@@ -1,0 +1,325 @@
+# Loop Atlas model: loops, arcs. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+- id: arc.activation
+  parent: era
+  at: 0
+  name: Activation
+  tier: 6
+  kind: loop
+  t: [600, 7200]
+  is: The first hours. A spotlight guide to the first game, a Lesson per ship with a ghost that flies the step once, then
+    a Mentor's tips.
+  phases:
+  - n: First launch
+  - n: The spotlight leads to one card
+  - n: The Lesson
+    d: The autopilot flies the step once, then hands over the stick.
+  - n: The Mentor's tips
+  - n: The quest chain takes over
+  drivers: [mastery, find, goal]
+  reps: '1'
+  repsOf: per player; one Lesson per ship
+  now:
+    s: dark
+    note: Built and merged, never run in the editor. The master unlock is on in shipped builds, so a fresh install gets
+      every lock open and no guidance.
+  plan:
+    note: The Microgame Training plan. The gate is flipped once the chain is signed off.
+  holes:
+  - 'on': n
+    q: No player has seen the onboarding. The first loop a stranger meets is an unlocked menu.
+  - 'on': p
+    q: The Lesson teaches a ship's Time verb. Nothing yet teaches a combo or a role.
+    fill: 'The Mentor''s stream is ordered by the ladder of tiers: Pulse and Verb in the Lesson, the kit''s first Combo
+      after three races, the Role the first time the player enters a Mass-Space game.'
+  src:
+  - Docs/ACTIVATION.md
+  - Docs/ModePreview/TRAINING_PLAN.md
+- id: arc.unlock
+  parent: era
+  at: 3
+  name: The quest chain
+  tier: 6
+  kind: loop
+  t: [3600, 1209600]
+  is: Games unlock in a chain. Reaching a mode's top rung completes its quest; claiming it opens the next. There is no XP.
+  phases:
+  - n: Play the frontier mode
+  - n: Reach rung I4
+  - n: Claim the quest
+  - n: The next mode unlocks
+  - n: 'At the end: the Hangar opens'
+  drivers: [reward, find, mastery]
+  reps: '4'
+  repsOf: quests before the Hangar
+  now:
+    s: dark
+    note: Scurry, Hex Race, Joust, Maelstrom, then the Vessel Hangar. Stood down by the master unlock.
+  holes:
+  - 'on': np
+    q: The chain orders 4 cards. About 80 others have no order, so after the Hangar opens nothing says what to play next.
+    fill: 'After the Hangar, the chain is per vessel: each hull''s flower (see The vessel''s flower) is its own short chain
+      of three element games.'
+  src:
+  - Docs/MENU_PROGRESSION_AND_IAP.md section 2
+  - Docs/QUEST_TRACK_AND_BREADCRUMB.md
+- id: arc.fleet
+  parent: era
+  at: 4
+  name: The fleet
+  tier: 6
+  kind: loop
+  t: [86400, 2592000]
+  is: Winning pays crystals, crystals buy vessels, and a new vessel is a new kit with its own games to learn.
+  phases:
+  - n: Win rounds
+  - n: Crystals add up
+  - n: Buy a vessel in the Hangar
+  - n: Learn its kit in its games
+  - n: Seat it in a squad
+  drivers: [own, reward, find]
+  reps: '20'
+  repsOf: wins per vessel (200 a win, 4000 a vessel)
+  now:
+    s: part
+    note: 'The economy is live: the winner is paid 200, everyone else nothing; five vessels cost 4000 each. Twenty-three
+      hulls exist; most are not priced or in the shipping list.'
+  prop:
+    s: change
+    note: Crystals get a second sink so the loop does not end with the last vessel.
+  holes:
+  - 'on': np
+    q: Crystals buy only vessels. When the fleet is owned the reward has no use, and the payout stops driving anything.
+    fill: 'Three more sinks: refitting the Ark (hold and plates), recruiting a pilot at port, and colour sets.'
+  - 'on': np
+    q: Which of the 23 hulls ship, at what price and in what order, is not decided beyond the first five.
+    fill: 'Price by how many loops a hull opens: a solo hull 4000, a crew vessel 6000 because it opens a second seat for
+      a friend.'
+  src:
+  - Docs/ECONOMY_AND_PRICING.md
+  - Docs/MENU_PROGRESSION_AND_IAP.md section 2c
+- id: fleet
+  parent: arc.fleet
+  at: 3
+  name: The fleet's kits
+  tier: 6
+  kind: fleet
+  t: [86400, 2592000]
+  is: Every vessel, each with its own loops. Pick one to make it the vessel shown everywhere in the atlas.
+  phases: []
+  drivers: [find, own, mastery]
+  now:
+    s: part
+  src:
+  - Docs/FleetCodex/abilities.json
+- id: arc.flower
+  parent: era
+  at: 4
+  in: x
+  name: The vessel's flower
+  tier: 6
+  kind: loop
+  t: [3600, 604800]
+  is: 'Proposed. Each vessel has a flower of three petals: Time, Charge, Mass-Space. A petal lights when its game is cleared
+    at I3. It is the player''s own pass through the elemental loop.'
+  phases:
+  - n: Fly the hull's Time game
+    d: Petal 1. Offers Regatta.
+  - n: Its Charge game
+    d: Petal 2. Offers Broadside.
+  - n: Its Mass-Space game
+    d: Petal 3. Offers Brood Rush.
+  - n: The flower is whole
+    d: The hull is marked voyage-ready in the squad book.
+  drivers: [mastery, own, goal]
+  reps: '3'
+  repsOf: petals per vessel
+  prop:
+    s: add
+    note: Proposal P8. It gives every card an order, makes 'arcade trains for arena' visible to the player, and reuses the
+      petal shape the HUD already teaches.
+  src: [proposal]
+- id: arc.squad
+  parent: era
+  at: 4
+  name: The squad book
+  tier: 6
+  kind: loop
+  t: [86400, 2592000]
+  is: 'A squad is a deck: three seats, each a vessel, an element, a pilot and an optional artifact. You build several and
+    pick one before a game.'
+  phases:
+  - n: Pick three vessels
+  - n: Give each an element
+  - n: Seat a pilot in each
+  - n: Risk an artifact, or not
+  - n: Play it, then change it
+  drivers: [make, mastery, own]
+  reps: null
+  repsOf: squads kept
+  now:
+    s: part
+    note: The squad book and the callsign pilots are built; unverified in the editor. Artifacts apply in voyages only.
+  src:
+  - Docs/PILOTS_AND_ARTIFACTS.md
+  - Docs/Pilots/CALLSIGNS.md
+  - Docs/Pilots/INVENTORY.md
+- id: arc.crew
+  parent: era
+  at: 4
+  name: Crew and standing
+  tier: 6
+  kind: loop
+  t: [259200, 5184000]
+  is: Pilots are people. Recruiting one brings their faction's jobs; succeeding for a faction raises standing, which widens
+    the work and the pay. Pirate work raises notoriety, and a bounty.
+  phases:
+  - n: Recruit a pilot
+  - n: 'Seat them: their faction''s jobs appear'
+  - n: Do the work
+  - n: Standing rises
+    d: Stranger, Known, Trusted.
+  - n: 'Promote a captain: join a faction'
+  drivers: [story, own, reward]
+  reps: '5'
+  repsOf: successes for one faction to reach Trusted
+  now:
+    s: part
+    note: 'Device-side stand-in built 2026-11-07: unique people on 18 callsigns, standing, notoriety, grudges. The backend
+      faction roster and the captain UI are not built.'
+  src:
+  - Docs/Voyages/DEPTH.md section 6
+  - Docs/Voyages/VOYAGES.md section 6.2.1
+  - Docs/Pilots/CALLSIGNS.md
+- id: arc.hoard
+  parent: era
+  at: 3
+  name: The hoard
+  tier: 6
+  kind: loop
+  t: [86400, 5184000]
+  is: Artifacts are found in the HyperSea, carried home at risk, and then carried into the next voyage at risk again.
+  phases:
+  - n: Find one in the sea
+  - n: Stow it aboard the Ark
+  - n: Get it home
+  - n: Equip it to a seat
+  - n: 'Carry it out again: it can be lost'
+  drivers: [own, stake, find]
+  reps: null
+  repsOf: artifacts per voyage
+  now:
+    s: part
+    note: Finds, the stake and extraction are built in the slice.
+  src:
+  - Docs/Pilots/ARTIFACTS.md
+  - Docs/Voyages/SLICE.md section 5
+- id: arc.saga
+  parent: era
+  at: 5
+  name: A saga
+  tier: 6
+  kind: loop
+  t: [259200, 3628800]
+  is: One story across several voyages. Each chapter is news that becomes a job, found only with the right faction's pilot
+    seated, and the last chapter holds a relic that exists once.
+  phases:
+  - n: A chapter's news reaches port
+  - n: Seat the pilot it asks for
+  - n: Sail the chapter's job
+  - n: The next chapter opens
+  - n: 'The finale: a relic'
+  drivers: [story, own, find]
+  reps: '3'
+  repsOf: chapters per saga; four sagas authored
+  now:
+    s: built
+    note: Four sagas of three chapters, each ending in a named relic. A saga runs once.
+  holes:
+  - 'on': np
+    q: A saga does not run again, so four sagas are a fixed amount of story. 'A season could reseed it' is a default, not
+      a decision.
+    fill: Each Tide reseeds one saga and adds one, so there is always an unfinished thread.
+  src:
+  - Docs/Voyages/DEPTH.md section 5
+- id: arc.social
+  parent: era
+  at: 0
+  name: Party and friends
+  tier: 6
+  kind: loop
+  t: [600, 604800]
+  is: Invite a friend, play as a party, rematch, and come back because they did.
+  phases:
+  - n: Invite or be invited
+  - n: Party up
+    d: AI fills the empty seats.
+  - n: Play together
+  - n: Rematch
+  - n: They are on your friends list
+  drivers: [crew, rival]
+  reps: null
+  repsOf: sittings with a friend
+  now:
+    s: built
+    note: The party lobby, invites, friends and AI backfill exist. Crew vessels (two to four seats on one hull) are local
+      only until networked.
+  prop:
+    s: change
+    note: 'A crew vessel''s empty seat is the invite: ''fly the kite on my Wrasse''.'
+  holes:
+  - 'on': np
+    q: Nothing a party does together lasts past the sitting, so a friend is a reason to play tonight and not a reason to
+      return.
+    fill: 'A party shares one voyage record: the Ark, its hoard and the saga thread belong to the party that sailed it.'
+  src:
+  - Docs/claude/MULTIPLAYER_AND_SOCIAL.md
+  - Docs/Voyages/PARTY.md
+- id: arc.replay
+  parent: era
+  at: 3
+  name: Replays
+  tier: 5
+  kind: loop
+  t: [60, 600]
+  is: Every match is recorded on the device. Watch your last ten from any camera.
+  phases:
+  - n: Finish a match
+  - n: Open My Replays
+  - n: Watch it from outside
+  - n: See what to do differently
+  drivers: [mastery, crew]
+  now:
+    s: built
+    note: On Will Bogen's Theater. Reached from Profile and the Arcade.
+  prop:
+    s: change
+    note: 'The breath offers ''watch the pass that beat you'': a ten-second cut, not the whole match.'
+  holes:
+  - 'on': np
+    q: A replay cannot leave the device, so it drives mastery and nothing else.
+    fill: Share a ten-second cut as a link that opens the same card at the same rung for whoever taps it.
+  src: [Docs/REPLAYS.md, Docs/THEATER.md]
+- id: arc.support
+  parent: era
+  at: 4
+  name: Episodes
+  tier: 6
+  kind: loop
+  t: [2592000, 15552000]
+  is: Real money. One token buys one episode. Built as an entitlement; nothing is for sale.
+  phases:
+  - n: An episode is offered
+  - n: Buy a token
+  - n: The episode is yours
+  drivers: [own]
+  now:
+    s: dark
+    note: One episode asset priced at 0. No storefront is wired, and the web checkout is not Steam-compliant.
+  holes:
+  - 'on': np
+    q: 'What an episode gives the player is not defined in loop terms: it opens no loop on this map.'
+    fill: 'An episode is a Tide''s content, sold once the Tide has run free for its season: its saga, its arena environments,
+      its colour set.'
+  src:
+  - Docs/ECONOMY_AND_PRICING.md sections 4 and 5

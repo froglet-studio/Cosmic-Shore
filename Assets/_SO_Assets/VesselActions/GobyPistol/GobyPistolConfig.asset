@@ -19,12 +19,12 @@ MonoBehaviour:
   dartCooldown: 1.2
   dartPace:
     Enabled: 1
-    Value: 1.25
-    Min: 1.25
-    Max: 1.95
+    Value: 1.45
+    Min: 1.45
+    Max: 1.75
     element: 4
     UseFloor: 1
-    Floor: 0.625
+    Floor: 0.725
   hullRadius: 3
   queryReach: 6
   ownPerchBlocks: 5
@@ -167,7 +167,7 @@ MonoBehaviour:
   aiCruiseSpeed: 100
   aiTurnRate: 90
   aiRethinkSeconds: 2.5
-  aiHomeRadius: 600
+  aiHomeRadius: 2000
   aiBackAfter: 4
   dartButtonIcon: {fileID: 21300000, guid: 173cce5c2e60d5fe47fe15cfb2bfa249, type: 3}
   dartButtonLabel: 

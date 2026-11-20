@@ -110,6 +110,22 @@ public class VesselTransformer : MonoBehaviour
     [Tooltip("VECTOR MODEL ONLY. Whether the throttle keeps acting during a drift (see the " +
              "enum's own docs).")]
     [SerializeField] DriftThrottlePolicy driftThrottlePolicy = DriftThrottlePolicy.Live;
+
+    [Header("Inertia (vector model only)")]
+    [Tooltip("VECTOR MODEL ONLY. Grip OUTSIDE a drift, per second, at cruise: how fast momentum swings back onto the " +
+             "nose in ordinary flight. 0 (default) = momentum snaps onto the nose (you fly where you point), the " +
+             "fleet's behaviour and the no-drift identity. Above 0 the hull OVERSTEERS: the nose turns a little " +
+             "sharper than the travel does and the path catches up, a slip of about turn rate / grip degrees in a " +
+             "steady turn. The Rhino, 2026-11-19 (Garrett: \"over steering as the rhino turns a little sharper than " +
+             "it changes direction\").")]
+    [SerializeField, Min(0f)] float inertialGripAtCruise = 0f;
+
+    [Tooltip("VECTOR MODEL ONLY. The same grip at Inertial Grip Speed and above; between them it is lerped by speed, " +
+             "so a lower value here makes a fast hull slide wider. Ignored while Inertial Grip At Cruise is 0.")]
+    [SerializeField, Min(0f)] float inertialGripAtSpeed = 0f;
+
+    [Tooltip("VECTOR MODEL ONLY. The speed, u/s, at which the grip reaches Inertial Grip At Speed.")]
+    [SerializeField, Min(1f)] float inertialGripSpeed = 1000f;
     #endregion
 
     /// <summary>
@@ -1273,6 +1289,10 @@ public class VesselTransformer : MonoBehaviour
         /// magnitude, so this is also the post-grip magnitude).</param>
         protected virtual float ShapeSpeed(float speedNow, float speedBeforeThrust, float dt)
         {
+            // Inertia (outside a drift): momentum off the nose plus thrust along it could add up past the target, a
+            // speed gain from merely turning. Bound the GAIN to the target (never brake below the entry speed).
+            if (DriftBlend01() <= 0f && HasInertialGrip)
+                return Mathf.Min(speedNow, Mathf.Max(speedBeforeThrust, ComputeThrottleTarget()));
             if (DriftBlend01() <= 0f) return speedNow;
             float ceiling = Mathf.Max(speedBeforeThrust, ComputeThrottleTarget() * driftOvershootCeiling);
             return Mathf.Min(speedNow, ceiling);
@@ -1314,9 +1334,57 @@ public class VesselTransformer : MonoBehaviour
         protected virtual float NoseConvergence(float dt)
         {
             float driftAmount = DriftBlend01();
+            float rest = InertialConvergence(dt);
             return driftAmount > 0f
-                ? Mathf.Clamp01(Mathf.Lerp(1f, GripFraction(dt), driftAmount))
-                : 1f;
+                ? Mathf.Clamp01(Mathf.Lerp(rest, GripFraction(dt), driftAmount))
+                : rest;
+        }
+
+        /// <summary>True when this hull flies with inertia outside a drift (<see cref="inertialGripAtCruise"/> above 0 on
+        /// the vector model): the nose leads and the travel follows.</summary>
+        public bool HasInertialGrip => vectorFlightModel && inertialGripAtCruise > 0f;
+
+        /// <summary>The fraction of the nose-ward angle closed this frame OUTSIDE a drift: 1 (snap, the fleet default)
+        /// unless <see cref="inertialGripAtCruise"/> is authored, then <c>1 - e^(-grip dt)</c> with the grip lerped from
+        /// cruise to <see cref="inertialGripSpeed"/>.</summary>
+        float InertialConvergence(float dt)
+        {
+            if (!HasInertialGrip) return 1f;
+            float grip = Mathf.Lerp(inertialGripAtCruise, inertialGripAtSpeed, Mathf.Clamp01(speed / inertialGripSpeed));
+            return InertialGripMath.Convergence(grip, dt);
+        }
+
+        /// <summary>
+        /// Degrees between where the hull points and where it travels (0 when momentum sits on the nose). The
+        /// inertia's oversteer and every drift both show here. VECTOR MODEL: read from the momentum vector; scalar: from
+        /// Course.
+        /// </summary>
+        public float SlipDegrees
+        {
+            get
+            {
+                Vector3 travel = vectorFlightModel ? _velocity : VesselStatus != null ? VesselStatus.Course : transform.forward;
+                return travel.sqrMagnitude > 1e-6f ? Vector3.Angle(transform.forward, travel) : 0f;
+            }
+        }
+
+        /// <summary>
+        /// Add <paramref name="amount"/> u/s to the hull's speed along its travel, never past <paramref name="ceiling"/>
+        /// (and never lowering a speed already above it). The speed then decays toward the throttle target at whatever
+        /// tracking rate is live, so a kick on a high-inertia hull lasts. The Rhino's Slingshot (Time level 5).
+        /// </summary>
+        public void KickSpeed(float amount, float ceiling)
+        {
+            if (amount <= 0f) return;
+            float next = Mathf.Max(speed, Mathf.Min(speed + amount, ceiling));
+            if (next <= speed) return;
+            if (vectorFlightModel)
+            {
+                Vector3 dir = _velocity.sqrMagnitude > 1e-6f ? _velocity.normalized : transform.forward;
+                _velocity = dir * next;
+                _lastPublishedSpeed = next;
+            }
+            speed = next;
         }
 
         /// <summary>Fraction of the remaining nose-ward angle that grip closes this frame.

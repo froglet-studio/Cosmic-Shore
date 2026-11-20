@@ -227,6 +227,11 @@ What has been measured, each with the painting that taught it (LESSONS 72 to 90)
    named in order to ban them were painted (63, 67).
 8. **Where each piece grows from is a sentence** (54): a tail from the base of the spine and out under the coat,
    wings from the shoulder blades through the cloth. "butterfly Wings on a head, as ears, is nonsensical."
+8a. **Respect homology** (Garrett 2026-11-18, on MANGER: "a platypus bill is homologous to other mammals' lips. we
+   want to try and respect homology. also it has an extra set of eyes over there"). A part of the second animal grows
+   from the part of the first that it IS in the body plan: a bill from the lips (it is the mouth), wings from the
+   forelimb line or the shoulder blades, a tail from the base of the spine. Never set it on the body where nothing of
+   its own kind grows, as a bill-plate on the brow; a misplaced plate is also read as a second pair of eyes.
 9. **Count the hats, wigs and second heads over every roll before picking one, and pick by what the note is about**
    (79, 86). Trace's four rolls: one keeper, one good head with a wrong display, one jelly wig, one jelly bonnet.
 10. **Some pairs are limits, and the cast should avoid them** (43, 50): a bird whose tell is its bill, behind

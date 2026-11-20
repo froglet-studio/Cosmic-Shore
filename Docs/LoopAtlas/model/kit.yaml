@@ -1,0 +1,190 @@
+# Loop Atlas model: kit. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+roles:
+  free:
+    name: Flying for its own sake
+    t: [10, 120]
+    is: No objective. The only driver is whether the kit is a pleasure by itself.
+    phases:
+    - n: See a shape in the mass
+    - n: Fly at it
+    - n: Use the kit on it
+    - n: Enjoy the result
+    drivers: [joy, find]
+    reps: null
+    repsOf: passes per visit
+  time:
+    name: Racing role
+    t: [3, 20]
+    is: The kit's Time verb, spent where the course rewards it. One pass is one gate.
+    phases:
+    - n: See the gate and the line to it
+    - n: Bank what your Time verb needs
+    - n: Spend it where it pays
+    - n: Through the gate with speed kept
+    drivers: [joy, mastery, goal]
+    reps: 16-64
+    repsOf: gates per race
+  charge:
+    name: Duelling role
+    t: [10, 45]
+    is: The kit's Charge verb, landed on a rival's hull. One pass is one scored hit.
+    phases:
+    - n: Choose a rival
+    - n: Get into your verb's range
+    - n: Land it
+    - n: Take the petal while they are silenced
+    - n: Break away before they answer
+    drivers: [rival, mastery, goal]
+    reps: null
+    repsOf: scored hits per match
+  ms:
+    name: Cell role
+    t: [15, 90]
+    is: 'Where this vessel sits between cultivator and destroyer. Both serve one claim: a vessel may be poor at one if it
+      is great at the other.'
+    phases:
+    - n: 'Read the claim: who holds the nucleus'
+    - n: 'Choose: make our volume or remove theirs'
+    - n: Do it with your Mass or Space verb
+    - n: The books move
+      d: Volume made, volume removed.
+    - n: The claim shifts
+    drivers: [make, break, crew, goal]
+    reps: null
+    repsOf: passes per brood
+  party:
+    name: Party role
+    t: [5, 60]
+    is: Whatever the card's one idea asks of the hull.
+    phases:
+    - n: See what the card wants
+    - n: Use the kit on it
+    - n: Score or be laughed at
+    drivers: [crew, joy]
+    reps: null
+    repsOf: passes per round
+  cell:
+    name: Escort role
+    t: [15, 90]
+    is: 'The cell role with the Ark in it: take the nucleus for the domain, and keep fauna off the hull while it regrows.'
+    phases:
+    - n: 'Read the cell: claim, fauna, the Ark''s plates'
+    - n: 'Choose: clear, build or guard'
+    - n: Do it with the kit
+    - n: The claim and the Ark answer
+    drivers: [crew, goal, stake, make, break]
+    reps: null
+    repsOf: passes per cell
+roleHoles:
+- 'on': np
+  q: How many passes of the role make a round is counted for races (gates) and not for the other games.
+  fill: Count scored hits and claim shifts per match from the scoreboard's own events, and aim each game at 6 to 10 passes
+    in its 90 seconds.
+- 'on': np
+  q: Where this vessel sits between cultivator and destroyer is to be measured from play. It has not been measured, and
+    the player is never shown it.
+  fill: Show each pilot their two volume numbers live as one meter, and print the vessel's measured lean on its Hangar card
+    once 100 matches exist.
+kit:
+  is: The vessel's four elemental verbs, its omni crystal, its combos and its feel. The kit as designed never changes for
+    a game mode.
+  holes:
+  - 'on': np
+    q: The combos baked into this kit are not written down anywhere, so nothing checks that a game rewards them or that
+      the ability icons teach them.
+    fill: 'Each kit doc names two combos: a feeder into a spender, and one that crosses two elements. The ones shown here
+      are invented from the ability texts for the vessel''s owner to correct.'
+pulse:
+  name: Flight feel
+  t: [0.1, 3]
+  is: Stick in, hull answers, camera, sound and haptics confirm. Skimming close to mass pays a pulse; ramming it costs a
+    thud.
+  phases:
+  - n: Move the stick
+  - n: The hull answers
+  - n: The world confirms
+    d: Camera, sound, the skim pulse or the punish thud.
+  - n: Correct
+  drivers: [joy]
+  holes:
+  - 'on': np
+    q: What this hull should feel like with nothing to do is not stated per vessel, and only the Dolphin has been signed
+      off as fun.
+    fill: 'One sentence per hull in its kit doc: the feeling of its cruise, and the one motion that is a pleasure to repeat.'
+verbHole:
+  'on': np
+  q: This verb's loop is written as what it does, not as steps, and the feeling it should provoke, and at which step, is
+    not written.
+  fillPrefix: 'Invented from the trigger: '
+archetypes:
+  hold_release:
+    match: release
+    phases:
+    - 'Commit: press and hold'
+    - It builds while you hold
+    - Release at the right moment
+    - The payoff lands
+    - Recover
+    feel: Tension while it builds, then the snap of letting go.
+    at: 2
+  mode:
+    match: switch mode|toggle|cycle|select mode|tap to stop
+    phases:
+    - Read what the moment needs
+    - Switch
+    - Play the mode's strength
+    - Its weakness shows
+    - Switch back
+    feel: Changing shape to fit the moment.
+    at: 2
+  seat:
+    match: seat
+    phases:
+    - One seat sets it up
+    - The other seat sees the chance
+    - Press together
+    - The payoff is shared
+    feel: We did that together.
+    at: 2
+  hold:
+    match: hold
+    phases: [Press in, It pays while you hold, The cost climbs, Let go in time, Cool down]
+    feel: Power under the thumb, and the nerve to let go.
+    at: 1
+  passive:
+    match: passive|always on|on contact
+    phases: [Look for the condition, Fly it right, It fires by itself, The payoff, Look for the next]
+    feel: The world pays you for flying well.
+    at: 2
+  omni:
+    match: omni
+    phases: [Spot the omni crystal, Race for it, It bursts, Ride the window, Hunt the next]
+    feel: A jackpot you had to win a race for.
+    at: 2
+  card:
+    match: hand
+    phases:
+    - A hand is dealt
+    - Pick the card the swarm lacks
+    - The swarm changes
+    - Watch it work
+    - The next hand
+    feel: A plan coming together without your hands on it.
+    at: 3
+  'off':
+    match: switched off
+    phases: [Switched off]
+    feel: ''
+    at: 0
+  tap:
+    match: tap
+    phases: [Spot the moment, Tap, The payoff, The cooldown runs, Ready again]
+    feel: A clean decision, answered at once.
+    at: 2
+elementDrivers:
+  Time: [joy, mastery]
+  Charge: [rival, mastery]
+  Mass: [make, crew]
+  Space: [break, joy]
+  Omni: [find, joy]

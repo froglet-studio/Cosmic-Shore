@@ -92,6 +92,11 @@ namespace CosmicShore.UI
             _topSpeed = root ? root.GetComponentInChildren<ITopSpeedSource>(true) : null;
             if (!ramp && root) ramp = root.GetComponentInChildren<RampBoostActionExecutor>(true);
 
+            // Time level-5 Slingshot (2026-11-19): the Time card flashes on every fling out of a slide.
+            if (_slingshot) _slingshot.Flung -= OnSlingshot;
+            _slingshot = root ? root.GetComponentInChildren<RhinoSlingshot>(true) : null;
+            if (_slingshot) _slingshot.Flung += OnSlingshot;
+
             // A re-initialise (menu vessel swap, pilot swap) starts the cards from a known state so
             // the change detection below pushes everything once.
             _chargeLit = false;
@@ -113,6 +118,15 @@ namespace CosmicShore.UI
             view.SetAbilityPressed(Element.Charge, false);
             view.SetAbilityPressed(Element.Time, false);
             view.SetMomentum(false, ResolveDomainSignalColor());
+        }
+
+        // Re-subscribed on every Initialize (a menu swap re-inits); the vessel and its HUD go together, so no
+        // OnDestroy here (it would hide the base class's).
+        RhinoSlingshot _slingshot;
+
+        void OnSlingshot(float kick)
+        {
+            if (view && IsHudAllowed) view.PlayAbilityFlash(Element.Time);
         }
 
         void Update()

@@ -1,0 +1,71 @@
+# Loop Atlas model: vessel Goby. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Goby
+verbs:
+  Time:
+    ability: Quick Jump
+    does: 'Switched off: the Pistol''s aimed jump is disabled in the Goby and Pistol config, so nothing fires it right now,
+      neither a player nor the AI. Its level-5 upgrade is wired for when it returns.'
+    trigger: Switched off
+    scales: Time has nothing to act on while the jump is off.
+    source: Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset
+    arch: 'off'
+    t: [1, 1]
+  Charge:
+    ability: Vortex Sting
+    does: The Pistol's Snap fires a vortex ring that sweeps up rival prisms and smashes them as it collapses; a ring that
+      hits a rival hull takes petals. If the Goby holds a lock on a rival in the Pistol's view, the ring homes in.
+    trigger: Passive - Pistol fires, Goby locks
+    scales: More Charge makes each ring hit take more petals from every one of a rival's elements.
+    source: Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs
+    arch: passive
+    t: [2, 15]
+  Mass:
+    ability: Dens
+    does: At each perch the Pistol rests and builds a den of prisms and shielded prisms, bigger the more energy it earned
+      flying over its ground. It can ride back to add to an old den; a fall loses the energy.
+    trigger: Passive - the Pistol rests at a perch
+    scales: More Mass builds more den prisms from the same energy.
+    source: Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs
+    arch: passive
+    t: [2, 15]
+  Space:
+    ability: Undertow
+    does: Mass either side of the Pistol's plane is pulled into it, and crystals drift in for the Pistol to collect. Danger,
+      super-shielded and your own prisms never move.
+    trigger: Always on
+    scales: More Space pulls mass in from further away and widens the hull's skim reach.
+    source: .claude/skills/duo-vessel/references/designs/goby-and-pistol.md
+    arch: passive
+    t: [2, 15]
+board:
+  Time: b ~ .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Perch Run]
+  Charge: [Snap]
+  Mass: [Den Builder]
+  Space: [Riptide]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: Perch to perch
+  t: [15, 60]
+  is: One seat lays the path, the other plays it.
+  chain:
+  - - ''
+    - 'The Goby darts: a path is laid'
+  - - Space
+    - The Pistol rides it; mass is pulled into its plane
+  - - Charge
+    - A vortex ring homes on the Goby's lock
+  - - Mass
+    - At the perch the Pistol builds a den
+  drivers: [crew, make, rival]
+  feel: Two games that need each other.
+doc: Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset

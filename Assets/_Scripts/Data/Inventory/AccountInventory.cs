@@ -37,6 +37,12 @@ namespace CosmicShore.Data
         /// <summary>The painted pilots ever granted to this crew (<see cref="PilotRecord.PaintedKey"/>), so one the player
         /// discontinued is not granted again.</summary>
         public List<string> PaintedGranted = new();
+        /// <summary>This account's crew: the painted pilots it is dealt, one a callsign, in callsign order
+        /// (<c>PaintedCrewSO.Grant</c>; Garrett, 2026-11-18: "each player of our game has a unique crew of pilots"). Set
+        /// once, from a dealt crew or a random set of the pool, and kept, so a pool that grows never reshuffles it.</summary>
+        public List<string> Crew = new();
+        /// <summary>Which dealt crew this account claimed, counted from 1 (0: none; the crew is a random set).</summary>
+        public int ClaimedCrew;
         /// <summary>True once this device's pre-inventory PlayerPrefs (Hangar seats, slots, track levels) were folded in.</summary>
         public bool DeviceImportDone;
 
@@ -61,6 +67,10 @@ namespace CosmicShore.Data
         }
 
         public bool HasCallsign(PilotVision vision) => PilotWithCallsign(Callsigns.IdOf(vision)) != null;
+
+        /// <summary>True when the painted pilot <paramref name="key"/> is one of this account's crew (always true while
+        /// no crew has been dealt).</summary>
+        public bool InCrew(string key) => Crew == null || Crew.Count == 0 || Crew.Contains(key);
 
         /// <summary>The crew's pilot who is the painted pilot <paramref name="key"/>, or null.</summary>
         public PilotRecord PaintedPilot(string key)
@@ -397,6 +407,10 @@ namespace CosmicShore.Data
                 if (p.Chronicle.Count > PilotRecord.MaxChronicle) p.Chronicle.RemoveRange(0, p.Chronicle.Count - PilotRecord.MaxChronicle);
                 return false;
             });
+
+            Crew ??= new List<string>();
+            Crew.RemoveAll(string.IsNullOrEmpty);
+            if (ClaimedCrew < 0) ClaimedCrew = 0;
 
             PaintedGranted ??= new List<string>();
             var granted = new HashSet<string>();

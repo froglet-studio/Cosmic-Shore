@@ -124,6 +124,18 @@ PAINTED = [
 ]
 
 
+# The roster's pilots (Tools/Build/pilot_art/roster.py; Garrett, 2026-11-18: a unique crew for every player) follow
+# from 51 in Docs/Pilots/art/roster/plan.json's order, the painted ones only. The plan only appends, so these ids are
+# append-only too. Every player's avatar picker offers the avatars of their own crew (PaintedCrewSO.AvatarIds).
+ROSTER_PLAN = "Docs/Pilots/art/roster/plan.json"
+
+
+def roster_words():
+    """The roster's painted pilots, in the plan's order: the words whose avatars take ids 51 and up."""
+    plan = json.loads(read(ROSTER_PLAN)) if os.path.exists(os.path.join(ROOT, ROSTER_PLAN)) else {"pilots": []}
+    return [p["word"] for p in plan["pilots"] if p.get("state") == "painted"]
+
+
 def bust_of(word):
     rel = f"{BUST_DIR}/{word}.jpg"
     return rel if os.path.exists(os.path.join(ROOT, rel)) else None
@@ -168,6 +180,10 @@ def roster():
         png = f"{PAINTED_DIR}/{stem}.png"
         assert os.path.exists(os.path.join(ROOT, png)), f"{png} is missing"
         out.append((len(CALLSIGNS) + 1 + i, name, (png, *frame)))
+    first = len(CALLSIGNS) + len(PAINTED) + 1
+    for i, word in enumerate(roster_words()):
+        assert word in scenes, f"{word} is painted in {ROSTER_PLAN} but its scene has no close box (scene.py)"
+        out.append((first + i, word, tuple(scenes[word])))
     return out
 
 
@@ -291,14 +307,14 @@ def check():
 def self_test():
     failures = []
     rows = roster()
-    if [v for v, _, _ in rows] != list(range(1, len(CALLSIGNS) + len(PAINTED) + 1)):
+    if [v for v, _, _ in rows] != list(range(1, len(CALLSIGNS) + len(PAINTED) + len(roster_words()) + 1)):
         failures.append("avatar ids are not 1..N (callsign values, then the painted pilots)")
     if len({n for _, n, _ in rows}) != len(rows):
         failures.append("two avatars share a name")
     if len({avatar_guid(w) for _, w, _ in rows}) != len(rows):
         failures.append("two avatars share a guid")
     text = icon_list_text(rows)
-    if text.count("  - Name: ") != len(CALLSIGNS) + len(PAINTED):
+    if text.count("  - Name: ") != len(CALLSIGNS) + len(PAINTED) + len(roster_words()):
         failures.append("the icon list does not hold one avatar per pilot in the catalog")
     # The cut finds the head: a blob high on the right pulls the square right and up.
     a = np.zeros((280, 220), np.uint8)

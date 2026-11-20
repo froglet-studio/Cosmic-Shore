@@ -1,0 +1,87 @@
+# Loop Atlas model: vessel TigerMoth. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Tiger Moth
+verbs:
+  Time:
+    ability: Drop
+    does: Shut your wings and fall straight down your belly line, passing through everything and leaving no trail. Let go
+      to flip into the fall and fly on. A long drop leaves a wormhole pair.
+    trigger: Hold, release to land
+    scales: More Time shortens the drop's recharge, down to half at the top.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md
+    arch: hold_release
+    t: [2, 12]
+  Charge:
+    ability: Scale Dust
+    does: In Dust mode your falling dust steals petals from any rival inside it, one at a time, scoring and silencing them.
+      Allies it touches are cleansed; rival creatures it reaches wither.
+    trigger: Passive - keep a rival in your dust
+    scales: More Charge makes the dust steal petals faster, up to ten a second.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md
+    arch: passive
+    t: [2, 15]
+  Mass:
+    ability: Mass / Dust Mode
+    does: Switch between two modes. Mass mode paints a wide wake of prisms behind you with no dust; Dust mode narrows the
+      wake to a line and turns on the dust below you.
+    trigger: Toggle
+    scales: More Mass widens the wake you paint in Mass mode.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md
+    arch: mode
+    t: [5, 30]
+  Space:
+    ability: Dust Reach
+    does: 'Your dust works on prisms too: your own grow, turn dangerous or get shielded, while rival prisms are destroyed,
+      shrunk or stolen.'
+    trigger: Passive - dust over prisms
+    scales: More Space makes the dust that falls below you longer.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md
+    arch: passive
+    t: [2, 15]
+  Omni:
+    ability: Explosion
+    does: 'Sets off a huge bloom of dust: rivals in it lose petals of every element, rival prisms and creatures are blighted,
+      your prisms are tended, and you and nearby allies are cleansed.'
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Waystation]
+  Charge: [Dustup]
+  Mass: [Tapestry]
+  Space: [Sirocco]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: Paint and tend
+  t: [20, 90]
+  is: Lay a field, then fly back over it and make it better.
+  chain:
+  - - Mass
+    - 'Mass mode: paint a wide wake'
+  - [Mass, Toggle to Dust]
+  - - Space
+    - Dust over your prisms grows and shields them; over theirs it destroys
+  - [Time, Drop out when threatened]
+  drivers: [make, crew]
+  feel: Gardening at altitude.
+- name: The dust trap
+  t: [8, 25]
+  is: Fall onto their line and let the dust do it.
+  chain:
+  - [Time, Drop onto a rival's path]
+  - - Charge
+    - 'Keep them in your dust: petals leave them one at a time'
+  drivers: [rival, joy]
+  feel: Falling out of the sky onto someone.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md

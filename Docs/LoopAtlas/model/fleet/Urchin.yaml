@@ -1,0 +1,70 @@
+# Loop Atlas model: vessel Urchin. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Urchin
+verbs:
+  Time:
+    ability: Slip
+    does: Let go of the trail you are riding and phase out for a moment, so you can fly clear of the mass you were in without
+      latching back on.
+    trigger: Tap while riding
+    scales: More Time makes the phase-out last longer.
+    source: Assets/Resources/ElementalAbilityMaps/Urchin.asset
+    arch: tap
+    t: [2, 20]
+  Charge:
+    ability: Chain Spikes
+    does: Tap for an aimed shotgun of spikes, or hold and release for a burst in every direction. Each spike steals the
+      prism it hits and sprays new spikes from it, chaining through enemy territory.
+    trigger: Tap, or hold and release
+    scales: More Charge makes each spike fly further and the chain run deeper.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md
+    arch: hold_release
+    t: [2, 12]
+  Mass:
+    ability: Trail Rider
+    does: Fly into a trail to latch on and ride it. Your own trail grows as you pass, an enemy's is stolen, and riding refills
+      ammo. Ride off the end to launch at grind speed.
+    trigger: Passive - fly into a trail
+    scales: More Mass makes your own prisms grow more each time you ride over them.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md
+    arch: passive
+    t: [2, 15]
+  Space:
+    ability: Track Projector
+    does: Lays a straight stretch of your own trail out ahead of you - a rail to ride where the map has none. Anyone can
+      steal it from you. Twenty-second cooldown.
+    trigger: Tap
+    scales: More Space makes the projected track longer.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRACK_PROJECTOR.md
+    arch: tap
+    t: [2, 20]
+board:
+  Time: b b ~
+  Charge: b b .
+  Mass: b b .
+  Space: '- - -'
+missing: ''
+arenas: [Regatta, Broadside]
+games:
+  Time: [Skein]
+  Charge: [Railrush]
+  Mass: [Hijack]
+  Space: []
+excused: [Space]
+lean: cultivator
+leanWhy: Lays and steals mass and destroys none; its Space game is excused.
+combos:
+- name: The rail thief
+  t: [12, 45]
+  is: Make a rail, ride everyone's, leave with their mass.
+  chain:
+  - [Space, Project a rail ahead]
+  - - Mass
+    - 'Ride it and any trail: yours grows, theirs is stolen, ammo refills'
+  - - Time
+    - Slip off clear of the mass
+  - - Charge
+    - Chain spikes into their territory
+  drivers: [make, joy, rival]
+  feel: Grinding a line nobody else can.
+doc: Assets/Resources/ElementalAbilityMaps/Urchin.asset

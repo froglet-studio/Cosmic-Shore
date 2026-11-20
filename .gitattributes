@@ -90,3 +90,29 @@
 *.mat        merge=unityyamlmerge
 *.controller merge=unityyamlmerge
 *.anim       merge=unityyamlmerge
+###############################################################################
+# Unity YAML is checked out as LF on every OS (Editor Churn W4, Caleb's
+# decision 2026-11-19, Docs/EditorChurn/TRACKER.md row 21).
+# Unity writes these files with LF on Windows too. Under Git for Windows'
+# default core.autocrlf=true, `* text=auto` checked them out as CRLF, so the
+# first editor open re-saved them as LF and git showed them as modified with
+# no diff. The project serializes as Force Text (EditorSettings
+# m_SerializationMode: 2), so every one of these is text; all are LF in the index.
+###############################################################################
+*.unity              text eol=lf
+*.prefab             text eol=lf
+*.asset              text eol=lf
+*.mat                text eol=lf
+*.meta               text eol=lf
+*.controller         text eol=lf
+*.overrideController text eol=lf
+*.anim               text eol=lf
+*.mask               text eol=lf
+*.mixer              text eol=lf
+*.lighting           text eol=lf
+*.renderTexture      text eol=lf
+*.physicMaterial     text eol=lf
+*.playable           text eol=lf
+*.signal             text eol=lf
+*.preset             text eol=lf
+*.spriteatlas        text eol=lf

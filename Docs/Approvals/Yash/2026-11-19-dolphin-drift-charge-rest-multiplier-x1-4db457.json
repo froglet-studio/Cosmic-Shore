@@ -1,0 +1,22 @@
+{
+  "id": "2026-11-19-dolphin-drift-charge-rest-multiplier-x1-4db457",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-19T07:55:01+00:00",
+  "area": "the Dolphin's Charge boost tuning",
+  "summary": "Dolphin Drift Charge rest multiplier x1.25 -> x1.375 (min 0.6875) so its card-start Regatta pace joins the field",
+  "why": "Regatta step 5: the Dolphin was the slow card edge (77.3 s vs 70.3-73.9); knee measured on 8 courses x 15 seeds, L5 unchanged",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "ed4ae800f",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset"
+  ],
+  "loop": {
+    "vessels": [
+      "Dolphin"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}

@@ -601,8 +601,8 @@ def class_asset() -> str:
                                                                 "  m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel\n") +
             f"  Class: {CLASS_ID}\n"
             "  Name: Shrike\n"
-            "  Description: A slow sniper that docks to whatever it touches. Build nests of super-shielded blocks,\n"
-            "    pierce anything with the Void Lance, sling across the cell on a tether, and paint targets for the\n"
+            "  Description: A slow sniper that docks to whatever it touches. Weave nests walled in super-shielded\n"
+            "    plates, pierce anything with the Void Lance, sling across the cell on a tether, and paint targets for the\n"
             "    missiles your nests launch.\n"
             "  PrimaryElement: 0\n"
             "  Element: {fileID: 0}\n"
@@ -638,8 +638,8 @@ MAP_ENTRIES = (
      "Salvo", "Every nest flora launches twice as often while you paint."),
     (2, "Nest", 6,
      "A. Any block you touch docks you (the camera eases back); docked, every cooldown runs x1.6 (x2.5 on "
-     "super-shielded mass or in a nest). Docked, A detaches you and leaves a nest behind: a cup of super-shielded "
-     "blocks round where you were, no two touching, the nose's way out open, crowned with a flora carrying ONE "
+     "super-shielded mass or in a nest). Docked, A detaches you and leaves a nest behind: a shell of super-shielded "
+     "plates round where you were (hoops of shielded twigs and a lining of plain pads inside), no two touching, the nose's way out open, crowned with a flora carrying ONE "
      "missile (8 s cooldown; at most three nests). Mass is volume - one dial: 12 -> 32 blocks per nest at level 10 "
      "(ShrikeConfigSO.nestBlocks), and the cruising trail's wavelength 8 -> 4 u (trailWavelength).",
      "Armed Nests", "A nest you leave behind carries two missiles."),

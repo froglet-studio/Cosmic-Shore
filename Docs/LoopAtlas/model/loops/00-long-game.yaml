@@ -1,0 +1,42 @@
+# Loop Atlas model: loops, long-game. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+- id: era
+  name: The long game
+  tier: 7
+  kind: loop
+  t: [1209600, 15552000]
+  is: Everything the product offers a person over months. Each pass is a stretch of sittings that ends because the world,
+    the fleet or the meta changed.
+  phases:
+  - n: Come back
+    d: 'Something pulled you in: a friend, news from the sea, a new hull, habit.'
+  - n: Pick a place
+    d: Home offers the Toybox, the Arcade, the Arena and Voyages.
+  - n: Play a sitting
+    d: Rounds in one place, sometimes crossing to another.
+  - n: Bank what it paid
+    d: Crystals, quest progress, artifacts, standing, replays.
+  - n: Grow
+    d: 'Spend and arrange: a vessel, a squad, a pilot, an artifact.'
+  - n: The world moves on
+    d: The sea ticks, sagas open, the meta is rebalanced, a vessel is added.
+  drivers: [find, own, story, crew, mastery]
+  now:
+    s: part
+    note: The places and most arcs exist. Nothing in the build changes on a schedule, so the last phase is empty today.
+  plan:
+    note: The meta is rebalanced on a schedule by the elemental loop's step 5, voyages add a living sea with sagas and relics,
+      and new vessels enter at step 1 and unsettle more than their own balance.
+  prop:
+    s: change
+    note: 'Give the last phase a name and a clock: the Tide (see The Tide).'
+  holes:
+  - 'on': np
+    q: How many sittings make one pass, and how often a person comes back, is not measured. Analytics events are declared
+      but no funnel reads them yet.
+    fill: Target 3 to 5 sittings a week and one Tide every 6 weeks. Measure it from game_started and game_completed per
+      account before tuning anything above the Round.
+  src:
+  - Docs/ElementalLoop/PLAYBOOK.md section 0
+  - Docs/Voyages/DEPTH.md
+  - Docs/ACTIVATION.md section 5

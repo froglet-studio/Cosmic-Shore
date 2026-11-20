@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-19-the-avatar-picker-now-offers-only-the-18-c48c4a",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-19T16:17:08+00:00",
+  "area": "the profile avatar picker and account inventory",
+  "summary": "The avatar picker now offers only the 18 avatars of the player's own crew, and a player's avatar is kept on their crew (the same callsign's crew pilot when it leaves). AccountInventory gains Crew and ClaimedCrew; PaintedCrewSO deals each account one crew (a random one seeded by the player id) and AccountInventoryStore raises CrewReady.",
+  "why": "Garrett 2026-11-19: each tester gets their own crew, and each person's set of avatars is consistent with their crew.",
+  "branch": "claude/pilot-crews",
+  "commit": "27befb80a",
+  "paths": [
+    "Assets/_Scripts/Data/Inventory/AccountInventory.cs",
+    "Assets/_Scripts/System/Inventory/AccountInventoryStore.cs",
+    "Assets/_Scripts/UI/Views/PlayerDataService.cs",
+    "Assets/_Scripts/UI/Views/ProfileIconSelectView.cs"
+  ]
+}
