@@ -191,6 +191,11 @@
   - Docs/Voyages/DEPTH.md section 6
   - Docs/Voyages/VOYAGES.md section 6.2.1
   - Docs/Pilots/CALLSIGNS.md
+  prop:
+    s: change
+    note: 'Since 2026-11-19 every account holds one crew of 18 dealt from the 126 painted pilots (commit 5a34332f9). Make
+      that dealt crew the start of this loop: recruiting becomes choosing which of your 18 to seat, and standing is earned
+      per pilot of that crew, so the device-side standing stand-in and the dealt crew are one roster instead of two.'
 - id: arc.hoard
   parent: era
   at: 3

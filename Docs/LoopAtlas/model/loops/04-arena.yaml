@@ -117,6 +117,13 @@
   src:
   - Docs/ArcadeRestructure/PLAN.md rulings 10 to 12
   - Docs/ElementalLoop/PLAYBOOK.md section 1
+  prop:
+    s: change
+    note: 'Seat the twelve hulls the trail-volume lever already balanced (Meerkat, Wrasse, Urchin, Honeyguide, Stoat, Sparrow,
+      Scarab, Squirrel, Dolphin, Orca, Tiger Moth, Thresher: each within 10% of the mean on net control of space over 124
+      real-game matches) as Brood Rush''s roster now, and hold the ten flagged hulls (Manta, Serpent, Grizzly, Jewel Wasp,
+      Angler, Rhino, Jacks, Goby, Swordfish, Brittle Star) out until the redesign brings each in range. The Shrike''s nest
+      rework measured 1.09, so it may join first. Source: commits 2b94a1fda and b8f578023, Docs/ElementalLoop/REDESIGN.md.'
 - id: round.astro
   parent: arena
   at: 2
