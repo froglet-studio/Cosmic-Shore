@@ -337,3 +337,18 @@
 2026-11-20T15:50:32.504Z E-e061201544: fix e357fbad6 taken (PlayMode); needs 2 clean run(s)
 2026-11-20T16:10:25.231Z editor load: play=False capture=True minPlay=15s issues=85
 2026-11-20T16:22:50.620Z PlayMode session ended (684s play run, exiting play mode): 5 fix(es) waiting; counted: E-0f0eb8a59f 1/2 E-111d87fec0 1/2 E-245165ae01 1/2 E-75a12f0559 1/2 E-e061201544 1/2; fired: E-c8e2f49696
+2026-11-20T16:25:36.665Z EditMode session ended (15min editor span, script reload): 5 fix(es) waiting; counted: none; fired: E-15034bdc73 E-c8e2f49696
+2026-11-20T16:25:47.485Z editor load: play=False capture=True minPlay=15s issues=85
+2026-11-20T16:32:20.971Z PlayMode session ended (265s play run, exiting play mode): 5 fix(es) waiting; counted: E-0f0eb8a59f 2/2 E-111d87fec0 2/2 E-245165ae01 2/2 E-75a12f0559 2/2 E-e061201544 2/2; fired: E-c8e2f49696
+2026-11-20T16:36:16.593Z EditMode session ended (10min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73 E-c8e2f49696
+2026-11-20T16:36:27.511Z editor load: play=False capture=True minPlay=15s issues=80
+2026-11-20T17:04:25.442Z EditMode session ended (28min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73
+2026-11-20T17:04:34.483Z editor load: play=False capture=True minPlay=15s issues=80
+2026-11-20T17:52:47.052Z PlayMode session ended (483s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-20T19:14:29.325Z EditMode session ended (130min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73 E-c8e2f49696 E-fa89fca07b
+2026-11-20T19:14:42.583Z editor load: play=False capture=True minPlay=15s issues=81
+2026-11-20T20:23:06.635Z EditMode session ended (68min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73
+2026-11-20T20:23:15.625Z editor load: play=False capture=True minPlay=15s issues=81
+2026-11-20T22:12:10.826Z EditMode session ended (109min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73
+2026-11-20T22:12:48.459Z editor load: play=False capture=True minPlay=15s issues=81
+2026-11-20T23:41:23.534Z PlayMode session ended (2765s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
