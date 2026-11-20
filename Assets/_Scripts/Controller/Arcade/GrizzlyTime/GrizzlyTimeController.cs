@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -39,9 +40,15 @@ namespace CosmicShore.Gameplay
         protected override string ModeName => "Grizzly Time";
 
         /// <summary>The AI commits to a ring from its approach point (Regatta's steering): the scene's approach lead (420)
-        /// sits outside its commit distance (380), which without this is the orbit shape (an AI circling a ring it
+        /// sits outside its commit distance (549 and 522 since the 2026-11-20 retrain), which without this is the orbit shape (an AI circling a ring it
         /// cannot quite line up). Redline went from 10/24 to 24/24 offline finishes on this one switch.</summary>
         protected override bool AICommitFromApproachPoint => true;
+
+        [Tooltip("The Grizzly AI's nose follow rate in Grizzly Time (learned by time_ai_search against the 20-80 blast, " +
+                 "2026-11-20). No nose lead; the fleet lag is 1.5/s.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Grizzly, 0f, noseFollow: 9.05f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
         protected override RaceCourseSource CreateCourseSource() =>
             new GrizzlyTimeCourseSource { Laps = laps };

@@ -87,10 +87,10 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("An AUTOPILOT presses no triggers (AIPilot writes stick and throttle only), so without this an AI Grizzly never bombs. While AIPilot.AutoPilotEnabled the executor fires full-size bombs while the stick is inside this band, freezes each one Ai Freeze Distance ahead, flies past it and detonates it behind - a launch. 0 disables the drive.")]
         [Range(0f, 1f)] float aiFireStickBand = 0.35f;
         [SerializeField, Tooltip("How far ahead of the hull an autopilot freezes its bomb, world units. Must sit well inside the blast radius (maxBlastScale / 2) or the launch misses the hull.")]
-        float aiFreezeDistance = 18f;
+        float aiFreezeDistance = 4.6f;
         [FormerlySerializedAs("aiDetonateDistance")]
         [SerializeField, Tooltip("An autopilot flies PAST its frozen bomb and detonates it once it is this far behind the hull, world units - the launch is away from the bomb, so behind you is forward.")]
-        float aiDetonateBehindDistance = 10f;
+        float aiDetonateBehindDistance = 14f;
         [SerializeField, Tooltip("Seconds between autopilot bombs, so the two triggers alternate rather than fire together.")]
         float aiFireIntervalSeconds = 0.6f;
 

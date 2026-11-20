@@ -33,8 +33,8 @@ MonoBehaviour:
   fallbackDangerColor: {r: 1, g: 0.072, b: 0.105, a: 1}
   sideHueShift: 0.045
   aiFireStickBand: 0.35
-  aiFreezeDistance: 18
-  aiDetonateBehindDistance: 10
+  aiFreezeDistance: 4.6
+  aiDetonateBehindDistance: 14
   aiFireIntervalSeconds: 0.6
   fireEvent:
     Guid:
