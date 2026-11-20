@@ -24,7 +24,7 @@ SCRIPTS = ("VesselPrismController", "SparrowPrismController", "ShrikePrismContro
 
 # hull: trailVolume.Value (shipped value x the loop's factor), from iterations 6-7 on the #2260 engine (2026-11-19).
 TABLE = {
-    "Orca": 0.4,          # shipped 1 x 0.4 (the cap)
+    "Orca": 0.8,          # shipped 1 x 0.8: back from the 0.4 cap when the 20 s bomb re-arm (#2263) cut its prism work (2026-11-20)
     "Sparrow": 0.61,      # shipped 1 x 0.61
     "Wrasse": 0.594,      # shipped 1 x 0.594
     "Scarab": 1.189,      # shipped 1 (default) x 1.189
