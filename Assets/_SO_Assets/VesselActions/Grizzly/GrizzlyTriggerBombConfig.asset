@@ -19,14 +19,14 @@ MonoBehaviour:
   minAmmoCost: 0.08
   maxAmmoCost: 0.35
   projectileSpeed: 90
-  minProjectileScale: 2.5
-  maxProjectileScale: 5
+  minProjectileScale: 2
+  maxProjectileScale: 4
   sideYawDegrees: 3
   aoePrefabs:
   - {fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}
-  minBlastScale: 50
-  maxBlastScale: 200
-  selfLaunchMultiplier: 4.5
+  minBlastScale: 20
+  maxBlastScale: 80
+  selfLaunchMultiplier: 11.25
   selfLaunchCeiling: 300
   selfLaunchSeconds: 1
   selfLaunchEdgeStrength: 0.5

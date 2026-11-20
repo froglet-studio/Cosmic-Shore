@@ -306,10 +306,10 @@ namespace CosmicShore.Tests
         public void Bank_shot_reads_the_push_against_the_lane()
         {
             Vector3 keg = Vector3.zero, exit = Vector3.forward;
-            Assert.IsTrue(GrizzlyTimeKegs.IsBankShot(keg, new Vector3(0, 0, -60), exit * 300f, exit), "down the lane");
-            Assert.IsFalse(GrizzlyTimeKegs.IsBankShot(keg, new Vector3(0, 0, -60), Vector3.right * 300f, exit), "across it");
+            Assert.IsTrue(GrizzlyTimeKegs.IsBankShot(keg, new Vector3(0, 0, -30), exit * 300f, exit), "down the lane");
+            Assert.IsFalse(GrizzlyTimeKegs.IsBankShot(keg, new Vector3(0, 0, -30), Vector3.right * 300f, exit), "across it");
             Assert.IsFalse(GrizzlyTimeKegs.IsBankShot(keg, new Vector3(0, 0, -400), exit * 300f, exit), "too far to be its blast");
-            Assert.IsFalse(GrizzlyTimeKegs.IsBankShot(keg, new Vector3(0, 0, -60), Vector3.zero, exit), "no push");
+            Assert.IsFalse(GrizzlyTimeKegs.IsBankShot(keg, new Vector3(0, 0, -30), Vector3.zero, exit), "no push");
         }
 
         [Test]

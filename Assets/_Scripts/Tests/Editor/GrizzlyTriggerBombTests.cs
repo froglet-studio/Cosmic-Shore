@@ -118,8 +118,9 @@ namespace CosmicShore.Tests
             for (float size = 0f; size <= 1.0001f; size += 0.1f)
                 Assert.GreaterOrEqual(_cfg.BlastScaleForSize(size), 10f * _cfg.ProjectileScaleForSize(size),
                     $"at size {size:F1} the blast is not ten times the bomb");
-            Assert.Greater(_cfg.MaxBlastScale, 120f,
-                "a full squeeze must out-blast the charged cannon's full charge (120)");
+            // Garrett, 2026-11-20: the full squeeze no longer out-blasts the cannon (120). One smaller radius serves the
+            // self-launch, rival harm and prisms, and the launch multiplier keeps the throw (TheLaunchThrows... below).
+            Assert.AreEqual(80f, _cfg.MaxBlastScale, 1e-4f, "a full squeeze's blast is 80 (40 u reach) since 2026-11-20");
         }
 
         // ── Launch 3x, trigger-only detonation, danger shades (design ask, 2026-10-08) ──
@@ -137,8 +138,11 @@ namespace CosmicShore.Tests
             float shared = float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
             Assert.AreEqual(3f * shared, _cfg.SelfLaunchCeiling, 1e-3f,
                 "the bomb launch was asked to throw 3x as hard as the shared ceiling it used to sit on");
-            Assert.AreEqual(4.5f, _cfg.SelfLaunchMultiplier, 1e-4f,
-                "3x the 1.5 the launch first shipped at, so a launch under the ceiling is tripled too");
+            // 4.5 on the 50-200 blast; 11.25 on the 20-80 blast (x 200/80) keeps every launch exactly as hard.
+            Assert.AreEqual(4.5f * 200f / 80f, _cfg.SelfLaunchMultiplier, 1e-4f,
+                "the launch keeps the 4.5 x (50-200 blast) throw now the blast is 20-80");
+            Assert.AreEqual(200f * 4.5f, _cfg.MaxBlastScale * _cfg.SelfLaunchMultiplier, 1e-3f,
+                "a full squeeze's launch must stay what it was when the blast shrank");
             // 1.2 s = AOEGrizzlyExplosion's ExplosionDuration; 0.5 = the launch's weakest weight
             // (cos ease 1.5 -> 0.5), so this is its LAST frame.
             Assert.GreaterOrEqual(_cfg.MaxBlastScale / 1.2f * _cfg.SelfLaunchMultiplier * 0.5f, _cfg.SelfLaunchCeiling,

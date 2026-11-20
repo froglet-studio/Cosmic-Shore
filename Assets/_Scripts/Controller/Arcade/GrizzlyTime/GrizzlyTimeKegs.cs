@@ -104,7 +104,7 @@ namespace CosmicShore.Gameplay
         public const float AIKegAimRange = 600f;
         /// <summary>The AI aims this far (u) past the keg down its exit lane, so it passes BESIDE the core (inside every
         /// credit radius and every full blast) instead of ramming the cage.</summary>
-        public const float AIKegPassOffset = 40f;
+        public const float AIKegPassOffset = 30f;
         /// <summary>Within this distance (u) of its keg aim point with the keg still standing, the AI gives that keg up
         /// for this gate and threads the mouth.</summary>
         public const float AIKegGiveUp = 50f;
@@ -287,7 +287,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Where to stand to blow a keg so its blast throws you down its exit lane: behind the core, opposite the
         /// next ring, <paramref name="standOff"/> u out (inside a full blast).</summary>
-        public static Vector3 BlowPoint(in Keg keg, float standOff = 60f) => keg.Centre - keg.ExitDir * standOff;
+        public static Vector3 BlowPoint(in Keg keg, float standOff = 30f) => keg.Centre - keg.ExitDir * standOff;
 
         /// <summary>
         /// Was a keg breaking beside the hull a BANK SHOT? The hull was inside a full blast of the keg and the launch it got

@@ -53,9 +53,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Muzzle speed ADDED to the hull's own velocity, u/s. The bomb then CRUISES at that velocity - no drag, no range limit - until the trigger or another vessel freezes it, so it always leaves faster than the Grizzly that fired it.")]
         float projectileSpeed = 90f;
         [SerializeField, Tooltip("Visible bomb scale of a minimum bomb. Small on purpose: a bomb is a little hot thing that becomes a huge blast (design ask, 2026-10-08).")]
-        float minProjectileScale = 2.5f;
+        float minProjectileScale = 2f;
         [SerializeField, Tooltip("Visible bomb scale of a maximum bomb - still small; the glow halo (GrizzlyBombVisual) carries the read.")]
-        float maxProjectileScale = 5f;
+        float maxProjectileScale = 4f;
         [SerializeField, Tooltip("Degrees each trigger's bomb is yawed off the muzzle (LT left, RT right) so the two bombs read as two.")]
         float sideYawDegrees = 3f;
 
@@ -63,13 +63,13 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Explosion prefab(s) spawned at detonation. Spawned with AffectSelfOverride OFF: the pilot's own domain is spared (own trail shields, teammates untouched); enemy mass and pilots are hit and knocked back. The pilot's own launch is applied by the executor (Self Launch below).")]
         AOEExplosion[] aoePrefabs;
         [SerializeField, Tooltip("Blast scale of a minimum bomb. Reach is half the scale.")]
-        float minBlastScale = 50f;
-        [SerializeField, Tooltip("Blast scale of a maximum bomb (the cannon's full charge is 120). Reach is half the scale: 100 u.")]
-        float maxBlastScale = 200f;
+        float minBlastScale = 20f;
+        [SerializeField, Tooltip("Blast scale of a maximum bomb. Reach is half the scale: 40 u. One radius for the self-launch, rival harm and prisms (Garrett, 2026-11-20: smaller radius, launch kept).")]
+        float maxBlastScale = 80f;
 
         [Header("Self launch (away from the bomb)")]
-        [SerializeField, Tooltip("A Grizzly inside its own blast is thrown AWAY FROM THE BOMB at blast scale / ExplosionDuration x this, capped by Self Launch Ceiling. 4.5 = three times the 1.5 it first shipped at (design ask, 2026-10-08).")]
-        float selfLaunchMultiplier = 4.5f;
+        [SerializeField, Tooltip("A Grizzly inside its own blast is thrown AWAY FROM THE BOMB at blast scale / ExplosionDuration x this, capped by Self Launch Ceiling. 11.25 keeps the launch of the 50-200 blast at x4.5 now the blast is 20-80 (Garrett, 2026-11-20).")]
+        float selfLaunchMultiplier = 11.25f;
         [SerializeField, Tooltip("The velocity ceiling a bomb launch may reach, u/s. Every other shove a vessel takes shares VesselTransformer's 100 u/s cap; a live bomb launch raises it to this for its own lifetime only (ShipVelocityModifier.ceiling). 300 = three times the shared cap, which a full squeeze used to sit on.")]
         float selfLaunchCeiling = 300f;
         [SerializeField, Tooltip("Seconds the launch lasts (cosine ease-out, VesselTransformer.ModifyVelocity).")]

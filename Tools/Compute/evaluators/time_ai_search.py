@@ -331,8 +331,10 @@ GAMES = {
     "Grizzly": {
         "mode": "GrizzlyTime",
         # As the Wrasse: the gate race's own steering, Grizzly Time's controller knobs and the nose rate (fleet lag).
-        "assets": {},
-        "fields": {},
+        # Since the 20-80 blast (Garrett, 2026-11-20: one smaller radius, then retrain) the bomb autopilot's own freeze
+        # and detonate distances are searched too: both must sit inside the 40 u full blast or the launch misses.
+        "assets": {i: "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyTriggerBombConfig.asset" for i in (1, 2, 3, 4)},
+        "fields": {"aiFreezeDistance": (2.0, 36.0), "aiDetonateBehindDistance": (1.0, 36.0)},
         "ctrl_fields": {"aiCommitDistance": (40.0, 900.0), "aiApproachLead": (40.0, 1200.0),
                         "aiThroughDistance": (40.0, 900.0)},
         "ctrl_defaults": {"aiCommitDistance": 380.0, "aiApproachLead": 420.0, "aiThroughDistance": 285.0},
