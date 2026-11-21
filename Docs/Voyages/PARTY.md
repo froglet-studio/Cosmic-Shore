@@ -46,7 +46,9 @@ them local on every machine, and pacifying a world runs on every machine, not on
 A friend's lobby choices (vessel, element, pilot, artifact) are sent to the host as a `Seat` report every 3 s while the
 Ark page is open, and at once when they change (`VoyagePartySeats.Publish`). The host's lobby draws the friend's card
 from it: pilot portrait and name, element petals and element name. The voyage's intro uses the same record to name each
-friend's pilot.
+friend's pilot. The host keeps its own seat in the same record, and the lobby (section 7) carries every seat to every
+friend, so a friend's Ark page shows the host's pilot and the other friends' too (Shombith, 2026-11-21: "The client
+cannot see the host's avatar").
 
 ## 4. One count
 
@@ -98,7 +100,7 @@ your Ark part". Two more named messages (`VoyageLobbyLink`, protocol 38):
 
 | Message | Direction | Delivery | Carries |
 |---|---|---|---|
-| `cosmicshore.voyage.lobby` | host to all | reliable | `VoyageLobbyState` JSON: the host's Voyage window open or not, its open voyage's seat key, page and difficulty, the Ark's domain, the votes per domain |
+| `cosmicshore.voyage.lobby` | host to all | reliable | `VoyageLobbyState` JSON: the host's Voyage window open or not, its open voyage's seat key, page and difficulty, the Ark's domain, the votes per domain, and every seat the host knows (`VoyageLobbySeat`: its own and each friend's vessel, element, pilot, artifact) |
 | `cosmicshore.voyage.domainvote` | friend to host | reliable | the domain the friend votes for (an int) |
 
 - **Following.** `ScreenSwitcher.VoyageLobby.cs` sends the host's state on each change and every 3 s. A friend's menu
@@ -139,3 +141,5 @@ your Ark part". Two more named messages (`VoyageLobbyLink`, protocol 38):
    The host closes the window: the friend's closes.
 10. Section 7: the friend presses Ruby on the Ark page; the host's Ruby chip shows one vote. The host presses Ruby: both
     pages show Ruby picked. Set sail: both vessels, the AI wingmates and the Ark (hull and model) are Ruby.
+11. Section 3: on the friend's Ark page the host's seat shows the host's hull, pilot portrait, pilot name and element.
+    The host changes pilot: the friend's page changes within a few seconds.

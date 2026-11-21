@@ -71,10 +71,11 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 - [ ] Compiles; EditMode `VoyageMilestoneOneTests`, `VoyageBoardTests`, `VoyageLobbyTests`, `VoyageShellTests` pass.
 - [ ] Voyages tab: only the Crystal Run (and Sail home when away) is on offer; Escort the Ark shows locked and its Open voyage is greyed; no other job (Iri Whistlebell) shows. The Crystal Run's kind reads Salvage.
 - [ ] Set sail, Open voyage and the brief's Ready are ruby with white words.
-- [ ] Your Ark page: the three pilot faces are whole (not cropped); "Fill the AI seats from a saved squad" fits in its button beside its Y keycap.
+- [ ] Your Ark page: the three pilot faces are whole (not cropped); "Fill the AI seats from a saved squad" is not shown (hidden for now, `VoyageToyDefinitionSO.offerFillFromSquad` off).
 - [ ] In a voyage, the pad's Start opens the pause window and closes it again; Select still opens it.
 - [ ] Two machines: friend flying freestyle, host opens the Voyage window and the Crystal Run: the friend leaves freestyle and lands on it; the host moves to the voyage and Ark pages, the friend follows; the host closes the window, the friend's closes.
 - [ ] Two machines: the friend presses Ruby on Your Ark (their chip outlined, the host's Ruby chip says "Ruby - 1"); the host presses Ruby: both show Ruby picked. Set sail: both vessels, the AI wingmates and the Ark's hull and model are Ruby.
+- [ ] Two machines: on the friend's Your Ark, the host's seat shows the host's hull, pilot portrait, pilot name and element (sent with the lobby, `VoyageLobbyState.Seats`); the host changes pilot and the friend's page follows within a few seconds.
 
 ## 🔴 iOS privacy manifest in the Xcode project (2026-11-06, Shombith, NOT BUILT FOR iOS)
 

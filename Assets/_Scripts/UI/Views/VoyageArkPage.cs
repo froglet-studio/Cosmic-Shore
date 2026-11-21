@@ -133,7 +133,8 @@ namespace CosmicShore.UI
         /// </summary>
         void PublishSeat(bool force)
         {
-            if (!Guest) return;
+            // The host publishes too: its seat rides the lobby to every friend (VoyagePartySeats.Snapshot).
+            if (!Guest && !VoyageCourseLink.HostWithParty) return;
             var squad = Seats();
             if (squad == null) return;
             var slot = squad.GetSlot(VoyageLaunch.LocalSeat(squad));
@@ -511,8 +512,10 @@ namespace CosmicShore.UI
             }
             DrawSailAs(squad);
             // A friend picks their seat; the host fills the AI seats and sets sail.
-            _fillButton.gameObject.SetActive(!guest);
-            if (guest) _fillList.gameObject.SetActive(false);
+            // Fill from a saved squad is hidden for now (Shombith, 2026-11-21; VoyageToyDefinitionSO.offerFillFromSquad).
+            bool fill = !guest && VoyageToyDefinitionSO.FillFromSquadOffered();
+            _fillButton.gameObject.SetActive(fill);
+            if (!fill) _fillList.gameObject.SetActive(false);
             if (_fillList.gameObject.activeSelf) DrawFill();
             _sail.interactable = !guest && _offer?.SetSail != null;
             VoyageKit.Set(_sailWords, guest ? _lines?.ArkHostSails : _lines?.CardSetSail);
@@ -651,7 +654,9 @@ namespace CosmicShore.UI
             // their machine reported them (VoyagePartySeats), once it has.
             var player = FriendPlayer(id, name);
             var reported = player ? VoyagePartySeats.Of(player.OwnerClientId) : null;
-            var vessel = _rules.VesselOf(FriendHull(id, name));
+            // The seat they reported names their hull (the host's own seat comes only this way); else their replicated hull.
+            var reportedHull = reported != null ? reported.Slot.Vessel : default;
+            var vessel = _rules.VesselOf(VesselRequirement.IsConcrete(reportedHull) ? reportedHull : FriendHull(id, name));
             _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
             VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : name);
             if (reported != null)

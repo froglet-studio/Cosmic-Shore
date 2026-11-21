@@ -70,6 +70,7 @@ namespace CosmicShore.UI
                 VotesJade = VoyageLobbyLink.VotesFor(CosmicShore.Data.Domains.Jade),
                 VotesRuby = VoyageLobbyLink.VotesFor(CosmicShore.Data.Domains.Ruby),
                 VotesGold = VoyageLobbyLink.VotesFor(CosmicShore.Data.Domains.Gold),
+                Seats = VoyagePartySeats.Snapshot(),
             };
         }
 

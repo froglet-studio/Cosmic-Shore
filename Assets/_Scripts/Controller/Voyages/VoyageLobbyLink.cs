@@ -180,6 +180,7 @@ namespace CosmicShore.Gameplay
             try
             {
                 s_latest = JsonUtility.FromJson<VoyageLobbyState>(json);
+                VoyagePartySeats.Adopt(s_latest?.Seats);
             }
             catch (ArgumentException e)
             {
@@ -223,6 +224,9 @@ namespace CosmicShore.Gameplay
         public int Domain;
         /// <summary>The friends' votes, per domain: Jade, Ruby, Gold.</summary>
         public int VotesJade, VotesRuby, VotesGold;
+        /// <summary>Every seat the host knows, its own among them (<see cref="VoyagePartySeats.Snapshot"/>), so each friend's
+        /// Ark page shows the host's pilot and the other friends' (Shombith, 2026-11-21).</summary>
+        public List<VoyageLobbySeat> Seats = new();
 
         /// <summary>True when this state asks a friend's menu to move from <paramref name="other"/> (another voyage, page,
         /// difficulty or open state).</summary>
@@ -232,7 +236,16 @@ namespace CosmicShore.Gameplay
         public override bool Equals(object obj) =>
             obj is VoyageLobbyState o && Open == o.Open && Key == o.Key && Page == o.Page &&
             Difficulty == o.Difficulty && Domain == o.Domain && VotesJade == o.VotesJade && VotesRuby == o.VotesRuby &&
-            VotesGold == o.VotesGold;
+            VotesGold == o.VotesGold && SameSeats(Seats, o.Seats);
+
+        static bool SameSeats(List<VoyageLobbySeat> a, List<VoyageLobbySeat> b)
+        {
+            int n = a?.Count ?? 0;
+            if (n != (b?.Count ?? 0)) return false;
+            for (int i = 0; i < n; i++)
+                if (!VoyageLobbySeat.Same(a[i], b[i])) return false;
+            return true;
+        }
 
         public override int GetHashCode() => HashCode.Combine(Open, Key, Page, Difficulty, Domain, VotesJade, VotesRuby, VotesGold);
 
@@ -244,5 +257,20 @@ namespace CosmicShore.Gameplay
             Domains.Gold => VotesGold,
             _ => 0,
         };
+    }
+
+    /// <summary>One seat in the host's lobby (<see cref="VoyageLobbyState.Seats"/>): who sits it and what they picked.</summary>
+    [Serializable]
+    public sealed class VoyageLobbySeat
+    {
+        public ulong ClientId;
+        public string PlayerName;
+        public int SlotVessel, SlotElement;
+        public string PilotId, ArtifactId, PilotName;
+
+        public static bool Same(VoyageLobbySeat a, VoyageLobbySeat b) =>
+            ReferenceEquals(a, b) || a != null && b != null && a.ClientId == b.ClientId && a.PlayerName == b.PlayerName &&
+            a.SlotVessel == b.SlotVessel && a.SlotElement == b.SlotElement && a.PilotId == b.PilotId &&
+            a.ArtifactId == b.ArtifactId && a.PilotName == b.PilotName;
     }
 }
