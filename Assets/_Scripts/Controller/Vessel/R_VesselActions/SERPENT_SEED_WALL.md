@@ -145,15 +145,38 @@ triangles). Both now use the fleet's 24-face prism mesh (`_Models/Testing/Prism.
 
 The wall is rebuilt on each peer from replicated inputs, the way the legacy wall and the Scarab
 switch are: the cloak and stance presses round-trip through `R_VesselActionHandler`, and crystal
-effects are broadcast. **Gap (predates this branch):** `ToggleTranslationModeActionExecutor.Toggle`
-returns early on any peer without authority over the vessel (it keeps the replicated
-`n_IsTranslationRestricted` single-writer), so the STANCE's seed and wall are built only on the
-owner and the server, and a third peer does not see that wall form (inferred from the gate; not
-yet observed in a three-player session). The cloak's wall has no such gate. Follow-up: drive the stance's seed from
-`stationaryModeChanged` on every peer rather than from the press. The Lockdown decision reads the replicated unlock bit at each steal sweep. The
-cloak's pilot view is decided per machine (`IsLocalUser`). Recruitment reads
-each peer's own prism set, so two peers can pull different loose prisms into the same site, as
-the legacy wall could.
+effects are broadcast. Recruitment reads each peer's own prism set, so two peers can pull different
+loose prisms into the same site, as the legacy wall could. The cloak's pilot view is decided per
+machine (`IsLocalUser`).
+
+**Fixed 2026-11-21 (Garrett's Brood Rush playtest: "the Serpent's wall was still not syncing").**
+Three ways a wall stood on one machine only:
+
+1. **An AI's press never left the host.** An AI pilot runs on the server and starts its actions
+   directly (`VesselActionTape.Start`, `PelletBoostAIPolicySO`'s refuel cloak, the ability cycler),
+   which is local, so an AI Serpent cloaked and walled on the host and nowhere else, and the host's
+   wall ate prisms every client still drew loose. `ShipActionSO.AutopilotPressTravels` (true on
+   `CloakSeedWallActionSO`, `SeedWallActionSO` and `SniperScopeActionSO`, whose scope the cloak
+   asks) sends such a press through `R_VesselActionHandler.TrySendAutopilotAction`, an RPC pair that
+   runs it on every peer, named by where the input maps hold it (protocol 39). The fleet audit the
+   same day flagged every other action an AI presses through the tape whose effect is prisms: the
+   sniper round, the Sparrow's guns (`FireGunActionSO`, `FullAutoActionSO`, `SparrowModeSwitchingFireSO`;
+   also the Honeyguide's Peck), the drift's trail (`DriftTrailActionSO`) and the Squirrel's tube
+   (`SquirrelTubeActionSO`); `SerpentWallSyncTests` holds the table. Not covered by the flag: the
+   AI's drift COMMIT (`AIPilot`, `vessel.PerformShipControllerActions(CommitControl)`) is still local,
+   so an AI's drift-trail shaping during a commit stays host-only.
+2. **The stance's wall was built only on the owner and the server.**
+   `ToggleTranslationModeActionExecutor.Toggle` returns early where it cannot decide the stance (it
+   keeps `n_IsTranslationRestricted` single-writer); every other peer now follows the replicated flag
+   (`MirrorReplicatedStance`) and runs the same `ApplyStance`: the trail stops and the held wall grows.
+3. **Size and reach read each peer's own element levels**, which never replicate: a remote copy's
+   bricks and steal radius followed the replica's level. `SnapshotWallShape` and the sweep's Space
+   reach read `ElementalScaling.ReplicatedMultiplier` (the integer level every peer agrees on; the
+   deficit band reads as level 0).
+
+Still per peer, by design of this wall: the seed is each peer's own latest trail prism (so the lattice
+can sit a few units apart along the heading), the `Wall Seeds` resource each peer gates the press on,
+and which loose prisms each sweep recruits.
 
 ## Editor checks (none have run)
 

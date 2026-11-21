@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-21-an-ai-pilot-s-direct-start-stop-of-an-ac-81b840",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-21T16:50:41+00:00",
+  "area": "Vessel AI platform (VesselActionTape, R_VesselActionHandler)",
+  "summary": "An AI pilot's direct start/stop of an action marked ShipActionSO.AutopilotPressTravels (Serpent cloak, seed wall, scope) now goes through a new handler RPC pair and runs on every peer instead of the host only; the cause of the Serpent's wall not syncing in Brood Rush. Protocol 39.",
+  "branch": "claude/project-thread-nqfbgz",
+  "commit": "f9f28974e"
+}

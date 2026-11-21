@@ -25914,3 +25914,19 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
+
+## 🔴 The Serpent's wall on every peer (2026-11-21, branch `claude/project-thread-nqfbgz`) — NOT EDITOR-VERIFIED
+
+Garrett's Brood Rush playtest: "the Serpent's wall was still not syncing". `unity_refcompile` (player and editor
+configs: 0 errors in the changed files; the remaining errors are this sandbox's missing packages) and the gates ran;
+no Unity editor, so `SerpentWallSyncTests` has not run. What changed is in `R_VesselActions/SERPENT_SEED_WALL.md`
+"Multiplayer"; protocol 39 (both machines need this build).
+
+- [ ] EditMode `SerpentWallSyncTests` pass (the flag table: 29 cases, plus 3 tests).
+- [ ] Host + client, an AI Sparrow and an AI Squirrel: the client sees the Sparrow's shots break prisms and the Squirrel's tube rings, where the host does.
+- [ ] MPPM, host + one client, Brood Rush with an AI Serpent on the host: when the AI cloaks, the client sees its
+  hull vanish and its wall grow at the same place as the host's; the AI's walls are on both screens.
+- [ ] Host + two clients, client A flies the Serpent and stops (the stance): client B sees A's trail stop and the held
+  wall grow; when A flies on, B's copy stops growing and stands.
+- [ ] An AI Serpent at Mass 8+ (crystals): its bricks are the same size on host and client.
+- [ ] Serpent Hood / Serpent Time, an AI that scopes: it never cloaks on the client while scoped on the host.

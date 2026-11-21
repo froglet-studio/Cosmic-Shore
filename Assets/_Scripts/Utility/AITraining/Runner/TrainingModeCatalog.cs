@@ -98,7 +98,7 @@ namespace CosmicShore.Utility.AITraining
             new(GameModes.BroodRush, "NucleusRush", "Brood Rush · Squirrel · I4",
                 VesselClassType.Squirrel, false, 4, TargetSensor.TargetMode.ClosestCrystal,
                 "MinigameBroodRush",
-                "Domain sum of GoalsScored ends the match. Each wave is stamped on one representative player, so a teammate who did not receive the stamp scores zero brood."),
+                "Domain sum of GoalsScored ends the match. Each wave is carried on one representative player (the team's brood counter), so a teammate who is not the carrier has zero GoalsScored; the scoreboard scores every pilot on VC + VD instead."),
             new(GameModes.AstroLeague, "AstroLeague", "Astro League · Swordfish · I4",
                 VesselClassType.Swordfish, false, 4, TargetSensor.TargetMode.BothPreferCrystal,
                 "MinigameAstroLeague",
