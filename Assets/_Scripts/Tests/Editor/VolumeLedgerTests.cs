@@ -40,6 +40,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ShieldToggles_NetOut_InsteadOfCountingEveryRaise()
+        {
+            var l = new VolumeLedger();
+            l.AddCreated("orca", 10f);                    // the prism it laid
+            for (int i = 0; i < 5; i++)
+            {
+                l.AddShieldDelta("orca", 3f);             // shell up
+                l.AddShieldDelta("orca", -3f);            // shell off
+            }
+            Assert.AreEqual(10f, l.Get("orca").Created, "five raises and drops add nothing to VC");
+            Assert.AreEqual(0f, l.Get("orca").Lost, "dropping your own shell is not a loss");
+            l.AddShieldDelta("orca", 3f);
+            Assert.AreEqual(13f, l.Get("orca").Created, "a shell standing counts once");
+            Assert.AreEqual(13f, l.Get("orca").Remaining);
+        }
+
+        [Test]
         public void DestroyingYourOwnTeamsVolume_IsNoContribution()
         {
             var l = new VolumeLedger();

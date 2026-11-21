@@ -500,9 +500,11 @@ namespace CosmicShore.Gameplay
             roundStats.VolumeCreated += prismStats.Volume;
             roundStats.VolumeRemaining += prismStats.Volume;
 
-            // The books split the change by sign (Garrett, 2026-11-18): growing is created, shrinking destroyed, and a
-            // shield's shell going up or coming off rides ShieldVolume. VolumeCreated keeps its legacy signed sum.
-            gameData.VolumeLedger.AddDelta(roundStats.Name, prismStats.Volume + prismStats.ShieldVolume);
+            // The books split the change by sign (Garrett, 2026-11-18): growing is created, shrinking lost. A shield's
+            // shell rides ShieldVolume and nets out: up is created, off takes that credit back (VolumeLedger.AddShieldDelta).
+            // VolumeCreated keeps its legacy signed sum.
+            gameData.VolumeLedger.AddDelta(roundStats.Name, prismStats.Volume);
+            gameData.VolumeLedger.AddShieldDelta(roundStats.Name, prismStats.ShieldVolume);
         }
 
         /// <summary>
