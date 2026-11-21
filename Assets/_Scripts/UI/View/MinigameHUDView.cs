@@ -16,6 +16,8 @@ namespace CosmicShore.UI
         [SerializeField] private TMP_Text roundTimeDisplay;
         [SerializeField] private Image countdownDisplay;
         [SerializeField] private Button readyButton;
+        [Tooltip("Who is still picking, between pressing Ready and the countdown (multiplayer only).")]
+        [SerializeField] private ReadyWaitingPanel readyWaiting;
         [SerializeField] private GameObject pip;
         [SerializeField] private CanvasGroup connectingPanelCanvasGroup;
         [SerializeField] private CanvasGroup canvasGroup;
@@ -202,6 +204,7 @@ namespace CosmicShore.UI
         public TMP_Text LeftNumberDisplay => leftNumberDisplay;
         public TMP_Text RightNumberDisplay => rightNumberDisplay;
         public Button ReadyButton => readyButton;
+        public ReadyWaitingPanel ReadyWaiting => readyWaiting;
         public GameObject Pip => pip;
 
         private void OnDestroy()

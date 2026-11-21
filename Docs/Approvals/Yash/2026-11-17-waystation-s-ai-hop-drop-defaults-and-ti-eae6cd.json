@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-waystation-s-ai-hop-drop-defaults-and-ti-eae6cd",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T23:44:49+00:00",
+  "area": "TigerMoth AI",
+  "summary": "Waystation's AI hop/drop defaults and TigerMoth nose rate set to the trained values (time_ai_search TigerMoth run1)",
+  "why": "Elemental loop step 3: 29% faster on fresh seeds, every rung finishes",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "0b4640bf3",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Waystation/WaystationController.cs",
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ],
+  "loop": {
+    "vessels": [
+      "TigerMoth"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

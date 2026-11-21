@@ -151,6 +151,17 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void VelocityModifier_Ceiling_DefaultsToTheVesselsOwn()
+        {
+            // 0 = "the vessel's ceiling is in charge". Every shove but the Grizzly bomb launch
+            // must keep the shared 100 u/s cap, so no existing constructor may set one.
+            Assert.AreEqual(0f, new ShipVelocityModifier().ceiling);
+            Assert.AreEqual(0f, new ShipVelocityModifier(Vector3.one, 1f, 0f).ceiling);
+            Assert.AreEqual(0f, new ShipVelocityModifier(Vector3.one, 1f, 0f, true).ceiling);
+            Assert.AreEqual(300f, new ShipVelocityModifier(Vector3.one, 1f, 0f, false, 300f).ceiling, 1e-5f);
+        }
+
+        [Test]
         public void VelocityModifier_ZeroDuration_IsValid()
         {
             // Instantaneous velocity impulse

@@ -43,7 +43,7 @@ Four things behave like currency. Only two of them are real economies today.
 | Mode | Payout |
 |---|---|
 | All non-tournament modes | **5 crystals, winner only.** Everyone else gets 0. |
-| Tournament / Maelstrom | **{2, 1, 0}** by domain placement, per game. Last place earns nothing. |
+| Maelstrom / Maelstrom | **{2, 1, 0}** by domain placement, per game. Last place earns nothing. |
 
 ---
 
@@ -61,7 +61,7 @@ This is the headline problem and it makes vessel unlocks effectively unreachable
 | Path | Payout | Games for one 4000-crystal vessel |
 |---|---|---|
 | Win a normal game | 5 | **800 wins** |
-| Win a Tournament game (1st of 3 domains) | 2 | **2000 wins** |
+| Win a Maelstrom game (1st of 3 domains) | 2 | **2000 wins** |
 | Lose anything | 0 | never |
 
 At a realistic 50% win rate that is **~1,600 games played** for a single vessel, and there are five
@@ -123,7 +123,7 @@ A participation payout — even 1 crystal for finishing — changes the shape of
 
 ### B. Payout structure
 
-6. **Flat or placement-based?** Non-tournament modes pay winner-only; Tournament pays {2,1,0}.
+6. **Flat or placement-based?** Non-tournament modes pay winner-only; Maelstrom pays {2,1,0}.
    Should these unify?
 7. **Any non-match payouts?** Daily first win, quest completion (the field exists, unwired),
    milestone rewards. Which, if any, do we want?
@@ -220,7 +220,8 @@ purchases as well as the base app.
 **The consequence for the planned design:** selling episode tokens through an external web checkout
 (`Application.OpenURL` → Stripe/Froglet page) inside a Steam build is **not a compliant path**. It
 routes around the Steam Wallet and around Valve's revenue share. The existing `IAPManager`
-web-checkout flow is fine for a non-Steam distribution, and not fine for this one.
+web-checkout flow is fine for a non-Steam DESKTOP distribution, and not fine for this one. iOS and
+Android builds refuse it outright, since those stores require their own billing.
 
 Compliant options on Steam:
 

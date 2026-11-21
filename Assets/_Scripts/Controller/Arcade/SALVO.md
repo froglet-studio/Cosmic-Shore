@@ -1,8 +1,25 @@
 # Salvo — Technical Documentation
 
+
+> **⚠ Changed under this mode's feet (2026-09).** The premise below — *"the tank never regenerates
+> and the only refuel is an omni crystal"* — is no longer the whole truth. The Sparrow's missiles
+> now also recharge by **destroying prisms with GUNFIRE** (any domain; a rocket's own blast pays
+> nothing — 0.01 per prism, 25 per base rocket and 50 per heavy one:
+> `VesselRearmOnPrismDestruction`), which in Salvo is the mode's own objective. So the crystal run
+> is no longer the only way to reload, and the crystal-run rhythm this mode is built around is
+> correspondingly weaker.
+>
+> **The wingman reload is untouched** and is still the reason to play together: an omni crystal
+> collected by any pilot fills the whole domain's bays instantly, where prism-destruction pays one
+> pilot 2% of a rack at a time. But the balance between the two wants a playtest, and if the
+> crystal line needs to matter more the lever is `ammoPerPrism` on `Sparrow.prefab`, not this
+> mode. Missiles also now carry a proximity fuze and a second, creature-killing blast — see
+> `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
+
+
 > **Naming.** `GameModes.Salvo = 44` is the code/data/enum identity, and the player-facing
 > `DisplayName` on `ArcadeGameSalvo.asset` is **"Salvo"** too. Do not rename the enum, the
-> controller, the scene, or this file (the Tournament/"Maelstrom" precedent covers a display
+> controller, the scene, or this file (the Maelstrom/"Maelstrom" precedent covers a display
 > split if one is ever wanted).
 >
 > **ID history:** authored as 42, renumbered to **44** when this branch merged
@@ -47,7 +64,7 @@ parallel solo demolition.
   `Vessels` entry on `ArcadeGameSalvo.asset`
 - **Crystals**: `CrystalCountMode.PlayerCountPlusExtra` **+5** (7 omni crystals in a 2-player
   lobby, 9 in a full one) **plus** 14 scattered elemental pickups (seed 42)
-- **Comeback**: `ScoreDifferenceSource.PrismsDestroyed`, rate **0.013** (a quarter-of-target
+- **Comeback**: the rule's `DomainValue` (`PrismsDestroyed`), rate **0.013** (a quarter-of-target
   deficit ≈ 2.3 element levels — clears the "must buy a whole level" floor, well under
   Rampage's ~4.9-level footing since the target came down and the rate did not)
 - **Environment**: the Boneyard cell assets **reused verbatim** (`Boneyard Cell Config
@@ -65,7 +82,7 @@ The whole missile economy is the Sparrow's shipped wiring, not this mode's inven
 | Missile tank: max **1**, starts full, **no regeneration** | `Sparrow.prefab` ResourceSystem, resource 0 ("Missiles") |
 | A skyburst costs **0.5** of the tank → 2 rockets per refuel | `SkyBurstGunAction.asset` (`ammoCost`) |
 | Full-auto guns cost **0** — always available, chip damage | `FullAutoAction.asset` |
-| An omni crystal **sets the tank full** on collect | `SparrowVesselChangeResourceByCrystalEffect.asset` (the Sparrow's one `vesselCrystalEffects` entry), replayed on the collector's own machine by `CrystalManager.ReplayVesselCrystalEffects` |
+| ~~An omni crystal **sets the tank full** on collect~~ — **RETIRED 2026-09** | `SparrowVesselChangeResourceByCrystalEffect.asset` is DELETED. Missiles now reload by DESTROYING PRISMS WITH GUNFIRE (`VesselRearmOnPrismDestruction` on `Sparrow.prefab`, 0.01 per prism = 25 per base rocket, 50 per heavy one; any domain, and a rocket's own blast pays nothing); the omni crystal grants an 8 s elemental-debuff ward instead. See the ⚠ section below |
 
 Salvo's job was to build a mode where that loop is the game: stock the arena with crystals,
 make destruction the score, and extend the refuel to the domain.
@@ -78,9 +95,12 @@ OmniCrystalImpactor.AcceptImpactee            [SERVER only - clients early-out]
      payload = collector's PlayerName)                 ← StatsManager already listens here
         └─ SalvoController.HandleOmniCrystalCollected  [server]
             ├─ resolve domain: gameData.TryGetRoundStats(name).Domain
-            └─ RefuelDomainMissiles_ClientRpc(domain)
-                └─ on EVERY peer (host included): for each player of that domain,
-                   ResourceSystem.SetResourceAmount(missileResourceIndex, MaxAmount)
+            └─ RefuelDomainMissiles_ClientRpc(domain, collector)   (collector = FixedString64Bytes
+                │                                                    of the PlayerName, display-only)
+                ├─ on EVERY peer (host included): for each player of that domain,
+                │  ResourceSystem.SetResourceAmount(missileResourceIndex, MaxAmount)
+                └─ if the domain fields 2+ pilots: GameToastAPI.Post(SalvoWingReload (136),
+                   domain, collector, domain name)  → "<b>{0}</b> reloaded the wing"
 ```
 
 Why this shape:
@@ -93,8 +113,9 @@ Why this shape:
   on every peer is exactly as authoritative as the ammo system itself. The write that matters
   lands on each vessel's OWNER machine; the same write on replicas is a harmless idempotent
   set.
-- **The collector is covered twice**: the platform crystal effect refills them (replayed on
-  their owner machine), and the RPC's set-to-full is idempotent on top.
+- **The collector is refilled by the same RPC** as the rest of the domain. (This line used to
+  say the platform crystal effect refilled them first; that effect was retired 2026-09 - see the
+  table above.)
 - **A blast-consumed crystal refuels nobody** — `ConsumeByBlast` raises with an empty
   `PlayerName` and the handler skips it; there is no pilot to credit a reload to.
 - **Elemental crystals do NOT refuel.** They raise a different channel
@@ -104,16 +125,18 @@ Why this shape:
 ## Scoring (nothing new)
 
 `ScoringMetric.PrismsDestroyed` against `GameDataSO.PrismTargetCount` — the exact Rampage /
-Ribcage machinery. The destruction stat auto-increments through `StatsManager.PrismDestroyed`
+Cleave machinery. The destruction stat auto-increments through `StatsManager.PrismDestroyed`
 (server-side for trails, and via `Player.ReportEnvironmentPrismDestroyed_ServerRpc` for the
 client-simulated environment — the Boneyard's wreckage is environment-owned `Domains.Blue`
 mass, hostile to every domain, so all of it scores). Fauna bodies count too (a scavenger is
 prisms); teammates' trails never score, by the roster domain check.
 
-The two Sparrow-vs-Sparrow combat-hit effects still run here (they are wired on the shared
-weapon containers), but `PointsForCombatHit` is 0 in this rule — shooting a rival pilot
-suppresses them (spin + skimmer shrink), it does not score. That is deliberate: interference
-is free, the quarry is the arena.
+The Sparrow-vs-Sparrow combat-hit effects still run here (they are wired on the shared weapon
+containers), but `PointsForCombatHit` is 0 in this rule — shooting a rival pilot does not score.
+That is deliberate: interference is free, the quarry is the arena. (This paragraph used to say
+the hit *"suppresses them (spin + skimmer shrink)"*; both of those victim effects were removed in
+Sep 2026 — a weapon may take a pilot's petals and nothing else, `Docs/ELEMENTAL_ECONOMY.md §9` —
+so what a rival hit does here now is drain petals, which this rule still pays nothing for.)
 
 ## Crystals
 
@@ -170,10 +193,12 @@ behind it yet.
 
 Every Salvo-owned asset is authored by `Tools/Build/author_salvo_assets.py` (deterministic
 GUIDs, idempotent, validates before writing). **Re-tune there and re-run** rather than
-hand-editing YAML. The generator clones `MinigameDogFight.unity` as its donor — if the Dog
-Fight scene is reworked, the asserts here will fail against the moved donor; that is the
-expected end state of a migration generator (see the Dog Fight generator's §9 note), not a
-break to repair.
+hand-editing YAML. The generator cloned `MinigameDogFight.unity` as its donor on first
+bring-up; since #969 (2026-10) it goes through `arcade_mode_lib.committed_scene`, so the
+committed `MinigameSalvo.unity` is adopted as-is, the clone stands down when the Dog Fight donor
+has moved, and the blocks the generator still authors must appear verbatim in the committed
+scene. `--check` now diffs every file against disk (it used to print "no files written" and exit
+0 without comparing).
 
 ## Shared-code touchpoints (added for this mode)
 
@@ -184,8 +209,9 @@ break to repair.
 | `SalvoPrismTurnMonitor` | new turn monitor reading `GetSalvoPrismTarget()` |
 | `SalvoScoringRuleSO` | new rule subclass (`RampageScoringRuleSO` + "SALVO TIME" reveal) |
 | `EndConditionOverridesSO` (+ window + asset) | `salvoPrismTarget` live/build/getter, default 700 |
-| `ElementalComebackSystem.DefaultSourceFor` | Salvo → `PrismsDestroyed` |
+| `ElementalComebackSystem` | reads `SalvoScoringRule`'s `DomainValue` (`PrismsDestroyed`) |
 | `MiniGameHUD.CreateObjectiveProviderForGameMode` | Salvo → `RampageObjectiveProvider` |
+| `GameToastSituation` (+ `GameToastConfig_Salvo.asset`) | `SalvoWingReload = 136`, posted by the wingman-reload RPC (#976) |
 
 Nothing else moved: no new stats, no new metrics, no new impact effects, no vessel or cell
 edits. The mode is deliberately a composition of shipped systems.
@@ -234,12 +260,15 @@ edits. The mode is deliberately a composition of shipped systems.
 
 - **700 is still unmeasured** — retuned down from the launch value of 1500 on request, not from
   a playtest. The intended match length is 3–6 minutes; the target is the dial.
-- **No refuel FEEDBACK beyond the gauge.** The wingman reload lands silently (the ammo gauge
-  fills). A `GameToastSituation` ("WINGMAN RELOAD — <name>") + a small SFX would sell the
-  cooperation; the toast enum + config authoring was deliberately left out of v1 (the same
-  unauthored-toast state Dog Fight ships in).
-- **No milestones.** Rampage ships without them too; Dog Fight's quarter/half rungs would
-  port trivially if the mode needs mid-match drama.
+- **The wingman reload has a toast, no SFX.** Since #976 (2026-10) the RPC carries the
+  collector's name and posts `GameToastSituation.SalvoWingReload` (136, "**<name>** reloaded the
+  wing", domain-tinted, authored in `GameToastConfig_Salvo.asset`) - only when the domain fields
+  two or more pilots, since a solo pilot refuelling itself is the ordinary crystal economy. A
+  small SFX is still unauthored.
+- **Milestones are the shared race beats.** Since #976 (2026-10-06) `SalvoController` ticks
+  `DomainRaceToasts` (a local poll over replicated RoundStats), and `GameToastConfig_Salvo.asset`
+  authors its quarter (128), halfway (129) and lead-change (130) beats, the prisms-levelled stat
+  toast (83) and the comeback toast (30). Rampage gets the same beats.
 - **Shared-arena coupling is deliberate but real**: retuning the Boneyard for Dog Fight
   (structure counts, danger, PhaseThresholds) retunes Salvo's quarry too. If the two modes
   ever need to diverge, fork the cell configs then — not preemptively.

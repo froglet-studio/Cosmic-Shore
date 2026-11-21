@@ -63,6 +63,11 @@ namespace CosmicShore.Gameplay
         /// <summary>Where the arena was parked.</summary>
         public Vector3 Origin { get; private set; }
 
+        /// <summary>The intensity the standing flight arena was built for. <see cref="SpawnPose"/>
+        /// reads it so a mode whose spawn ring is sized per intensity (Cleave) seats the vessel
+        /// on that rung's ring.</summary>
+        public int Intensity { get; private set; } = 1;
+
         /// <summary>True once the cell exists and has a config (its world may still be growing).</summary>
         public bool IsStanding => Cell && Cell.HasConfigAssigned;
 
@@ -73,11 +78,14 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Build the arena for <paramref name="definition"/> at <paramref name="origin"/>.
         /// <paramref name="template"/> is any live cell to clone the prefab and runtime shape from
-        /// - normally the scene's own cell.
+        /// - normally the scene's own cell. <paramref name="prismStride"/> overrides the library's
+        /// flight thinning (1 = every prism, as a match lays them; 0 = the library's
+        /// <see cref="ModePreviewLibrarySO.FlightPrismStride"/>) - a replay stands the arena a race
+        /// was flown in, so it asks for its own density (<c>Docs/REPLAYS.md</c>).
         /// </summary>
         public bool Stand(ModePreviewDefinitionSO definition, CellConfigDataSO config, Cell template,
                           GameObject cellPrefab, Vector3 origin, Container container = null,
-                          int intensity = 1)
+                          int intensity = 1, int prismStride = 0)
         {
             if (IsStanding) return false;
 
@@ -99,6 +107,7 @@ namespace CosmicShore.Gameplay
             }
 
             Origin = origin;
+            Intensity = Mathf.Max(1, intensity);
 
             // Instantiated under an INACTIVE root so the cell's OnEnable does not run before it
             // has been handed its own runtime data. OnEnable clears runtime.Config, and the
@@ -148,7 +157,8 @@ namespace CosmicShore.Gameplay
             // method; the track structure below builds inside an explicit scope.
             int stride = 1;
             var previewLibrary = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
-            if (previewLibrary) stride = previewLibrary.FlightPrismStride;
+            if (prismStride > 0) stride = prismStride;
+            else if (previewLibrary) stride = previewLibrary.FlightPrismStride;
             Cell.SatellitePrismStride = stride;
 
             if (!Cell.InitializeSatellite(config))
@@ -165,14 +175,14 @@ namespace CosmicShore.Gameplay
             SpawnPreviewCrystals(definition, intensity);
             SpawnPreviewFauna(definition);
 
-            CSDebug.Log($"[ModePreview] Arena standing for {definition.Mode} " +
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[ModePreview] Arena standing for {definition.Mode} " +
                         $"({config.CellName}) at {origin}.");
             return true;
         }
 
         /// <summary>
         /// A local prop for a mode whose gameplay structure is built by its CONTROLLER rather than
-        /// by its cell (Scarab's hoops, Astro League's goals, HexRace's track). Refused outright if
+        /// by its cell (Scarab's hoops, Astro League's goals, SkimRace's track). Refused outright if
         /// it is networked - Menu_Main hosts the party, so a NetworkObject here would spawn the
         /// preview's furniture into everybody else's menu.
         /// </summary>
@@ -195,6 +205,68 @@ namespace CosmicShore.Gameplay
         // The mode's REAL track/structure, built for the flight phase, and its spawnable instance.
         GameObject _trackStructure;
         GameObject _trackSource;
+
+        // A gate race's controller-built structure (Breakwater's stations), hung on the preview
+        // course. Same lifetime and same retirement as the track structure.
+        GameObject _courseStructure;
+        GameObject _courseStructureSource;
+
+        /// <summary>True while a course structure is standing.</summary>
+        public bool HasCourseStructure => _courseStructure;
+
+        /// <summary>
+        /// Build a gate race's structure on the preview's course - the SAME prefab the mode's
+        /// scene controller spawns, posed by the same <see cref="RaceCourseSource"/> call, so the
+        /// stations you fly through are the match's. The course is CELL-LOCAL, so the instance
+        /// sits at the cell centre and its prisms stream in there (spawn-then-parent is safe for a
+        /// streamed spawnable - see <see cref="SpawnTrackStructure"/>). Instantiated mass, never
+        /// pooled; retired with the world on strike.
+        /// </summary>
+        public bool BuildCourseStructure(SpawnableBase prefab, RaceCourseSource source,
+                                         IReadOnlyList<RaceGate> course, int intensity)
+        {
+            if (!prefab || source == null || course == null || course.Count == 0 || !_root) return false;
+            StrikeCourseStructure();
+
+            if (prefab.GetComponentInChildren<Unity.Netcode.NetworkObject>(true))
+            {
+                CSDebug.LogError($"[ModePreview] Course structure '{prefab.name}' carries a " +
+                                 "NetworkObject. A preview is strictly local - skipped.");
+                return false;
+            }
+
+            var instance = Object.Instantiate(prefab, _root.transform);
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
+            _courseStructureSource = instance.gameObject;
+
+            if (!source.PoseCourseStructure(instance, course, Vector3.zero))
+            {
+                CSDebug.LogWarning($"[ModePreview] {source.ModeName}'s course source does not pose " +
+                                   $"'{prefab.name}' - no structure built.");
+                StrikeCourseStructure();
+                return false;
+            }
+
+            var built = instance.Spawn(Mathf.Max(1, intensity));
+            if (!built) { StrikeCourseStructure(); return false; }
+
+            built.transform.SetParent(_root.transform, false);
+            built.transform.localPosition = Vector3.zero;
+            built.transform.localRotation = Quaternion.identity;
+            built.name = $"ModePreviewCourseStructure ({source.ModeName})";
+            _courseStructure = built;
+            return true;
+        }
+
+        /// <summary>Take a course structure down outside a strike (the course was re-raised).</summary>
+        public void StrikeCourseStructure()
+        {
+            if (_courseStructureSource) Object.Destroy(_courseStructureSource);
+            _courseStructureSource = null;
+            if (_courseStructure) Object.Destroy(_courseStructure);
+            _courseStructure = null;
+        }
 
         /// <summary>
         /// Build the mode's scene-built structure FOR REAL - the thing you actually fly through.
@@ -328,7 +400,7 @@ namespace CosmicShore.Gameplay
         /// which left LifeformsKilled cards with nothing to hunt. The card authors a SMALL
         /// species and a tiny count (<see cref="ModePreviewDefinitionSO.PreviewFauna"/>),
         /// released through the canonical <see cref="CellLifeSpawnerBase"/> path on a runtime
-        /// clone - the Lifeform Matrix bench's idiom - so each creature registers in the cell's
+        /// clone - the Spawn Matrix bench's idiom - so each creature registers in the cell's
         /// lifeform book and the strike retires it with the world. Released in
         /// <see cref="Domains.Blue"/>: the neutral sentinel is hostile to every pilot, so
         /// anyone's rounds land. Ecology protocol: a bounded explicit release (production, which
@@ -366,10 +438,13 @@ namespace CosmicShore.Gameplay
                 Vector3 local = (dir.sqrMagnitude > 0.001f ? dir.normalized : Vector3.up)
                                 * (radius * (0.6f + 0.6f * (float)rng.NextDouble()));
 
+                // The config goes IN: SpawnFaunaWithDomain owns the lineage bind and the
+                // replication seam. Releasing PreviewFaunaCount (4) copies of one prefab and
+                // leaving each one an un-spawned NetworkObject is what broke every later
+                // joiner's synchronization - see Docs/PartySystem/BUGS.md B5.
                 var fauna = CellLifeSpawnerBase.SpawnFaunaWithDomain(
-                    Cell, clone.FaunaPrefab, Origin, Domains.Blue, Origin + local);
+                    Cell, clone.FaunaPrefab, Origin, Domains.Blue, Origin + local, clone);
                 if (!fauna) continue;
-                fauna.AssignLineage(Cell, clone);
                 spawned++;
             }
 
@@ -432,6 +507,18 @@ namespace CosmicShore.Gameplay
                 _trackStructure = null;
             }
 
+            if (_courseStructureSource)
+            {
+                Object.Destroy(_courseStructureSource);
+                _courseStructureSource = null;
+            }
+            if (_courseStructure)
+            {
+                if (retiring) _courseStructure.transform.SetParent(retiring.transform, true);
+                else Object.Destroy(_courseStructure);
+                _courseStructure = null;
+            }
+
             return retiring;
         }
 
@@ -449,6 +536,8 @@ namespace CosmicShore.Gameplay
             // just keep the fields honest.
             _trackStructure = null;
             _trackSource = null;
+            _courseStructure = null;
+            _courseStructureSource = null;
 
             if (_root)
             {
@@ -530,23 +619,13 @@ namespace CosmicShore.Gameplay
             var source = Camera.main;
             if (!source) return;
 
-            target.clearFlags = source.clearFlags;
-            target.backgroundColor = source.backgroundColor;
+            // Routed through the shared helper rather than copied a fourth time: the same finding
+            // had been written down here, at the connecting panel's preview and at the toy preview
+            // before the Serpent's scope window rediscovered it. See OffscreenCameraSetup.
+            OffscreenCameraSetup.AdoptGameCameraFraming(target, excludeUiLayer: false);
             target.fieldOfView = source.fieldOfView;
-            target.cullingMask = source.cullingMask;
-            target.allowHDR = source.allowHDR;
-            target.allowMSAA = source.allowMSAA;
-
-            if (!source.TryGetComponent(out UniversalAdditionalCameraData from)) return;
-
-            var to = target.GetUniversalAdditionalCameraData();
-            if (!to) return;
-
-            to.renderPostProcessing = from.renderPostProcessing;
-            to.antialiasing = from.antialiasing;
-            to.antialiasingQuality = from.antialiasingQuality;
-            to.renderShadows = from.renderShadows;
-            to.volumeLayerMask = from.volumeLayerMask;
+            OffscreenCameraSetup.AdoptGameCameraImage(target, postProcessing: true,
+                                                     antiAliasing: true, shadows: true);
 
             // The scriptable RENDERER index is deliberately not copied: URP exposes SetRenderer
             // but no public getter for the index in this version, so there is nothing to copy it
@@ -600,6 +679,11 @@ namespace CosmicShore.Gameplay
             // additive on purpose: nothing today authors both a track and an EnvironmentPrefab,
             // but a mode that did would genuinely have both in its arena.
             bool track = AddTrackModel(definition, intensity, gameData, pointBudget);
+
+            // A gate race's arena is its COURSE, laid by its controller at match start - twenty-two
+            // cards, and the cell alone drew every one of them as the same bare shell at every
+            // intensity. Additive like the track: Regatta's rails and its rings are both its arena.
+            track |= AddCourseModel(definition, intensity, config, gameData, pointBudget);
 
             if (!config.EnvironmentPrefab)
             {
@@ -699,6 +783,41 @@ namespace CosmicShore.Gameplay
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                 $"[ModePreview] Track model '{spawnable.name}' up at intensity {intensity}.");
+            return true;
+        }
+
+        /// <summary>
+        /// A gate race's course as a model: the rings the tap will fly, at this intensity
+        /// (<see cref="ModePreviewTrackModel.BuildGateCourseLays"/>). No prisms, one mesh.
+        /// </summary>
+        bool AddCourseModel(ModePreviewDefinitionSO definition, int intensity, CellConfigDataSO config,
+                            GameDataSO gameData, int pointBudget)
+        {
+            if (!definition || RaceCourseSource.For(definition.Mode) == null) return false;
+
+            var lays = ModePreviewTrackModel.BuildGateCourseLays(definition.Mode, intensity, config,
+                                                                 Cell.MeasureNucleusRadius(config));
+            if (lays.Count == 0) return false;
+
+            var miniature = CellMiniatureBuilder.BuildFromLays(lays, _modelRadius,
+                                                               Mathf.Max(lays.Count, pointBudget),
+                                                               1f, $"{definition.Mode} course");
+            if (!miniature.IsValid) return false;
+
+            var body = ToyFactory.AddMiniatureBody(_modelRoot.transform, miniature,
+                                                   new ToyContext { GameData = gameData },
+                                                   "CourseModel");
+            if (!body)
+            {
+                Object.Destroy(miniature.Mesh);
+                return false;
+            }
+
+            _generatedMeshes.Add(miniature.Mesh);
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ModePreview] Course model for {definition.Mode} up at intensity {intensity} " +
+                $"({lays.Count} shards).");
             return true;
         }
 
@@ -904,9 +1023,11 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>The resolution lives on the definition, which carries the mode's own scene data -
         /// the ring flag, radius, floor and formation for a mode that computes its ring, and the
-        /// scene's hand-placed poses for a mode that does not.</para>
+        /// scene's hand-placed poses for a mode that does not. The floor is the one for the
+        /// intensity this arena stood at.</para>
         /// </summary>
         public Pose SpawnPose(ModePreviewDefinitionSO definition, int seat = 0)
-            => definition.ResolveSpawnPose(Origin, Cell ? Cell.ExpectedNucleusWorldRadius : 0f, seat);
+            => definition.ResolveSpawnPose(Origin, Cell ? Cell.ExpectedNucleusWorldRadius : 0f, seat,
+                                           Intensity);
     }
 }

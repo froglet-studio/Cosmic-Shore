@@ -2,7 +2,7 @@
 
 **Status: IMPLEMENTED (2026-08-26).** The boot fallback, the offline local host, the local
 last-known-good data cache, the online-only UI gating and the in-place reconnect are in. §6
-records what shipped, §7 the reconnect design. Short version: `Docs/OFFLINE_MODE_SUMMARY.md`.
+records what shipped, §7 the reconnect design.
 §§0–3 are kept as the diagnosis of the world before the fix — the "today" they describe is the
 pre-implementation state. Read this before touching any offline code.
 
@@ -210,12 +210,12 @@ Every domain minigame is a **multiplayer-mode scene backfilled with AI**
 what a "single-player fallback" is in this architecture. Confirmed playable offline once §3.1 is
 fixed:
 
-- All 15 multiplayer scenes (HexRace, Joust, Crystal Capture, Astro League, Brood Rush, Rampage,
-  Peel the Cage, Wildlife Liberation, Dog Fight, The Bends, Scarab Scramble, …) — solo + AI
+- All 15 multiplayer scenes (SkimRace, Joust, Crystal Capture, Astro League, Brood Rush, Rampage,
+  Cleave, Wildlife Liberation, Dog Fight, The Bends, Scarab Scramble, …) — solo + AI
 - Menu_Main lava-lamp / freestyle, all toys (cell selector, painting, Wanderway, vessel/domain changers)
-- Maelstrom / Tournament — sequential `Single` scene loads, all local
-- The two genuine single-player scenes (`MinigameCellularDuel`, `MinigameWildlifeBlitz`) use the
-  non-networked `PlayerSpawner` path and would work even without a host
+- Maelstrom / Maelstrom — sequential `Single` scene loads, all local
+- The two genuine single-player scenes (`MinigameDuelForTheCell`, `MinigameWildlifeBlitz`) used the
+  non-networked `PlayerSpawner` path and would have worked even without a host *(both retired 2026-09)*
 
 **Not playable offline:** party play with real humans. That is inherent, not a defect.
 
@@ -359,6 +359,18 @@ request.
 
 ### 7.2 Reconnect — and why it does NOT reload Bootstrap
 
+> ⚠ **`ReconnectButton` is in no scene and no prefab** (measured 2026-09-09). The service below is
+> real and is now reachable — `DisconnectNotice` calls it directly
+> (`Docs/UI_ARCHITECTURE_AUDIT.md §4.2.1`) — but the *button* this section describes has never been
+> placed, so a player who booted offline still has no in-menu retry control. Placing it on the
+> menu's `OfflineUIGate` offline-only list is the remaining work.
+>
+> ⚠ **A mid-session network loss never enters offline mode.** `EnterOfflineSessionAsync` has exactly
+> one caller — `AuthenticationSceneController`, the boot chain — so `IsOfflineSession` stays false
+> when the network drops mid-play and every surface in §7.1 stays dark while the menu keeps
+> offering online-only actions. The service-level guards still refuse the work; it is the offering
+> that is wrong. Own change, own blast radius (it tears down Relay and starts a local host).
+
 `ReconnectService` + `ReconnectButton`: one tap tears the offline host down, clears
 `IsOfflineSession`, resets the auth facade, and loads the **Authentication scene** — which *is*
 the boot chain (sign in → wait for the Relay host → load `Menu_Main` through Netcode). If the
@@ -451,7 +463,7 @@ with the preference false; going online then costs them one tap.
 `ReconnectAsync` clears the preference *before* the boot chain reads it; `RunBootChainAsync`
 clears only `IsOfflineSession`, never the preference.
 
-### 8.4 Wiring it: `FrogletTools > Interface > Wire Offline Menu Surfaces`
+### 8.4 Wiring it: `FrogletTools > UI > Wire Offline Menu Surfaces`
 
 `OfflineMenuWirer` wires Menu_Main: the lamp, the confirm bar, and an `OfflineUIGate` on each
 online-only panel.
@@ -525,7 +537,7 @@ Proven by executing the shipped latch logic (`ResetForReconnect` → re-announce
 once, re-entry does not double-raise, a reconnect raises again, and the pre-fix path is kept as a
 negative control showing the trunk staying silent.
 
-### 9.2 `.AsMainThread()` marshals the SUCCESS path only
+### 9.2 `.AsMainThread()` marshals the SUCCESS path only *(fixed 2026-09 — it now marshals in a `finally`; see `Docs/THREADING.md`)*
 
 `await WaitForRelayReadyAsync(linkedCts.Token).AsMainThread()` — when the wait **times out**, the
 `OperationCanceledException` is raised from `linkedCts`'s timer, so it propagates out of the
@@ -672,5 +684,78 @@ Two details that matter for UI sprites: **mipmaps are on** (these scale *down* t
 CanvasScaler, and a thin stroke shimmers without them), and **RGB stays white even where alpha is
 zero** — a sprite carrying black RGB in its transparent pixels fringes dark when filtered.
 
-`EnsureIcon` never overwrites, so authored art always wins; **FrogletTools ▸ Interface ▸ Wire
+`EnsureIcon` never overwrites, so authored art always wins; **FrogletTools ▸ UI ▸ Wire
 Offline Menu Surfaces (Regenerate Icons)** forces a re-render after a geometry change.
+
+---
+
+## The snapshot is a data layer nobody remembers
+
+`LocalCloudDataCache` writes to `{persistentDataPath}/CloudCache/{key}.json` — **neither PlayerPrefs
+nor UGS**. It is what makes offline play work, and it is also why "I cleared PlayerPrefs and deleted
+the player in the UGS dashboard, and they still had their data" is a thing that happens: every
+repository falls back to this snapshot when the cloud answers with nothing, so a deleted account can
+launch straight back into its own save.
+
+Player data has **four** layers, and the dashboard shows one:
+
+| Layer | Where | Cleared by |
+|---|---|---|
+| Cloud Save | UGS, keyed by player id | the dashboard, or `ICloudSaveProvider.DeleteAsync` |
+| Local snapshot | `{persistentDataPath}/CloudCache/` | `LocalCloudDataCache.DeleteAll` |
+| PlayerPrefs | per-platform prefs store | `PlayerPrefs.DeleteAll` |
+| Session token | the Authentication SDK's own storage | `ClearSessionToken` |
+
+The session token is the subtle one: without clearing it the next launch re-authenticates as the
+**same player id**, so no fresh anonymous account is minted and the data appears to come back even
+when the first three were wiped.
+
+**FrogletTools ▸ Services ▸ Wipe Player Data** does all four, each as its own switch, and reports
+which layer held what — the thing that was actually missing when this was first diagnosed by hand.
+Its Cloud Save key list is read off `UGSKeys` by reflection rather than kept by hand, because a
+stale list in a wipe tool fails as a wipe that quietly leaves data behind.
+
+## 9. The seven cases, tested (2026-10-08)
+
+`Assets/_Scripts/Tests/Editor/OfflineSessionTests.cs` covers every case in
+`Docs/MultiplayerArchitecture/HARDENING_PLAN_STEAM_LAUNCH.md` §4.1, plus §4.2's invariant. It runs
+headlessly with `bash Tools/Build/prisma_edit_mode_tests/run.sh` (15/15). Each case is pinned where
+its decision is made:
+
+| Case | Seam | Asserts |
+|---|---|---|
+| 1 no network at boot | `AuthenticationSceneController.PlanBootNetwork` | no Relay attempts; counted and explained |
+| 2 network up, UGS down | `PlanBootNetwork` + `OfflineModeService.TryStartOfflineHost` | attempts are walked; the flag is up BEFORE `StartHost` |
+| 3 the player chose offline | `PlanBootNetwork` | no attempts, no notice, no `OfflineFallback` count |
+| 4 network dies mid-session | `NetworkMonitor.Poll` + a source scan | one `OnNetworkLost` per loss; the boot gate is the only caller of `EnterOfflineSessionAsync` |
+| 5 the network returns while offline | `HostConnectionService` | `EnsurePartySessionAsync` touches nothing; `SendInviteAsync` returns early; a late sign-in does not re-join the presence lobby |
+| 6 Reconnect | `ReconnectService` (two optional seams) | order: party reset → shutdown (flag still up) → clear stale → flag down → Authentication load; `OfflinePreferred` withdrawn |
+| 7 `StartHost` refuses | `TryStartOfflineHost` | the flag comes down again, on a `false` and on a throw |
+| §4.2 the invariant | `HostConnectionService.EnsurePartySessionAsync` | offline begins while a creation's shutdown is in flight, and no session is created |
+
+**Two real defects the tests were written against:**
+1. **The §4.2 invariant was enforced only at entry.** `EnsurePartySessionAsync` checked the flag
+   when it started and never again. A call queued on its mutex or inside its NetworkManager
+   shutdown, when the offline host came up, went on to `CreateAsync`. It now re-checks under the
+   mutex (no await separates that check from the shutdown) and again after the shutdown.
+2. **A late sign-in re-joined the presence lobby of an offline session.** That restarted UGS
+   traffic under a player who had been told they were offline. `EnsureInitializedAsync` now stands
+   down while the flag is up.
+
+**Fixed alongside:**
+- **The boot gate's in-attempt retry was unbounded.** A create that hung made "three attempts" a
+  minimum, and the offline fallback could arrive minutes late. It is now bounded by the per-attempt
+  timeout.
+- **§2.3's "one authoritative flag" had a second writer** in `ReconnectService`. The flag is now
+  written only in `OfflineModeService` (`TryStartOfflineHost` and `EndOfflineSession`).
+
+Negative control: with the two `HostConnectionService` fixes removed, exactly the invariant test
+and the late-sign-in test fail (13/15).
+
+**Still open:**
+- **A player-build pass,** per Block 4's gate (`QA-NET-OFFLINE-MODE` on a Windows IL2CPP player).
+- **The progression decision** (§4.3 of the plan: unlocks do not persist offline).
+- **The mid-session notice may have no Reconnect button.** `DisconnectNotice` reads
+  `ReconnectService.CanReconnect` once, when it shows. Mid-session the host is usually still
+  listening, so it reads false.
+

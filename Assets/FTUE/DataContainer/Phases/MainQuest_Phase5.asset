@@ -1,0 +1,113 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-9219368479096466919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc71607207fd49ea9b400656e8aff5d3, type: 3}
+  m_Name: QuestWaitForUserActionNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForUserActionNode
+  nodeId: 97eb987978d04d2084ecbc719662d873
+  displayName: Wait For User Action
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 40}
+  outputs:
+  - portName: next
+    targetNodeId: f450b9d5b60d42ceb646b121b0a13526
+    delaySeconds: 0
+  action: 500
+--- !u!114 &-619745350775395874
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe7733c75551462a9e3732fed37e9d98, type: 3}
+  m_Name: FTUE Complete
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestEndNode
+  nodeId: 42affe4618b94fd5aa3ed2aaddecdf3f
+  displayName: FTUE Complete
+  nodeEnabled: 1
+  graphPosition: {x: 1200, y: 40}
+  outputs: []
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4262bc93f9a346d184d698a04d485256, type: 3}
+  m_Name: MainQuest_Phase5
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseGraphSO
+  graphId: MainQuest_Phase5
+  phaseName: "Episodes & Beyond \u2014 Finale"
+  phaseEnabled: 1
+  designerNotes: "Entry: vessel unlocked. Wait gate, closing dialogue ('you can also
+    buy new game modes'), then enable the (authored non-interactable) Episodes screen
+    button and Quest End \u2014 the FTUE is complete and persisted to UGS."
+  entryNode: {fileID: -9219368479096466919}
+  nodes:
+  - {fileID: 4280780183346032293}
+  - {fileID: -619745350775395874}
+  - {fileID: -9219368479096466919}
+  - {fileID: 3145926535897932401}
+  canvasScroll: {x: 0, y: 0}
+  canvasZoom: 1
+--- !u!114 &3145926535897932401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3014b5d137374f2695269fce5020c23a, type: 3}
+  m_Name: Enable Episodes Button
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestSetButtonInteractableNode
+  nodeId: 6e1a4b7c2d9f4e0a8b3c5d7e9f1a2b3c
+  displayName: Enable Episodes Button
+  nodeEnabled: 1
+  graphPosition: {x: 820, y: 40}
+  outputs:
+  - portName: next
+    targetNodeId: 42affe4618b94fd5aa3ed2aaddecdf3f
+    delaySeconds: 0
+  buttonKey: episodes
+  interactable: 1
+--- !u!114 &4280780183346032293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: Finale Dialogue
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: f450b9d5b60d42ceb646b121b0a13526
+  displayName: Finale Dialogue
+  nodeEnabled: 1
+  graphPosition: {x: 440, y: 40}
+  outputs:
+  - portName: next
+    targetNodeId: 6e1a4b7c2d9f4e0a8b3c5d7e9f1a2b3c
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - "One more thing \u2014 the Episodes hold new game modes you can pick up anytime."
+  - That's everything, pilot. The HyperSea is yours!

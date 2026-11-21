@@ -1,9 +1,10 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
@@ -40,6 +41,15 @@ namespace CosmicShore.UI
         [Header("UI")]
         [SerializeField] private TMP_Text statusText;
         [SerializeField] private Button retryButton;
+
+        [Header("Style B retry panel (optional)")]
+        [Tooltip("The Connection lost panel around the retry button (Docs/MENU_REDESIGN_B.md section 26). " +
+                 "Shown in Retry mode only; the status line under the bar is cleared while it is up.")]
+        [SerializeField] private CanvasGroup retryPanel;
+        [Tooltip("The panel's message - the request's text in Retry mode.")]
+        [SerializeField] private TMP_Text retryMessageText;
+        [Tooltip("The LOADING caption and bar. Hidden while the retry panel is up: nothing is loading then.")]
+        [SerializeField] private CanvasGroup readoutGroup;
 
         [Header("SOAP")]
         [Tooltip("Inbound: any system raises BootStatusRequest to drive the surface.")]
@@ -79,29 +89,41 @@ namespace CosmicShore.UI
         void ReportMissingWiring()
         {
             if (statusText == null)
-                Debug.LogError("[BootStatusPanel] statusText is not wired in the inspector.", this);
+                CSDebug.LogError("[BootStatusPanel] statusText is not wired in the inspector.", this);
             if (retryButton == null)
-                Debug.LogError("[BootStatusPanel] retryButton is not wired in the inspector.", this);
+                CSDebug.LogError("[BootStatusPanel] retryButton is not wired in the inspector.", this);
             if (inboundRequestEvent == null)
-                Debug.LogError("[BootStatusPanel] inboundRequestEvent is not wired in the inspector.", this);
+                CSDebug.LogError("[BootStatusPanel] inboundRequestEvent is not wired in the inspector.", this);
             if (outboundRetryEvent == null)
-                Debug.LogError("[BootStatusPanel] outboundRetryEvent is not wired in the inspector.", this);
+                CSDebug.LogError("[BootStatusPanel] outboundRetryEvent is not wired in the inspector.", this);
         }
 
         private void HandleRequest(BootStatusRequest req) => Apply(req);
 
         private void Apply(BootStatusRequest req)
         {
+            bool retryMode = req.Mode == BootStatusMode.Retry;
             if (statusText != null)
-                statusText.text = req.Text ?? string.Empty;
+                statusText.text = retryMode && retryPanel ? string.Empty : req.Text ?? string.Empty;
+            if (retryPanel)
+            {
+                // The panel is shown by alpha, so nothing re-enables under it: replay its rise.
+                if (retryMode && !KitVisibility.IsShown(retryPanel)) KitEntrance.ReplayUnder(retryPanel.transform);
+                KitVisibility.SetShown(retryPanel, retryMode);
+                if (retryMode && retryMessageText) retryMessageText.text = req.Text ?? string.Empty;
+            }
+            if (readoutGroup) KitVisibility.SetShown(readoutGroup, !retryMode);
 
             if (retryButton != null)
             {
                 bool wantRetry = req.Mode == BootStatusMode.Retry;
                 if (wantRetry)
-                    Debug.Log($"[BootStatusPanel] Retry surface shown - \"{req.Text}\"");
+                    CSDebug.LogVerbose(CSLogChannel.Boot, $"[BootStatusPanel] Retry surface shown - \"{req.Text}\"");
                 retryButton.gameObject.SetActive(wantRetry);
                 retryButton.interactable = wantRetry;
+                // The pad has nothing else to land on while the splash holds the screen.
+                if (wantRetry && UnityEngine.EventSystems.EventSystem.current)
+                    UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(retryButton.gameObject);
             }
         }
 

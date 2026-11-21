@@ -74,14 +74,14 @@ namespace CosmicShore.Tests
         [Test]
         public void Default_RotationSmoothTime_IsPositive()
         {
-            Assert.Greater(_settings.rotationSmoothTime, 0f,
+            Assert.Greater(_settings.RotationSmoothTime, 0f,
                 "Rotation smooth time must be positive.");
         }
 
         [Test]
         public void Default_DisableSmoothing_IsFalse()
         {
-            Assert.IsFalse(_settings.disableSmoothing,
+            Assert.IsFalse(_settings.DisableSmoothing,
                 "Smoothing should be enabled by default.");
         }
 
@@ -102,14 +102,14 @@ namespace CosmicShore.Tests
         [Test]
         public void Default_EnableAdaptiveZoom_IsFalse()
         {
-            Assert.IsFalse(_settings.enableAdaptiveZoom,
+            Assert.IsFalse(_settings.EnableAdaptiveZoom,
                 "Adaptive zoom should be off by default.");
         }
 
         [Test]
         public void Default_OrthographicSize_IsPositive()
         {
-            Assert.Greater(_settings.orthographicSize, 0f,
+            Assert.Greater(_settings.OrthographicSize, 0f,
                 "Orthographic size must be positive.");
         }
 

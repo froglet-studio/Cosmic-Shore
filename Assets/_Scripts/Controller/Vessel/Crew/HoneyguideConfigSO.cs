@@ -1,0 +1,1006 @@
+using System;
+using System.Collections.Generic;
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
+using FMODUnity;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// Each pattern's own effect, converted from its tabletop card (Honeyguide Lab round 4, Garrett 2026-10-21: "Keep the
+    /// tabletop names and try to make abilities that convert from the old"). Members are the lab's <c>EFFECTS</c> keys in
+    /// card order; values are serialized on the config's pattern table, so each member keeps its value.
+    /// </summary>
+    public enum HoneyguideEffect
+    {
+        None = 0,
+        Plow = 1,
+        Dock = 2,
+        Amanita = 3,
+        Plankter = 4,
+        Skipper = 5,
+        Fugacity = 6,
+        Thruster = 7,
+        Lasso = 8,
+        BigRed = 9,
+        Eigen = 10,
+        Saddle = 11,
+        Watt = 12,
+        Eyelet = 13,
+        Detangler = 14,
+        Condenser = 15,
+        Sepia = 16,
+        ZeroPoint = 17,
+        Noodley = 18,
+        Triplesynth = 19,
+        Harmonizer = 20,
+        Lance = 21,
+        Translator = 22,
+        Anode = 23,
+        Printer5D = 24,
+        Hammer = 25,
+        Cilia = 26,
+        Chrono = 27,
+        Meta = 28,
+        Eti = 29,
+        Ftl = 30,
+        LittleBang = 31,
+        Vorticity = 32,
+        Gravity = 33,
+        Portals = 34,
+        Rosen = 35,
+        Frame = 36,
+        VoidJumper = 37,
+        Blink = 38,
+        Monte = 39,
+    }
+
+    /// <summary>One tabletop card: its name, family (1 Ruby, 2 Jade, 3 Gold: the printed M / C / S), its shape as printed,
+    /// its effect and the words the player reads. Parked cards are never drawn.</summary>
+    [Serializable]
+    public sealed class HoneyguidePattern
+    {
+        [Tooltip("The tabletop card's name (player-facing).")]
+        public string name;
+        [Tooltip("1 Ruby, 2 Jade, 3 Gold (the card's printed family M / C / S).")]
+        [Range(1, 3)] public int family = 1;
+        [Tooltip("The shape as printed: tokens 'Xq,r' with X = M / C / S (Ruby / Jade / Gold), r running down.")]
+        public string shape;
+        public HoneyguideEffect effect;
+        [Tooltip("What the effect does, as the player reads it on the card.")]
+        [TextArea] public string effectText;
+        [Tooltip("Never drawn (a card can be parked while its effect is reworked; lab round 6 parks none).")]
+        public bool parked;
+    }
+
+    /// <summary>What a trigger's pull previews in the world before the release fires it (the lab's <c>pv</c>, round 8).</summary>
+    public enum HoneyguidePreview
+    {
+        Line = 0,     // a line `reach` ahead (Peck, Genesis Lance, Hexapod Eyelet Jet)
+        Lob = 1,      // the landing ring where a lob lands (Little Bang Grenade)
+        Cone = 2,     // a cone ahead (Particle Harmonizer)
+        Ring = 3,     // a ring round the hull (Fugacity Discharger, Sepia Drone)
+        Thrust = 4,   // the thrusts ahead (Thruster Swarm)
+        Hook = 5,     // the rope to the target it found (Hard Light Lasso)
+        Land = 6,     // the landing and its strike ring (Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool)
+        Hops = 7,     // every hop and its strike ring (Monte Cannon)
+        Dart = 8,     // the dart and its strike lane (Flit)
+    }
+
+    /// <summary>One trigger upgrade (the lab's <c>ACTIVES8</c>, round 8): the card that banks it, the trigger it banks on
+    /// (0 RT, the Space active that cuts opposing prism volume; 1 LT, the Charge active that strikes vessels and creatures),
+    /// its reach and what its pull previews. Every make of its card banks <c>usesPerCard</c> uses on that trigger.</summary>
+    [Serializable]
+    public sealed class HoneyguideUpgrade
+    {
+        public HoneyguideEffect effect;
+        [Tooltip("0 RT (Space: cuts opposing prism volume), 1 LT (Charge: strikes rival vessels and creatures). Garrett 2026-11-01.")]
+        [Range(0, 1)] public int trigger;
+        [Tooltip("Its reach (u): the lab's ACTIVES8 reach.")]
+        [Min(0f)] public float reach;
+        [Tooltip("What a pull of the trigger shows before the release fires it.")]
+        public HoneyguidePreview preview;
+        [Tooltip("Plays on each use. Ship empty; an unwired slot is a visible TODO.")]
+        public EventReference sfx;
+        [Tooltip("Its card picture: the trigger's card (RT the Space card, LT the Charge card) shows it while this ability is " +
+                 "the newest banked on that trigger (icon kit, AbilityIcons/Honeyguide/Upgrades/).")]
+        public Sprite icon;
+    }
+
+    /// <summary>A designed engine (Appendix B): its printed rows, top first, M / C / S a port of that colour.</summary>
+    [Serializable]
+    public sealed class HoneyguideEngine
+    {
+        public string label;
+        public string[] rows = new string[7];
+    }
+
+    /// <summary>The words for one of the Ratel's abilities.</summary>
+    [Serializable]
+    public sealed class HoneyguideAbilityText
+    {
+        public DynamoAbility ability;
+        public string name;
+        [TextArea] public string text;
+    }
+
+    /// <summary>One Engineer-AI difficulty: how often it thinks, how many placements it weighs and how often it blunders.</summary>
+    [Serializable]
+    public sealed class HoneyguideEngineerSkill
+    {
+        [Min(0.05f)] public float think = 0.45f;
+        [Min(1)] public int top = 1;
+        [Range(0f, 1f)] public float blunder;
+    }
+
+    /// <summary>One Ratel-AI difficulty in hive mode (the Ratel Raid Lab's SKILL): seconds per cell it drags, whether it plays
+    /// the solver's plan (never touching danger), and how often its thumb slides on into a danger cell.</summary>
+    [Serializable]
+    public sealed class HoneyguideHiveSkill
+    {
+        [Min(0.02f)] public float cell = 0.22f;
+        public bool solver = true;
+        [Range(0f, 1f)] public float sloppy;
+    }
+
+    public enum HoneyguideAILevel
+    {
+        Easy = 0,
+        Medium = 1,
+        Hard = 2,
+    }
+
+    /// <summary>Which way up the Ratel's big board is drawn. The screen stays locked to landscape; a portrait board is drawn
+    /// turned a quarter so it reads upright with the phone held portrait (Garrett 2026-10-22).</summary>
+    public enum HoneyguideBoardOrientation
+    {
+        PortraitOnPhone = 0,
+        Portrait = 1,
+        Landscape = 2,
+    }
+
+    /// <summary>
+    /// Every number, table and word of the Honeyguide and Ratel (Honeyguide Lab round 6; <c>Docs/Studios/HONEYGUIDE_LAB.md</c>,
+    /// <c>HONEYGUIDE.md</c> beside this file). The lab is the record: each field names the lab key it came from, and
+    /// <c>Tools/Build/author_honeyguide_assets.py --check</c> holds the shipped asset to the page. Read by
+    /// <see cref="HoneyguideCrew"/>.
+    /// </summary>
+    [CreateAssetMenu(fileName = "HoneyguideConfig", menuName = "ScriptableObjects/Vessel Actions/Honeyguide Config")]
+    public sealed class HoneyguideConfigSO : ScriptableObject
+    {
+        [Header("The Dynamo (the Ratel's hex puzzle)")]
+        [Tooltip("lab tickSeconds: seconds per spin (the port pattern turns 60 degrees; the AP refill).")]
+        [SerializeField, Min(1f)] float tickSeconds = 15f;
+        [Tooltip("lab apPerTick: action points each spin (move, inject and make cost 1).")]
+        [SerializeField, Min(1)] int apPerTick = 3;
+        [Tooltip("lab apBank: most AP held; above it a spin's AP are wasted. Garrett 2026-10-29: 6 (was 3), so what a spin does " +
+                 "not use is kept.")]
+        [SerializeField, Min(1)] int apBank = 6;
+        [Tooltip("lab abilityChoices: abilities offered every patternsPerShuffle patterns; the Ratel picks one while the clock is " +
+                 "stopped (Garrett 2026-10-29: 3). 1 = the old random draw.")]
+        [SerializeField, Range(1, 4)] int abilityChoices = 3;
+        [Tooltip("lab pickSeconds: seconds the Ratel has to pick before the first offer is taken; 0 waits for the pick.")]
+        [SerializeField, Min(0f)] float pickSeconds = 20f;
+        [Tooltip("lab bonusApCap: banked extra AP (the Refund ability).")]
+        [SerializeField, Min(0)] int bonusApCap = 2;
+        [Tooltip("lab batteryCap: slip charges held; a new one replaces the oldest when full.")]
+        [SerializeField, Min(1)] int batteryCap = 3;
+        [Tooltip("lab revealAbility: seconds the spin clock stops to show the Ratel's new ability.")]
+        [SerializeField, Min(0f)] float revealAbility = 3.5f;
+        [Tooltip("lab revealPorts: then seconds the new port pattern is shown before the clock restarts.")]
+        [SerializeField, Min(0f)] float revealPorts = 2f;
+        [Tooltip("lab usesPerPattern: a pattern made this many times is replaced (0 = never).")]
+        [SerializeField, Min(0)] int usesPerPattern = 3;
+        [Tooltip("lab patternsPerShuffle: every this many patterns, a new ability and a new port pattern (0 = never).")]
+        [SerializeField, Min(0)] int patternsPerShuffle = 4;
+        [Tooltip("lab spinAnim: seconds the ports take to turn on screen.")]
+        [SerializeField, Min(0f)] float spinAnim = 0.6f;
+        [Tooltip("Seconds a made pattern's juice plays on the board: its cells burst, its card pops, the board's edge flashes in " +
+                 "the card's family colour (Garrett 2026-10-23: \"the ratel needs juice when it completes a pattern\").")]
+        [SerializeField, Min(0f)] float madeJuiceSeconds = 0.7f;
+        [Tooltip("Seconds the prism a made pattern takes flies from its cell to its battery slot, morphing from the board's hex " +
+                 "prism into the battery's round charge.")]
+        [SerializeField, Min(0f)] float chargeFlightSeconds = 0.55f;
+        [Tooltip("lab opts.portsCount: an empty port counts as a prism of its colour for completing a pattern.")]
+        [SerializeField] bool portsCount = true;
+        [Tooltip("lab opts.rotatable: patterns match in any of the six rotations.")]
+        [SerializeField] bool rotatable = true;
+        [Tooltip("lab RETIRED_ABILITIES: abilities the Ratel never draws. Garrett 2026-10-22: Printer (a free prism at the start " +
+                 "of every spin) is out for now, \"too confusing to players on mobile\".")]
+        [SerializeField] DynamoAbility[] retiredAbilities = { DynamoAbility.Printer };
+
+        [Header("Hive mode (the Ratel Raid Lab, Garrett 2026-10-31; HONEYGUIDE.md \"Hive mode\")")]
+        [Tooltip("An omnicrystal the hull collects becomes a hive, and the Ratel goes into hive mode.")]
+        [SerializeField] bool hiveMode = true;
+        [Tooltip("lab hiveEndsSpin 'complete': entering hive mode completes the current spin at once (\"the ratel ends their " +
+                 "current timer\"), and a fresh spin starts on the way out. Off: the clock only stops, and the old spin resumes.")]
+        [SerializeField] bool hiveCompletesSpin = true;
+        [Tooltip("lab raidSeconds: hive mode ends when the hive is cleared, after this long, or when the Ratel leaves.")]
+        [SerializeField, Min(1f)] float raidSeconds = 15f;
+        [Tooltip("lab minChain (Garrett: 3): a chain is a path through touching cells of one other domain, at least this long.")]
+        [SerializeField, Min(2)] int minChain = 3;
+        [Tooltip("lab snakeMin: the generator lays each other-domain run as a snake at least this long.")]
+        [SerializeField, Min(2)] int snakeMin = 3;
+        [Tooltip("lab snakeMax: and at most this long.")]
+        [SerializeField, Min(2)] int snakeMax = 5;
+        [Tooltip("lab hiveOtherShare: share of the 37 cells laid as the other two domains (the rest is ours).")]
+        [SerializeField, Range(0.1f, 0.8f)] float hiveOtherShare = 0.45f;
+        [Tooltip("lab hiveHoles: empty cells in a hive.")]
+        [SerializeField, Min(0)] int hiveHoles = 2;
+        [Tooltip("lab hiveCross: chance a later snake crosses a plain cell of its colour, making one more shielded prism.")]
+        [SerializeField, Range(0f, 1f)] float hiveCross = 0.35f;
+        [Tooltip("lab hiveDangerMin (Garrett: \"always include some danger prisms\"): danger prisms in every hive, off every snake.")]
+        [SerializeField, Min(0)] int hiveDangerMin = 2;
+        [Tooltip("lab hiveArmour: share of our own body cells that are shielded (at least one).")]
+        [SerializeField, Range(0f, 1f)] float hiveArmour = 0.15f;
+        [Tooltip("lab stingSeconds: a chain that touches danger breaks with nothing destroyed, and the thumb is stunned this long.")]
+        [SerializeField, Min(0f)] float stingSeconds = 1f;
+        [Tooltip("lab rewardDynamo (Garrett: 2): prisms of a completed colour that land on the Dynamo.")]
+        [SerializeField, Min(0)] int rewardDynamo = 2;
+        [Tooltip("lab rewardBattery (Garrett: 1): charges of a completed colour that go to the battery.")]
+        [SerializeField, Min(0)] int rewardBattery = 1;
+        [Tooltip("lab crystalGlowSeconds: how long the planar crystal lights while the rewards land.")]
+        [SerializeField, Min(0f)] float crystalGlowSeconds = 1.6f;
+        [Tooltip("The hive in the world: the distance between neighbouring cells' centres is this times the square root of 3 (u).")]
+        [SerializeField, Min(0.5f)] float hiveCellSpacing = 2.5f;
+        [Tooltip("The hive in the world is laid this far behind where the omnicrystal was taken, square to the hull's flight, " +
+                 "so the hull that took it is not inside it (u).")]
+        [SerializeField, Min(0f)] float hiveOffset = 40f;
+        [Tooltip("Garrett 2026-10-31: the hive the Ratel leaves spawns bees of the player's domain that guard it and grow it. A " +
+                 "native bee hive (a Bee Hive Flora config) is planted behind the comb when hive mode ends, in our domain; its bees " +
+                 "guard the comb and grow the hive from mass stung off opposing fauna. Empty = no bees.")]
+        [SerializeField] FloraConfigurationSO leftBeeHive;
+        [Tooltip("How far behind the comb's back face the bee hive is planted (u), so its own comb does not grow into ours.")]
+        [SerializeField, Min(0f)] float leftBeeHiveBehind = 12f;
+        [Tooltip("The Ratel AI in hive mode, by engineerLevel (Easy, Medium, Hard; the lab's rookie and skilled are Easy and Hard).")]
+        [SerializeField] HoneyguideHiveSkill[] hiveSkills =
+        {
+            new() { cell = 0.5f, solver = false, sloppy = 0.15f },
+            new() { cell = 0.35f, solver = false, sloppy = 0.05f },
+            new() { cell = 0.22f, solver = true, sloppy = 0f },
+        };
+        [Tooltip("The strip over the Ratel's board: the farthest omnicrystal it draws at its far end (u). Nearer ones sit along it.")]
+        [SerializeField, Min(10f)] float stripRangeU = 1600f;
+        [Tooltip("The danger prisms' colour on the Ratel's board.")]
+        [SerializeField] Color hiveDangerColour = new(0.85f, 0.12f, 0.08f, 1f);
+
+        [Header("The Slip (the Honeyguide's Time ability)")]
+        [Tooltip("lab minSlipTrailLength: shortest trail (prisms) a slip rides.")]
+        [SerializeField, Min(2)] int minSlipTrailLength = 6;
+        [Tooltip("lab slipReach: farthest a slip lands from where you touched (u).")]
+        [SerializeField, Min(10f)] float slipReach = 400f;
+        [Tooltip("lab exitOffset: land this far past the trail's end, outward (u).")]
+        [SerializeField, Min(0f)] float exitOffset = 8f;
+        [Tooltip("lab slipGrace: seconds the trail just ridden is ignored (no re-slip on landing).")]
+        [SerializeField, Min(0f)] float slipGrace = 1f;
+        [Tooltip("lab aimCone: the slip arms when the nose is within this many degrees of the touched prism's long axis, either way.")]
+        [SerializeField, Range(5f, 90f)] float aimCone = 45f;
+        [Tooltip("lab hullRadius + prismL / 2: a prism this close to the hull's centre is touched (u).")]
+        [SerializeField, Min(0.5f)] float contactRadius = 5.5f;
+        [Tooltip("lab selfGrace (SelfTrailContactConfig.hullGraceSeconds): a prism younger than this is never touched.")]
+        [SerializeField, Min(0f)] float selfGrace = 1f;
+        [Tooltip("lab 'exit: align': the hull lands facing along the trail's outward heading (off: it keeps its facing).")]
+        [SerializeField] bool exitAligned = true;
+        [Tooltip("A slip is a ride, not a teleport (Garrett 2026-10-21): the hull zips along the trail at this speed (u/s).")]
+        [SerializeField, Min(10f)] float zipSpeed = 480f;
+        [Tooltip("Seconds the zip takes to reach zipSpeed from the hull's own speed.")]
+        [SerializeField, Min(0f)] float zipRamp = 0.15f;
+        [Tooltip("How quickly the hull turns onto each leg of the trail while zipping (1/s; higher is snappier).")]
+        [SerializeField, Min(0.5f)] float zipTurnRate = 14f;
+        [Tooltip("The zip rides this far off the trail's prisms, on the hull's up side (u).")]
+        [SerializeField, Min(0f)] float zipLift = 3f;
+        [Tooltip("Seconds of boost the hull carries out of a zip.")]
+        [SerializeField, Min(0f)] float zipExitBoost = 0.75f;
+
+        [Header("Pattern effects (lab applyEffect)")]
+        [Tooltip("lab passiveSeconds: how long a timed effect lasts; a repeat refreshes it and raises its level.")]
+        [SerializeField, Min(1f)] float passiveSeconds = 20f;
+        [Tooltip("lab passiveMaxLevel: highest level a timed effect stacks to.")]
+        [SerializeField, Range(1, 5)] int passiveMaxLevel = 3;
+        [Tooltip("lab: most boost seconds held at once.")]
+        [SerializeField, Min(0.5f)] float boostCap = 6f;
+        [Tooltip("Juggernaut Plow: boost seconds when made.")]
+        [SerializeField, Min(0f)] float plowBoost = 1f;
+        [Tooltip("Amanita Furnace: boost seconds (it burns one Dynamo prism).")]
+        [SerializeField, Min(0f)] float amanitaBoost = 3f;
+        [Tooltip("Big Red Button: boost seconds for each Dynamo prism destroyed.")]
+        [SerializeField, Min(0f)] float bigRedBoostEach = 0.5f;
+        [Tooltip("Dragon Saddle: boost seconds for each battery charge drained.")]
+        [SerializeField, Min(0f)] float saddleBoostEach = 1.5f;
+        [Tooltip("Zero Point Amplifier: boost seconds for the charge it drains.")]
+        [SerializeField, Min(0f)] float zeroPointBoost = 1.5f;
+        [Tooltip("Plankter Sail: boost seconds after the free slip.")]
+        [SerializeField, Min(0f)] float sailBoost = 1f;
+        [Tooltip("Plankter Sail: most free slips held.")]
+        [SerializeField, Min(1)] int maxSails = 3;
+        [Tooltip("Singularity Dock (2 a level) and Gravity Engine (1 a level): slips catch trails this much farther a unit (u).")]
+        [SerializeField, Min(0f)] float magnetPerLevel = 3f;
+        [Tooltip("Gravity Engine: boost seconds after each slip, a level.")]
+        [SerializeField, Min(0f)] float gravityBoostPerLevel = 1f;
+        [Tooltip("Anomaly Skipper: boost seconds a level for touching a prism of a different domain from the last.")]
+        [SerializeField, Min(0f)] float skipperBoostPerLevel = 0.4f;
+        [Tooltip("Eigen Booster: turn rate added a unit (2 units a level).")]
+        [SerializeField, Min(0f)] float eigenTurnPerUnit = 0.3f;
+        [Tooltip("Wattslider: speed added a level while alongside a trail.")]
+        [SerializeField, Min(0f)] float wattSpeedPerLevel = 0.3f;
+        [Tooltip("Wattslider: alongside means a trail prism within this distance (u)...")]
+        [SerializeField, Min(1f)] float wattReach = 14f;
+        [Tooltip("...with the heading within this many degrees of its axis.")]
+        [SerializeField, Range(5f, 90f)] float wattCone = 30f;
+        [Tooltip("Reality Detangler: prisms touched that turn the newest charge's domain.")]
+        [SerializeField, Min(1)] int detangleCount = 3;
+        [Tooltip("Noodley Appendages: hostile prisms pushed aside.")]
+        [SerializeField, Min(1)] int noodleCount = 5;
+        [Tooltip("Noodley Appendages: how far each is pushed (u).")]
+        [SerializeField, Min(1f)] float noodlePush = 12f;
+        [Tooltip("Noodley Appendages: a prism this much farther than a touch is reached (u).")]
+        [SerializeField, Min(0f)] float noodleReach = 6f;
+        [Tooltip("Epitaxial Condenser: prisms in the lane it lays.")]
+        [SerializeField, Min(2)] int condenserCount = 6;
+        [Tooltip("Epitaxial Condenser: the lane starts this far ahead (u); its prisms are a prism spacing apart.")]
+        [SerializeField, Min(0f)] float condenserAhead = 30f;
+        [Tooltip("Epitaxial Condenser: the spacing of its prisms (u; the Sparrow's wavelength).")]
+        [SerializeField, Min(1f)] float condenserSpacing = 7f;
+        [Tooltip("Mystic Eti: domains with a trail within this distance each give a charge (u).")]
+        [SerializeField, Min(1f)] float etiReach = 40f;
+        [Tooltip("Square-Peg Hammer: Dynamo prisms dropped.")]
+        [SerializeField, Min(1)] int hammerCount = 3;
+        [Tooltip("Reactor Cilia: extra AP banked.")]
+        [SerializeField, Min(1)] int ciliaBonus = 3;
+        [Tooltip("Chrono-Compressor: seconds the spin bar winds back.")]
+        [SerializeField, Min(0f)] float chronoRewind = 5f;
+
+        [Header("The triggers (lab round 8: RT Space, LT Charge; pull to preview, release to fire; cards bank uses)")]
+        [Tooltip("RT's base power, Peck: a weak shot while held, through the hull's own gun (HoneyguidePeckAction.asset, a " +
+                 "FullAutoActionSO with the lab's peckRate and peckRange).")]
+        [SerializeField] ShipActionSO peckAction;
+        [Tooltip("lab peckRange: how far a Peck flies (u). The AI pecks at a hostile prism this close ahead.")]
+        [SerializeField, Min(1f)] float peckRange = 45f;
+        [Tooltip("lab flitDistance: LT's base power, Flit, throws the hull this far ahead (u).")]
+        [SerializeField, Min(1f)] float flitDistance = 18f;
+        [Tooltip("lab: the seconds a Flit takes.")]
+        [SerializeField, Min(0.02f)] float flitSeconds = 0.15f;
+        [Tooltip("lab flitCooldown: seconds between Flits.")]
+        [SerializeField, Min(0f)] float flitCooldown = 2f;
+        [Tooltip("lab peckBurst: the shots one Peck release fires (the gun runs for this many of its shots).")]
+        [SerializeField, Min(1)] int peckBurst = 3;
+        [Tooltip("lab peckCooldown: seconds between Peck releases.")]
+        [SerializeField, Min(0f)] float peckCooldown = 1f;
+        [Tooltip("lab flitStrikeRadius: Flit strikes every rival vessel and creature within this of its dart (u).")]
+        [SerializeField, Min(0f)] float flitStrikeRadius = 8f;
+        [Tooltip("lab strikeRadius: an LT landing (every jump, each Monte hop, the lasso's arrival) strikes every rival vessel " +
+                 "and creature within this (u).")]
+        [SerializeField, Min(0f)] float strikeRadius = 12f;
+        [Tooltip("A struck vessel is not struck again by this hull for this many seconds (CombatHitDrain's admission).")]
+        [SerializeField, Min(0f)] float strikeCooldown = 0.5f;
+        [Tooltip("lab usesPerCard (Garrett 2026-11-01: \"the three uses per card is good\"): every make of an upgrade card banks " +
+                 "this many uses on its trigger. The newest banked ability is current and fires first.")]
+        [SerializeField, Min(1)] int usesPerCard = 3;
+        [Tooltip("lab: after any fire a trigger waits at least this long (s) before its next pull.")]
+        [SerializeField, Min(0f)] float postFireCooldown = 0.25f;
+        [Tooltip("The thirteen upgrades (lab ACTIVES8), one per upgrade card.")]
+        [SerializeField] List<HoneyguideUpgrade> upgrades = new();
+        [Tooltip("Hard Light Lasso: the target must be within this many degrees of the nose.")]
+        [SerializeField, Range(5f, 90f)] float lassoCone = 30f;
+        [Tooltip("Hard Light Lasso: the reel's speed (u/s; the hull's own when faster).")]
+        [SerializeField, Min(1f)] float lassoReelSpeed = 220f;
+        [Tooltip("Hard Light Lasso: the longest a reel lasts (s).")]
+        [SerializeField, Min(0.1f)] float lassoReelSeconds = 1.2f;
+        [Tooltip("Genesis Lance: hostile prisms this close to its line shatter (u).")]
+        [SerializeField, Min(0.5f)] float lanceWidth = 4f;
+        [Tooltip("Genesis Lance: its lane starts this far ahead (u); the lane's prisms are condenserSpacing apart.")]
+        [SerializeField, Min(0f)] float lanceLaneStart = 25f;
+        [Tooltip("Little Bang Grenade: lobbed this far ahead (u).")]
+        [SerializeField, Min(1f)] float grenadeThrow = 55f;
+        [Tooltip("Little Bang Grenade: seconds until it bursts.")]
+        [SerializeField, Min(0f)] float grenadeFuse = 0.6f;
+        [Tooltip("Sepia Drone: seconds it circles.")]
+        [SerializeField, Min(0.5f)] float droneSeconds = 8f;
+        [Tooltip("Sepia Drone: zaps a second.")]
+        [SerializeField, Min(0.1f)] float droneZapsPerSecond = 3f;
+        [Tooltip("Particle Harmonizer: the beam's cone (degrees either side of the nose).")]
+        [SerializeField, Range(5f, 90f)] float harmonizerCone = 20f;
+        [Tooltip("Particle Harmonizer: the most hostile prisms one release turns to your domain, nearest first.")]
+        [SerializeField, Min(1)] int harmonizerMaxTurned = 12;
+        [Tooltip("Fugacity Discharger: boost seconds for each prism it shatters...")]
+        [SerializeField, Min(0f)] float fugacityBoostEach = 0.05f;
+        [Tooltip("...up to this many.")]
+        [SerializeField, Min(0f)] float fugacityBoostCap = 1.5f;
+        [Tooltip("Hexapod Eyelet Jet: the seconds the jet takes.")]
+        [SerializeField, Min(0.02f)] float eyeletSeconds = 0.25f;
+        [Tooltip("Thruster Swarm: the seconds a thrust takes.")]
+        [SerializeField, Min(0.02f)] float thrusterSeconds = 0.12f;
+        [Tooltip("Thruster Swarm: thrusts one release makes.")]
+        [SerializeField, Min(1)] int thrusterThrusts = 3;
+        [Tooltip("Thruster Swarm: seconds between thrusts.")]
+        [SerializeField, Min(0f)] float thrusterGap = 0.4f;
+        [Tooltip("Rosen Bridge, FTL Chromatool, Monte Cannon: a target must be within this many degrees of the nose.")]
+        [SerializeField, Range(5f, 90f)] float jumpCone = 35f;
+        [Tooltip("lab: a jump target must be at least this far away (u).")]
+        [SerializeField, Min(0f)] float jumpMinDistance = 8f;
+        [Tooltip("All Terrain Portals: no prism within this of the landing is empty space, and it goes again (u).")]
+        [SerializeField, Min(1f)] float portalsEmptyRadius = 12f;
+        [Tooltip("Monte Cannon: hops.")]
+        [SerializeField, Min(1)] int monteHops = 3;
+        [Tooltip("The AI pilot's look at its triggers, every this many seconds.")]
+        [SerializeField, Min(0.05f)] float aiTriggerThink = 0.3f;
+        [Tooltip("The AI pilot holds a trigger this long between its pull and its release (it pulls, as a person does).")]
+        [SerializeField, Min(0f)] float aiPreviewSeconds = 0.17f;
+
+        [Header("The AI pilot's hunt (Garrett 2026-11-02: in freestyle it hunts fauna, rival vessels and opposing prisms)")]
+        [Tooltip("An AI-flown Honeyguide picks its own goal: a creature, a rival vessel, an opposing prism mass, the Mass hive or " +
+                 "an omnicrystal, and uses its triggers on it (HoneyguideCrew.Hunt.cs). Off: it chases omnicrystals as every " +
+                 "hull's autopilot does.")]
+        [SerializeField] bool aiHunts = true;
+        [Tooltip("The hunt runs only outside a match, or in freestyle: a match's own objective (its steering hook) is never touched.")]
+        [SerializeField] bool aiHuntFreestyleOnly = true;
+        [Tooltip("Seconds between the AI's looks at what to go after.")]
+        [SerializeField, Min(0.1f)] float aiHuntThink = 0.75f;
+        [Tooltip("Seconds the AI keeps a goal before a better one may take its place (a goal that dies is dropped at once).")]
+        [SerializeField, Min(0f)] float aiHuntCommit = 4f;
+        [Tooltip("A new goal must want this many times the current one's pull to take its place after the commit (no flapping).")]
+        [SerializeField, Min(1f)] float aiHuntSwitch = 1.3f;
+        [Tooltip("Farthest a creature, rival vessel or opposing prism mass the AI hunts (u).")]
+        [SerializeField, Min(10f)] float aiHuntReach = 900f;
+        [Tooltip("A goal's pull halves at this distance (u): nearer things win.")]
+        [SerializeField, Min(1f)] float aiHuntFalloff = 250f;
+        [Tooltip("How much the AI wants a creature (LT strikes it).")]
+        [SerializeField, Min(0f)] float aiWantFauna = 1f;
+        [Tooltip("How much the AI wants a rival vessel (LT strikes it).")]
+        [SerializeField, Min(0f)] float aiWantVessel = 1.2f;
+        [Tooltip("How much the AI wants an opposing prism mass (RT pecks it).")]
+        [SerializeField, Min(0f)] float aiWantPrisms = 0.8f;
+        [Tooltip("How much the AI wants an omnicrystal (while it is not resting from one).")]
+        [SerializeField, Min(0f)] float aiWantCrystal = 0.6f;
+        [Tooltip("How much the AI wants the Mass hive (a human Ratel's hull: the AI flies it there).")]
+        [SerializeField, Min(0f)] float aiWantHive = 1.5f;
+        [Tooltip("After an omnicrystal or a hive the AI leaves omnicrystals alone this long, unless one is within aiCrystalSnatch (s).")]
+        [SerializeField, Min(0f)] float aiCrystalRest = 40f;
+        [Tooltip("An omnicrystal this near is taken even while the AI rests from them (u).")]
+        [SerializeField, Min(0f)] float aiCrystalSnatch = 80f;
+        [Tooltip("An opposing prism mass is a goal only with at least this many hostile prisms within aiPrismMassRadius of its centre.")]
+        [SerializeField, Min(1)] int aiPrismMassMin = 8;
+        [Tooltip("The radius the opposing prism mass is counted in (u).")]
+        [SerializeField, Min(1f)] float aiPrismMassRadius = 30f;
+        [Tooltip("Seconds between the AI's looks for the densest opposing prism mass (the cell's own density grid).")]
+        [SerializeField, Min(0.5f)] float aiPrismMassScan = 3f;
+        [Tooltip("The AI slips only when the landing brings it at least this much nearer its goal (u). Garrett 2026-11-02: the AI " +
+                 "got stuck slipping, riding trails that carried it away from where it was going and turning back onto them.")]
+        [SerializeField, Min(0f)] float aiSlipMinGain = 40f;
+        [Tooltip("A trail the AI turned down is ignored this long (s).")]
+        [SerializeField, Min(0f)] float aiSlipSkipSeconds = 3f;
+        [Tooltip("This many AI slips inside aiSlipLoopWindow seconds is a loop: the AI leaves slips alone aiSlipRest seconds.")]
+        [SerializeField, Min(2)] int aiSlipLoopCount = 4;
+        [Tooltip("The window the AI's slips are counted in for the loop guard (s).")]
+        [SerializeField, Min(0.5f)] float aiSlipLoopWindow = 8f;
+        [Tooltip("Seconds the AI leaves slips alone after a loop.")]
+        [SerializeField, Min(0f)] float aiSlipRest = 5f;
+        [Tooltip("A ride (slip, jet or reel) ends where it is after its path at its top speed would take this many times as long, " +
+                 "plus a second: a watchdog, so no ride can hold the hull.")]
+        [SerializeField, Min(1f)] float rideWatchdog = 2f;
+
+        [Header("The trigger previews (drawn in the world for the pilot on this screen)")]
+        [Tooltip("The previews' line material. Empty: an unlit sprite material is made at run time.")]
+        [SerializeField] Material previewMaterial;
+        [Tooltip("The previews' line width (u).")]
+        [SerializeField, Min(0.05f)] float previewWidth = 0.6f;
+        [Tooltip("The previews' colour: the neutral blue (Garrett: \"stay in the neutral Blue\").")]
+        [SerializeField] Color previewColour = new(0.36f, 0.72f, 1f, 0.85f);
+        [Tooltip("Segments in a preview ring.")]
+        [SerializeField, Range(8, 96)] int previewRingSegments = 40;
+
+        [Header("The Mass hive (lab round 8: Mass is a passive; fly to the hive to open hive mode)")]
+        [Tooltip("Mass plants a hive to fly to.")]
+        [SerializeField] bool massHive = true;
+        [Tooltip("lab massHiveSeconds: a hive is planted this often (s) at Mass level 0...")]
+        [SerializeField, Min(5f)] float massHiveSeconds = 45f;
+        [Tooltip("...and each Mass level shortens it this much (fraction a level, the timer runs 1 + this x level times as fast).")]
+        [SerializeField, Min(0f)] float massHiveLevelGain = 0.1f;
+        [Tooltip("lab: a hive is planted at least this far from the hull (u), inside the cell.")]
+        [SerializeField, Min(0f)] float hiveMinDistance = 150f;
+        [Tooltip("lab hiveReach: pass within this of the hive to open hive mode (u).")]
+        [SerializeField, Min(1f)] float hiveReach = 25f;
+
+        [Header("Element scaling and level-5 upgrades (the vessel pass, Garrett, 2026-11-13)")]
+        [Tooltip("CHARGE: Flit's strike radius (vessel contract: Charge = threat). Multiplies flitStrikeRadius: x1 at Charge 0 to " +
+                 "x2 at Charge 10.")]
+        [SerializeField] ElementalFloat flitStrikeScale = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.5f);
+        [Tooltip("MASS: the hive's size (vessel contract: Mass = size). Multiplies hiveReach: x1 at Mass 0 to x2 at Mass 10.")]
+        [SerializeField] ElementalFloat hiveReachScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 0.5f);
+        [Tooltip("SPACE: Peck's burst (vessel contract: Space = how much opposing prism volume RT reaches). Multiplies peckBurst: " +
+                 "x1 at Space 0 to x2 at Space 10 (3 -> 6 shots).")]
+        [SerializeField] ElementalFloat peckBurstScale = ElementalFloat.Multiplier(1f, 2f, Element.Space, 0.5f);
+        [Tooltip("TIME: the Slip's speed (vessel contract: Time = rate). Multiplies zipSpeed: x1 at Time 0 to x1.5 at Time 10.")]
+        [SerializeField] ElementalFloat slipSpeedScale = ElementalFloat.Multiplier(1f, 1.5f, Element.Time, 0.5f);
+        [Tooltip("CHARGE level-5 'Relentless': a Flit that strikes a vessel or creature is ready again at once. None = never.")]
+        [SerializeField] Element relentlessUpgradeElement = Element.Charge;
+        [Tooltip("MASS level-5 'Hive Chain': reaching a hive plants the next one at once. None = never.")]
+        [SerializeField] Element hiveChainUpgradeElement = Element.Mass;
+        [Tooltip("TIME level-5 'Slipstream': a slip carries slipstreamExitScale times its boost out. None = never.")]
+        [SerializeField] Element slipstreamUpgradeElement = Element.Time;
+        [Tooltip("How much more boost a slip carries out under Slipstream (x zipExitBoost).")]
+        [SerializeField, Min(1f)] float slipstreamExitScale = 2f;
+        [Tooltip("The hive marker's size (u).")]
+        [SerializeField, Min(1f)] float hiveMarkerSize = 12f;
+        [Tooltip("The hive marker's colour.")]
+        [SerializeField] Color hiveMarkerColour = new(1f, 0.82f, 0.48f, 0.9f);
+
+        [Header("Crew AI")]
+        [Tooltip("The Ratel AI's level when the human flies.")]
+        [SerializeField] HoneyguideAILevel engineerLevel = HoneyguideAILevel.Hard;
+        [Tooltip("lab ESKILL easy / medium / hard.")]
+        [SerializeField] HoneyguideEngineerSkill[] engineerSkills =
+        {
+            new() { think = 1.6f, top = 4, blunder = 0.25f },
+            new() { think = 0.9f, top = 2, blunder = 0.08f },
+            new() { think = 0.45f, top = 1, blunder = 0f },
+        };
+        [Tooltip("A hull flown by its AIPilot on this machine (an AI rival or squad mate) gets an AI Ratel too.")]
+        [SerializeField] bool aiCrewEngineers = true;
+
+        [Header("The Ratel's view")]
+        [Tooltip("The board's rect while the human plays the Ratel (fractions of the screen: x, y, width, height). Garrett 2026-10-21: it covers the centre of the screen.")]
+        [SerializeField] Rect engineerRect = new(0.18f, 0.04f, 0.64f, 0.92f);
+        [Tooltip("The board's rect while the human flies (the small view; a double tap on it swaps seats).")]
+        [SerializeField] Rect pilotRect = new(0.01f, 0.30f, 0.20f, 0.42f);
+        [Tooltip("Which way up the big board is drawn. PortraitOnPhone: upright for a phone held portrait on a touch device, " +
+                 "landscape elsewhere. The screen itself stays landscape (Garrett 2026-10-22).")]
+        [SerializeField] HoneyguideBoardOrientation boardOrientation = HoneyguideBoardOrientation.PortraitOnPhone;
+        [Tooltip("The portrait board's rect (fractions of the portrait safe area: x, y, width, height). The Fly button sits above it.")]
+        [SerializeField] Rect portraitRect = new(0.03f, 0.02f, 0.94f, 0.86f);
+        [Tooltip("Portrait: the board's text size (the em height, in millimetres on the screen).")]
+        [SerializeField, Min(1f)] float portraitTextMillimetres = 2.8f;
+        [Tooltip("Portrait: the pattern cards' height, in millimetres on the screen (thumb-sized).")]
+        [SerializeField, Min(8f)] float portraitCardMillimetres = 20f;
+        [Tooltip("Touch: holding a prism this long (s) without leaving its cell deletes it, for 1 AP (a phone's right-click).")]
+        [SerializeField, Min(0.1f)] float longPressSeconds = 0.45f;
+        [Tooltip("The Fly button's edge, in millimetres on the screen. It sits just left of the Ratel's board, at its top, and " +
+                 "swaps back to flying (a phone has no D-pad and no arrow keys).")]
+        [SerializeField, Min(5f)] float flyButtonMillimetres = 10f;
+        [Tooltip("The colours of Ruby, Jade and Gold prisms and ports (the game's palette, studio-domains.js).")]
+        [SerializeField] Color[] colours = { new(1f, 0f, 0.976f, 1f), new(0.075f, 1f, 0.949f, 1f), new(1f, 0.655f, 0f, 1f) };
+
+        [Header("Words (player-facing; an empty field shows nothing)")]
+        [Tooltip("The Ratel's seat label at the top of the board.")]
+        [SerializeField] string ratelLabel = "Ratel";
+        [Tooltip("The names of colours 1-3 (Ruby, Jade, Gold).")]
+        [SerializeField] string[] colourNames = { "Ruby", "Jade", "Gold" };
+        [Tooltip("The button beside the Ratel's board that goes back to flying. Empty = the button shows no word (it still works).")]
+        [SerializeField] string flyButtonLabel = "Fly";
+        [Tooltip("On a lit card. Tokens: none.")]
+        [SerializeField] string tapToMake = "TAP";
+        [Tooltip("The free-prism line. Tokens: {count}, {colour} (the domain of the prism on the cursor, placed first).")]
+        [SerializeField] string freePrismTemplate = "{count} free ({colour} on your cursor): tap an empty cell";
+        [Tooltip("The line above the cards naming what the last pattern made does; it stays until the next one. Lime when the " +
+                 "effect works on the Dynamo itself (dynamoLineColour). Tokens: {name}, {level} (empty for a one-off), {text} (the " +
+                 "card's effect). Empty = no line.")]
+        [SerializeField] string madeLineTemplate = "{name}: {text}";
+        [Tooltip("The colour of that line (and of the free-prism line) when what it says is about the Dynamo: lime.")]
+        [SerializeField] Color dynamoLineColour = new(0.66f, 1f, 0.18f, 1f);
+        [Tooltip("The reveal card's heading for a new ability. Tokens: {name}.")]
+        [SerializeField] string revealAbilityTemplate = "New ability: {name}";
+        [Tooltip("The reveal's second step.")]
+        [SerializeField] string revealPortsLine = "New injection ports";
+        [Tooltip("The heading over the abilities offered to pick from (round 7). Empty = no heading.")]
+        [SerializeField] string pickAbilityTitle = "Pick the Ratel's next ability";
+        [Tooltip("Hive mode's heading over the board. Empty = no heading.")]
+        [SerializeField] string hiveTitle = "Hive: drag 3 or more of one colour";
+        [Tooltip("The Leave button in hive mode (the rewards earned so far are kept).")]
+        [SerializeField] string hiveLeaveLabel = "Leave";
+        [Tooltip("The toast when an omnicrystal becomes a hive.")]
+        [SerializeField] string hiveEnterToast = "The omnicrystal became a hive: hive mode";
+        [Tooltip("The toast when a colour is completed. Tokens: {colour}, {prisms}, {charges}.")]
+        [SerializeField] string hiveColourDoneTemplate = "{colour} complete: +{prisms} prisms, +{charges} charge";
+        [Tooltip("Added when both other colours are done and our own is rewarded too. Tokens: {colour}.")]
+        [SerializeField] string hiveBothDoneTemplate = "Both done: {colour} too";
+        [Tooltip("The toast when a chain touches a danger prism.")]
+        [SerializeField] string hiveStungToast = "Stung: the chain broke";
+        [Tooltip("The band above the cards in hive mode: the rewards earned so far. Tokens: {colours}. Empty = no line.")]
+        [SerializeField] string hiveEarnedTemplate = "Earned: {colours}";
+        [Tooltip("The toast when hive mode ends. Tokens: {rewards} (hiveRewardsTemplate, or hiveNoRewardsLine).")]
+        [SerializeField] string hiveEndTemplate = "Hive mode over: {rewards}";
+        [Tooltip("{rewards} when a colour was completed. Tokens: {colours}.")]
+        [SerializeField] string hiveRewardsTemplate = "{colours} rewards land on the crystal";
+        [Tooltip("{rewards} when no colour was completed.")]
+        [SerializeField] string hiveNoRewardsLine = "no colour completed";
+        [Tooltip("The strip over the board while the Honeyguide closes on an omnicrystal. Tokens: {distance} (u).")]
+        [SerializeField] string stripOmniTemplate = "Omnicrystal {distance} u";
+        [Tooltip("The strip while no omnicrystal is out. Empty = no line.")]
+        [SerializeField] string stripNoTargetLine = "No omnicrystal in sight";
+        [Tooltip("The strip while the AI hunts a creature. Tokens: {distance} (u).")]
+        [SerializeField] string stripFaunaTemplate = "Hunting fauna {distance} u";
+        [Tooltip("The strip while the AI chases a rival vessel. Tokens: {distance} (u).")]
+        [SerializeField] string stripVesselTemplate = "Chasing a rival {distance} u";
+        [Tooltip("The strip while the AI goes for an opposing prism mass. Tokens: {colour} (its colour name, or stripOpposingWord), " +
+                 "{distance} (u).")]
+        [SerializeField] string stripPrismsTemplate = "Breaking {colour} prisms {distance} u";
+        [Tooltip("The {colour} of a prism mass with no Ruby, Jade or Gold name.")]
+        [SerializeField] string stripOpposingWord = "opposing";
+        [Tooltip("The strip while the hull flies to the Mass hive. Tokens: {distance} (u).")]
+        [SerializeField] string stripHiveTemplate = "Mass hive {distance} u";
+        [Tooltip("The strip while the hull rides a slip.")]
+        [SerializeField] string stripSlipLine = "Slipping";
+        [Tooltip("The strip while the hull darts (Flit, Eyelet Jet, Thruster Swarm).")]
+        [SerializeField] string stripJetLine = "Darting";
+        [Tooltip("The strip while the Hard Light Lasso reels the hull in.")]
+        [SerializeField] string stripReelLine = "Reeling in";
+        [Tooltip("Seconds a strike, a break or a pickup flashes on the strip.")]
+        [SerializeField, Min(0.05f)] float stripHitSeconds = 0.6f;
+        [Tooltip("The toast when a pattern is made (the game's toast, top right under Settings). Tokens: {name}, {level} (empty for " +
+                 "a one-off), {text} (the card's effect).")]
+        [SerializeField] string madeToastTemplate = "{name} {level}: {text}";
+        [Tooltip("The toast when the Ratel draws a new ability; it tells both seats what it does. Tokens: {name}, {text}.")]
+        [SerializeField] string abilityToastTemplate = "The Ratel's new ability, {name}: {text}";
+        [Tooltip("A right-clicked card's details on the board. Tokens: {name}, {text}, {uses} (made so far), {max} (made before " +
+                 "it is replaced).")]
+        [SerializeField] string cardDetailTemplate = "{name}\n{text}\nMade {uses} of {max}\n\nClick anywhere to close";
+        [Tooltip("The toast when a card banks uses of an upgrade on a trigger. Tokens: {name}, {trigger}, {uses} (banked now), {text}.")]
+        [SerializeField] string upgradeToastTemplate = "{name} on {trigger} x{uses}: {text}";
+        [Tooltip("The triggers' names (RT, LT).")]
+        [SerializeField] string[] triggerNames = { "RT", "LT" };
+        [Tooltip("The base powers' names (RT, LT).")]
+        [SerializeField] string[] basePowerNames = { "Peck", "Flit" };
+        [Tooltip("One trigger on the chip beside the small board. Tokens: {trigger}, {power}.")]
+        [SerializeField] string triggerChipTemplate = "{trigger} {power}";
+        [Tooltip("{power} while uses are banked on the trigger. Tokens: {name} (the current, newest ability), {ticks} (one " +
+                 "tickGlyph a banked use), {uses} (how many).")]
+        [SerializeField] string upgradePowerTemplate = "{name} {ticks}";
+        [Tooltip("One banked use on the chip.")]
+        [SerializeField] string tickGlyph = "•";
+        [Tooltip("Shown when a release finds no target (it fizzles and keeps its use).")]
+        [SerializeField] string noJumpTarget = "No target";
+        [Tooltip("The patterns' tabletop cards, in card order (39). Parked cards are never drawn.")]
+        [SerializeField] List<HoneyguidePattern> patterns = new();
+        [Tooltip("The designed engines; every three-fold colour-symmetric turn and recolouring of them is a port pattern.")]
+        [SerializeField] List<HoneyguideEngine> engines = new();
+        [Tooltip("The Ratel's abilities' names and words.")]
+        [SerializeField] List<HoneyguideAbilityText> abilities = new();
+
+        [Header("Audio (ship empty; an unwired slot is a visible TODO)")]
+        [SerializeField] EventReference patternMadeSfx;
+        [SerializeField] EventReference slipSfx;
+        [SerializeField] EventReference jumpSfx;
+        [SerializeField] EventReference flitSfx;
+        [SerializeField] EventReference upgradeSfx;
+        [SerializeField] EventReference spinSfx;
+        [SerializeField] EventReference revealSfx;
+        [SerializeField] EventReference hiveEnterSfx;
+        [SerializeField] EventReference hiveChainSfx;
+        [SerializeField] EventReference hiveStingSfx;
+        [SerializeField] EventReference hiveColourSfx;
+        [SerializeField] EventReference hiveLeaveSfx;
+
+        [Header("Wiring")]
+        [Tooltip("Runtime GameData (the players, for the AI crew rule).")]
+        [SerializeField] GameDataSO gameData;
+
+        public float TickSeconds => tickSeconds;
+        public float SpinAnim => spinAnim;
+        public float MadeJuiceSeconds => madeJuiceSeconds;
+        public float ChargeFlightSeconds => chargeFlightSeconds;
+        public int MinSlipTrailLength => minSlipTrailLength;
+        public float SlipReach => slipReach;
+        public float ExitOffset => exitOffset;
+        public float SlipGrace => slipGrace;
+        public float AimCone => aimCone;
+        public float ContactRadius => contactRadius;
+        public float SelfGrace => selfGrace;
+        public bool ExitAligned => exitAligned;
+        public float PassiveSeconds => passiveSeconds;
+        public int PassiveMaxLevel => passiveMaxLevel;
+        public float BoostCap => boostCap;
+        public float PlowBoost => plowBoost;
+        public float AmanitaBoost => amanitaBoost;
+        public float BigRedBoostEach => bigRedBoostEach;
+        public float SaddleBoostEach => saddleBoostEach;
+        public float ZeroPointBoost => zeroPointBoost;
+        public float SailBoost => sailBoost;
+        public int MaxSails => maxSails;
+        public float MagnetPerLevel => magnetPerLevel;
+        public float GravityBoostPerLevel => gravityBoostPerLevel;
+        public float SkipperBoostPerLevel => skipperBoostPerLevel;
+        public float EigenTurnPerUnit => eigenTurnPerUnit;
+        public float WattSpeedPerLevel => wattSpeedPerLevel;
+        public float WattReach => wattReach;
+        public float WattCone => wattCone;
+        public int DetangleCount => detangleCount;
+        public int NoodleCount => noodleCount;
+        public float NoodlePush => noodlePush;
+        public float NoodleReach => noodleReach;
+        public int CondenserCount => condenserCount;
+        public float CondenserAhead => condenserAhead;
+        public float CondenserSpacing => condenserSpacing;
+        public float EtiReach => etiReach;
+        public int HammerCount => hammerCount;
+        public int CiliaBonus => ciliaBonus;
+        public float ChronoRewind => chronoRewind;
+        public ShipActionSO PeckAction => peckAction;
+        public float PeckRange => peckRange;
+        public float FlitDistance => flitDistance;
+        public float FlitSeconds => flitSeconds;
+        public float FlitCooldown => flitCooldown;
+        public int PeckBurst => peckBurst;
+        public float PeckCooldown => peckCooldown;
+        public float FlitStrikeRadius => flitStrikeRadius;
+        public float StrikeRadius => strikeRadius;
+        public float StrikeCooldown => strikeCooldown;
+        public int UsesPerCard => usesPerCard;
+        public float PostFireCooldown => postFireCooldown;
+        public IReadOnlyList<HoneyguideUpgrade> Upgrades => upgrades;
+        public float LassoCone => lassoCone;
+        public float LassoReelSpeed => lassoReelSpeed;
+        public float LassoReelSeconds => lassoReelSeconds;
+        public float LanceWidth => lanceWidth;
+        public float LanceLaneStart => lanceLaneStart;
+        public float GrenadeThrow => grenadeThrow;
+        public float GrenadeFuse => grenadeFuse;
+        public float DroneSeconds => droneSeconds;
+        public float DroneZapsPerSecond => droneZapsPerSecond;
+        public float HarmonizerCone => harmonizerCone;
+        public int HarmonizerMaxTurned => harmonizerMaxTurned;
+        public float FugacityBoostEach => fugacityBoostEach;
+        public float FugacityBoostCap => fugacityBoostCap;
+        public float EyeletSeconds => eyeletSeconds;
+        public float ThrusterSeconds => thrusterSeconds;
+        public int ThrusterThrusts => thrusterThrusts;
+        public float ThrusterGap => thrusterGap;
+        public float JumpCone => jumpCone;
+        public float JumpMinDistance => jumpMinDistance;
+        public float PortalsEmptyRadius => portalsEmptyRadius;
+        public int MonteHops => monteHops;
+        public float AITriggerThink => aiTriggerThink;
+        public float AIPreviewSeconds => aiPreviewSeconds;
+        public bool AIHunts => aiHunts;
+        public bool AIHuntFreestyleOnly => aiHuntFreestyleOnly;
+        public float AIHuntThink => aiHuntThink;
+        public float AIHuntCommit => aiHuntCommit;
+        public float AIHuntSwitch => aiHuntSwitch;
+        public float AIHuntReach => aiHuntReach;
+        public float AIHuntFalloff => aiHuntFalloff;
+        public float AIWantFauna => aiWantFauna;
+        public float AIWantVessel => aiWantVessel;
+        public float AIWantPrisms => aiWantPrisms;
+        public float AIWantCrystal => aiWantCrystal;
+        public float AIWantHive => aiWantHive;
+        public float AICrystalRest => aiCrystalRest;
+        public float AICrystalSnatch => aiCrystalSnatch;
+        public int AIPrismMassMin => aiPrismMassMin;
+        public float AIPrismMassRadius => aiPrismMassRadius;
+        public float AIPrismMassScan => aiPrismMassScan;
+        public float AISlipMinGain => aiSlipMinGain;
+        public float AISlipSkipSeconds => aiSlipSkipSeconds;
+        public int AISlipLoopCount => aiSlipLoopCount;
+        public float AISlipLoopWindow => aiSlipLoopWindow;
+        public float AISlipRest => aiSlipRest;
+        public float RideWatchdog => rideWatchdog;
+        public Material PreviewMaterial => previewMaterial;
+        public float PreviewWidth => previewWidth;
+        public Color PreviewColour => ColorTrace.Retrace(ColorTrace.World, previewColour);
+        public int PreviewRingSegments => previewRingSegments;
+        public bool MassHive => massHive;
+        public float MassHiveSeconds => massHiveSeconds;
+        public float MassHiveLevelGain => massHiveLevelGain;
+        public float HiveMinDistance => hiveMinDistance;
+        public float HiveReach => hiveReach;
+        public ElementalFloat FlitStrikeScale => flitStrikeScale;
+        public ElementalFloat HiveReachScale => hiveReachScale;
+        public ElementalFloat PeckBurstScale => peckBurstScale;
+        public ElementalFloat SlipSpeedScale => slipSpeedScale;
+        public float SlipstreamExitScale => slipstreamExitScale;
+
+        static float Live(ElementalFloat f, IVesselStatus status) => f != null ? Mathf.Max(0f, f.EvaluateLive(status)) : 1f;
+
+        /// <summary>Flit's strike radius for <paramref name="status"/> (flitStrikeRadius x Charge).</summary>
+        public float FlitStrikeRadiusFor(IVesselStatus status) => flitStrikeRadius * Live(flitStrikeScale, status);
+        /// <summary>The hive's reach for <paramref name="status"/> (hiveReach x Mass).</summary>
+        public float HiveReachFor(IVesselStatus status) => hiveReach * Live(hiveReachScale, status);
+        /// <summary>Shots in one Peck for <paramref name="status"/> (peckBurst x Space, at least one).</summary>
+        public int PeckBurstFor(IVesselStatus status) => Mathf.Max(1, Mathf.RoundToInt(peckBurst * Live(peckBurstScale, status)));
+        /// <summary>The Slip's top speed for <paramref name="status"/> (zipSpeed x Time).</summary>
+        public float ZipSpeedFor(IVesselStatus status) => zipSpeed * Live(slipSpeedScale, status);
+        /// <summary>Seconds of boost a slip carries out for <paramref name="status"/>: more under Slipstream.</summary>
+        public float ZipExitBoostFor(IVesselStatus status) => zipExitBoost * (SlipstreamActive(status) ? slipstreamExitScale : 1f);
+
+        /// <summary>Charge 5 'Relentless': a Flit that strikes is ready again at once.</summary>
+        public bool RelentlessActive(IVesselStatus status)
+        {
+            if (relentlessUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(relentlessUpgradeElement);
+        }
+
+        /// <summary>Mass 5 'Hive Chain': reaching a hive plants the next at once.</summary>
+        public bool HiveChainActive(IVesselStatus status)
+        {
+            if (hiveChainUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(hiveChainUpgradeElement);
+        }
+
+        /// <summary>Time 5 'Slipstream': a slip carries more boost out.</summary>
+        public bool SlipstreamActive(IVesselStatus status)
+        {
+            if (slipstreamUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(slipstreamUpgradeElement);
+        }
+        public float HiveMarkerSize => hiveMarkerSize;
+        public Color HiveMarkerColour => ColorTrace.Retrace(ColorTrace.World, hiveMarkerColour);
+        public HoneyguideEngineerSkill EngineerSkill => engineerSkills is { Length: > 0 }
+            ? engineerSkills[Mathf.Clamp((int)engineerLevel, 0, engineerSkills.Length - 1)] : new HoneyguideEngineerSkill();
+        public bool AICrewEngineers => aiCrewEngineers;
+        public Rect EngineerRect => engineerRect;
+        public Rect PilotRect => pilotRect;
+        public HoneyguideBoardOrientation BoardOrientation => boardOrientation;
+        public Rect PortraitRect => portraitRect;
+        public float PortraitTextMillimetres => portraitTextMillimetres;
+        public float PortraitCardMillimetres => portraitCardMillimetres;
+        public float LongPressSeconds => longPressSeconds;
+        public float FlyButtonMillimetres => flyButtonMillimetres;
+        public string RatelLabel => ratelLabel;
+        public string FlyButtonLabel => flyButtonLabel;
+        public string TapToMake => tapToMake;
+        public string FreePrismTemplate => freePrismTemplate;
+        public string RevealAbilityTemplate => revealAbilityTemplate;
+        public string RevealPortsLine => revealPortsLine;
+        public string PickAbilityTitle => pickAbilityTitle;
+        public string MadeToastTemplate => madeToastTemplate;
+        public string MadeLineTemplate => madeLineTemplate;
+        public Color DynamoLineColour => ColorTrace.Retrace(ColorTrace.Ui, dynamoLineColour);
+        public string AbilityToastTemplate => abilityToastTemplate;
+        public string CardDetailTemplate => cardDetailTemplate;
+        public float ZipSpeed => zipSpeed;
+        public float ZipRamp => zipRamp;
+        public float ZipTurnRate => zipTurnRate;
+        public float ZipLift => zipLift;
+        public float ZipExitBoost => zipExitBoost;
+        public int UsesPerPattern => usesPerPattern;
+        public string UpgradeToastTemplate => upgradeToastTemplate;
+        public string TriggerChipTemplate => triggerChipTemplate;
+        public string UpgradePowerTemplate => upgradePowerTemplate;
+        public string TickGlyph => tickGlyph;
+        public string NoJumpTarget => noJumpTarget;
+        public IReadOnlyList<HoneyguidePattern> Patterns => patterns;
+        public IReadOnlyList<HoneyguideEngine> Engines => engines;
+        public EventReference PatternMadeSfx => patternMadeSfx;
+        public EventReference SlipSfx => slipSfx;
+        public EventReference JumpSfx => jumpSfx;
+        public EventReference FlitSfx => flitSfx;
+        public EventReference UpgradeSfx => upgradeSfx;
+        public EventReference SpinSfx => spinSfx;
+        public EventReference RevealSfx => revealSfx;
+        public EventReference HiveEnterSfx => hiveEnterSfx;
+        public EventReference HiveChainSfx => hiveChainSfx;
+        public EventReference HiveStingSfx => hiveStingSfx;
+        public EventReference HiveColourSfx => hiveColourSfx;
+        public EventReference HiveLeaveSfx => hiveLeaveSfx;
+        public bool HiveMode => hiveMode;
+        public bool HiveCompletesSpin => hiveCompletesSpin;
+        public float CrystalGlowSeconds => crystalGlowSeconds;
+        public float HiveCellSpacing => hiveCellSpacing;
+        public float HiveOffset => hiveOffset;
+        public FloraConfigurationSO LeftBeeHive => leftBeeHive;
+        public float LeftBeeHiveBehind => leftBeeHiveBehind;
+        public float StripRangeU => stripRangeU;
+        public Color HiveDangerColour => ColorTrace.Retrace(ColorTrace.Ui, hiveDangerColour);
+        public HoneyguideHiveSkill HiveSkill => hiveSkills is { Length: > 0 }
+            ? hiveSkills[Mathf.Clamp((int)engineerLevel, 0, hiveSkills.Length - 1)] : new HoneyguideHiveSkill();
+        public string HiveTitle => hiveTitle;
+        public string HiveLeaveLabel => hiveLeaveLabel;
+        public string HiveEnterToast => hiveEnterToast;
+        public string HiveColourDoneTemplate => hiveColourDoneTemplate;
+        public string HiveBothDoneTemplate => hiveBothDoneTemplate;
+        public string HiveStungToast => hiveStungToast;
+        public string HiveEarnedTemplate => hiveEarnedTemplate;
+        public string HiveEndTemplate => hiveEndTemplate;
+        public string HiveRewardsTemplate => hiveRewardsTemplate;
+        public string HiveNoRewardsLine => hiveNoRewardsLine;
+        public string StripOmniTemplate => stripOmniTemplate;
+        public string StripNoTargetLine => stripNoTargetLine;
+        public string StripFaunaTemplate => stripFaunaTemplate;
+        public string StripVesselTemplate => stripVesselTemplate;
+        public string StripPrismsTemplate => stripPrismsTemplate;
+        public string StripOpposingWord => stripOpposingWord;
+        public string StripHiveTemplate => stripHiveTemplate;
+        public string StripSlipLine => stripSlipLine;
+        public string StripJetLine => stripJetLine;
+        public string StripReelLine => stripReelLine;
+        public float StripHitSeconds => stripHitSeconds;
+
+        /// <summary>The hive core's settings from this asset (the Ratel Raid Lab's SHIPPED).</summary>
+        public HiveSettings ToHiveSettings() => new()
+        {
+            MinChain = minChain, SnakeMin = snakeMin, SnakeMax = snakeMax, HiveHoles = hiveHoles, HiveDangerMin = hiveDangerMin,
+            RewardDynamo = rewardDynamo, RewardBattery = rewardBattery, HiveOtherShare = hiveOtherShare, HiveCross = hiveCross,
+            HiveArmour = hiveArmour, StingSeconds = stingSeconds, RaidSeconds = raidSeconds,
+        };
+        public GameDataSO GameData => gameData;
+
+        /// <summary>Colour 1-3's display colour (white for anything else).</summary>
+        public Color ColourOf(int colour) => colours != null && colour >= 1 && colour <= colours.Length
+            ? ColorTrace.Retrace(ColorTrace.Ui, colours[colour - 1]) : Color.white;
+
+        /// <summary>Colour 1-3's name, or empty.</summary>
+        public string ColourName(int colour) => colourNames != null && colour >= 1 && colour <= colourNames.Length ? colourNames[colour - 1] : "";
+
+        /// <summary>Trigger k's name (0 RT, 1 LT), or empty.</summary>
+        public string TriggerName(int k) => triggerNames != null && k >= 0 && k < triggerNames.Length ? triggerNames[k] : "";
+
+        /// <summary>Trigger k's base power's name (0 Peck, 1 Flit), or empty.</summary>
+        public string BasePowerName(int k) => basePowerNames != null && k >= 0 && k < basePowerNames.Length ? basePowerNames[k] : "";
+
+        /// <summary>The upgrade a card grants, or null (the card is not a trigger upgrade).</summary>
+        public HoneyguideUpgrade UpgradeFor(HoneyguideEffect effect)
+        {
+            if (upgrades != null) foreach (var u in upgrades) if (u != null && u.effect == effect) return u;
+            return null;
+        }
+
+        /// <summary>A Dynamo colour's domain: 1 Ruby, 2 Jade, 3 Gold.</summary>
+        public static Domains DomainOf(int colour) => colour switch { 1 => Domains.Ruby, 2 => Domains.Jade, 3 => Domains.Gold, _ => Domains.Blue };
+
+        /// <summary>A domain's Dynamo colour, or 0 (no prism of the Dynamo is that domain).</summary>
+        public static int ColourOf(Domains domain) => domain switch { Domains.Ruby => 1, Domains.Jade => 2, Domains.Gold => 3, _ => 0 };
+
+        /// <summary>True when an effect works on the Dynamo itself - its prisms, ports, AP, spin clock or battery - so the line
+        /// naming it above the cards is lime (the Ratel-seat cards, and the hull cards that burn, purge or drain the board).</summary>
+        public static bool TouchesDynamo(HoneyguideEffect effect) => effect switch
+        {
+            HoneyguideEffect.Amanita or HoneyguideEffect.BigRed or HoneyguideEffect.Saddle or HoneyguideEffect.ZeroPoint
+                or HoneyguideEffect.Triplesynth or HoneyguideEffect.Translator or HoneyguideEffect.Anode
+                or HoneyguideEffect.Printer5D or HoneyguideEffect.Hammer or HoneyguideEffect.Cilia or HoneyguideEffect.Chrono
+                or HoneyguideEffect.Meta or HoneyguideEffect.Eti or HoneyguideEffect.Vorticity => true,
+            _ => false,
+        };
+
+        public HoneyguideAbilityText AbilityText(DynamoAbility ability)
+        {
+            if (abilities != null) foreach (var a in abilities) if (a != null && a.ability == ability) return a;
+            return null;
+        }
+
+        /// <summary>A card's shape as (q, r, colour) cells: the lab's <c>PATTERNS</c> parse.</summary>
+        public static int[][] ParseShape(string shape)
+        {
+            var cells = new List<int[]>();
+            if (string.IsNullOrWhiteSpace(shape)) return cells.ToArray();
+            foreach (var tok in shape.Split((char[])null, StringSplitOptions.RemoveEmptyEntries))
+            {
+                int col = tok[0] == 'M' ? 1 : tok[0] == 'C' ? 2 : tok[0] == 'S' ? 3 : 0;
+                var qr = tok.Substring(1).Split(',');
+                if (col == 0 || qr.Length != 2 || !int.TryParse(qr[0], out int q) || !int.TryParse(qr[1], out int r)) continue;
+                cells.Add(new[] { q, r, col });
+            }
+            return cells.ToArray();
+        }
+
+        /// <summary>The abilities a random draw picks from: all but <c>retiredAbilities</c> (null when none is retired, or all are).</summary>
+        int[] AbilityPool()
+        {
+            if (retiredAbilities is not { Length: > 0 }) return null;
+            var pool = new List<int>();
+            for (int a = 0; a < DynamoCore.AbilityCount; a++) if (Array.IndexOf(retiredAbilities, (DynamoAbility)a) < 0) pool.Add(a);
+            return pool.Count > 0 ? pool.ToArray() : null;
+        }
+
+        /// <summary>The core's settings from this asset (the lab's <c>dynamoSettings</c> with the shipped rule options).</summary>
+        public DynamoSettings ToSettings()
+        {
+            var s = new DynamoSettings
+            {
+                TickSeconds = tickSeconds, ApPerTick = apPerTick, ApBank = apBank, BonusApCap = bonusApCap, BatteryCap = batteryCap,
+                RevealAbility = revealAbility, RevealPorts = revealPorts, AllowRotatedMatches = rotatable, PortsCount = portsCount,
+                AbilityChoices = abilityChoices, PickSeconds = pickSeconds,
+                SlotCount = 3, StartFilled = true, UsesPerPattern = usesPerPattern, PatternsPerShuffle = patternsPerShuffle,
+                Abilities = AbilityPool(),
+            };
+            foreach (var p in patterns) s.Patterns.Add(new DynamoPattern { Cells = ParseShape(p.shape), Parked = p.parked });
+            var parsed = new List<int[][]>();
+            foreach (var e in engines) if (e != null && e.rows != null) parsed.Add(DynamoCore.ParseEngine(e.rows));
+            s.PortSets = DynamoCore.BuildPortSets(parsed);
+            return s;
+        }
+    }
+}

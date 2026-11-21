@@ -36,8 +36,10 @@ NAMED = {
 }
 
 # Not player-facing UI: the style foundation governs the game's UI, not the Editor's or the console's.
+# `ActiveGameModesWindow.cs` and `LeaderboardConfigSOEditor.cs` were here until the per-mode
+# leaderboard path was deleted (2026-09). An exclusion naming a file that no longer exists never
+# matches and never complains, so it reads as a live carve-out forever - removed rather than left.
 OUT_EDITOR = {
-    "ActiveGameModesWindow.cs", "LeaderboardConfigSOEditor.cs",
     "UniversalStatsProviderEditor.cs", "Model/MinigameHUDInspector.cs",
 }
 OUT_DEBUG = {
@@ -59,12 +61,12 @@ TOKENS = {
 #   a = missing token   b = belongs in a feature-level SO   c = never designed
 VERDICTS = {
     "ConnectingPanelController.cs:160": ("b", "SO_ColorSet — domain accent fallback"),
-    "Controller/MantaVesselHUDController.cs:22": ("b", "Manta HUD — overcharge state; danger candidate"),
+    "Controller/MantaHUDController.cs:22": ("b", "Manta HUD — overcharge state; danger candidate"),
     "DomainVolumeHexGraphic.cs:84": ("b", "SO_ColorSet — hardcoded domain triad; SEE FLAG F1"),
-    "DomainVolumeIndicator.cs:178": ("c", "alpha-0 hide, not a colour"),
-    "DomainVolumeIndicator.cs:340": ("b", "SO_ColorSet — domain fallback"),
-    "DomainVolumeIndicator.cs:352": ("b", "SO_ColorSet — domain fallback"),
-    "DomainVolumeIndicator.cs:82": ("b", "SO_ColorSet — jade/ruby/gold fallback"),
+    "DomainVolumeIndicator.cs:305": ("c", "alpha-0 hide, not a colour"),
+    "DomainVolumeIndicator.cs:524": ("b", "SO_ColorSet — domain fallback"),
+    "DomainVolumeIndicator.cs:536": ("b", "SO_ColorSet — domain fallback"),
+    "DomainVolumeIndicator.cs:106": ("b", "SO_ColorSet — jade/ruby/gold fallback"),
     "Elements/DomainInfoData.cs:29": ("textLight", ""),
     "Elements/DomainInfoData.cs:30": ("inactiveLight", ""),
     "Elements/GameCard.cs:31": ("a", "locked-card tint — §10.6 says 'grey', gives no value"),
@@ -79,7 +81,7 @@ VERDICTS = {
     "Elements/LoadoutCard.cs:20": ("inactiveLight", "SEE FLAG F2 — deselected is currently white"),
     "Elements/OnlineInfoEntry.cs:39": ("cta", "§3 player online status; SEE FLAG F3 — currently white"),
     "Elements/OnlineInfoEntry.cs:48": ("c", "multiply-identity white"),
-    "Elements/QuestItemCard.cs:42": ("c", "multiply-identity white"),
+    "Elements/QuestItemCard.cs:46": ("c", "multiply-identity white"),
     "Elements/RequestInfoEntry.cs:29": ("cta", "§2 attention reuses CTA; currently white"),
     "Elements/ScoreNumberAnimator.cs:131": ("a", "positive/gain green — §2 gap table proposes no gain hue"),
     "Elements/ScoreNumberAnimator.cs:132": ("b", "HUDAnimationSettingsSO — value is danger (Δ0.008)"),
@@ -124,9 +126,9 @@ VERDICTS = {
     "Screens/LeaderboardsMenu.cs:221": ("textLight", "§10.10 row text"),
     "Screens/LeaderboardsMenu.cs:222": ("textLight", "§10.10 row text"),
     "ThumbPerimeter.cs:23": ("c", "multiply-identity white"),
-    "ToastNotification/ToastNotificationManager.cs:152": ("a", "toast surface — 1A1A26 is neutral; both §11 surfaces are blue-tinted"),
-    "ToastNotification/ToastNotificationManager.cs:163": ("textLight", ""),
-    "TournamentRoundCard.cs:67": ("b", "SO_ColorSet — domain fallback"),
+    "ToastNotification/ToastNotificationManager.cs:166": ("a", "toast surface — 1A1A26 is neutral; both §11 surfaces are blue-tinted"),
+    "ToastNotification/ToastNotificationManager.cs:177": ("textLight", ""),
+    "MaelstromRoundCard.cs:67": ("b", "SO_ColorSet — domain fallback"),
     "View/ControllerButtonIconReferences.cs:51": ("c", "multiply-identity white (fade reset)"),
     "View/DolphinVesselHUDView.cs:122": ("c", "multiply-identity white (rest)"),
     "View/DolphinVesselHUDView.cs:139": ("c", "multiply-identity white (rest)"),
@@ -175,12 +177,6 @@ VERDICTS = {
     "Views/ArcadeLoadoutView.cs:89": ("c", "reset-to-identity; SEE FLAG F7"),
     "Views/ArcadeLoadoutView.cs:90": ("c", "reset-to-identity; SEE FLAG F7"),
     "Views/ArcadeLoadoutView.cs:91": ("c", "reset-to-identity; SEE FLAG F7"),
-    "Views/DailyChallengeLeaderboardView.cs:100": ("textLight", "§10.10 row text"),
-    "Views/DailyChallengeLeaderboardView.cs:101": ("textLight", "§10.10 row text"),
-    "Views/DailyChallengeLeaderboardView.cs:93": ("a", "local-player row highlight"),
-    "Views/DailyChallengeLeaderboardView.cs:94": ("a", "local-player row highlight"),
-    "Views/DailyChallengeLeaderboardView.cs:95": ("a", "local-player row highlight"),
-    "Views/DailyChallengeLeaderboardView.cs:99": ("textLight", "§10.10 row text"),
     "Views/HangarCaptainsView.cs:113": ("surfaceBlack", "Color.black → 00010A"),
     "Views/HangarCaptainsView.cs:99": ("c", "multiply-identity white"),
     "Views/HangarVesselDetailView.cs:197": ("textLight", "button label"),

@@ -1,6 +1,7 @@
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.UI
 {
@@ -128,8 +129,8 @@ namespace CosmicShore.UI
             _colorFlashTween?.Kill();
 
             var flashColor = isGain
-                ? (_settings ? _settings.scoreGainColor : new Color(0.2f, 1f, 0.4f, 1f))
-                : (_settings ? _settings.scoreLossColor : new Color(1f, 0.3f, 0.2f, 1f));
+                ? (_settings ? _settings.ScoreGainColor : ColorTrace.Retrace(ColorTrace.Ui, new Color(0.2f, 1f, 0.4f, 1f)))
+                : (_settings ? _settings.ScoreLossColor : ColorTrace.Retrace(ColorTrace.Ui, new Color(1f, 0.3f, 0.2f, 1f)));
             float duration = _settings ? _settings.scoreColorFlashDuration : 0.4f;
             bool unscaled = _settings == null || _settings.useUnscaledTime;
 

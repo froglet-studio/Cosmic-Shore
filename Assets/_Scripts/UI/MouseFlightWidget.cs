@@ -33,6 +33,7 @@ namespace CosmicShore.UI
     /// call. It draws nothing at all when the player has turned joystick visuals off in settings,
     /// since that is exactly the setting this is.</para>
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     [AddComponentMenu("")]   // self-installed; never authored onto a prefab
     public sealed class MouseFlightWidget : MaskableGraphic
     {
@@ -142,7 +143,7 @@ namespace CosmicShore.UI
                 {
                     hideFlags = HideFlags.HideInHierarchy
                 };
-                DontDestroyOnLoad(root);
+                Object.DontDestroyOnLoad(root);   // qualified: CosmicShore.Utility also has a DontDestroyOnLoad component
 
                 var canvas = root.GetComponent<Canvas>();
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -160,8 +161,7 @@ namespace CosmicShore.UI
                 };
                 child.transform.SetParent(root.transform, false);
 
-                var widget = child.GetComponent<MouseFlightWidget>();
-                if (widget == null)
+                if (!child.TryGetComponent(out MouseFlightWidget widget))
                 {
                     s_installFailed = true;
                     Destroy(root);

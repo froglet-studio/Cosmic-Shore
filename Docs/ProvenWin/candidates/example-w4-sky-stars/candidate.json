@@ -1,0 +1,47 @@
+{
+ "id": "example-w4-sky-stars",
+ "title": "HyperSea sky: reject empty star cells before the per-cell maths (W4, re-run as the worked example)",
+ "owner": "Shombith",
+ "lane": "world-look",
+ "kind": "shader",
+ "earlyOut": false,
+ "runtimeWriters": "No C# writes any sky float; the deciding values (_StarBaseProb 0, _StarGalacticBoost 0.089, _StarConcentration 2) are the .mat's. Checked: grep of every property name across Assets/_Scripts (only _SkyCellOverlaySuppress and colour repaints are written).",
+ "exposure": "RenderSettings.skybox of 59 build scenes; full cost on Desktop and MobileHigh.",
+ "spec": {
+  "material": "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat",
+  "mesh": "builtin:Sphere.fbx",
+  "swapFile": "Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader",
+  "cameraDistance": 0.0,
+  "fov": 60,
+  "width": 2560,
+  "height": 1440,
+  "timepoints": 48,
+  "drawsPerBatch": 16,
+  "chain": 8,
+  "samples": 200,
+  "warmupSeconds": 3,
+  "clockSpan": 60,
+  "driveGlobalTime": true,
+  "floats": [],
+  "colors": [],
+  "randomPerMoment": []
+ },
+ "variants": {
+  "A": "variants/A.shader",
+  "B": "variants/B.shader",
+  "C": "variants/C.shader"
+ },
+ "states": {},
+ "machine": "an RTX 3080 (Gbox)",
+ "signoff": {
+  "heading": "Sky stars sign-off",
+  "subject": "the HyperSea sky shader (the backdrop of every menu and match)",
+  "whatChanged": "Each star cell checks one random number against the highest chance any cell could have before doing the rest of its maths, so the empty cells (about 97 in 100) skip that work. Stars that do appear are drawn exactly as before.",
+  "changeName": "star pre-test",
+  "frameNote": "Material HyperSeaSkybox on a sphere around the eye; the stars are small, so look closely in the 1:1 view.",
+  "notMeasured": [
+   "A phone GPU.",
+   "Its share of a real frame: the sky is drawn every frame in menus and matches."
+  ]
+ }
+}

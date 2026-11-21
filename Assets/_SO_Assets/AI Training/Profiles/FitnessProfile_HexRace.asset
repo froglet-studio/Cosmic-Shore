@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d62d971cd1d4a8aa1da345d70d9c3b8, type: 3}
+  m_Name: FitnessProfile_HexRace
+  m_EditorClassIdentifier: 
+  Description: "HexRace: crystals collected by this pilot, golf score negated (lower finish time is better), elapsed-time penalty. No team bonus."
+  Entries:
+  - Kind: 1
+    Weight: 100
+    Label: Crystals
+  - Kind: 13
+    Weight: 0.1
+    Label: GolfScore
+  - Kind: 10
+    Weight: 1
+    Label: TimePenalty

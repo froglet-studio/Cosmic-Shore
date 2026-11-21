@@ -30,14 +30,14 @@ namespace CosmicShore.Tests
             _catalog = ScriptableObject.CreateInstance<WeeklyChallengeCatalogSO>();
             _catalog.Pool = new List<WeeklyChallengeCatalogSO.Entry>
             {
-                new() { Mode = GameModes.MultiplayerCrystalCapture, Metric = ScoringMetric.Crystals,
-                        Target = 8, TimeLimitSeconds = 60f, Intensity = 1,
+                new() { Mode = GameModes.Scurry, Metric = ScoringMetric.Crystals,
+                        Target = 8, Intensity = 1,
                         Verb = "Collect", Noun = "crystals" },
-                new() { Mode = GameModes.MultiplayerJoust, Metric = ScoringMetric.Jousts,
-                        Target = 1, TimeLimitSeconds = 60f, Intensity = 1,
+                new() { Mode = GameModes.Joust, Metric = ScoringMetric.Jousts,
+                        Target = 1, Intensity = 1,
                         Verb = "Land", Noun = "joust" },
                 new() { Mode = GameModes.Rampage, Metric = ScoringMetric.PrismsDestroyed,
-                        Target = 300, TimeLimitSeconds = 90f, Intensity = 1,
+                        Target = 300, Intensity = 1,
                         Verb = "Destroy", Noun = "prisms" },
             };
         }
@@ -119,6 +119,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ForDate_ModeTargetEntry_IsValidWithoutAnAuthoredNumber()
+        {
+            _catalog.Pool = new List<WeeklyChallengeCatalogSO.Entry>
+            {
+                new() { Mode = GameModes.SkimRace, Target = 0, UseModeTarget = true,
+                        Verb = "Finish", Noun = "the race" },
+            };
+
+            var challenge = _catalog.ForDate(DateTime.UtcNow);
+            Assert.IsTrue(challenge.IsValid);
+            Assert.IsTrue(challenge.UsesModeTarget);
+            Assert.AreEqual(0, challenge.TargetValue, "The number is the live match's, not the catalog's.");
+            Assert.AreEqual("Finish the race", challenge.ObjectiveText,
+                "A mode-target objective carries no number - there is none to print before the scene exists.");
+        }
+
+        [Test]
         public void ForDate_ProgressionFilter_OnlyAppliesWhenOptedIn()
         {
             _catalog.respectModeProgression = false;
@@ -147,8 +164,11 @@ namespace CosmicShore.Tests
         [Test]
         public void NextRolloverUtc_IsTheFollowingMonday()
         {
+            // 2026-08-29 is a Saturday, so the rollover is Monday the 31st - NOT the next UTC
+            // midnight (the 30th, a Sunday), which is what this test expected while the cycle was
+            // daily.
             var noon = new DateTime(2026, 8, 29, 12, 0, 0, DateTimeKind.Utc);
-            Assert.AreEqual(new DateTime(2026, 8, 30, 0, 0, 0, DateTimeKind.Utc),
+            Assert.AreEqual(new DateTime(2026, 8, 31, 0, 0, 0, DateTimeKind.Utc),
                             WeeklyChallengeCatalogSO.NextRolloverUtc(noon));
         }
 
@@ -157,13 +177,14 @@ namespace CosmicShore.Tests
         {
             var entry = new WeeklyChallengeCatalogSO.Entry
             {
-                Target = 30, TimeLimitSeconds = 60f, Verb = "Collect", Noun = "crystals"
+                Target = 30, Verb = "Collect", Noun = "crystals"
             };
-            Assert.AreEqual("Collect 30 crystals in 1:00", WeeklyChallengeCatalogSO.BuildObjectiveText(entry));
+            Assert.AreEqual("Collect 30 crystals", WeeklyChallengeCatalogSO.BuildObjectiveText(entry));
 
-            entry.TimeLimitSeconds = 0f;
-            Assert.AreEqual("Collect 30 crystals", WeeklyChallengeCatalogSO.BuildObjectiveText(entry),
-                "A challenge with no time budget must not claim one.");
+            // No duration, ever. A weekly run is an ordinary match of its mode played for a
+            // personal objective on top, so an objective line that said "in 1:00" was describing a
+            // rule the run does not have.
+            StringAssert.DoesNotContain(" in ", WeeklyChallengeCatalogSO.BuildObjectiveText(entry));
         }
 
         [Test]
@@ -322,27 +343,51 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TestMode_TimeScaleAppliesToTheObjectiveCopyToo()
+        public void TheChallengeNeverAltersTheMode()
         {
-            _catalog.test.enabled = true;
-            _catalog.test.forcedPoolIndex = 0; // 60s crystal capture entry
-            _catalog.test.timeLimitScale = 0.25f;
-
+            // The whole reason the time limit is gone: it ended the turn. A run whose clock
+            // expired had its attempt already spent (spent at LAUNCH) and NOTHING submitted, so a
+            // player could lose their one weekly attempt to a rule the mode itself does not have.
             var challenge = _catalog.ForDate(DateTime.UtcNow);
-            Assert.AreEqual(15f, challenge.TimeLimitSeconds, 0.01f);
-            StringAssert.Contains("0:15", challenge.ObjectiveText,
-                "The card must describe the clock the run actually uses, not the authored one.");
+
+            Assert.IsTrue(challenge.IsValid);
+            StringAssert.DoesNotContain(" in ", challenge.ObjectiveText,
+                "The objective must not describe a clock - the run uses the mode's own end conditions.");
         }
 
         [Test]
         public void TestMode_IgnoreAttemptLimitMakesAttemptsUnlimited()
         {
-            _catalog.attemptsPerPeriod = 1;
-            Assert.AreEqual(1, _catalog.EffectiveAttemptsPerPeriod);
+            _catalog.attemptsPerDay = 1;
+            Assert.AreEqual(1, _catalog.EffectiveAttemptsPerDay);
 
             _catalog.test.enabled = true;
             _catalog.test.ignoreAttemptLimit = true;
-            Assert.AreEqual(0, _catalog.EffectiveAttemptsPerPeriod, "0 means unlimited.");
+            Assert.AreEqual(0, _catalog.EffectiveAttemptsPerDay, "0 means unlimited.");
+        }
+
+        [Test]
+        public void DayKey_IsTheUtcDate_AndTestDaysAreASeventhOfTheTestPeriod()
+        {
+            var utc = new DateTime(2026, 9, 3, 23, 59, 0, DateTimeKind.Utc);
+            Assert.AreEqual("2026-09-03", _catalog.DayKeyFor(utc));
+            Assert.AreEqual(new DateTime(2026, 9, 4, 0, 0, 0, DateTimeKind.Utc), _catalog.DayEndUtc(utc));
+
+            // A minute later it is a new day - the attempt refreshes at UTC midnight for everyone.
+            Assert.AreEqual("2026-09-04", _catalog.DayKeyFor(utc.AddMinutes(1)));
+
+            // A 70-minute test week has 10-minute test days, and they carry the period so a day
+            // from one shrunken week can never be mistaken for the same day of the next.
+            _catalog.test.enabled = true;
+            _catalog.test.periodLengthMinutes = 70f;
+            // Test days are counted from the Unix epoch, so UTC midnight starts one; 23:59 is the
+            // LAST minute of its test day, and nine minutes past it is already the next one.
+            var dayStart = utc.AddMinutes(1);
+            string a = _catalog.DayKeyFor(dayStart);
+            string b = _catalog.DayKeyFor(dayStart.AddMinutes(10));
+            Assert.AreNotEqual(a, b);
+            StringAssert.StartsWith("T", a);
+            Assert.AreEqual(a, _catalog.DayKeyFor(dayStart.AddMinutes(9)));
         }
 
         [Test]
@@ -352,7 +397,7 @@ namespace CosmicShore.Tests
             _catalog.Pool[1].Enabled = true;
 
             for (int i = 0; i < 10; i++)
-                Assert.AreEqual(GameModes.MultiplayerJoust,
+                Assert.AreEqual(GameModes.Joust,
                     _catalog.ForDate(new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(i)).GameMode);
         }
 
@@ -374,6 +419,8 @@ namespace CosmicShore.Tests
                 ChallengeWeek = "2026-08-28",
                 BestValue = 42,
                 Completed = true,
+                BestTimeMs = 47300,
+                AttemptDay = "2026-08-28",
                 Attempts = 3,
             };
 
@@ -381,6 +428,7 @@ namespace CosmicShore.Tests
 
             Assert.AreEqual(0, data.BestValue);
             Assert.IsFalse(data.Completed);
+            Assert.AreEqual(0, data.BestTimeMs);
             Assert.AreEqual(0, data.Attempts,
                 "Attempts do not bank - one a day is a rhythm, not a currency.");
             Assert.AreEqual(300, data.TargetValue);
@@ -388,11 +436,41 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void CloudData_Attempts_AreFiledUnderADay_AndReadAsZeroOnAnyOther()
+        {
+            var data = new WeeklyChallengeCloudData();
+            data.ResetForNewDay("2026-08-31", "SkimRace", 1, "Crystals", 0);
+
+            Assert.AreEqual(0, data.AttemptsOn("2026-09-01"));
+
+            data.SpendAttempt("2026-09-01");
+            Assert.AreEqual(1, data.AttemptsOn("2026-09-01"), "Spent today.");
+            Assert.AreEqual(0, data.AttemptsOn("2026-09-02"),
+                "A new UTC day reads as a fresh attempt - a key comparison, never a timer.");
+
+            data.SpendAttempt("2026-09-02");
+            Assert.AreEqual(1, data.AttemptsOn("2026-09-02"), "The counter rolled over, it did not bank.");
+            Assert.AreEqual(0, data.AttemptsOn("2026-09-01"), "Yesterday's count is gone with yesterday.");
+        }
+
+        [Test]
+        public void CloudData_RecordCompletionTime_KeepsOnlyTheWeeksFastest()
+        {
+            var data = new WeeklyChallengeCloudData();
+            Assert.IsTrue(data.RecordCompletionTime(52000), "The first completion always qualifies.");
+            Assert.IsFalse(data.RecordCompletionTime(60000), "A slower run has nothing to add.");
+            Assert.AreEqual(52000, data.BestTimeMs);
+            Assert.IsTrue(data.RecordCompletionTime(47300), "A faster one replaces it.");
+            Assert.AreEqual(47300, data.BestTimeMs);
+            Assert.IsFalse(data.RecordCompletionTime(0), "Zero is 'never completed', not a time.");
+        }
+
+        [Test]
         public void CloudData_RecordResult_KeepsTheBestAndLatchesCompletion()
         {
             var now = new DateTime(2026, 8, 29, 10, 0, 0, DateTimeKind.Utc);
             var data = new WeeklyChallengeCloudData();
-            data.ResetForNewDay("2026-08-29", "MultiplayerCrystalCapture", 1, "Crystals", 8);
+            data.ResetForNewDay("2026-08-29", "Scurry", 1, "Crystals", 8);
 
             data.RecordResult(5, 8, now);
             Assert.AreEqual(5, data.BestValue);
@@ -434,7 +512,8 @@ namespace CosmicShore.Tests
                     $"Pool entry names an undefined GameModes value: {(int)entry.Mode}");
                 Assert.IsTrue(Enum.IsDefined(typeof(ScoringMetric), entry.Metric),
                     $"Pool entry for {entry.Mode} names an undefined ScoringMetric.");
-                Assert.Greater(entry.Target, 0, $"Pool entry for {entry.Mode} has no target.");
+                Assert.IsTrue(WeeklyChallengeCatalogSO.HasTarget(entry),
+                    $"Pool entry for {entry.Mode} has no target and does not use the mode's own.");
                 Assert.GreaterOrEqual(entry.Intensity, 1);
                 Assert.LessOrEqual(entry.Intensity, 4);
 
@@ -442,8 +521,8 @@ namespace CosmicShore.Tests
                     $"{entry.Mode}: the opening domain is not one a player flies.");
             }
 
-            Assert.AreEqual(1, shipped.attemptsPerPeriod,
-                "The weekly challenge is played ONCE - see Docs/WEEKLY_CHALLENGE.md §1.");
+            Assert.AreEqual(1, shipped.attemptsPerDay,
+                "One run a DAY at the week's challenge - see Docs/WEEKLY_CHALLENGE.md §1.");
             Assert.IsFalse(shipped.test != null && shipped.test.enabled,
                 "Test mode must never ship enabled.");
         }
@@ -464,6 +543,8 @@ namespace CosmicShore.Tests
             foreach (var entry in shipped.Pool)
             {
                 if (entry == null || !entry.Enabled) continue;
+                // The mode's own target cannot sit above itself.
+                if (entry.UseModeTarget) continue;
                 if (!end.TryGetAuthoredTurnTarget(entry.Mode, out int normal)) continue;
 
                 Assert.LessOrEqual(entry.Target, normal,
@@ -480,13 +561,17 @@ namespace CosmicShore.Tests
             var shipped = Resources.Load<WeeklyChallengeCatalogSO>(WeeklyChallengeCatalogSO.ResourcePath);
             if (shipped == null) Assert.Ignore("No shipped catalog.");
 
-            var lists = Resources.FindObjectsOfTypeAll<SO_GameList>();
-            if (lists == null || lists.Length == 0) Assert.Ignore("No SO_GameList loaded in this test session.");
+            // Every list ASSET, loaded here: FindObjectsOfTypeAll only sees lists something else happened
+            // to load, so the verdict used to depend on which tests ran first (skipped when none had,
+            // red when another test had loaded only lists without these cards).
+            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:" + nameof(SO_GameList));
+            Assert.IsNotEmpty(guids, "No SO_GameList asset in the project.");
 
             var modes = new HashSet<GameModes>();
-            foreach (var list in lists)
+            foreach (string guid in guids)
             {
-                if (list.Games == null) continue;
+                var list = UnityEditor.AssetDatabase.LoadAssetAtPath<SO_GameList>(UnityEditor.AssetDatabase.GUIDToAssetPath(guid));
+                if (list == null || list.Games == null) continue;
                 foreach (var game in list.Games)
                     if (game) modes.Add(game.Mode);
             }
@@ -524,6 +609,55 @@ namespace CosmicShore.Tests
             Assert.AreEqual("1:00.00", WeeklyChallengeRanking.FormatSeconds(59.999d));
 
             Assert.AreEqual("--:--.--", WeeklyChallengeRanking.FormatSeconds(double.PositiveInfinity));
+        }
+
+        // ── The formatter is as much a boundary as the boundary ────────────────
+
+        /// <summary>
+        /// A period key must name the same week on every device on Earth.
+        ///
+        /// WHY: the UTC-Monday rule fixes WHICH instant a week starts at, and then
+        /// <c>ToString("yyyy-MM-dd")</c> threw that away again - a bare format string renders
+        /// through CurrentCulture, whose CALENDAR is not always Gregorian, and Unity takes
+        /// CurrentCulture from the device locale. Measured before the fix: the same instant keyed
+        /// as 1448-03-25 on ar-SA, 2569-09-07 on th-TH and 1405-06-16 on fa-IR. Those players drew
+        /// a different challenge, wrote progress under a key nothing else reads, and never rolled
+        /// over in step with anyone.
+        /// </summary>
+        [Test]
+        public void PeriodKeysAreTheSameInEveryLocale()
+        {
+            var utc = new DateTime(2026, 9, 9, 12, 0, 0, DateTimeKind.Utc);   // a Wednesday
+            var previous = System.Threading.Thread.CurrentThread.CurrentCulture;
+            int checkedCultures = 0;
+
+            try
+            {
+                foreach (var name in new[] { "ar-SA", "th-TH", "fa-IR", "he-IL", "ja-JP", "en-US" })
+                {
+                    System.Globalization.CultureInfo culture;
+                    try { culture = new System.Globalization.CultureInfo(name); }
+                    catch (System.Globalization.CultureNotFoundException) { continue; }
+
+                    System.Threading.Thread.CurrentThread.CurrentCulture = culture;
+                    checkedCultures++;
+
+                    Assert.AreEqual("2026-09-07", WeeklyChallengeCatalogSO.WeekKeyFor(utc),
+                        $"week key drifted under {name} " +
+                        $"({culture.Calendar.GetType().Name})");
+                    Assert.AreEqual("2026-09-09", _catalog.DayKeyFor(utc),
+                        $"day key drifted under {name} " +
+                        $"({culture.Calendar.GetType().Name})");
+                }
+            }
+            finally
+            {
+                System.Threading.Thread.CurrentThread.CurrentCulture = previous;
+            }
+
+            // A runtime with no ICU data would silently check nothing and pass.
+            Assert.GreaterOrEqual(checkedCultures, 2,
+                "no alternate locales were available, so this asserted nothing");
         }
 
         [Test]

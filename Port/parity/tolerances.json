@@ -1,0 +1,12 @@
+{
+  "_source": "docs/ARCHITECTURE_REVIEW_2026-10-06.md C9. Gate G1 calibrates these by planting three known differences (ParityDiffTests).",
+  "eventTimeSeconds": 0.04,
+  "positionRelative": 1e-4,
+  "positionFloorMetres": 1.0,
+  "rotationDegrees": 0.1,
+  "transformWindowSeconds": 10,
+  "ssimGameplay": 0.97,
+  "ssimUi": 0.98,
+  "uiRectPixels": 1.0,
+  "uiFontSize": 0.5
+}

@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -30,6 +31,45 @@ namespace CosmicShore.UI
 
         [Tooltip("Bright inner core, sits on top.")]
         [SerializeField] Color innerColor = new Color(0.86f, 1.00f, 0.62f, 1.00f);
+
+        Color? _accent;
+
+        /// <summary>
+        /// Wear a domain's colour instead of the authored lime (the HUD's arrow points at the LOCAL
+        /// pilot's objective, so it is theirs - Docs/MENU_REDESIGN_B.md section 22.6). The three
+        /// tones keep their roles: the halo is the accent dimmed and faint, the stroke is the
+        /// accent, the core is the accent lifted halfway to Light. One rebuild per change, never
+        /// per frame - the pulse stays a canvasRenderer alpha.
+        /// </summary>
+        public void SetAccent(Color accent)
+        {
+            accent.a = 1f;
+            if (_accent.HasValue && _accent.Value == accent) return;
+            if (!_authored.HasValue) _authored = (glowColor, outerColor, innerColor);
+            _accent = accent;
+            var glow = accent * 0.55f;
+            glow.a = glowColor.a;
+            var outer = accent;
+            outer.a = outerColor.a;
+            var inner = Color.Lerp(accent, UITheme.Resolve(null, UIColorToken.TextLight), 0.6f);
+            inner.a = innerColor.a;
+            glowColor = glow;
+            outerColor = outer;
+            innerColor = inner;
+            SetVerticesDirty();
+        }
+
+        (Color glow, Color outer, Color inner)? _authored;
+
+        /// <summary>Back to the colours the arrow had before its first <see cref="SetAccent"/> (a temporary accent,
+        /// such as the Ark's damage alarm, ending).</summary>
+        public void ClearAccent()
+        {
+            if (!_accent.HasValue || !_authored.HasValue) return;
+            (glowColor, outerColor, innerColor) = _authored.Value;
+            _accent = null;
+            SetVerticesDirty();
+        }
 
         [Header("Shape")]
         [Tooltip("How far the shoulder sits ahead of the rect centre (fraction of half-width).")]
@@ -72,6 +112,11 @@ namespace CosmicShore.UI
         float _currentScale = 1f;
         float _currentRendererAlpha = 1f;
 
+        // The mesh is rebuilt when the player wears another colour set (the authored lime is the set's, OnPopulateMesh):
+        // a version check in Update, not an OnEnable override, whose access differs between the shipped uGUI
+        // (protected) and the compile gate's publicized reference (public).
+        int _colorVersion;
+
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
@@ -82,13 +127,20 @@ namespace CosmicShore.UI
             float cx = r.center.x;
             float cy = r.center.y;
 
+            // The authored lime as the worn colour set paints it (ColorTrace); an accent is a domain colour, already the
+            // set's own.
+            bool authored = !_accent.HasValue;
+            Color glow = authored ? ColorTrace.Retrace(ColorTrace.Ui, glowColor) : glowColor;
+            Color outer = authored ? ColorTrace.Retrace(ColorTrace.Ui, outerColor) : outerColor;
+            Color inner = authored ? ColorTrace.Retrace(ColorTrace.Ui, innerColor) : innerColor;
+
             // Back-to-front: glow halo, outer stroke, bright core.
             // Mesh is static - pulse animation modulates canvasRenderer alpha
             // and rectTransform scale at runtime, neither of which rebuilds
             // this mesh.
-            AddChevron(vh, cx, cy, halfW * glowScale, halfH * glowScale, glowColor);
-            AddChevron(vh, cx, cy, halfW, halfH, outerColor);
-            AddChevron(vh, cx, cy, halfW * innerScale, halfH * innerScale, innerColor);
+            AddChevron(vh, cx, cy, halfW * glowScale, halfH * glowScale, glow);
+            AddChevron(vh, cx, cy, halfW, halfH, outer);
+            AddChevron(vh, cx, cy, halfW * innerScale, halfH * innerScale, inner);
         }
 
         /// <summary>
@@ -123,6 +175,11 @@ namespace CosmicShore.UI
 
         void Update()
         {
+            if (_colorVersion != ColorTrace.Version)
+            {
+                _colorVersion = ColorTrace.Version;
+                SetVerticesDirty();
+            }
             if (!pulse)
             {
                 if (_currentScale != 1f)

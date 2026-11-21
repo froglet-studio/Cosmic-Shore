@@ -34,11 +34,15 @@ namespace CosmicShore.UI
         [Tooltip("Three-wedge per-domain volume indicator on the pause button face. " +
                  "Optional - leave null if the button has no indicator wired yet.")]
         [SerializeField] DomainVolumeIndicator domainVolumeIndicator;
-        [Tooltip("Toggles freestyle <-> menu state. Pressing the volume/pause button exits freestyle.")]
+        [Tooltip("What the freestyle button does, drawn in the middle of its volume hex: leave " +
+                 "freestyle (chrome_close). Empty = no glyph (Docs/MENU_REDESIGN_B.md section 22.5).")]
+        [SerializeField] Sprite exitGlyph;
+        [Tooltip("Toggles freestyle <-> menu state. Pressing the volume/pause button exits freestyle. Empty in the voyage " +
+                 "scene, where the button (and Escape / the pad's Select) opens the pause menu instead.")]
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 
         [Header("SOAP Events")]
-        [SerializeField] ScriptableEventShipHUDData onShipHUDInitialized;
+        [SerializeField] ScriptableEventVesselHUDData onShipHUDInitialized;
 
         [Header("Pause Menu")]
         [SerializeField] GameObject pauseMenuPrefab;
@@ -48,6 +52,11 @@ namespace CosmicShore.UI
         [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
 
         bool _isInFreestyle;
+        PauseMenu _pauseMenu;
+
+        /// <summary>In the voyage scene the pause window draws above the voyage HUD (20000-20001), its toasts and its end
+        /// board (25000), and under the load veil (30000).</summary>
+        const int VoyagePauseSortingOrder = 26000;
 
         void Awake()
         {
@@ -71,6 +80,7 @@ namespace CosmicShore.UI
                 domainVolumeIndicator = volumePauseButton.gameObject.AddComponent<DomainVolumeIndicator>();
 
             domainVolumeIndicator.SetGameData(gameData);
+            if (exitGlyph) domainVolumeIndicator.SetCentreGlyph(exitGlyph, 40f);
         }
 
         void OnEnable()
@@ -170,7 +180,7 @@ namespace CosmicShore.UI
         // UI
         // ---------------------------------------------------------
 
-        // While flying freestyle, ESCAPE or the pad's START returns you to the appshell - the
+        // While flying freestyle, ESCAPE or the pad's SELECT returns you to the appshell - the
         // counterpart to the on-screen Volume/Pause button, and the same one gesture the game
         // scenes use (OverviewGesture, asked by MiniGameHUD too, so the two cannot drift).
         //
@@ -183,14 +193,35 @@ namespace CosmicShore.UI
         // itself guards against re-entrancy while a transition is mid-flight.
         void Update()
         {
+            if (!crystalClickHandler)
+            {
+                // The voyage scene: Escape / Select opens the pause menu (Shombith, 2026-11-17), the same gesture every
+                // game scene uses, and so does the pad's Start, the pause button's own key on every other game scene's
+                // GameCanvas (ControllerButtonPress, Start; Shombith, 2026-11-21: "it should be Start as everywhere
+                // else"). Pressed again it resumes (PauseMenu.OnClickPauseGameButton toggles). Not while the end board
+                // is up (its B / Escape is Finish) or the intro plays.
+                if (VoyageScoreboard.Current == null && !VoyageIntro.IsPlaying &&
+                    (OverviewGesture.RequestedThisFrame() || StartPressed()))
+                    Exit();
+                return;
+            }
             if (!_isInFreestyle) return;
             if (OverviewGesture.RequestedThisFrame())
-                crystalClickHandler.ToggleTransition();
+                Exit();
         }
 
-        void OnVolumePauseClicked()
+        static bool StartPressed() =>
+            UnityEngine.InputSystem.Gamepad.current is { } pad && pad.startButton.wasPressedThisFrame;
+
+        void OnVolumePauseClicked() => Exit();
+
+        /// <summary>Leave the flight: freestyle back to the menu, or (in the voyage scene, which has no freestyle toggle)
+        /// open the pause menu, whose Leave takes the pilot out of the voyage. With no pause menu the voyage is left.</summary>
+        void Exit()
         {
-            crystalClickHandler.ToggleTransition();
+            if (crystalClickHandler) crystalClickHandler.ToggleTransition();
+            else if (_pauseMenu) _pauseMenu.OnClickPauseGameButton();
+            else VoyageScene.Current?.Leave();
         }
 
         public void Show()
@@ -209,7 +240,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Vessel HUD reparenting - identical to MiniGameHUD.OnShipHUDInitialized().
-        /// When a vessel spawns, ShipHUD.Start() raises this SOAP event with the
+        /// When a vessel spawns, VesselHUD.Start() raises this SOAP event with the
         /// vessel's MiniGameHUD children. We reparent them under our parent
         /// (Game UI canvas) so they render as siblings.
         ///
@@ -241,7 +272,27 @@ namespace CosmicShore.UI
         void InstantiatePauseMenu()
         {
             if (!pauseMenuPrefab) return;
-            var go = Instantiate(pauseMenuPrefab, transform.parent);
+            // The voyage scene's "Game UI" is a zero-size rect (Voyage.unity: stretched with a -1920 x -1080 size delta),
+            // so a stretched pause panel made under it had no size and never showed (Shombith, 2026-11-17: "pressing
+            // select/back doesn't open the screen"). There the panel goes on the root canvas, on its own sorting canvas
+            // above the voyage HUD's overlays (20000-25000), filling the screen.
+            bool voyage = !crystalClickHandler;
+            var rootCanvas = voyage ? GetComponentInParent<Canvas>()?.rootCanvas : null;
+            var parent = rootCanvas ? rootCanvas.transform : transform.parent;
+            var go = Instantiate(pauseMenuPrefab, parent);
+            if (voyage && go.transform is RectTransform rt)
+            {
+                rt.anchorMin = Vector2.zero;
+                rt.anchorMax = Vector2.one;
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero;
+                rt.sizeDelta = Vector2.zero;
+                rt.localScale = Vector3.one;
+                var sorting = go.AddComponent<Canvas>();
+                sorting.overrideSorting = true;
+                sorting.sortingOrder = VoyagePauseSortingOrder;
+                go.AddComponent<GraphicRaycaster>();
+            }
             GameObjectInjector.InjectRecursive(go, _container);
             go.SetActive(false);
 
@@ -251,6 +302,7 @@ namespace CosmicShore.UI
             var pauseMenu = go.GetComponentInChildren<PauseMenu>(true);
             if (pauseMenu != null)
                 pauseMenu.Prewarm();
+            _pauseMenu = pauseMenu;
         }
     }
 }

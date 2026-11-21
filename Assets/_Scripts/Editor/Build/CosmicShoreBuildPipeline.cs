@@ -10,7 +10,8 @@ using CosmicShore.Editor.Froglet;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// Scripted Windows x64 build entry points. This is the SOURCE OF TRUTH for what a shipping
+    /// Scripted Windows x64 and Android build entry points (Android in
+    /// <c>CosmicShoreBuildPipeline.Android.cs</c>). This is the SOURCE OF TRUTH for what a shipping
     /// build is: the in-editor Build Profile is a convenience wrapper, but CI (UGS Build Automation)
     /// and the release checklist both drive the build through here so the same commit always
     /// produces the same player.
@@ -19,13 +20,18 @@ namespace CosmicShore.Editor
     /// <code>
     /// Unity -quit -batchmode -nographics -projectPath &lt;proj&gt; \
     ///       -executeMethod CosmicShore.Editor.CosmicShoreBuildPipeline.BuildWindowsRelease \
-    ///       -buildOutput Builds/Windows64 -buildVersion 0.2.0 -logFile -
+    ///       -buildOutput Builds/Windows64 -buildVersion 0.2.0 [-buildNumber 42] [-buildCommit &lt;sha&gt;] \
+    ///       [-releaseChannel playtest] [-ugsEnvironment production] -logFile -
     /// </code>
+    /// The version, build number, commit, channel and UGS environment go into the player's build
+    /// stamp (<see cref="BuildStampProcessor"/>, Docs/LAUNCH/BUILD_STAMP.md), which also puts
+    /// <c>bundleVersion</c> back after the build. <see cref="WindowsDefine"/> is passed for this
+    /// build only and never written into <c>ProjectSettings.asset</c>.
     ///
     /// Exits non-zero on failure so the build server actually fails the job instead of publishing
     /// a half-written depot.
     /// </summary>
-    public static class CosmicShoreBuildPipeline
+    public static partial class CosmicShoreBuildPipeline
     {
         /// <summary>Executable name inside the build folder. Also the SteamPipe launch target.</summary>
         const string ExecutableName = "CosmicShore.exe";
@@ -36,6 +42,8 @@ namespace CosmicShore.Editor
         /// <summary>
         /// Define added to Windows player builds, mirroring the LINUX_BUILD define on the Linux
         /// profile. Use it for desktop-only code paths that must not compile into mobile players.
+        /// Passed through <see cref="BuildPlayerOptions.extraScriptingDefines"/>, so it applies to
+        /// this build only (it used to be written into the Standalone defines and left there).
         /// </summary>
         const string WindowsDefine = "WINDOWS_BUILD";
 
@@ -43,17 +51,17 @@ namespace CosmicShore.Editor
         //  Entry points
         // ──────────────────────────────────────────────
 
-        [MenuItem("FrogletTools/Build/Windows x64 (Release)", false, 100)]
+        [MenuItem("FrogletTools/Build/Windows x64 (Release)", false, 120)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 5,
             Description = "Release player build - the artifact that ships.")]
         public static void BuildWindowsRelease() => Run(development: false);
 
-        [MenuItem("FrogletTools/Build/Windows x64 (Development)", false, 101)]
+        [MenuItem("FrogletTools/Build/Windows x64 (Development)", false, 121)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 4,
             Description = "Development player build with the profiler attached.")]
         public static void BuildWindowsDevelopment() => Run(development: true);
 
-        [MenuItem("FrogletTools/Build/Reveal Build Folder", false, 120)]
+        [MenuItem("FrogletTools/Build/Reveal Build Folder", false, 122)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 2,
             Description = "Open the last build output in the file browser.")]
         public static void RevealBuildFolder()
@@ -74,24 +82,10 @@ namespace CosmicShore.Editor
             try
             {
                 string outputFolder = GetArg("-buildOutput") ?? DefaultOutputFolder;
-                string version = GetArg("-buildVersion");
                 bool useMono = HasFlag("-useMono");
 
-                if (!string.IsNullOrWhiteSpace(version))
-                {
-                    PlayerSettings.bundleVersion = version;
-                    Debug.Log($"[Build] Version stamped: {version}");
-                }
-
-                string[] scenes = EnabledScenes();
-                if (scenes.Length == 0)
-                    throw new InvalidOperationException(
-                        "No enabled scenes in Build Settings. A player with no scenes cannot boot.");
-
-                if (!scenes[0].EndsWith("Bootstrap.unity", StringComparison.OrdinalIgnoreCase))
-                    Debug.LogWarning(
-                        $"[Build] First scene is '{scenes[0]}', not Bootstrap.unity. " +
-                        "Bootstrap MUST be build index 0 or DI registration and the splash flow never run.");
+                // -buildVersion / CS_BUILD_VERSION is applied (and put back) by BuildStampProcessor.
+                string[] scenes = RequireScenes();
 
                 ConfigurePlayerSettings(development, useMono);
 
@@ -107,6 +101,7 @@ namespace CosmicShore.Editor
                     options = development
                         ? BuildOptions.Development | BuildOptions.AllowDebugging
                         : BuildOptions.None,
+                    extraScriptingDefines = new[] { WindowsDefine },
                 };
 
                 Debug.Log($"[Build] Windows x64 {(development ? "Development" : "Release")} " +
@@ -133,6 +128,12 @@ namespace CosmicShore.Editor
                 if (batch) EditorApplication.Exit(1);
                 else throw;
             }
+            finally
+            {
+                // Puts bundleVersion back and removes the stamp even when the build failed
+                // (a failed build never reaches the postprocess callback).
+                BuildStampProcessor.Cleanup();
+            }
         }
 
         /// <summary>
@@ -156,10 +157,8 @@ namespace CosmicShore.Editor
             {
                 PlayerSettings.SetIl2CppCompilerConfiguration(
                     standalone,
-                    development ? Il2CppCompilerConfiguration.Debug : Il2CppCompilerConfiguration.Release);
+                    development && !HasFlag("-il2cppRelease") ? Il2CppCompilerConfiguration.Debug : Il2CppCompilerConfiguration.Release);
             }
-
-            AddDefineIfMissing(standalone, WindowsDefine);
 
             // Desktop players must never inherit the mobile "keep the screen awake" behaviour or a
             // portrait default; both are mobile-only concerns that read as bugs on PC.
@@ -172,19 +171,23 @@ namespace CosmicShore.Editor
             PlayerSettings.runInBackground = true;
         }
 
-        static void AddDefineIfMissing(NamedBuildTarget target, string define)
-        {
-            string defines = PlayerSettings.GetScriptingDefineSymbols(target);
-            var parts = defines.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            if (parts.Contains(define)) return;
-
-            parts.Add(define);
-            PlayerSettings.SetScriptingDefineSymbols(target, string.Join(";", parts));
-            Debug.Log($"[Build] Added scripting define '{define}'.");
-        }
-
         static string[] EnabledScenes() =>
             EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
+
+        /// <summary>The enabled scenes; throws when there are none, warns when Bootstrap is not first.</summary>
+        static string[] RequireScenes()
+        {
+            string[] scenes = EnabledScenes();
+            if (scenes.Length == 0)
+                throw new InvalidOperationException(
+                    "No enabled scenes in Build Settings. A player with no scenes cannot boot.");
+
+            if (!scenes[0].EndsWith("Bootstrap.unity", StringComparison.OrdinalIgnoreCase))
+                Debug.LogWarning(
+                    $"[Build] First scene is '{scenes[0]}', not Bootstrap.unity. " +
+                    "Bootstrap MUST be build index 0 or DI registration and the splash flow never run.");
+            return scenes;
+        }
 
         /// <summary>
         /// Drops a build manifest next to the player. The upload script reads it so the Steam build
@@ -194,13 +197,19 @@ namespace CosmicShore.Editor
         {
             try
             {
+                // The player's own stamp: Player Settings are already put back by now.
+                var stamp = BuildStampProcessor.LastStamp;
                 string manifest =
-                    $"version={PlayerSettings.bundleVersion}\n" +
+                    $"version={stamp?.version ?? PlayerSettings.bundleVersion}\n" +
+                    $"buildNumber={stamp?.buildNumber}\n" +
                     $"unity={Application.unityVersion}\n" +
                     $"configuration={(development ? "development" : "release")}\n" +
                     $"backend={PlayerSettings.GetScriptingBackend(NamedBuildTarget.Standalone)}\n" +
-                    $"commit={GetArg("-buildCommit") ?? "unknown"}\n" +
-                    $"builtAtUtc={DateTime.UtcNow:o}\n";
+                    $"commit={stamp?.commit ?? GetArg("-buildCommit") ?? "unknown"}\n" +
+                    $"ref={stamp?.gitRef}\n" +
+                    $"channel={stamp?.channel}\n" +
+                    $"ugsEnvironment={stamp?.ugsEnvironment}\n" +
+                    $"builtAtUtc={stamp?.builtAtUtc ?? DateTime.UtcNow.ToString("o")}\n";
 
                 File.WriteAllText(Path.Combine(outputFolder, "build_manifest.txt"), manifest);
             }

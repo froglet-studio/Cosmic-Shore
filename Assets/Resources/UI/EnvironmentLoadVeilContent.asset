@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e895dc3cb24462e9418df9a64f89528, type: 3}
+  m_Name: EnvironmentLoadVeilContent
+  m_EditorClassIdentifier: 
+  enteringWord: Entering
+  loadingWord: Loading
+  tipLabel: Tip
+  stepLabels:
+  - Laying prisms
+  - Growing prisms
+  - Settling the cell
+  - Opening the cell
+  cellLines:
+  - cellName: Garland
+    line: A flowering bough wound twice around the seed of the world
+  - cellName: Geode
+    line: A crystal cathedral cracked open to the void
+  - cellName: Zephyr
+    line: A painted sky of wind rivers and cyclones
+  - cellName: Yggdra
+    line: The World-Tree - a garden grown around a colossal braided trunk
+  - cellName: Hesperides
+    line: The Garden - terraced beds, pergolas and hanging baskets
+  - cellName: Ourobor
+    line: One-sided country - cities on both faces, no up anywhere
+  - cellName: Orrery
+    line: Flying inside a celestial clock
+  - cellName: Daedala
+    line: An Escher city of roads, arches, and floating isles
+  - cellName: Caldera
+    line: Four forges ringing the core - lava runs for the brave
+  tips:
+  - LT and RT slide between the Toy Box, Arcade, Arena and Mission windows.
+  - Rest on a pilot's picture in the friends panel to see where they are.
+  - On Home, press Y to fly the cell yourself, and Y again to come back.
+  - The Toy Box's shuffle re-rolls the world, your domain and your hull.
+  colourSetWord: Changing colour set
+  colourSetSteps:
+  - Mixing the palette
+  - Repainting prisms
+  - Recolouring vessels and trails
+  - Opening the cell
+  colourSetTip: A colour set changes how you see the HyperSea. Other pilots keep theirs.
+  background: {fileID: 2100000, guid: a718859f761b339d50cf8da837ec360e, type: 2}
+  stepGlyphs: []
+  displayFont: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
+  captionFont: {fileID: 4519786210045101501, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}

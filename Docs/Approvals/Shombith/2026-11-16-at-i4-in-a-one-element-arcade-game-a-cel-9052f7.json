@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-at-i4-in-a-one-element-arcade-game-a-cel-9052f7",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-16T22:47:41+00:00",
+  "area": "Ecology: I4 fauna of Harvest and 13 other arcade cells",
+  "summary": "At I4 in a one-element arcade game, a cell's authored fauna species are now cloned with their element pinned to the game's element (Harvest's fauna are all Space variants at I4, not spread across elements). Garrett's I4 card: arenas with fauna keep theirs, recoloured to the element. No asset edited; Cell.RebuildFaunaRoster.",
+  "branch": "claude/project-thread-31ri4q",
+  "commit": "7da24f784"
+}

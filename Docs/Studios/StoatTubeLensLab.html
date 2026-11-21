@@ -1,0 +1,774 @@
+<title>Tube Lens Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: an optics bench. The viewport fills the left; a narrow control rack runs down the right. Phones stack them. */
+:root {
+  --bg: #f2f1f7; --rack: #fbfaff; --fg: #1c1930; --muted: #5f5a78; --line: #dcd7ea; --chip: #ebe8f6;
+  --accent: #5a3fd4; --accent-soft: #e3dcff; --lime: #3f8a14; --warn: #b4531c; --stage: #07060d;
+  --ui: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --num: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0c0a14; --rack: #13101d; --fg: #ebe8f6; --muted: #9b95b6; --line: #29243d; --chip: #1d1930;
+  --accent: #a690ff; --accent-soft: #2a2250; --lime: #9dff2e; --warn: #ff9b5e; --stage: #07060d; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0c0a14; --rack: #13101d; --fg: #ebe8f6; --muted: #9b95b6; --line: #29243d; --chip: #1d1930;
+  --accent: #a690ff; --accent-soft: #2a2250; --lime: #9dff2e; --warn: #ff9b5e; --stage: #07060d; color-scheme: dark; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--ui); font-size: 14px; }
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 384px; height: 100%; }
+.stage { position: relative; background: var(--stage); min-height: 0; overflow: hidden; touch-action: none; }
+.stage canvas#view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.stage canvas#view:active { cursor: grabbing; }
+.tag { position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); font: 500 11px/1 var(--num); letter-spacing: .06em; text-transform: uppercase;
+  color: #e9e5ff; background: rgba(12, 10, 22, .62); border: 1px solid rgba(166, 144, 255, .35); padding: 6px 8px; border-radius: 4px; pointer-events: none; }
+.tag.l { left: max(12px, env(safe-area-inset-left, 0px)); }
+.tag.r { right: max(12px, env(safe-area-inset-right, 0px)); }
+.splitline { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(233, 229, 255, .55); pointer-events: none; }
+.hud { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px)); font: 400 11px/1.5 var(--num); color: #b9b2da;
+  background: rgba(12, 10, 22, .55); padding: 6px 8px; border-radius: 4px; pointer-events: none; max-width: calc(100% - 24px); }
+.rack { background: var(--rack); border-left: 1px solid var(--line); overflow-y: auto; min-height: 0;
+  padding-block: 18px 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 18px; }
+h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.lede { color: var(--muted); margin: 6px 0 0; line-height: 1.45; max-width: 65ch; }
+section { display: flex; flex-direction: column; gap: 8px; }
+h2 { font: 600 11px/1 var(--ui); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+h2 small { font: 400 10px var(--num); letter-spacing: 0; text-transform: none; color: var(--muted); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; background: var(--chip); padding: 2px; border-radius: 6px; }
+.seg button { font: 500 12px var(--ui); color: var(--fg); background: transparent; border: 0; border-radius: 4px; padding: 7px 4px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--rack); color: var(--accent); box-shadow: 0 0 0 1px var(--line); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.presets button { font: 500 12px var(--ui); color: var(--fg); background: var(--chip); border: 1px solid transparent; border-radius: 999px; padding: 5px 10px; cursor: pointer; }
+.presets button:hover { border-color: var(--accent); }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 2px 10px; align-items: center; }
+.row label { font-size: 12.5px; line-height: 1.3; min-width: 0; }
+.row label .gn { display: block; font: 400 10px var(--num); color: var(--muted); overflow-wrap: anywhere; }
+.row output { font: 500 12px var(--num); text-align: right; font-variant-numeric: tabular-nums; }
+.row output.changed { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 0; }
+.note { color: var(--muted); font-size: 12px; line-height: 1.45; margin: 0; }
+.note b { color: var(--fg); font-weight: 600; }
+canvas.diag { width: 100%; height: auto; display: block; border-radius: 6px; background: var(--stage); }
+details { border-top: 1px solid var(--line); padding-top: 10px; }
+summary { cursor: pointer; font: 600 12px var(--ui); color: var(--fg); }
+details > div { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.toggles { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.toggles label { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; cursor: pointer; }
+.toggles input { accent-color: var(--accent); }
+.foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-top: 1px solid var(--line); padding-top: 14px; }
+.foot button { font: 600 12px var(--ui); border-radius: 6px; padding: 8px 12px; cursor: pointer; border: 1px solid var(--line); background: var(--rack); color: var(--fg); }
+.foot button.primary { background: var(--accent); border-color: var(--accent); color: var(--rack); }
+.foot .count { font: 400 11px var(--num); color: var(--muted); margin-left: auto; }
+textarea#copyout { width: 100%; min-height: 120px; font: 400 11px/1.4 var(--num); background: var(--chip); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; box-sizing: border-box; }
+.math { font: 400 11.5px/1.55 var(--num); color: var(--fg); background: var(--chip); border-radius: 6px; padding: 10px; overflow-x: auto; white-space: pre; }
+@media (max-width: 820px) {
+  html, body { height: auto; }
+  .app { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .stage { height: 62vh; min-height: 300px; }
+  .rack { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+}
+@media (prefers-reduced-motion: reduce) { .seg button, .presets button { transition: none; } }
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <canvas id="view" aria-label="The tunnel and the bent space round it. Drag to orbit, scroll or pinch to zoom."></canvas>
+    <div class="tag l" id="tagL">Round 25</div>
+    <div class="tag r" id="tagR">Contour field</div>
+    <div class="splitline" id="splitline"></div>
+    <div class="hud" id="hud"></div>
+  </div>
+
+  <aside class="rack">
+    <header>
+      <h1>Tube Lens Lab</h1>
+      <p class="lede">Lensing for the Stoat's Gate tunnel. Yash's round-25 look puts a round dent at each mouth. The contour field lives in a thin shell on the tube wall, its field lines run along the grid's own lines, and it fades to zero a short way off the surface.</p>
+    </header>
+
+    <section>
+      <h2>Compare</h2>
+      <div class="seg" id="modeSeg" role="group" aria-label="Which lens to show">
+        <button type="button" data-v="2">Round 25</button>
+        <button type="button" data-v="3">Split</button>
+        <button type="button" data-v="1">Contour field</button>
+        <button type="button" data-v="0">No lens</button>
+      </div>
+      <div class="row" id="row-split"></div>
+    </section>
+
+    <section>
+      <h2>Field presets</h2>
+      <div class="presets" id="presets">
+        <button type="button" data-p="toroidal">Toroidal: long lines</button>
+        <button type="button" data-p="poloidal">Poloidal: rings</button>
+        <button type="button" data-p="helical">Helical</button>
+        <button type="button" data-p="ribbed">Ribbed glass</button>
+        <button type="button" data-p="twist">Twisted</button>
+        <button type="button" data-p="travel">Travelling rings</button>
+      </div>
+    </section>
+
+    <section id="sec-field">
+      <h2>Contour field <small>proposed fields</small></h2>
+      <p class="note" id="pitchNote"></p>
+      <div id="g-field"></div>
+      <h2 style="margin-top:4px">Flow along the tube</h2>
+      <div class="seg" id="flowSeg" role="group" aria-label="Flow along the tube">
+        <button type="button" data-v="0">Even</button>
+        <button type="button" data-v="1">In, then out</button>
+        <button type="button" data-v="2">Throat</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Shell <small>where the field lives</small></h2>
+      <canvas class="diag" id="profileCv" width="704" height="190" aria-label="Field strength across the wall, from inside the tube to outside"></canvas>
+      <div class="seg" id="profSeg" role="group" aria-label="Fall-off shape">
+        <button type="button" data-v="0">Smooth</button>
+        <button type="button" data-v="1">Smoother</button>
+        <button type="button" data-v="2">Linear</button>
+        <button type="button" data-v="3">Bell</button>
+      </div>
+      <div id="g-shell"></div>
+    </section>
+
+    <section>
+      <h2>Field lines on the wall <small>unrolled tube</small></h2>
+      <canvas class="diag" id="mapCv" width="704" height="330" aria-label="The tube's wall unrolled: grid lines in grey, field lines in colour"></canvas>
+      <p class="note">Across: entry mouth to exit mouth. Down: once round the tube. Grey is the maker's grid; colour is the field (violet bends in, white bends out).</p>
+      <div id="g-ribs"></div>
+    </section>
+
+    <section>
+      <h2>Tunnel <small>the Stoat's reticle</small></h2>
+      <div id="g-shape"></div>
+      <details>
+        <summary>Shipped tunnel limits (Stoat studio)</summary>
+        <div id="g-limits"></div>
+      </details>
+    </section>
+
+    <section>
+      <h2>Round 25 look <small>shipped in the studio</small></h2>
+      <div id="g-r25"></div>
+    </section>
+
+    <section>
+      <h2>View</h2>
+      <div class="seg" id="camSeg" role="group" aria-label="Camera">
+        <button type="button" data-v="orbit">Orbit</button>
+        <button type="button" data-v="ride">Ride through</button>
+      </div>
+      <div id="g-view"></div>
+      <div class="toggles">
+        <label><input type="checkbox" id="tgGrid" checked> Maker's grid</label>
+        <label><input type="checkbox" id="tgBoxes" checked> Prisms</label>
+        <label><input type="checkbox" id="tgFloor" checked> Floor</label>
+        <label><input type="checkbox" id="tgSky" checked> Sky grid</label>
+        <label><input type="checkbox" id="tgPause"> Pause ride</label>
+      </div>
+    </section>
+
+    <details>
+      <summary>How the contour field bends light</summary>
+      <div>
+        <p class="note">Every pixel's ray is marched through space. Away from the tube it travels straight. Inside the shell its direction is turned by the field there, then it carries on to the sky, prisms and floor.</p>
+        <div class="math">d   distance to the wall (− inside, + outside)
+τ   shell: inner × r inside, outer × r outside
+w   = shape(1 − |d| / τ)       1 on the wall, 0 at τ
+T   along the tube (the long grid lines)
+Φ   round the tube (the rings)
+F   = cos(pitch)·T + sin(pitch)·Φ
+k   = strength / (½ · (inner + outer) · r)
+
+drag   dD += k·w·(F − (F·D)·D)·ds
+twist  dD += k·w·(D × F)·ds
+glass  dD += Δn·∇(w)⊥·ds</div>
+        <p class="note">Grazing scales k by mix(1, |D·n|, grazing). At 0 a ray skimming the wall bends most, as through real glass; riding inside the tube, every ray skims, so the ride view swirls. At 1 every crossing bends about the same.</p>
+        <p class="note">T is the true surface tangent of the long lines (it tilts with the flare and with the bend), so a field line traced on the wall is a grid line at pitch 0° and a ring at 90°. Strength is roughly the bend, in degrees, of a ray crossing the wall head-on; grazing rays bend more, which is what gives the tube its outline.</p>
+        <p class="note"><b>In the game</b> this would replace the mouth dents and the rim warp with one full-screen pass. It marches only the pixels the tube's screen bounds cover, with the same distance function the studio's grid uses (<code>whAt</code>, <code>whRadius</code>).</p>
+      </div>
+    </details>
+
+    <div class="foot">
+      <button type="button" class="primary" id="btnCopy">Copy settings</button>
+      <button type="button" id="btnReset">Reset all</button>
+      <span class="count" id="changedCount"></span>
+      <textarea id="copyout" hidden readonly aria-label="Settings as JSON"></textarea>
+    </div>
+  </aside>
+</div>
+
+<script>
+(() => {
+'use strict';
+// ================= SHIPPED: copied from the Stoat Flight Studio, round 25 (Docs/Studios/VesselStudio/stoat.html) =================
+// Tunnel limits: StoatModeAction gt* (studio P block). Round-25 look: StoatModeAction gate* (setLensUniforms, updateTubeWarp).
+// Grid: WH_RINGS 22 rings, WH_LONG 12 long lines (whDraw).
+const SHIPPED = {
+  gtLenMax: 600, gtLenMin: 120, gtTurnMax: 120, gtThroatMin: 3, gtThroatMax: 40, gtMouthFlare: 2,
+  gateDentStrength: 0.6, gateDentWidth: 1, gateDentNear: 3, gateTubeWarp: 0.8, gateGridGlass: 0.6,
+  whRings: 22, whLong: 12,
+};
+// Lab knobs (proposals and view). The gateField* names are the planned StoatModeAction fields.
+const LAB = {
+  mode: 3, split: 0.5,
+  gateFieldStrength: 18, gateFieldPitch: 0, gateFieldDrag: 1, gateFieldTwist: 0, gateFieldGlass: 0, gateFieldGlassDn: 0.05,
+  gateFieldGrazing: 0.6, gateFieldFlow: 0, gateFieldInner: 0.1, gateFieldOuter: 0.2, gateFieldProfile: 0,
+  gateFieldRibs: 0, gateFieldRibSharp: 6, gateFieldRibTravel: 0,
+  bend: 0.55, lt: 0,
+  cam: 'orbit', rideSpeed: 110, fov: 70, renderScale: 0.7,
+  grid: 1, boxes: 1, floor: 1, sky: 1,
+};
+const DEFAULTS = Object.assign({}, SHIPPED, LAB);
+const P = Object.assign({}, DEFAULTS);
+try { const s = JSON.parse(localStorage.getItem('tubeLensLab.v1') || 'null'); if (s && typeof s === 'object') for (const k in s) if (k in P) P[k] = s[k]; } catch (e) {}
+function save() { try { const d = {}; for (const k in P) if (P[k] !== DEFAULTS[k]) d[k] = P[k]; localStorage.setItem('tubeLensLab.v1', JSON.stringify(d)); } catch (e) {} }
+
+// [group, key, label, min, max, step, game name, unit]
+const SPEC = [
+  ['split', 'split', 'Split position', 0.1, 0.9, 0.01, null, ''],
+  ['field', 'gateFieldStrength', 'Strength (bend per wall crossing)', 0, 40, 0.5, 'gateFieldStrength', '°'],
+  ['field', 'gateFieldPitch', 'Pitch: along the tube 0°, round it 90°', 0, 90, 1, 'gateFieldPitch', '°'],
+  ['field', 'gateFieldDrag', 'Drag: pull rays along the field lines', 0, 2, 0.05, 'gateFieldDrag', ''],
+  ['field', 'gateFieldTwist', 'Twist: turn rays round the field lines', 0, 2, 0.05, 'gateFieldTwist', ''],
+  ['field', 'gateFieldGlass', 'Glass: refract across the shell', 0, 2, 0.05, 'gateFieldGlass', ''],
+  ['field', 'gateFieldGrazing', 'Grazing: 0 physical, 1 every crossing bends alike', 0, 1, 0.01, 'gateFieldGrazing', ''],
+  ['field', 'gateFieldGlassDn', 'Glass index at the wall (Δn)', 0, 0.25, 0.005, 'gateFieldGlassDn', ''],
+  ['shell', 'gateFieldInner', 'Inner thickness (× local radius)', 0, 0.6, 0.01, 'gateFieldInner', ''],
+  ['shell', 'gateFieldOuter', 'Outer thickness (× local radius)', 0, 1, 0.01, 'gateFieldOuter', ''],
+  ['ribs', 'gateFieldRibs', 'Ribs: concentrate the field on the grid lines', 0, 1, 0.01, 'gateFieldRibs', ''],
+  ['ribs', 'gateFieldRibSharp', 'Rib sharpness', 1, 24, 0.5, 'gateFieldRibSharp', ''],
+  ['ribs', 'gateFieldRibTravel', 'Ribs travel toward the exit (rings per second)', -4, 4, 0.1, 'gateFieldRibTravel', ''],
+  ['shape', 'bend', 'Bend (right stick, 0 to full)', 0, 1, 0.01, 'whShape t', ''],
+  ['shape', 'lt', 'Shorten (LT, 0 to full)', 0, 1, 0.01, 'whShape lq', ''],
+  ['limits', 'gtLenMax', 'Longest (straight)', 100, 1200, 10, 'gtLenMax', 'u'],
+  ['limits', 'gtLenMin', 'Shortest (sharpest bend)', 20, 400, 5, 'gtLenMin', 'u'],
+  ['limits', 'gtTurnMax', 'Sharpest bend', 10, 180, 1, 'gtTurnMax', '°'],
+  ['limits', 'gtThroatMin', 'Thinnest throat', 1, 30, 0.5, 'gtThroatMin', 'u'],
+  ['limits', 'gtThroatMax', 'Fattest throat', 5, 80, 1, 'gtThroatMax', 'u'],
+  ['limits', 'gtMouthFlare', 'Mouth flare (× throat)', 1, 4, 0.05, 'gtMouthFlare', ''],
+  ['r25', 'gateDentStrength', 'Dent in space-time (strength)', 0, 0.95, 0.01, 'gateDentStrength', ''],
+  ['r25', 'gateDentWidth', 'Dent width (× the mouth)', 0.3, 3, 0.05, 'gateDentWidth', ''],
+  ['r25', 'gateDentNear', 'Dent fades as the camera nears (× the mouth)', 0.5, 8, 0.1, 'gateDentNear', ''],
+  ['r25', 'gateTubeWarp', 'Warp along the whole tube (strength)', 0, 2, 0.05, 'gateTubeWarp', ''],
+  ['view', 'gateGridGlass', 'Grid glass (both looks)', 0, 2, 0.05, 'gateGridGlass', ''],
+  ['view', 'rideSpeed', 'Ride speed', 20, 400, 5, null, 'u/s'],
+  ['view', 'fov', 'Field of view', 40, 110, 1, null, '°'],
+  ['view', 'renderScale', 'Render resolution', 0.35, 1, 0.05, null, '×'],
+];
+const GROUP_EL = { split: 'row-split', field: 'g-field', shell: 'g-shell', ribs: 'g-ribs', shape: 'g-shape', limits: 'g-limits', r25: 'g-r25', view: 'g-view' };
+const outs = {}, inputs = {};
+function fmt(v, step) { const d = step >= 1 ? 0 : step >= 0.1 ? 1 : 2; return (+v).toFixed(d); }
+for (const [g, key, label, mn, mx, st, gname, unit] of SPEC) {
+  const host = document.getElementById(GROUP_EL[g]);
+  const row = g === 'split' ? host : document.createElement('div');
+  row.className = 'row';
+  const id = 'sl-' + key;
+  const src = key in SHIPPED ? 'shipped ' + SHIPPED[key] : 'lab default ' + DEFAULTS[key];
+  row.innerHTML = '<label for="' + id + '">' + label + (gname ? '<span class="gn">' + gname + (key in SHIPPED ? ' · shipped' : key.startsWith('gateField') ? ' · new (proposed)' : '') + '</span>' : '') + '</label>' +
+    '<output for="' + id + '"></output><input type="range" id="' + id + '" min="' + mn + '" max="' + mx + '" step="' + st + '">';
+  row.title = src;
+  if (g !== 'split') host.appendChild(row);
+  const inp = row.querySelector('input'), out = row.querySelector('output');
+  inp.value = P[key]; inputs[key] = inp; outs[key] = { out, st, unit };
+  inp.addEventListener('input', () => { P[key] = +inp.value; changed(); });
+}
+function segBind(id, key, cast) {
+  const el = document.getElementById(id);
+  el.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; P[key] = cast(b.dataset.v); changed(); });
+  return el;
+}
+const segs = { mode: segBind('modeSeg', 'mode', Number), gateFieldFlow: segBind('flowSeg', 'gateFieldFlow', Number), gateFieldProfile: segBind('profSeg', 'gateFieldProfile', Number), cam: segBind('camSeg', 'cam', String) };
+const toggles = { grid: 'tgGrid', boxes: 'tgBoxes', floor: 'tgFloor', sky: 'tgSky' };
+for (const k in toggles) document.getElementById(toggles[k]).addEventListener('change', (e) => { P[k] = e.target.checked ? 1 : 0; changed(); });
+let paused = false;
+document.getElementById('tgPause').addEventListener('change', (e) => { paused = e.target.checked; dirty = true; });
+
+const PRESETS = {
+  toroidal: { mode: 3, gateFieldPitch: 0, gateFieldDrag: 1, gateFieldTwist: 0, gateFieldGlass: 0, gateFieldRibs: 0, gateFieldRibTravel: 0, gateFieldStrength: 18, gateFieldFlow: 0 },
+  poloidal: { mode: 3, gateFieldPitch: 90, gateFieldDrag: 1, gateFieldTwist: 0, gateFieldGlass: 0, gateFieldRibs: 0, gateFieldRibTravel: 0, gateFieldStrength: 14, gateFieldFlow: 0 },
+  helical: { mode: 3, gateFieldPitch: 40, gateFieldDrag: 1, gateFieldTwist: 0, gateFieldGlass: 0, gateFieldRibs: 0, gateFieldRibTravel: 0, gateFieldStrength: 14, gateFieldFlow: 0 },
+  ribbed: { mode: 3, gateFieldPitch: 0, gateFieldDrag: 0.3, gateFieldTwist: 0, gateFieldGlass: 1, gateFieldGlassDn: 0.04, gateFieldRibs: 0.85, gateFieldRibSharp: 6, gateFieldRibTravel: 0, gateFieldStrength: 10 },
+  twist: { mode: 3, gateFieldPitch: 0, gateFieldDrag: 0, gateFieldTwist: 1, gateFieldGlass: 0, gateFieldRibs: 0, gateFieldRibTravel: 0, gateFieldStrength: 16, gateFieldFlow: 0 },
+  travel: { mode: 1, gateFieldPitch: 90, gateFieldDrag: 1, gateFieldTwist: 0, gateFieldGlass: 0.4, gateFieldRibs: 0.9, gateFieldRibSharp: 8, gateFieldRibTravel: 1.5, gateFieldStrength: 18, gateFieldFlow: 1 },
+};
+document.getElementById('presets').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; Object.assign(P, PRESETS[b.dataset.p]); changed(); });
+document.getElementById('btnReset').addEventListener('click', () => { Object.assign(P, DEFAULTS); orbit = orbitDefault(); changed(); });
+document.getElementById('btnCopy').addEventListener('click', () => {
+  const pick = (keys) => Object.fromEntries(keys.map((k) => [k, P[k]]));
+  const txt = JSON.stringify({
+    lab: 'Tube Lens Lab', from: 'Stoat Flight Studio round 25, Gate mode',
+    look: ['off', 'contour field', 'round 25', 'split'][P.mode],
+    proposed: pick(Object.keys(P).filter((k) => k.startsWith('gateField'))),
+    tunnel: pick(['bend', 'lt', 'gtLenMax', 'gtLenMin', 'gtTurnMax', 'gtThroatMin', 'gtThroatMax', 'gtMouthFlare']),
+    round25: pick(['gateDentStrength', 'gateDentWidth', 'gateDentNear', 'gateTubeWarp', 'gateGridGlass']),
+    changedFromDefaults: Object.keys(P).filter((k) => P[k] !== DEFAULTS[k]),
+  }, null, 2);
+  const ta = document.getElementById('copyout'); ta.value = txt;
+  const btn = document.getElementById('btnCopy');
+  const done = (ok) => { btn.textContent = ok ? 'Copied' : 'Select and copy below'; if (!ok) { ta.hidden = false; ta.focus(); ta.select(); } setTimeout(() => { btn.textContent = 'Copy settings'; }, 1600); };
+  try { navigator.clipboard.writeText(txt).then(() => done(true), () => done(false)); } catch (e) { done(false); }
+});
+
+// ================= the tunnel: the studio's whShape / whAt / whRadius, A at the origin, t0 = +z, bending toward +x =================
+let tube = null;
+function whShape() {
+  const t = Math.max(0, Math.min(1, P.bend)), short = Math.max(t, Math.max(0, Math.min(1, P.lt)));
+  const L = Math.max(10, P.gtLenMax - (P.gtLenMax - P.gtLenMin) * short);
+  const theta = Math.max(0, P.gtTurnMax) * Math.PI / 180 * t;
+  const R = theta > 1e-3 ? L / theta : Infinity;
+  const b = Math.min(P.gtThroatMin + (P.gtThroatMax - P.gtThroatMin) * t, 0.6 * R);
+  const M = Math.min(b * Math.max(1, P.gtMouthFlare) + 6, Math.max(b, 0.95 * R));
+  return { L, theta, R, b, M };
+}
+function whAt(sh, s) {   // centreline point and tangent at s (s may run past either mouth: straight on)
+  if (sh.theta < 0.01) return { p: [0, 0, s], t: [0, 0, 1] };
+  const sc = Math.max(0, Math.min(sh.L, s)), a = sc / sh.R, R = sh.R;
+  const p = [R - R * Math.cos(a), 0, R * Math.sin(a)], t = [Math.sin(a), 0, Math.cos(a)], over = s - sc;
+  return { p: [p[0] + t[0] * over, p[1], p[2] + t[2] * over], t };
+}
+function whRadius(sh, s) { const u = Math.max(0, Math.min(1, s / sh.L)), k = 2 * u - 1; return Math.sqrt(sh.b * sh.b + (sh.M * sh.M - sh.b * sh.b) * k * k); }
+function rebuildTube() {
+  const sh = whShape(), mid = whAt(sh, sh.L / 2).p;
+  sh.mid = mid; sh.Rb = sh.L / 2 + sh.M * (1 + Math.max(P.gateFieldOuter, 0.05)) + 4;
+  sh.floorY = mid[1] - sh.Rb - 160;
+  // a ring of prisms round the tunnel, outside its bounds, so the bend has straight edges to show on
+  const boxC = [], boxH = [], boxCol = [], pal = [[0.18, 0.84, 0.63], [1.0, 0.30, 0.43], [1.0, 0.79, 0.30], [0.30, 0.64, 1.0]];
+  for (let i = 0; i < 12; i++) {
+    const a = i / 12 * Math.PI * 2 + 0.3, rr = Math.max(1.75 * Math.max(sh.L, 200), sh.Rb + 200) + (i % 2) * 0.35 * sh.L, hgt = 0.45 * sh.Rb + ((i * 37) % 5) * 0.15 * sh.Rb;
+    boxC.push(mid[0] + Math.cos(a) * rr, mid[1] + ((i * 53) % 7 - 3) * 0.08 * sh.Rb, mid[2] + Math.sin(a) * rr);
+    boxH.push(12 + (i % 2) * 8, hgt, 12 + ((i + 1) % 2) * 8);
+    boxCol.push(...pal[i % 4]);
+  }
+  sh.boxC = new Float32Array(boxC); sh.boxH = new Float32Array(boxH); sh.boxCol = new Float32Array(boxCol);
+  tube = sh;
+}
+
+// ================= WebGL: one full-screen ray-marching pass =================
+const cv = document.getElementById('view');
+const gl = cv.getContext('webgl2', { antialias: false, preserveDrawingBuffer: false });
+const hud = document.getElementById('hud');
+if (!gl) { hud.textContent = 'This lab needs WebGL 2, which this browser does not offer.'; }
+const VS = `#version 300 es
+in vec2 aPos; void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }`;
+const FS = `#version 300 es
+precision highp float; precision highp int;
+uniform vec2 uRes; uniform float uAspect, uTanHalf, uPixAng, uTime;
+uniform vec3 uCamPos, uCamR, uCamU, uCamF;
+uniform float uL, uTheta, uB, uM; uniform vec4 uBound;
+uniform float uK, uDn, uPitch, uTin, uTout, uGraze; uniform vec3 uW;
+uniform int uProfile, uFlow, uMode;
+uniform float uRibs, uRibSharp, uRibPhase, uRings, uLongs, uSplit;
+uniform vec4 uDent0, uDent1; uniform float uTubeK;
+uniform float uGrid, uGlass, uBoxes, uFloor, uSkyGrid, uFloorY;
+uniform float uDebug; float gSteps = 0.0;
+uniform vec3 uBoxC[12]; uniform vec3 uBoxH[12]; uniform vec3 uBoxCol[12];
+out vec4 outCol;
+const float PI = 3.14159265;
+
+struct TQ { float d; float s; float u; float phi; vec3 n; vec3 T; float r; float drds; float inR; float scale; };
+float radAt(float s){ float u = clamp(s / uL, 0.0, 1.0); float k = 2.0 * u - 1.0; return sqrt(uB * uB + (uM * uM - uB * uB) * k * k); }
+// The tunnel's wall: an arc of radius L/theta (or a straight line) carrying the studio's hyperboloid radius.
+TQ tube(vec3 p){
+  TQ q; float s; vec3 c; vec3 T; vec3 N; float invR = 0.0;
+  if (uTheta < 0.01) { s = p.z; q.s = clamp(s, 0.0, uL); c = vec3(0.0, 0.0, q.s); T = vec3(0.0, 0.0, 1.0); N = vec3(1.0, 0.0, 0.0); }
+  else {
+    float R = uL / uTheta; invR = 1.0 / R; vec3 v = p - vec3(R, 0.0, 0.0);
+    float a = atan(v.z, -v.x); if (a < 0.5 * uTheta - PI) a += 2.0 * PI;
+    s = R * a; q.s = clamp(s, 0.0, uL); float ac = q.s * invR;
+    c = vec3(R - R * cos(ac), 0.0, R * sin(ac)); T = vec3(sin(ac), 0.0, cos(ac)); N = vec3(cos(ac), 0.0, -sin(ac));
+  }
+  q.u = q.s / uL; q.r = radAt(q.s);
+  float k = 2.0 * q.u - 1.0; q.drds = (uM * uM - uB * uB) * k * 2.0 / (uL * q.r);
+  vec3 v = p - c; float h = dot(v, T); vec3 vr = v - h * T; float rho = length(vr);
+  q.n = rho > 1e-5 ? vr / rho : N;
+  q.inR = (s >= 0.0 && s <= uL) ? 1.0 : 0.0;
+  q.d = q.inR > 0.5 ? rho - q.r : length(vec2(h, rho - q.r));   // past a mouth: the distance to its lip
+  q.T = T; float cn = dot(q.n, N); q.phi = atan(q.n.y, cn);
+  q.scale = 1.0 - q.r * cn * invR;   // the inner side of the bend is shorter than the outer
+  return q;
+}
+float prof(float t){
+  t = clamp(t, 0.0, 1.0);
+  if (uProfile == 0) return t * t * (3.0 - 2.0 * t);
+  if (uProfile == 1) return t * t * t * (t * (6.0 * t - 15.0) + 10.0);
+  if (uProfile == 2) return t;
+  float e = exp(-9.0); return (exp(-9.0 * (1.0 - t) * (1.0 - t)) - e) / (1.0 - e);
+}
+float shellTh(TQ q){ return (q.d > 0.0 ? uTout : uTin) * q.r; }
+float shellW(TQ q){ float th = shellTh(q); if (th <= 1e-4) return 0.0; return prof(1.0 - abs(q.d) / th); }
+float flowF(float u){ if (uFlow == 1) return cos(PI * u); if (uFlow == 2) return sin(PI * u); return 1.0; }
+float lineP(float x){ return pow(0.5 + 0.5 * cos(2.0 * PI * x), uRibSharp); }
+float ribF(TQ q){
+  if (uRibs <= 0.0) return 1.0;
+  float a = lineP(q.u * (uRings - 1.0) - uRibPhase), b = lineP(q.phi / (2.0 * PI) * uLongs);
+  return mix(1.0, max(a, b), uRibs);
+}
+float nField(vec3 p){ TQ q = tube(p); return shellW(q) * ribF(q) * flowF(q.u); }
+// The field on the wall: T is the long grid line's own tangent (tilted by the flare), Phi the ring's.
+vec3 fieldDir(TQ q){
+  vec3 Ts = normalize(q.T * q.scale + q.drds * q.n);
+  vec3 Ph = normalize(cross(Ts, q.n));
+  return cos(uPitch) * Ts + sin(uPitch) * Ph;
+}
+
+vec3 sky(vec3 d){
+  float lat = asin(clamp(d.y, -1.0, 1.0)), lon = atan(d.z, d.x);
+  vec3 col = mix(vec3(0.012, 0.010, 0.026), vec3(0.05, 0.028, 0.09), smoothstep(-0.3, 0.8, d.y));
+  float n = sin(d.x * 3.1 + 1.3) * sin(d.y * 4.7 + 0.4) * sin(d.z * 2.3 + 2.1);
+  col += vec3(0.10, 0.04, 0.16) * smoothstep(0.1, 0.9, n) + vec3(0.02, 0.07, 0.11) * smoothstep(0.2, 0.9, -n);
+  vec3 g = d * 160.0, cell = floor(g), f = fract(g) - 0.5;
+  float h = fract(sin(dot(cell, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+  if (h > 0.982) col += vec3(0.9, 0.92, 1.0) * smoothstep(0.26, 0.0, length(f)) * (h - 0.982) * 55.0;
+  if (uSkyGrid > 0.0) {
+    float st = PI / 12.0, w = uPixAng * 1.1;
+    float dl = abs(fract(lat / st + 0.5) - 0.5) * st;
+    float dn = abs(fract(lon / st + 0.5) - 0.5) * st * cos(lat);
+    float a = max(1.0 - smoothstep(0.5 * w, 1.5 * w, dl), (1.0 - smoothstep(0.5 * w, 1.5 * w, dn)) * smoothstep(1.45, 1.2, abs(lat)));
+    col += vec3(0.24, 0.21, 0.42) * a * uSkyGrid;
+  }
+  return col;
+}
+bool hitBox(vec3 ro, vec3 rd, vec3 c, vec3 h, out float t, out vec3 lp){
+  vec3 m = 1.0 / rd, o = ro - c, n = m * o, k = abs(m) * h, t1 = -n - k, t2 = -n + k;
+  float tN = max(max(t1.x, t1.y), t1.z), tF = min(min(t2.x, t2.y), t2.z);
+  t = tN; lp = o + rd * tN; return tN <= tF && tN > 0.0;
+}
+vec3 shadeBox(vec3 lp, vec3 h, vec3 col, vec3 rd){
+  vec3 q = abs(lp) / h; float mx = max(q.x, max(q.y, q.z)), mn = min(q.x, min(q.y, q.z)), mid = q.x + q.y + q.z - mx - mn;
+  vec3 nrm = step(vec3(mx - 1e-4), q) * sign(lp);
+  float lit = 0.35 + 0.65 * max(0.0, dot(nrm, normalize(vec3(0.4, 0.8, 0.3))));
+  return col * (0.10 + 0.22 * lit) + col * smoothstep(0.84, 0.97, mid) * 1.5;
+}
+vec3 shadeFloor(vec3 hp, float t, vec3 rd){
+  vec2 c = hp.xz / 40.0; float w = uPixAng * t / 40.0 * 1.2;   // t: the whole path from the eye, so a bent ray keeps its line width
+  vec2 dd = abs(fract(c + 0.5) - 0.5);
+  float line = 1.0 - smoothstep(0.5 * w, 1.5 * w, min(dd.x, dd.y));
+  float chk = mod(floor(c.x) + floor(c.y), 2.0);
+  vec3 base = vec3(0.035, 0.03, 0.06), lc = vec3(0.36, 0.30, 0.62) * 0.5;
+  vec3 col = base + vec3(0.016, 0.014, 0.03) * chk + lc * line;
+  col = mix(base + vec3(0.008, 0.007, 0.015) + lc * min(1.0, 2.0 * w), col, smoothstep(0.45, 0.15, w));   // cells under a few pixels: their average, no moire
+  return mix(sky(rd), col, exp(-t / 3200.0));
+}
+vec4 objects(vec3 ro, vec3 rd, float tmax, float t0){
+  float best = tmax; vec3 col = vec3(0.0); bool any = false;
+  if (uBoxes > 0.5) for (int i = 0; i < 12; i++) { float t; vec3 lp; if (hitBox(ro, rd, uBoxC[i], uBoxH[i], t, lp) && t < best) { best = t; any = true; col = shadeBox(lp, uBoxH[i], uBoxCol[i], rd); } }
+  if (uFloor > 0.5 && rd.y < -1e-4) { float t = (uFloorY - ro.y) / rd.y; if (t > 0.0 && t < best) { best = t; any = true; col = shadeFloor(ro + rd * t, t0 + t, rd); } }
+  return vec4(col, any ? 1.0 : 0.0);
+}
+vec3 background(vec3 ro, vec3 rd, float t0){ vec4 o = objects(ro, rd, 1e9, t0); return o.w > 0.5 ? o.rgb : sky(rd); }
+
+// The maker's grid where a ray crosses the wall: 22 rings and 12 long lines, violet at the entry to white at the exit.
+vec3 gridAt(TQ x, vec3 dir, float dist, bool camIn){
+  float lw = max(uPixAng * dist, 1e-4);
+  float sp = uL / (uRings - 1.0), dr = abs(fract(x.u * (uRings - 1.0) + 0.5) - 0.5) * sp;
+  float sl = 2.0 * PI / uLongs * x.r, dl = abs(fract(x.phi / (2.0 * PI) * uLongs + 0.5) - 0.5) * sl;
+  float aR = (1.0 - smoothstep(0.5 * lw, 1.5 * lw, dr)) * (0.35 + 0.65 * abs(2.0 * x.u - 1.0)) * smoothstep(2.0, 5.0, sp / lw);
+  float aL = (1.0 - smoothstep(0.5 * lw, 1.5 * lw, dl)) * 0.8 * smoothstep(2.0, 5.0, sl / lw);
+  vec3 col = mix(vec3(0.541, 0.420, 1.0), vec3(0.91, 0.97, 1.0), x.u);
+  float facing = camIn ? 1.0 : dot(x.n, -dir);
+  float face = 0.28 + 0.72 * smoothstep(-0.25, 0.35, facing);
+  float rim = 1.0 - abs(dot(x.n, dir));
+  return col * (uGrid * max(aR, aL) * face + uGrid * uGlass * (0.05 + 0.55 * rim * rim * rim) * 0.35);
+}
+
+vec3 trace(vec3 ro, vec3 rd, bool field, bool camIn){
+  vec3 c = uBound.xyz; float Rb = uBound.w;
+  vec3 oc = ro - c; float b = dot(oc, rd), cc = dot(oc, oc) - Rb * Rb, disc = b * b - cc;
+  if (disc < 0.0 || (cc > 0.0 && b > 0.0)) return background(ro, rd, 0.0);
+  float t0 = max(0.0, -b - sqrt(disc));
+  if (t0 > 0.0) { vec4 o = objects(ro, rd, t0, 0.0); if (o.w > 0.5) return o.rgb; }
+  vec3 pos = ro + rd * t0, dir = rd, grid = vec3(0.0), prevPos = pos; float travel = t0;
+  TQ q = tube(pos); float prevD = q.d, prevIn = q.inR;
+  for (int i = 0; i < 520; i++) {
+    float th = field ? shellTh(q) : 0.0, ad = abs(q.d), hmin = max(max(0.02, 0.008 * q.r), 0.2 * th), stp;
+    bool inShell = field && ad < th;
+    if (inShell) {
+      float across = max(abs(dot(dir, q.n)), 0.12);   // grazing: the field barely changes along the wall, so step further
+      stp = clamp(th / (7.0 * across), 0.02, max(th * 1.2, 0.02));
+      if (uRibs > 0.0) stp = min(stp, uL / (uRings - 1.0) / (2.0 * uRibSharp + 4.0));
+      float w = shellW(q) * ribF(q) * flowF(q.u);
+      vec3 F = fieldDir(q);
+      float k = uK / max(0.5 * (uTin + uTout) * q.r, 1e-3);
+      k *= mix(1.0, across, uGraze);   // 0: physical (a grazing ray's long path bends it most); 1: every crossing bends alike
+      vec3 dd = (uW.x * (F - dot(F, dir) * dir) + uW.y * cross(dir, F)) * k * w;
+      if (uW.z > 0.0) {
+        float e = max(0.15 * th, 0.02); vec2 kk = vec2(1.0, -1.0);
+        vec3 g = kk.xyy * nField(pos + kk.xyy * e) + kk.yyx * nField(pos + kk.yyx * e) + kk.yxy * nField(pos + kk.yxy * e) + kk.xxx * nField(pos + kk.xxx * e);
+        g /= 4.0 * e;
+        dd += uW.z * uDn * mix(1.0, across, uGraze) * (g - dot(g, dir) * dir);
+      }
+      dir = normalize(dir + dd * stp);
+    } else stp = max((ad - th) * 0.85, hmin);
+    pos += dir * stp; travel += stp; gSteps += 1.0;
+    q = tube(pos);
+    if (uGrid > 0.0 && q.inR > 0.5 && prevIn > 0.5 && (q.d < 0.0) != (prevD < 0.0)) {
+      float f = prevD / (prevD - q.d); TQ x = tube(mix(prevPos, pos, f));
+      grid += gridAt(x, dir, travel - stp * (1.0 - f), camIn);
+    }
+    prevD = q.d; prevIn = q.inR; prevPos = pos;
+    vec3 rel = pos - c; if (dot(rel, rel) > Rb * Rb && dot(rel, dir) > 0.0) break;
+  }
+  return background(pos, dir, travel) + grid;
+}
+
+// ---- Round 25, rebuilt: the studio's two mouth dents (setLensUniforms, type 3/4) and the tube's rim warp (twMat) ----
+vec2 dent(vec2 p, vec4 D){
+  if (D.w == 0.0) return vec2(0.0);
+  vec2 d = p - D.xy; float th = max(length(d), 1e-6), rc = max(D.z, 1e-6), u = th / rc;
+  return sign(D.w) * (d / th) * abs(D.w) * rc * u * exp(-0.5 * u * u);
+}
+vec2 tubeWarp(vec3 ro, vec3 rd){
+  if (uTubeK <= 0.0) return vec2(0.0);
+  vec3 c = uBound.xyz; float Rb = uBound.w;
+  vec3 oc = ro - c; float b = dot(oc, rd), cc = dot(oc, oc) - Rb * Rb, disc = b * b - cc;
+  if (disc < 0.0 || (cc > 0.0 && b > 0.0)) return vec2(0.0);
+  vec3 pos = ro + rd * max(0.0, -b - sqrt(disc)), prevPos = pos; TQ q = tube(pos); float prevD = q.d, prevIn = q.inR;
+  vec2 acc = vec2(0.0);
+  vec3 vv = vec3(-dot(rd, uCamR), -dot(rd, uCamU), dot(rd, uCamF));
+  for (int i = 0; i < 260; i++) {
+    float stp = max(abs(q.d) * 0.85, max(0.02, 0.008 * q.r));
+    pos += rd * stp; q = tube(pos);
+    if (q.inR > 0.5 && prevIn > 0.5 && (q.d < 0.0) != (prevD < 0.0)) {
+      float f = prevD / (prevD - q.d); TQ x = tube(mix(prevPos, pos, f));
+      vec3 nv = vec3(dot(x.n, uCamR), dot(x.n, uCamU), -dot(x.n, uCamF));
+      if (dot(nv, vv) < 0.0) nv = -nv;
+      float rim = 1.0 - abs(dot(nv, vv));
+      acc += nv.xy * sin(PI * rim) * uTubeK * cos(PI * x.u);
+    }
+    prevD = q.d; prevIn = q.inR; prevPos = pos;
+    vec3 rel = pos - c; if (dot(rel, rel) > Rb * Rb && dot(rel, rd) > 0.0) break;
+  }
+  return acc;
+}
+vec3 rayFor(vec2 p){ return normalize(uCamF + uCamR * (2.0 * p.x * uTanHalf) + uCamU * (2.0 * p.y * uTanHalf)); }
+
+void main(){
+  vec2 p = (gl_FragCoord.xy / uRes - 0.5) * vec2(uAspect, 1.0);
+  int mode = uMode; if (mode == 3) mode = gl_FragCoord.x / uRes.x < uSplit ? 2 : 1;
+  TQ cq = tube(uCamPos); bool camIn = cq.inR > 0.5 && cq.d < 0.0;
+  vec3 col;
+  if (mode == 1) col = trace(uCamPos, rayFor(p), true, camIn);
+  else if (mode == 2) {
+    vec3 rd = rayFor(p);
+    vec2 s = p + dent(p, uDent0) + dent(p, uDent1) + tubeWarp(uCamPos, rd);
+    col = trace(uCamPos, rayFor(s), false, camIn);
+  } else col = trace(uCamPos, rayFor(p), false, camIn);
+  if (uDebug > 0.5) col = vec3(gSteps / 520.0, gSteps > 519.0 ? 1.0 : 0.0, 0.0);
+  col = col / (1.0 + 0.25 * col);
+  outCol = vec4(pow(col, vec3(0.4545)), 1.0);
+}`;
+let prog = null; const U = {};
+function compile() {
+  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+  gl.bindAttribLocation(prog, 0, 'aPos'); gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+  const n = gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) { const info = gl.getActiveUniform(prog, i), name = info.name.replace(/\[0\]$/, ''); U[name] = gl.getUniformLocation(prog, info.name); }
+  const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+}
+if (gl) { try { compile(); } catch (e) { hud.textContent = 'Shader failed to compile: ' + e.message; console.error(e); prog = null; } }
+
+// ================= camera =================
+const v3 = { sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], mul: (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+  dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+  norm: (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }, len: (a) => Math.hypot(a[0], a[1], a[2]) };
+function orbitDefault() { return { yaw: -2.05, pitch: 0.22, dist: 1.05 }; }
+let orbit = orbitDefault(), rideS = -0.5, camState = null;
+function camera(dt) {
+  const sh = tube; let pos, look;
+  if (P.cam === 'ride') {
+    const lead = 0.55 * sh.L, span = sh.L + 2 * lead;
+    if (!paused) rideS += dt * P.rideSpeed;
+    if (rideS > sh.L + lead) rideS -= span; if (rideS < -lead) rideS = -lead;
+    pos = whAt(sh, rideS).p; look = whAt(sh, rideS + Math.max(40, sh.M)).p;
+    pos = v3.add(pos, [0, 0.12 * whRadius(sh, rideS), 0]);   // a little above the centreline, like a chase view
+  } else {
+    const d = orbit.dist * Math.max(sh.L, 200), cp = Math.cos(orbit.pitch);
+    look = sh.mid; pos = v3.add(look, [Math.sin(orbit.yaw) * cp * d, Math.sin(orbit.pitch) * d, Math.cos(orbit.yaw) * cp * d]);
+  }
+  const F = v3.norm(v3.sub(look, pos)); let R = v3.cross(F, [0, 1, 0]); if (v3.len(R) < 1e-4) R = [1, 0, 0]; R = v3.norm(R);
+  const Up = v3.cross(R, F);
+  camState = { pos, F, R, U: Up };
+}
+// Round 25's dents, as setLensUniforms places them: the screen centre, ang(rM), strength x nearA; in at the entry, out at the exit.
+function dentUniform(mouthS, sign, tanHalf) {
+  const sh = tube, c = camState, mp = whAt(sh, mouthS).p, rel = v3.sub(mp, c.pos), vz = v3.dot(rel, c.F);
+  if (vz <= 1.5) return [0, 0, 0, 0];
+  const D = v3.len(rel), rM = whRadius(sh, mouthS) * Math.max(0.05, P.gateDentWidth), f = 0.5 / tanHalf;
+  const ang = f * Math.tan(Math.min(1.45, Math.asin(Math.min(0.999, rM / Math.max(D, rM * 1.001)))));
+  const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const nearA = smooth(rM * 0.6, rM * Math.max(0.7, P.gateDentNear), D);
+  const amp = Math.min(0.95, Math.max(0, P.gateDentStrength)) * nearA;
+  return [v3.dot(rel, c.R) / vz * f, v3.dot(rel, c.U) / vz * f, ang, sign * amp];
+}
+
+// ================= render =================
+let dirty = true, last = performance.now(), ribPhase = 0, fpsAcc = 0, fpsN = 0, fps = 0;
+function resize() {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2), s = P.renderScale;
+  const w = Math.max(2, Math.round(r.width * dpr * s)), h = Math.max(2, Math.round(r.height * dpr * s));
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; dirty = true; }
+}
+new ResizeObserver(() => { resize(); }).observe(cv);
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  const animating = (P.cam === 'ride' && !paused) || (P.gateFieldRibTravel !== 0 && P.gateFieldRibs > 0 && P.mode !== 2 && P.mode !== 0);
+  if (P.gateFieldRibs > 0) ribPhase += dt * P.gateFieldRibTravel;
+  if (gl && prog && (dirty || animating) && !document.hidden) {
+    resize(); camera(dt); draw();
+    dirty = false; fpsAcc += dt; fpsN++; if (fpsAcc > 0.5) { fps = fpsN / fpsAcc; fpsAcc = 0; fpsN = 0; }
+    updateHud();
+  }
+  requestAnimationFrame(frame);
+}
+function draw() {
+  const sh = tube, c = camState, W = cv.width, H = cv.height, tanHalf = Math.tan(P.fov * Math.PI / 360);
+  gl.viewport(0, 0, W, H); gl.useProgram(prog);
+  const f1 = (n, v) => U[n] && gl.uniform1f(U[n], v), i1 = (n, v) => U[n] && gl.uniform1i(U[n], v), f3 = (n, v) => U[n] && gl.uniform3fv(U[n], v), f4 = (n, v) => U[n] && gl.uniform4fv(U[n], v);
+  U.uRes && gl.uniform2f(U.uRes, W, H); f1('uAspect', W / H); f1('uTanHalf', tanHalf); f1('uPixAng', 2 * tanHalf / H); f1('uTime', performance.now() / 1000);
+  f3('uCamPos', c.pos); f3('uCamR', c.R); f3('uCamU', c.U); f3('uCamF', c.F);
+  f1('uL', sh.L); f1('uTheta', sh.theta); f1('uB', sh.b); f1('uM', sh.M); f4('uBound', [...sh.mid, sh.Rb]);
+  f1('uK', P.gateFieldStrength * Math.PI / 180); f1('uDn', P.gateFieldGlassDn); f1('uPitch', P.gateFieldPitch * Math.PI / 180);
+  f1('uGraze', P.gateFieldGrazing); f1('uTin', P.gateFieldInner); f1('uTout', P.gateFieldOuter); f3('uW', [P.gateFieldDrag, P.gateFieldTwist, P.gateFieldGlass]);
+  i1('uProfile', P.gateFieldProfile | 0); i1('uFlow', P.gateFieldFlow | 0); i1('uMode', P.mode | 0);
+  f1('uRibs', P.gateFieldRibs); f1('uRibSharp', P.gateFieldRibSharp); f1('uRibPhase', ribPhase); f1('uRings', P.whRings); f1('uLongs', P.whLong); f1('uSplit', P.split);
+  f4('uDent0', dentUniform(0, -1, tanHalf)); f4('uDent1', dentUniform(sh.L, 1, tanHalf)); f1('uTubeK', 0.05 * Math.max(0, P.gateTubeWarp));
+  f1('uGrid', P.grid); f1('uGlass', P.gateGridGlass); f1('uBoxes', P.boxes); f1('uFloor', P.floor); f1('uSkyGrid', P.sky); f1('uFloorY', sh.floorY); f1('uDebug', P.debug || 0);
+  f3('uBoxC', sh.boxC); f3('uBoxH', sh.boxH); f3('uBoxCol', sh.boxCol);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function pitchWords() {
+  const a = P.gateFieldPitch;
+  if (a < 0.5) return 'Toroidal: the field runs along the tube, on the long grid lines.';
+  if (a > 89.5) return 'Poloidal: the field runs round the tube, on the rings.';
+  const turns = Math.tan(a * Math.PI / 180) * tube.L / (2 * Math.PI * tube.b);
+  return 'Helical: about ' + turns.toFixed(1) + ' turns round the throat over the tunnel\'s length.';
+}
+function updateHud() {
+  const sh = tube, look = ['No lens', 'Contour field', 'Round 25', 'Split'][P.mode];
+  hud.textContent = look + ' · tunnel ' + sh.L.toFixed(0) + ' u, bend ' + (sh.theta * 180 / Math.PI).toFixed(0) + '°, throat ' + sh.b.toFixed(1) + ' u, mouth ' + sh.M.toFixed(1) + ' u · ' + fps.toFixed(0) + ' fps';
+}
+
+// ================= diagnostics: the shell profile and the unrolled wall =================
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function profJS(t) {
+  t = Math.max(0, Math.min(1, t)); const p = P.gateFieldProfile | 0;
+  if (p === 0) return t * t * (3 - 2 * t); if (p === 1) return t * t * t * (t * (6 * t - 15) + 10); if (p === 2) return t;
+  const e = Math.exp(-9); return (Math.exp(-9 * (1 - t) * (1 - t)) - e) / (1 - e);
+}
+function drawProfile() {
+  const c = document.getElementById('profileCv'), g = c.getContext('2d'), W = c.width, H = c.height;
+  g.clearRect(0, 0, W, H); g.fillStyle = '#07060d'; g.fillRect(0, 0, W, H);
+  const tin = P.gateFieldInner, tout = P.gateFieldOuter, span = Math.max(0.2, tin + tout) * 1.35, x0 = 40, x1 = W - 20, yb = H - 40, yt = 30;
+  const X = (d) => x0 + (d + tin * 1.15 + 0.02) / (span + 0.04) * (x1 - x0);
+  g.fillStyle = 'rgba(138,107,255,0.10)'; g.fillRect(X(-tin), yt, X(tout) - X(-tin), yb - yt);
+  g.strokeStyle = 'rgba(233,229,255,0.85)'; g.lineWidth = 2; g.beginPath(); g.moveTo(X(0), yt - 8); g.lineTo(X(0), yb + 6); g.stroke();
+  g.strokeStyle = 'rgba(185,178,218,0.35)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x0, yb); g.lineTo(x1, yb); g.stroke();
+  g.strokeStyle = '#a690ff'; g.lineWidth = 3; g.beginPath();
+  for (let i = 0; i <= 200; i++) {
+    const d = -tin * 1.15 - 0.02 + (span + 0.04) * i / 200, th = d > 0 ? tout : tin, w = th > 1e-4 ? profJS(1 - Math.abs(d) / th) : 0;
+    const x = X(d), y = yb - w * (yb - yt); i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.stroke();
+  g.fillStyle = '#b9b2da'; g.font = '500 20px "JetBrains Mono", monospace'; g.textAlign = 'center';
+  g.fillText('wall', X(0), yb + 30); g.textAlign = 'left'; g.fillText('inside −' + tin.toFixed(2) + 'r', x0, yt - 8);
+  g.textAlign = 'right'; g.fillText('outside +' + tout.toFixed(2) + 'r', x1, yt - 8);
+}
+function drawMap() {
+  const c = document.getElementById('mapCv'), g = c.getContext('2d'), W = c.width, H = c.height, sh = tube;
+  g.fillStyle = '#07060d'; g.fillRect(0, 0, W, H);
+  const pad = 14, x0 = pad, x1 = W - pad, y0 = pad, y1 = H - pad, X = (s) => x0 + s / sh.L * (x1 - x0), Y = (phi) => y0 + (phi + Math.PI) / (2 * Math.PI) * (y1 - y0);
+  // field strength on the wall: ribs x flow (violet in, white out)
+  const nx = 110, ny = 52, img = g.createImageData(nx, ny);
+  const lineP = (x) => Math.pow(0.5 + 0.5 * Math.cos(2 * Math.PI * x), P.gateFieldRibSharp);
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const u = (i + 0.5) / nx, phi = -Math.PI + (j + 0.5) / ny * 2 * Math.PI;
+    const rib = P.gateFieldRibs > 0 ? (1 - P.gateFieldRibs) + P.gateFieldRibs * Math.max(lineP(u * (P.whRings - 1) - ribPhase), lineP(phi / (2 * Math.PI) * P.whLong)) : 1;
+    const fl = P.gateFieldFlow === 1 ? Math.cos(Math.PI * u) : P.gateFieldFlow === 2 ? Math.sin(Math.PI * u) : 1, v = rib * fl, a = Math.min(1, Math.abs(v));
+    const col = v < 0 ? [233, 247, 255] : [138, 107, 255], k = (j * nx + i) * 4;
+    img.data[k] = 7 + (col[0] - 7) * a * 0.28; img.data[k + 1] = 6 + (col[1] - 6) * a * 0.28; img.data[k + 2] = 13 + (col[2] - 13) * a * 0.28; img.data[k + 3] = 255;
+  }
+  const tmp = document.createElement('canvas'); tmp.width = nx; tmp.height = ny; tmp.getContext('2d').putImageData(img, 0, 0);
+  g.imageSmoothingEnabled = true; g.drawImage(tmp, x0, y0, x1 - x0, y1 - y0);
+  // the maker's grid
+  g.strokeStyle = 'rgba(185,178,218,0.30)'; g.lineWidth = 1.5; g.beginPath();
+  for (let i = 0; i < P.whRings; i++) { const x = X(sh.L * i / (P.whRings - 1)); g.moveTo(x, y0); g.lineTo(x, y1); }
+  for (let j = 0; j <= P.whLong; j++) { const y = Y(-Math.PI + j / P.whLong * 2 * Math.PI); g.moveTo(x0, y); g.lineTo(x1, y); }
+  g.stroke();
+  // field lines traced on the wall: ds/dl = cos(pitch) / |dX/ds|, dphi/dl = sin(pitch) / r (top of the bend: no scale term)
+  const a = P.gateFieldPitch * Math.PI / 180, seeds = [];
+  for (let j = 0; j < P.whLong; j++) seeds.push([0, -Math.PI + (j + 0.5) / P.whLong * 2 * Math.PI]);
+  if (a > 0.02) for (let i = 1; i < 16; i++) seeds.push([sh.L * i / 16, -Math.PI]);
+  g.lineWidth = 2.2;
+  for (const [s0, p0] of seeds) {
+    let s = s0, phi = p0, steps = 0; const dl = sh.L / 500;
+    g.beginPath(); g.moveTo(X(s), Y(phi));
+    while (s <= sh.L && steps++ < 1400) {
+      const r = whRadius(sh, s), k2 = 2 * s / sh.L - 1, drds = (sh.M * sh.M - sh.b * sh.b) * k2 * 2 / (sh.L * r), ms = Math.sqrt(1 + drds * drds);
+      const ds = Math.cos(a) * dl / ms, dp = Math.sin(a) * dl / r;
+      if (Math.abs(ds) < 1e-9 && Math.abs(dp) * steps > 2 * Math.PI) break;
+      s += ds; phi += dp;
+      if (phi > Math.PI) { g.stroke(); phi -= 2 * Math.PI; g.beginPath(); g.moveTo(X(s), Y(phi)); }
+      else g.lineTo(X(s), Y(phi));
+      if (a > 1.55 && steps * dp > 2 * Math.PI) break;
+    }
+    g.strokeStyle = 'rgba(166,144,255,0.95)'; g.stroke();
+  }
+  g.fillStyle = '#b9b2da'; g.font = '500 18px "JetBrains Mono", monospace'; g.textAlign = 'left'; g.fillText('entry', x0 + 6, y1 - 8); g.textAlign = 'right'; g.fillText('exit', x1 - 6, y1 - 8);
+}
+
+// ================= input =================
+const ptrs = new Map(); let pinch0 = 0, dist0 = 1;
+cv.addEventListener('pointerdown', (e) => { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]); dist0 = orbit.dist; } });
+cv.addEventListener('pointermove', (e) => {
+  if (!ptrs.has(e.pointerId)) return;
+  const prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch0 > 0) orbit.dist = Math.max(0.15, Math.min(4, dist0 * pinch0 / d)); }
+  else { orbit.yaw -= (e.clientX - prev[0]) * 0.006; orbit.pitch = Math.max(-1.45, Math.min(1.45, orbit.pitch + (e.clientY - prev[1]) * 0.006)); }
+  if (P.cam !== 'orbit') { P.cam = 'orbit'; syncUI(); }
+  dirty = true;
+});
+const up = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = 0; };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+cv.addEventListener('wheel', (e) => { e.preventDefault(); orbit.dist = Math.max(0.15, Math.min(4, orbit.dist * Math.exp(e.deltaY * 0.0012))); dirty = true; }, { passive: false });
+
+// ================= UI sync =================
+let diagQueued = false;
+function syncUI() {
+  for (const k in inputs) { if (+inputs[k].value !== P[k]) inputs[k].value = P[k]; const o = outs[k]; o.out.textContent = fmt(P[k], o.st) + o.unit; o.out.classList.toggle('changed', P[k] !== DEFAULTS[k]); }
+  for (const k in segs) for (const b of segs[k].querySelectorAll('button')) b.setAttribute('aria-pressed', String(String(P[k]) === b.dataset.v));
+  for (const k in toggles) document.getElementById(toggles[k]).checked = !!P[k];
+  document.getElementById('row-split').hidden = P.mode !== 3;
+  const split = P.mode === 3, sl = document.getElementById('splitline');
+  sl.hidden = !split; sl.style.left = (P.split * 100) + '%';
+  const tl = document.getElementById('tagL'), tr = document.getElementById('tagR');
+  tl.hidden = !(split || P.mode === 2); tr.hidden = !(split || P.mode === 1);
+  tl.textContent = 'Round 25: mouth dents + rim warp'; tr.textContent = 'Contour field';
+  if (!split && P.mode === 2) tl.hidden = false;
+  document.getElementById('pitchNote').textContent = pitchWords();
+  const n = Object.keys(P).filter((k) => P[k] !== DEFAULTS[k]).length;
+  document.getElementById('changedCount').textContent = n ? n + ' changed from the defaults' : 'All at defaults';
+}
+function changed() {
+  rebuildTube(); syncUI(); save(); dirty = true;
+  if (!diagQueued) { diagQueued = true; requestAnimationFrame(() => { diagQueued = false; drawProfile(); drawMap(); }); }
+}
+rebuildTube(); syncUI(); drawProfile(); drawMap();
+document.fonts && document.fonts.ready.then(() => { drawProfile(); drawMap(); });
+setInterval(() => { if (P.gateFieldRibTravel !== 0 && P.gateFieldRibs > 0) drawMap(); }, 100);
+requestAnimationFrame(frame);
+
+// set('debug', 1) colours each pixel by its march steps (yellow: ran out).
+window.__lab = { P, SHIPPED, DEFAULTS, SPEC, PRESETS, state: () => ({ tube, cam: camState, fps }), set: (k, v) => { P[k] = v; changed(); }, render: () => { dirty = true; } };
+})();
+</script>

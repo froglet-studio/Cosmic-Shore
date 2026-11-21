@@ -36,7 +36,7 @@ namespace CosmicShore.Editor.Froglet
         /// <summary>Set by a button, run after the GUI pass — mutating state mid-layout throws.</summary>
         Action _deferred;
 
-        [MenuItem("FrogletTools/Build/Pending Tool Changes", false, 20)]
+        [MenuItem("FrogletTools/Build/Pending Tool Changes", false, 140)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 5,
             Description = "Uncommitted asset output from editor tools. Validate, push, retire.",
             DocPath = "Docs/TOOLING.md#tool-output-is-a-deliverable")]

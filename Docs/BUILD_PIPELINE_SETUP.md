@@ -92,19 +92,40 @@ promotion.
 Everything above works today. This section adds a Unity compile before builds
 reach UGS. Skip it until you want it.
 
+**There is no runner today.** The self-hosted one was removed on 2026-10-13
+because it ran on a developer's everyday PC, so Unity jobs are skipped until a
+runner that meets 5a is attached.
+
 ### 5a. Secure the repo first
 
-**This repository is public.** Do this before attaching a runner, or a fork PR
-can run arbitrary code on your build machine.
+**This repository is public.** A self-hosted runner runs any workflow that asks
+for its label — from any branch a writer pushes, or from a fork pull request —
+so the triggers in our workflow files do not protect it. Tick every box here
+before 5b. Why: `Docs/BUILD_AND_DELIVERY.md` §10 *Security*.
 
-**Settings → Actions → General → Fork pull request workflows**
+**Settings → Actions → General → Approval for running fork pull request
+workflows from contributors**
 
-- [ ] Require approval for **all outside collaborators**
+- [ ] **Require approval for all external contributors**
+
+**Settings → Rules → Rulesets**
+
+- [ ] `bleeding-edge` and `development` protected (`build/*` is step 4)
+
+**The machine**
+
+- [ ] An isolated machine or VM used only as the runner — **never anyone's
+      everyday PC**
+- [ ] Holds no credentials, signing material, personal accounts or browser
+      sessions
+- [ ] A dedicated low-privilege local account for the runner service — never
+      a person's account
 
 ### 5b. Attach the runner
 
-**Settings → Actions → Runners → New self-hosted runner**, register your build
-machine, then set two variables under
+**Settings → Actions → Runners → New self-hosted runner**, register the machine
+from 5a with its service running as the dedicated account (full runbook:
+`Docs/BUILD_AND_DELIVERY.md` §10.2), then set two variables under
 **Settings → Secrets and variables → Actions → Variables**:
 
 | Variable | Value |

@@ -11,13 +11,11 @@ trigger for this ability.
 
 | Input | Gamepad | Touch |
 |---|---|---|
-| Drift (analog: no-drift → single → sharp) | Left trigger | keep-left-finger (`OnlyLeftStickAction`) |
+| Drift (analog: drift amount = trigger pull) | Left trigger | keep-left-finger (`OnlyLeftStickAction`) |
 | Tube (press to place) | Right trigger | keep-right-finger (`OnlyRightStickAction`) |
 
-`VesselTransformer.singleTriggerDrift` (on the Squirrel only) remaps the left trigger's 0-1 travel
-across the full 0-2 drift range so a single trigger spans the light→sharp range the Manta still gets
-from summing both triggers. See `DriftActionSO.playDriftSfx` (off on the sharp tier) so the shared
-drift SFX isn't doubled when both tiers stack on one trigger.
+`VesselTransformer.singleTriggerDrift` puts drift on the left trigger alone. The Squirrel binds one
+drift action to it, so the trigger's 0-1 pull is the drift amount directly (see SQUIRREL_DRIFT.md §1).
 
 The ability fires on the trigger **press** (`Begin`); release (`Commit`) does nothing.
 
@@ -103,7 +101,7 @@ the tracked prisms are **returned to the pool** — `PrismKinds.Clear` first, th
 
 ## Cooldown HUD
 
-`SquirrelVesselHUDController` polls `SquirrelTubeActionExecutor.CooldownRemaining01` each frame and
+`SquirrelHUDController` polls `SquirrelTubeActionExecutor.CooldownRemaining01` each frame and
 pushes it to the **ability lockup's** standard cooldown veil — the fleet-wide clockwise radial swept
 over the Time card (`VesselHUDView.SetAbilityCooldown`). The Squirrel's own bespoke reload animation
 (sink-and-rise, breathing pulse, radial fill on the icon itself, slam-home flash) is **retired** with
@@ -174,7 +172,7 @@ lines, so a naive one-line regex silently reports zero overrides.
 | SO asset | `_SO_Assets/VesselActions/Squirrel/SquirrelTubeAction.asset` |
 | Time ability icon (art) | `_Graphics/Design Assests/HUD UI/Squirrel/BoostRingCrossSectionIcon.png` |
 | Icon generator (`--check`) | `Tools/Build/author_squirrel_boost_ring_icon.py` |
-| HUD view / controller | `UI/View/SquirrelVesselHUDView.cs`, `R_VesselActions/Data Containers/SquirrelVesselHUDController.cs` |
+| HUD view / controller | `UI/View/SquirrelVesselHUDView.cs`, `R_VesselActions/Data Containers/SquirrelHUDController.cs` |
 | Drift analog toggle | `VesselTransformer.singleTriggerDrift`, `DriftActionSO.playDriftSfx` |
 | Input mapping | `Squirrel.prefab` R_VesselActionHandler (`OnlyLeft/OnlyRight` + gamepad `LeftStick/RightStick` overrides) |
 | Shared ring primitive | `BoostRingBuilder` (`Controller/Environment/Spawning/`) |

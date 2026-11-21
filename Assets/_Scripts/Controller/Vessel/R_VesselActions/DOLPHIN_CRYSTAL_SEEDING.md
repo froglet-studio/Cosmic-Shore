@@ -90,7 +90,7 @@ crystal.
 
 ### It touches nothing but photons
 
-The whole ability is `PrismDestructionSight`'s global uniforms, published while the trigger is
+The whole ability is `PrismLit`'s global uniforms, published while the trigger is
 held. No camera write of any kind, no speed change, no input mute, and nothing it does can destroy,
 move or protect a single prism.
 
@@ -175,11 +175,11 @@ placement from the binding, so nothing is hand-positioned.
 | Seeding executor | `Executors/DeployTeamCrystalActionExecutor.cs` |
 | Sight config | `Data Containers/EchoSightActionSO.cs` |
 | Sight executor | `Executors/EchoSightActionExecutor.cs` |
-| Highlight publisher | `_Scripts/Utility/PrismDestructionSight.cs` |
+| Highlight publisher | `_Scripts/Utility/Lit/PrismLit.cs` (was `_Scripts/Utility/PrismDestructionSight.cs`; the LIT fundamental promoted it — `Docs/LIT.md`) |
 | Highlight shader | `_Graphics/Materials/Graphs/PrismDestructionSight.hlsl` |
 | Graph splice tool | `Tools/Shaders/wire_prism_destruction_sight.py` |
 | Shared blast geometry | `ImpactEffects/EffectsSO/Helpers/ExplosionHelper.cs` (`BlastVolume`, `TryResolveConicVolume`) |
-| HUD | `UI/View/DolphinVesselHUDView.cs`, `Data Containers/DolphinVesselHUDController.cs` |
+| HUD | `UI/View/DolphinVesselHUDView.cs`, `Data Containers/DolphinHUDController.cs` |
 | Assets | `_SO_Assets/VesselActions/Dolphin/DeployTeamCrystalAction.asset`, `EchoSightAction.asset` |
 
 ## 5. Tuning knobs
@@ -207,7 +207,7 @@ this. Two rows remain unverified because one editor cannot reach them: the **MPP
 row, and the **live-cap** row (~4 minutes of uninterrupted seeding at the shipped 30 s cooldown).
 Mirrored in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
-Run **FrogletTools > Vessels > Audit Vessel Ability Rows** first — Dolphin should still report map
+Run **FrogletTools > Vessels > Audits > Audit Vessel Ability Rows** first — Dolphin should still report map
 complete, 4/4 icons, order ✅. Then play Menu_Main and enter freestyle on the Dolphin.
 
 | check | expect |
@@ -271,7 +271,7 @@ of that single act**, so the row reads left to right as the whole weapon.
 | **Charge** | Echo Sight (RT) | blast capsule **THICKNESS**, `0.75×` → `1.5×` | **Pilot Echo** — vessels in the volume light up |
 | **Mass** | Crystal Seeding (passive) | recharge `×0.5` at level 10 | **Claimed Seed** — omni seed → team seed |
 | **Space** | Echo Obliteration (crystal impact) | **REACH** `×2` at level 10 | **Clean Blast** — spares own domain |
-| **Time** | Charge Fill Rate (drift) | boost fill `×1.5` at level 10 | **Drift Ward** — no DANGER-PRISM elemental debuff while drifting (an opposing pilot's blast still lands) |
+| **Time** | Drift Charge (drift) | boost fill `×2.5` at level 10 | **Drift Ward** — no DANGER-PRISM elemental debuff while drifting (an opposing pilot's blast still lands) |
 
 ### Charge → thickness, and the first un-anchored elemental multiplier
 
@@ -353,7 +353,7 @@ Every slot now draws one dimension of the same weapon:
 |---|---|---|
 | **Charge** | `BlastProfileGraphic` — a generated stadium mesh: the blast's cross-section, radius from Charge, extent from energy. Warms to the sight's own colour while RT is held | NEW. The band's old blast sprite is retired; `ProfileIcon` is now a transparent container with the generated profile as its child, the same arrangement `JawIcon` uses |
 | **Mass** | the crystal recharge fill, tinted by the tier the next cycle will plant | moved from the Charge band; the two carry pips are **deleted** with Twin Seed |
-| **Space** | the jaw pair (gape = energy) + the prism tally | jaws moved from the Time band; the tally moved onto its own row beneath them and was widened to 120px so a five-figure claim renders at full size |
+| **Space** | the jaw pair (gape = energy) | jaws moved from the Time band. The prism tally that sat beneath them moved again (2026-09-26) onto the **omni crystal card**, centred and held until the next blast — see `DolphinVesselHUDView.EnsureGeneratedAbilityIcons` |
 | **Time** | the authored 11-step boost ring | moved from the Mass band |
 
 The profile is procedural rather than an authored sprite ladder for the same reason the preview
@@ -364,7 +364,7 @@ the reference extent in one call so the icon can never mix a radius from one fra
 from another.
 
 The row wirer was re-cut to the same layout AND generalized to the whole fleet —
-`VesselAbilityRowWirer` (`FrogletTools > Vessels > Wire Vessel Ability Row`). Nothing about the
+`VesselAbilityRowWirer` (`FrogletTools > Vessels > Wiring > Wire Vessel Ability Row`). Nothing about the
 row's geometry was ever Dolphin-specific, and three vessels still report 0/4 icons, so pointing
 it at Manta/Rhino/Serpent builds their whole row from nothing. The Dolphin's gauges (profile
 capsule, tallies, jaws, adopted boost ring) stay as a per-vessel step the generic pass calls for
@@ -451,7 +451,7 @@ Three playtest findings, all of them cases where a change was *correct* and stil
 ### The Mass slot rendered black
 
 `DullCrystalColor` is authored **(0, 0, 0)** on Jade, Ruby and Gold in the live
-`OriginalColorSetSO`. §9 picked it on the reasoning that the icon should wear the colour the crystal
+`PhoticColorSetSO`. §9 picked it on the reasoning that the icon should wear the colour the crystal
 wears, and that reasoning was sound — the near-black body with a bright fresnel rim is exactly what
 makes a faceted domain crystal read as a dark gem. It is simply not a colour a UI element can be.
 
@@ -742,8 +742,8 @@ Two channels, deliberately two different looks.
 
 | | published by | colour | who sees it |
 |---|---|---|---|
-| **Yours** | `PrismDestructionSight.PublishLocal` | `PRISM_SIGHT_COLOR`, the pale cool cast | you |
-| **Theirs** | `PrismDestructionSight.PublishPeer` | that pilot's **domain signal colour**, pulled toward white by `PRISM_SIGHT_PEER_DESATURATION` | everyone but them |
+| **Yours** | `PrismLit.PublishAimed` | `PRISM_SIGHT_COLOR`, the pale cool cast | you |
+| **Theirs** | `PrismLit.PublishLight` | that pilot's **domain signal colour**, pulled toward white by `PRISM_LIT_PEER_DESATURATION` | everyone but them |
 
 **Your own cone wins outright on every prism it covers.** A rival sweeping across the same mass
 cannot recolour, brighten or dim it. This is not a tie-break convenience — an instrument that
@@ -818,7 +818,7 @@ Unchanged in the only place that matters: **O(1) per frame in total**, not per s
 prism. The peer bank is four `Shader.SetGlobalVectorArray` calls plus a float, packed once per frame
 in `LateUpdate` regardless of how many pilots are aiming — and skipped entirely when nobody is, so a
 match with no Dolphin in it costs this system literally nothing. On the GPU the loop is bounded by
-`_PrismSightPeerCount` and costs one compare when that is zero; with rivals aiming it is ~15 ALU per
+`_PrismLitPeerCount` and costs one compare when that is zero; with rivals aiming it is ~15 ALU per
 peer per prism, no texture, no extra varying, and no change to the render queue, the batch, or the
 draw call count. Wire cost is three floats per holder at a fraction of the tick rate.
 
@@ -826,10 +826,10 @@ draw call count. Wire cost is three floats per holder at a fraction of the tick 
 
 ### The bank is FOUR slots, and that is bounded by the roster
 
-`PRISM_SIGHT_PEER_SLOTS` / `PrismDestructionSight.PeerSlots`, one number in two files. Four is the
+`PRISM_LIT_PEER_SLOTS` / `PrismLit.Slots`, one number in two files. Four is the
 roster of both Dolphin-only modes (`MaxPlayersAllowed: 4` on `ArcadeGameRampage` and
 `ArcadeGameBends`) and one of those four is the viewer, so no roster the game ships can overflow it.
-`PrismDestructionSightTests.PeerBank_IsBigEnoughForEveryDolphinOnlyRoster` reads those assets rather
+`PrismLitTests.PeerBank_IsBigEnoughForEveryDolphinOnlyRoster` reads those assets rather
 than restating the number, so *raising a mode's player count* — the change that would silently start
 dropping rivals' marks — fails the test instead of shipping.
 
@@ -860,7 +860,7 @@ kind of "surely this is the same" that turns into a real behaviour change the ne
 refactors near it. The fix was the composition rule above, which needs no division at all on the
 local path.
 
-Edit-mode gates (`Assets/_Scripts/Tests/Editor/PrismDestructionSightTests.cs`) cover what a C#
+Edit-mode gates (`Assets/_Scripts/Tests/Editor/PrismLitTests.cs`) cover what a C#
 assembly can see: the slot count matching the shader's array length, the bank being big enough for
 the authored rosters, every published global being declared in the HLSL, and the own-sight early
 `return` still preceding the peer loop — that `return` **is** the "your own cone wins outright"
@@ -874,11 +874,11 @@ harness proved honest by re-running it with a `using` removed.
 | file | change |
 |---|---|
 | `Assets/_Graphics/Materials/Graphs/PrismDestructionSight.hlsl` | peer bank + the own-wins composition rule. **No ShaderGraph edit** — the arrays are declared at file scope, the same mechanism `PrismOcclusionCorridor.hlsl` uses for its dials, and the Custom Function signature is unchanged (so `Tools/Shaders/wire_prism_destruction_sight.py` stays valid) |
-| `Assets/_Scripts/Utility/PrismDestructionSight.cs` | split into a local channel and a frame-stamped peer bank with a `LateUpdate` flush driver |
+| `Assets/_Scripts/Utility/PrismDestructionSight.cs` (since renamed `Utility/Lit/PrismLit.cs`) | split into a local channel and a frame-stamped peer bank with a `LateUpdate` flush driver |
 | `Assets/_Scripts/Controller/Vessel/R_VesselActionHandler.cs` | `NetEchoSightShape` |
 | `.../Executors/EchoSightActionExecutor.cs` | local vs peer routing, shape publish/apply, teardown on both channels |
 | `Tools/Shaders/verify_prism_sight_composition.py` | new — compiles and runs the shipped HLSL |
-| `Assets/_Scripts/Tests/Editor/PrismDestructionSightTests.cs` | new — the C#-visible contracts |
+| `Assets/_Scripts/Tests/Editor/PrismDestructionSightTests.cs` (since renamed `PrismLitTests.cs`) | new — the C#-visible contracts |
 
 ### In-editor verification
 
@@ -1016,3 +1016,67 @@ channel, which is O(1) per frame in total regardless of how many pilots, human o
 6. Fly a **Sparrow** (Dog Fight) with AI opponents and confirm nothing changed: no vessel there
    binds a telegraph, so `TryGetInputForAction` returns false and the AI behaves exactly as before.
 
+
+## 16. 2026-09-28 — a super-shield in your cone glows DANGER: it is where the blast ends
+
+A crystal blast that reaches a **super-shielded** prism stops there. `PrismSpatialIndex
+.ResolveExplosionHit` answers `shouldContinue = false` on the first one the sweep meets — before
+the domain test, so your OWN super-shields stop it too — and `AOEConicExplosion` destroys the blast
+on that frame. The sight used to paint such a prism in the same pale cast as everything it was about
+to take, which is exactly backwards: it was the one prism in the cone that was going to cost you the
+shot. Now **every super-shield inside your own cone glows in the danger colour.**
+
+- **Why a per-PRISM bit, not a material stamp.** The domain gate rides a per-material float because
+  a prism's material IS its domain. The super-shield has no material of its own to stamp: the
+  stellation deliberately keeps the PLAIN team material (`PrismStateManager.ActivateSuperShield`),
+  so the prism graphs could not tell it apart from plain mass at all. The bit is therefore the
+  Hybrid-Per-Instance `_PrismSuperShielded`, carried by the ECS override `PrismSuperShieldedOverride`
+  on the live-prism prototype (a property block on the legacy MeshRenderer path).
+- **It is a STATE write, not an animation.** `PrismStellatedOctahedronShield` sets it as its pose
+  goes final in each direction (`Prism.SetSuperShieldMark(true/false)`), `Prism.Initialize` clears
+  it on pool reuse, and `Prism.ApplyRenderPath` re-asserts it onto a companion entity minted after
+  the shield engaged. Zero per-frame CPU; the clock-material law has no quarrel with a state that
+  is final the instant it is applied. It follows the shield the player can SEE — every path that
+  super-shields a prism (the state manager, the Skim Race track) engages that component.
+- **It TINTS, which the own sight otherwise never does — deliberately.** The sight stays out of the
+  palette's language so it can never be read as mass state; this is the one case where the mark IS
+  about mass state (the prism is a hazard to the weapon you are aiming), so it borrows the danger
+  colour the game already uses for "touching this costs you". It pulls the prism's own colour 75%
+  toward the danger colour and then adds a glow on top (additive red over a blue face would read as
+  purple). The fill is FLAT rather than edge-weighted — a blocker in the core blocks exactly as
+  hard as one on the rim.
+- **The colour is the palette's.** `PrismLit.PublishAimed` writes `_PrismSightBlockerColor` from
+  `SO_ColorSet.GetDangerSignalColor()` every frame the sight is held, so the mark cannot drift from
+  the danger tier. Unpublished (a tool scene with no theme) falls back to the HLSL `#define`.
+- **Own sight only.** A rival's cone does not flag blockers: a red mark inside someone else's aim
+  says "your problem" in the colour that means yours.
+- **Not done, and worth a playtest first:** the prisms BEYOND the first blocker are still lit as
+  though the blast will take them. It will not — it ends at the blocker — but drawing the shadow
+  a blocker casts would need a per-frame ordering the global-uniform shape cannot express, and
+  whether the red mark alone is enough is a look call.
+- **Known gap (created by this change, deliberately small):** `Prism.ApplyRenderPath` re-asserts
+  the mark onto a companion entity minted after the shield engaged, but NOT onto the legacy
+  MeshRenderer path. So a prism that was super-shielded on the entity path and then FELL BACK to
+  the legacy path (the ECS world torn down mid-life) shows no red until its shield next changes.
+  Fixing it means one re-assert in the legacy branch of `ApplyRenderPath`; not done because the
+  fall-back-mid-life case has no known trigger in shipped play.
+
+Proof: `Tools/Shaders/verify_prism_sight_composition.py` §5 compiles and RUNS the shipped HLSL —
+red dominates at every depth and at the rim, an unmarked prism is bit-identical to before, a
+marked prism outside the cone is untouched, a marked prism under a PEER cone gets the peer paint
+unchanged, and the published palette colour beats the fallback. Negative control: disable the
+branch and §5 fails (red 0/40). Graph wiring: `Tools/Shaders/wire_prism_destruction_sight.py`
+(an UPGRADE pass adds the property, node, slot and edge to a graph wired before it existed).
+Asserted from assets by `PrismLitTests.TheSuperShieldMarkReachesTheSightFromTheShieldToTheGraph`.
+
+**In-editor verification.** In freestyle on Garland (the boot world carries 69 super-shielded
+prisms), swap to the Dolphin with the Vessel Changer and hold the Echo Sight across a super-shield: it glows red while
+the plain mass around it takes the pale cast. Fire through it and confirm the blast stops there.
+Let it drop (a Rhino sword break) and confirm it stops glowing red on the next sweep.
+
+## 2026-11-16: a faster recharge (the weakest-abilities pass)
+
+The seed stays at a random point of the cytoplasm (Garrett, 2026-11-16: "the dolphin's crystals are intended to be
+random with in the cytoplasm"; a seed-ahead variant was built and removed the same day). The base recharge moved
+30 s -> 15 s so seeds come often enough to matter. The Time card's label moved "Charge Fill Rate" -> "Drift Charge",
+and its fill multiplier at Time 10 from x1.5 to x2.5 (authored on the Dolphin's ChargeBoostAction).

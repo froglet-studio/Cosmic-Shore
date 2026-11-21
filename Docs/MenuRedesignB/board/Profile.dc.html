@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Profile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.big>span{padding:14px 28px;font-size:18px}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.btn:disabled{cursor:default}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csDrop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes csGlow{0%,100%{box-shadow:0 0 18px rgba(153,255,128,.22)}50%{box-shadow:0 0 34px rgba(153,255,128,.5)}}
+@keyframes csShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes csSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes csSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes csDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes csCeremony{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile,.card{transition:filter 120ms ease-out}
+.tile:hover,.card:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+  <img src="/_blob/c480f7802bf9e34b00948517f6c3b602" alt="" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover">
+  <div style="position: absolute; left: 0; top: 84px; width: 1920px; height: 996px; background: rgba(0, 1, 10, 0.72)"></div>
+  <nav aria-label="Menu screens" style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 56px; background: rgba(0, 4, 31, 0.6); border-bottom: 1px solid rgba(67, 76, 137, 0.7)">
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">LT</span></span>
+    <span class="tab" style="color: #747BAD">HANGAR</span>
+    <span class="tab" style="color: #747BAD">ARK</span>
+    <span class="tab" style="color: #747BAD">HOME</span>
+    <span class="tab" style="color: #5C5F70; display: flex; align-items: center; gap: 8px"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg>PORT</span>
+    <span class="tab" style="color: #00D4FF; padding: 8px 0 6px; border-bottom: 2px solid #00D4FF">PROFILE</span>
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">RT</span></span>
+  </nav>
+
+  <section aria-label="Pilot" style="position: absolute; left: 40px; top: 108px; width: 1180px; height: 196px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 0ms both">
+    <div class="sl" style="background: #222645; padding: 1px; box-sizing: border-box; width: 1180px; height: 196px"><div class="sl grid" style="position: relative; height: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 30px; padding: 0 30px"><span aria-hidden="true" style="position: absolute; top: 10px; left: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; left: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; right: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span>
+      <button class="tile oct" type="button" aria-label="Change avatar" onClick="{{toAvatar}}" style="display: grid; place-items: center; width: 148px; height: 148px; flex: none; background: #E6E9FF">
+        <span class="oct" style="display: block; width: 144px; height: 144px; overflow: hidden; background: #222645"><img src="{{avatar}}" alt="" style="width: 144px; height: 144px; object-fit: cover; animation: csFloat 4s ease-in-out infinite"></span>
+      </button>
+      <div style="display: flex; flex-direction: column; gap: 10px; width: 380px">
+        <span class="lab">Pilot</span>
+        <h1 style="margin: 0; font-weight: 400; font-size: 48px; line-height: 1">{{name}}</h1>
+        <div style="display: flex; gap: 12px; margin-top: 6px"><button class="btn" type="button" onClick="{{toAvatar}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Change avatar</span></button><button class="btn" type="button" onClick="{{toName}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Rename</span></button></div>
+      </div>
+      <div style="width: 1px; align-self: stretch; margin: 28px 0; background: #222645"></div>
+      <div style="flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 26px">
+        <sc-for list="{{record}}" as="r" hint-placeholder-count="4">
+          <div style="display: flex; flex-direction: column; gap: 4px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) {{r.d}}ms both">
+            <span class="lab" style="font-size: 12px">{{r.k}}</span>
+            <span style="display: flex; align-items: center; gap: 8px">
+              <sc-if value="{{r.crystal}}" hint-placeholder-val="{{ false }}"><span style="color: #FFAE00; display: flex"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 2l7 6-7 10-7-10z"></path><path d="M3.6 8h12.8"></path></svg></span></sc-if>
+              <span class="num" style="font-size: 28px; line-height: 1; color: {{r.color}}">{{r.v}}</span>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </div></div>
+  </section>
+
+  <section aria-label="Episodes" style="position: absolute; left: 1240px; top: 108px; width: 640px; height: 196px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 80ms both">
+    <button class="tile sl" type="button" aria-label="Episodes, locked" onClick="{{episodes}}" style="display: block; width: 640px; height: 196px; background: #5C5F70; padding: 1px; animation: {{shake}}">
+      <span class="sl" style="position: relative; display: flex; align-items: center; gap: 26px; height: 100%; box-sizing: border-box; padding: 0 34px; background: #0B0F29">
+        <span aria-hidden="true" style="position: absolute; top: 10px; left: 10px; width: 22px; height: 22px; border-top: 1px solid #25262D; border-left: 1px solid #25262D; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-top: 1px solid #25262D; border-right: 1px solid #25262D; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; left: 10px; width: 22px; height: 22px; border-bottom: 1px solid #25262D; border-left: 1px solid #25262D; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; right: 10px; width: 22px; height: 22px; border-bottom: 1px solid #25262D; border-right: 1px solid #25262D; pointer-events: none"></span>
+        <span class="hex" style="display: grid; place-items: center; width: 84px; height: 72px; background: #25262D; flex: none"><span class="hex" style="display: grid; place-items: center; width: 80px; height: 68px; background: #0B0F29"><svg width="24" height="28" viewBox="0 0 14 16" fill="none" stroke="#5C5F70" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg></span></span>
+        <span style="display: flex; flex-direction: column; gap: 8px; text-align: left">
+          <span class="lab" style="font-size: 18px; color: #5C5F70">Episodes</span>
+          <span style="font-size: 22px; color: #747BAD">Arrive with the full release</span>
+        </span>
+      </span>
+    </button>
+  </section>
+
+  <div style="position: absolute; left: 40px; top: 330px; width: 1840px; display: flex; align-items: center; gap: 24px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 120ms both">
+    <span class="lab" style="color: #E6E9FF">Quests</span>
+    <span style="flex: 1; height: 4px; background: #003648; position: relative; overflow: hidden"><span style="position: absolute; left: 0; top: 0; height: 4px; width: {{donePct}}%; background: #00D4FF; transform-origin: left; animation: csGrowX 600ms cubic-bezier(.33,1,.68,1) 300ms both"></span></span>
+    <span class="lab num">{{doneCount}} of 5 complete</span>
+  </div>
+  <div aria-hidden="true" style="position: absolute; left: 40px; top: 372px; width: 1840px; height: 28px">
+    <sc-for list="{{rail}}" as="r" hint-placeholder-count="4">
+      <div style="position: absolute; left: {{r.x}}px; top: {{r.top}}px; width: {{r.w}}px; height: {{r.h}}px; background: {{r.c}}; overflow: hidden; transform-origin: left; animation: csGrowX 200ms cubic-bezier(.33,1,.68,1) {{r.d}}ms both">
+        <sc-if value="{{r.spark}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: 0; left: -48px; width: 48px; height: 100%; background: linear-gradient(90deg, rgba(128, 234, 255, 0), #FFFFFF, rgba(128, 234, 255, 0)); animation: csSparkX 1.8s linear {{r.sd}}ms infinite"></span></sc-if>
+      </div>
+    </sc-for>
+    <sc-for list="{{nodes}}" as="n" hint-placeholder-count="5">
+      <span class="hex" style="position: absolute; left: {{n.x}}px; top: 0; display: grid; place-items: center; width: 32px; height: 28px; background: {{n.border}}; animation: csPop 320ms cubic-bezier(.34,1.56,.64,1) {{n.d}}ms both"><span class="hex" style="display: block; width: 28px; height: 24px; background: {{n.fill}}"></span></span>
+    </sc-for>
+  </div>
+
+  <section aria-label="Quests" style="position: absolute; left: 40px; top: 420px; width: 1840px; height: 620px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px">
+    <sc-for list="{{cards}}" as="q" hint-placeholder-count="5">
+      <div class="sl" style="background: {{q.border}}; padding: 1px; animation: {{q.anim}}">
+        <div class="sl" style="position: relative; height: 100%; box-sizing: border-box; background: #00041F; display: flex; flex-direction: column">
+          <div style="position: relative; height: 190px; overflow: hidden; flex: none">
+            <img src="{{q.art}}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: {{q.artAlpha}}; animation: csPan 16s ease-in-out infinite alternate">
+            <span class="num" style="position: absolute; left: 14px; top: 10px; font-size: 44px; line-height: 1; color: rgba(230, 233, 255, 0.85)">{{q.num}}</span>
+            <sc-if value="{{q.locked}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex"><svg width="26" height="30" viewBox="0 0 14 16" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg></span></sc-if>
+            <sc-if value="{{q.done}}" hint-placeholder-val="{{ true }}"><span class="sls lab" style="position: absolute; right: 12px; top: 12px; padding: 5px 10px; background: #747BAD; color: #00010A; font-size: 12px">Completed</span></sc-if>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 20px">
+            <span class="lab" style="color: {{q.tagColor}}">{{q.tag}}</span>
+            <span style="font-size: 22px; color: {{q.titleColor}}">{{q.name}}</span>
+            <span style="font-size: 15px; line-height: 1.45; color: #747BAD">{{q.desc}}</span>
+            <div style="height: 1px; background: #222645; margin: 4px 0"></div>
+            <span class="lab" style="font-size: 12px">{{q.goalsTitle}}</span>
+            <sc-for list="{{q.goals}}" as="g" hint-placeholder-count="2">
+              <div style="display: flex; align-items: flex-start; gap: 10px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) {{g.d}}ms both">
+                <span style="display: grid; place-items: center; width: 14px; height: 18px; flex: none">
+                  <sc-if value="{{g.done}}" hint-placeholder-val="{{ false }}"><span style="color: #99FF80; display: flex"><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5l3.5 3.5 7.5-8.5"></path></svg></span></sc-if>
+                  <sc-if value="{{g.next}}" hint-placeholder-val="{{ true }}"><span style="display: block; width: 8px; height: 8px; background: #E6E9FF; transform: rotate(45deg)"></span></sc-if>
+                  <sc-if value="{{g.todo}}" hint-placeholder-val="{{ false }}"><span style="display: block; width: 8px; height: 8px; border: 1px solid #5C5F70; transform: rotate(45deg)"></span></sc-if>
+                </span>
+                <span style="display: flex; flex-direction: column; gap: 2px">
+                  <span class="lab" style="font-size: 11px; color: {{g.labColor}}">{{g.lab}}</span>
+                  <span style="font-size: 15px; line-height: 1.35; color: {{g.color}}">{{g.text}}</span>
+                </span>
+              </div>
+            </sc-for>
+            <span style="flex: 1"></span>
+            <sc-if value="{{q.showBars}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 12px">
+                <span style="display: flex; align-items: flex-end; gap: 3px"><sc-for list="{{q.bars}}" as="b" hint-placeholder-count="4"><span style="width: 9px; height: {{b.h}}px; background: {{b.c}}; transform-origin: bottom; animation: csGrowY 200ms cubic-bezier(.33,1,.68,1) {{b.d}}ms both"></span></sc-for></span>
+                <span class="num" style="font-size: 15px">Intensity {{q.level}} of 4</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{q.ready}}" hint-placeholder-val="{{ false }}"><span style="display: flex; flex-direction: column"><button class="btn big" type="button" onClick="{{q.claim}}" style="--bc: #99FF80; --bf: #99FF80; --bt: #00010A"><span style="position: relative; overflow: hidden; padding: 14px 0; font-size: 18px">Claim<span aria-hidden="true" style="position: absolute; top: 0; left: -80px; width: 70px; height: 100%; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)); animation: csSweep 2.8s ease-in-out infinite"></span></span></button></span></sc-if>
+            <sc-if value="{{q.current}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" onClick="{{q.play}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF; align-self: stretch"><span>Play {{q.mode}}</span></button></sc-if>
+            <sc-if value="{{q.locked}}" hint-placeholder-val="{{ false }}"><span style="font-size: 15px; color: #5C5F70">{{q.lockText}}</span></sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </section>
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 0; right: 0; top: 112px; display: flex; justify-content: center; z-index: 5; animation: csDrop 320ms cubic-bezier(.22,1,.36,1) both"><div class="sl" style="background: #434C89; padding: 1px">
+      <div class="sl" style="background: #00041F; padding: 12px 22px; font-size: 17px">{{toastText}}</div>
+    </div></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 1080}, "start": {"editor": null}}'>
+const Q = [{"name": "SCURRY", "mode": "Scurry", "art": "/_blob/a1f5c5b5b5c1074b0e6e9257d75fe653", "desc": "Unlock Intensity 4 to unlock gamemodes", "goals": {"3": "Rank first in an Intensity 2 game", "4": "Rank first in an Intensity 3 game"}}, {"name": "HEX RACE", "mode": "Skim Race", "art": "/_blob/33b45ebe5f51c2b0d213c122ea74892a", "desc": "Unlock Intensity 4 to unlock gamemodes", "goals": {"3": "Rank first in an Intensity 2 race", "4": "Rank first in an Intensity 3 race"}}, {"name": "JOUST", "mode": "Joust", "art": "/_blob/1efac15c724589a0f77c042d666ebb18", "desc": "Unlock Intensity 4 to unlock gamemodes", "goals": {"3": "Win a Joust match at Intensity 2", "4": "Win a Joust match at Intensity 3"}}, {"name": "MAELSTROM", "mode": "Maelstrom", "art": "/_blob/e5ff645affc0bc6995957b95d3a8c0c7", "desc": "Unlock Intensity 4 to unlock Hangar", "goals": {"3": "Play Intensity 2 to unlock", "4": "Play Intensity 3 to unlock"}}, {"name": "VESSEL HANGAR", "mode": "", "art": "/_blob/b9c23a15cc3620c737d974cd5f402158", "desc": "Complete all game mode quests to unlock the Vessel Hangar", "goals": {}}];
+const AV = ["/_blob/9a4056241500f4b0b79480b0fe3a767d", "/_blob/2cc2a6e62ae1396c8f5de3abef10e911", "/_blob/235ab6e35ba068dadd55579362aad847", "/_blob/84f030327dea2da91414bad3c8b31503", "/_blob/5a183917b2d8308cf5d3cc0650fbc359", "/_blob/fe5678a904b7cc505ffc1ca5d3806c63", "/_blob/ee4bf7ad283c99d16dd17efe71012237", "/_blob/0b54fb2a941aa0806c1aa5b7ab8099dd", "/_blob/a222a7741e335ef265c6409589a099c7", "/_blob/357232684e62c3323ea05ecb9b3bf921", "/_blob/aa68449f06d220e145108192c0af177c", "/_blob/7eaa27fb8ceb63828f5b02dedccd616a", "/_blob/9eec88b032aebb43abe9eb8b7a1d9b99", "/_blob/df1dbe80a73ba684c3ea01433ff0b4db", "/_blob/ffab301434b2c67d238f6f9eb1425b98", "/_blob/611de1d4aebd64ce54f40eec00947ec5", "/_blob/ec7403d6960ec10aff4f4e2d218d39be", "/_blob/9777e9dfe4bc2e7c58228ee8f7b8f457"];
+const RECORD = [["Crystals", 1250, "crystal"], ["Games completed", 48, ""], ["Flight time", "6h 12m", ""], ["Sessions", 31, ""]];
+const DEFAULT = { states: ['done', 'ready', 'current', 'locked', 'locked'], level: 2, name: 'Gradies', avatar: 0, toast: '' };
+const OUT = 'cubic-bezier(.22,1,.36,1)';
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const s = Object.assign({}, DEFAULT, props.start || {});
+    this.state = { states: s.states.slice(), level: s.level, name: s.name, avatar: s.avatar, toast: s.toast, claimed: -1, shake: 0, t: 1 };
+    this.timer = null; this.shakeT = null;
+    this.count = null;
+  }
+  componentWillUnmount() { [this.timer, this.shakeT].forEach((t) => t && clearTimeout(t)); if (this.count) clearInterval(this.count); }
+  say(text) {
+    if (this.timer) clearTimeout(this.timer);
+    this.setState({ toast: text });
+    this.timer = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+  renderVals() {
+    const st = this.state;
+    const W = 1840, cw = (W - 4 * 20) / 5;
+    const cx = Q.map((_, i) => Math.round(i * (cw + 20) + cw / 2));
+    const reached = (i) => st.states[i] === 'done' || st.states[i] === 'ready';
+    const rail = [], nodes = [];
+    for (let i = 0; i < Q.length - 1; i++) {
+      const on = reached(i);
+      rail.push({ x: cx[i], w: cx[i + 1] - cx[i], top: on ? 12 : 13, h: on ? 3 : 2, c: on ? '#00D4FF' : '#003648', spark: on, d: 200 + i * 80, sd: 700 + i * 300 });
+    }
+    Q.forEach((_, i) => {
+      const s = st.states[i];
+      nodes.push({ x: cx[i] - 16, d: 160 + i * 60, border: s === 'locked' ? '#25262D' : (s === 'current' ? '#E6E9FF' : '#00D4FF'),
+                   fill: s === 'done' || s === 'ready' ? '#00D4FF' : '#00041F' });
+    });
+    const goalRows = (q, i, s) => {
+      if (!q.mode) return Q.slice(0, 4).map((p, k) => ({ lab: 'Quest ' + (k + 1), text: p.name,
+        done: st.states[k] === 'done', next: st.states[k] === 'ready' || st.states[k] === 'current', todo: st.states[k] === 'locked',
+        color: st.states[k] === 'done' ? '#747BAD' : '#E6E9FF', labColor: '#5C5F70', d: 360 + i * 40 + k * 40 }));
+      return [3, 4].map((lv, k) => {
+        const done = s === 'done' || s === 'ready' || (s === 'current' && st.level >= lv);
+        const next = s === 'current' && st.level + 1 === lv;
+        return { lab: 'Unlock intensity ' + lv, text: q.goals[lv], done, next, todo: !done && !next,
+                 color: done ? '#747BAD' : (next ? '#E6E9FF' : '#5C5F70'), labColor: next ? '#E6E9FF' : '#5C5F70', d: 360 + i * 40 + k * 40 };
+      });
+    };
+    const cards = Q.map((q, i) => {
+      const s = st.states[i], prev = i > 0 ? Q[i - 1].name : '';
+      const ceremony = st.claimed === i;
+      return { name: q.name, desc: q.desc, art: q.art, mode: q.mode, num: '0' + (i + 1),
+        tag: s === 'done' ? 'Completed' : (s === 'ready' ? 'Ready to claim' : (s === 'current' ? 'In progress' : 'Locked')),
+        tagColor: s === 'ready' ? '#99FF80' : (s === 'locked' ? '#5C5F70' : '#747BAD'),
+        titleColor: s === 'locked' ? '#5C5F70' : '#E6E9FF', artAlpha: s === 'locked' ? 0.3 : (s === 'done' ? 0.7 : 1),
+        border: s === 'ready' ? '#99FF80' : (s === 'current' ? '#E6E9FF' : '#222645'),
+        anim: ceremony ? 'csCeremony 500ms cubic-bezier(.34,1.56,.64,1) both'
+                       : (s === 'ready' ? 'csRise 320ms ' + OUT + ' ' + (200 + i * 40) + 'ms both, csGlow 2.4s ease-in-out 600ms infinite'
+                                        : 'csRise 320ms ' + OUT + ' ' + (200 + i * 40) + 'ms both'),
+        done: s === 'done', ready: s === 'ready', current: s === 'current', locked: s === 'locked',
+        goalsTitle: q.mode ? 'Goals' : 'Needs', goals: goalRows(q, i, s),
+        showBars: s === 'current', level: String(st.level),
+        bars: [1, 2, 3, 4].map((b) => ({ h: 10 + b * 4, c: b <= st.level ? '#E6E9FF' : '#222645', d: 500 + b * 40 })),
+        lockText: 'Unlocks after ' + prev,
+        claim: () => {
+          const states = st.states.slice(); states[i] = 'done';
+          this.setState({ states, claimed: i }); this.say('Quest Complete! ' + q.name);
+        },
+        play: () => this.say('Opens ' + q.mode + ' in the Arcade.') };
+    });
+    const done = st.states.filter((s) => s === 'done').length;
+    const ease = 1 - Math.pow(1 - st.t, 3);
+    return {
+      avatar: AV[st.avatar], name: st.name, rail, nodes, cards,
+      record: RECORD.map((r, i) => ({ k: r[0], crystal: r[2] === 'crystal', d: 120 + i * 40, color: r[2] === 'crystal' ? '#FFAE00' : '#E6E9FF',
+                                      v: typeof r[1] === 'number' ? Math.round(r[1] * ease).toLocaleString('en-US') : r[1] })),
+      doneCount: String(done), donePct: done * 20,
+      shake: st.shake ? 'csShake 240ms ease-out' : 'none',
+      toAvatar: () => this.say('Opens the profile window on Avatar.'),
+      toName: () => this.say('Opens the profile window on Display name.'),
+      episodes: () => {
+        this.setState({ shake: st.shake + 1 });
+        if (this.shakeT) clearTimeout(this.shakeT);
+        this.shakeT = setTimeout(() => this.setState({ shake: 0 }), 260);
+        this.say('Episodes arrive with the full release.');
+      },
+      toast: !!st.toast, toastText: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

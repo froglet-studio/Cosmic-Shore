@@ -10,6 +10,18 @@ Run from the repo root:  python3 Tools/Build/author_dogfight_assets.py [--check]
 
 --check validates without writing (CI / pre-commit use).
 
+WHAT --check COVERS, precisely. It builds every asset in memory and validates THAT - the
+generator's own constants, the relationships between them, and the wiring it would emit. It
+does NOT diff against what is on disk, so it cannot see a hand-edit that has drifted an asset
+away from what this script would author; read a green --check as "the recipe is coherent", not
+as "the shipped assets match it".
+
+It also has to keep RUNNING to mean anything, and it once quietly stopped: section 9's
+one-shot scene clone asserts against a donor scene that has since been reworked, and every
+validation in this file lives after it, so the abort took the whole check with it while
+--check still looked like it was being run. A spent one-shot now stands down (SCENE_STEP_LIVE)
+instead of aborting.
+
 The arena geometry and the PhaseThresholds are IMPORTED from boneyard_budget.py - which
 mirrors SpawnableBoneyard.cs's loops exactly - so the wreck field and the phase ladder that
 sits above it can never drift apart behind a stale constant here.
@@ -31,6 +43,7 @@ CHECK_ONLY = "--check" in sys.argv
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import boneyard_budget as budget  # noqa: E402
+import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 
 
 def guid(name: str) -> str:
@@ -65,8 +78,12 @@ G_ASSET = {
     "MinigameDogFight.unity":        guid("asset/MinigameDogFight.unity"),
     "Event_CombatHitStats":          guid("asset/Event_CombatHitStats"),
     "VesselCombatHitByBullet":       guid("asset/VesselCombatHitByBullet"),
+    # The three RANKED missile tiers. The seeds are internal identities, not filenames - the
+    # direct-hit asset was renamed VesselCombatHitByMissileDirect for readability alongside its
+    # two siblings and deliberately kept its seed, so every container reference survived.
     "VesselCombatHitByMissile":      guid("asset/VesselCombatHitByMissile"),
     "VesselCombatHitByMissileBlast": guid("asset/VesselCombatHitByMissileBlast"),
+    "VesselCombatHitByMissileShockwave": guid("asset/VesselCombatHitByMissileShockwave"),
     "SkyBurstExplosionContainer":    guid("asset/SkyBurstExplosionImpactorDataContainer"),
 }
 for _i in INTENSITIES:
@@ -99,7 +116,6 @@ EXISTING = {
     "IconActive":         "1dc25875d7cbd3e478fc5a133e65eedb",
     "IconInactive":       "fa9b62abd1b217b4ba3d7c5a4a2c0916",
     "CardBackground":     "587d2203114c8004c9985d0112c89585",
-    "PreviewClip":        "4396864d799a6154bb82e5346ac0093b",
     # the scavengers
     "QuadFishPrefab":     "19615ed0c903b1041973d70593d4b0a3",
     # the cell's CellRuntimeDataSO - the spawn ring resolves its Cell through this
@@ -115,12 +131,25 @@ QUADFISH_PALETTE = ["4053ff006892420d8ca5efa51365570c", "5697aa8685514f2ca9b9de9
 PRISM_FILEID = 4563009547826722997
 MEMBRANE_FILEID = 346633111830028674
 CYTOPLASM_FILEID = 639495419069806261
-PREVIEW_FILEID = 241334157148977051
+# The point target - the race metric. The 25%/50% milestone rungs are fractions of this (so 10
+# and 20), and moving it moves the whole progress ladder. Kept in sync with
+# EndConditionOverridesSO.DefaultDogFightPointTarget. 90 until 2026-10-26: no playtest reached it
+# inside 63-180 s, so it was cut to 40 to land an experienced match near 90 s.
+DOGFIGHT_POINT_TARGET = 40
 
-# The point target - the race metric. The 25%/50% milestone rungs are fractions of this (so 30
-# and 60), and moving it moves the whole progress ladder. Kept in sync with
-# EndConditionOverridesSO.DefaultDogFightPointTarget.
-DOGFIGHT_POINT_TARGET = 90
+# The price list, and it is a ladder of PROXIMITY. One rocket reaches a pilot through three
+# concentric radii - warhead shockwave (25x the round's hit radius), prism blast (the conic
+# detonation), direct strike (the round's own 1x sphere) - and the tiers are RANKED, not
+# additive: VesselCombatHitLatch folds all three onto one window per victim and pays the best
+# one achieved. So a centre-punch is worth 30, not 10+20+30.
+#
+# The shape follows the ask: the shockwave is the ORDINARY outcome (the proximity fuze trips at
+# 20x, so a rocket almost always goes off before it can touch a hull), and the two inner tiers
+# are deliberately rare rather than merely better.
+BULLET_POINTS = 1
+MISSILE_SHOCKWAVE_POINTS = 10
+MISSILE_BLAST_POINTS = 20
+MISSILE_DIRECT_POINTS = 30
 
 # The comeback strength, and it is a FUNCTION OF THE TARGET - `bonusLevels = deficit x rate`, so
 # a rate is only meaningful next to the scale of the deficits the mode produces. This one shipped
@@ -135,7 +164,10 @@ DOGFIGHT_POINT_TARGET = 90
 # All four elements rise together. That is the platform law (CLAUDE.md / ElementalComebackSystem:
 # "ALL FOUR elements rise EQUALLY... equal-elements is the law"), so the dial below is the whole
 # tuning surface; a Mass-only weighting would be a fundamentals change, not a mode setting.
-COMEBACK_RATE = 0.12
+#
+# 0.27 since the target went 90 -> 40 (2026-10-26): it keeps the 2.7 levels a quarter-of-target
+# deficit bought at 0.12 x 90, rather than letting the cut silently halve the comeback.
+COMEBACK_RATE = 0.27
 
 # Players spawn on a shell OUTSIDE the wreck field (radius 520) and inside the membrane (1200),
 # so every pilot's opening move is to fly in. The cell has no nucleus, so the ring has nothing
@@ -147,7 +179,7 @@ SPAWN_RING_RADIUS = 700
 SENSE_RADIUS = 1200
 
 # The scene's NetworkCrystalManager spawns the OMNI crystal. Dog Fight runs it EXACTLY as every
-# other mode does (Ribcage, freestyle: crystalCountMode 0, one crystal, spawnOnClientReady) - it
+# other mode does (Cleave, freestyle: crystalCountMode 0, one crystal, spawnOnClientReady) - it
 # is a platform fundamental, not mode furniture, and a mode that switches it off is a mode where
 # a whole crystal economy silently does nothing.
 #
@@ -297,31 +329,52 @@ emit("Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByBulle
 emit("Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByBullet.asset.meta",
      asset_meta(G_ASSET["VesselCombatHitByBullet"]))
 
-emit("Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByMissile.asset",
-     HEADER_FOR(G_SCRIPT["VesselCombatHitByProjectileEffectSO"], "VesselCombatHitByMissile") +
+# ONE ROCKET, THREE RANKED CLASSES. A skyburst reaches a pilot through three concentric
+# things - the round's own hit sphere (MissileDirect, hitClass 1), the prism blast that tears
+# up the arena (MissileBlast, 3) and the warhead shockwave that debuffs and jousts (
+# MissileShockwave, 4) - and a victim inside the inner one is always inside the outer ones.
+# They share ONE latch window per victim (VesselCombatHitLatch folds all three onto one key),
+# so a rocket pays its BEST tier and no more; the classes exist to price how close it got.
+#
+# hitClass values 3 and 4 are new members appended to the enum on purpose: 0/1/2 keep the
+# meanings every already-serialized asset in the project relies on.
+DIRECT_PATH = ("Assets/_SO_Assets/Effects/Vessel Projectile Effects/"
+               "VesselCombatHitByMissileDirect.asset")
+emit(DIRECT_PATH,
+     HEADER_FOR(G_SCRIPT["VesselCombatHitByProjectileEffectSO"], "VesselCombatHitByMissileDirect") +
      f"""  vesselTypesToImpact: []
   hitClass: 1
   onCombatHitLanded: {{fileID: 11400000, guid: {G_ASSET['Event_CombatHitStats']}, type: 2}}
   sameVictimCooldownSeconds: {SAME_VICTIM_COOLDOWN}
 """)
-emit("Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByMissile.asset.meta",
-     asset_meta(G_ASSET["VesselCombatHitByMissile"]))
+emit(DIRECT_PATH + ".meta", asset_meta(G_ASSET["VesselCombatHitByMissile"]))
 
-emit("Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileBlast.asset",
+BLAST_PATH = ("Assets/_SO_Assets/Effects/Vessel Explosion Effects/"
+              "VesselCombatHitByMissileBlast.asset")
+emit(BLAST_PATH,
      HEADER_FOR(G_SCRIPT["VesselCombatHitByExplosionEffectSO"], "VesselCombatHitByMissileBlast") +
-     f"""  hitClass: 1
+     f"""  hitClass: 3
   onCombatHitLanded: {{fileID: 11400000, guid: {G_ASSET['Event_CombatHitStats']}, type: 2}}
   sameVictimCooldownSeconds: {SAME_VICTIM_COOLDOWN}
 """)
-emit("Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileBlast.asset.meta",
-     asset_meta(G_ASSET["VesselCombatHitByMissileBlast"]))
+emit(BLAST_PATH + ".meta", asset_meta(G_ASSET["VesselCombatHitByMissileBlast"]))
+
+SHOCKWAVE_PATH = ("Assets/_SO_Assets/Effects/Vessel Explosion Effects/"
+                  "VesselCombatHitByMissileShockwave.asset")
+emit(SHOCKWAVE_PATH,
+     HEADER_FOR(G_SCRIPT["VesselCombatHitByExplosionEffectSO"], "VesselCombatHitByMissileShockwave") +
+     f"""  hitClass: 4
+  onCombatHitLanded: {{fileID: 11400000, guid: {G_ASSET['Event_CombatHitStats']}, type: 2}}
+  sameVictimCooldownSeconds: {SAME_VICTIM_COOLDOWN}
+""")
+emit(SHOCKWAVE_PATH + ".meta", asset_meta(G_ASSET["VesselCombatHitByMissileShockwave"]))
 
 
 # ── 4. Wire them onto the Sparrow's weapons ─────────────────────────────────
 #
-# BULLETS: append to the full-auto container's existing projectileShipEffects (which already
-# spins and shrinks the victim's skimmer) - the scoring effect is additive and changes nothing
-# about how a bullet already feels.
+# BULLETS: append to the full-auto container's existing projectileShipEffects - the scoring
+# effect is additive and changes nothing about how a bullet already feels. (That container used
+# to carry a SPIN as well; it was removed - a vessel may not move an opposing vessel.)
 FULLAUTO_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/"
                  "SparrowFullAutoProjectileImpactContainer.asset")
 fullauto = read(FULLAUTO_PATH)
@@ -400,16 +453,17 @@ emit(SKYBURST_PATH, skyburst)
 # every vessel it engulfed - a Sparrow rocket has never done anything to a pilot it did not hit
 # dead-on. This is the container it was missing.
 #
-# Scoped to the CONIC prefab deliberately. The same detonation also spawns the shared
-# AOEExplosion.prefab, which the Manta's crystal path uses too; hanging a "missile hit" on that
-# would label a crystal blast as gunnery in every mode. The conic burst is the big one (scale
-# 100-170) and is Sparrow-only, so it is the honest place for this.
+# The BLAST-tier reporter no longer hangs here. The Sparrow pass (89c8a53c7, "both rockets pay
+# the blast") moved VesselCombatHitByMissileBlast onto SkyBurstBlastExplosionImpactorDataContainer
+# - the container on the DESTRUCTIVE AOEExplosion both rocket variants spawn - and emptied this
+# one, so the heavy rocket's conic burst no longer double-reports the blast tier. This container
+# stays (the conic prefab still needs a non-null container, or AcceptImpactee returns for every
+# vessel) but carries no vessel effect; the blast reporter's new home is checked READ-ONLY below.
 emit("Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
      "SkyBurstExplosionImpactorDataContainer.asset",
      HEADER_FOR(EXISTING["ExplosionImpactorDataContainerSO"],
                 "SkyBurstExplosionImpactorDataContainer") +
-     f"""  vesselExplosionEffects:
-  - {{fileID: 11400000, guid: {G_ASSET['VesselCombatHitByMissileBlast']}, type: 2}}
+     """  vesselExplosionEffects: []
   explosionPrismEffects: []
 """)
 emit("Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
@@ -517,7 +571,10 @@ MonoBehaviour:
 # metric reader - see DogFightScoringRuleSO's class summary.
 emit("Assets/_SO_Assets/Scoring Rules/DogFightScoringRule.asset",
      HEADER_FOR(G_SCRIPT["DogFightScoringRuleSO"], "DogFightScoringRule") +
-     "  metric: 8\n  golfRules: 1\n  bulletPoints: 1\n  missilePoints: 50\n")
+     f"  metric: 8\n  golfRules: 1\n  bulletPoints: {BULLET_POINTS}\n"
+     f"  missileShockwavePoints: {MISSILE_SHOCKWAVE_POINTS}\n"
+     f"  missileBlastPoints: {MISSILE_BLAST_POINTS}\n"
+     f"  missileDirectPoints: {MISSILE_DIRECT_POINTS}\n")
 emit("Assets/_SO_Assets/Scoring Rules/DogFightScoringRule.asset.meta",
      asset_meta(G_ASSET["DogFightScoringRule"]))
 
@@ -540,19 +597,17 @@ emit("Assets/_SO_Assets/Games/ArcadeGameDogFight.asset",
     to the point target takes it.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
-  PreviewClip: {{fileID: {PREVIEW_FILEID}, guid: {EXISTING['PreviewClip']}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {aml.card_background('DogFight')}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameDogFight
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Sparrow']}, type: 2}}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
-  CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: {COMEBACK_RATE}
@@ -634,14 +689,14 @@ for i in INTENSITIES:
     # only how much wreckage there is to hide behind.
     env_ref = (f"{{fileID: 5260000000000503, "
                f"guid: {G_ASSET[f'SpawnableBoneyard{i}.prefab']}, type: 3}}")
-    description = (
-        f"The Dog Fight arena at intensity {i} - {row['total']} prisms of wreckage\n"
-        f"    inside r={budget.ARENA_RADIUS:.0f}: {hulks} hollow hulks to hide in, {spires} leaning spires,\n"
-        f"    {frames} girder cages, {overpasses} broken overpasses, and {row['danger']} danger traps on the torn\n"
-        "    ends and around the reactor, scattered into debris fields with an open centre.\n"
-        "    Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design.\n"
-        "    PhaseThresholds ride THIS intensity's own baseline; regenerate with\n"
-        "    Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.")
+    description = aml.wrap_yaml_scalar(
+        f"The Dog Fight arena at intensity {i} - {row['total']} prisms of wreckage "
+        f"inside r={budget.ARENA_RADIUS:.0f}: {hulks} hollow hulks to hide in, {spires} leaning spires, "
+        f"{frames} girder cages, {overpasses} broken overpasses, and {row['danger']} danger traps on the torn "
+        "ends and around the reactor, scattered into debris fields with an open centre. "
+        "Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design. "
+        "PhaseThresholds ride THIS intensity's own baseline; regenerate with "
+        "Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.")
     th = budget.phase_thresholds(row["total"], row["volume"])
     thresholds = f"""  PhaseThresholds:
     RestlessEnter: {th['RestlessEnter']}
@@ -683,111 +738,140 @@ for i in INTENSITIES:
 # so the asserts below fire on a donor that is simply a different scene now. That is the
 # expected end state of a migration generator, not a break to repair - if Dog Fight ever needs
 # re-authoring, re-point it at a current donor rather than trying to satisfy these asserts.
-scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
-
-# 9a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
-scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["DogFightPointTurnMonitor"], scene)
-assert n == 1, f"turn monitor guid appeared {n} times"
-
-# 9b. controller script swap + its serialized field block
-scene, n = re.subn(EXISTING["RampageController"], G_SCRIPT["DogFightController"], scene)
-assert n == 1, f"controller guid appeared {n} times"
-
-OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}
+# The donor check is a GUARD, not an assert, and that distinction is the whole point: the
+# asserts below abort the script, and every validation this file performs lives AFTER them
+# (errors = [] is ~130 lines further down). So the moment the donor moved on, `--check` -
+# advertised at the top of this file for CI / pre-commit use - stopped validating anything
+# at all, silently, while still being run and still exiting 0-on-write-mode-abort. A spent
+# one-shot must STAND DOWN, not take the checks with it.
+DONOR = "Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity"
+_donor_scene = read(DONOR)
+_donor_fields = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
   aiRetargetSeconds: 1.5
 """
-NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['DogFightScoringRule']}, type: 2}}
-  arenaCell: {{fileID: 1700000065}}
-  firstMilestoneFraction: 0.25
-  secondMilestoneFraction: 0.5
-  progressSampleSeconds: 0.5
-  elementalCrystalCount: 14
-  crystalScatterRadius: 400
-  crystalScatterSeed: 41
-  aiRetargetSeconds: 1.5
-  aiLeadSeconds: 0.6
-  aiBreakOffDistance: 120
-  aiExtendDistanceMultiplier: 3
-  aiMaxExtendSeconds: 4
-"""
-assert OLD_FIELDS in scene, "controller field block not found in donor scene"
-scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
+SCENE_STEP_LIVE = _donor_fields in _donor_scene
 
-# 9c. Cell: swap the donor's single config for the FOUR per-intensity configs and flip the
-# choice mode to IntensityWise - the platform's own way to vary a cell by intensity.
-OLD_CELL = f"""  CellConfigs:
-  - {{fileID: 11400000, guid: {EXISTING['RampageCellConfig']}, type: 2}}
-  cellTypeChoiceOptions: 0
-"""
-NEW_CELL = "  CellConfigs:\n" + "".join(
-    f"  - {{fileID: 11400000, guid: {G_ASSET[f'BoneyardCellConfig{i}']}, type: 2}}\n"
-    for i in INTENSITIES) + "  cellTypeChoiceOptions: 1\n"
-assert OLD_CELL in scene, "donor Cell config block not found"
-scene = scene.replace(OLD_CELL, NEW_CELL)
+if not SCENE_STEP_LIVE:
+    print("note: section 9 (scene clone) stood down - the Rampage donor has moved on and",
+          "MinigameDogFight.unity is already committed. Every other section still runs.")
+    # Feed the checks the SHIPPED scene instead of a freshly-generated one. Strictly better:
+    # the scene-dependent validations below then describe the artifact that actually loads,
+    # rather than one this script would have produced. It is registered read-only - `files`
+    # is only written out in write mode, and this entry is byte-identical to what is on disk,
+    # so re-running the generator cannot rewrite the scene from here.
+    for _rel in ("Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity",
+                 "Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity.meta"):
+        files[_rel] = read(_rel)
+    # The .meta goes in too, and not only for symmetry: the minted-GUID sweep excludes the
+    # .meta files THIS script owns, so leaving the scene's out makes the generator report its
+    # own committed scene as a foreign asset colliding with the guid it minted for it.
+else:
+    scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
 
-# 9d. Spawn on a SPHERE outside the wreck field. The donor's four authored transforms sit at
-# +/-50 - dead centre of the arena, which here is inside the reactor. Switch to the computed
-# cell spawn ring (CellSpawnFormation, all facing the cell) with a radius FLOOR, because this
-# cell has no nucleus for the ring to measure off.
-#
-# spawnFormation 0 = Symmetric: spread over a SPHERE rather than a horizontal circle. A
-# dogfight arena has no meaningful "up" - the crust is a bowl, not a floor with a ceiling - so
-# there is no pole to be unfair about, and a spherical spread means the opening merge comes
-# from every direction instead of everyone converging on one plane.
-OLD_SPAWN = """  playerSpawnPoints:
-  - {fileID: 1468661147}
-  - {fileID: 1074736317}
-  - {fileID: 1323644424}
-  - {fileID: 1564881929}
-  preSpawnDelayMs: 200
-"""
-NEW_SPAWN = f"""  playerSpawnPoints:
-  - {{fileID: 1468661147}}
-  - {{fileID: 1074736317}}
-  - {{fileID: 1323644424}}
-  - {{fileID: 1564881929}}
-  arrangeSpawnPointsAroundCell: 1
-  spawnDistanceOutsideNucleus: 40
-  spawnFormation: 0
-  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}
-  cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
-  preSpawnDelayMs: 200
-"""
-assert OLD_SPAWN in scene, "donor spawn-point block not found"
-scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
+    # 9a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
+    scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["DogFightPointTurnMonitor"], scene)
+    assert n == 1, f"turn monitor guid appeared {n} times"
 
-# 9e. THE OMNI CRYSTAL SPAWNS NORMALLY - it just stops spawning at the origin.
-#
-# The donor's settings are already the platform-normal ones (crystalCountMode 0, one crystal,
-# spawnOnClientReady), identical to Ribcage, and they are kept verbatim. What the donor does NOT
-# author is `noNucleusSpawnRadius`, and in THIS cell that is the whole problem:
-# CrystalManager.GetAnchorlessSpawnRadius resolves the cell's NUCLEUS radius FIRST (the crystal
-# volume and the nucleus are coupled platform-wide and no scene may override that - see
-# Docs/ECOSYSTEM.md 27.6), the Boneyard has no nucleus by design, so it fell through to the
-# crystal's own SphereRadius - a few units - and every spawn landed on the arena's exact centre.
-# `noNucleusSpawnRadius` is the FALLBACK that exists for exactly this case: a cell with no core. A large faceted sphere pinned to the middle
-# of a gunnery arena reads as THE objective, which is how it got mistaken for a ball.
-#
-# Authoring the radius is the fix the field exists for: the crystal now draws from a ball that
-# covers the wreck field, so it hides among the hulks and moves somewhere new on every respawn -
-# a thing you go and find, not a monument in the middle of the map.
-OLD_CRYSTALS = "  crystalCountMode: 0\n  fixedCrystalCount: 1\n"
-NEW_CRYSTALS = (f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n"
-                f"  crystalCountMode: 0\n  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n")
-assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
-scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
+    # 9b. controller script swap + its serialized field block
+    scene, n = re.subn(EXISTING["RampageController"], G_SCRIPT["DogFightController"], scene)
+    assert n == 1, f"controller guid appeared {n} times"
 
-# 9f. SPARROW-ONLY, third layer: the AI templates. ServerPlayerVesselInitializerWithAI clamps
-# these through GameDataSO.ClampVesselToGame anyway, but authoring the right class here means
-# the scene is honest on its own and the clamp never has to fire. 3 = Rhino (Rampage's donor
-# value), 11 = Sparrow.
-scene, n = re.subn(r"^  - vesselClass: 3$", "  - vesselClass: 11", scene, flags=re.M)
-assert n == 4, f"expected 4 AI vessel templates, patched {n}"
+    OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}
+      arenaCell: {{fileID: 1700000065}}
+      aiRetargetSeconds: 1.5
+    """
+    NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['DogFightScoringRule']}, type: 2}}
+      arenaCell: {{fileID: 1700000065}}
+      firstMilestoneFraction: 0.25
+      secondMilestoneFraction: 0.5
+      progressSampleSeconds: 0.5
+      elementalCrystalCount: 14
+      crystalScatterRadius: 400
+      crystalScatterSeed: 41
+      aiRetargetSeconds: 1.5
+      aiLeadSeconds: 0.6
+      aiBreakOffDistance: 120
+      aiExtendDistanceMultiplier: 3
+      aiMaxExtendSeconds: 4
+    """
+    assert OLD_FIELDS in scene, "controller field block not found in donor scene"
+    scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 
-emit("Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity", scene)
-emit("Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity.meta",
-     scene_meta(G_ASSET["MinigameDogFight.unity"]))
+    # 9c. Cell: swap the donor's single config for the FOUR per-intensity configs and flip the
+    # choice mode to IntensityWise - the platform's own way to vary a cell by intensity.
+    OLD_CELL = f"""  CellConfigs:
+      - {{fileID: 11400000, guid: {EXISTING['RampageCellConfig']}, type: 2}}
+      cellTypeChoiceOptions: 0
+    """
+    NEW_CELL = "  CellConfigs:\n" + "".join(
+        f"  - {{fileID: 11400000, guid: {G_ASSET[f'BoneyardCellConfig{i}']}, type: 2}}\n"
+        for i in INTENSITIES) + "  cellTypeChoiceOptions: 1\n"
+    assert OLD_CELL in scene, "donor Cell config block not found"
+    scene = scene.replace(OLD_CELL, NEW_CELL)
+
+    # 9d. Spawn on a SPHERE outside the wreck field. The donor's four authored transforms sit at
+    # +/-50 - dead centre of the arena, which here is inside the reactor. Switch to the computed
+    # cell spawn ring (CellSpawnFormation, all facing the cell) with a radius FLOOR, because this
+    # cell has no nucleus for the ring to measure off.
+    #
+    # spawnFormation 0 = Symmetric: spread over a SPHERE rather than a horizontal circle. A
+    # dogfight arena has no meaningful "up" - the crust is a bowl, not a floor with a ceiling - so
+    # there is no pole to be unfair about, and a spherical spread means the opening merge comes
+    # from every direction instead of everyone converging on one plane.
+    OLD_SPAWN = """  playerSpawnPoints:
+      - {fileID: 1468661147}
+      - {fileID: 1074736317}
+      - {fileID: 1323644424}
+      - {fileID: 1564881929}
+      preSpawnDelayMs: 200
+    """
+    NEW_SPAWN = f"""  playerSpawnPoints:
+      - {{fileID: 1468661147}}
+      - {{fileID: 1074736317}}
+      - {{fileID: 1323644424}}
+      - {{fileID: 1564881929}}
+      arrangeSpawnPointsAroundCell: 1
+      spawnDistanceOutsideNucleus: 40
+      spawnFormation: 0
+      spawnRingRadiusFloor: {SPAWN_RING_RADIUS}
+      cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
+      preSpawnDelayMs: 200
+    """
+    assert OLD_SPAWN in scene, "donor spawn-point block not found"
+    scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
+
+    # 9e. THE OMNI CRYSTAL SPAWNS NORMALLY - it just stops spawning at the origin.
+    #
+    # The donor's settings are already the platform-normal ones (crystalCountMode 0, one crystal,
+    # spawnOnClientReady), identical to Cleave, and they are kept verbatim. What the donor does NOT
+    # author is `noNucleusSpawnRadius`, and in THIS cell that is the whole problem:
+    # CrystalManager.GetAnchorlessSpawnRadius resolves the cell's NUCLEUS radius FIRST (the crystal
+    # volume and the nucleus are coupled platform-wide and no scene may override that - see
+    # Docs/ECOSYSTEM.md 27.6), the Boneyard has no nucleus by design, so it fell through to the
+    # crystal's own SphereRadius - a few units - and every spawn landed on the arena's exact centre.
+    # `noNucleusSpawnRadius` is the FALLBACK that exists for exactly this case: a cell with no core. A large faceted sphere pinned to the middle
+    # of a gunnery arena reads as THE objective, which is how it got mistaken for a ball.
+    #
+    # Authoring the radius is the fix the field exists for: the crystal now draws from a ball that
+    # covers the wreck field, so it hides among the hulks and moves somewhere new on every respawn -
+    # a thing you go and find, not a monument in the middle of the map.
+    OLD_CRYSTALS = "  crystalCountMode: 0\n  fixedCrystalCount: 1\n"
+    NEW_CRYSTALS = (f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n"
+                    f"  crystalCountMode: 0\n  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n")
+    assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
+    scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
+
+    # 9f. SPARROW-ONLY, third layer: the AI templates. ServerPlayerVesselInitializerWithAI clamps
+    # these through GameDataSO.ClampVesselToGame anyway, but authoring the right class here means
+    # the scene is honest on its own and the clamp never has to fire. 3 = Rhino (Rampage's donor
+    # value), 11 = Sparrow.
+    scene, n = re.subn(r"^  - vesselClass: 3$", "  - vesselClass: 11", scene, flags=re.M)
+    assert n == 4, f"expected 4 AI vessel templates, patched {n}"
+
+    emit("Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity", scene)
+    emit("Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity.meta",
+         scene_meta(G_ASSET["MinigameDogFight.unity"]))
 
 
 # ── 10. Register the card in the party-games list ───────────────────────────
@@ -939,16 +1023,44 @@ if "z: 15.13}" in _sparrow:
 if G_ASSET["VesselCombatHitByMissile"] not in files[SKYBURST_PATH]:
     errors.append("the skyburst container does not carry the missile scoring effect - "
                   "direct rocket hits would never score")
+# READ, not emitted: the warhead container belongs to the Sparrow's missile pass, not to this
+# mode. Dog Fight is the only thing that PAYS for a shockwave, though, so it is the right place
+# to notice if the effect ever falls off - the symptom otherwise is a mode that silently stops
+# scoring the most common way a rocket reaches a pilot.
+WARHEAD_CONTAINER_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
+                          "MissileWarheadExplosionImpactorDataContainer.asset")
+if G_ASSET["VesselCombatHitByMissileShockwave"] not in read(WARHEAD_CONTAINER_PATH):
+    errors.append("the missile WARHEAD container does not carry the shockwave scoring effect - "
+                  "the most common way a rocket reaches a pilot would score nothing")
+# READ, not emitted, for the same reason: the blast tier's container is the Sparrow pass's.
+BLAST_CONTAINER_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
+                        "SkyBurstBlastExplosionImpactorDataContainer.asset")
+if G_ASSET["VesselCombatHitByMissileBlast"] not in read(BLAST_CONTAINER_PATH):
+    errors.append("the skyburst BLAST container does not carry the blast scoring effect - a "
+                  "rocket's 20-point prism blast would score nothing")
+if G_ASSET["VesselCombatHitByMissileBlast"] in files[
+        "Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
+        "SkyBurstExplosionImpactorDataContainer.asset"]:
+    errors.append("the conic skyburst container carries the blast reporter again - the heavy "
+                  "rocket would report its blast tier from two containers")
 if G_ASSET["SkyBurstExplosionContainer"] not in files[CONIC_PATH]:
     errors.append("AOEConicSkyBurst has no explosion container - a rocket's BLAST would never "
                   "score, which is most of what a rocket does")
 if "explosionImpactorDataContainer: {fileID: 0}" in files[CONIC_PATH]:
     errors.append("AOEConicSkyBurst still has a null explosion container")
 
-# The two effects that share a latch window must AGREE on it, or a direct rocket strike scores
-# twice (once for the hit, once for its own blast).
-direct = files["Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByMissile.asset"]
-blast = files["Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileBlast.asset"]
+# ALL THREE missile tiers share ONE latch window per victim, so they must agree on how long it
+# is. Give any of them a different window and the ranked-upgrade guarantee evaporates: a rocket
+# whose shockwave latched for 0.5s and whose blast latched for 0.2s can pay twice for one
+# victim, which is the exact double-count the latch exists to prevent.
+_tier_paths = {
+    "direct": "Assets/_SO_Assets/Effects/Vessel Projectile Effects/"
+              "VesselCombatHitByMissileDirect.asset",
+    "blast": "Assets/_SO_Assets/Effects/Vessel Explosion Effects/"
+             "VesselCombatHitByMissileBlast.asset",
+    "shockwave": "Assets/_SO_Assets/Effects/Vessel Explosion Effects/"
+                 "VesselCombatHitByMissileShockwave.asset",
+}
 
 
 def cooldown_of(body):
@@ -956,9 +1068,24 @@ def cooldown_of(body):
     return float(m.group(1)) if m else None
 
 
-if cooldown_of(direct) != cooldown_of(blast) or not cooldown_of(direct):
-    errors.append("the missile direct-hit and blast effects must share one non-zero "
-                  "sameVictimCooldownSeconds - they claim the same latch window")
+_cooldowns = {k: cooldown_of(files[v]) for k, v in _tier_paths.items()}
+if len(set(_cooldowns.values())) != 1 or not next(iter(_cooldowns.values())):
+    errors.append(f"the three missile tiers must share one non-zero sameVictimCooldownSeconds - "
+                  f"they claim the same latch window; got {_cooldowns}")
+
+# The tiers must be PRICED IN RANK ORDER, or "closer is worth more" - the whole reason there
+# are three - stops being true, and CombatHitScoring's upgrade would credit a negative delta.
+if not (BULLET_POINTS <= MISSILE_SHOCKWAVE_POINTS < MISSILE_BLAST_POINTS < MISSILE_DIRECT_POINTS):
+    errors.append(f"the Dog Fight price list is not in proximity order: bullet "
+                  f"{BULLET_POINTS} <= shockwave {MISSILE_SHOCKWAVE_POINTS} < blast "
+                  f"{MISSILE_BLAST_POINTS} < direct {MISSILE_DIRECT_POINTS}")
+
+# Each tier must carry the hitClass its NAME claims. The class is authored on the asset and
+# nothing at runtime re-derives it, so a transposed pair here would price the common outcome as
+# the rare one with no other symptom.
+for _name, _cls in (("direct", 1), ("blast", 3), ("shockwave", 4)):
+    if f"  hitClass: {_cls}\n" not in files[_tier_paths[_name]]:
+        errors.append(f"the missile {_name} effect does not carry hitClass {_cls}")
 
 # Sparrow-only must be a SINGLE entry, or the clamps let another hull through
 arcade = files["Assets/_SO_Assets/Games/ArcadeGameDogFight.asset"]
@@ -1045,7 +1172,7 @@ if "PointsForCombatHit" not in cs_fields("Assets/_Scripts/Controller/Arcade/Scor
 
 SO_BASE = {"CellName", "Description", "Icon", "Difficulty", "CellEndGameScore", "Mode",
            "IsMultiplayer", "DisplayName", "IconActive", "IconInactive", "CardBackground",
-           "PreviewClip", "GolfScoring", "SceneName"}
+           "GolfScoring", "SceneName"}
 for asset_path, cs_path in CHECKS:
     keys = set(re.findall(r"^  (\w+):", files[asset_path], re.M)) - {
         "m_ObjectHideFlags", "m_CorrespondingSourceObject", "m_PrefabInstance", "m_PrefabAsset",
@@ -1096,6 +1223,10 @@ for i in BONEYARD_INTENSITIES:
                       f"{i - 1}'s ({prev}) - the phase ladder is not riding its own baseline")
     prev = enter
 
+# The card's CardBackground is the /cardart render and no retired key rides on it - the
+# shared check every arcade generator runs (arcade_mode_lib.card_errors).
+errors += aml.check_cards(files)
+
 if errors:
     print("VALIDATION FAILED - nothing written:")
     for e in errors:
@@ -1107,7 +1238,15 @@ for rel in sorted(files):
     print("  ", rel)
 
 if CHECK_ONLY:
-    print("\n--check: no files written.")
+    # Diff against disk. This used to print "no files written" and exit 0 - a --check that
+    # never compares is a false green (the CardBackground and SkyBurst drift sat behind it).
+    _changed = aml.drift(files)
+    if _changed:
+        print(f"\n--check: {len(_changed)} file(s) differ from the authored output:")
+        for _c in sorted(_changed):
+            print("  -", _c)
+        sys.exit(1)
+    print(f"\n--check: no files written; all {len(files)} files match what this script authors.")
     sys.exit(0)
 
 for rel, content in files.items():

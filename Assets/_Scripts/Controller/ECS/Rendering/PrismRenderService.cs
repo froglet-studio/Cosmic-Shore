@@ -1,8 +1,11 @@
 using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -25,12 +28,15 @@ namespace CosmicShore.ECS
     /// Which per-instance override components a companion entity carries.
     /// Prism: color trio + grow / color / flight / shieldMorph / jiggle / suction clocks.
     /// Explosion/Implosion: color trio + the effect shader's animated parameters.
+    /// Slice: color trio + the six slice stamps PrismSlice.shader reads (the Rhino sword's
+    /// cut, Docs/PRISM_ANIMATION.md §4.10).
     /// </summary>
     public enum PrismRenderOverrideSet
     {
-        Prism,
-        Explosion,
-        Implosion,
+        Prism = 0,
+        Explosion = 1,
+        Implosion = 2,
+        Slice = 3,
     }
 
     /// <summary>
@@ -74,8 +80,10 @@ namespace CosmicShore.ECS
     /// All methods are main-thread only and no-op safely when the ECS world or
     /// EntitiesGraphicsSystem is unavailable (tool scenes, headless, teardown),
     /// so the legacy MeshRenderer path remains a complete fallback at runtime
-    /// via the master toggle (PrismRenderConfigSO, runtime override, or the
-    /// PRISM_RENDER_TOGGLE in the benchmark workflow).
+    /// via the master toggle (PrismRenderConfigSO, SetRuntimeOverride, or the
+    /// DiagnosticsHUD console command "prismpath on | off | auto", which also
+    /// re-syncs the LIVE population — SetRuntimeOverride alone gates only entity
+    /// CREATION, so prisms that already own one keep drawing through it).
     /// </summary>
     public static class PrismRenderService
     {
@@ -92,6 +100,7 @@ namespace CosmicShore.ECS
         {
             _runtimeOverride = null;
             _linearizeOverride = null;
+            _forceMeshRendererStamps = false;
         }
         static bool _configLoaded;
         // OPT-IN: defaults OFF. The instanced path only renders correctly once the
@@ -132,7 +141,7 @@ namespace CosmicShore.ECS
                 if (enabled && !_loggedActive)
                 {
                     _loggedActive = true;
-                    Debug.Log("[PrismRenderService] Instanced prism rendering is ACTIVE (Entities Graphics). " +
+                    CSDebug.LogVerbose(CSLogChannel.PrismRuntime, "[PrismRenderService] Instanced prism rendering is ACTIVE (Entities Graphics). " +
                               "If colors look uniform/mixed or explosions are frozen, the prism ShaderGraphs need " +
                               "'Hybrid Per Instance' on their animated properties — see Docs/PRISM_ECS_MIGRATION.md §7.");
                 }
@@ -142,6 +151,32 @@ namespace CosmicShore.ECS
 
         /// <summary>Runtime A/B override (null = fall back to config). New prisms follow the new value; existing ones keep their current path until reuse.</summary>
         public static void SetRuntimeOverride(bool? enabled) => _runtimeOverride = enabled;
+
+        // ------------------------------------------------------------------
+        // The no-compute MeshRenderer stamp path (Docs/PRISM_ANIMATION.md §4.11)
+        // ------------------------------------------------------------------
+
+        static bool _forceMeshRendererStamps;
+
+        /// <summary>
+        /// True on a device where Entities Graphics cannot run (<see cref="EntitiesGraphicsSupportProbe"/>: no
+        /// SRP, no compute — every WebGL2 browser —, or compute kernels that fail to load), and while the dev A/B
+        /// forces it (<c>prismpath mpb</c>). On such a device no prism ever gets a companion entity, so the
+        /// clock-material stamps go to each prism's MaterialPropertyBlock instead
+        /// (<see cref="PrismMeshRendererStamps"/>) and the death visuals to a small pooled GameObject carrier
+        /// (<c>PrismMeshRendererDebris</c>). Keyed off the device probe, never a build define. Everywhere else it is
+        /// false and strict mode holds unchanged: a prism without an entity snaps and screams.
+        /// </summary>
+        public static bool UsesMeshRendererStamps =>
+            _forceMeshRendererStamps || !EntitiesGraphicsSupportProbe.IsSupported;
+
+        /// <summary>Whether the dev A/B currently forces the MeshRenderer stamp path.</summary>
+        public static bool MeshRendererStampsForced => _forceMeshRendererStamps;
+
+        /// <summary>Dev A/B (the <c>prismpath mpb</c> console command): force the MeshRenderer stamp path on a
+        /// device that HAS Entities Graphics. Only meaningful together with <c>SetRuntimeOverride(false)</c> and a
+        /// re-sync of the live prisms, so no prism keeps an entity the stamps would land on first.</summary>
+        public static void SetMeshRendererStampsForced(bool forced) => _forceMeshRendererStamps = forced;
 
         // ------------------------------------------------------------------
         // Clock-material animation (Docs/PRISM_ANIMATION.md, LOCKED law)
@@ -175,6 +210,12 @@ namespace CosmicShore.ECS
                 return "OFF (config: Use Instanced Rendering unchecked)";
             }
 
+            // The device gate comes first: on a GPU whose compute kernels cannot load,
+            // CosmicShoreEntitiesBootstrap creates the world EMPTY on purpose, so the
+            // "missing system" line below would be true but would name the wrong cause.
+            if (!EntitiesGraphicsSupportProbe.IsSupported)
+                return $"OFF (Entities Graphics unsupported on this device: {EntitiesGraphicsSupportProbe.Reason})";
+
             var world = World.DefaultGameObjectInjectionWorld;
             if (world == null || !world.IsCreated) return "OFF (no ECS world at runtime)";
             if (world.GetExistingSystemManaged<EntitiesGraphicsSystem>() == null)
@@ -193,6 +234,20 @@ namespace CosmicShore.ECS
 
         static World _world;
         static EntitiesGraphicsSystem _graphics;
+        static PrismRenderLookupSystem _lookups;
+
+        /// <summary>
+        /// A fresh <see cref="ComponentLookup{T}"/> on the cached world. <c>EntityManager.GetComponentLookup</c>
+        /// is <c>internal</c> in Entities 1.x, so the public route is a system's
+        /// <see cref="ComponentSystemBase.GetComponentLookup{T}"/>; <see cref="PrismRenderLookupSystem"/> exists
+        /// only to hand these out (never updated). Callers still complete the component's dependency first.
+        /// </summary>
+        static ComponentLookup<T> Lookup<T>(bool isReadOnly) where T : unmanaged, IComponentData
+        {
+            if (_lookups == null)
+                _lookups = _world.GetOrCreateSystemManaged<PrismRenderLookupSystem>();
+            return _lookups.GetComponentLookup<T>(isReadOnly);
+        }
         static int _epoch; // bumped whenever the cached world goes away — invalidates all outstanding handles
         static readonly Dictionary<Mesh, BatchMeshID> _meshIds = new();
         static readonly Dictionary<Material, BatchMaterialID> _materialIds = new();
@@ -222,14 +277,31 @@ namespace CosmicShore.ECS
             {
                 _world = null;
                 _graphics = null;
+                _lookups = null;
                 _meshIds.Clear();
                 _materialIds.Clear();
                 // Pending keys are raw Entity ids with no epoch — a fresh world
                 // restarts version counters, so stale keys could alias entities in
                 // the new world and force-toggle an unrelated prism.
                 s_pendingVisibility.Clear();
+                ClearPendingTransforms();
                 LiveEntityCount = 0;
                 _epoch++;
+            }
+
+            // Same gate the ICustomBootstrap applies: never construct EntitiesGraphicsSystem
+            // on a device whose compute kernels will not load. Its OnCreate throws, Entities
+            // keeps the half-built system, and the first frame to touch it crashes the process
+            // (Docs/PRISM_ECS_MIGRATION.md §8). The legacy MeshRenderer path is the answer.
+            if (!EntitiesGraphicsSupportProbe.IsSupported)
+            {
+                if (!_loggedWorldBootstrap)
+                {
+                    _loggedWorldBootstrap = true;
+                    CSDebug.LogWarning("[PrismRenderService] Entities Graphics is unsupported on this device (" +
+                                     EntitiesGraphicsSupportProbe.Reason + "); staying on the legacy MeshRenderer path.");
+                }
+                return false;
             }
 
             var world = World.DefaultGameObjectInjectionWorld;
@@ -248,7 +320,7 @@ namespace CosmicShore.ECS
                     if (!_loggedWorldBootstrap)
                     {
                         _loggedWorldBootstrap = true;
-                        Debug.Log("[PrismRenderService] No default ECS world found — bootstrapped one on demand for instanced prism rendering.");
+                        CSDebug.LogVerbose(CSLogChannel.PrismRuntime, "[PrismRenderService] No default ECS world found - bootstrapped one on demand for instanced prism rendering.");
                     }
                 }
                 catch (System.Exception e)
@@ -256,7 +328,7 @@ namespace CosmicShore.ECS
                     if (!_loggedWorldBootstrap)
                     {
                         _loggedWorldBootstrap = true;
-                        Debug.LogWarning("[PrismRenderService] Could not bootstrap a default ECS world; staying on the legacy MeshRenderer path. " + e.Message);
+                        CSDebug.LogWarning("[PrismRenderService] Could not bootstrap a default ECS world; staying on the legacy MeshRenderer path. " + e.Message);
                     }
                     return false;
                 }
@@ -270,6 +342,7 @@ namespace CosmicShore.ECS
 
             _world = world;
             _graphics = graphics;
+            _lookups = null;
             _epoch++;
             return true;
         }
@@ -455,6 +528,17 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismJiggleStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleParamsOverride { Value = float3.zero });
+                        // Super-shield mark (a STATE bit the Echo Sight reads, not a stamp).
+                        // 0 = not super-shielded, which is every prism until one engages.
+                        em.AddComponentData(prototype, new PrismSuperShieldedOverride { Value = 0f });
+                        // Living-mass sway (Docs/ECOSYSTEM.md §47). A ZERO span is an
+                        // exact no-op, so every prism that is not part of a living limb
+                        // — every trail, every authored environment, every skeleton —
+                        // renders bit-identically to before.
+                        em.AddComponentData(prototype, new PrismSwaySpanXOverride { Value = float3.zero });
+                        em.AddComponentData(prototype, new PrismSwaySpanYOverride { Value = float3.zero });
+                        em.AddComponentData(prototype, new PrismSwayAxisOverride { Value = float3.zero });
+                        em.AddComponentData(prototype, new PrismSwayTimingOverride { Value = float3.zero });
                         // Cell-swap world suction (Docs/PRISM_ANIMATION.md §5 C9). Duration 0
                         // = unstamped identity on live graphs (LegacyState default 0). Location
                         // is the same override the Implosion set already carries — added here
@@ -464,6 +548,14 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismSuctionDirectionOverride { Value = 1f });
                         em.AddComponentData(prototype, new PrismSuctionGrowDelayOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismImplosionLocationOverride { Value = float3.zero });
+                        // Black-hole gravity body (Docs/BLACK_HOLE.md). NOT a material
+                        // property: a simulation state the gravity job reads and writes.
+                        // On the prototype so admitting a prism to a field is a
+                        // non-structural SetComponentData + SetComponentEnabled; DISABLED
+                        // by default, so every prism outside a hole's influence is exactly
+                        // what it was before the component existed.
+                        em.AddComponentData(prototype, new GravityBody());
+                        em.SetComponentEnabled<GravityBody>(prototype, false);
                         break;
                     case PrismRenderOverrideSet.Explosion:
                         em.AddComponentData(prototype, new PrismExplodeStartTimeOverride { Value = 0f });
@@ -478,6 +570,17 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismSuctionDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismSuctionDirectionOverride { Value = 1f });
                         em.AddComponentData(prototype, new PrismSuctionGrowDelayOverride { Value = 0f });
+                        break;
+                    case PrismRenderOverrideSet.Slice:
+                        // Zero is the UNSTAMPED state PrismSlice.shader renders as the plain prism
+                        // (zero plane = nothing is beyond the cut, zero motion). Every clone is
+                        // stamped in SpawnSliceDebrisBatch before it is ever made visible.
+                        em.AddComponentData(prototype, new PrismSliceTimingOverride { Value = float4.zero });
+                        em.AddComponentData(prototype, new PrismSlicePlaneOverride { Value = float4.zero });
+                        em.AddComponentData(prototype, new PrismSliceCentreOverride { Value = new float4(0f, 0f, 0f, 1f) });
+                        em.AddComponentData(prototype, new PrismSlicePivotOverride { Value = float4.zero });
+                        em.AddComponentData(prototype, new PrismSliceAxisOverride { Value = float4.zero });
+                        em.AddComponentData(prototype, new PrismSliceDriftOverride { Value = float4.zero });
                         break;
                 }
             }
@@ -522,6 +625,90 @@ namespace CosmicShore.ECS
             return new PrismRenderHandle { Entity = entity, Epoch = _epoch };
         }
 
+        /// <summary>
+        /// Bulk <see cref="Create"/>: one batched Instantiate from the shared prototype and
+        /// one Burst pass that writes mesh/material, pose, bounds and the material's
+        /// authored colour trio for every clone. Clones are born HIDDEN, exactly like
+        /// <see cref="Create"/>; show them with <see cref="QueueVisible"/> (or
+        /// <see cref="SetVisible"/>). Writes <paramref name="localToWorld"/>.Length handles
+        /// into <paramref name="outHandles"/> (Invalid on every slot when the ECS path is
+        /// unavailable — callers stay on their fallback). Returns false in that case.
+        /// </summary>
+        public static bool CreateBatch(Mesh mesh, Material material, int layer,
+            Unity.Collections.NativeArray<float4x4> localToWorld,
+            Unity.Collections.NativeArray<PrismRenderHandle> outHandles,
+            PrismRenderOverrideSet overrideSet = PrismRenderOverrideSet.Prism)
+        {
+            int n = math.min(localToWorld.Length, outHandles.Length);
+            if (!Enabled || mesh == null || material == null || n == 0 || !TryEnsure())
+            {
+                for (int i = 0; i < outHandles.Length; i++) outHandles[i] = PrismRenderHandle.Invalid;
+                return false;
+            }
+
+            var em = _world.EntityManager;
+            var entities = new Unity.Collections.NativeArray<Entity>(n, Unity.Collections.Allocator.TempJob);
+            em.Instantiate(GetPrototype(layer, overrideSet, mesh, material), entities);
+            em.CompleteDependencyBeforeRW<LocalToWorld>();
+
+            var job = new InitCreatedJob
+            {
+                Entities = entities,
+                Matrices = localToWorld,
+                Mmi = new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh)),
+                Bounds = new AABB { Center = mesh.bounds.center, Extents = mesh.bounds.extents },
+                Bright = ReadColor(material, BrightColorId),
+                Dark = ReadColor(material, DarkColorId),
+                Spread = ReadVector3(material, SpreadId),
+                MmiLookup = Lookup<MaterialMeshInfo>(false),
+                L2wLookup = Lookup<LocalToWorld>(false),
+                BoundsLookup = Lookup<RenderBounds>(false),
+                BrightLookup = Lookup<PrismBrightColorOverride>(false),
+                DarkLookup = Lookup<PrismDarkColorOverride>(false),
+                SpreadLookup = Lookup<PrismSpreadOverride>(false),
+            };
+            if (n < TransformJobInlineThreshold) job.Run(n);
+            else job.Schedule(n, TransformJobBatch).Complete();
+
+            for (int i = 0; i < n; i++)
+                outHandles[i] = new PrismRenderHandle { Entity = entities[i], Epoch = _epoch };
+            for (int i = n; i < outHandles.Length; i++)
+                outHandles[i] = PrismRenderHandle.Invalid;
+
+            LiveEntityCount += n;
+            entities.Dispose();
+            return true;
+        }
+
+        [BurstCompile]
+        struct InitCreatedJob : IJobParallelFor
+        {
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<Entity> Entities;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<float4x4> Matrices;
+            public MaterialMeshInfo Mmi;
+            public AABB Bounds;
+            public float4 Bright;
+            public float4 Dark;
+            public float3 Spread;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<MaterialMeshInfo> MmiLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<LocalToWorld> L2wLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<RenderBounds> BoundsLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<PrismBrightColorOverride> BrightLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<PrismDarkColorOverride> DarkLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<PrismSpreadOverride> SpreadLookup;
+
+            public void Execute(int i)
+            {
+                var e = Entities[i];
+                MmiLookup[e] = Mmi;
+                L2wLookup[e] = new LocalToWorld { Value = Matrices[i] };
+                BoundsLookup[e] = new RenderBounds { Value = Bounds };
+                BrightLookup[e] = new PrismBrightColorOverride { Value = Bright };
+                DarkLookup[e] = new PrismDarkColorOverride { Value = Dark };
+                SpreadLookup[e] = new PrismSpreadOverride { Value = Spread };
+            }
+        }
+
         /// <summary>Shows/hides the entity immediately (DisableRendering tag add/remove —
         /// a structural change per call). Use for pooled VFX bursts and hand-offs to the
         /// GameObject renderer, where same-instant application matters. High-churn
@@ -553,6 +740,27 @@ namespace CosmicShore.ECS
         static VisibilityFlushHost s_flushHost;
         static readonly Unity.Profiling.ProfilerMarker s_flushMarker = new("PrismRender.VisibilityFlush");
 
+        // Play-mode exit / quit. The DontDestroyOnLoad flush host is torn down with everything
+        // else, but Prism.OnDisable still queues a hide for its entity during that teardown -
+        // re-creating the host then leaks it ("Some objects were not cleaned up when closing
+        // the scene" listing [PrismRenderVisibilityFlush]). Application.quitting also fires on
+        // editor play-mode exit; reset per session (domain reload is disabled in this project).
+        static bool s_quitting;
+
+        /// <summary>True from play-mode exit / application quit until the next session starts.
+        /// Lazily-created prism hosts check it so teardown cascades can't re-spawn them.</summary>
+        public static bool IsQuitting => s_quitting;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetQuitting()
+        {
+            s_quitting = false;
+            Application.quitting -= HandleQuitting;
+            Application.quitting += HandleQuitting;
+        }
+
+        static void HandleQuitting() => s_quitting = true;
+
         /// <summary>
         /// Deferred SetVisible: applied in one batched structural change per direction
         /// at LateUpdate — same frame, before rendering, so nothing is ever visibly
@@ -561,6 +769,9 @@ namespace CosmicShore.ECS
         public static void QueueVisible(in PrismRenderHandle handle, bool visible)
         {
             if (!IsUsable(in handle)) return;
+            // Teardown: the world and every entity are going away with the session, so a
+            // queued hide has nothing left to do - and queuing it would re-create the host.
+            if (s_quitting) return;
             s_pendingVisibility[handle.Entity] = visible;
             EnsureFlushHost();
         }
@@ -568,6 +779,8 @@ namespace CosmicShore.ECS
         static void EnsureFlushHost()
         {
             if (s_flushHost != null) return;
+            // Never spawn a DontDestroyOnLoad host outside play mode or during teardown.
+            if (s_quitting || !Application.isPlaying) return;
             // HideInHierarchy (NOT HideAndDontSave — that exempts the object from
             // play-mode-exit cleanup and leaks one host into edit mode per session).
             var go = new GameObject("[PrismRenderVisibilityFlush]") { hideFlags = HideFlags.HideInHierarchy };
@@ -580,7 +793,14 @@ namespace CosmicShore.ECS
         [DefaultExecutionOrder(30000)]
         sealed class VisibilityFlushHost : MonoBehaviour
         {
-            void LateUpdate() => FlushVisibility();
+            void LateUpdate()
+            {
+                // Visibility first: its structural changes would invalidate the
+                // component lookup the transform flush takes.
+                FlushVisibility();
+                FlushTransforms();
+                FlushGrowStampClears();
+            }
         }
 
         internal static void FlushVisibility()
@@ -622,7 +842,343 @@ namespace CosmicShore.ECS
         public static void SetTransform(in PrismRenderHandle handle, in Matrix4x4 localToWorld)
         {
             if (!IsUsable(in handle)) return;
-            _world.EntityManager.SetComponentData(handle.Entity, new LocalToWorld { Value = ToFloat4x4(in localToWorld) });
+            var m = ToFloat4x4(in localToWorld);
+            // The immediate path is authoritative: a same-frame queued (older) pose
+            // must not overwrite it at the flush.
+            if (s_pendingTransformCount > 0 && s_pendingTransformIndex.TryGetValue(handle.Entity, out int slot))
+                s_pendingTransformMatrices[slot] = m;
+            _world.EntityManager.SetComponentData(handle.Entity, new LocalToWorld { Value = m });
+        }
+
+        // ------------------------------------------------------------------
+        // Batched transforms — one Burst pass per frame for every mover
+        // ------------------------------------------------------------------
+
+        // Last write this frame wins. Flushed by the same LateUpdate host as the
+        // visibility batch (DefaultExecutionOrder 30000 — after every gameplay
+        // LateUpdate, and before the PresentationSystemGroup / Entities Graphics
+        // upload that runs at the end of PreLateUpdate), so a queued pose renders in
+        // the SAME frame it was queued: no added latency versus SetTransform.
+        // Managed backing arrays (not persistent native ones) so a play-mode exit with
+        // domain reload disabled can never leak an allocation.
+        static readonly Dictionary<Entity, int> s_pendingTransformIndex = new(256);
+        static Entity[] s_pendingTransformEntities = new Entity[256];
+        static float4x4[] s_pendingTransformMatrices = new float4x4[256];
+        static int s_pendingTransformCount;
+        static readonly Unity.Profiling.ProfilerMarker s_transformFlushMarker = new("PrismRender.TransformFlush");
+
+        /// <summary>Number of transforms waiting for this frame's flush (diagnostics/tests).</summary>
+        public static int PendingTransformCount => s_pendingTransformCount;
+
+        /// <summary>
+        /// Deferred <see cref="SetTransform"/> for per-frame movers (fauna body prisms,
+        /// bond steering): the pose is applied with every other mover's in one Burst job
+        /// at this frame's LateUpdate flush — before rendering, so it is not visibly late.
+        /// Falls back to the immediate write when no flush host can exist (edit mode,
+        /// teardown).
+        /// </summary>
+        public static void QueueTransform(in PrismRenderHandle handle, in Matrix4x4 localToWorld)
+        {
+            if (!IsUsable(in handle)) return;
+            if (!s_quitting && Application.isPlaying) EnsureFlushHost();
+            if (s_flushHost == null)
+            {
+                _world.EntityManager.SetComponentData(handle.Entity, new LocalToWorld { Value = ToFloat4x4(in localToWorld) });
+                return;
+            }
+            EnqueueTransform(handle.Entity, ToFloat4x4(in localToWorld));
+        }
+
+        static void EnqueueTransform(Entity entity, in float4x4 m)
+        {
+            if (s_pendingTransformIndex.TryGetValue(entity, out int slot))
+            {
+                s_pendingTransformMatrices[slot] = m;
+                return;
+            }
+            if (s_pendingTransformCount == s_pendingTransformEntities.Length)
+            {
+                int n = s_pendingTransformEntities.Length * 2;
+                System.Array.Resize(ref s_pendingTransformEntities, n);
+                System.Array.Resize(ref s_pendingTransformMatrices, n);
+            }
+            slot = s_pendingTransformCount++;
+            s_pendingTransformEntities[slot] = entity;
+            s_pendingTransformMatrices[slot] = m;
+            s_pendingTransformIndex[entity] = slot;
+        }
+
+        static void DropPendingTransform(Entity entity)
+        {
+            if (s_pendingTransformCount == 0) return;
+            if (!s_pendingTransformIndex.TryGetValue(entity, out int slot)) return;
+            // Swap-remove keeps the arrays dense.
+            int last = --s_pendingTransformCount;
+            s_pendingTransformIndex.Remove(entity);
+            if (slot != last)
+            {
+                var moved = s_pendingTransformEntities[last];
+                s_pendingTransformEntities[slot] = moved;
+                s_pendingTransformMatrices[slot] = s_pendingTransformMatrices[last];
+                s_pendingTransformIndex[moved] = slot;
+            }
+            s_pendingTransformEntities[last] = Entity.Null;
+        }
+
+        static void ClearPendingTransforms()
+        {
+            s_pendingTransformIndex.Clear();
+            s_pendingTransformCount = 0;
+        }
+
+        /// <summary>Applies every queued transform in one Burst job. Called by the flush host.</summary>
+        internal static void FlushTransforms()
+        {
+            if (s_pendingTransformCount == 0) return;
+            if (_world == null || !_world.IsCreated)
+            {
+                ClearPendingTransforms();
+                return;
+            }
+
+            using (s_transformFlushMarker.Auto())
+            {
+                int n = s_pendingTransformCount;
+                var entities = new Unity.Collections.NativeArray<Entity>(n, Unity.Collections.Allocator.TempJob,
+                    Unity.Collections.NativeArrayOptions.UninitializedMemory);
+                var matrices = new Unity.Collections.NativeArray<float4x4>(n, Unity.Collections.Allocator.TempJob,
+                    Unity.Collections.NativeArrayOptions.UninitializedMemory);
+                Unity.Collections.NativeArray<Entity>.Copy(s_pendingTransformEntities, entities, n);
+                Unity.Collections.NativeArray<float4x4>.Copy(s_pendingTransformMatrices, matrices, n);
+                ClearPendingTransforms();
+
+                WriteTransforms(entities, matrices, n);
+
+                entities.Dispose();
+                matrices.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Bulk transform write for data-driven callers that already hold their poses in
+        /// native memory (e.g. a swarm tick job's instance array): one Burst job over a
+        /// <c>ComponentLookup&lt;LocalToWorld&gt;</c> instead of one managed
+        /// <c>EntityManager.SetComponentData</c> per entity. Handles with a stale epoch or
+        /// a dead entity are skipped. Completes before returning (main thread).
+        /// </summary>
+        public static void SetTransformsBatch(Unity.Collections.NativeArray<PrismRenderHandle> handles,
+            Unity.Collections.NativeArray<float4x4> localToWorld, int count = -1)
+        {
+            if (!handles.IsCreated || !localToWorld.IsCreated) return;
+            if (_world == null || !_world.IsCreated) return;
+            int n = count < 0 ? math.min(handles.Length, localToWorld.Length) : math.min(count, math.min(handles.Length, localToWorld.Length));
+            if (n <= 0) return;
+
+            var entities = new Unity.Collections.NativeArray<Entity>(n, Unity.Collections.Allocator.TempJob);
+            for (int i = 0; i < n; i++)
+            {
+                var h = handles[i];
+                entities[i] = h.Epoch == _epoch ? h.Entity : Entity.Null;
+                // The bulk write is authoritative over any same-frame queued pose.
+                if (s_pendingTransformCount > 0) DropPendingTransform(h.Entity);
+            }
+            var matrices = localToWorld.GetSubArray(0, n);
+            WriteTransforms(entities, matrices, n);
+            entities.Dispose();
+        }
+
+        /// <summary>
+        /// <see cref="SetTransformsBatch(Unity.Collections.NativeArray{PrismRenderHandle}, Unity.Collections.NativeArray{float4x4}, int)"/>
+        /// for matrices a JOB is still writing (Docs/SWARM_FAUNA.md §19.4): the handle-to-entity resolve runs as a Burst
+        /// job alongside <paramref name="dependsOn"/>, and the LocalToWorld write is scheduled on both, so the main thread
+        /// pays the scheduling and one wait instead of a managed loop over the handles. Completes before returning.
+        /// When same-frame queued poses exist (<see cref="PendingTransformCount"/> &gt; 0) the bulk write must drop them per
+        /// entity, which is managed work, so it completes <paramref name="dependsOn"/> and takes the plain overload.
+        /// </summary>
+        public static void SetTransformsBatch(Unity.Collections.NativeArray<PrismRenderHandle> handles,
+            Unity.Collections.NativeArray<float4x4> localToWorld, int count, JobHandle dependsOn)
+        {
+            if (!handles.IsCreated || !localToWorld.IsCreated || _world == null || !_world.IsCreated)
+            {
+                dependsOn.Complete();
+                return;
+            }
+            int n = count < 0 ? math.min(handles.Length, localToWorld.Length) : math.min(count, math.min(handles.Length, localToWorld.Length));
+            if (n <= 0) { dependsOn.Complete(); return; }
+            if (s_pendingTransformCount > 0)
+            {
+                dependsOn.Complete();
+                SetTransformsBatch(handles, localToWorld, n);
+                return;
+            }
+
+            var entities = new Unity.Collections.NativeArray<Entity>(n, Unity.Collections.Allocator.TempJob,
+                Unity.Collections.NativeArrayOptions.UninitializedMemory);
+            var resolve = new ResolveHandlesJob { Handles = handles, Epoch = _epoch, Entities = entities }
+                .Schedule(n, TransformJobBatch);
+            var em = _world.EntityManager;
+            // Any in-flight system job touching LocalToWorld must finish before we write.
+            em.CompleteDependencyBeforeRW<LocalToWorld>();
+            var write = new WriteLocalToWorldJob
+            {
+                Entities = entities,
+                Matrices = localToWorld.GetSubArray(0, n),
+                LocalToWorldLookup = Lookup<LocalToWorld>(false),
+            }.Schedule(n, TransformJobBatch, JobHandle.CombineDependencies(resolve, dependsOn));
+            write.Complete();
+            entities.Dispose();
+        }
+
+        [BurstCompile]
+        struct ResolveHandlesJob : IJobParallelFor
+        {
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<PrismRenderHandle> Handles;
+            public int Epoch;
+            [Unity.Collections.WriteOnly] public Unity.Collections.NativeArray<Entity> Entities;
+
+            public void Execute(int i)
+            {
+                var h = Handles[i];
+                Entities[i] = h.Epoch == Epoch ? h.Entity : Entity.Null;
+            }
+        }
+
+        const int TransformJobInlineThreshold = 256;
+        const int TransformJobBatch = 64;
+
+        static void WriteTransforms(Unity.Collections.NativeArray<Entity> entities,
+            Unity.Collections.NativeArray<float4x4> matrices, int n)
+        {
+            var em = _world.EntityManager;
+            // Any in-flight system job touching LocalToWorld must finish before we write.
+            em.CompleteDependencyBeforeRW<LocalToWorld>();
+            var job = new WriteLocalToWorldJob
+            {
+                Entities = entities,
+                Matrices = matrices,
+                LocalToWorldLookup = Lookup<LocalToWorld>(false),
+            };
+            // Small batches: Burst on the main thread (no scheduling overhead).
+            if (n < TransformJobInlineThreshold) job.Run(n);
+            else job.Schedule(n, TransformJobBatch).Complete();
+        }
+
+        [BurstCompile]
+        struct WriteLocalToWorldJob : IJobParallelFor
+        {
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<Entity> Entities;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<float4x4> Matrices;
+            // Entities are unique per batch (dedup by the pending index / caller contract),
+            // so parallel writes never alias.
+            [Unity.Collections.NativeDisableParallelForRestriction]
+            public ComponentLookup<LocalToWorld> LocalToWorldLookup;
+
+            public void Execute(int i)
+            {
+                var e = Entities[i];
+                if (e == Entity.Null || !LocalToWorldLookup.HasComponent(e)) return;
+                LocalToWorldLookup[e] = new LocalToWorld { Value = Matrices[i] };
+            }
+        }
+
+        /// <summary>
+        /// Bulk restyle for data-driven callers (a swarm's members changing tier or domain, Docs/SWARM_FAUNA.md §19.2):
+        /// entity <c>k</c> takes look <c>lookIndex[k]</c> - that look's MATERIAL and its authored colour trio
+        /// (bright, dark, spread), exactly what <see cref="SetMaterial"/>(handle, look, refreshColors: true) writes,
+        /// in one Burst pass over component lookups instead of four managed EntityManager writes per entity.
+        /// Looks are resolved (material id, colours) once per call. Handles with a stale epoch or a dead entity, and
+        /// out-of-range or null looks, are skipped. Completes before returning (main thread).
+        /// </summary>
+        public static void SetLooksBatch(Unity.Collections.NativeArray<PrismRenderHandle> handles,
+            Unity.Collections.NativeArray<byte> lookIndex, int count, Material[] looks)
+        {
+            if (!handles.IsCreated || !lookIndex.IsCreated || looks == null || looks.Length == 0) return;
+            if (_world == null || !_world.IsCreated) return;
+            int n = math.min(count, math.min(handles.Length, lookIndex.Length));
+            if (n <= 0) return;
+
+            int lookCount = looks.Length;
+            var materialIds = new Unity.Collections.NativeArray<BatchMaterialID>(lookCount, Unity.Collections.Allocator.TempJob);
+            var valid = new Unity.Collections.NativeArray<bool>(lookCount, Unity.Collections.Allocator.TempJob);
+            var bright = new Unity.Collections.NativeArray<float4>(lookCount, Unity.Collections.Allocator.TempJob);
+            var dark = new Unity.Collections.NativeArray<float4>(lookCount, Unity.Collections.Allocator.TempJob);
+            var spread = new Unity.Collections.NativeArray<float3>(lookCount, Unity.Collections.Allocator.TempJob);
+            for (int l = 0; l < lookCount; l++)
+            {
+                var m = looks[l];
+                if (m == null) continue;
+                valid[l] = true;
+                materialIds[l] = GetMaterialID(m);
+                bright[l] = ReadColor(m, BrightColorId);
+                dark[l] = ReadColor(m, DarkColorId);
+                spread[l] = ReadVector3(m, SpreadId);
+            }
+
+            var entities = new Unity.Collections.NativeArray<Entity>(n, Unity.Collections.Allocator.TempJob);
+            for (int i = 0; i < n; i++)
+            {
+                var h = handles[i];
+                entities[i] = h.Epoch == _epoch ? h.Entity : Entity.Null;
+            }
+
+            var em = _world.EntityManager;
+            em.CompleteDependencyBeforeRW<MaterialMeshInfo>();
+            em.CompleteDependencyBeforeRW<PrismBrightColorOverride>();
+            em.CompleteDependencyBeforeRW<PrismDarkColorOverride>();
+            em.CompleteDependencyBeforeRW<PrismSpreadOverride>();
+            var job = new SetLookJob
+            {
+                Entities = entities,
+                LookIndex = lookIndex,
+                Valid = valid,
+                MaterialIds = materialIds,
+                Bright = bright,
+                Dark = dark,
+                Spread = spread,
+                MmiLookup = Lookup<MaterialMeshInfo>(false),
+                BrightLookup = Lookup<PrismBrightColorOverride>(false),
+                DarkLookup = Lookup<PrismDarkColorOverride>(false),
+                SpreadLookup = Lookup<PrismSpreadOverride>(false),
+            };
+            if (n < TransformJobInlineThreshold) job.Run(n);
+            else job.Schedule(n, TransformJobBatch).Complete();
+
+            entities.Dispose();
+            materialIds.Dispose();
+            valid.Dispose();
+            bright.Dispose();
+            dark.Dispose();
+            spread.Dispose();
+        }
+
+        [BurstCompile]
+        struct SetLookJob : IJobParallelFor
+        {
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<Entity> Entities;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<byte> LookIndex;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<bool> Valid;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<BatchMaterialID> MaterialIds;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<float4> Bright;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<float4> Dark;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<float3> Spread;
+            // Entities are unique per batch (one per member slot), so parallel writes never alias.
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<MaterialMeshInfo> MmiLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<PrismBrightColorOverride> BrightLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<PrismDarkColorOverride> DarkLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<PrismSpreadOverride> SpreadLookup;
+
+            public void Execute(int i)
+            {
+                var e = Entities[i];
+                int look = LookIndex[i];
+                if (e == Entity.Null || look >= Valid.Length || !Valid[look] || !MmiLookup.HasComponent(e)) return;
+                var mmi = MmiLookup[e];
+                mmi.MaterialID = MaterialIds[look];
+                MmiLookup[e] = mmi;
+                BrightLookup[e] = new PrismBrightColorOverride { Value = Bright[look] };
+                DarkLookup[e] = new PrismDarkColorOverride { Value = Dark[look] };
+                SpreadLookup[e] = new PrismSpreadOverride { Value = Spread[look] };
+            }
         }
 
         /// <summary>
@@ -645,6 +1201,87 @@ namespace CosmicShore.ECS
                 em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = ReadColor(material, DarkColorId) });
                 em.SetComponentData(handle.Entity, new PrismSpreadOverride { Value = ReadVector3(material, SpreadId) });
             }
+        }
+
+        /// <summary>
+        /// Re-reads bright, dark and spread from <paramref name="materials"/> into every live prism entity that draws
+        /// with one of them. A colour set applied from the Profile (Docs/MENU_REDESIGN_B.md §124) repaints the domain
+        /// materials in place, but an entity copied its colours out of its material when it was created
+        /// (<see cref="Create"/>), so without this the world keeps the old set until every prism respawns. One pass
+        /// over the prism entities, on the main thread, run behind the loading veil; entities on other materials are
+        /// untouched. A prism whose owner shades it (<see cref="ApplyColorShade"/>) takes the raw new colours until its
+        /// next material sync re-applies the shade. Returns how many entities were re-stamped.
+        /// </summary>
+        public static int RestampColors(IReadOnlyList<Material> materials)
+        {
+            if (materials == null || materials.Count == 0 || _world == null || !_world.IsCreated) return 0;
+            var colours = new Dictionary<BatchMaterialID, (float4 bright, float4 dark, float3 spread)>();
+            foreach (var m in materials)
+                if (m && _materialIds.TryGetValue(m, out var id))
+                    colours[id] = (ReadColor(m, BrightColorId), ReadColor(m, DarkColorId), ReadVector3(m, SpreadId));
+            if (colours.Count == 0) return 0;
+
+            var em = _world.EntityManager;
+            using var query = em.CreateEntityQuery(new EntityQueryDesc
+            {
+                All = new[]
+                {
+                    ComponentType.ReadOnly<MaterialMeshInfo>(), ComponentType.ReadWrite<PrismBrightColorOverride>(),
+                    ComponentType.ReadWrite<PrismDarkColorOverride>(), ComponentType.ReadWrite<PrismSpreadOverride>(),
+                },
+                Options = EntityQueryOptions.IncludeDisabledEntities,
+            });
+            using var entities = query.ToEntityArray(Unity.Collections.Allocator.Temp);
+            int restamped = 0;
+            foreach (var entity in entities)
+            {
+                if (!colours.TryGetValue(em.GetComponentData<MaterialMeshInfo>(entity).MaterialID, out var c)) continue;
+                em.SetComponentData(entity, new PrismBrightColorOverride { Value = c.bright });
+                em.SetComponentData(entity, new PrismDarkColorOverride { Value = c.dark });
+                em.SetComponentData(entity, new PrismSpreadOverride { Value = c.spread });
+                restamped++;
+            }
+            return restamped;
+        }
+
+        /// <summary>
+        /// Re-writes the entity's bright/dark overrides as a SHADE of <paramref name="material"/>'s authored colours:
+        /// scaled by <paramref name="gain"/> (0-1, darker), then lifted toward white by <paramref name="lift"/> (0-1,
+        /// the LIT state). The hue stays the material's, so neither reads as another team. Inputs are authored-space;
+        /// the colour-space transform is applied here, as in <see cref="SetMaterial"/>. Spread is left as the material
+        /// set it. Called by <c>Prism.ApplyColorShade</c> after every material sync, so a domain or state change keeps
+        /// the shade.
+        /// </summary>
+        public static void ApplyColorShade(in PrismRenderHandle handle, Material material, float gain, float lift = 0f)
+        {
+            if (material == null || !IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = ApplyColorSpace(ShadedColor(material, BrightColorId, gain, lift)) });
+            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = ApplyColorSpace(ShadedColor(material, DarkColorId, gain, lift)) });
+        }
+
+        /// <summary>
+        /// Fades the entity INTO its current shade (<see cref="ApplyColorShade"/>, already written) from the shade it
+        /// showed at <paramref name="fromGain"/> / <paramref name="fromLift"/>, over <paramref name="duration"/>: one
+        /// <see cref="StampColorTransition"/>, so the GPU runs the fade and nothing is written per frame. False when
+        /// the clock path is off; the prism then shows its new shade at once.
+        /// </summary>
+        public static bool StampShadeTransition(in PrismRenderHandle handle, Material material, float startTime,
+            float duration, float fromGain, float fromLift)
+        {
+            if (material == null) return false;
+            return StampColorTransition(in handle, startTime, duration,
+                ShadedColor(material, BrightColorId, fromGain, fromLift),
+                ShadedColor(material, DarkColorId, fromGain, fromLift),
+                ReadVector3(material, SpreadId));
+        }
+
+        // Authored-space: the caller applies the colour-space transform (StampColorTransition does it itself).
+        static float4 ShadedColor(Material material, int propertyId, float gain, float lift)
+        {
+            Color c = material.HasProperty(propertyId) ? material.GetColor(propertyId) : Color.white;
+            float k = Mathf.Clamp01(gain), l = Mathf.Clamp01(lift);
+            return new float4(Mathf.Lerp(c.r * k, 1f, l), Mathf.Lerp(c.g * k, 1f, l), Mathf.Lerp(c.b * k, 1f, l), c.a);
         }
 
         /// <summary>
@@ -719,6 +1356,7 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismGrowStartTimeOverride { Value = startTime });
             em.SetComponentData(handle.Entity, new PrismGrowRateOverride { Value = rate });
             em.SetComponentData(handle.Entity, new PrismGrowStartFracOverride { Value = startFrac });
+            EnqueueGrowStampClear(in handle, startTime, rate, in startFrac);
             return true;
         }
 
@@ -732,6 +1370,88 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismGrowStartTimeOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismGrowRateOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismGrowStartFracOverride { Value = new float3(1f) });
+        }
+
+        // ------------------------------------------------------------------
+        // The settled-bloom clear (Docs/PRISM_ANIMATION.md C23). Every grow stamp pushes ONE entry
+        // onto one shared due-queue (PrismGrowStampClearQueue: a min-heap, no per-entry allocation),
+        // drained by the LateUpdate flush host at most GrowClearBudgetPerFrame pops a frame. Entries
+        // are never cancelled: each pop re-reads the entity's current stamp, so a retarget, a restore
+        // or a pool reuse makes an older entry a no-op, and a same-instant re-stamp with a later end
+        // pushes itself again. A clear late by frames is invisible (the factor is already exactly 1).
+        // ------------------------------------------------------------------
+
+        static readonly PrismGrowStampClearQueue s_growClears = new();
+        static readonly PrismGrowStampClearQueue.Entry[] s_dueGrowClears =
+            new PrismGrowStampClearQueue.Entry[GrowClearBudgetPerFrame];
+        static readonly Unity.Profiling.ProfilerMarker s_growClearMarker = new("PrismRender.GrowStampClear");
+        static bool s_warnedGrowClearFull;
+
+        /// <summary>Most settled-bloom clears applied in one frame (~0.3 us each: one Exists, three reads,
+        /// three writes on the EntityManager). The rest stay due for the next frame.</summary>
+        internal const int GrowClearBudgetPerFrame = 1024;
+
+        /// <summary>Clears waiting in the queue (diagnostics/tests).</summary>
+        public static int PendingGrowStampClearCount => s_growClears.Count;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetGrowClears()
+        {
+            s_growClears.Clear();
+            s_warnedGrowClearFull = false;
+        }
+
+        static void EnqueueGrowStampClear(in PrismRenderHandle handle, float startTime, float rate, in float3 startFrac)
+        {
+            // No host can exist in edit mode or teardown: nothing would drain the queue, so the stamp
+            // simply stays (the pre-C23 cost, never a wrong picture).
+            if (s_quitting || !Application.isPlaying || rate <= 0f) return;
+            EnsureFlushHost();
+            if (s_flushHost == null) return;
+            float fire = startTime + PrismGrowStampClearQueue.ExactDelay(rate, in startFrac);
+            if (!s_growClears.TryPush(fire, startTime, in handle) && !s_warnedGrowClearFull)
+            {
+                s_warnedGrowClearFull = true;
+                CSDebug.LogWarning($"[PrismRenderService] Grow-stamp clear queue is full ({PrismGrowStampClearQueue.MaxCapacity}); " +
+                                   "further blooms keep their stamp (correct picture, full vertex cost) until it drains.");
+            }
+        }
+
+        /// <summary>Applies up to <see cref="GrowClearBudgetPerFrame"/> due clears. O(1) when none is due.</summary>
+        internal static void FlushGrowStampClears()
+        {
+            if (s_growClears.Count == 0) return;
+            if (_world == null || !_world.IsCreated)
+            {
+                s_growClears.Clear(); // every handle in it belongs to a dead world
+                return;
+            }
+            float now = PrismClock.Now;
+            int n = s_growClears.PopDue(now, s_dueGrowClears, GrowClearBudgetPerFrame);
+            if (n == 0) return;
+            using (s_growClearMarker.Auto())
+            {
+                var em = _world.EntityManager;
+                for (int i = 0; i < n; i++)
+                {
+                    ref readonly var e = ref s_dueGrowClears[i];
+                    if (!IsUsable(in e.Handle) || !em.HasComponent<PrismGrowStartTimeOverride>(e.Handle.Entity)) continue;
+                    var entity = e.Handle.Entity;
+                    float start = em.GetComponentData<PrismGrowStartTimeOverride>(entity).Value;
+                    if (start != e.StampTime) continue; // cheap reject before the other two reads
+                    float rate = em.GetComponentData<PrismGrowRateOverride>(entity).Value;
+                    float3 s0 = em.GetComponentData<PrismGrowStartFracOverride>(entity).Value;
+                    switch (PrismGrowStampClearQueue.Decide(e.StampTime, start, rate, in s0, now, out float refire))
+                    {
+                        case PrismGrowStampClearQueue.Verdict.Clear:
+                            ClearGrowStamp(in e.Handle);
+                            break;
+                        case PrismGrowStampClearQueue.Verdict.Refire:
+                            s_growClears.TryPush(refire, start, in e.Handle);
+                            break;
+                    }
+                }
+            }
         }
 
         /// <summary>Settles just the color-transition stamp (visual snaps to the bound
@@ -888,6 +1608,57 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismJiggleParamsOverride { Value = float3.zero });
         }
 
+        /// <summary>Writes the super-shield MARK (1 = this prism wears the super-shield). A STATE
+        /// bit rather than a clock stamp: written once at the shield's engage and once at its
+        /// drop, never per frame, and deliberately NOT part of <see cref="ClearPrismStamps"/> —
+        /// <c>Prism</c> owns the bit and re-asserts it whenever its companion entity (re)engages.
+        /// Returns false when there is no usable entity (the caller then carries the bit on the
+        /// MeshRenderer instead).</summary>
+        public static bool SetSuperShieldMark(in PrismRenderHandle handle, bool superShielded)
+        {
+            if (!IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismSuperShieldedOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity,
+                new PrismSuperShieldedOverride { Value = superShielded ? 1f : 0f });
+            return true;
+        }
+
+        /// <summary>Stamps the LIVING-MASS SWAY: this prism rides the shear field of the
+        /// limb it is bolted to (Docs/ECOSYSTEM.md §47). Every argument is a constant of the
+        /// attachment, so unlike every other stamp on this service there is no start time and
+        /// no duration — the sway does not end, it is what being alive looks like.
+        ///
+        /// spanX / spanY are the limb's +x / +y in THIS prism's object space times the limb's
+        /// amplitude; axis is the limb's +z as a functional on that space; timing is
+        /// (frequency, phase, the prism origin's height up the limb).</summary>
+        public static bool StampSway(in PrismRenderHandle handle, in float3 spanX, in float3 spanY,
+            in float3 axis, in float3 timing)
+        {
+            if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismSwaySpanXOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, new PrismSwaySpanXOverride { Value = spanX });
+            em.SetComponentData(handle.Entity, new PrismSwaySpanYOverride { Value = spanY });
+            em.SetComponentData(handle.Entity, new PrismSwayAxisOverride { Value = axis });
+            em.SetComponentData(handle.Entity, new PrismSwayTimingOverride { Value = timing });
+            return true;
+        }
+
+        /// <summary>Stops a prism swaying. This is a STATE CHANGE, not a settle: it is what
+        /// a lifeform's death does to the skeleton it leaves behind, so the mass the food web
+        /// then grazes is visibly no longer alive. Also pool hygiene.</summary>
+        public static void ClearSwayStamp(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismSwaySpanXOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismSwaySpanXOverride { Value = float3.zero });
+            em.SetComponentData(handle.Entity, new PrismSwaySpanYOverride { Value = float3.zero });
+            em.SetComponentData(handle.Entity, new PrismSwayAxisOverride { Value = float3.zero });
+            em.SetComponentData(handle.Entity, new PrismSwayTimingOverride { Value = float3.zero });
+        }
+
         /// <summary>Clears a prism's animation stamps back to the settled state (pool
         /// reuse). Safe no-op when the clock components are absent.</summary>
         public static void ClearPrismStamps(in PrismRenderHandle handle)
@@ -898,7 +1669,73 @@ namespace CosmicShore.ECS
             ClearShieldMorphStamp(in handle);
             ClearJiggleStamp(in handle);
             ClearSuctionClockStamp(in handle);
+            ClearSwayStamp(in handle);
+            ClearGravityBody(in handle);
         }
+
+        // ------------------------------------------------------------------
+        // Gravity body (Docs/BLACK_HOLE.md) — simulation state, not a stamp
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Seats a prism as a body under black-hole gravity: writes its state and ENABLES the
+        /// component. Non-structural (the component lives on the Prism prototype). Returns false
+        /// when there is no usable entity or the entity was created with a non-Prism override set
+        /// (debris, slices and implosion husks are not bodies — their flight is a clock stamp).
+        /// </summary>
+        public static bool SetGravityBody(in PrismRenderHandle handle, in GravityBody body, bool enabled)
+        {
+            if (!IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<GravityBody>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, body);
+            em.SetComponentEnabled<GravityBody>(handle.Entity, enabled);
+            return true;
+        }
+
+        /// <summary>Reads a body's state (the job writes it). False when the entity has none.</summary>
+        public static bool TryGetGravityBody(in PrismRenderHandle handle, out GravityBody body)
+        {
+            body = default;
+            if (!IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<GravityBody>(handle.Entity)) return false;
+            body = em.GetComponentData<GravityBody>(handle.Entity);
+            return true;
+        }
+
+        /// <summary>
+        /// Releases a prism from gravity: zero state, component DISABLED. Pool hygiene as much as
+        /// a release — a reused prism must never inherit the velocity of the one it replaced.
+        /// </summary>
+        public static void ClearGravityBody(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<GravityBody>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new GravityBody());
+            em.SetComponentEnabled<GravityBody>(handle.Entity, false);
+        }
+
+        /// <summary>
+        /// The gravity job's access to its component: a read-write
+        /// <see cref="ComponentLookup{T}"/> over <see cref="GravityBody"/>, with any in-flight
+        /// job on it completed first. The caller schedules against it and MUST complete that
+        /// job within the same frame, before any structural change (the same contract
+        /// <see cref="SetTransformsBatch(Unity.Collections.NativeArray{PrismRenderHandle}, Unity.Collections.NativeArray{float4x4}, int, JobHandle)"/>
+        /// keeps for <c>LocalToWorld</c>). False when there is no world.
+        /// </summary>
+        internal static bool TryGetGravityBodyLookup(out ComponentLookup<GravityBody> lookup)
+        {
+            lookup = default;
+            if (_world == null || !_world.IsCreated) return false;
+            _world.EntityManager.CompleteDependencyBeforeRW<GravityBody>();
+            lookup = Lookup<GravityBody>(false);
+            return true;
+        }
+
+        /// <summary>The service's current epoch — a handle whose epoch differs is stale.</summary>
+        internal static int HandleEpoch => _epoch;
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure
         /// functions of the clock. The entity transform must already hold the debris'
@@ -1175,6 +2012,87 @@ namespace CosmicShore.ECS
         }
 
         // ------------------------------------------------------------------
+        // Batched pure-entity SLICE halves — the Rhino sword's death visual
+        // (Docs/PRISM_ANIMATION.md §4.10, PrismSlice.hlsl). The explosion's shape
+        // exactly: one prototype-instantiate + one visibility strip per frame, every
+        // stamp a non-structural SetComponentData, retired in whole batches by
+        // PrismSlice through DestroyDebrisBatch. Two entities per sliced prism, one
+        // per half, both drawing the SHARED HighPolyPrismMesh — so a frame's slices
+        // are one instanced batch however many prisms the blade went through.
+        // ------------------------------------------------------------------
+
+        /// <summary>One half's complete initial conditions. Written once at spawn.</summary>
+        public struct SliceDebrisSpawn
+        {
+            /// <summary>The dead prism's pose. The entity matrix never moves — the GPU moves the half.</summary>
+            public Matrix4x4 LocalToWorld;
+            /// <summary>Raw tier colours — colour-space conversion happens at stamp.</summary>
+            public float4 BrightColor;
+            public float4 DarkColor;
+            /// <summary>(start, life, noise seed, 0). Start is rewritten to the batch's clock.</summary>
+            public float4 Timing;
+            public float4 Plane;
+            public float4 Centre;
+            public float4 Pivot;
+            public float4 Axis;
+            public float4 Drift;
+            /// <summary>Object-space AABB covering every pose the half takes over its life.</summary>
+            public AABB Bounds;
+        }
+
+        /// <summary>
+        /// Spawns every entry of <paramref name="spawns"/> as a slice half in ONE
+        /// prototype-instantiate + ONE batched visibility strip. Entities are appended to
+        /// <paramref name="appendEntitiesTo"/> index-aligned with <paramref name="spawns"/>.
+        /// Returns false — spawning nothing — when the service is off or no world exists;
+        /// the caller then falls back to the ordinary explosion (PrismSlice).
+        /// </summary>
+        public static bool SpawnSliceDebrisBatch(Mesh mesh, Material material, int layer,
+            System.Collections.Generic.List<SliceDebrisSpawn> spawns, float startTime,
+            System.Collections.Generic.List<Entity> appendEntitiesTo)
+        {
+            if (!Enabled || mesh == null || material == null ||
+                spawns == null || spawns.Count == 0 || !TryEnsure())
+                return false;
+
+            var em = _world.EntityManager;
+            var prototype = GetPrototype(layer, PrismRenderOverrideSet.Slice, mesh, material);
+
+            var entities = new Unity.Collections.NativeArray<Entity>(
+                spawns.Count, Unity.Collections.Allocator.Temp);
+            em.Instantiate(prototype, entities);
+            // Born hidden (prototype ships DisableRendering). The stamps below ARE the correct
+            // first frame — the two halves exactly tile the prism at age 0 — so strip at once.
+            em.RemoveComponent(entities, ComponentType.ReadWrite<DisableRendering>());
+
+            var mmi = new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh));
+
+            for (int i = 0; i < spawns.Count; i++)
+            {
+                var s = spawns[i];
+                var entity = entities[i];
+                var timing = s.Timing;
+                timing.x = startTime;
+                em.SetComponentData(entity, mmi);
+                em.SetComponentData(entity, new LocalToWorld { Value = ToFloat4x4(in s.LocalToWorld) });
+                em.SetComponentData(entity, new PrismBrightColorOverride { Value = ApplyColorSpace(in s.BrightColor) });
+                em.SetComponentData(entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in s.DarkColor) });
+                em.SetComponentData(entity, new PrismSliceTimingOverride { Value = timing });
+                em.SetComponentData(entity, new PrismSlicePlaneOverride { Value = s.Plane });
+                em.SetComponentData(entity, new PrismSliceCentreOverride { Value = s.Centre });
+                em.SetComponentData(entity, new PrismSlicePivotOverride { Value = s.Pivot });
+                em.SetComponentData(entity, new PrismSliceAxisOverride { Value = s.Axis });
+                em.SetComponentData(entity, new PrismSliceDriftOverride { Value = s.Drift });
+                em.SetComponentData(entity, new RenderBounds { Value = s.Bounds });
+                appendEntitiesTo.Add(entity);
+            }
+
+            LiveEntityCount += spawns.Count;
+            entities.Dispose();
+            return true;
+        }
+
+        // ------------------------------------------------------------------
         // Batched pure-entity SUCTION debris — the implosion half of the same
         // pattern. An implosion carries one extra piece of live state the
         // explosion does not: the convergence point tracks a MOVING target (a
@@ -1309,6 +2227,29 @@ namespace CosmicShore.ECS
             }
         }
 
+        /// <summary>
+        /// <see cref="RefreshImplosionDebrisBatch"/> for the burst carrier's SUCTION (PrismCollisionBurst, the slice
+        /// entities drawing the destruction's cut into a moving sink): the live sink rides the slice's
+        /// <see cref="PrismSliceCentreOverride"/>, which no other burst kind reads. The same §1 exception, the same
+        /// shape — one float4 per live suction per frame, a bounds write only when the sink wandered out of them.
+        /// </summary>
+        public static void RefreshSliceDebrisSinkBatch(
+            System.Collections.Generic.List<ImplosionDebrisRefresh> refreshes, int epoch)
+        {
+            if (refreshes == null || refreshes.Count == 0) return;
+            if (epoch != _epoch || _world == null || !_world.IsCreated) return;
+
+            var em = _world.EntityManager;
+            for (int i = 0; i < refreshes.Count; i++)
+            {
+                var r = refreshes[i];
+                if (r.Entity == Entity.Null || !em.Exists(r.Entity)) continue;
+                em.SetComponentData(r.Entity, new PrismSliceCentreOverride { Value = new float4(r.Location, 1f) });
+                if (r.GrowBounds)
+                    em.SetComponentData(r.Entity, new RenderBounds { Value = r.Bounds });
+            }
+        }
+
         // The former SHIELD SHATTER batch spawner lived here. It is GONE on purpose
         // (Docs/PRISM_ANIMATION.md §4.8.1): a shield's shards are ordinary explosion
         // debris now — PrismShieldShatter groups a frame's disengages per shield mesh and
@@ -1326,6 +2267,7 @@ namespace CosmicShore.ECS
                 // Entity indices recycle — drop any queued toggle so the flush can
                 // never apply a dead prism's wish to a future entity reusing the id.
                 s_pendingVisibility.Remove(handle.Entity);
+                DropPendingTransform(handle.Entity);
                 _world.EntityManager.DestroyEntity(handle.Entity);
                 LiveEntityCount = Mathf.Max(0, LiveEntityCount - 1);
             }
@@ -1365,5 +2307,16 @@ namespace CosmicShore.ECS
             }
             return float3.zero;
         }
+    }
+
+    /// <summary>
+    /// Never-updated system whose only job is to issue <see cref="ComponentLookup{T}"/>s to the static
+    /// <see cref="PrismRenderService"/> (Entities keeps <c>EntityManager.GetComponentLookup</c> internal).
+    /// <see cref="DisableAutoCreationAttribute"/>: created on demand by the service, joins no update group.
+    /// </summary>
+    [DisableAutoCreation]
+    internal sealed partial class PrismRenderLookupSystem : SystemBase
+    {
+        protected override void OnUpdate() { }
     }
 }

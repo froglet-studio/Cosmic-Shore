@@ -1,10 +1,12 @@
 # Cosmic Shore — Style Foundation
 
-**Version:** 0.3.2 · **Reference:** 1920×1080, PPU 240 · **Stack:** uGUI + TextMeshPro
+**Version:** 0.3.3 · **Reference:** 1920×1080, PPU 240 · **Stack:** uGUI + TextMeshPro
 
 **v0.3 supersedes v0.1 and v0.2.** The existing Cosmic Shore style guide — Main Colors, Additional Colors, Typography, Icons, Buttons, UI Elements — is **authoritative**. This document records it, resolves the open items, and adds only what the guide does not cover: spacing, layering, motion, safe area, and the numeric type role.
 
 Direction: Helldivers 2 **discipline only** — the rigour, not the look.
+
+**The team-facing guide built on these numbers is [`Docs/UI_STYLE_GUIDE.md`](UI_STYLE_GUIDE.md)** (2026-11-03): the rules in plain language with a do and a don't from our own screens, the Froglet themes, and the UI checklist every UI pull request answers. Its open decisions D2-D5 concern sections 2 and 3 here.
 
 ---
 
@@ -49,6 +51,11 @@ Direction: Helldivers 2 **discipline only** — the rigour, not the look.
 
 **(Light)** variants may be used for text emphasis, player-name text, and subheadings.
 
+> **2026-11-05 (UI_STYLE_GUIDE D4):** five of these variants fall outside their family on Garrett's colour chart
+> (`colour_domains.json`): Jade Light, Ruby Light, Jade Dark, Ruby Dark and Gold Dark. Use their in-family
+> replacements from the guide's section 13 (the chart's palette, `froglet-tokens.json` `palettes`); the table below is
+> kept as the record of the original guide.
+
 | Name | Hex | Name | Hex |
 |---|---|---|---|
 | Neutral (Lightest) | `747BAD` | Neutral (Light) | `434C89` |
@@ -81,7 +88,9 @@ Three main colours carry both team identity and a UI function. **Green is the in
 | End-of-game victory banner | Team **(Light)** variant — see §11.9 |
 | **Active toggles, sliders, scrollbars** | **Jade `00D4FF` per the guide — keep.** Jade players see a mild overlap; acceptable because controls and team data never share a component |
 | Tooltip boxes | Ruby `A600FF` *(per the guide)* |
-| Primary buttons, focus, selection | CTA `99FF80` |
+| Primary buttons (the call to action) | CTA `99FF80`, always (UI_STYLE_GUIDE D5, 2026-11-05) |
+| Focus, selection, a choice you can claim and reclaim (a hull pick, friends) | Jade (`controlActive` `00D4FF`; UI_STYLE_GUIDE D3, 2026-11-05) |
+| A commitment you cannot take back (Play, which launches a game; Ready) | Ruby (`A600FF`; UI_STYLE_GUIDE D3, 2026-11-05) |
 | Player online status | CTA `99FF80` |
 | Currency / purchase | Gold `FFAE00` |
 | Panel borders, chrome | Neutral (Dark) `222645` |
@@ -178,9 +187,13 @@ Staggers: 40ms per item, capped at 8.
 
 ## 8. Safe area
 
-Mobile deferred; `SafeAreaFitter` ships dormant.
-
 Background layer full-bleed; content layer constrained to `Screen.safeArea`; minimum edge inset 24 canvas units @1920 as a **floor**, authored as padding. Test aspects: **16:9 · 16:10 · 21:9**.
+
+`SafeAreaFitter` is **live**, not dormant — every canvas that carries player-facing UI now has a
+full-bleed / content split, and the per-layer decisions (which layers are content, which are
+deliberately full-bleed, and the three constraints that decide whether a layer hosts the component
+or gets a fitted parent) are recorded in `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3. On desktop the whole
+thing is a no-op, so the split costs nothing until mobile is picked back up.
 
 ---
 
@@ -192,11 +205,30 @@ Knowledge (XP) · Charge / Mass / Time / Space (elemental crystals) · Omnicryst
 
 Elemental glyphs match the vessel-HUD petal geometry — one system, not two.
 
+**Elements have no colour (LOCKED, Garrett 2026-10-24).** The team colours in §3 never stand for an element:
+jade is not Time, gold is not Charge, blue is not Mass, ruby is not Space. An element is told by shape and
+position only. The lockup's rev 3 element colouring is OFF (`check_ui_colors.py`, `Docs/UI_COLOR_RULES.md`); see
+`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md` "Elements have no colour".
+
 **Objective glyphs (art present, unwired).** Nine line-weight monochrome silhouettes, one per
 `ScoringMetric`, in `_Graphics/UI/Objectives/`, drawn by `Tools/Build/author_objective_icons.py`.
 Nothing reads them today — the readout they were drawn for was removed and the art kept; see
 `Docs/GAME_MODE_TOPBAR.md` §2. They apply §1.2 directly: the three crystal metrics share one gem
 silhouette and are told apart by FILL, not by hue.
+
+**UI chrome glyphs (art present, WIRED).** Five line-weight monochrome glyphs in
+`_Graphics/UI/Chrome/`, drawn by `Tools/Build/author_ui_chrome_icons.py`, which imports the
+objective set's drawing engine rather than copying it so the two cannot drift on stroke weight,
+supersampling, margin or encoding. `chrome_close` (the X Button — worn by both the Menu_Main cancel
+and the Arcade Screen close, per this list naming ONE X Button), `chrome_reroll`, `chrome_confirm`,
+`chrome_arrow_down`, and `chrome_vessel_placeholder` (the Termite's class icon: a slivered slot,
+because that vessel is planned and its real art is a design task). They replaced sprites that were
+being drawn out of a plugin's demo folder — `Docs/THIRD_PARTY_DECISIONS.md` row 5.
+
+`chrome_reroll` is the worked example of §5 in an icon: a circular refresh arrow is the obvious
+glyph and is banned, so the same statement is made out of right angles — two hooks chasing each
+other round a broken rectangle. It reads as a cycle just as fast and matches the orthogonal
+language of everything around it.
 
 **Missing, needed:** connection lost, error, warning, success, mute, host badge, kick, ready/waiting, favourite star.
 
@@ -215,7 +247,7 @@ silhouette and are told apart by FILL, not by hue.
 | Cancel | Dark neutral | `747BAD` fill, dark text | Cancel; "coming soon" in store |
 | Purchase | Dark amber tint | `FFAE00` fill, dark text | Any spend — icon + amount |
 | CTA | Dark green tint | `99FF80` fill, dark text | Free / primary action |
-| Play | Dark blue tint | Jade gradient fill | Launch a game |
+| Play | Dark ruby tint | Ruby fill, white text (UI_STYLE_GUIDE D3, 2026-11-05; was the Jade gradient) | Launch a game |
 
 Icons may sit before or after the label. Buttons lengthen for long text rather than wrapping.
 
@@ -310,4 +342,5 @@ Chrome only. **Team colours stay in `SO_ColorSet`.**
 | 0.2 | Rebuilt on the studio palette and typography |
 | 0.3 | Team names resolved (Jade cyan / Ruby purple / Gold amber). PC type scale set. Aldrich `<mspace>` for numerics. Chamfer corrected to the flippable corner sliver. Glow/gradient admitted as state carriers. Component library §10 added from the guide. |
 | 0.3.1 | Typography source page received; §4's transcribed rows confirmed against it. Four resolutions applied: emphasis is **colour shift only** (italic clause dropped); Display / Body small / Data ×3 marked **spec-authored**; button caps **unconditional** (the Port exception retired with the Port screen); `<mspace>` **generalised to any live-updating numeric in any face**, with `TabularText` taking the face as a parameter. Section numbering unchanged. |
+| 0.3.3 | §8 **applied**: `SafeAreaFitter` is no longer dormant. Every player-facing canvas is split into a full-bleed layer and a fitted content layer; the per-layer decision table lives in `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3. The 24-unit inset is unchanged and still authored padding. |
 | 0.3.2 | **`danger FF4B3A` approved** and promoted from proposed to a shipping token — §2's gap table and §11's field map both drop the qualifier. No other palette change. |

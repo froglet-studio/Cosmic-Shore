@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 70 B - The sea: the route poster at window size, the voyages along its foot, the open voyage on the right - interactive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<img src="{{voyage.map}}" alt="The course on the HyperSea map" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:{{voyage.pos}};filter:brightness(.62) saturate(.8)"><div class="abs" style="inset:0;background:linear-gradient(180deg,rgba(0,1,10,.94) 0%,rgba(0,1,10,.7) 16%,rgba(0,1,10,0) 30%,rgba(0,1,10,0) 70%,rgba(0,1,10,.82) 100%)"></div><nav aria-label="Menu screens" class="abs" style="left:0;right:0;top:0;height:84px;background:rgba(0,1,10,.82);display:flex;align-items:center;justify-content:center;gap:48px;z-index:5"><span class="kc">LT</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/ec690d6b90d6fcdbc430b9bbaacf28a9" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">CODEX</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/34f5a50f1275fef42808fe9df3bf6af5" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">HANGAR</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#E6E9FF"><img src="/_blob/a5bd4d8d1de7b494567fc3de75525e1e" alt="" style="width:26px;height:26px;object-fit:contain;opacity:1">HOME<span class="abs" style="left:0;right:0;bottom:-12px;height:2px;background:#E6E9FF"></span></span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/e5b050c5a676193c650e94d873ad40e2" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">ARK</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/d0e850bc927559f1a499868d26f2a3de" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">PORT</span><span class="kc">RT</span></nav><div class="abs num" style="right:40px;top:28px;z-index:6;display:flex;align-items:center;gap:8px;font-size:20px;color:#FFAE00"><span style="width:14px;height:18px;background:#FFAE00;clip-path:polygon(50% 0,100% 35%,50% 100%,0 35%)"></span>1,240</div><div class="abs" style="left:40px;right:40px;top:100px;height:52px;display:flex;align-items:center;justify-content:space-between;z-index:4"><div style="display:flex;align-items:center;gap:32px"><span class="kc">LB</span><span class="cap" style="position:relative;display:flex;align-items:center;gap:8px;font-size:18px;color:#E6E9FF">Voyages<span class="abs" style="left:0;right:0;bottom:-16px;height:2px;background:#E6E9FF"></span></span><span class="cap" style="position:relative;display:flex;align-items:center;gap:8px;font-size:18px;color:#747BAD">Saga</span><span class="cap" style="position:relative;display:flex;align-items:center;gap:8px;font-size:18px;color:#747BAD"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg>Episodes</span><span class="kc">RB</span></div><button class="btn sm def" type="button"><span class="kc">B</span>Back</button></div><span class="abs glass sls" style="left:40px;top:180px;padding:12px 18px;font-size:18px">{{voyage.course}}</span><sc-if value="{{open}}" hint-placeholder-val="{{ true }}"><div class="abs glass sl" style="left:1300px;top:172px;width:580px;height:868px;box-sizing:border-box;padding:30px 30px 0">
+<button class="pick abs" type="button" onClick="{{close}}" aria-label="Close the voyage" style="right:24px;top:24px;font-size:28px;color:#747BAD">&#215;</button>
+<span class="lab" style="display:block;max-width:470px">{{voyage.kicker}}</span>
+<span style="display:block;margin-top:12px;font-size:36px;line-height:1.1">{{voyage.title}}</span>
+<div class="num" style="display:flex;gap:26px;margin-top:22px;font-size:22px"><span>{{voyage.ly}}</span><span>{{voyage.min}}</span><span>{{voyage.intensity}}</span></div>
+<span style="display:block;margin-top:18px;font-size:18px;line-height:1.45;color:#747BAD">{{voyage.line}}</span>
+<div style="display:flex;gap:10px;margin-top:34px"><sc-for list="{{presets}}" as="p" hint-placeholder-count="2"><button class="pick sls" type="button" aria-pressed="{{p.pressed}}" onClick="{{p.pick}}" style="padding:10px 16px;background:rgba(0,4,31,.6);box-shadow:{{p.edge}};font-family:'Chakra Petch';font-weight:600;font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:{{p.col}}">{{p.name}}</button></sc-for></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:22px"><sc-for list="{{formation}}" as="f" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;align-items:center;gap:8px"><img class="hull" src="{{f.hull}}" alt="{{f.alt}}" style="width:166px;height:150px"><span class="ell" style="max-width:170px;font-size:14px">{{f.who}}</span></div></sc-for></div>
+<div class="abs" style="left:30px;right:30px;bottom:30px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:12px"><a class="btn sm def" href="R70Crew.dc.html" style="flex:1">Ark crew</a><a class="btn sm def" href="#" style="flex:1">Story</a></div>
+<a class="btn commit" href="#"><span class="kc">A</span>Set sail</a></div>
+</div></sc-if>
+<sc-if value="{{closed}}" hint-placeholder-val="{{ false }}"><button class="btn def abs" type="button" onClick="{{reopen}}" style="right:40px;top:180px"><span class="kc">A</span>Open the voyage</button></sc-if><div class="abs" style="left:40px;top:888px;width:1220px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+<sc-for list="{{rail}}" as="r" hint-placeholder-count="4"><button class="pick glass sls" type="button" aria-pressed="{{r.pressed}}" onClick="{{r.pick}}" style="height:150px;box-sizing:border-box;padding:18px 18px 0;display:flex;flex-direction:column;justify-content:space-between;box-shadow:{{r.edge}};font-size:18px;line-height:1.3;color:#E6E9FF">{{r.title}}<span style="display:block;padding-bottom:16px;font-size:15px;color:#747BAD">{{r.sub}}</span></button></sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+const V = [{"n": 1, "title": "Carry sealed news to Tollmoor", "place": "Tollmoor", "min": "27 min", "ly": "540 ly", "i": 1, "crew": "Merrin Tal", "line": "Reach Tollmoor with the Ark standing. The news aboard will change what Tollmoor knows.", "placeLine": "A toll port on the edge of Tumult's bubble. The dock crews hear everything first.", "wps": 2, "map": "/_blob/9778fd69fcae1f8cb003a9bbd8508a56", "pos": "62% 58%", "thumbPos": "62% 58%"}, {"n": 2, "title": "Open the vaults at Lantern Reach", "place": "Lantern Reach", "min": "29 min", "ly": "580 ly", "i": 2, "crew": "Oriel Vance", "line": "Crack a vault with a payload, carry its artifact back to the Ark and stow it.", "placeLine": "Super-shielded shells drift in a lit shoal, each with an artifact inside.", "wps": 7, "map": "/_blob/b96bc9cef23de987e4ed42294befc28a", "pos": "38% 46%", "thumbPos": "38% 46%"}, {"n": 3, "title": "Raid the thieves' cache at Gallowglass", "place": "Gallowglass", "min": "47 min", "ly": "940 ly", "i": 2, "crew": "Cass Morrow", "line": "Take what the thieves took from their hold in the reefs, and stow it before they notice.", "placeLine": "The thieves' hold in the reefs toward the centre.", "wps": 2, "map": "/_blob/037d66eeef857313705b96448c91f4a0", "pos": "50% 40%", "thumbPos": "50% 40%"}, {"n": 4, "title": "Hunt the creature in The Maw", "place": "The Maw", "min": "49 min", "ly": "980 ly", "i": 3, "crew": "Brisk Amadou", "line": "Something big feeds in The Maw. Find it, bring it down, bring back what it carried.", "placeLine": "A dark gulf where the sea runs thick and the big feeders hunt.", "wps": 2, "map": "/_blob/da47aa2e4c65d63e53711ebfe6fc4ac2", "pos": "48% 38%", "thumbPos": "48% 38%"}];
+const SQ = [{"name": "Skim Wing", "dom": "Jade", "mine": true, "owner": "", "seats": [{"role": "Leader", "who": "You", "v": "Sparrow", "p": "Shrapnel", "e": "Charge", "a": "Extra Bay"}, {"role": "Rogue One", "who": "Halcyon", "v": "Dolphin", "p": "Riptide", "e": "Space", "a": "Seed Pod"}, {"role": "Rogue Two", "who": "AI wingmate", "v": "Squirrel", "p": "Trace", "e": "Time", "a": "No artifact"}]}, {"name": "Breakers", "dom": "Ruby", "mine": false, "owner": "Kestrel", "seats": [{"role": "Leader", "who": "Kestrel", "v": "Rhino", "p": "Tomahawk", "e": "Mass", "a": "Long Edge"}, {"role": "Rogue One", "who": "You", "v": "Manta", "p": "Reaper", "e": "Charge", "a": "Tailwind"}, {"role": "Rogue Two", "who": "AI wingmate", "v": "Serpent", "p": "Scales", "e": "Space", "a": "No artifact"}]}];
+const HULL = {"Sparrow": "/_blob/a2a4139d8e2822885778740d4f2fb92e", "Dolphin": "/_blob/e4ebf079ba441cd7141a2c8bc092d8ea", "Squirrel": "/_blob/694ae84ec6db347c4f034c8e03b56991", "Rhino": "/_blob/48e972fa9d369a737bacf39f37baf59f", "Manta": "/_blob/ab51cbb598b5a1e912416244829d134c", "Serpent": "/_blob/215e6ad15de9f075e7a45e7640a12f09"};
+const ROOM = {"Jade": "/_blob/c2a9b2634cf0ccae357e84f5a3ff5917", "Ruby": "/_blob/cd2a783f5d168b8a448e948e3d67122a", "Gold": "/_blob/48075ef29368f88768c579631ceb3f3d"};
+const DOMC = {"Jade": "#21C0BD", "Ruby": "#BD1BC8", "Gold": "#FF8F11"};
+class Component extends DCLogic {
+constructor(p) { super(p); this.state = { v: 1, sq: 0, open: true }; }
+renderVals() {
+  const st = this.state;
+  const v = V[st.v], q = SQ[st.sq];
+  const voyage = { kicker: 'Voyage ' + v.n + ' of ' + V.length + ' - found by ' + v.crew, title: v.title, line: v.line,
+    ly: v.ly, min: v.min, intensity: 'Intensity ' + v.i, map: v.map, pos: v.pos, place: v.place, placeLine: v.placeLine,
+    course: 'Tumult to ' + v.place + ' - ' + v.wps + ' waypoints' };
+  const rail = V.map((x, i) => ({ title: x.title, sub: x.place + ' - ' + x.min, map: x.map, pos: x.thumbPos,
+    edge: i === st.v ? 'inset 0 0 0 2px #00D4FF' : 'inset 0 0 0 1px rgba(116,123,173,.45)',
+    pressed: i === st.v ? 'true' : 'false', pick: () => this.setState({ v: i, open: true }) }));
+  const presets = SQ.map((s, i) => ({ name: s.name, pressed: i === st.sq ? 'true' : 'false',
+    edge: i === st.sq ? 'inset 3px 0 0 ' + DOMC[s.dom] + ', inset 0 0 0 1px #00D4FF' : 'inset 3px 0 0 ' + DOMC[s.dom] + ', inset 0 0 0 1px rgba(116,123,173,.45)',
+    col: i === st.sq ? '#E6E9FF' : '#747BAD', pick: () => this.setState({ sq: i }) }));
+  const formation = q.seats.map((s) => ({ hull: HULL[s.v], alt: s.v, who: (s.who === 'You' ? 'You' : s.who) + ' - ' + s.v }));
+  const squad = { name: q.name, room: ROOM[q.dom], dc: DOMC[q.dom] };
+  return { voyage, rail, presets, formation, squad, open: st.open, closed: !st.open,
+    close: () => this.setState({ open: false }), reopen: () => this.setState({ open: true }) };
+}
+}
+</script>
+</body>
+</html>

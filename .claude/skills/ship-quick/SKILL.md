@@ -7,9 +7,20 @@ description: The fast lane of the ship protocol - for a small, low-risk branch t
 
 **Read `.claude/skills/ship/SKILL.md` first.** This file only says what changes.
 
+**§0.05 (the verify rule) applies here in full:** C# passes `unity_refcompile` plus `gates.sh`,
+and the `unity` CLI when an editor is open. `/verify-unity` is not required until that skill
+merges. Do not stand up a syntax-only compiler, do not treat "CI is green" as a ship requirement
+(`unity-ci.yml` has no runner), and do not wait on or watch checks. If neither refcompile nor the
+CLI ran, report verification honestly as "not compiled", add the checklist entry, and name what a
+human must check in-editor.
+
 Fast means *less review depth*, not *less verification*. The two things that make a
 branch unsafe to merge — a half-landed editor tool and an unresolved base merge — are
 exactly the things a rushed ship drops, so they are the things this mode keeps whole.
+
+**Start with the triage** (`python3 Tools/Build/ship_triage.py`, `/ship` §0.0): its `depth` line measures the refusal
+rules below for you, and its trap and LAB / CODEX lines say what this branch still needs. Start the gates in the
+background straight away. **End with `/ship` §6.5** (offer the hand-off) on a GO.
 
 ## Refuse the fast lane when
 
@@ -36,16 +47,23 @@ one fired.
    Zero shortcuts here — this gate is the whole reason the fast lane is safe to have.
 4. **`git status --porcelain -- Assets ProjectSettings` must be empty** (or every entry
    explained and committed). One command; there is no version of "quick" that skips it.
-5. **Compile-risk scan on what you changed**: run
-   `python3 Tools/Build/check_conditional_compilation.py` if any script has an `#if`
-   guard, and grep for callers of any public member you renamed or deleted.
+5. **Blast-radius grep on what you changed**: callers of any public member you renamed or
+   deleted, and guid references for any asset you moved. This is a grep, not a gate — no
+   compiler, no CI (§0.05).
 6. **Docs: one question only** — did this change a pattern, invariant, or key-files row
    that `CLAUDE.md` or a `Docs/<System>/` file states? If yes, update it now; a doc lie
    costs the next reader more than this branch saved you. If no, say "no doc surface
    touched" and move on.
 7. **Go / no-go.** Same bar as `/ship`. Fast is not a licence to ship a NO.
-8. **PR** with what & why, verification status (what a human must still check in-editor),
-   the **Tool output** line from §2.5, and follow-ups. Then subscribe and watch CI.
+8. **PR** with what & why, verification status ("not compiled" plus what a human must still
+   check in-editor), the **Tool output** line from §2.5, and follow-ups. Do not subscribe to
+   watch CI.
+9. **Fire CI once** — `/ship` §5.5: dispatch `unity-ci.yml` with `mode: static` on the
+   branch. Not trimmed by fast mode; it is the branch's only pre-merge CI.
+10. **Refresh the Fleet Codex** — `/ship` §5.6: when the branch touched a vessel, rebuild the codex on bleeding-edge
+   with this branch merged on top (`--pending`) and republish it. Not trimmed by fast mode.
+11. **Merge** — `/ship` §5.7: on the GO, merge the PR into `bleeding-edge` with a merge commit (auto-merge when a
+   review is required), unless the person said "PR only". Not trimmed by fast mode.
 
 ## What you skip
 
@@ -54,9 +72,14 @@ one fired.
 - The §3 documentation sweep beyond step 6 above.
 - The §3.5 skill-capture retrospective, **unless** something in this session was painful
   to figure out — in which case name it in the report in one line so it isn't lost.
+- Most of §3.55 lab capture, **but not its minimum**. If the branch touched a lab (§3.55's
+  detect step), still refresh the lab's row in `.claude/skills/labmaker/CATALOG.md` and add
+  any lesson that cost time to `LEARNINGS.md`. That is one row and at most a few lines. Labs are
+  built on many branches by many contributors, and a fast lane that drops their learnings is the
+  reason `/labmaker` would go stale. A small lab change can skip `verify_lab.cjs`. Say so.
 
 ## Report
 
-Two paragraphs: what shipped and the PR link, then the §2.5 verdict (tools classified,
-where their output landed) and anything you deliberately skipped so the prompter can
-call it back.
+Two paragraphs: what shipped, the PR link and whether it merged (§5.7), then the §2.5 verdict (tools classified,
+where their output landed), the §3.55 lab line ("no lab touched", or the CATALOG/LEARNINGS
+changes), and anything you deliberately skipped so the prompter can call it back.

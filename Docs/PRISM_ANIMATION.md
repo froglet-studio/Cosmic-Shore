@@ -180,7 +180,7 @@ per-tick `smoothstep` color lerp → `PrismRenderService.SetColors` or MPB write
 | Explosion debris | `Prism.Damage` → `Explode` → `PrismExplosion` | `PrismEffectsManager.ProcessExplosions`: per-frame Burst job computing `pos = p₀ + t·v`, `amount = speed·t`, `opacity = 1 − t/dur` → per-frame `transform.position` + `SetExplosionParams`/MPB writes (`PrismEffectsManager.cs:242-331`). Every output is linear in t. | ❌ |
 | Implosion / consume | `Prism.Consume` → `Implode` → `PrismImplosion` | `ProcessImplosions`: per-frame progress `±t/dur` + per-frame moving-target `RefreshConvergence()` → `SetImplosionParams`/MPB | ❌ (progress) · ⚠ (moving target — see §1) |
 | Destruction state | `SetupDestruction` | One-shot: collider off, render off, spatial `MarkDestroyed`, volume zeroed | ✅ |
-| Restore | `Prism.Restore` | One-shot re-show (`SetRenderVisible(true)`) | ✅ by this law (⚠ it pops in — a continuity-law gap to fix WITH clock-material bloom, not with a CPU animation) |
+| Restore | `Prism.Restore` | One-shot re-show (`SetRenderVisible(true)`) plus, since 2026-10-29, `PrismScaleAnimator.RearmAfterRestore`: the animator `SetupDestruction` turned off is re-armed (a restored prism used to be unable to grow ever again, so the Urchin's restore-then-grow payoff never grew anything) and ONE clock grow stamp blooms it from zero to the size it died at | ✅ by this law; the pop-in gap is closed by the clock bloom (`PrismRestoreTests`) |
 
 ### 3.4 Shields (exotic geometry)
 
@@ -211,6 +211,20 @@ conveyor recycle — all inventoried in §3.7 lenses A, F, G, J, K.)*
 | Cell swap drain / conveyor suction | Batched retire/relocate passes | must use clock-material suction/bloom for the *visuals*; the batch bookkeeping itself is one-shot per prism |
 
 ### 3.7 Full path inventory (all 10 lenses + critic)
+
+> ⚠ **This table's `file:line` references are a SNAPSHOT of the sweep and have rotted — treat
+> every one as a hint, not an address.** Measured 2026-09-25: **24** cite paths that no longer
+> resolve and **9** are out of range in files that still exist. Both are expected and mostly
+> *correct as history* — the migration's whole point was deleting `PrismScaleManager.cs`,
+> `MaterialStateManager.cs` and `ClearPrisms.cs`, so a row whose path is gone is a row that
+> LANDED — but the out-of-range ones on live files (`PrismEffectsManager.cs`,
+> `PrismOctahedronShield.cs`, `PrismStellatedOctahedronShield.cs`,
+> `AOEDangerHemisphereBlocks.cs`, `PrismExplosionPoolManager.cs`) point at nothing in particular
+> and read as precise. Re-anchoring them on SYMBOLS rather than numbers is the fix (the rule
+> `VESSEL_CONSTRUCTION_FOLLOWUP`-style docs already use: name the method, demote the line to a
+> parenthesised hint); the sweep that measures it is ~20 lines over the extracted references.
+> **Do not spend a branch's time on it in passing** — it is a whole-table pass, and a
+> half-re-anchored table is worse than a uniformly stale one.
 
 <!-- AUDIT_TABLE_START -->
 #### A. Grow-in / scale
@@ -370,7 +384,7 @@ conveyor recycle — all inventoried in §3.7 lenses A, F, G, J, K.)*
 | AOEDangerHemisphereBlocks.MakeDangerousAsync + GrowToScale — deferred restyle + duplicate grower | per-frame CPU | ❌ | `Controller/Projectiles/AOEDangerHemisphereBlocks.cs:205-258` | Set IsDangerous/IsShielded BEFORE Initialize (the ResetState contract explicitly supports spawner-requested pre-Initialize state — Prism.cs:579-580), killing the one-frame defer; pull from a danger-styled pool (PrismKinds already maps kind→state, PrismKinds.cs:37) so the danger palette is an initial… |
 | Octahedron shield engage/shatter morph — centrally ticked per-frame CPU mesh rebuild | per-frame CPU | ❌ | `Controller/Vessel/PrismOctahedronShield.cs:259-330` | The morphs are closed-form in t: face-vertex = centroid + (v-centroid)*faceScale (+ normal*offset for shatter). Bake face centroid + face normal into the SHARED octahedron mesh (color/UV2 channels), add _MorphStart/_MorphDuration/_MorphMode instance props; a vertex shader runs the bloom/shatter off… |
 | Stellated super-shield engage/shatter morph — per-prism Update() | per-frame CPU | ❌ | `Controller/Vessel/PrismStellatedOctahedronShield.cs:336-401` | Identical GPU vertex-morph migration as the octahedron shield (shared mesh + per-face centroid/normal attributes + _MorphStart/_MorphDuration instance props, PrismTimerManager one-shot at settle for the shared-mesh handoff). |
-| SkimmerOvercharge BlowUpPrismsOverTime — staggered detonation ripple | scheduled | ✅ | `Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerOverchargeCollectPrismEffectSO.cs:174-195` | Already cadence-conforming. Optional hardening: schedule the N destruction callbacks through a generalized PrismTimerManager (t0 + 0.1·i) instead of a live await-loop on an SO (survives scene teardown races, no allocation). |
+| ~~SkimmerOvercharge BlowUpPrismsOverTime — staggered detonation ripple~~ | scheduled | **RETIRED** | (file deleted) | The Manta's overcharge kit was retired with the spec remake (`R_VesselActions/MANTA_STING_KABLOOM.md`), taking `SkimmerOverchargeCollectPrismEffectSO` with it. The row is kept struck through rather than deleted because its finding still applies to the next staggered ripple somebody writes: a live await-loop on a ScriptableObject does not survive a scene teardown, so schedule the N callbacks through `PrismTimerManager` (t0 + 0.1·i) instead. |
 | Shield/danger trigger sites — one-shot state writes (complete conforming inventory) | one-shot | ✅ | `Controller/Vessel/Prism.cs:875-888` | No cadence change. When the shield morphs go GPU-clocked, these calls become: one-shot instance-prop write (_MorphStart=now + state palette) + optional PrismTimerManager settle/deactivation callbacks — same call sites, same signatures. |
 | Next-frame deferral shims (SeedAssembler bonding, AssembledArchBurst scale enforce) | scheduled | ✅ | `Controller/Vessel/VesselActions/SeedAssemblerConfigurator.cs:60-71` | Both shims dissolve when initial conditions move into pool-pull material properties (nothing zeroes the transform anymore, nothing needs a next-frame rewrite). |
 | AOE spawn-stagger loops (spawn scheduling, one-shot per prism) | scheduled | ✅ | `Controller/Projectiles/AOEBlockCreation.cs:56-85` | Keep as spawn scheduling. Under the target architecture the de-spike motivation weakens (spawn = a few instance-prop writes, no coroutine, no mesh work), so several of these staggers can collapse to single-frame batch spawns with staggered _SpawnTime props — the visual stagger moves onto the GPU clo… |
@@ -505,7 +519,7 @@ Fix these DURING the migration (most disappear by construction under stamp+clock
       (`prismProperties.IsShielded` baked true → `Prism.Initialize` calls
       `ActivateShield()`) and every environment prism carrying `PrismKind.Shielded` /
       `SuperShielded` via `PrismKinds.Apply` (Yggdra, Orrery, Zephyr, Caldera, Geode,
-      Atlantis, the Wanderway conveyor's palette) hit it — i.e. the HexRace track and
+      Atlantis, the Wanderway conveyor's palette) hit it — i.e. the SkimRace track and
       the freestyle six.
     Collateral now gone with it: those prisms drew from the un-batched GameObject
     MeshRenderer for the whole morph, each registered with
@@ -520,10 +534,13 @@ Fix these DURING the migration (most disappear by construction under stamp+clock
     `d375b1129a0a4e29b505296c9e510bdc` lived only on its own `.meta` after
     `MinigameFreestyle.unity` was removed. Exclusive dependents deleted with
     it (`ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`,
-    `ShapeScoreData`). SOAP events `EventOnShapeGameModeStarted` /
-    `EventOnShapePrismReturnToPool` stay on live prism prefabs (inert; they
-    dump every listener to `Prism.ReturnToPool` — **never Raise them**; do not
-    strip the EventListeners). Do not reintroduce as a clock migration of
+    `ShapeScoreData`). SOAP event assets `EventOnShapeGameModeStarted` /
+    `EventOnShapePrismReturnToPool` are kept; their `EventListenerNoParam`
+    listeners on 8 prism prefabs were **stripped 2026-09** (they were only ever
+    raised by the deleted manager, and every prism instantiate paid to
+    serialize their UnityEvent lists — `Docs/archive/PERFORMANCE_LOG_2026.md` §0.11.6),
+    superseding the earlier "do not strip" note, which was a scope boundary
+    rather than a functional rule. Do not reintroduce as a clock migration of
     unreachable code.
 
 **Verified clean (no prism update path — do not re-audit)**: Rewind system, warp/flow
@@ -582,7 +599,9 @@ Implementation constraints (verified by the capability audit):
   transition — silent where that is a normal transient (fresh spawn paint, morph
   overlay windows), screaming via `PrismClockDiagnostics.WarnNoRenderEntity` where the
   render path is genuinely down. There are no MaterialPropertyBlock twins and no CPU
-  animation tier; the former managers are DELETED (tracker D2, 2026-08-02).
+  animation tier; the former managers are DELETED (tracker D2, 2026-08-02). **One exception
+  (2026-10-15, §4.11): on a device where Entities Graphics cannot run at all (no compute — a
+  WebGL2 browser), the same one-shot stamps go to the prism's property block.**
 - Currently NON-instanced properties that must not be driven per-instance without
   flipping the flag first: `_SqrDistance`, `_Alpha` (BlockGraph),
   `_ExplosiveRotation`/`_ExplosiveSpead` (ExplodingBlockGraph), `_Move` (SuctionGraph),
@@ -1079,10 +1098,45 @@ last two make a violation loud):
 | **Runtime** fail-loud | `PrismOcclusionDiagnostics.VerifyCorridorCapable`, called from `Prism.SyncRenderMaterial` — every material a prism ever binds passes through it. One error per offending material, naming it | A prism on an unwired shader, or an opaque material without alpha test, screams instead of silently staying solid. |
 | **Asset** gate | Edit-mode test `PrismOcclusionCoverageTests` (graphs wired · every material on them dissolvable · **every prefab carrying a `Prism` renders on a wired graph**) + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** | New prism content authored outside the corridor fails a test, not a playtest. All three gates share ONE rule (`PrismOcclusionDiagnostics.IsCorridorCapable`) so they cannot drift. |
 
-The **one** sanctioned hold is `PrismOcclusionCorridor.SetSuppressed`, used by exactly one
-caller — `CameraManager`'s manual replay camera, a broadcast vantage that is not looking at
-the local ship, where a camera→ship capsule would cut a hole through unrelated mass. It is
-symmetric (`RestoreGameplayCamera` lifts it) and it is a HOLD, not an opt-out: the vessel
+The **one** sanctioned hold is `PrismOcclusionCorridor.SetSuppressed`, and it has exactly **two**
+callers, both of them cameras posed by hand somewhere the pilot's eye is not, both holding it for
+the identical reason — a camera→ship capsule drawn from a vantage the pilot is not looking through
+cuts a hole through unrelated mass:
+
+1. `CameraManager`'s **manual replay camera**, a broadcast vantage that is not looking at the
+   local ship. Lifted by `RestoreGameplayCamera`.
+2. The **screenshot director's capture camera** (`Docs/SCREENSHOT_DIRECTOR.md`), which poses a
+   second camera for one frame to photograph the vessel from a random capture concept — where the
+   hole would open straight through the trail the photograph exists to show. Lifted in a
+   `finally`, and **identity-guarded**: it only lifts a hold it placed itself, so a photograph
+   taken during a replay cannot lift the replay's hold out from under it.
+
+A third caller needs to make the same argument. What is NOT sanctioned is a hold taken to make
+some content look better, or one taken for longer than the vantage it exists for.
+
+**The one re-shaping view, `PrismOcclusionCorridor.BeginViewOverride` / `EndViewOverride`
+(2026-10-18).** Not a hold and not a re-point to somewhere else: a SECOND VIEW of the bound
+vessel's own play that looks down a different line needs the same protection the law gives the
+pilot's eye. The one caller is the Wrasse's navigator board (`Controller/Vessel/Crew/KiteNavigatorView.cs`).
+That is a top-down orthographic camera over the hull's plane, where the mass between the lens and the
+plane hides the board the navigator flies on (Garrett: "for the prisms above the plane just use
+the dither effect in a cone to preserve the viewing area visibility").
+- **For that camera's render only** (`beginCameraRendering` / `endCameraRendering`), the three
+  corridor globals become a cone from the kite lens down to the plane, sized so its core covers the
+  view at the plane, with a core alpha above 0 so the mass dithers rather than vanishing.
+- **Its guards:**
+  - it is **identity-guarded** like `SetViewShift` (only the bound vessel or a child may call it);
+  - it honours `SetSuppressed`;
+  - it saves what was published and restores it at the end callback, so the pilot camera that renders
+    after it, and the Scene view, draw their own corridor unchanged.
+- **Its sibling for the same render** is `PrismDepthPlane` (`PrismDepthPlane.hlsl`, included by
+  `PrismClockAnimation.hlsl` and the swarm member shaders). The face spread's distance becomes the
+  scaled distance OUT OF THE PLANE, so the board reads crisp and the mass far above or below it opens.
+  The all-zero default is off, bit for bit.
+
+A further view override needs the same argument: a second view of the bound vessel's own play.
+
+In both cases it is symmetric and it is a HOLD, not an opt-out: the vessel
 binding survives it, so nothing has to remember to re-point the corridor afterwards. That lift
 is **unconditional and first**, above `RestoreGameplayCamera`'s own follow-target early return
 (fixed 2026-08-05): a replay can finish a frame after its scene tore down, when the follow
@@ -1174,6 +1228,130 @@ The two clearances are combined by **product, not `min()`**: multiplying two C2 
 stays C2, whereas `min()` would crease wherever they cross — precisely the artefact the
 grading exists to remove.
 
+**But the clearance and its grade are both HULL-sized and both eat the same end of a
+CAMERA-sized corridor — so what they cost is one ratio (2026-09-16).** Call it
+`ρ = cameraDistance / hullRadius`. The nose clearance takes `1·R/axisLen` of the corridor
+and the axial band takes another `(R − innerR)/axisLen`, off the *same* end, so together
+they take **`1.75/ρ`** of its length at the shipped `innerRadiusScale 0.25`. The fleet
+authors ρ across a factor of ~37 (`|followOffset|` 6.72 on the Urchin against 250 on the
+Serpent), so one constant is a sliver on one hull and most of the tunnel on another.
+
+Measured against the shipped function itself
+(`Tools/Shaders/verify_prism_corridor_base.py`), the **fully-clear** corridor was:
+
+| ρ | 1.25 | 1.75 | 2.0 | 2.83 | 3.5 | 5.0 | 11.7 | 41.7 |
+|---|---|---|---|---|---|---|---|---|
+| clear fraction (before) | **0.000** | 0.002 | 0.127 | 0.384 | 0.500 | 0.650 | 0.851 | 0.958 |
+| clear fraction (now) | 0.500 | 0.500 | 0.500 | 0.500 | 0.500 | 0.650 | 0.851 | 0.958 |
+
+so on a close-camera hull the corridor was nearly inert, and that reads in play as mass —
+trail, environment and especially the 24-wedge explosion debris, which is born wherever
+the ship destroyed something — **sitting solid in front of the ship while the same mass
+dissolves for a long-camera hull**. The clearance constant's own degenerate-case note said
+the corridor is only lost inside one hull radius; that was an analysis of `tSolid` alone
+and was blind to the grade subtracting a second `(outer − inner)/axisLen` from the same
+end, which is why it is empty at **1.75**, not 1.
+
+`PRISM_OCCLUSION_MAX_BASE_SHARE` (**0.5**) caps the pair as a share of the corridor's
+LENGTH. Both are scaled by **one** factor, which keeps the grade exactly the fraction of
+the clearance it was derived as (the isotropy argument above survives untouched) and makes
+the cap a **bit-exact no-op for ρ ≥ 1.75/0.5 = 3.5** — 2,406 samples, exact, with the
+pre-cap formula as the negative control. 0.5 is not a taste call: the clearance is
+described in the file as trading *a sliver* of see-through for the impact reading, and a
+sliver that takes more than half the tunnel is not a sliver.
+
+**The general rule**: *a clearance written in the units of the OBJECT, subtracted from a
+volume whose extent is a property of the CAMERA, is a different fraction on every vessel* —
+and the fleet's camera distances are the thing that varies most. State such a constant as a
+share of what it is taken from, or measure it on the closest-camera hull.
+
+**And the cap was still only half the answer, because the clearance is paid by mass that
+cannot use it (2026-09-17).** Capped or not, roughly the closest half of the tunnel is
+solid-or-grading on the two closest-camera flying hulls — and **explosion debris is born
+exactly there**, at the point of destruction, which in a fight is at or near the hull. So a
+burst went on occluding the vessel while every fragment was nominally inside the corridor,
+which is the symptom this whole pass started from. What the clearance buys is stated in the
+file and is a claim about **collision**: a prism the ship is about to *hit* must read solid
+so the impact lands visibly. **Debris has no collider.** It is photons from the frame it is
+born, so the clearance's argument has nothing to buy on the debris graph while its cost is
+paid in the one place it hurts most.
+
+The fix is a second **entry point**, not a second corridor. `PrismOcclusionFadeImpl` is the
+one body; `PrismOcclusionFade_float` passes `PRISM_OCCLUSION_NOSE_CLEARANCE` (1.0) and
+`PrismOcclusionFadeDebris_float` passes `PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE` (**0.0**).
+`BlockGraph` binds the first and is **untouched**, so live — collidable — mass keeps the
+full clearance and no impact read is lost; `ExplodingBlockGraph` binds the second, so
+debris dissolves flush to the vessel's plane:
+
+| ρ | 1.25 | 1.75 | 2.83 | 3.5 | 5.0 | 11.7 | 41.7 |
+|---|---|---|---|---|---|---|---|
+| clear fraction, live mass | 0.500 | 0.500 | 0.500 | 0.500 | 0.650 | 0.851 | 0.958 |
+| clear fraction, debris | 0.502 | 0.573 | **0.736** | 0.786 | 0.851 | 0.936 | 0.982 |
+
+**The cost, stated:** a burst visibly THINS where it crosses the ship. That is the corridor
+doing its job on mass that has no other job, and it was chosen deliberately over the
+alternatives — nothing collidable changes. The base-share cap goes *mostly* inert for
+debris as a consequence rather than as a second decision (with `clearanceT = 0` the share
+is the grade alone, `0.75/ρ`, under 0.5 for every ρ ≥ 1.5); it still bites on the Urchin at
+ρ ≈ 1.12, where it is doing exactly the job it was written for.
+
+**Two entry points rather than a new node input, and that is not a style call.** A
+ShaderGraph file-mode Custom Function node builds its call as **all input slots, then all
+output slots** — slot IDs do not decide it — so a parameter declared after an `out` makes
+the graph fail to compile and *every material drawn with it renders unmaterialed*, with
+nothing in the console naming the file. That is a shipped incident, not a hypothetical;
+`Tools/Build/check_shadergraph_custom_function_signatures.py` holds the rule now, and both
+wrappers keep the identical four-in/two-out shape so the debris graph needed only its
+`m_FunctionName` string changed.
+
+**The general rule**: *a clearance is bought for a reason, and mass that cannot use that
+reason should not pay for it.* Both entry points are compiled from the one shipped body by
+`verify_prism_corridor_base.py` **T4**, which asserts the debris corridor is wider at every
+ρ and reaches the grade, with the live clearance as the negative control — so "the same
+corridor, one argument apart" stays a measurement rather than a claim in a comment.
+
+#### The erosion rework this replaced, and why it was reverted (2026-09-17)
+
+The report that started this was *"the dithering effect does not behave as intended for the
+rotating pieces of the exploding prism's faces — as if the dither is applied first and then
+they are rotated and repositioned, dithering based on their previous position not their
+actual position."* That was read as a defect in the **erosion** (the debris's own
+body-anchored wipe) and answered with a rework of it: the wipe direction was re-seeded
+per-WEDGE off the object-space tangent instead of per-PRISM off the stamped velocity, the
+wipe coordinate was re-normalized against the face triangle's support instead of the UV
+square's, the CDF was refitted, the cube's UV0 apexes were edited, and a clang-backed gate
+was written for the lot. Every measurement in it was correct. **It was the wrong system**,
+and the whole commit is reverted.
+
+The report was about the **corridor**: fragments inside the cone that still occluded the
+ship. The nose clearance above is what was actually holding them solid, and that is what
+this section fixes. What the erosion rework produced instead was 24 independent wipe
+fronts per prism — one per wedge, each crossing its own tiny triangle in its own hashed
+direction — so at any instant the debris was a jumble of partially-eaten triangles
+receding in twenty-four directions. Play-tested verdict: *"flickering out with overlapping
+dusty surfaces instead of the clean wipe."*
+
+**The mechanism is worth keeping even though the change is gone.** A debris prism's 24
+wedges are read by the player as ONE object coming apart, and an erosion front is only
+legible while it is COHERENT across that object. The shared UV triangle — the very thing
+the rework called a defect, since UV0 names where on a piece a fragment sits and never
+which piece — is what makes all 24 fronts parallel and in step, and that lockstep IS the
+clean wipe. Per-piece identity is not a free improvement on it; it is the thing that
+destroys it.
+
+Two rules come out of it:
+
+- **Diagnose which system the report is about before rebuilding one.** Prisms carry two
+  independent dithers — the corridor (a view effect: am I between the camera and the ship)
+  and the erosion (a body effect: how does this chunk peel) — and both present as "the
+  dither is wrong on the exploding pieces". The tell was in the report's own second
+  sentence, *inside the dither cone and still getting occluded*; it named the corridor.
+- **A per-instance identity is not automatically an improvement.** Ask what the player
+  reads as one object first. Where several pieces are read as one, shared phase is the
+  feature and independence is noise — the same argument the charge shell records from the
+  other end (`SPARROW_SPRAY_ACCURACY.md` § Round 5: the tuning surface is the SUM over N
+  instances, never one instance).
+
 **Why not the capsule it replaced:** the constant radius was an artefact of the retired
 `ClearPrisms` `CapsuleCollider`, carried into the first shader version unexamined. A fixed
 world radius subtends a *huge* solid angle near the camera, so a capsule massively
@@ -1207,6 +1385,12 @@ corridor to the skimmer instead of the hull. Because size is now derived, a bad 
 is not cosmetic — too small hides the ship anyway, too large dissolves the world in front of
 it — so measured radii are clamped into a config sanity band and both the clamp and an
 unmeasurable hull scream once, naming the vessel and the number.
+**The band's floor moved 2 → 0.25 (2026-10-15).** The Urchin's hull genuinely measures **0.53 u**
+(`Urchan_Test.fbx`, a ~1 u ship framed by the fleet's closest camera, `|followOffset|` 6.72), so the
+old floor clamped a REAL hull on every spawn: a red `[PrismOcclusion]` error per play and a corridor
+four times the ship. The floor exists to catch a broken measurement, so it has to sit below the
+smallest real hull. (Its ρ is therefore ≈ 12.7, not the ≈ 1.12 quoted in §4.7's base-share
+discussion, which predates the skimmer exclusion and read the skimmer's 7.5 u sphere.)
 
 The band between the two radii is deliberately **short**, and the two things that keep a
 short band from reading as an edge are both continuity choices:
@@ -1578,6 +1762,23 @@ Four properties of the design worth preserving if it is ever touched:
   flush-to-the-plane behaviour. A camera closer than the clearance switches the corridor
   off entirely, which is correct rather than dangerous: inside one hull radius there is no
   room for occluding mass to hide behind.
+- **The corridor OPENS AS A CIRCLE at the lens — `_PrismOcclusionNearRadius`
+  (2026-09-15).** The bare cone was a POINT at the camera, which is the one place its own
+  argument fails: the eye→silhouette cone is the minimal volume that can occlude the
+  *ship*, but a prism at the lens occludes the whole *screen*, and the cone — sized only to
+  the ship — was thinnest exactly there, so mass the camera drifted into stayed solid and
+  blacked out the view. The profile now opens from a near circle
+  (`PrismOcclusionConfigSO.nearRadiusScale`, **0.5** hull radii, clamped to the outer scale)
+  and lerps LINEARLY to the hull circle at `t = 1`: still one ruled surface, so no seam; the
+  inner radius rides it as the same fraction at every depth, so the feather's shape is
+  unchanged along the whole length; and `near = 0` is the old cone bit for bit. The near
+  radius travels as its OWN file-scope global float (published beside `_PrismOcclusionParams`
+  by `PrismOcclusionCorridor.Publish`, `Shader.SetGlobalFloat`) rather than as a fourth
+  lane of the params vector, for the same reason the Lab's dither dials do — it reaches
+  both wired graphs with **no Custom Function node edit**, and unpublished it reads 0. The
+  trade: past the lens the cleared region is no longer exactly a constant angular size —
+  it converges on the silhouette from a wider start — so slightly more mass dissolves in
+  the first stretch out from the camera than strictly needs to for the ship's sake.
 - **The corridor test is per-fragment**, from the Position(World) node — the same
   post-vertex-animation position the rasterizer used. A per-object test would make a large
   environment plate flip wholesale between solid and dissolved.
@@ -1665,7 +1866,8 @@ and it demonstrates the shape generalises: a view-dependent prism visual that is
 than a law still gets exactly one global-uniform publisher and zero per-prism CPU.
 
 While a Dolphin's pilot holds the sight, every prism standing inside the volume their next crystal
-blast would sweep lights up. `PrismDestructionSight` publishes the viewer's OWN sight as five
+blast would sweep lights up. `PrismLit` (named `PrismDestructionSight` until the LIT fundamental
+promoted it — `Docs/LIT.md`) publishes the viewer's OWN sight as five
 globals per frame (apex, sweep axis, gape axis,
 `(height, coreRadiusPerUnitDepth, halfLengthPerUnitDepth)`, strength);
 `PrismDestructionSight.hlsl` runs the containment test **once per prism** — at the prism's own
@@ -1702,8 +1904,192 @@ Four properties worth carrying to the next one:
   breaks SRP batching); and the count uniform must be the master sentinel, since unpublished
   globals read as zero and that has to mean "loop does not execute".
 
+- **A per-PRISM fact the shader needs is a STATE bit, not a stamp** (added 2026-09-28). A
+  super-shield inside the own cone glows in the danger colour, because the blast ENDS there — and a
+  super-shielded prism wears the plain team material, so no per-material value can say what it is.
+  The answer is one Hybrid-Per-Instance float (`_PrismSuperShielded`) written once at the shield's
+  engage and once at its drop, owned by `Prism` so it survives the companion entity being re-minted.
+  Not a global (it differs per prism), not a per-frame write (it only changes when the state does).
+
 Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`
-(§14 for the peer channel).
+(§14 for the peer channel, §16 for the blocker mark).
+
+### 4.7.2 The third citizen of §4.7 — the Urchin's cradle (shipped 2026-09-16, re-cut 2026-09-22)
+
+Like the Echo Sight, not a law: one vessel's ride feel, live only while that vessel is attached.
+It is recorded here because it is the first §4.7 consumer that moves **VERTICES** rather than
+colour or coverage, and it shows the shape holds for a deformation exactly as it held for a tint.
+
+While an Urchin **rides** a prismscape — attached, with a live ride kernel under it; not launched
+off a ribbon's end, not in free flight — the mass around it **DRAPES** over the hull. Every vertex
+within `drapeReach` of the hull's SURFACE slides along its own radius toward that surface: mass
+INSIDE the hull closes onto it (the wrap — a prism the Urchin is buried in envelopes it instead of
+clipping through it), mass just outside RISES to meet it (the lip), and mass past the reach is
+perfectly still. The pilot reads it as the mass they are grinding cradling them.
+
+**The two rounds this replaced are the finding.** The first cut moved whole prism FACES; the
+second moved individual WEDGES (the four triangles fanned from a face's centre on `Prism.asset`),
+with the nearest wedge landing on the hull's surface, its three neighbours coming partway by a
+continuous adjacency max, and everything else bit-identical. Both were faithful to the request as
+written, both were proven correct by the harness, and both read on screen as **facets hinging** —
+*"this looks terrible"*, then, after a 10x tone-down, *"this effect looks really bad to the point i
+put this down and let this branch go stale."* The lesson generalises past the Urchin: **a
+deformation is only as smooth as the surface it moves, and 24 triangles is not a surface.** No
+rigid per-triangle motion and no amount of tuning could have fixed it, because a turning facet is
+what 24 triangles can express and nothing else. The fix is more surface and a smoother map.
+
+**So a handful of prisms get more surface.** `HighPolyPrismMesh` builds the identical solid —
+a unit cube of the same half-extent, per-face flat normals, the same face-local UV0 — subdivided
+into `subdivision²` quads per face (3,072 triangles at the shipped 16 against the authored 24), and
+`PrismCradle`'s residency pass hands it to the prisms near a riding hull through the platform's own
+shared-mesh handoff (`Prism.SetRenderMeshOverride`). **That is not a §1 violation and the distinction
+is the one worth stating: a mesh override is FINAL at the instant it is applied — a state change,
+exactly like a shield engaging — not an animation.** The animation is still `f(one global uniform)`
+with zero per-prism CPU per frame. Three properties make the swap invisible and affordable:
+
+- it happens where the drape **provably cannot have moved anything** (`residencyMargin` beyond
+  `hullRadius + drapeReach`), so a prism changes geometry only while every one of its vertices is
+  still exactly where the authored mesh put it;
+- the mesh is **SHARED**, so the resident prisms stay in one instanced batch instead of minting a
+  mesh and a draw call each (the rule CLAUDE.md's exotic-visual handoff already records);
+- it is **BUDGETED** (`maxResidentPrisms`, 24 — ~74k triangles at the shipped subdivision), and the
+  nearest prisms win.
+
+`PrismCradle` (`_Scripts/Utility/`) publishes a bank of `PrismCradle.Slots` (4) global slots once
+per frame from `LateUpdate` — `_PrismCradleCentre[i]` (hull centre + radius), `_PrismCradleWeight[i]`
+(eased strength) and `_PrismCradleParams` (drape reach, exponent, live count) — from a frame-stamped
+registry that `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`,
+gated on `GunVesselTransformer.IsRiding`) reports into from `Update`, and reconciles residency in
+the same pass. `PrismCradle.hlsl` runs the deformation in the VERTEX stage, spliced **last** on
+both live graphs' `VertexDescription.Position` and `.Normal` by `Tools/Shaders/wire_prism_cradle.py`
+(the same census as the corridor, the sight, the jiggle and the flight clock, for the same reason;
+the three sibling wirers that pinned the old tail walk through the cradle node). Tuning:
+`Resources/PrismCradleConfig` (`PrismCradleConfigSO`). Proof: `Tools/Shaders/verify_prism_cradle.py`
+compiles the SHIPPED HLSL with clang++ and holds ten properties over randomized inputs under a
+(3, 1, 6) model scale, including a negative control.
+
+Six properties worth carrying to the next one:
+
+- **Live data, so a global — even for geometry.** "Where is the hull relative to this prism" fails
+  §1's dividing question (the GPU could not have known it at any stamp), so a per-prism stamp is
+  impossible and a per-prism CPU pass is the thing the law forbids. The request's "every prism in
+  range has its material updated with the vessel position" is satisfied LITERALLY, for all of them
+  at once, by publishing the position ONCE. The hull's RADIUS travels beside the centre only
+  because a slot is one float4; it is measured once (`PrismOcclusionCorridor.
+  MeasureCircumscribedRadius`, the corridor's own hull measurement) or authored, never per frame.
+- **The whole deformation is ONE LINE, and that is why it reads as fabric.** With `rad = p − U`,
+  `d = |rad|`, `s = d − R`: `p' = U + (rad/d)·(d − s·k(s)·w)`. Inside the hull `k = 1`, so at full
+  strength the vertex lands exactly on the surface; outside, `k` falls from 1 at the surface to 0
+  at `drapeReach`. No adjacency, no per-triangle case, no facets, no bake, no TEXCOORD — the map
+  is a pure function of world position and world normal, so it is correct on ANY mesh: the
+  high-poly copy, the authored 24-triangle prism just outside the residency band, the built-in
+  cube, the shield octahedra, the exploding debris. There is no geometry it can be wrong about.
+- **There is no seam because the falloff is C1 at BOTH ends.** `k = (1 − smoothstep(0,1,t))^e`
+  with `t = s/reach`: smoothstep's derivative vanishes at 0 and 1, so the displacement, its first
+  derivative AND the normal correction are all exactly zero at `s = drapeReach`. The reach is the
+  width of the lip, not a cutoff. (The exponent is floored at 1 because `(1−S)^(e−1)` diverges at
+  the far edge below that — the one place the shaping dial can put a crease exactly where the
+  effect is supposed to vanish without one.)
+- **The normal is the map's ANALYTIC inverse-transpose, and the cheap alternative is a trap.**
+  In the radial/tangential frame the differential is `diag(a, b, b)` with `a = f'(d) = 1 − w(k +
+  s·k')` and `b = f(d)/d`, so `n' = normalize(dir·(n·dir)/a + (n − dir·(n·dir))/b)`. The obvious
+  shortcut — lerp `n` toward `dir·sign(n·dir)` — pops discontinuously wherever `n·dir` crosses
+  zero, which on the SIDE faces of the very prism the Urchin is riding is a line straight down the
+  middle of the effect. Note `a → 0` at full strength inside the hull is CORRECT rather than
+  degenerate: a patch flattened onto a sphere has the sphere's normal, and the guarded `1/a` is
+  what delivers it.
+- **A differential claim is proven by CONVERGENCE, not by a tolerance.** The harness deforms a tiny
+  triangle in a face's plane and compares its geometric normal to the one the shader returns at the
+  centroid — but a flat patch of ANY size disagrees at second order in its size, so a single
+  tolerance only measures which patch was chosen. (Measured, and it cost a debugging round: at a
+  fixed 0.02 u patch the worst disagreement was 0.71, which looks exactly like a broken Jacobian.)
+  The assertion is that **halving the patch quarters the error** — shipped: 0.32 → 0.10 → 0.026 →
+  0.0058 — which is the signature of an exact first derivative and nothing else. The negative
+  control rebuilds the file with the radial term neutered and the error **plateaus** at 0.74
+  instead of converging. General rule: *when the claim is "this value is a derivative", assert the
+  convergence RATE; a wrong derivative converges to a constant and a tolerance cannot tell them
+  apart.*
+- **Strength is EASED, never switched** (0.25 s in, 0.4 s out), and the map is affine in the weight,
+  so a half-engaged cradle is the same drape at half depth rather than a differently-shaped one.
+  A bare on/off would snap every vertex in the band on one frame.
+
+**Three stated limitations.** (1) The ride is simulated on the machine that owns the vessel (the
+owner, or the host for an AI): a remote replica's transformer is inactive and never attaches, so a
+remote pilot sees no cradle around another player's Urchin — ride state does not replicate today.
+(2) The spatial index keys prisms by their CENTRE, so a very long prism whose centre is outside the
+residency radius but whose end pokes inside is not made resident. It still drapes — the shader
+knows nothing about residency — just at the authored mesh's resolution: **coarse, never wrong.**
+The same applies to subdivision, which is in PARAMETER space, so a 60×1×1 lattice strut is 60×
+coarser along its length than across it; the prismscapes an Urchin actually rides are modest.
+(3) Entities Graphics culls by the prism's `RenderBounds`, which a per-frame global cannot expand,
+so a prism whose bounds are just off-screen can carry a draped face that should be on-screen; the
+ride camera sits 6.7 u off the hull looking at it and the reach is a few units, so in practice the
+band is near the centre of the frame. Neither the look nor the residency cost has been seen on
+screen: **nothing here has been run in the editor** — the wiring is machine-validated, the HLSL is
+executed by the harness, and the C# is Roslyn-checked against a transcribed stub harness; the LOOK
+is a playtest away.
+
+Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md` § "The
+cradle".
+
+### 4.7.3 A fourth citizen was BUILT and is NOT shipped (2026-09-24 → 2026-09-25)
+
+A travelling **ripple** — a thin shell of rippled prisms sweeping outward through the mass
+around a source — was built on this shape, carried by four different things over six playtests,
+and **removed from the branch** with the paradigm it was proving. Nothing in the project ships
+it and no code, asset, graph node or gate refers to it any more; the only thing it left behind
+is what it TAUGHT, which lives in `.claude/skills/prism-morph` §13 as a retirement record
+because those findings belong to the family rather than to that one effect. The three worth
+knowing before building the next member: a **residency selector is a claim about where the
+field lives** (the cradle's decays with distance, a travelling shell's does not, and the two
+are identical in code); a morph has **three** budgets and not one (how big, how long, and how
+much of its life at full size) and the one you may spend depends on who owns the clock; and an
+effect **strong enough to be an EVENT stops being one the moment it is continuous**, which no
+measurement will tell you.
+
+### 4.7.4 The fifth citizen of §4.7 — the black hole's WARP (built 2026-10-07, not yet playtested)
+
+Not a law: a world object's signature, live only while a black hole is. Recorded here because it is
+the second §4.7 consumer that moves VERTICES, and the first whose source is not a vessel — a spawned
+`BlackHole` (`Docs/BLACK_HOLE.md`), which also MOVES the prisms around it through the ordinary
+movers contract (§1 "Animation vs. live gameplay data", §3.6). The two halves are deliberately
+separate systems: the FIELD changes where mass is (gameplay data — colliders, index, entity), the
+WARP changes only how it is drawn, so the bend can be tuned, switched off or judged on look without
+touching the physics.
+
+Mass near a horizon is drawn TIDALLY STRETCHED — spaghettification, from the physics. The tidal
+tensor a freely falling body feels near a Schwarzschild hole is exactly `(GM/r³)·diag(2, −1, −1)`;
+a prism that yields to it for a response time τ is drawn with log-stretch `ε = GM·τ²/r³` along the
+line to the hole and `−ε/2` across it, applied as ONE affine map per prism about its own centre (its
+object origin). Volume is conserved exactly (det = 1), every stretch is positive so it never folds,
+the centre stays put (tides deform; the FIELD moves mass), and because it is affine the authored
+24-triangle prism represents it exactly — **no residency, no high-poly mesh**. The normal is the
+map's inverse transpose, also exact. The harness measures the tensor number for number at 1.5–5 r_s,
+the 1/r³ falloff, `ε_h ∝ 1/M²`, volume, the ceiling and the normal, with a negative control that
+switches the normal correction off (`Tools/Shaders/verify_prism_gravity_warp.py`).
+
+**Superseded 2026-10-08:** the first cut was the cradle's shape with a STRAIN, `p' = U + dir·d·(1 − w·k(s))`
+— every vertex slid toward the singularity by a fraction of its distance. That was a second, invented
+pull on top of the real one, and with `k` flat at the horizon its stretch PEAKED mid-reach and was
+zero at the horizon — the opposite of a tide. It needed its own 32 × s12 high-poly residency because
+a per-vertex radial map bends a flat face.
+
+`BlackHoleWarp` publishes `_PrismGravityWarpCentre[4]` (centre, r_s) / `_PrismGravityWarpWeight[4]`
+(GM·τ² eased by the hole's weight, reach) / `_PrismGravityWarpParams` (ln of the stretch ceiling,
+live count) once per frame from the registry's one driver (order 29500). The
+node (`PrismGravityWarpDeform`, `PrismGravityWarp.hlsl`) is spliced IMMEDIATELY BEFORE the cradle on
+both live graphs by `Tools/Shaders/wire_prism_gravity_warp.py`, anchored structurally on "the morph
+that feeds the vertex blocks" — the cradle stays last, and all sixteen sibling wirers still pass. A
+separate node rather than a map kind inside `PrismCradle.hlsl` (the prism-morph skill's preference),
+weighed on ownership: a world object and one vessel's ride feel never legitimately fight over a vertex.
+
+Three things worth carrying: **when the morph depicts physics, derive it — do not shape it** (the
+first cut's hand-shaped falloff put the strongest stretch in the wrong place, which no tuning of its
+dials could fix, and the derived map turned out cheaper, exact on 24 triangles, and residency-free);
+**gameplay motion and the morph can share one source** so long as they are
+two systems with two budgets, and the morph never reads anything the field did not already make
+true; and **a hole that despawns keeps publishing a falling weight** while the field has already
+stopped pulling — only the photons ease.
 
 ### 4.8 The shield morph — the last CPU ticker (shipped 2026-08-15, B4)
 
@@ -1819,9 +2205,17 @@ duration, no fly-out offset, no speed cap — the base effect owns all of it, an
 death visuals cannot drift apart because they are one visual.
 
 **A TIMED pop is the one disengage with no breaking force, and it carries HALF the blow
-that shielded it** (2026-08-24). The temporary shield exists to stop a blast reading as
-clipping: an explosion meeting its own domain's mass shields the prism instead of passing
-through it, so the hit reads as ACCEPTED. The pop that ends that shield therefore has to
+that shielded it** (2026-08-24). ⚠ **The explosion is no longer one of its producers**
+(2026-09-18): an own-domain blast passthrough is now said with LIGHT rather than with a
+2-second shield on every prism (`Docs/LIT.md`), so nothing in the game raises a TIMED
+shield with a blow behind it any more and every timed pop takes the impactless
+`minSpeed`-in-a-random-direction branch below. The mechanism is kept, and the two timed
+producers that remain — a prism leaving a crystal's trigger (`Prism.OnTriggerExit`, 2 s)
+and a projectile's `Shield` impact effect (0.5 s) — are exactly the "raised with no blow"
+case it already handles. The paragraph stays because the plumbing does, and because it
+records why a timed pop must not be silent. The temporary shield existed to stop a blast
+reading as clipping: an explosion meeting its own domain's mass shielded the prism instead
+of passing through it, so the hit read as ACCEPTED. The pop that ends that shield therefore has to
 read as a pop — and it is exactly the case with no impact vector to forward, so on the
 zero-vector fallback above every shielded prism in a blast drifted its shards straight up
 at `minSpeed`, in lockstep, a beat after the explosion. Both explosion paths now hand the
@@ -1914,8 +2308,11 @@ pivot = Pn + slide               the rotation is rot(P - pivot) + pivot
 — and the `0.5` in `slide` is not a fact about faces. It is the prism CUBE's geometry: that
 mesh carries twice a normal cube's triangles so every face is four isoceles wedges fanned
 from a face-centre vertex, and a wedge's own centre sits half a face-half-width along its
-tangent. `Pn + 0.25*T` therefore lands on the wedge, the four wedges spin in place, and the
-prism comes apart the way it is supposed to.
+tangent. `Pn + 0.25*T` therefore lands on the wedge at age 0 and the prism comes apart the way it is
+supposed to. (The wedges do not "spin in place": the slide grows with the explosion's amount,
+`(0.5 + Spread + A·ExplosiveSpread)·T/2` with `A = speed·t`, so each wedge slides outward along its
+tangent linearly with age while turning by `A·ExplosiveRotation` — measured against the evaluated
+subgraph by the Collision Burst Lab's parity gate, `Docs/Studios/COLLISION_BURST_LAB.md`.)
 
 For a mesh whose faces are single triangles it is simply wrong, in two different ways:
 
@@ -2055,8 +2452,8 @@ sword landed.** Two independent reasons, and both are wiring rather than design:
 
 1. Four of the five skimmer containers (Dolphin, Manta-overcharge, Sparrow, Squirrel) carry **no
    prism-damage effect at all**, so they never call `Prism.Damage` and cannot reach the gate.
-2. The fifth — `RhinoForceFieldSkimmerImpactorDataContainer` — carries
-   `RhinoSkimmerDamagePrismEffectSO`, which handles super-shielded contact in its own branch
+2. The fifth — `SwordfishForceFieldSkimmerImpactorDataContainer` — carries
+   `SwordfishSkimmerDamagePrismEffectSO`, which handles super-shielded contact in its own branch
    (`PopSuperShield` on an energized blade, `NotifyPopDenied` + `BounceBack` otherwise) and
    **returns before any `Damage` call** either way.
 
@@ -2104,6 +2501,510 @@ spam gate. The *curve shape* stays in the HLSL, matching how C5 splits feel from
 
 ---
 
+### 4.10 The Rhino sword's SLICE — a death that is a CUT (shipped 2026-09-26, C18)
+
+A prism the Rhino's energy sword destroys no longer bursts into debris. It is **cut along the plane
+the blade swept through it** — the plane containing the blade's own axis and the velocity of the
+part of the blade that made contact — and comes apart like fruit under a sharp knife: a crisp
+white-hot seam at the instant of the cut, the two halves holding for a beat, then parting along
+the cut and opening like a book about the trailing edge, each half showing a hot cut face that
+cools to the domain's bright colour, and then each half **dissolving away from its sliced face**,
+the cut going first and a ragged ember front marching out to the far end of the piece.
+
+**It is a STAMP, not a §4.7 global, and that is the admission test answered, not dodged.** Every
+input is known at the instant of the hit — the plane, the side each half is on, how hard the blade
+was moving — and nothing depends on live data after it. So it is §1's ordinary shape: one stamp of
+initial conditions per half, the GPU runs the course off `_PrismClock`, one scheduled retirement.
+There is no per-frame CPU write to any piece and no §1 exception (contrast the implosion's moving
+target). The shape is the explosion debris' (§4.6) exactly — requests queue during the frame, ONE
+prototype-instantiate batch per frame spawns them (`PrismRenderService.SpawnSliceDebrisBatch`,
+override set `Slice`), ONE batched destroy retires each expired batch (`PrismSlice.Sweep`).
+
+**The high-poly prism is load-bearing, not decorative.** Each half is a pure render entity drawing
+the SHARED `HighPolyPrismMesh` (subdivision 10), and a half is made by MAPPING the far side of the
+prism's own skin onto the cut plane — the skin beyond the cut folds onto the plane and *becomes*
+the cut face (`PrismSliceCut` in `PrismSlice.hlsl`). The map is a **central projection from a point
+strictly inside the kept half**, which is what makes it exact for a convex solid: every ray from an
+interior point through a far-side surface point crosses the plane inside the cross-section, and
+every cross-section point is crossed by exactly one such ray, so the far skin maps BIJECTIVELY onto
+the true cut face — no overhang past the real edge (an orthogonal projection's failure on any face
+slanted to the cut), no holes, no fold; continuous where it meets the kept skin, so the half is
+watertight. A vertex map is only as exact as the triangles it moves, so the one row of triangles
+straddling the cut is where the fold is approximate: the rim is exact to ONE grid cell — half a
+face on the authored 24-triangle prism (a crude wedge), a tenth of a face at subdivision 10. What
+is left of that is closed by two fragment-stage rules: the skin's straddling triangles are clipped
+exactly on the cut line (the interpolated REST depth is exact within a triangle), and the sliver
+that opens between the skin's edge and the cap looks INTO the half, where every back face is shaded
+as cut flesh with the cut face's own normal — the same colour and shading as the cap beside it. A
+per-vertex FAR flag tells cap from rim: 1 on every moved vertex, so a triangle made wholly of them
+interpolates to exactly 1 (cap) while a straddling one is below it everywhere but its far corner.
+**This is the high-poly mesh's second consumer after the cradle (§4.7.2), and the first that is a
+stamp rather than a global** — it uses the mesh and nothing else of the morph family (no residency
+swap, no bank): the halves are born on the dense mesh, so there is nothing to swap invisibly.
+
+**The plane is stamped UNNORMALISED so a depth is a world distance.** The CPU stamps `m = Mᵀ·n` and
+`d = n·(Q − t)` for the unit world normal `n`, which makes `dot(m, x) − d` the WORLD signed distance
+of an object-space vertex from the cut, exactly, under the prism's non-uniform scale. So the
+dissolve depth, the fresh-cut seam width and the half's full depth are world units with no
+per-fragment matrix work, and a long thin slab dissolves like a cube does. Projecting in object
+space is identical to projecting in world space because an affine map preserves lines and ratios
+along them.
+
+**The motion is rigid and provably non-interpenetrating.** `world = Pivot + Rot(axis, θ·Open(u))·(rest
+− Pivot) + Away·sep·Separate(u) + drift·Drift(u)`, the three envelopes exponential approaches (the
+drift one is a velocity under linear drag, so the halves are carried along the swing and coast to a
+stop). The CPU puts the hinge on the half's most-TRAILING point along the blade's travel, dropped
+onto the cut; every point of the half is then at or ahead of the hinge, so a rotation of up to 90°
+toward "away" can only carry points further from the twin, never into it. Both properties are
+asserted — rigidity and the half-space bound in `verify_prism_slice.py`, the hinge rule against the
+C# that stamps it in `PrismSliceTests`.
+
+**The dissolve.** Each fragment's place in the dissolve order is its depth into the half as a
+fraction of the half's full depth (0 on the cut face — every cap vertex — 1 at the deepest point),
+roughened by world-scale value noise. The front is a HARD edge with an ember band behind it (the
+house style; a dithered dissolve reads as the corridor's view effect), leaning toward the fresh-cut
+white so it reads as a front against flesh that is already past the bloom clamp. The window ends
+`dissolveEndMargin` of the life before retirement and overshoots progress 1, so the retirement never
+beats the wipe (continuity of existence).
+
+**It obeys the occlusion corridor (§4.7).** The halves are born exactly where the blade kills —
+beside the Rhino's own hull — so they are the one death visual most likely to occlude the ship. The
+shader includes `PrismOcclusionCorridor.hlsl` and clips through `PrismOcclusionFadeDebris_float`, the
+same entry point ExplodingBlockGraph uses (no collider, so no nose clearance to buy), in all three
+passes so depth and colour agree.
+
+**Why a hand-written shader rather than a graph.** Three things the graph cannot give: the face side
+(a back face seen through the rim or the dissolve is shaded as flesh), two per-vertex values computed
+BEFORE the map moves the vertex (rest depth and the far flag), and a far flag that interpolates
+linearly across a triangle. It is DOTS-instanced by hand (`UNITY_DOTS_INSTANCED_PROP` for the six
+stamps plus the colour trio every prism entity carries), opaque + alpha-clip like every prism
+material, `Cull Off`, three passes (UniversalForwardOnly, DepthOnly, DepthNormalsOnly), no shadow
+caster (the entities cast none, like the debris).
+
+**It never costs a death its visual.** `PrismFactory.SpawnExplosion` tries the slice first and falls
+through to the ordinary explosion on ANY refusal — the config off or missing, the budget full, a
+degenerate cut, the render service down. The slice is photons only: damage, energy, stats, SFX and
+the destroyed-channel payload are `Prism.Damage`'s, unchanged (`Prism.Slice` is Damage with the plane
+parked in a transient field, the same idiom as `_destroyedByCreature`).
+
+**Budget (the whole cost story).** Triangles `maxLiveSlices × 2 × 12 × s²` = 48 × 2 × 1,200 =
+**115,200** at the defaults (a slice lives 1.15 s, so this is a ceiling a very fast blade reaches, not
+a steady state); past the ceiling kills explode. **Always-on colliders: ZERO** — the prism's collider
+went with its destruction, the halves are photons. **Extra draw calls: ZERO beyond one batch** — every
+half shares one mesh and one material. Per-frame CPU: the drain and the sweep, both O(this frame's
+kills), nothing that scales with live halves.
+
+**Tuning.** `Resources/PrismSliceConfig` owns everything the CPU needs to stamp and retire (life,
+the three time constants, the dissolve window, separation, opening angle, drift, the cut-offset
+clamp, the budget); the time constants and window are written onto a runtime CLONE of the material,
+so the shared material asset is never written at runtime. `PrismSliceMaterial` owns the look
+(fresnel, fresh-cut colour and cooling time, seam width, cut-face glow and shading, dissolve noise,
+ember band/glow/whiteness). `SwordfishSkimmerDamagePrismEffectSO.sliceDestroyedPrisms` is the A/B switch.
+
+**Proof.** `Tools/Shaders/verify_prism_slice.py` — (A) clang++ compiles and RUNS the shipped HLSL:
+identity unstamped, the kept side bit-identical, every far vertex on the cut and inside the prism,
+the cap covering the cross-section once, continuity at the cut (as a convergence: halving the step
+halves the displacement), watertight duplicates, outward cap winding, rigid motion, the half-space
+bound, the dissolve window finishing before retirement, the cut going first, the rim clip, the
+noise; with three negative controls (a cap flag that eats the cap, a zero overshoot, and a centre
+outside the half — the broken stamp the CPU's inside-check exists to refuse) that must all FIRE.
+(B) glslang front-end-compiles every pass, vertex and fragment, plain and DOTS-instanced, against a
+mock of the URP library — it proves the shader's own code, not the library. `PrismSliceTests` holds
+the CPU stamps to the promises (A) assumes, and was itself run off-engine against real vector math
+with two mutations (hinge on the leading edge; a normalised plane) confirmed to fail it.
+
+**What was NOT proven, stated.** Nothing has run in the editor. Whether it READS as a satisfying
+slice is the playtest's answer; the numbers say only that the map is the map. Known imprecision: the
+halves' fresnel and flesh shading is the prism look approximated, not the BlockGraph composition;
+`UNITY_DOTS_INSTANCED_PROP` / `DOTS.hlsl` are the documented Entities-Graphics custom-shader surface
+and were compiled against a mock, not the package.
+
+### 4.11 The no-compute MeshRenderer stamp path (shipped 2026-10-15, the browser Toybox)
+
+**Why.** A WebGL2 browser (the browser Toybox, `Docs/WEBGL_TOYBOX.md`) has no compute shaders, so
+Entities Graphics is unsupported, `PrismRenderService` never creates a companion entity, and every prism
+draws through its own MeshRenderer. Strict mode then had nothing to stamp: in the shipped browser build
+NOTHING animated — no grow-in, no colour lerp, no sway, no shield bloom, no turret flight, no jiggle, no
+cell-swap suction — and no death had a visual (`PrismDebris` queued batches that could never spawn, held
+for 5 s, and `PrismFactory` reported "this death has no visual"). The owner asked for the animations back.
+
+**The ruling.** On a device where Entities Graphics CANNOT run — and only there — the "no MPB twins" clause
+of §4.4 is reversed. The law's core is untouched: one write at the stamp, nothing per frame, one write at
+the analytic end, GPU runs the course off `_PrismClock`. Only the CARRIER of the initial conditions changes:
+the prism's `MaterialPropertyBlock` instead of its entity's per-instance components. Every other strict-mode
+case (tool scenes, pre-first-show, exotic morph windows, a misconfigured `PrismRenderConfig` on a desktop)
+still snaps and screams through `PrismClockDiagnostics.WarnNoRenderEntity`, exactly as before.
+
+- **The predicate:** `PrismRenderService.UsesMeshRendererStamps` = `!EntitiesGraphicsSupportProbe.IsSupported`
+  (no SRP, no compute, or compute kernels that fail to load) or the dev A/B force. Device-keyed, never the
+  `FROGLET_WEB_TOYBOX` define. `PrismMeshRendererStamps.Active` adds `Application.isPlaying` (edit-mode tooling
+  keeps settling to the end state). Every new branch is gated on it, so a device with Entities Graphics runs
+  bit-for-bit as before.
+- **Why it works on the GPU side.** Every clock property the prism graphs read is exposed and Hybrid Per
+  Instance (`hlslDeclarationOverride: 3`). In a variant without `DOTS_INSTANCING_ON` — the only variant a
+  no-compute device has — Shader Graph declares those properties in the `UnityPerMaterial` cbuffer, which a
+  property block overrides. `PrismMeshRendererStampsTests` pins every name the block writes as exposed + Hybrid
+  Per Instance in BlockGraph, ExplodingBlockGraph and SuctionGraph, and as the `[MaterialProperty]` name of the
+  component the entity stamp writes, with the same float / vector packing. The settled defaults the materials
+  carry (`_GrowStartFrac` 1, every duration/rate 0, sway spans 0) are what a REMOVED property falls back to.
+- **One writer, mirroring the service.** `Controller/ECS/Rendering/PrismMeshRendererStamps.cs`: `StampGrow`,
+  `StampColorTransition`, `StampFlight`, `StampShieldMorph`, `StampJiggle`, `StampSuctionClock`, `StampSway`, the
+  super-shield mark, `ClearPrismStamps`, and the culling-envelope twins (`ExpandBounds`, `EncapsulateBoundsPoint`,
+  `ResetBounds` on `Renderer.localBounds`). Same arguments as the `PrismRenderService.Stamp*` they mirror;
+  colours go through `PrismRenderService.ApplyColorSpace` and `SetVector`, i.e. the entity write's own
+  conversion. Get-modify-set, so grow + colour + sway + shield on one renderer coexist.
+- **Clearing is removal.** A block takes a renderer out of the SRP Batcher, so a settled prism must end with
+  NO block. Unity has no per-property remove: a clear rebuilds the block from the families still present and
+  sets `null` when none are (and resets the local bounds). Timed families clear THEMSELVES at the analytic end
+  through `PrismTimerManager`, guarded by their stamp time (a re-stamp or pooled reuse makes the stale clear a
+  no-op): colour at `t0+dur`, flight at arrival, shield morph at t = 1, jiggle at its end, and grow when the
+  largest per-axis remainder is under 0.5% of final size (`GrowClearDelay`: ln(dev/0.005)/k — 4.2 s for a
+  from-zero bloom at the default k = 1.25, 2.1 s for boost prisms at k = 2.5; the entity path never clears a grow
+  at all, it has no batcher to lose). Sway is permanent while the lifeform lives (cleared at death and on pool
+  release); cell-swap suction ends in a pool return (`ClearPrismStamps`), because clearing it would pop the
+  collapsed prism back.
+- **Population (estimate, not measured).** At steady state the prisms carrying a block are: every LIVING health
+  prism on a swaying limb (permanent — the lifeform mass in the cell and the Wanderway belt), plus trail prisms
+  for ~4.2 s after they are laid (lay rate × 4.2 s; at a vessel's wavelength 4 and ~50 u/s, ≈ 50), plus a
+  Wanderway scene arrival's prisms (≤ 600 per arrival, two concurrent) for ~4.2 s. Trail and environment mass
+  that has settled carries none. Read the real number from `prismpath` in a Development WebGL build
+  (`prisms with a stamp block N`; `PrismMeshRendererStamps.RenderersWithBlock`).
+- **Death visuals.** `Utility/Effects/PrismMeshRendererDebris.cs`: a capped pool (`PrismRenderConfigSO.
+  MeshRendererDebrisCap`, 96) of plain MeshRenderer pieces, created on first need and never destroyed. One
+  pose + one block write per death (the same `ExplosionDebrisSpawn` / `ImplosionDebrisSpawn` values, computed by
+  `PrismDebris` / `PrismShieldShatter` with their own arithmetic), a flat end-time sweep, and for a suction the
+  §1 moving-target exception (one `_Location` write per live suction per frame). Past half the cap pieces
+  shorten toward 0.33 s (the retired pooled path's pressure reading); past the cap a death has no visual and
+  the request still reports success, so the factory's "no visual" error stays for real faults. The Rhino slice
+  refuses on these devices (its hand-written DOTS shader has no carrier), so a blade kill explodes instead. The
+  pooled `PrismExplosion` / `PrismImplosion` (Grow — the Sparrow's ReverseSuction) stamp their own block too.
+- **Diagnostics.** On these devices the strict-mode screams are replaced by ONE `CSDebug.LogVerbose(
+  PrismRuntime)` line at first use ("MeshRenderer stamp path (no Entities Graphics)"). The render service's
+  one-time "Entities Graphics is unsupported on this device" warning stays.
+- **Dev A/B.** `prismpath mpb` (DiagnosticsHUD, editor + development builds): entities off, MeshRenderer stamp
+  path forced, live prisms re-synced. `prismpath on|off|auto` drops the force. A stamp made before the switch is
+  not re-made (a lifeform's sway shows on the path it was grown on), so compare on a cell grown after it.
+- **Not covered.** `ThreatGrove.StampGlow` writes its danger palette with `PrismRenderService.SetColors`, a
+  direct colour STATE on the entity, not a stamp; on these devices the glow's colour lerp still does not show.
+  `Prism.SetColorShade` is entity-only, as it always was.
+- **Verified so far:** compiles in the `webgl`, `player` and `editor` refcompile configs; the edit-mode tests
+  above. NOT verified: nothing has run in a browser or in the editor — see `Docs/WEBGL_TOYBOX.md` §4 for the
+  in-browser checks.
+
+### 4.12 The prism's interaction DETAIL LEVELS — destruction and stealing (shipped 2026-10-14, C20, C21; the suction on the destruction's ladder, round 15, 2026-10-25)
+
+**Current design (round 2, the designer, 2026-10-14):** *"lets do without the white edge on the dissolves
+and the glitter; the interior brighter color will create plenty of contrast already. in this scheme
+shatter, glitter and explosion are simply a spectrum that we can use for destruction. unravel and bloom
+could be used for stealing as a molting effect that reveals the new color inside. then we have a level of
+detail effect for these fundamental interactions across the game. we can probably do other shedding
+effects that can look like grading from a distance."*
+
+The prism's two fundamental interactions each have DETAIL LEVELS, picked once at the instant of the event,
+for every prism in the game, by how big the prism is on the player's screen (its projected diameter over
+the screen height through `CameraManager.ViewCamera`; behind the camera or well off screen: the ordinary
+effect) and by the shared budget (`PrismInteractionLod`, config `Resources/PrismInteractionLodConfig`):
+
+| Interaction | Far / over budget | Nearer | Close up |
+|---|---|---|---|
+| **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION — depth 0 of the Sierpinski cut | DEPTH 1 (≥ 5%) → DEPTH 2 (≥ 10%) | DEPTH 3 (≥ 16%) → DEPTH 4 (≥ 24%) |
+| **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): the ROLL (round 7; bloom, unravel and flake ship at weight 0), on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
+| **Suction** (every consumption, `PrismFactory.SpawnImplosion`; round 15) | LEVEL 0 — the suction kind on the cut's depth 0 (the explosion's 24 wedges); refused, the SuctionGraph's implosion | the destruction's DEPTHS 1–2, same lines | its DEPTHS 3–4, same lines |
+
+**Round 15 (Garrett, 2026-10-25) — the suction comes apart on the destruction's cut and ladder:** *"lets use the silver
+gnomen triangles that are used on the explosion shader on the suction shader. Use the same LOD system as well."*
+
+- **The SUCTION kind** (kind 7, `PrismBurstSuctionPose`, its own program `_BURST_SUCTION`): a consumed prism is drawn
+  on the destruction's own mesh at the destruction's own depth (`PrismInteractionLod.TrySuction` runs `PickDepth`,
+  the crowding steps and the triangle fit exactly as `TryDestruction` does), and every silver triangle and gnomon is
+  drawn into the eater over the implosion's authored life (`PrismImplosion.prefab` `implosionDuration`, 2 s, read
+  through `PrismDebris.TryGetImplosionDuration`). **Round 15b (Garrett, the same day): *"i was thinking it would detatch
+  one triangle at a time along the current faces. so we would see the triangle spaced out along their path. so
+  instead of one whole face that face simply separates its triangles as it is pulled in."*** Every face stays whole
+  and lets go of its triangles ONE AFTER ANOTHER, starting from the face's point nearest the eater and spreading
+  across it, over `suctionStagger` (0.7) of the life; the face toward the eater starts first and the face turned
+  away `suctionFaceLag` (0.2 of the order) later, the SuctionGraph's face order kept as a lag instead of a block. A
+  gradient noise bends the peel front a little (`suctionOrderNoise` 0.03). Each triangle's own trip (the remaining
+  quarter of the life) is eased in as u^`suctionAcceleration` (1.4) along a curve lifted `suctionLift` (0.35 R) off
+  its face, wound `suctionSwirl` (0.25 turns, its hand per suction) about the line to the eater, tumbling
+  `suctionSpin` (0.75 turns, the destruction's size spin and cap), shrinking over the last `suctionShrink` (0.3) of
+  the trip so it is gone exactly AT the eater; with the trips overlapping, each face feeds a stream of triangles
+  strung out along the path in. Every fragment is in by 95% of the life. (Round 15's first cut ordered the whole
+  prism by how far each piece sat toward the eater, so the face toward it went as one block.)
+- **The moving target, unchanged**: the eater swims while it feeds, so the sink is RETAINED, not snapshotted — the
+  burst carrier's one post-spawn write, `PrismCollisionBurst.RefreshSuctions` → `PrismRenderService
+  .RefreshSliceDebrisSinkBatch`, one float4 (`_SliceCentre`, unused by every other burst kind) per live suction per
+  frame, the §1 exception exactly as `PrismDebris.RefreshImplosions` writes the SuctionGraph's `_Location`. The
+  stamp-time sink rides `_SliceAxis` and fixes the order and the vortex's axis, so a fragment already on its way
+  never changes its turn. An eater that dies mid-suction freezes the sink where it was last seen.
+- **Level 0 and the budget**: far away, off screen or over the detail budget a suction is the same kind on depth 0
+  (`suctionAsFragments`, its own cap `maxLiveSuctions` 1,024, outside the detail budget like the explosions); close-up
+  suctions share the detail budget (`maxLiveBursts`, `maxLiveTriangles`) with destructions and sheds. Any refusal —
+  config off, budget, the render service down, a device without Entities Graphics — draws the SuctionGraph's implosion,
+  so a consumption never loses its visual. **Grow** (the Sparrow's ReverseSuction, `PrismType.Grow`) is untouched: it
+  still runs the pooled SuctionGraph, which owns its completion callback.
+- **Proved offline**: `verify_prism_collision_burst.py` § S — the first frame is the prism, every fragment rigid up to
+  its shrink, every pose inside `PrismBurstSuctionReach` about the LIVE sink (= `PrismCollisionBurst.SuctionReach`, the
+  culling box grown when the sink wanders), every fragment at the live sink by 95% of the life; on each face the
+  triangles let go from its point nearest the sink outward (S6: every same-face pair in order) and one at a time (S7:
+  each face's departures spread over at least half its share, under 2% of consecutive ones at one instant; measured
+  0.79 and 15 of 17,784); negative controls: a random order (S6 fires), a face letting go whole (S7 fires), the sink
+  snapshotted at the stamp (S5 fires). Every pass compiles with
+  `_BURST_SUCTION`, plain and DOTS-instanced. The Collision Burst Lab does not draw the suction yet (its page is rebuilt
+  from the shipped HLSL; its JS port has no suction kind).
+
+**Round 14 (Garrett, 2026-10-23) — the skin is the OLD domain on both sides:** *"the stealing effect is supposed to
+curl the original domain and reveal the stolen domain underneath, but i am seeing it immediately change domain color
+and the peel the changed color to have the changed color also underneath"*; *"the abrupt change on the outside is
+wrong"*. The roll winds the skin top side in, so the curl shows its UNDERSIDE, and the steal stamped that underside
+with the NEW colour (round 2's "molting reveals the new colour inside"). The new colour showed along the curl from
+the first frame, and the curl read as new peeling off new. `TryRequestShed` now stamps no inside colour
+(`_SlicePivot.w` 0): the underside is the old bright × `_InnerGlow`. The only new colour on screen is the prism the
+roll uncovers. The Collision Burst Lab still draws the round-7 inside colour; it is not yet updated.
+
+**Round 13 (the designer, 2026-10-17): *"triple the amount that they spread"*.** Fragment burst 0.12 → 0.36, drift
+0.072 → 0.216: every fragment travels three times as far; level 0's cloud at 2 s is 2.57 R against the old explosion
+graph's 1.78 R. Lab round 13: `Docs/Studios/COLLISION_BURST_LAB.md`.
+
+**Round 12 (the designer, 2026-10-17) — more separation, and each death its own:** *"lets add 20% more separation and
+speed and some randomization that makes it so adjacent prisms with the nearly identical impacts vectors and initial
+orientations don't look like they are playing the same animation, but spherical explosions should still look beautiful
+… so there is a balance between not looking noisy and not looking like copies."*
+
+- **+20% separation and speed**: fragment burst 0.1 → 0.12, drift 0.06 → 0.072 (distance and speed both scale).
+- **A death's character** (`PrismBurstFragmentVariety`, config `fragmentVariety` 0.5, shader `_FragmentVariety`): drawn
+  ONCE per death from its seed (`SeedOf`, the pose's hash), the same for all its fragments — the spread and the opening
+  time × (1 ± v/2), the spin rate × (1 ± 0.6 v), the tumble's plane turned about each face's normal by up to ± 0.4 π v,
+  the lean tilted off the hit by up to v/2, and the cloud drawn out along a random axis into a smooth ellipsoid
+  (distance × (1 + 0.6 v (1.5 cos² − 0.5))). Being one per death it reshapes the cloud and never adds grain. The seed
+  is read through triangle waves, not a hash13: the hash multiplies its input's rounding about a hundredfold, so one
+  death would differ between two GPUs. Bounds × (1 + v/2)(1 + 0.6 v) (`FragmentVarietyReach`).
+- Measured (harness F11): two deaths struck alike differ in shape by 0.33 of their motion against 0.10 with the noise
+  alone (3.3 ×); one death's neighbour roughness +0%. Lab round 12 (a Neighbours view): `Docs/Studios/COLLISION_BURST_LAB.md`.
+
+**Round 11 (the designer, 2026-10-17) — the explosion IS level 0, and the performance pass:** *"it was reflected in the
+levels not the explosion. lets see what we can do about unifying them and ensure that this is the performance
+optimized version we are pushing for both the explosion and the roll effect for the steal."*
+
+- **Level 0 is the FRAGMENT kind on the cut's depth 0** (the explosion's own 24 wedges; `explosionAsFragments`, on):
+  every death the finer levels do not take — far, off screen, PLAIN, over budget — runs the same law and dials. Its own
+  live queue (`maxLiveExplosions` 4,096), outside the detail budget; any refusal falls back to the explosion's graph
+  (`PrismDebris.TryRequestExplosion`, which on a device without Entities Graphics is the MeshRenderer path).
+- **One program per kind**: `multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL` — the game draws destructions with a
+  fragment-only vertex program and steals with a roll-only one; the lab keeps the every-kind program.
+- **The roll draws the welded per-face grid** (`HighPolyPrismMesh.Get`): bit-identical vertices, (n + 1)² instead of 6n²
+  a face — 5.5 × fewer vertex-stage runs at 24 subdivisions.
+- The designer's *Fragment look* decision adopted (burst 0.1, drift 0.06, lift 2, aim 0.95, speed gain 1.65, travel
+  noise 0.48; depth lines 0.05 / 0.315 / 0.52 / 0.6). Lab round 11: `Docs/Studios/COLLISION_BURST_LAB.md`.
+
+**Round 9 (the designer, 2026-10-16) — retires the squint and supersedes the WEDGE motion below:** *"by using the silver
+gnomen cut we unsure that there are still a nice size range such that from far away a player could assume that the
+small ones are going unseen. thus we do not need to do the squint test anymore. this will allow you to create a more
+uniform effect instead of keeping things grouped ... now I just want it to look awesome"*.
+
+- **The FRAGMENT kind** (kind 5, `PrismBurstFragmentPose`, world space; config `fragment*`, shader `_Fragment*`):
+  every fragment of the cut bursts out on its OWN direction — its face's radial × how far out it sits plus the normal
+  × 1 (the cube seen from its centre: every face fills its sixth of the sphere) plus the hit × 0.35 — eased in and
+  drifting on, R × (0.5 (1 − e^(−t/τ)) + 0.2 t) × (1 + 0.8 × its size level), so big chunks stay near the core and
+  fine debris flies farthest; tumbles about its direction and cross(velocity, N) at the explosion's own capped angle ×
+  min(1 + 0.25 level, 1.6); and shrinks away to its centre (no dissolve), the smallest gone at 45% of the life, the
+  largest at 92%, all by 95%. The gradient noise still varies spin, distance and direction. CPU bounds:
+  `PrismCollisionBurst.FragmentReach` = `PrismBurstFragmentReach`, proved by the harness.
+- **Measured** (lab round 9, the Look scorecard): the travel directions fill 0.78–0.81 of the sphere's entropy
+  (256 bins; the explosion 0.32, a face leaving as one 0.53); 0–0.9% of same-size neighbours in step (noise off:
+  100%); half the area gone at 3.3–4.6 s, all at 5.5–6.6 s of the 7.5 s life.
+- The WEDGE text of rounds 5–8 below is history: the explosion's own law now draws only the explosion.
+- **Round 10 (the designer: "they still don't seem to be accepting the velocity vector")**: the velocity was reaching
+  the burst (flight, lean, spin axis — traced end to end), but the hit barely shaped the fragments' own motion. Now a
+  harder hit bursts wider and leans more along it: distance and lean × (1 + `fragmentSpeedGain` 0.5 × (flight speed ÷
+  `fragmentSpeedRef` 10 u/s − 1)) (`PrismBurstFragmentBoost`), aim 0.5. The lab's Velocity tab sets the hit in 3D and
+  draws the flight; its Look scorecard measures the lean along v (1.1–1.9 R at 2 s for a 20 u/s hit; reversed −1.9;
+  the pose ignoring v −0.03).
+
+**Round 7 (the designer, 2026-10-15) — supersedes the Sierpinski cut as the shipped destruction and the bloom as the
+shipped shed:** *"lets add a small amount of perlin noise ... break up the perfectly synchronized triangle rotations
+... use this silver ratio gnomen as a way to get a range of triangle sizes"*; *"for the stealing lets use a camera
+trick like we do for the mass crystal effect. the peeling can curl into a tight roll and roll along and around the
+surface until the prism occludes it ... always peel away from the camera's perspective"*.
+
+- **The silver gnomon cut** (`PrismSilverGnomonTiling`, `HighPolyPrismMesh.GetSilverGnomon`, `destructionCut`,
+  `silverDepths` 4 / 6 / 8 / 10): the explosion's wedges cut into silver triangles (45°, 67.5°, 67.5°) and their
+  gnomons (45°, 22.5°, 112.5°), each of which cuts exactly into one of each (area √2 − 1 and 2 − √2); the same-shape
+  child recursing a level shallower gives Fibonacci counts (24 × 8 / 21 / 55 / 144) and a wide size range. Nested,
+  sliver-free; depth 0 is still the explosion.
+- **The spin noise**: every fragment's two spin angles × (1 + 0.15 × a 3D gradient noise at its centroid, 3 cycles a
+  prism width, seeded per death) — `PrismBurstWedgeSpin`, `_WedgeNoise`. Neighbours turn almost alike, never in step.
+  **Round 8: the slide too** (`PrismBurstWedgeSlide`, `wedgeSlideNoise` 0.15): the slide's length × (1 + 0.15 × a
+  third field), plus half that across the wedge and off the face; at most 1.3 × the explosion's slide (the reach
+  counts it). Measured: silver levels 2–4 now squint as the explosion WITH the inside colour (0.132–0.144).
+- **The ROLL** (kind 6, `PrismBurstRoll`): each face's skin rolls up into a tight Archimedean roll AWAY from where the
+  camera was at the steal (`_SliceAxis`), crosses the face over the grade's length showing the new colour, rolls over
+  the far edge onto a face the camera cannot see and stops where its own prism hides it — down the side face, or round
+  onto the opposite face when that is too short; its ends tuck in against a sideways camera. No dissolve, but in the
+  last 15% of a 1.6 × grade life. The harness: 98.5% of the camera-facing skin hidden by 70% of the tail.
+- **Measured** (lab round 7): silver levels squint 0.152–0.167 against the explosion (round 6's Sierpinski 0.166),
+  fade 0.035–0.046; the roll does NOT squint as the grade (0.21–0.24 — a wipe that hides itself, by design); every
+  LOD step ≤ 1.4 × its band.
+
+**Round 5 (the designer, 2026-10-15) — supersedes the glitter MOTION of round 4 and the three-way shed pick:**
+*"lets use just the bloom for stealing and we can have more noise in how it peels so it looks different each time.
+the lets have it peal from more cuts so one peal curls tighter and moves less far off the surface, so it is less
+obtrusive while skimming close. for destruction the explosion is tuned. it accepts velocity vectors that send
+fragments in the right direction spinning the right way. it limits how fast things rotate so they don't flicker
+etc. Each depth should adopt the fine tuning that was put into the base explosion."*
+
+- **Every Sierpinski fragment moves by the explosion's own law** (burst kind `WEDGE` = 5,
+  `PrismBurstWedgePose`): RotateFacesAlongAxis' closed form in object space — turned about its tangent and about
+  cross(velocity, N) by amount × `_ExplosiveRotation` in the object-scaled frame, slid along its tangent by amount ×
+  `_ExplosiveSpead`, amount = the explosion's clamped speed × t (so the spin rate is capped where the explosion caps
+  it) — as a wedge scaled to the fragment (tangent = its ROOT wedge's, so it turns about the wedge's own two axes, the
+  tangent and cross(velocity, N), and slides with it — round 6; pivot = centroid + the explosion's
+  pivot offset × 2^−level). Depth 0 IS the explosion (parity: 144 vertices against the graph evaluated on
+  `Prism.asset`). The dials are copied from the explosion pool's live material at runtime
+  (`PrismCollisionBurst.TryGetExplosionTuning`). The fade is the explosion's erosion over each fragment's
+  WEDGE UV (`PrismSierpinskiTiling.WedgeUV` — `Prism.asset`'s UV is per wedge). Culling: `WedgeReach`, a proved bound.
+- **The bloom only, cut finer, peeling with noise**: each quarter into `bloomRings` × `bloomSegments` (3 × 3) pieces,
+  each hinged on its own outer edge — a third of the length, so the same `bloomTurns` curls it three times tighter
+  and it lifts a third as far (worst rise off its face 0.63 u against 1.66 u for one petal a quarter on a 4 × 0.6 × 2
+  slab); `peelNoise` (0.6) gives each piece its own delay, curl and lift; `StealSeed` reseeds every steal.
+- **Measured** (lab round 5): destruction size 0.99–1.02 and fade 0.05–0.07 of the explosion's; squint 0.21–0.22
+  against a 0.097 band, the remaining gap the brighter inside colour (0.13–0.14 without it — a designer's call);
+  every LOD step ≤ 1.19 × its band; the bloom 0.116–0.121 against the grade (one petal a quarter 0.175–0.177).
+
+**Round 4 (the designer, 2026-10-15) — supersedes the shatter and the glitter tiling below:** *"a serpinski
+inspired cut would give a nice distribution and range that you could scale with recursion depth without the need
+for shatter and using the base explosion as the first depth."* Destruction is one cut scaled by recursion depth
+(`PrismSierpinskiTiling`, `HighPolyPrismMesh.GetSierpinski`): depth 0 is the explosion's own four wedges a face (the
+same 24 triangles as `Prism.asset`, held by `parity.py`) and the game draws it as the explosion; each deeper depth
+splits the corner triangles at their edge midpoints, keeping the middle whole — 24 × 1, 4, 13, 40, 121 triangles at
+depths 0–4, a self-similar range of sizes, each depth the next with its finest corners merged. Each triangle is a
+glitter shard (shader unchanged). The lines are `depthMinScreen` (an array: its length is the deepest cut). The
+shatter kind stays in the shader as the fallback for an unknown kind; no ladder draws it.
+
+**Round 3 (the designer, the same day; its glitter tiling is superseded by round 4):** *"lets have glitter create a range of fragment sizes that are
+triangles of different sizes. then from far away it will look like we just aren't seeing the small ones. then
+you can grade the effect with more LOD based on distance and amount."* — *"the steal effects are looking
+great, but these should have even higher resolution versions that also grade LOD."*
+
+- **The glitter's fragments are triangles of three sizes** (`PrismGlitterTiling`: a 16 × 16 grid a face cut by
+  a quadtree of 4-, 2- and 1-cell blocks, each block two right triangles across a hashed diagonal;
+  `HighPolyPrismMesh.GetGlitter`). Its three levels are NESTED — LARGE (192 triangles) is MEDIUM (528) with the
+  1-cell fragments merged into their 2-cell parents and those into the 4-cell ones; FULL is 1,386 — so every
+  level is the whole prism at rest and far away a coarser one reads as the finer with the small ones unseen.
+  The shader is unchanged: each triangle is a shard about its own centroid (TEXCOORD2), whatever its size.
+- **Sheds at three resolutions** on `HighPolyPrismMesh.GetShed` — the unwelded prism cut UNION-JACK (the
+  off-diagonal quadrants take the other cell diagonal) so both face diagonals are triangle edges and the bloom's
+  petals tear straight at every resolution. 12 / 18 / 24 subdivisions: multiples of the 6 ribbons and of the
+  flake's 6 scales a face edge.
+- **Graded by distance and AMOUNT**: once the budget — `maxLiveBursts` entities or `maxLiveTriangles` (80,000)
+  triangles, whichever is fuller — is `crowdedFill` (half) full, every new event is one level coarser; at
+  `packedFill` (80%) two. A level whose mesh does not fit steps down until one does. One spawn batch per mesh.
+- **Measured** (lab round 3): the glitter's three levels squint identically (0.318–0.322); a shed squints the same
+  at 12 and 24 subdivisions; at the true pixel size of each line the glitter's merges differ from the finer level
+  by half to two-thirds of what two glitters differ, and the shed's resolution steps by a fourteenth and an eighth.
+
+- **No white accents.** The crack flash, the ember front and the glints are gone (`_HotColor`,
+  `_EmberGlow`, `_EmberWhite`, `_BurstFade` retired). The contrast is the brighter INSIDE colour on every
+  kind's back faces as the surface opens.
+- **A destruction level shares the explosion's envelope** (flight, life, palette, size, linear fade), as
+  round 1 below describes, so squinted at it is meant to read as the explosion.
+- **A SHED is the grade, squinted at.** On an accepted shed the prism takes its new colour AT ONCE
+  (`UpdateMaterial` with duration 0) and a skin in its OLD on-screen colours, a hair outside it
+  (`shedInflate` radii), comes off it; since round 14 the skin's inside is the OLD colour too (no `_SlicePivot`
+  stamp), so only the prism it uncovers wears the new one.
+  Its coverage falls on the grade's own smoothstep over the grade's own length (`_SlicePlane.x` = 1:
+  `PrismBurstProgress` returns `smoothstep(age / (life/(1+overshoot)))`, the life stamped as
+  `DefaultTransitionSeconds × (1 + overshoot)`), so the mean colour runs the grade's course exactly —
+  `verify_prism_collision_burst.py` executes the shipped `PrismColorLerp_float` and holds the two equal
+  (≤ 1e-4), with a linear-shed negative control. No flight: the prism stays.
+- **FLAKE, the new shed** (kind 4): the skin lifts off as rigid scales, a grid twice as fine as the
+  shatter's, in a wave that runs the prism's long axis — each scale tips up on its far edge as the front
+  nears and is gone when the front reaches it (its dissolve value IS its place in the wave).
+- **The carrier** (`PrismCollisionBurst`) keeps its first name; destruction and sheds share its budget
+  and batch, and retire from separate expiry queues so a 0.85 s shed never waits behind a 7.5 s death.
+
+**Measured** (Collision Burst Lab round 2, `Docs/Studios/COLLISION_BURST_LAB.md`): without the white the
+glitter's colour difference from the explosion fell from 0.187 to 0.109, but neither destruction level yet squints as the
+explosion on blurred rendered pixels (shatter 0.346, glitter 0.303 vs a 0.097 band). Against the grade
+(band: the grade 10% late, 0.033; negative: the colour snapped, 0.158) the flake is closest (0.120) but
+reads as a wipe along the prism; bloom (0.214) and unravel (0.220) grow the silhouette by a third and
+read further from the grade than a snap does — kept to the prism (the lab's PROPOSAL: a shed-only lift
+and curl), bloom reaches 0.069. **Decision needed (designer):** see the write-up.
+
+#### 4.12 round 1 — the collision burst (superseded where the round-2 text above differs: the four-way kind pick, the white accents)
+
+Prism movement is a fundamental (Docs/PRISM_MOTION.md): a moving prism that runs into another prism
+destroys both. At LEVEL 1 of its ladder — few prisms moving, and the budget has room — each of the two
+comes apart as a **collision burst** on the slice's ultra-high-res prism instead of as the explosion.
+The brief is the whole design: **spectacular when you look at it, indistinguishable from the ordinary
+explosion when you squint.**
+
+**It is a STAMP, the slice's neighbour.** Everything is known at the instant of the collision — the
+pose, the flight, the kind — so it is §1's ordinary shape: one stamp per prism, the GPU runs the course
+off `_PrismClock`, one batched retirement. It rides the slice's carrier unchanged
+(`PrismRenderService.SpawnSliceDebrisBatch`, the `Slice` override set, its `_SliceTiming` and
+`_SliceDrift` channels) with its own mesh and material, so it added no ECS component and no render-service
+code. No per-frame CPU write to any burst, no §1 exception, no residency swap (born on the dense mesh). (Round 15's
+SUCTION kind is the one exception since: its live sink, one `_SliceCentre` float4 per live suction per frame through
+`PrismRenderService.RefreshSliceDebrisSinkBatch` — see the round-15 entry above.)
+
+**The mesh is the slice's, UNWELDED.** `HighPolyPrismMesh.GetUnwelded(10)`: the identical solid, 1,200
+triangles, every triangle owning its own three vertices, plus TEXCOORD2 = the triangle's centroid in
+face coordinates. Unwelded is what lets a kind tear the surface along ANY pattern — shard borders, petal
+diagonals, ribbon seams — with no triangle stretched across the tear; the centroid makes every vertex of
+a triangle choose the same piece, so a triangle can never straddle two. At rest it renders exactly as
+the welded mesh does.
+
+**Four kinds** (`PrismCollisionBurst.hlsl`, weights in `Resources/PrismMotionConfig`): **shatter**
+(Voronoi shards over the triangle centroids, rigid, tumbling about their seeds, white-hot fracture lines
+that cool), **bloom** (four petals per face along the diagonals — the explosion's own wedge layout —
+curling open from the cube's edges), **unravel** (ribbons along each face's longer world axis, curling up
+from one end, staggered), **glitter** (every triangle its own glinting shard). Rigid pieces rotate in
+WORLD space, after the scale, so a shard of a 20:1 slab stays rigid. A bend is exact and isometric: the
+strip at arc length s is turned by a = κs about the hinge, and its normal is that same rotation of the
+rest normal — the bend's derivative, not the cheap-normal shortcut the cradle rejected (the harness's
+negative control proves the shortcut fails).
+
+**Why squinting sees the explosion.** The burst shares the explosion's envelope and differs only at the
+fine scale: the cloud's frame flies at `PrismDebris.ResolveExplosionFlight` (the explosion's own clamp
+and gain, extracted so the two cannot drift), linearly, for `PrismExplosion.DefaultDuration`; it wears
+the tier pair the factory resolved for the explosion; every piece stays within `3.5 + 1.5·spread` prism
+radii of the travelling centre (spread ≤ 1) and the cloud's mean within 0.23 radii (measured); and its
+coverage falls LINEARLY with age, the explosion's opacity curve, because a fragment's place in the fade
+is `frac(piece + grain·noise)` — uniform on [0, 1) whatever the noise. Accents are thin lines and brief
+instants.
+
+**It never costs a death its visual.** `Prism.DamageByCollision(burst)` parks the request on the death
+event (`PrismEventData.CollisionBurst`, the slice's transient-field idiom); `PrismFactory.SpawnExplosion`
+tries the slice, then the burst, then the explosion, and every refusal falls through. **Budget**:
+`maxLiveBursts` 48 × 12·10² = **57,600 triangles**, ZERO colliders, one batch per frame.
+
+**Proof.** `Tools/Shaders/verify_prism_collision_burst.py` — (A) clang++ executes the shipped HLSL on
+random prisms up to 20:1, every vertex of the unwelded mesh, all four kinds: the first frame IS the
+prism; no triangle is torn; rigid pieces stay rigid; bends are isometric and the normal is their
+derivative (by convergence rate, the protocol's rule — a fixed tolerance first failed on float noise);
+unit normals; every pose inside the envelope the CPU bounds by; the cloud's centre stays put; the fade is
+linear; all gone before retirement; Voronoi cells contain their points; an unknown kind falls back to
+the shatter. Four negative controls must FIRE: zero overshoot, a non-uniform fade value, a shrunken
+envelope, the cheap normal. (B) glslang compiles every pass, plain and DOTS-instanced, against the
+slice verifier's URP mock. `PrismCollisionBurstTests` holds the CPU half: the envelope formula against
+the HLSL text, the bounds against random points, the kind weights, the unwelded mesh, the config.
+
+**Not proven, stated.** Nothing has run in the editor. Whether a burst reads as spectacular is the
+playtest's answer.
+
+**Measured since: the shipped bursts do NOT squint as the explosion** (Collision Burst Lab, round 1,
+`Docs/Studios/COLLISION_BURST_LAB.md`, https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9). The page runs
+this HLSL on WebGL2 (parity 4.65e-4 radii against the C++ execution, zero outliers) beside the shipped
+explosion subgraph, and scores rendered, blurred pixels: two explosions differ by 0.082; the four kinds
+by 0.33–0.47 — more than a prism that never breaks (0.261). A shared envelope is not a shared look: the
+accents brighten the cloud (colour Δ 0.11–0.20 against 0.012), the cloud covers 0.69–0.91 of the
+explosion's screen, and the explosion's last wedges outlast the burst's linear fade. A proposal (the
+detail carried on the explosion's own wedges) plus tamed accents reaches 0.12–0.18. **Decision needed
+(designer)** — see the write-up. The parity gate also found three float32 defects in this HLSL, fixed:
+bloom petals tied on a face diagonal (`PRISM_BURST_PETAL_TIE`), the unravel bend cancelling at small
+angles (now `2 sin²(a/2)/κ`), and the lab's own double-precision centroids.
+
 ## 5. Migration tracker (the deduplicated work list)
 
 > **Every ☐ / ◐ row below has a ready-to-paste branch prompt in
@@ -2127,7 +3028,7 @@ Phase B — migrate the engines (each retires a per-frame pass):
 
 | # | Item | Status |
 |---|---|---|
-| B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` DELETED (D2, 2026-08-02). Graph wiring ✅. **Prompt 7 (2026-08-25) closed the three B1 pendings:** `HoldColliderAtFullSize` DELETED (BoostRingBuilder applies all kinds at lay; transform final at stamp); arena-gate settle no longer force-snaps (`Prism.AnalyticGrowSettleTime` / `PrismScaleAnimator.AnalyticSettleTime` exposed; `SettleGrowWatch` waits on clock predicates); `CreateBlockCoroutine` 0.6 s window **kept** — `TryReserve` is growth/assembler-only, so trail/`PrismFactory` still need the disable window. PhaseThresholds re-baseline was already ✅ 2026-08-02 |
+| B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` DELETED (D2, 2026-08-02). Graph wiring ✅. **Prompt 7 (2026-08-25) closed the three B1 pendings:** `HoldColliderAtFullSize` DELETED (BoostRingBuilder applies all kinds at lay; transform final at stamp); arena-gate settle no longer force-snaps (`Prism.AnalyticGrowSettleTime` / `PrismScaleAnimator.AnalyticSettleTime` exposed; `SettleGrowWatch` waits on clock predicates; **2026-10-21:** behind the menu's opaque `EnvironmentLoadVeil` only, `PrismTrailBuilder.LoadGateCovered` makes it snap each created prism's bloom with `CompleteGrowthImmediately`, because nobody can see it. The connecting screen's live preview never snaps); `CreateBlockCoroutine` 0.6 s window **kept** — `TryReserve` is growth/assembler-only, so trail/`PrismFactory` still need the disable window. PhaseThresholds re-baseline was already ✅ 2026-08-02 |
 | B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ✅ LIVE (strict, the only path) 2026-08-01 — `MaterialStateManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth on BlockGraph; the transparent-prism color cluster on ExplodingBlockGraph is wired too — 2026-08-02 — so transparent steals/repaints fade instead of snapping) |
 | B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes + Burst jobs DELETED (D2, 2026-08-02 — the manager keeps only convergence refresh + zombie audit). Graph wiring ✅ both graphs, PLAYTEST-CONFIRMED 2026-08-02: explosions ✅ (GPU-side world→object conversion inside `PrismExplosionClock` — raw inverse-model multiply, never the normalizing Direction-mode Transform — + flight-envelope bounds) and suction ✅ (`EncapsulateBoundsPoint` envelope). **Mass-death carrier upgraded 2026-08-02**: prism-death explosions spawn as BATCHED PURE-ENTITY debris (`PrismDebris` + `PrismRenderService.SpawnExplosionDebrisBatch` — no GameObject/pool/per-effect timer; full duration always); pooled death spawn retired D4 2026-08-25 (Grow stays pooled). **Implosion batch port shipped 2026-08-04** (`SpawnImplosionDebrisBatch` + `RefreshImplosionDebrisBatch`): suctions ride the same carrier, and the moving-target §1 exception moved onto it as a per-record `_Location` refresh with a CPU-mirrored culling envelope — see §4.6 for the carrier's rules and the death-path marker split that shipped with it |
 | B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms) | ✅ **SHIPPED 2026-08-15 — Phase B is complete and the LAST sanctioned CPU ticker is DELETED** (`PrismOctahedronShieldManager` + `IPrismShieldMorphTicker`; its active set is empty by construction because no shield registers any more, and an edit-mode test fails if the file returns). Both tiers' engage bloom and disengage shatter are now `f(clock, stamp)` via `PrismShieldMorph_float` + four Hybrid-Per-Instance properties, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_shield_morph.py`. The mesh generators bake each vertex's FACE CENTROID into TEXCOORD1, which makes the cache-shared **settled** mesh also the morph mesh — so no "anim variant" mesh was needed (the audit's sketch), no scheduled end-callback was needed (the shader clamps at t = 1, which IS the settled shield), the exotic-visual window collapses entirely (`SetExoticVisualActive` is now only ever driven FALSE; `SetRenderMeshOverride` still carries the handoff), and same-size shields stay in ONE batch through the whole animation instead of each minting a unique mesh + draw call. The shatter overlay's per-prism child GameObject is replaced by batched pure-entity debris on the §4.6 carrier (`PrismShieldShatter` → `SpawnShieldShatterBatch`, grouped by mesh × material × layer since shields vary in size and domain) and is no longer cancellable on re-engage — deleting shards mid-flight was a continuity-law breach. `AnimationCurve.EaseInOut(0,0,1,1)` == `smoothstep` (zero end tangents — verified against Unity's own serialization of that constructor), so every runtime-added shield is reproduced EXACTLY; the two prefabs that serialize a hand-altered curve (`BlueBlock`, `OctahedronShieldTest`, end tangents 2) now ease like the fleet, a stated deviation of up to 0.192. Curve fields retired. Design + the five carryable properties: §4.8. **Follow-up 2026-08-24 (§4.8.1, final form):** the DISENGAGE no longer uses this morph at all — a dropped shield sheds its faces as ORDINARY prism-explosion debris on the shield's own mesh (`PrismShieldShatter` → `SpawnExplosionDebrisBatch`; the generators bake the debris attribute set — UV0 + per-face normals AND tangents — so `RotateFacesAlongAxis` and `PrismErosionFade` run unmodified). Net shader delta: zero. Four bespoke intermediate shapes (an HLSL re-expression of the rotation, its retune, a mirrored back-face bake that z-fought under Cull Off, a BlockGraph erosion splice) shipped and were all reverted; the rule they bought — port the MESH into the pipeline, never the pipeline into the mesh — is §4.8.1's record. Only the ENGAGE bloom drives this morph now |
@@ -2151,7 +3052,15 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C13a | Environment-laid prisms miss the clock path (the live repro: `grow:SpawnablePrism (Clone)`) | ✅ FIXED 2026-08-02 — root cause was NOT the raw-`Instantiate` lay: the shield engage-morph held `_exoticVisualActive` across the creation reveal, so `EnsureRenderEntity` was skipped at the exact instant the one-shot grow stamp fired. Fixed by §4.5 (a) entity existence ⊥ visibility + stamp-site self-heal + fact-based diagnosis, and (b) the birth rule (spawn-time shields snap). §3.8 #10 has the full anatomy. Pooling is orthogonal — a pooled prism with a `Shielded` kind failed identically; `BoostRingBuilder` only escaped because it defers shield kinds to `onGrown` |
 | C13b | Environment lay pooling: `PrismTrailBuilder.LayOne` through a dedicated unbounded prefab-keyed pool so prisms **snap Blue** then `ChangeTeam` clock-lerps Blue→domain | ✅ SHIPPED 2026-08-25 (Prompt 14). **Not a clock fix** (C13a was; pooling never caused the miss). Design: `EnvironmentPrismPool` — standalone static + hidden DontDestroyOnLoad host; prefab-keyed stacks; **no capacity cap, never Destroy on Release overflow**. Membership = issued dict + `TryRelease`; **never** wire the prism's pool-return delegate (`Cell.RetireWorldIntoSuctionRoot` would vacuum Wanderway). `PrepareForLay` restores authored kind + scale window, `ResetToNeutralForReuse` (writes `currentDomain = Blue`, no `OnTeamChanged`) + `BindMaterialsImmediate`. `CloneBatchAsync` → `GetBatchAsync` (reuse first, `InstantiateAsync` shortfall only). Flora HealthPrism Instantiates folded (`PhyllotacticFlora` / `BranchingFlora` / `AssembledFlora`). Named, not folded: `Boid.cs`, `SpawnableBase` non-prism `leafPrefab`, `SpawnableCord`. Playtest outstanding → Prompt 11. **Do not restore "final domain material from frame 0"** — that was the Jade→Jade no-op. |
 | C14 | Super-shielded prisms absorb hits SILENTLY — a deflection reads as a miss | ✅ SHIPPED 2026-08-15 — new `PrismJiggleClock` (HLSL) + `_JiggleStartTime`/`_JiggleDuration`/`_JiggleParams` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_jiggle_clock.py`) + `PrismRenderService.StampJiggle`/`ClearJiggleStamp` + `PrismSuperShieldJiggle` (the stamp site) + `PrismSuperShieldJiggleConfigSO` (the feel). Each FACE wobbles about the prism's object origin on an axis that PRECESSES about that face's own normal and NUTATES, decaying to exactly zero at `Duration` so the scheduled clear is invisible. Per-face and per-prism randomness is derived on the GPU from the face normal and the object-to-world translation — no seed stamped, no mesh channel authored, which matters because the super-shield stella carries neither tangents nor UVs (the tangent basis is built from the normal alone). **Not** the §4.7 global-uniform shape: this is §1 animation, not a view-dependent value. The four invulnerability gates that used to each carry their own `IsSuperShielded` early-return now route through ONE `Prism.AbsorbSuperShieldHit`. Design + the measured envelope: §4.9 |
-| C15 | `ShapeDrawingManager` shrink-to-outline — per-frame `transform.position`/`localScale` Lerp, no render-bridge / spatial-index sync; **no §5 row**, so every sweep missed it | ✅ 2026-08-25: **resolved by deletion** (Prompt 15), the C4/C10 outcome. Unreachable — GUID `d375b1129a0a4e29b505296c9e510bdc` lived only on its own `.meta` after `MinigameFreestyle.unity` was removed. Exclusive dependents deleted with it: `ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`, `ShapeScoreData` (all GUID-only-on-own-meta). **Kept:** `ShapeDefinition` (painting toy), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `SegmentSpawner` (HexRace live), SOAP events `EventOnShapeGameModeStarted` (`8484be0c8df25b94a9e0ba29131f8dc3`) / `EventOnShapePrismReturnToPool` (`33f47a5e536b78442a7f206db3ad7929`) — still wired on live prism prefabs to `Prism.ReturnToPool`; only the deleted manager `Raise()`d them; **never Raise them**; do not strip the EventListeners. Migrating a path nothing can execute would have shipped an untested clock path. |
+| C15 | `ShapeDrawingManager` shrink-to-outline — per-frame `transform.position`/`localScale` Lerp, no render-bridge / spatial-index sync; **no §5 row**, so every sweep missed it | ✅ 2026-08-25: **resolved by deletion** (Prompt 15), the C4/C10 outcome. Unreachable — GUID `d375b1129a0a4e29b505296c9e510bdc` lived only on its own `.meta` after `MinigameFreestyle.unity` was removed. Exclusive dependents deleted with it: `ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`, `ShapeScoreData` (all GUID-only-on-own-meta). **Kept:** `ShapeDefinition` (painting toy), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `SegmentSpawner` (SkimRace live), SOAP events `EventOnShapeGameModeStarted` (`8484be0c8df25b94a9e0ba29131f8dc3`) / `EventOnShapePrismReturnToPool` (`33f47a5e536b78442a7f206db3ad7929`) — still wired on live prism prefabs to `Prism.ReturnToPool`; only the deleted manager `Raise()`d them; **never Raise them**; do not strip the EventListeners. Migrating a path nothing can execute would have shipped an untested clock path. |
+| C16 | A LIVING health prism stands still while the limb it is bolted to bends — the lockup that reads as one creature comes apart | ✅ SHIPPED 2026-09-16 — new `PrismSway` (its own `PrismSway.hlsl`, which `#include`s `SpindleSway.hlsl` so the prism and the limb share the two wave constants rather than each carrying a copy) + `_SwaySpanX`/`_SwaySpanY`/`_SwayAxis`/`_SwayTiming` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_sway.py`, spliced immediately AFTER `PrismShieldMorph` so the two compose) + `PrismRenderService.StampSway`/`ClearSwayStamp` + `PrismSway` (the bake and the stamp site) + `Prism.OnCreationComplete` (a new one-line virtual — the stamp cannot live in `Initialize`, which runs before the companion entity exists and before `AssembledFlora` has re-parented the prism onto its spindle). The prism reads the LIMB'S OWN shear field evaluated at its own vertices, so the two move together **bit-identically** rather than approximately; `verify_prism_sway.py` T3 asserts exactly that against `SpindleSway`, which is why the limb height is folded into the span BEFORE the sine. Everything stamped is a constant of the attachment, so there is no start time, no duration and no per-frame CPU. A ZERO span is the exact no-op and is the default, so trails, authored environments and the skeleton a dead lifeform leaves behind (`HealthPrism.LeaveAsSkeleton` clears the stamp) are unchanged — which is the feature: **living mass is the mass that moves**. Design, the four proof layers and the instance-data cost: `Docs/ECOSYSTEM.md` §47 |
+| C17 | The Urchin's CRADLE — the mass around a RIDING Urchin drapes onto its hull (a per-frame, per-prism deformation that a per-prism material write would have made a §1 violation) | ✅ SHIPPED 2026-09-16 as the THIRD §4.7 global-uniform citizen (§4.7.2); **RE-CUT 2026-09-22 from a per-triangle rigid motion to a high-poly radial DRAPE** after the per-face and per-wedge cuts were both rejected on look (*"this looks terrible"* → a 10x tone-down → *"really bad to the point i put this down"*) — a deformation is only as smooth as the surface it moves, and 24 triangles is not a surface. Now: `HighPolyPrismMesh` (the identical solid subdivided 16x per face axis, 3,072 tris, SHARED so the swapped prisms still batch) + `PrismCradle`'s residency pass (`Prism.SetRenderMeshOverride` on the nearest prisms within `hullRadius + drapeReach + residencyMargin` — a STATE CHANGE, final at the instant it is applied, like a shield engaging, and budgeted at 24 prisms; it declines any prism already holding an override and only clears one that is still its own) + `PrismCradle.hlsl` (`PrismCradleDeform`, VERTEX stage, 4 slots — the object-space Tangent Vector the wedge cut needed is GONE, the map reads only world position and normal — spliced LAST on both live graphs by `Tools/Shaders/wire_prism_cradle.py`, whose migration is now written against slot DIRECTIONS so it runs in both directions and sweeps the feeder nodes an old signature orphaned) + `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`, gated on `IsRiding`) + `PrismCradleConfigSO` (`Resources/PrismCradleConfig`: 6 u drape reach, exponent 1.5, max strength **1**, subdivision 16, 24 resident prisms, 2 u residency margin, 0.25 s in / 0.4 s out). The map is ONE line — `p' = U + dir·(d − s·k(s)·w)` — with a falloff C1 at both ends (no seam) and the ANALYTIC inverse-transpose for the normal (the cheap lerp-toward-the-sphere-normal shortcut pops where `n·dir` crosses zero, which is a line down the middle of the ridden prism's side faces). Proven by `Tools/Shaders/verify_prism_cradle.py` (clang++ over the SHIPPED file: identity off/beyond reach, the wrap onto the surface along the outward radial, the lip never past the surface and never folding, radial purity, the normal proven by CONVERGENCE RATE — halving the patch quarters the error, 0.32 → 0.0058 — no seam at the reach, affine in the weight, dominant slot, plus a negative control that PLATEAUS at 0.74 with the radial Jacobian term neutered). Not run in the editor. |
+| C18 | The Rhino sword's kills burst into debris like any other death — a blade reads as a blast | ✅ SHIPPED 2026-09-26 (§4.10) — a blade kill is a CUT: two pure render entities per prism on the shared `HighPolyPrismMesh`, the far skin centrally projected onto the cut plane (`PrismSlice.hlsl`), rigid hinge-opening motion and a dissolve from the cut face, all off one stamp per half; batched spawn/retire (`PrismSlice.cs`, `PrismRenderService.SpawnSliceDebrisBatch`), explosion fallback on any refusal, budget 115k triangles / zero colliders. Proven offline by `verify_prism_slice.py` (execution + glslang) and `PrismSliceTests`; **not run in the editor** |
+| C19 | A BLACK HOLE — mass around a spawned gravity well orbits, spirals in and is consumed, and bends on screen as it goes (a per-frame, per-prism deformation and a per-frame, per-prism MOVE) | ✅ BUILT 2026-10-07 (§4.7.4, `Docs/BLACK_HOLE.md`) — the MOVE is live gameplay data under the movers contract (three chained Burst jobs over the admitted bodies — read-only pose read, `IJobParallelFor` integration, transform write-back — + `SetTransformsBatch` + `UpdatePositionsBatch`; `GravityBody` on every prism prototype, disabled until admitted), the BEND is a §4.7 global bank (`PrismGravityWarp.hlsl`, spliced immediately before the cradle on both live graphs) drawing the GR tidal tensor as one affine stretch per prism — no residency since the 2026-10-08 re-cut; captures go through `Prism.Consume` with the hole as the implosion sink. Proven offline by `verify_prism_gravity_warp.py` (thirteen properties + negative control), `BlackHoleTests`, `BlackHolePhysicsTests`; **not run in the editor** |
+| C20 | Prism-movement collisions die as the ordinary explosion at every load | ✅ SHIPPED 2026-10-14 (§4.12) — at ladder level 1 a collision death is a COLLISION BURST: one pure render entity per prism on the unwelded `HighPolyPrismMesh` (s10), four kinds (shatter / bloom / unravel / glitter) off one stamp on the slice's carrier, sharing the explosion's flight, life, palette, size and linear fade (the Collision Burst Lab measured that this does NOT yet squint as the explosion — 0.33–0.47 against a 0.08 band; decision open, `Docs/Studios/COLLISION_BURST_LAB.md`); **round 2 (same day): game-wide DETAIL LEVELS** — destruction explosion → shatter → glitter and stealing grade → bloom / unravel / flake shed, by size on screen, no white accents (§4.12, `PrismInteractionLod`); explosion fallback on any refusal, budget 57,600 triangles / zero colliders. Proven offline by `verify_prism_collision_burst.py` (execution, 4 negative controls, glslang) and `PrismCollisionBurstTests`; **not run in the editor** |
+| C21 | The five lab-only burst kinds (shatter, bloom, unravel, glitter, flake) still ship in the burst shader's every-kind program | ⬜ OPEN (decision) — since round 11 the game draws destructions with the fragment-only program and steals with the roll-only one (`multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL`); the every-kind program is reached in the game only if a shed weight other than `rollWeight` is raised above 0 (all 0 in `PrismInteractionLodConfig.asset`). The kinds' code (~400 HLSL lines, `PrismBurstShatter` / `Bloom` / `Unravel` / `Flake` and the glitter tiling) stays for the Collision Burst Lab's Archive comparisons. Decide: keep them reachable (design options) or strip them from the game shader and keep them lab-only. Measure first: the every-kind program's register count against the fragment-only one (a shader compile report in the editor). |
+| C22 | The destruction cut's meshes still carry the explosion's UV0 (`HighPolyPrismMesh.PopulateCut`, `PrismSierpinskiTiling.WedgeUV`) | ⬜ OPEN (debt this branch created) — no shader reads it since round 9 (the fragments shrink instead of eroding), but `EveryFragmentWearsItsWedgesExplosionUV` and the lab parity check `uv_vs_prism` pin it. Remove the channel, the test and the check together, or keep it as a layout invariant and say why in the mesh's doc. |
+| C23 | A settled prism kept paying for its bloom and its (absent) sway: the entity path never cleared the grow stamp (`ClearGrowStamp` ran only on the §4.11 twin and pool reuse), so every prism that ever bloomed evaluated `PrismGrowScale`'s exp() and three per-instance loads per vertex for life, and `PrismSway_float` ran two sines on every prism with a zero span | ✅ BUILT 2026-11-10, not yet compiled in the Unity editor — every `PrismRenderService.StampGrow` pushes ONE entry `(fireTime, handle, stampTime)` on a single shared due-queue, `PrismGrowStampClearQueue` (a preallocated min-heap of structs, 1024 doubling to a 2^18 cap, no per-entry allocation), at `t0 + (ln max\|1-s0\| + 27 ln2)/k`, the first time the shader's float32 factor is exactly 1.0f (threshold 25 ln2, measured; `PrismGrowStampClearTests`). The render service's existing LateUpdate flush host drains it after visibility and transforms: O(1) when nothing is due, O(log n) per pop, at most 1024 clears a frame. Entries are never cancelled: each pop re-reads the entity's current stamp (`Decide`), so a retarget, restore or pool reuse makes an old entry a no-op and a same-instant re-stamp with a later end pushes itself again. No `PrismTimerManager` entry, no delegate. `PrismSway_float` returns `PositionOS` when both spans are exactly zero (`verify_prism_sway.py` T2b: equal to the full path, only a -0 coordinate can come back +0). Offline estimate (unity-standins prism worker, DOTS-modelled SPIR-V): resting-prism vertex path ≈ 415 → ≈ 270 executed instructions. |
 
 Phase D — lock-in:
 
@@ -2159,7 +3068,7 @@ Phase D — lock-in:
 |---|---|---|
 | D1 | Docs locked (this file + CLAUDE.md anti-pattern + manager banners + cross-refs) | ✅ shipped (2026-07-31) |
 | D2 | Delete the retired classes + scene components (`PrismScaleManager`, `MaterialStateManager`, `PrismEffectsManager`'s animation passes + Burst jobs, `AdaptiveAnimationManager` frame-skip machinery, retired animator fields, `TrailViewer`) | ✅ DONE 2026-08-02, programmatically: classes deleted; components excised from `PrismManagers.prefab` + `Urchin.prefab` by fileID (machine-verified reference-free); `PrismEffectsManager` slimmed to convergence refresh + zombie audit; animator dead surface stripped (`IsAnimating`/`IsScaling`/registration/…); `GameLoadSampler` re-sourced to `PrismSpatialIndex.LiveCount` + effect `EnabledInstances` + `PrismDebris.LiveDebrisCount` (most deaths now live on the batched debris carrier); `AdaptivePerformanceSetting` documented INERT. PhaseThresholds re-baseline ✅ 2026-08-02 (`PRISM_CLOCK_WIRING_CHECKLIST.md` Phase 6; `Docs/ECOSYSTEM.md` §18) |
-| D3 | In-editor verification pass (all migrated paths, both render paths, load-gate + hitstop + pause) | ◐ 2026-08-25 — Validate Clock Wiring ✅; grid pause froze `PrismClock.Now` (3404.3060 for 1.5 s real). Menu_Main freestyle **ON**; ring bloom+collider ✅ (`visualScale` blooming, `worldBox` already full target, collider enabled). HexRace **skipped**. Console is **not** zero `[PrismClock]`: `shieldShatter` refused (`ents=26085`). |
+| D3 | In-editor verification pass (all migrated paths, both render paths, load-gate + hitstop + pause) | ◐ 2026-08-25 — Validate Clock Wiring ✅; grid pause froze `PrismClock.Now` (3404.3060 for 1.5 s real). Menu_Main freestyle **ON**; ring bloom+collider ✅ (`visualScale` blooming, `worldBox` already full target, collider enabled). SkimRace **skipped**. Console is **not** zero `[PrismClock]`: `shieldShatter` refused (`ents=26085`). |
 | D4 | Retire the pooled `PrismExplosion` / `PrismImplosion` *death* spawn path | ✅ **DONE 2026-08-25 for death pooling; Grow kept.** Factory `SpawnExplosion`/`SpawnImplosion` are batch-only (declined request warns once and drops — no `Get()`). Authored config stays on the pool prefabs (`PrismDebris.Configure` / `ConfigureImplosion`). Explosion pool never Get()d, not prewarmed. Implosion pool prewarm 64→12. `GameLoadSampler` counts batched death + pooled Grow. **Do not delete `PrismImplosion` / `StartGrow` / `OnGrowCompleted`** — Sparrow ReverseSuction is a live producer. Gate (§4.6.2 + this file's benchmark half) landed first. |
 
 ---
@@ -2183,7 +3092,7 @@ re-baseline ✅ 2026-08-02 — six freestyle configs re-authored from measured b
 | Remainder | Where |
 |---|---|
 | **C11** — starve + joust wither look-verify (Prompt 13, shipped 2026-08-25; playtest never run) | `Docs/UNITY_VERIFICATION_CHECKLIST.md` Prompt 13; Prompt 11 item (8) |
-| Phase 5 / **D3** — HexRace still skipped; `[PrismClock] shieldShatter` refusal is live (Menu_Main freestyle + ring bloom + pause recorded) | Checklist Phase 5 |
+| Phase 5 / **D3** — SkimRace still skipped; `[PrismClock] shieldShatter` refusal is live (Menu_Main freestyle + ring bloom + pause recorded) | Checklist Phase 5 |
 | **Phase 8** — corridor active on Menu_Main Squirrel (r=5.51); radii audit done (Serpent 50.40 ⚠); steps 1–7 (cone, nose-clearance, SHATTER-at-speed, UV wipe) **not confirmed**; SHARD3D kernel 6 coverage proven offline (0.00783), look-at-speed **unearned** | Checklist Phase 8 |
 | **Phase 9** — Engage NRE=0 on Menu_Main; `shieldShatter` overlay refused; bloom-from-centres + steps 3–6 not run; YAML `outSlope: 2` confirmed not “fixed” | Checklist Phase 9 |
 | **Phase 10** — super-shield jiggle (C14) first playtest passed; steps 2, 3, 5 still outstanding (2026-08-25: grid + Menu_Main `ActivateSuperShield` + `Damage` confirmed absorb / 0 debris; Squirrel is not the sword vessel) | Checklist Phase 10 |

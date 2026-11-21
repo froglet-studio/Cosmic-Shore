@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+"""Author every hull's Regatta RACE LINE style (RaceLineStyleSO) into Assets/Resources/RaceLines/<Hull>_Regatta.asset.
+
+Every hull races its own line (Yash, 2026-10-17: "no vessels move in the same way ... it's always better to play from the
+sides"): RegattaController flies each AI hull along the GAP between two rails (RegattaRaceLine) at the hull's distance from
+the braid, with the hull's room and risk. The numbers below are the starting values, reasoned from each hull's size and
+speed; a person's flights of a hull REPLACE them: learn_drives_from_flights.py --write measures where they cross the rings
+and writes race_lines_learned.json beside this script, which this generator reads on top of the defaults.
+
+The Squirrel (its own Skim Race pilot) and the Urchin (rides its own lane) have no style here on purpose.
+
+    python3 Tools/Build/author_race_lines.py            # write the assets
+    python3 Tools/Build/author_race_lines.py --check    # fail on drift (what a re-run would change), and on bad values
+"""
+import hashlib
+import json
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
+OUT_DIR = os.path.join(REPO, "Assets", "Resources", "RaceLines")      # RaceLineStyleSO.ResourceFolder
+SCRIPT = os.path.join(REPO, "Assets", "_Scripts", "Controller", "AI", "Racing", "RaceLineStyleSO.cs")
+LEARNED = os.path.join(HERE, "race_lines_learned.json")
+MODE = "Regatta"
+
+# Field order = the SO's. LaneShare: 0 = the rails' radius in the gap, 1 = as far out as the tightest mouth allows.
+FIELDS = ["LaneShare", "HullClearance", "Risk", "RiskSpread", "CarefulLookaheadSeconds", "BoldLookaheadSeconds",
+          "MinLookahead", "MaxLookahead"]
+COMMON = {"RiskSpread": 0.15, "CarefulLookaheadSeconds": 0.35, "BoldLookaheadSeconds": 0.8, "MinLookahead": 60,
+          "MaxLookahead": 520}
+# Written only when a hull sets them (absent, the SO's defaults apply: the nose lead off), so turning one on rewrites one
+# asset. NoseLeadGain is AIPilot's nose lead (2026-11-06, scarab_nose_lead_sim.py): 0 = off. Switched on 2026-11-08
+# (Garrett, for testing): Rhino / Stoat / Scarab 2.5, Dolphin 2.5 then 1.0 (2026-11-16: at 2.5 it circled and never
+# finished in the real-game judge, Docs/Reports/REGATTA_JUDGE.md), Sparrow 2.0, Serpent 1.0 (single stick, #1832); the Manta
+# stays off (its fix is a faster nose, #1780/#1829). Lead-on round: Docs/Reports/NOSE_LEAD_ROLL.md.
+# NoseFollowPerSecond (2026-11-17, RaceLineStyleSO, #2084): the AI nose's follow rate in Regatta, 0 = the fleet lag
+# (1.5/s). Each hull's is the rate trained in its OWN Time game (time_ai_search.py; the home-game PRs #2087 Scarab, #2088
+# Serpent, #2092 Dolphin, #2093 Rhino, #2094 Manta, #2095 Sparrow), where the fleet lag was each AI's biggest handicap. The Manta takes
+# Redline's I3-I4 rate (9), not I1-I2's 15: with Soar lit 15 overshot the mouths. Each hull's NoseLeadGain is the lead
+# trained WITH that rate (a pair: Rhino 2.47, Dolphin 2.03, Serpent 2.09 at 10.42 (run4, with its refuel genes), Stoat 2.62 at 10.43 (run1, with its sling genes), Sparrow 1.29 at 13.9 (run4), Scarab 0, Manta 0). Not yet judged in Regatta.
+OPTIONAL = ["NoseLeadGain", "NoseLeadMaxExtraDegrees", "NoseFollowPerSecond"]
+RANGES = {"NoseLeadGain": (0, 10), "NoseFollowPerSecond": (0, 30), "NoseLeadMaxExtraDegrees": (0, 120), "LaneShare": (0, 1), "HullClearance": (0, 60), "Risk": (0, 1), "RiskSpread": (0, 0.5),
+          "CarefulLookaheadSeconds": (0, 3), "BoldLookaheadSeconds": (0, 3), "MinLookahead": (1, 400),
+          "MaxLookahead": (1, 2000)}
+# The starting values, per hull (why, in a word): big and fast flies far out and plays safer; agile flies closer and bolder.
+HULLS = {
+    # the biggest hull, 840-1200 u/s on the ramp. A longer look-ahead (2026-10-25), for the same nose lag as the Manta's:
+    # once the ramp fires on the line it reaches 450-585 u/s and missed I3/I4 mouths chasing a 0.35-0.8 s point
+    # (rhino_line_sim.py, lag on: 447.7 s I1-I4, 12 misses; 0.8 / 1.4 s: 405.4 s, none). REGATTA.md section 6.4.1.
+    "Rhino":   {"LaneShare": 0.80, "HullClearance": 18, "Risk": 0.40,
+                "CarefulLookaheadSeconds": 0.8, "BoldLookaheadSeconds": 1.4, "NoseLeadGain": 2.47,
+                "NoseFollowPerSecond": 7.5},
+    # wide wings, 720 u/s Soar. A longer look-ahead (2026-10-25): an AI hull's nose follows its command at 1.5/s
+    # (VesselTransformer.LERP_AMOUNT), and chasing a point 0.35-0.8 s ahead through that lag pinned the Manta's stick,
+    # which drops its Soar (Tools/Build/manta_line_sim.py, nose="nose": I1-I4 697 s, I4 unfinished; 0.6 / 1.0 s: 280 s,
+    # no miss, fewer rail rams). REGATTA.md section 6.4.1.
+    "Manta":   {"LaneShare": 0.70, "HullClearance": 16, "Risk": 0.50,
+                "CarefulLookaheadSeconds": 0.6, "BoldLookaheadSeconds": 1.0, "NoseFollowPerSecond": 9},
+    "Dolphin": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 2.03, "NoseFollowPerSecond": 11.18},   # a drift locks its course: room to slide; 2.5 circled (judge, 2026-11-16)
+    "Stoat":   {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.60, "NoseLeadGain": 2.62, "NoseFollowPerSecond": 10.43},   # a 72 u turning circle at any warp
+    "Serpent": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 2.09, "NoseFollowPerSecond": 10.42},   # single stick: 2.5 corkscrews it (#1832)
+    "Sparrow": {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50, "NoseLeadGain": 1.29, "NoseFollowPerSecond": 13.9},
+    "Scarab":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.45, "NoseLeadGain": 0, "NoseFollowPerSecond": 15},   # cannot slow quickly: a little more care
+    # The hulls seated 2026-11-17 on the real-game judge's word (author_regatta_assets.py JUDGED_HULLS). None trained a
+    # nose pair at home (their Time games fly the fleet lag), so the rate is the one the Regatta judge picked from
+    # 1.5 / 5 / 10 on the shipped course, alone, card start: Thresher 243 -> 149 s, Grizzly 304 -> 179 s at 10; the
+    # Wrasse, Meerkat and Angler barely move (190 -> 180, 261 -> 250, 385 -> 313). A home-game search replaces these.
+    # Seated in #2123: Wrasse, Thresher, Meerkat, Grizzly. Second round, the same rate: on its race line the Brittle Star
+    # races 73-89 s (on the gate way at the fleet lag it threaded 20 of 24 gates in 400 s), the Angler 350-432 s. The
+    # Honeyguide is not seated: 395-485 s and a 14-gate stall on one archive course, on its line or the gate way.
+    # The same night the Wrasse, Meerkat, Grizzly and Angler came off the card (2-5x the pace: the card is the ally AI's
+    # draw); their lines stay for the judge, which seats them by name.
+    "Wrasse":  {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50, "NoseFollowPerSecond": 10},   # the Sparrow hull
+    # The Thresher takes its Time game's trained pair (Thornline run1, 2026-11-17) with the same drive
+    # (ThresherAIBoostPolicy_Regatta): the shipped course plus three archive courses, 98.5 -> 91.4 s; 10/s with lead 2.77 was 103.
+    "Thresher": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 2.77, "NoseFollowPerSecond": 6.37},
+    "Meerkat": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
+    "Grizzly": {"LaneShare": 0.70, "HullClearance": 16, "Risk": 0.45, "NoseFollowPerSecond": 10},   # a big hull: room
+    "Angler":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 8.25},   # trained in Lantern Run (time_ai_search.py --hull Angler, run1 2026-11-19, #2250)
+    # The Brittle Star takes its Time game's trained Legendary I1-I2 nose (run1, #2141).
+    "BrittleStar": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 13.66},
+    # 2026-11-17, toward the Regatta ten. The Swordfish flies the Rhino's airframe and ramp (its Regatta ramp is the
+    # Rhino's, RhinoAIBoostPolicy_Regatta, by the base policy's name), so it takes the Rhino's line and nose pair, with
+    # Spearline's 10 degree lead cap: at the default 40 its AI locked into an 11 u circle (FINDINGS 30).
+    "Swordfish": {"LaneShare": 0.80, "HullClearance": 18, "Risk": 0.40,
+                  "CarefulLookaheadSeconds": 0.8, "BoldLookaheadSeconds": 1.4, "NoseLeadGain": 2.47,
+                  "NoseLeadMaxExtraDegrees": 10, "NoseFollowPerSecond": 7.5},
+    # The TigerMoth's Waystation AI is that controller's own (the Fold and the drop are pressed by the mode), so in
+    # Regatta it flies the plain line: the starting values of the mid-size hulls.
+    "TigerMoth": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
+    # 2026-11-19: the Shrike's speed is its sling (RegattaController's RegattaShrikeSling coach picks the anchor), so its
+    # line only matters between slings at 18 u/s; the nose pair is its Time game's trained Legendary row (Thornline run1:
+    # lead 9.2, follow 1.6), the aim that lands a sling on a block.
+    "Shrike":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 9.2, "NoseFollowPerSecond": 1.6},
+}
+
+
+def guid(key):
+    return hashlib.md5(("cosmic-shore/" + key).encode()).hexdigest()
+
+
+def script_guid():
+    return re.search(r"guid: ([0-9a-f]{32})", open(SCRIPT + ".meta", encoding="utf-8").read()).group(1)
+
+
+def learned():
+    if not os.path.exists(LEARNED):
+        return {}
+    return json.load(open(LEARNED, encoding="utf-8")).get("hulls", {})
+
+
+# Values the real-game race judge measured as better for the AI than the line people fly, applied last. People's crossing
+# lane (race_lines_learned.json) is kept as measured; this is the AI's own lane where the judge found one.
+# Dolphin (2026-11-17, overnight stall trace): a drift committed at L5 speed carried it past ring mouths, then a ~900 u
+# re-approach. Risk 0.25 + LaneShare 0.6 vs shipped (0.5, learned 0.785), 18 archive2 courses x seeds 1-4, 72 races a side:
+# card mean 110.8 -> 98.0 s, L5 86.7 -> 88.5 s (flat inside noise), missed rings 72 -> 56.
+JUDGED = {
+    "Dolphin": {"LaneShare": 0.60, "Risk": 0.25},
+}
+
+
+def values(hull):
+    v = dict(COMMON)
+    v.update(HULLS[hull])
+    v.update({k: x for k, x in learned().get(hull, {}).items() if k in FIELDS})
+    v.update({k: x for k, x in JUDGED.get(hull, {}).items() if k in FIELDS})
+    return v
+
+
+def written(hull):
+    """The fields the hull's asset carries, in the SO's order: every FIELD, then each OPTIONAL one the hull sets."""
+    v = values(hull)
+    return FIELDS + [k for k in OPTIONAL if k in v]
+
+
+def fmt(x):
+    return str(int(x)) if float(x).is_integer() else repr(round(float(x), 4))
+
+
+def asset_text(hull):
+    name = f"{hull}_{MODE}"
+    v = values(hull)
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n"
+            "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
+            "  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid()}, type: 3}}\n  m_Name: {name}\n  m_EditorClassIdentifier: \n"
+            + "".join(f"  {k}: {fmt(v[k])}\n" for k in written(hull)))
+
+
+def native_meta(g):
+    return (f"fileFormatVersion: 2\nguid: {g}\nNativeFormatImporter:\n  externalObjects: {{}}\n  mainObjectFileID: 11400000\n"
+            "  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
+
+
+def folder_meta(g):
+    return f"fileFormatVersion: 2\nguid: {g}\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {{}}\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n"
+
+
+def outputs():
+    files = {OUT_DIR + ".meta": folder_meta(guid("folder/Resources/RaceLines"))}
+    for hull in HULLS:
+        path = os.path.join(OUT_DIR, f"{hull}_{MODE}.asset")
+        files[path] = asset_text(hull)
+        files[path + ".meta"] = native_meta(guid(f"asset/RaceLines/{hull}_{MODE}"))
+    return files
+
+
+def validate():
+    problems = []
+    for hull in HULLS:
+        v = values(hull)
+        for k in written(hull):
+            lo, hi = RANGES[k]
+            if not lo <= float(v[k]) <= hi:
+                problems.append(f"{hull}: {k} {v[k]} outside {RANGES[k]}")
+        if v["MaxLookahead"] < v["MinLookahead"]:
+            problems.append(f"{hull}: MaxLookahead under MinLookahead")
+    for hull in learned():
+        if hull not in HULLS:
+            problems.append(f"race_lines_learned.json names {hull}, which has no style (Squirrel / Urchin fly their own)")
+    return problems
+
+
+def main():
+    check = "--check" in sys.argv
+    problems = validate()
+    files = outputs()
+    drift = [p for p, t in files.items() if not os.path.exists(p) or open(p, encoding="utf-8").read() != t]
+    if check:
+        for p in problems:
+            print("check:", p)
+        for p in drift:
+            print("check: would change", os.path.relpath(p, REPO))
+        ok = not problems and not drift
+        print(f"author_race_lines --check: {'OK' if ok else 'FAILED'} ({len(HULLS)} hulls, {len(learned())} learned)")
+        return 0 if ok else 1
+    if problems:
+        for p in problems:
+            print("error:", p)
+        return 1
+    os.makedirs(OUT_DIR, exist_ok=True)
+    for p, t in files.items():
+        if not os.path.exists(p) or open(p, encoding="utf-8").read() != t:
+            open(p, "w", encoding="utf-8").write(t)
+            print("wrote", os.path.relpath(p, REPO))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -116,11 +116,13 @@ namespace CosmicShore.Gameplay
 
         private void Awake()
         {
-            if (boxCollider == null) boxCollider = GetComponent<BoxCollider>();
-            if (meshFilter == null)  meshFilter  = GetComponent<MeshFilter>();
-            if (rb == null)          rb          = GetComponent<Rigidbody>();
-            _meshRenderer = GetComponent<MeshRenderer>();
-            _prism = GetComponent<Prism>();
+            // TryGetComponent: a prism need not carry each of these (most have no Rigidbody), and a
+            // missed GetComponent allocates its error message in the editor - on every prism laid.
+            if (boxCollider == null) TryGetComponent(out boxCollider);
+            if (meshFilter == null)  TryGetComponent(out meshFilter);
+            if (rb == null)          TryGetComponent(out rb);
+            TryGetComponent(out _meshRenderer);
+            TryGetComponent(out _prism);
 
             CacheGeometry();
 

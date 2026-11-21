@@ -24,6 +24,8 @@ MonoBehaviour:
   topMargin: 120
   leftMargin: 24
   stackSpacing: 10
+  newestOnTop: 1
+  dropDistance: 16
   maxVisible: 3
   maxQueue: 10
   useUnscaledTime: 1

@@ -295,9 +295,15 @@ def site_mask(spec):
 # clearly in-world - a Space garden is wiry and fine, a Mass garden is thick and heavy - and it
 # stacks with the tempo and budget differences below. The assembled species (gyroid, Schwarz P)
 # keep using LeafSize.z as their thin axis, unchanged.
+#
+# MASS and CHARGE take the species' OWN leaf (leaf_mul 1) since 2026-10-28 (Docs/ECOSYSTEM.md 65). Mass was x1.35
+# and Charge x0.85 here, ON TOP OF the fleet law Flora.OnElementResolved applies to every non-lattice plant - so a
+# Mass Hesperides plant was enlarged twice. Mass now has SIZE through the law alone (FloraElementalForm.ShapeLeaf
+# and ReachScale grow the Time plant whole by x1.2786), is armoured (shield 1, ElementalArmour) and Charge never
+# shields because every prism it lays is danger. Space keeps its rung: it is not part of that change.
 ELEMENT_TUNING = {
-    "Charge": dict(leaf_mul=(0.85, 0.85, 1.0), grow_mul=1.0, shield=1.0, budget_mul=0.85),
-    "Mass":   dict(leaf_mul=(1.35, 1.35, 1.0), grow_mul=1.3, shield=0.0, budget_mul=1.2),
+    "Charge": dict(leaf_mul=(1.00, 1.00, 1.0), grow_mul=1.0, shield=0.0, budget_mul=0.85),
+    "Mass":   dict(leaf_mul=(1.00, 1.00, 1.0), grow_mul=1.3, shield=1.0, budget_mul=1.2),
     "Space":  dict(leaf_mul=(0.50, 0.50, 1.0), grow_mul=1.8, shield=0.0, budget_mul=0.7),
     "Time":   dict(leaf_mul=(1.00, 1.00, 1.0), grow_mul=0.5, shield=0.0, budget_mul=1.0),
 }
@@ -831,9 +837,16 @@ MonoBehaviour:
 
     profile_guid = guid("profile/Hesperides")
     profile_rel = f"{folder}/Hesperides Cell Spawn Profile.asset"
+    # The garden's BEES (Docs/ECOSYSTEM.md §66): a hive is a flora slot, so the cell lists its config with the
+    # plants. Tools/Build/author_bee_assets.py authors that config (its population, its element palette); this
+    # script only lists it, by the guid that script mints, so the profile keeps one owner.
+    sys.path.insert(0, os.path.join(REPO, "Tools", "Build"))
+    import author_bee_assets as bees
+    bee_hive = bees.guid(bees.rel(bees.hesp_hive_path()))
     flora_refs = "\n".join(
         [f"  - {{fileID: 11400000, guid: {cell_flora[n]}, type: 2}}" for n in seeding] +
-        [f"  - {{fileID: 11400000, guid: {topiary_guids[n]}, type: 2}}" for n in topiary_guids])
+        [f"  - {{fileID: 11400000, guid: {topiary_guids[n]}, type: 2}}" for n in topiary_guids] +
+        [f"  - {{fileID: 11400000, guid: {bee_hive}, type: 2}}"])
     made.append(write(profile_rel, f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
@@ -908,11 +921,14 @@ MonoBehaviour:
     RestlessExit: 15900
     FrenzyEnter: 33000
     FrenzyExit: 32200
-    RestlessEnterVolume: 602000
-    RestlessExitVolume: 592000
-    FrenzyEnterVolume: 985000
-    FrenzyExitVolume: 960000
+    RestlessEnterVolume: 550182
+    RestlessExitVolume: 540182
+    FrenzyEnterVolume: 933182
+    FrenzyExitVolume: 908182
 """))
+    # The four volumes are the hand-set ladder less the 51,818 the environment lost when every
+    # prism was fitted flush (SpawnableHesperides, NO PRISM MAY INTERPENETRATE ANOTHER): the
+    # shipped asset carries the same numbers, so re-running this writes what ships.
     meta_asset(cell_rel, cell_guid)
 
     print(f"wrote {len(made)} assets (+ metas)")

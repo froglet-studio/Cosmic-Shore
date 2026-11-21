@@ -427,6 +427,316 @@ namespace CosmicShore.Tests
             Assert.AreEqual(40f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f,
                 "Another cell's bindings must survive the bulk clear.");
         }
+        // ------------------------------------------------------------------
+        // Virtual entries (data-driven prisms with no GameObject Prism yet)
+        // ------------------------------------------------------------------
+
+        /// <summary>Test owner: materialises a member by spawning + registering a real
+        /// prism at the member's stored position (what a swarm proxy does).</summary>
+        sealed class TestVirtualOwner : IVirtualPrismOwner
+        {
+            public PrismSpatialIndexTests Fixture;
+            public readonly Dictionary<int, Vector3> Positions = new();
+            public readonly Dictionary<int, Prism> Materialised = new();
+            public int Calls;
+            public bool Refuse;
+
+            public Prism MaterialiseVirtualPrism(int slot)
+            {
+                Calls++;
+                if (Refuse) return null;
+                if (Materialised.TryGetValue(slot, out var existing)) return existing;
+                var prism = Fixture.SpawnRegisteredPrism(Positions[slot]);
+                Materialised[slot] = prism;
+                return prism;
+            }
+        }
+
+        TestVirtualOwner NewOwner() => new TestVirtualOwner { Fixture = this };
+
+        int AddVirtual(TestVirtualOwner owner, int slot, Vector3 position, int domain = 0, float volume = 1f)
+        {
+            owner.Positions[slot] = position;
+            return _index.RegisterVirtual(owner, slot, position, domain, volume);
+        }
+
+        readonly List<int> _ids = new();
+
+        [Test]
+        public void Virtual_IsSeenByIdQueryAndProbes_ButNotByPrismListQueries()
+        {
+            var owner = NewOwner();
+            int id = AddVirtual(owner, 3, Vector3.zero);
+
+            Assert.IsTrue(_index.IsVirtual(id));
+            Assert.IsTrue(_index.IsLiveVirtual(id));
+            Assert.AreEqual(1, _index.VirtualCount);
+            Assert.IsTrue(_index.IsAnyPrismWithin(Vector3.zero, 2f), "Occupancy must see virtual members.");
+            Assert.AreEqual(1, _index.QuerySphereIds(Vector3.zero, 5f, _ids));
+            Assert.AreEqual(id, _ids[0]);
+            Assert.IsTrue(_index.TryGetVirtual(id, out var o, out int slot));
+            Assert.AreSame(owner, o);
+            Assert.AreEqual(3, slot);
+
+            // Sensing through the Prism-list queries never materialises.
+            Assert.AreEqual(0, _index.QuerySphere(Vector3.zero, 5f, _results));
+            Assert.AreEqual(0, _index.QuerySegment(new Vector3(-5f, 0f, 0f), new Vector3(5f, 0f, 0f), 2f, _results));
+            Assert.AreEqual(0, _index.CopyLivePrisms(_results));
+            Assert.IsNull(_index.ResolvePrism(id, materialise: false));
+            Assert.AreEqual(0, owner.Calls);
+        }
+
+        [Test]
+        public void Virtual_BucketWalkPath_FindsVirtualEntry()
+        {
+            SpawnPaddingPrisms(40);
+            var owner = NewOwner();
+            int id = AddVirtual(owner, 0, new Vector3(1f, 1f, 1f));
+
+            Assert.AreEqual(1, _index.QuerySphereIds(Vector3.zero, 4f, _ids));
+            Assert.AreEqual(id, _ids[0]);
+        }
+
+        [Test]
+        public void Virtual_Materialise_SuspendsSlot_SoMemberCountsOnce()
+        {
+            var owner = NewOwner();
+            int id = AddVirtual(owner, 1, Vector3.zero);
+            int liveBefore = _index.LiveCount;
+
+            var prism = _index.ResolvePrism(id, materialise: true);
+            Assert.IsNotNull(prism);
+            Assert.AreEqual(1, owner.Calls);
+            Assert.IsFalse(_index.IsLiveVirtual(id), "Materialising must suspend the virtual slot.");
+            Assert.IsTrue(_index.IsVirtual(id), "Suspended slots keep their owner record.");
+            Assert.AreEqual(liveBefore, _index.LiveCount, "Proxy registered, virtual suspended: net count unchanged.");
+
+            // Exactly one entry for the member: the proxy's real slot.
+            Assert.AreEqual(1, _index.QuerySphereIds(Vector3.zero, 5f, _ids));
+            Assert.AreEqual(prism.SpatialIndexId, _ids[0]);
+            Assert.AreEqual(1, _index.QuerySphere(Vector3.zero, 5f, _results));
+
+            // A suspended slot does not materialise again.
+            Assert.IsNull(_index.ResolvePrism(id, materialise: true));
+            Assert.AreEqual(1, owner.Calls);
+        }
+
+        [Test]
+        public void Virtual_RefusedMaterialise_LeavesSlotLive()
+        {
+            var owner = NewOwner();
+            owner.Refuse = true;
+            int id = AddVirtual(owner, 0, Vector3.zero);
+
+            Assert.IsNull(_index.ResolvePrism(id, materialise: true));
+            Assert.IsTrue(_index.IsLiveVirtual(id));
+        }
+
+        [Test]
+        public void Virtual_ResumeAfterProxyRetires_ReentersQueriesAtUpdatedPosition()
+        {
+            var owner = NewOwner();
+            int id = AddVirtual(owner, 0, Vector3.zero);
+            var proxy = _index.ResolvePrism(id, materialise: true);
+
+            // Proxy retires: its slot goes, the member continues as data elsewhere.
+            _index.Unregister(proxy.SpatialIndexId);
+            proxy.SpatialIndexId = -1;
+            var moved = new Vector3(100f, 0f, 0f);
+            _index.UpdatePosition(id, moved);
+            _index.SetVirtualSuspended(id, false);
+
+            Assert.IsTrue(_index.IsLiveVirtual(id));
+            Assert.AreEqual(0, _index.QuerySphereIds(Vector3.zero, 5f, _ids));
+            Assert.AreEqual(1, _index.QuerySphereIds(moved, 5f, _ids));
+            Assert.AreEqual(id, _ids[0]);
+        }
+
+        [Test]
+        public void Virtual_UpdatePositionsBatch_RebucketsEveryEntry()
+        {
+            SpawnPaddingPrisms(40);
+            var owner = NewOwner();
+            int a = AddVirtual(owner, 0, Vector3.zero);
+            int b = AddVirtual(owner, 1, new Vector3(1f, 0f, 0f));
+
+            var ids = new NativeArray<int>(new[] { a, b }, Allocator.TempJob);
+            var pos = new NativeArray<Unity.Mathematics.float3>(2, Allocator.TempJob);
+            pos[0] = new Unity.Mathematics.float3(300f, 0f, 0f);
+            pos[1] = new Unity.Mathematics.float3(301f, 0f, 0f);
+            _index.UpdatePositionsBatch(ids, pos);
+            ids.Dispose();
+            pos.Dispose();
+
+            Assert.AreEqual(0, _index.QuerySphereIds(Vector3.zero, 4f, _ids), "Old buckets must be vacated.");
+            Assert.AreEqual(2, _index.QuerySphereIds(new Vector3(300f, 0f, 0f), 4f, _ids));
+        }
+
+        [Test]
+        public void Virtual_CellMass_CountsOnce_AcrossMaterialisation()
+        {
+            var owner = NewOwner();
+            int id = AddVirtual(owner, 0, Vector3.zero, (int)Domains.Gold, 12f);
+            _index.SetCellBinding(id, 7, false, Domains.Gold);
+            _index.UpdateCellVolume(id, 12f);
+
+            var results = NewResults();
+            _index.SumCellVolumes(7, Vector3.zero, 0f, results);
+            Assert.AreEqual(12f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f);
+
+            // Materialise: the proxy takes over the binding; the virtual slot drops out.
+            var proxy = _index.ResolvePrism(id, materialise: true);
+            _index.SetCellBinding(proxy.SpatialIndexId, 7, false, Domains.Gold);
+            _index.UpdateCellVolume(proxy.SpatialIndexId, 12f);
+
+            _index.SumCellVolumes(7, Vector3.zero, 0f, results);
+            Assert.AreEqual(12f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f,
+                "A materialised member must not be summed twice (virtual + proxy).");
+        }
+
+        [Test]
+        public void Virtual_Unregister_FreesSlotAndOwnerRecord_SlotReuseIsClean()
+        {
+            var owner = NewOwner();
+            int id = AddVirtual(owner, 0, Vector3.zero);
+            int liveBefore = _index.LiveCount;
+
+            _index.Unregister(id);
+            Assert.IsFalse(_index.IsVirtual(id));
+            Assert.AreEqual(0, _index.VirtualCount);
+            Assert.AreEqual(liveBefore - 1, _index.LiveCount);
+            Assert.AreEqual(0, _index.QuerySphereIds(Vector3.zero, 5f, _ids));
+            _index.Unregister(id); // double free is a no-op
+            Assert.AreEqual(liveBefore - 1, _index.LiveCount);
+
+            // The freed slot is reused by a real prism with no virtual residue.
+            var prism = SpawnRegisteredPrism(Vector3.zero);
+            Assert.AreEqual(id, prism.SpatialIndexId);
+            Assert.IsFalse(_index.IsVirtual(prism.SpatialIndexId));
+            Assert.AreSame(prism, _index.ResolvePrism(prism.SpatialIndexId, materialise: true));
+        }
+
+        /// <summary>
+        /// The wide-radius queries run as one Burst pass (LinearCapsuleScanJob). Both QuerySphere and QuerySegment must
+        /// return exactly the brute-force set on BOTH paths, and the linear path in slot order (what the managed scan it
+        /// replaced produced). A destroyed prism inside the radius must stay out.
+        /// </summary>
+        [Test]
+        public void WideAndTightQueries_MatchBruteForce_OnBothPaths()
+        {
+            var rng = new System.Random(20261102);
+            var prisms = new List<Prism>();
+            for (int i = 0; i < 300; i++)
+                prisms.Add(SpawnRegisteredPrism(new Vector3(
+                    (float)rng.NextDouble() * 120f - 60f,
+                    (float)rng.NextDouble() * 120f - 60f,
+                    (float)rng.NextDouble() * 120f - 60f)));
+            _index.MarkDestroyed(prisms[7].SpatialIndexId);
+
+            Vector3 a = new(-20f, 5f, 3f), b = new(25f, -10f, 12f);
+            // 200 u (Fulmen's burn) takes the linear path; 6 u takes the bucket walk at this high-water mark.
+            foreach (float radius in new[] { 200f, 40f, 6f })
+            {
+                var expectSphere = new List<Prism>();
+                var expectSegment = new List<Prism>();
+                foreach (var p in prisms)
+                {
+                    if (p == prisms[7]) continue;
+                    Vector3 at = p.transform.position;
+                    if ((at - a).sqrMagnitude <= radius * radius) expectSphere.Add(p);
+                    Vector3 ab = b - a;
+                    float t = Mathf.Clamp01(Vector3.Dot(at - a, ab) / ab.sqrMagnitude);
+                    if ((a + ab * t - at).sqrMagnitude <= radius * radius) expectSegment.Add(p);
+                }
+
+                _index.QuerySphere(a, radius, _results);
+                CollectionAssert.AreEquivalent(expectSphere, _results, $"QuerySphere r={radius}");
+                if (radius >= 40f) CollectionAssert.AreEqual(expectSphere, _results, $"QuerySphere r={radius}: slot order");
+
+                _index.QuerySegment(a, b, radius, _results);
+                CollectionAssert.AreEquivalent(expectSegment, _results, $"QuerySegment r={radius}");
+                if (radius >= 40f) CollectionAssert.AreEqual(expectSegment, _results, $"QuerySegment r={radius}: slot order");
+            }
+        }
+
+        // ProjectileSweepBatch skips a round's QuerySegment when SegmentsOccupied says 0, so a 0 must mean
+        // QuerySegment finds nothing - on the bucket walk, and with a destroyed prism in the field.
+        [Test]
+        public void SegmentsOccupied_AgreesWithQuerySegment()
+        {
+            var rng = new System.Random(20261103);
+            var prisms = new List<Prism>();
+            for (int i = 0; i < 300; i++)
+                prisms.Add(SpawnRegisteredPrism(new Vector3(
+                    (float)rng.NextDouble() * 160f - 80f,
+                    (float)rng.NextDouble() * 160f - 80f,
+                    (float)rng.NextDouble() * 160f - 80f)));
+            _index.MarkDestroyed(prisms[11].SpatialIndexId);
+
+            const int n = 400;
+            var a = new NativeArray<Unity.Mathematics.float3>(n, Allocator.TempJob);
+            var ab = new NativeArray<Unity.Mathematics.float3>(n, Allocator.TempJob);
+            var radius = new NativeArray<float>(n, Allocator.TempJob);
+            var occupied = new NativeArray<byte>(n, Allocator.TempJob);
+            try
+            {
+                for (int i = 0; i < n; i++)
+                {
+                    var from = new Vector3((float)rng.NextDouble() * 200f - 100f, (float)rng.NextDouble() * 200f - 100f,
+                                           (float)rng.NextDouble() * 200f - 100f);
+                    var step = new Vector3((float)rng.NextDouble() - 0.5f, (float)rng.NextDouble() - 0.5f,
+                                           (float)rng.NextDouble() - 0.5f) * (i % 2 == 0 ? 6f : 50f);
+                    // Every tenth segment ends on a live prism: a sure hit, the negative control.
+                    if (i % 10 == 0) from = prisms[(i / 10) % 300 == 11 ? 12 : (i / 10) % 300].transform.position;
+                    a[i] = from;
+                    ab[i] = step;
+                    radius[i] = i % 3 == 0 ? 0.9f : 8.8f;
+                }
+
+                _index.SegmentsOccupied(a, ab, radius, occupied, n);
+
+                int clear = 0, sure = 0;
+                for (int i = 0; i < n; i++)
+                {
+                    Vector3 from = a[i];
+                    int found = _index.QuerySegment(from, from + (Vector3)ab[i], radius[i], _results);
+                    if (found > 0)
+                        Assert.AreEqual(1, occupied[i], $"segment {i}: QuerySegment found {found} prism(s), batch said clear");
+                    else if (occupied[i] == 0) clear++;
+                    if (i % 10 == 0) { Assert.AreEqual(1, occupied[i], $"segment {i} starts on a prism"); sure++; }
+                }
+                Assert.Greater(clear, n / 4, "the batch should answer most open-space segments clear");
+                Assert.AreEqual(n / 10, sure);
+            }
+            finally
+            {
+                a.Dispose(); ab.Dispose(); radius.Dispose(); occupied.Dispose();
+            }
+        }
+
+        // The batch trusts a "clear" only while nothing was added or moved since it was taken.
+        [Test]
+        public void WriteStamp_MovesOnAddAndMove_NotOnDestroy()
+        {
+            var p = SpawnRegisteredPrism(new Vector3(1f, 2f, 3f));
+            int s0 = _index.WriteStamp;
+            _index.MarkDestroyed(p.SpatialIndexId);
+            Assert.AreEqual(s0, _index.WriteStamp, "a removal can only make a query find less");
+            _index.MarkRestored(p.SpatialIndexId);
+            Assert.AreNotEqual(s0, _index.WriteStamp, "a restored prism is new to a query");
+            int s1 = _index.WriteStamp;
+            _index.UpdatePosition(p.SpatialIndexId, new Vector3(1.5f, 2f, 3f));
+            Assert.AreNotEqual(s1, _index.WriteStamp, "a move within the bucket still moves the stamp");
+            int s2 = _index.WriteStamp;
+            SpawnRegisteredPrism(new Vector3(40f, 0f, 0f));
+            Assert.AreNotEqual(s2, _index.WriteStamp, "a register moves the stamp");
+        }
+
+        [Test]
+        public void Virtual_NullOwner_IsRejected()
+        {
+            Assert.AreEqual(-1, _index.RegisterVirtual(null, 0, Unity.Mathematics.float3.zero, 0));
+        }
     }
 }
 #endif

@@ -50,11 +50,31 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("This panel's domain tiles (Jade, Ruby, Gold).")]
         protected List<DomainInfoData> domainTiles = new(3);
 
+        [SerializeField, Tooltip("This panel's AI difficulty row (Easy / Medium / Hard / Legendary). Optional: a " +
+                                 "panel without one never offers the setting. Shown only on cards " +
+                                 "whose AI reads it (AIDifficultyRules.IsOfferedFor); the modal " +
+                                 "decides, the row only draws.")]
+        protected AIDifficultyPicker aiDifficultyPicker;
+
+        [SerializeField, Tooltip("The pilots as a lineup of pedestals (style-B arcade window, section 74). Optional: a " +
+                                 "panel without one draws its pilots on the domain tiles' seat strips.")]
+        protected ConfigureSeatLineup seatLineup;
+
         [SerializeField, Tooltip("Start / ready-up button.")]
         protected Button startButton;
 
         [SerializeField, Tooltip("'Waiting for others…' label, shown after this player confirms.")]
         protected GameObject waitingForOthersLabel;
+
+        [Header("Weekly challenge (optional)")]
+        [SerializeField, Tooltip("Opens this week's leaderboard. Shown ONLY while the card is " +
+                                 "open as the weekly challenge - the board ranks completion times " +
+                                 "for the week's objective, which an ordinary card has none of.")]
+        protected Button leaderboardButton;
+
+        [SerializeField, Tooltip("Why Start is unavailable, e.g. 'ALREADY PLAYED THIS WEEK'. " +
+                                 "Optional: without it the button simply greys out.")]
+        protected TMPro.TMP_Text startUnavailableLabel;
 
         [Header("Own window (optional)")]
         [SerializeField, Tooltip("Set ONLY when this panel lives in its own modal window rather " +
@@ -79,7 +99,58 @@ namespace CosmicShore.UI
                                  "the same event, and both may be wired at once.")]
         protected UnityEngine.UI.Toggle fillWithAIToggle;
 
+        [Header("Configure tree (optional)")]
+        [SerializeField, Tooltip("Every label that names the card's hull: the step value, the vessel " +
+                                 "node's caption, the class title, the preview strip, the controls " +
+                                 "header, the summary chip. Written as the hull's Name; a Label-role " +
+                                 "text upper-cases it itself.")]
+        protected List<TMPro.TMP_Text> vesselNameTexts = new();
+
+        [SerializeField, Tooltip("The header eyebrow over the card's name (\"Arcade\", \"Arena\"). Reads " +
+                                 "\"Weekly challenge\" while the card is open as the weekly challenge; " +
+                                 "the authored text otherwise.")]
+        protected TMPro.TMP_Text eyebrowText;
+
+        [SerializeField, Tooltip("The eyebrow while the card is open as the weekly challenge. Empty: no eyebrow then.")]
+        protected string weeklyEyebrowLine = "Weekly challenge";
+
+        [SerializeField, Tooltip("The hull's class description.")]
+        protected TMPro.TMP_Text vesselDescriptionText;
+
+        [SerializeField, Tooltip("The vessel node's art: the hull's hangar render (SO_Vessel.PreviewImage).")]
+        protected KitCoverImage vesselArt;
+
+        [SerializeField, Tooltip("The intensity step's value - the bare level, \"2\".")]
+        protected TMPro.TMP_Text intensityValueText;
+
+        [SerializeField, Tooltip("The summary chip - \"Intensity 2\".")]
+        protected TMPro.TMP_Text intensityChipText;
+
+        [SerializeField, Tooltip("The summary chip's line. {intensity} is the level. Empty: no chip text.")]
+        protected string intensityChipLine = "Intensity {intensity}";
+
+        [SerializeField, Tooltip("The pilots step's value - seats filled of the seats the match holds, \"2 of 4\".")]
+        protected TMPro.TMP_Text seatValueText;
+
+        [SerializeField, Tooltip("The summary chip - \"2 pilots\".")]
+        protected TMPro.TMP_Text pilotsChipText;
+
+        [SerializeField, Tooltip("The pilots step's value. {seated} of {seats}. Empty: no value.")]
+        protected string seatLine = "{seated} of {seats}";
+        [SerializeField, Tooltip("The pilots chip with one pilot. {seated} is the count.")]
+        protected string onePilotLine = "{seated} pilot";
+        [SerializeField, Tooltip("The pilots chip with any other count. {seated} is the count.")]
+        protected string manyPilotsLine = "{seated} pilots";
+
+        [SerializeField, Tooltip("\"Ready to launch\": shown while Start is live, replaced by the refusal " +
+                                 "reason or by the waiting label.")]
+        protected GameObject readyLabel;
+
         bool _suppressFillToggleCallback;
+
+        // Whether the local player has pressed Start (held so the ready line and the refusal line,
+        // which two different calls drive, agree with each other).
+        bool _confirmed;
 
         // Null = draw the card's own description and tips. Non-null = draw this line instead.
         // Held rather than written straight into the briefing because Bind() re-fills the block
@@ -90,11 +161,24 @@ namespace CosmicShore.UI
         // it back the next time the roster redraws.
         bool _addAIAvailable = true;
 
+        // False greys the Start button out. Held as STATE for the same reason _addAIAvailable is:
+        // the modal's ready-up path re-SetActives the Start button, so a one-shot write would be
+        // undone by the next redraw.
+        bool _startAvailable = true;
+
         /// <summary>The ✕ on an AI seat: remove the placed AI with this ordinal.</summary>
         public event Action<int> OnKickAIRequested;
 
         /// <summary>The Add AI mode toggle moved. True = domain taps now place AI.</summary>
         public event Action<bool> OnAddAIModeChanged;
+
+        /// <summary>A button on the AI difficulty row was pressed. The modal decides whether it
+        /// counts (host only) and replicates it.</summary>
+        public event Action<CosmicShore.Data.AIDifficulty> OnAIDifficultyPicked;
+
+        /// <summary>The leaderboard button was pressed. The modal opens the window; the panel does
+        /// not know one exists.</summary>
+        public event Action OnLeaderboardRequested;
 
         /// <summary>
         /// Raised when this panel's OWN window was closed by its own controls, so the modal can run
@@ -112,6 +196,7 @@ namespace CosmicShore.UI
         public IReadOnlyList<IntensitySelectButton> IntensityButtons => intensityButtons;
         public IReadOnlyList<DomainInfoData> DomainTiles => domainTiles;
         public Button StartButton => startButton;
+        public ConfigureSeatLineup SeatLineup => seatLineup;
         public GameObject WaitingForOthersLabel => waitingForOthersLabel;
         public FavoriteIcon Favorite => favoriteIcon;
 
@@ -134,6 +219,8 @@ namespace CosmicShore.UI
 
             if (fillWithAIToggle) fillWithAIToggle.onValueChanged.AddListener(HandleFillToggle);
 
+            if (aiDifficultyPicker) aiDifficultyPicker.OnPicked += RaiseAIDifficultyPicked;
+
             if (hostModal) hostModal.OnModalClosed += RaiseHostModalClosed;
         }
 
@@ -146,6 +233,8 @@ namespace CosmicShore.UI
             }
 
             if (fillWithAIToggle) fillWithAIToggle.onValueChanged.RemoveListener(HandleFillToggle);
+
+            if (aiDifficultyPicker) aiDifficultyPicker.OnPicked -= RaiseAIDifficultyPicked;
 
             if (hostModal) hostModal.OnModalClosed -= RaiseHostModalClosed;
         }
@@ -160,6 +249,15 @@ namespace CosmicShore.UI
 
             if (gameNameText)
                 gameNameText.text = game ? game.DisplayName : string.Empty;
+
+            // Every card flies one hull now (the two-screen flow is gone), so the first vessel the
+            // card lists IS the hull. The Arena carousel redraws this through ShowVessel.
+            SO_Vessel hull = null;
+            if (game && game.Vessels != null)
+                foreach (var v in game.Vessels)
+                    if (v) { hull = v; break; }
+            DrawVessel(hull);
+            DrawIntensity(intensity);
 
             if (briefing)
             {
@@ -202,7 +300,37 @@ namespace CosmicShore.UI
         }
 
         /// <summary>The intensity changed while this panel is up.</summary>
-        public virtual void HandleIntensityChanged(int intensity) { }
+        public virtual void HandleIntensityChanged(int intensity) => DrawIntensity(intensity);
+
+        /// <summary>Write the hull into every place the configure tree names it. Null clears them.</summary>
+        protected void DrawVessel(SO_Vessel vessel)
+        {
+            string name = vessel ? vessel.Name : string.Empty;
+            foreach (var label in vesselNameTexts)
+                if (label) label.text = name;
+            if (vesselDescriptionText) vesselDescriptionText.text = vessel ? vessel.Description : string.Empty;
+            if (vesselArt) vesselArt.SetSprite(vessel ? vessel.PreviewImage : null);
+        }
+
+        void DrawIntensity(int intensity)
+        {
+            if (intensityValueText) intensityValueText.text = intensity.ToString();
+            if (intensityChipText) intensityChipText.text = TemplateText.Fill(intensityChipLine, "intensity", intensity.ToString());
+        }
+
+        /// <summary>
+        /// The seats: <paramref name="seated"/> of <paramref name="seats"/> filled (humans and AI), and
+        /// <paramref name="spare"/> still open. Each domain shows its open seat while one is spare, with
+        /// its + AI only for a player who may place one (<paramref name="canAddAI"/>: the host).
+        /// </summary>
+        public virtual void SetSeatSummary(int seated, int seats, int spare, bool canAddAI)
+        {
+            if (seatValueText) seatValueText.text = TemplateText.Fill(seatLine, "seated", seated.ToString(), "seats", seats.ToString());
+            if (pilotsChipText) pilotsChipText.text = TemplateText.Fill(seated == 1 ? onePilotLine : manyPilotsLine, "seated", seated.ToString());
+            foreach (var tile in domainTiles)
+                if (tile && tile.Domain != CosmicShore.Data.Domains.Blue)
+                    tile.SetOpenSeat(spare > 0, canAddAI && spare > 0);
+        }
 
         /// <summary>Redraw the roster. A panel with no <see cref="lobbyRow"/> ignores this.</summary>
         public virtual void RefreshRoster(GameDataSO gameData, int totalPlayers, int humanCount,
@@ -248,13 +376,143 @@ namespace CosmicShore.UI
         /// <summary>Ready-up state: the Start button and the waiting label are mutually exclusive.</summary>
         public virtual void SetReadyUpState(bool confirmed)
         {
-            if (startButton) startButton.gameObject.SetActive(!confirmed);
-            if (waitingForOthersLabel) waitingForOthersLabel.SetActive(confirmed);
+            _confirmed = confirmed;
+            if (startButton)
+            {
+                SetPartShown(startButton.gameObject, !confirmed);
+                // Re-asserted, because this is the redraw that would otherwise hand a spent
+                // weekly challenge a live Start button back.
+                startButton.interactable = _startAvailable;
+            }
+            SetPartShown(waitingForOthersLabel, confirmed);
+            RefreshReadyLine();
+        }
+
+        void RefreshReadyLine()
+        {
+            bool reasonShown = startUnavailableLabel && !_startAvailable &&
+                               !string.IsNullOrEmpty(startUnavailableLabel.text);
+            SetPartShown(readyLabel, !_confirmed && !reasonShown);
+            if (startUnavailableLabel) SetPartShown(startUnavailableLabel.gameObject, !_confirmed && reasonShown);
         }
 
         /// <summary>
-        /// Grey out the controls only the host owns (intensity, the fill toggle). Domain and Start
-        /// stay live for every player — those are each player's own choices.
+        /// Show or hide one of the panel's parts: through its CanvasGroup when it has one (the
+        /// style-B panels - a hidden part keeps its lifecycle and closes up in a layout), otherwise
+        /// by active state (the legacy panels this class still drives).
+        /// </summary>
+        protected static void SetPartShown(GameObject part, bool shown)
+        {
+            if (!part) return;
+            if (part.TryGetComponent(out CanvasGroup group)) KitVisibility.SetShown(group, shown);
+            else part.SetActive(shown);
+        }
+
+        /// <summary>
+        /// Whether this card can be STARTED. False greys the button and shows
+        /// <paramref name="reason"/> beside it.
+        ///
+        /// <para><b>Greyed, never hidden.</b> A missing Start button reads as a broken modal; a
+        /// dead one with "ALREADY PLAYED THIS WEEK" next to it explains itself. That matters here
+        /// because the whole point of still being able to OPEN a spent weekly challenge is to
+        /// reach the leaderboard, and a window that looks broken is one nobody explores.</para>
+        ///
+        /// <para>It drives <c>interactable</c> rather than active state on purpose: the modal's
+        /// ready-up path owns the button's ACTIVE state and toggles it freely, so a hide here
+        /// would be undone on the next redraw. Nothing else in the project writes Start's
+        /// <c>interactable</c>, which makes it a channel this can own outright.</para>
+        /// </summary>
+        public virtual void SetStartAvailable(bool available, string reason = null)
+        {
+            _startAvailable = available;
+
+            if (startButton) startButton.interactable = available;
+
+            if (startUnavailableLabel)
+                startUnavailableLabel.text = !available && !string.IsNullOrEmpty(reason) ? reason : string.Empty;
+            RefreshReadyLine();
+        }
+
+        /// <summary>
+        /// Whether this card offers the weekly leaderboard. Passed either way, never only switched
+        /// ON: the panel is a shared scene object, so a button shown for a challenge has to be
+        /// taken back when the next ordinary card opens - the same rule
+        /// <see cref="SetAddAIAvailable"/> records.
+        /// </summary>
+        public virtual void SetLeaderboardAvailable(bool available)
+        {
+            if (leaderboardButton) SetPartShown(leaderboardButton.gameObject, available);
+
+            // The leaderboard is offered exactly when the card is the weekly challenge, so this is
+            // also the one call that knows which eyebrow the header wears.
+            if (eyebrowText)
+            {
+                _authoredEyebrow ??= eyebrowText.text;
+                eyebrowText.text = available ? weeklyEyebrowLine : _authoredEyebrow;
+            }
+        }
+
+        string _authoredEyebrow;
+
+        /// <summary>Whether this panel shows an AI difficulty row at all.</summary>
+        public bool HasAIDifficultyRow => aiDifficultyPicker;
+
+        /// <summary>
+        /// Show or hide the AI difficulty row. Passed either way, never only switched ON - the
+        /// panel is a shared scene object, so a row shown for Skim Race has to be taken back when
+        /// the next card opens (the rule <see cref="SetAddAIAvailable"/> records). A subclass that
+        /// lays something out under the row moves it here.
+        /// </summary>
+        public virtual void SetAIDifficultyAvailable(bool available)
+        {
+            if (aiDifficultyPicker) SetPartShown(aiDifficultyPicker.gameObject, available);
+            // The lineup's AI seats say how the AI flies only where the card offers a difficulty.
+            if (seatLineup && !available) seatLineup.SetDifficulty(null);
+        }
+
+        /// <summary>
+        /// Whether this card's AI reads the difficulty. Rev 7 (approved 2026-10-17: "the AI difficulty row shows, unlocked,
+        /// wherever the mode supports it"): the row is on every card; where the mode's AI has one level it shows LOCKED -
+        /// dimmed, out of pad navigation, on the default - and the AI seats name no difficulty.
+        /// </summary>
+        public virtual void SetAIDifficultyOffered(bool offered)
+        {
+            _aiDifficultyOffered = offered;
+            if (aiDifficultyPicker)
+            {
+                aiDifficultyPicker.SetInteractable(_hostControlsInteractable && offered);
+                if (aiDifficultyPicker.TryGetComponent(out CanvasGroup group) && group.alpha > 0f)
+                {
+                    group.alpha = offered ? 1f : lockedAIDifficultyAlpha;
+                    group.interactable = offered;
+                }
+            }
+            if (seatLineup && !offered) seatLineup.SetDifficulty(null);
+        }
+
+        [Tooltip("The AI difficulty row's opacity on a card whose AI has one level (the row shows there, locked).")]
+        [SerializeField, Range(0f, 1f)] float lockedAIDifficultyAlpha = 0.4f;
+        bool _aiDifficultyOffered = true;
+        bool _hostControlsInteractable = true;
+
+        /// <summary>Light <paramref name="difficulty"/> on the row. Draws only; raises nothing, so
+        /// the modal can mirror the host's pick on a guest without it echoing back.</summary>
+        public virtual void ShowAIDifficulty(CosmicShore.Data.AIDifficulty difficulty)
+        {
+            if (aiDifficultyPicker) aiDifficultyPicker.SetSelected(difficulty);
+            if (seatLineup) seatLineup.SetDifficulty(difficulty);
+        }
+
+        /// <summary>Wired by the modal, so a panel prefab needs no onClick of its own.</summary>
+        public Button LeaderboardButton => leaderboardButton;
+
+        /// <summary>Raise <see cref="OnLeaderboardRequested"/>. Public so the button can also be
+        /// wired straight to it in the inspector.</summary>
+        public void RequestLeaderboard() => OnLeaderboardRequested?.Invoke();
+
+        /// <summary>
+        /// Grey out the controls only the host owns (intensity, AI difficulty, the fill toggle).
+        /// Domain and Start stay live for every player — those are each player's own choices.
         /// </summary>
         public virtual void SetHostControlsInteractable(bool interactable)
         {
@@ -267,6 +525,9 @@ namespace CosmicShore.UI
                 var uiButton = button.GetComponent<Button>();
                 if (uiButton) uiButton.interactable = interactable;
             }
+
+            _hostControlsInteractable = interactable;
+            if (aiDifficultyPicker) aiDifficultyPicker.SetInteractable(interactable && _aiDifficultyOffered);
         }
 
         /// <summary>Bring this panel up, opening its own window when it has one.</summary>
@@ -294,6 +555,8 @@ namespace CosmicShore.UI
 
         void RaiseKickAI(int aiOrdinal) => OnKickAIRequested?.Invoke(aiOrdinal);
         void RaiseAddAIMode(bool on) => OnAddAIModeChanged?.Invoke(on);
+        void RaiseAIDifficultyPicked(CosmicShore.Data.AIDifficulty difficulty) =>
+            OnAIDifficultyPicked?.Invoke(difficulty);
 
         void HandleFillToggle(bool on)
         {

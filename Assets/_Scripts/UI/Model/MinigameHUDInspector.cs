@@ -21,7 +21,7 @@ public class MiniGameHUDViewInspector : Editor
         var variantColor = view.MiniGameHUDType switch
         {
             MiniGameType.Freestyle => new Color(0.2f, 0.6f, 0.2f),// greenish
-            MiniGameType.CellularDuel => new Color(0.6f, 0.2f, 0.6f),// purple
+            MiniGameType.DuelForTheCell => new Color(0.6f, 0.2f, 0.6f),// purple
             _ => headerColor,
         };
         EditorGUILayout.Space(3);

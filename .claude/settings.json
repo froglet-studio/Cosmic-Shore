@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/vessel_studio_nudge.py\" 2>/dev/null || python \"$CLAUDE_PROJECT_DIR/.claude/hooks/vessel_studio_nudge.py\" 2>/dev/null || true",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/ugs_ai_data_nudge.py\" 2>/dev/null || python \"$CLAUDE_PROJECT_DIR/.claude/hooks/ugs_ai_data_nudge.py\" 2>/dev/null || true",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/report_request.py\" 2>/dev/null || python \"$CLAUDE_PROJECT_DIR/.claude/hooks/report_request.py\" 2>/dev/null || true",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/health_status.py\" 2>/dev/null || python \"$CLAUDE_PROJECT_DIR/.claude/hooks/health_status.py\" 2>/dev/null || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

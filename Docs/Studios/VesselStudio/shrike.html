@@ -1,0 +1,1653 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shrike Studio</title>
+<!-- Shrike Studio, round 1: a DESIGN studio (/vessel-studio D2). A page of the Vessel Studio (Docs/Studios/VesselStudio/).
+     What it models:
+       - THE KIT: the design document "Class - Shrike" (Notion, Design Documents / Class Design Documents / Sparrow Chain):
+         a one-touch flyer that "flies incredibly slowly to allow for better aim", docks to any block it runs into, builds
+         Shrike nests (super-shielded blocks round it, a turret flora on top that fires missiles), the Void Lance (a pin-point
+         shot that pierces everything and breaks even super-shielded blocks), the Void Sling (a tether shot that anchors on a
+         block and boosts the Shrike there in one second, docking on arrival), the Targeting Array (paint a target; every
+         nest fires homing missiles at it, one nest health block each, never the last), the four element parameters and the
+         two minigames (Den Defense, Thread the Needle) at four intensities. Every number the document gives only in words
+         is a lab-only proposal and says so (the KIT rows of SHIPPED).
+       - FLIGHT: Shrike.prefab on bleeding-edge, which is a flat Manta copy (SingleStickVesselTransformer, FullAutoAction,
+         BoostAction; no ability map, the class asset under _SO_Assets/_TEMP). Its turn rates are flown as authored; its
+         cruise (60 u/s) is Vessel Config > Flight numbers' second set, the design's slow cruise the first.
+       - LOCKED rules over the document: PvP is petals only (Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md, Garrett 2026-10-10):
+         the document's lance and missile effects on a vessel (slowed, steering disrupted, trail disabled) are retired; a hit
+         on a rival hull is one scored petal hit and nothing else.
+     Everything found about the vessel is in Docs/Studios/SHRIKE.md. -->
+<style>
+  /* Layout: a sniper's hide. The stage owns the screen; the docks hold the settings and the records. */
+  :root {
+    color-scheme: dark;
+    --bg: #0b0d16; --panel: #121524; --panel-2: #181c30; --line: #262b47;
+    --fg: #e9ecff; --muted: #8e95bf;
+    --jade: #13fff2; --ruby: #ff00f9; --gold: #ffa700; --blue: #6680ff;   /* the game's palette; studio-domains.js sets them from it */
+    --charge: #ffd23f; --mass: #ff6a4d; --space: #6aa8ff; --time: #c48bff;
+    --lance: #f4f1ff; --sling: #c48bff; --array: #ff6a6a; --nest: #8dffb0;
+    --easy: #4be38f; --medium: #ffb454; --hard: #ff5c6c;
+  }
+  [hidden] { display: none !important; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); -webkit-text-size-adjust: 100%; }
+  img, canvas { max-width: 100%; }
+  a { color: var(--accent); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .wrap { max-width: 1440px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+  .back { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
+  h1 { margin: 0; text-transform: uppercase; }
+  .round { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; }
+  .sub { color: var(--muted); max-width: 78ch; margin: 0; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; align-items: start; }
+  .layout > section { min-width: 0; }
+  @media (max-width: 1020px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+  #viewport { position: relative; border-radius: 10px; overflow: hidden; background: #05060c; border: 1px solid var(--line); aspect-ratio: 16 / 10; max-width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #c { display: block; width: 100%; max-width: 100%; height: 100%; outline: none; }
+  .hud { position: absolute; inset: 0; pointer-events: none; font-variant-numeric: tabular-nums; }
+  .hud .tl { position: absolute; left: 12px; top: 10px; display: grid; gap: 2px; text-shadow: 0 1px 2px #000; }
+  .hud .big { font-size: 32px; font-weight: 700; line-height: 1; }
+  .hud .lbl { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .board { position: absolute; right: 10px; top: 10px; display: grid; gap: 3px; min-width: 220px; background: #0b0d16b3; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12px; }
+  .board .hd { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .board .pl { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+  .board .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .board .st { color: var(--muted); font-size: 11px; }
+  .kit { position: absolute; left: 12px; bottom: 12px; display: grid; gap: 6px; width: min(340px, 52%); }
+  .pills { display: flex; gap: 4px; }
+  .pill { flex: 1; position: relative; overflow: hidden; text-align: center; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 4px 2px; border-radius: 5px; border: 1px solid #ffffff22; color: var(--muted); background: #0b0d16b3; }
+  .pill > i { position: absolute; left: 0; bottom: 0; height: 2px; background: currentColor; }
+  .pill.ready { color: #0b0d16; font-weight: 700; }
+  .pill.ready.lance { background: var(--lance); border-color: var(--lance); }
+  .pill.ready.sling { background: var(--sling); border-color: var(--sling); }
+  .pill.ready.array { background: var(--array); border-color: var(--array); }
+  .pill.ready.nest { background: var(--nest); border-color: var(--nest); }
+  .pill.on { outline: 2px solid #fff; }
+  .hud .row { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); text-shadow: 0 1px 2px #000; }
+  .hud .row b { color: var(--fg); font-weight: 500; }
+  .feed { position: absolute; right: 10px; bottom: 10px; display: grid; gap: 4px; justify-items: end; max-width: 46%; }
+  .feed div { font-size: 12px; background: #0b0d16cc; border: 1px solid var(--line); padding: 2px 8px; border-radius: 4px; }
+  .camtag { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 11px; color: var(--muted); background: #0b0d16b3; border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
+  .alert { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; background: #ff5c6ccc; color: #1a0306; white-space: nowrap; }
+  .alert.calm { background: #c48bffd9; color: #12041f; }
+  .vignette { position: absolute; inset: 0; box-shadow: inset 0 0 90px 22px #ff1f3ccc; opacity: 0; transition: opacity .2s; }
+  .vignette.on { opacity: 1; }
+  .scope { position: absolute; inset: 0; display: none; }
+  .scope.on { display: block; }
+  .scope::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, transparent 0 36%, #000000d9 38%); }
+  .scope .h, .scope .v { position: absolute; background: #ffffffb3; }
+  .scope .h { left: 30%; right: 30%; top: 50%; height: 1px; }
+  .scope .v { top: 22%; bottom: 22%; left: 50%; width: 1px; }
+  .scope .z { position: absolute; left: 50%; top: calc(50% + 34vmin * .5); transform: translateX(-50%); font-size: 12px; color: #fff; letter-spacing: .1em; }
+  .reticle { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 1px solid #ffffffaa; border-radius: 50%; }
+  .lockbox { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border: 2px solid var(--array); transform: rotate(45deg); display: none; }
+  .lockbox.on { display: block; }
+  .landing { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 2px solid var(--sling); border-radius: 50%; display: none; }
+  .landing.on { display: block; }
+  .landing.clip { border-color: var(--hard); }
+
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: #05060cb3; padding: 16px; }
+  .overlay .card { max-width: 520px; display: grid; gap: 10px; }
+  .overlay .card h2 { margin: 0; text-transform: uppercase; }
+  .overlay .card p { margin: 0; color: var(--muted); }
+  .keys { font-size: 12px; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 6px; padding: 7px 14px; font-weight: 600; }
+  .btn.primary { background: var(--accent); color: #1a1200; border-color: var(--accent); }
+  .btn.small { padding: 4px 10px; font-size: 12px; }
+  .btn[disabled] { opacity: .5; cursor: default; }
+  .stagebtns { position: absolute; left: 12px; bottom: 96px; display: flex; gap: 6px; z-index: 3; }   /* the transport where every studio has it (D29) */
+  .stagebtns .btn { padding: 4px 10px; font-size: 12px; background: #121524d9; }
+  body:not(.dev-phone) .phone-only { display: none !important; }   /* each device sees its own interface only (D26) */
+  .transport { display: flex; gap: 2px; }
+  .transport .btn:disabled { opacity: 0.35; cursor: default; }
+  .transport .btn.on { background: var(--accent); color: #1a1200; opacity: 1; }
+  .transport .btn[aria-pressed="true"] { background: #7fd7ff; color: #04131c; }
+
+  aside { display: grid; gap: 10px; min-width: 0; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
+  .panel h3 { margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; text-transform: uppercase; }
+  .field { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; align-items: center; }
+  .field > span { font-size: 12px; color: var(--muted); }
+  .field select, .field input[type=text] { width: 100%; min-width: 0; }
+  .note { font-size: 12px; color: var(--muted); margin: 0; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  .el { display: grid; grid-template-columns: 70px minmax(0, 1fr) 26px; align-items: center; gap: 8px; }
+  .el label { font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+  .el input { width: 100%; accent-color: var(--accent); }
+  .el output { text-align: right; }
+  .el .what { grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin-top: -4px; display: flex; justify-content: space-between; gap: 8px; }
+  .el .what b { color: var(--fg); font-weight: 500; }
+  .l5 { font-size: 10px; padding: 2px 5px; border-radius: 3px; border: 1px dashed var(--line); color: var(--muted); white-space: nowrap; }
+  .abilities { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .ab { border: 1px solid var(--line); border-radius: 8px; padding: 7px 4px; display: grid; gap: 4px; justify-items: center; text-align: center; background: var(--panel-2); }
+  .ab .ic { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center; font-weight: 700; font-size: 13px; color: var(--accent); }
+  .ab .nm { font-size: 11px; line-height: 1.15; }
+  .ab .st { font-size: 10px; line-height: 1.1; color: var(--muted); }
+  .ab.on { border-color: var(--accent); }
+  .read { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .read span { color: var(--muted); }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .tbl td, .tbl th { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+  .tbl th:first-child, .tbl td:first-child { text-align: left; }
+  .tbl th { color: var(--muted); font-weight: 500; }
+  .tblwrap { overflow-x: auto; }
+  details summary { cursor: pointer; color: var(--muted); }
+  details ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; display: grid; gap: 3px; }
+  .slider { display: grid; grid-template-columns: 110px minmax(0, 1fr) 52px; gap: 8px; align-items: center; font-size: 12px; }
+  .slider span:first-child { color: var(--muted); }
+  .slider span.changed { color: var(--fg); text-decoration: underline dotted; }
+  .slider input { width: 100%; accent-color: var(--accent); }
+  .slider output { text-align: right; }
+  .sub-h { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 4px 0 -4px; }
+  .log { display: grid; gap: 6px; max-height: 220px; overflow: auto; }
+  .log div { font-size: 12px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+  .log b { color: var(--fg); }
+  textarea { width: 100%; min-height: 54px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
+  input[type=text] { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
+
+  .touch { position: absolute; inset: 0; display: none; }
+  body.play .touch { display: block; }
+  body.play .vside-dock, body.play .vside-split, body.play .vside-win { display: none !important; }
+  body.play #viewport { position: fixed; inset: 0; z-index: 50; border-radius: 0; aspect-ratio: auto; border: 0; }
+  body.play .wrap > :not(.layout), body.play aside, body.play .stagebtns, body.play #overlay, body.play .feed, body.play .afternote { display: none !important; }
+  .tz { position: absolute; bottom: 0; top: 30%; left: 0; width: 55%; }
+  .ts { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; border-radius: 50%; border: 2px solid #ffffff55; background: #ffffff0d; pointer-events: none; }
+  .ts.idle { opacity: .45; }
+  .ts > i { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: #ffffff40; }
+  .tbtns { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(64px + env(safe-area-inset-bottom, 0px));   /* above the shared Sync button */ display: grid; grid-template-columns: repeat(2, 76px); gap: 8px; }
+  .tbtns button { height: 52px; border-radius: 14px; border: 1px solid #ffffff33; background: #121524cc; font-size: 12px; font-weight: 700; letter-spacing: .06em; }
+  .tbtns button.held { background: #ffffff33; }
+  .tbtns [data-b="lance"] { color: var(--lance); } .tbtns [data-b="sling"] { color: var(--sling); } .tbtns [data-b="paint"] { color: var(--array); } .tbtns [data-b="dock"] { color: var(--nest); }
+  .tzoom { position: absolute; right: calc(184px + env(safe-area-inset-right, 0px)); bottom: calc(64px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; }
+  .tzoom button { width: 46px; height: 46px; border-radius: 12px; border: 1px solid #ffffff33; background: #121524cc; font-weight: 700; }
+  .tbar { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+  .tbar .btn { padding: 6px 10px; font-size: 13px; background: #121524d9; }
+  .portrait { position: absolute; inset: 0; display: none; place-items: center; background: #05060cf2; text-align: center; padding: 24px; font-size: 22px; font-weight: 700; text-transform: uppercase; }
+  @media (orientation: portrait) { body.play .portrait { display: grid; } }
+  body.play .hud .tl { left: 16px; top: calc(56px + env(safe-area-inset-top, 0px)); }
+  body.play .board { right: 12px; top: calc(56px + env(safe-area-inset-top, 0px)); min-width: 0; }
+  body.play .kit { left: 50%; transform: translateX(-50%); bottom: 10px; width: min(300px, 40%); }
+  body.play .camtag { bottom: auto; top: calc(56px + env(safe-area-inset-top, 0px)); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<script src="studio-theme.js"></script>   <!-- the one Vessel Studio look (D29): after this page's own <style> so it wins -->
+
+<div class="wrap">
+  <header class="top">
+    <a class="back" href="index.html">&larr; Vessel Studio</a>
+    <h1>Shrike Studio</h1>
+    <span class="round">Round 1 · design studio</span>
+    <p class="sub">The Shrike, the fleet's sniper: a one-touch flyer that flies very slowly so it can aim, docks to any block it runs into, and builds nests to dock in. The Void Lance pierces everything, even super-shielded blocks; the Void Sling anchors a tether on a block and hurls the Shrike there in a second; the Targeting Array paints a target and every nest fires homing missiles at it. Fly its two design minigames, Den Defense and Thread the Needle, at four intensities, with AI Shrikes at Easy, Medium or Hard. The kit is the design document; the game's Shrike is still a Manta copy, so every kit number is a lab-only proposal.</p>
+  </header>
+
+  <div class="layout">
+    <section>
+      <div id="viewport">
+        <canvas id="c" tabindex="0" aria-label="Shrike stage"></canvas>
+        <div class="hud">
+          <div class="vignette" id="vignette"></div>
+          <div class="scope" id="scope"><div class="h"></div><div class="v"></div><div class="z" id="zoomTag">x1.0</div></div>
+          <div class="reticle" id="reticle"></div>
+          <div class="lockbox" id="lockbox"></div>
+          <div class="landing" id="landing"></div>
+          <div class="tl">
+            <span class="lbl" id="hWho">You · speed u/s</span><span class="big" id="hSpeed">0</span>
+            <span class="lbl" id="hSub">cruise</span>
+          </div>
+          <div class="board" id="board"></div>
+          <div class="alert" id="hAlert" hidden></div>
+          <div class="kit">
+            <div class="row"><span id="hGoal">Window 1/6</span><b id="hMass">0 destroyed</b></div>
+            <div class="pills">
+              <span class="pill lance" id="pLance">Lance<i></i></span><span class="pill sling" id="pSling">Sling<i></i></span><span class="pill array" id="pArray">Array<i></i></span><span class="pill nest" id="pNest">Nest<i></i></span>
+            </div>
+            <div class="row"><span id="hDock">flying</span><b id="hNests">nests 0</b></div>
+          </div>
+          <div class="feed" id="feed"></div>
+          <div class="camtag" id="camTag">Chase camera</div>
+        </div>
+        <div class="stagebtns"><button class="btn phone-only" id="playBtn" type="button">Back to flying</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes): paused, every pilot and the clock halt, the stage and cameras stay live">▶ Play</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the run, back to the start">■ Stop</button></span></div>
+        <div class="overlay" id="overlay">
+          <div class="card">
+            <h2 id="ovTitle">Thread the Needle, intensity 1</h2>
+            <p id="ovText">Sling through every window and take its crystal.</p>
+            <div class="keys">
+              <span>Gamepad</span><span>left stick steers (docked, it aims) · RT Void Lance · B Void Sling · hold X Targeting Array · Y dock / undock / build a nest · LT / LB zoom out, RB zoom in</span>
+              <span>Keys</span><span>W S pitch · A D turn · Space lance · E sling · hold Q paint · F dock / nest · Z X zoom</span>
+              <span></span><span>Enter play · P pause / resume · R stop · C next camera</span>
+            </div>
+            <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="resetBtn" type="button">Reset</button></div>
+          </div>
+        </div>
+        <div class="touch" id="touch">
+          <div class="tz" id="tzL"><div class="ts idle" id="tsL"><i></i></div></div>
+          <div class="tzoom"><button type="button" data-z="1">+</button><button type="button" data-z="-1">−</button></div>
+          <div class="tbtns"><button type="button" data-b="paint">PAINT</button><button type="button" data-b="lance">LANCE</button><button type="button" data-b="dock">DOCK</button><button type="button" data-b="sling">SLING</button></div>
+          <div class="tbar"><button class="btn" id="tStart" type="button">▶ Play</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">■ Stop</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
+          <div class="portrait">Turn the phone sideways</div>
+        </div>
+      </div>
+      <p class="note afternote" style="margin-top:8px">Show AI thinking draws each AI's line to what it is working on: green = going for the window or the threat, amber = has not noticed it yet, red = misjudged it, violet = working the kit (breaking a panel, tunnelling a cluster, building a nest, painting).</p>
+    </section>
+
+    <aside>
+      <div class="panel" id="grp-scene">
+        <h3>Scene <span style="font-size:11px;letter-spacing:0;text-transform:none" id="courseInfo"></span></h3>
+        <div id="scenePanel"></div>
+      </div>
+
+      <div class="panel" id="grp-world">
+        <h3>Course and waves</h3>
+        <div id="worldSliders" style="display:grid;gap:8px"></div>
+        <p class="note">Lab-only: how the two minigames are laid out. The design gives each intensity in words; these are this studio's numbers for it.</p>
+      </div>
+
+      <div class="panel" id="grp-game">
+        <h3>Minigame</h3>
+        <label class="field"><span>Minigame</span><select id="gameSel" class="arp-seg"><option value="thread">Thread the Needle</option><option value="den">Den Defense</option></select></label>
+        <p class="note" id="gameNote"></p>
+      </div>
+
+      <div class="panel" id="grp-intensity">
+        <h3>Intensity</h3>
+        <div id="intensityPanel"></div>
+        <p class="note" id="intensityNote"></p>
+      </div>
+
+      <div class="panel" id="grp-players">
+        <h3>Players</h3>
+        <div id="playersPanel"></div>
+      </div>
+
+      <div class="panel" id="grp-ai">
+        <h3>AI</h3>
+        <div id="racePanel"></div>
+        <label class="check"><input type="checkbox" id="idleHold"> AI holds my idle hull (3 s without input)</label>
+      </div>
+
+      <div class="panel" id="grp-score">
+        <h3>Scorecard <span class="btns"><button class="btn small" id="scoreBtn" type="button">Score AI levels</button><button class="btn small" id="styleBtn" type="button">Score styles</button></span></h3>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Intensity</th><th>Easy</th><th>Medium</th><th>Hard</th><th>Hard, no sling</th><th>Hard, no array</th></tr></thead><tbody id="score"></tbody></table></div>
+        <p class="note" id="scoreNote">Each cell flies one AI Shrike alone, five seeds, headless. Thread the Needle: median seconds to take every crystal (lower is better). Den Defense: median seconds the den survives (higher is better; 300 is the cap). The last two columns are controls: the Hard pilot that never slings, and the Hard pilot that never paints. In Thread the Needle the sling should be worth a lot and the array only where clusters block windows (I3, I4); in Den Defense the sling should be worth nothing (a drift control) and the array something.</p>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Style (Hard, I4)</th><th>Result</th><th>Accuracy</th><th>Lances</th><th>Slings</th><th>Missiles</th><th>Nests</th><th>Destroyed</th></tr></thead><tbody id="styleScore"></tbody></table></div>
+        <p class="note">Each style flies its own brain at Hard on intensity 4 (where the kit is used most) of the minigame picked in Game Config. Accuracy is the share of lance shots that broke something worth breaking (a panel or cluster block, an asteroid, a creature). The styles should read differently here, or they are one pilot with four names.</p>
+      </div>
+
+      <div class="panel" id="grp-style">
+        <h3>Play style <span id="typeName" style="color:var(--fg);letter-spacing:.04em">Balanced</span></h3>
+        <label class="field"><span>Style</span><select id="styleSel" class="arp-seg"></select></label>
+        <p class="note" id="typeInfo"></p>
+        <label class="check"><input type="checkbox" id="typeToAll"> Rivals fly at these element levels too</label>
+      </div>
+
+      <div class="panel" id="grp-elements">
+        <h3>Element levels <span style="font-size:11px;letter-spacing:0">0–10</span></h3>
+        <div id="elements" style="display:grid;gap:12px"></div>
+        <p class="note">The design gives each element one parameter (below) and no level-5 upgrade: the upgrades are open design slots, and this studio does not invent them.</p>
+      </div>
+
+      <div class="panel" id="grp-kit">
+        <h3>The kit <span class="btns"><button class="btn small" id="kitReset" type="button">Proposed values</button></span></h3>
+        <div id="kitSliders" style="display:grid;gap:8px"></div>
+        <p class="note">Every row is a lab-only proposal for what the design describes in words (its tooltip quotes the words); none ships, because the game has no Shrike kit yet. A changed value is underlined. Record what you settle in Decisions so it can reach the game through <code>/artifact-to-unity</code> once the Shrike is built.</p>
+      </div>
+
+      <div class="panel" id="grp-controls">
+        <h3>Controls</h3>
+        <div class="keys">
+          <span>One touch</span><span>the Shrike is a one-stick flyer: it always flies at its (slow) cruise; the stick only turns it. Docked, the stick turns the nose in place and the nest turns with it</span>
+          <span>Gamepad</span><span>left stick steer / aim · RT Void Lance (hold: fires each time it is ready) · B Void Sling · hold X Targeting Array (paint) · Y: docked, undock; flying, build a nest · LT or LB zoom out, RB zoom in (the scope, docked)</span>
+          <span>Keys</span><span>W S pitch · A D turn · Space lance · E sling · hold Q paint · F dock / nest · Z out, X in</span>
+          <span>Free cam</span><span>drag to turn · wheel to zoom · J L / I K turn · U O zoom</span>
+          <span>Transport</span><span>Enter play · P pause / resume · R stop · C next camera</span>
+          <span>Phone</span><span>opens by itself on a phone: left thumb steers, LANCE / SLING / PAINT / DOCK on the right, + and − zoom</span>
+          <span>Bindings</span><span>lab-only: the game has no Shrike bindings yet (its prefab still carries the Manta's FullAuto gun and Boost)</span>
+        </div>
+      </div>
+
+      <div class="panel" id="grp-feel">
+        <h3>Input feel</h3>
+        <label class="check"><input type="checkbox" id="scopeOn"> Scope when docked (Chase camera): "when stationary the trail silhouette turns into a pip zoomed into the reticle"</label>
+        <label class="check"><input type="checkbox" id="landingOn"> Show where the sling would anchor (a ring on the block; red when the hull would clip something on the way)</label>
+        <label class="field"><span>Zoom speed</span><select id="zoomFeel" class="arp-seg"><option value="1">Slow (x1 to x8 in 3 s)</option><option value="2">Fast (in 1.5 s)</option></select></label>
+        <p class="note">The design's zoom slider sits by the fire button and runs on the triggers or shoulders; here LT / RT, Z / X and the phone's + / −. The landing ring is a studio aid, not in the design.</p>
+      </div>
+
+      <div class="panel" id="grp-abilities">
+        <h3>Ability row</h3>
+        <div class="abilities" id="abilities"></div>
+        <p class="note">The design's four abilities. Which element owns which icon on the game's row (charge, mass, space, time) follows the element parameters: Charge the lance, Mass the nest, Space the array, Time the sling.</p>
+      </div>
+
+      <div class="panel" id="grp-hull">
+        <h3>Hull</h3>
+        <label class="field"><span>Flight numbers</span><select id="shipSet" class="arp-seg"><option value="design">Design: "flies incredibly slowly" (cruise 18 u/s, proposal)</option><option value="prefab">Shrike.prefab (bleeding-edge): cruise 60 u/s, the Manta copy</option></select></label>
+        <p class="note">Both fly the prefab's turn rates (<code>SingleStickVesselTransformer</code>: pitch 60°/s, yaw 40°/s, bank 15°/s, no speed term) and the whole kit. The prefab's own buttons (<code>FullAutoAction</code> 40 rounds/s at 2000 u/s, <code>BoostAction</code> x4) are a placeholder the design replaces and are not flown.</p>
+      </div>
+
+      <div class="panel" id="grp-live">
+        <h3>Live numbers <span id="readWho" style="font-size:11px;letter-spacing:0;text-transform:none"></span></h3>
+        <div class="read" id="read"></div>
+      </div>
+
+      <div class="panel" id="grp-runs">
+        <h3>Runs</h3>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Game</th><th>Pilot</th><th>Style</th><th>Result</th><th>Accuracy</th><th>Destroyed</th></tr></thead><tbody id="runs"></tbody></table></div>
+      </div>
+
+      <div class="panel" id="grp-log">
+        <h3>Decisions</h3>
+        <label class="field"><span>Topic</span><select id="logTopic" class="arp-seg"><option>Flight speed</option><option>Docking and nests</option><option>Void Lance</option><option>Void Sling</option><option>Targeting Array</option><option>Element parameters</option><option>Den Defense</option><option>Thread the Needle</option><option>AI</option><option>Other</option></select></label>
+        <label class="field"><span>Choice</span><input type="text" id="logChoice" placeholder="what you decided"></label>
+        <textarea id="logNote" placeholder="why (optional)"></textarea>
+        <div class="btns"><button class="btn small" id="logRecord" type="button">Record with these settings</button><button class="btn small" id="logCopy" type="button">Copy log</button></div>
+        <p class="note" id="logStatus">Connecting…</p>
+        <div class="log" id="logList"></div>
+      </div>
+
+      <div class="panel" id="grp-about">
+        <details open>
+          <summary>Where the numbers come from, and what is not modelled</summary>
+          <ul>
+            <li><b>The kit</b>: the design document "Class - Shrike" (Notion, Class Design Documents, Sparrow Chain). Docking: "the Shrike will dock to any block it runs into"; one button undocks, or (flying) builds a nest; "docking anywhere on the nest should snap the Shrike to the correct location in the center"; "while docked the Shrike gets a cooldown reduction bonus on all of its abilities, increased on super shielded blocks". The nest: super-shielded blocks round the hull (here a cup behind it, so the nose is always clear) that "rotates with the Shrike", and a turret flora on top that holds health blocks, regrows them (faster while you are docked in it), fires the missiles and, destroyed, reveals its crystal. Void Lance: "a long range pin point shot that pierces through everything and destroys any block it hits, even if super shielded; friendly fire is enabled; a short cooldown". Void Sling: "a long range shot that slings the Shrike across the map to its target; it automatically docks on arrival; cannot tether to crystals or vessels; a moderate cooldown; a 1 second fixed boost pointing at the target". Targeting Array: "paint a target and homing missiles launch from each active nest; one health block per missile, never the last; enemies first, else the centre of mass near the aim; no target, no missiles; the missiles are faster than any class but turn wide". Trail: "thin long blocks that get thicker while boosting with the void sling". Ark range: "medium = 1 cell diameter; at the edge a countdown and a gentle pull back". Every number for these is in The kit, a lab-only proposal.</li>
+            <li><b>Elements</b> (the design's descriptions): Charge "wider radius on void lance"; Mass "more blocks in the nest and shorter trail wavelength"; Space "larger lock-on radius for targeting array"; Time "shorter cooldown on void sling". No persona names or level-5 upgrades are given: the play-style names here (Lancer, Nester, Painter, Slinger) are the studio's.</li>
+            <li><b>Flight</b>: <code>Shrike.prefab</code> on bleeding-edge, a flat Manta copy: <code>SingleStickVesselTransformer</code> (DefaultMinimumSpeed 10, DefaultThrottleScaler 50, so 60 u/s; PitchScaler 60, YawScaler 40, RollScaler 15, RotationThrottleScaler 0). The nose follows the stick's command at 1.5/s (<code>VesselTransformer.LERP_AMOUNT</code>) and speed eases at the same rate; the stick eases as the gamepad strategy does, <code>1 − cos(x·π/2)</code>. No <code>CameraSettingsSO</code>: the chase camera sits 30 u behind, the Manta's (<code>Docs/VESSEL_TAIL_AND_JETS.md</code>), plus a lab-only 6 u lift.</li>
+            <li><b>PvP is petals only</b> (LOCKED, <code>Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md</code>): the design's "slowed, disrupted steering, trail disabled" on a vessel hit by the lance or a missile is retired. A rival hull hit is one scored petal hit, at most one per victim per 0.05 s. Friendly fire still breaks your own and allied MASS. Den Defense is co-operative, so its pilots never hit each other.</li>
+            <li><b>Minigames</b> (the design's two): Thread the Needle ("use your void sling to traverse through obstacles and collect all the crystals"; I1 windows narrowing, I2 a wall-sized panel hiding each window, I3 panels then a mass cluster at the last, I4 a cluster at every window) and Den Defense ("defend your nest from blocks on collision course and fauna"; a wave every 20 s; I1 asteroids, I2 plus single creatures as boss waves, I3 sizes and speeds vary (big ones slow), I4 the creatures more aggressive). The layouts' numbers are lab-only (Course and waves). Each window's anchor plate is a fixture (lab-only) so a lance through the window cannot strand the course.</li>
+            <li><b>AI</b>: input-only (the stick and the four buttons a player has). Easy and Medium are Hard plus <code>SkimRaceDifficulty.asset</code>'s two mistakes in what it believes: a late notice of each new target (0.5 / 0.25 s mean) and a misjudged one (9.9% / 4.5%: it believes a window or a threat is off to one side, and shoots or slings there); and one lab-only Shrike mistake, a small aim error per target (0.5° / 0.2°). The style brains (<code>STYLES[].brain</code>) are lab-only.</li>
+            <li>Not modelled: the game's prism pools and growth animation, elemental crystals and the comeback system, the HyperSea ecology (the creatures and asteroids are lab stand-ins), networking, sound, an asteroid striking a docked hull outside the den, missiles' own pathfinding beyond a look-ahead swerve. Read every number as relative: between levels, styles and kit settings.</li>
+          </ul>
+        </details>
+        <p class="note">Want a change in this studio or a design tried? <a href="index.html#agent">Ask the studio agent</a>.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="studio-look.js"></script>
+<script src="studio-domains.js"></script>
+<script src="studio-ide.js"></script>
+<script src="ai_race_panel.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const lerp = (a, b, t) => a + (b - a) * t, clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+  // ================= the numbers =================
+  // D1: every number names where it came from. The FLIGHT rows are Shrike.prefab's (bleeding-edge); the KIT rows are this
+  // studio's lab-only proposals for what the design document gives only in words. Keys are the names a Unity port should use.
+  const SHIPPED = {
+    // Shrike.prefab: SingleStickVesselTransformer (the Manta copy's numbers)
+    minimumSpeed: 10, throttleScaler: 50, pitchScaler: 60, yawScaler: 40, rollScaler: 15, rotationThrottleScaler: 0,
+    // ---- the kit: LAB-ONLY proposals (Notion "Class - Shrike"); the quoted words are in each slider's tooltip ----
+    cruise: 18,                                   // "the ship flies incredibly slowly to allow for better aim"
+    hullRadius: 3,                                // the hull's contact sphere (docking happens on touch)
+    dockBonus: 1.6, dockBonusShielded: 2.5,       // cooldowns tick this much faster docked; more on super-shielded blocks and nests
+    lanceRange: 2400, lanceCooldown: 1.2, lanceRadiusAt0: 1.5, lanceRadiusAt10: 5,   // Charge: "wider radius on void lance"
+    slingRange: 1600, tetherSpeed: 2400, slingSeconds: 1, slingCooldownAt0: 6, slingCooldownAt10: 2.5,   // Time: "shorter cooldown on void sling"
+    lockRange: 1500, lockConeAt0: 5, lockConeAt10: 14,   // Space: "larger lock-on radius for targeting array" (degrees off the nose)
+    missileSpeed: 220, missileTurn: 140, missileBlast: 18, missileEvery: 0.8, missileLife: 8,
+    nestBlocksAt0: 12, nestBlocksAt10: 32, nestCooldown: 8, nestHealth: 4, nestHealthMax: 12, turretRegen: 6, crystalHealth: 3, maxNests: 3,   // Mass: "more blocks in the nest"
+    trailWaveAt0: 8, trailWaveAt10: 4, trailThin: 0.6, trailThick: 2.6, trailLength: 7,   // Mass: "shorter trail wavelength"
+    arkRange: 1000,                               // "Ark maximum range: medium = 1 cell diameter"
+  };
+  const K = Object.assign({}, SHIPPED), SHIPPED_AT_LOAD = Object.assign({}, SHIPPED);
+  const LAB = { manualClock: false };   // window.__lab (filled at the end of setup)
+  const FOLLOW = 1.5;   // VesselTransformer.LERP_AMOUNT: the nose follows the command, speed eases, both at 1.5/s
+  const HIT_WINDOW = 0.05;   // VesselCombatHitByBullet: at most one petal hit per victim per 0.05 s (PvP is petals only, LOCKED)
+  const DIFF = { Easy: { reaction: 0.5, mistake: 0.099, jitter: 0.5 }, Medium: { reaction: 0.25, mistake: 0.045, jitter: 0.2 }, Hard: { reaction: 0, mistake: 0, jitter: 0 } };   // reaction + mistake: SkimRaceDifficulty.asset; jitter (deg): lab-only
+  const ELEMENTS = [
+    { key: 'charge', name: 'Charge', color: '--charge', param: 'Void Lance radius' },
+    { key: 'mass', name: 'Mass', color: '--mass', param: 'Nest blocks, trail wavelength' },
+    { key: 'space', name: 'Space', color: '--space', param: 'Lock-on radius' },
+    { key: 'time', name: 'Time', color: '--time', param: 'Void Sling cooldown' },
+  ];
+  // Play styles: named types over the element levels (D6), each with its AI brain (D23, lab-only). The names are the
+  // studio's: the design document leaves every persona blank.
+  const STYLES = [
+    { name: 'Balanced', el: null, lv: { charge: 3, mass: 3, space: 3, time: 3 }, brain: { nest: true, paint: true, lanceFirst: false, margin: 1.2, paintAt: 2, guard: false },
+      info: 'Every element at 3. Breaks panels with the lance, builds a nest and paints a cluster, slings when the line is clean.' },
+    { name: 'Lancer', el: 'charge', lv: { charge: 10, mass: 0, space: 0, time: 0 }, brain: { nest: false, paint: false, lanceFirst: true, margin: 1.2, paintAt: 99, guard: false },
+      info: 'Charge. A wider lance (5 u at 10): it tunnels a cluster with the lance alone and never paints. The design\'s "wider radius on void lance".' },
+    { name: 'Nester', el: 'mass', lv: { charge: 0, mass: 10, space: 0, time: 0 }, brain: { nest: true, paint: true, lanceFirst: false, margin: 1.4, paintAt: 1, guard: true },
+      info: 'Mass. Bigger nests (32 blocks at 10) and a denser trail; builds a forward nest in Den Defense to soak hits, and lets the missiles do the work.' },
+    { name: 'Painter', el: 'space', lv: { charge: 0, mass: 0, space: 10, time: 0 }, brain: { nest: true, paint: true, lanceFirst: false, margin: 1.2, paintAt: 1, guard: false },
+      info: 'Space. A wide lock-on cone (14° at 10): it paints every threat it can and keeps the lock through clutter.' },
+    { name: 'Slinger', el: 'time', lv: { charge: 0, mass: 0, space: 0, time: 10 }, brain: { nest: true, paint: true, lanceFirst: false, margin: 0.6, paintAt: 3, guard: false },
+      info: 'Time. The sling back in 2.5 s: it takes tighter lines and slings sooner, and pays for it when it clips a frame.' },
+    { name: 'Shipped', el: null, lv: { charge: 0, mass: 0, space: 0, time: 0 }, brain: { nest: true, paint: true, lanceFirst: false, margin: 1.2, paintAt: 2, guard: false },
+      info: 'The start of a match: every element at 0.' },
+  ];
+  const GAMES = {
+    thread: { name: 'Thread the Needle', note: 'Sling through every window and take its crystal. Main objective: time. Side objective: mass destroyed (it breaks ties). A crystal resets your sling and gives each of your nests 3 health blocks. Rewards in the design: Space and Time.',
+      ladder: { 1: 'open windows, each narrower', 2: 'a wall-sized panel hides each window', 3: 'panels, then a mass cluster at the last', 4: 'a mass cluster at every window' } },
+    den: { name: 'Den Defense', note: 'Defend your den (a pre-built nest) from asteroids on collision course and creatures for as long as you can; a wave every 20 s. Main objective: time survived. Side objective: don\'t miss shots (accuracy). Rewards in the design: Mass and Charge.',
+      ladder: { 1: 'asteroids only', 2: 'plus single creatures as boss waves', 3: 'asteroid sizes and speeds vary', 4: 'the creatures more aggressive' } },
+  };
+  const WORLD = {   // lab-only layout of the two minigames (Course and waves)
+    walls: 6, spacing: 240, border: 24, block: 6, clusterR: 20,
+    waveSeconds: 20, spawnEvery: 3.6, astSpeed: 30, denBlocks: 40, denHealth: 6, faunaHp: 3, coreDamage: 3,
+  };
+  const CAP = 300;   // a run ends at 300 s
+  const DOMAINS = VesselStudioDomains.list.map((d) => ({ key: d.key, color: d.hex, css: d.color, name: d.name }));   // the game's palette (studio-domains.js)
+  const domainOf = (k) => DOMAINS.find((d) => d.key === k) || DOMAINS[0];
+
+  // ================= settings =================
+  const S = { game: 'thread', course: 1, players: [{ ai: false, domain: 'jade', level: 'Hard', style: 'Balanced' }], view: 0, cam: 'Chase', speed: 1, thinking: true, autoRestart: false,
+    idleHold: true, typeToAll: false, ship: 'design', style: 'Balanced', lv: Object.assign({}, STYLES[0].lv), kit: {}, world: {}, scope: true, landing: true, zoomFeel: 1 };
+  const LS = 'cs.studio.shrike.v1';
+  try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) Object.assign(S, s, { lv: Object.assign({}, S.lv, s.lv || {}), kit: s.kit || {}, world: s.world || {} }); } catch (e) { /* storage blocked */ }
+  for (const k in S.kit) if (k in K) K[k] = S.kit[k];
+  Object.assign(WORLD, S.world);
+  function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { /* storage blocked */ } }
+  const styleOf = (n) => STYLES.find((s) => s.name === n) || STYLES[0];
+  function mults(lv) {
+    const f = (k) => clamp((lv[k] || 0) / 10, 0, 1);
+    return {
+      lanceR: lerp(K.lanceRadiusAt0, K.lanceRadiusAt10, f('charge')),
+      nestBlocks: Math.round(lerp(K.nestBlocksAt0, K.nestBlocksAt10, f('mass'))), wave: lerp(K.trailWaveAt0, K.trailWaveAt10, f('mass')),
+      cone: lerp(K.lockConeAt0, K.lockConeAt10, f('space')), slingCd: lerp(K.slingCooldownAt0, K.slingCooldownAt10, f('time')),
+    };
+  }
+  const cruiseOf = () => S.ship === 'prefab' ? K.minimumSpeed + K.throttleScaler : K.cruise;
+  const CHASE = [0, 6, -30];   // no CameraSettingsSO: the Manta's 30 u behind (inherited), plus a lab-only 6 u lift
+  function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+
+  // ================= the world: pure, no rendering, so the scorecard runs it headless (D3) =================
+  const V = THREE.Vector3, Q = THREE.Quaternion, R = Math.PI / 180;
+  function Grid(cell) { this.cell = cell; this.map = new Map(); }
+  Grid.prototype.h = function (x, y, z) { return ((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) | 0; };
+  Grid.prototype.add = function (p) { const c = this.cell; const k = this.h(Math.floor(p.pos.x / c), Math.floor(p.pos.y / c), Math.floor(p.pos.z / c)); let a = this.map.get(k); if (!a) this.map.set(k, a = []); a.push(p); p.k = k; };
+  Grid.prototype.remove = function (p) { const a = this.map.get(p.k); if (!a) return; const i = a.indexOf(p); if (i >= 0) a.splice(i, 1); };
+  Grid.prototype.near = function (pos, r, out) {
+    const c = this.cell, n = Math.ceil(r / c), cx = Math.floor(pos.x / c), cy = Math.floor(pos.y / c), cz = Math.floor(pos.z / c);
+    for (let x = cx - n; x <= cx + n; x++) for (let y = cy - n; y <= cy + n; y++) for (let z = cz - n; z <= cz + n; z++) { const a = this.map.get(this.h(x, y, z)); if (a) for (const p of a) out.push(p); }
+    return out;
+  };
+  function basisQuat(fwd) { const s = new V().crossVectors(fwd, new V(0, 1, 0)); if (s.lengthSq() < 1e-4) s.set(1, 0, 0); s.normalize(); const u = new V().crossVectors(s, fwd).normalize(); return new Q().setFromRotationMatrix(new THREE.Matrix4().makeBasis(s, u, fwd.clone().negate())); }
+  const AX = new V(1, 0, 0), AY = new V(0, 1, 0), AZ = new V(0, 0, 1), dq = new Q();
+  const fwdOf = (q) => new V(0, 0, -1).applyQuaternion(q), upOf = (q) => new V(0, 1, 0).applyQuaternion(q), rightOf = (q) => new V(1, 0, 0).applyQuaternion(q);
+
+  // ---- blocks: oriented boxes. Small ones live in a grid, big ones (panels) in a list, nest blocks with their nest ----
+  const _l = new V(), _d = new V(), BIG = 14;
+  function mkBox(W, pos, quat, size, o) {
+    const p = Object.assign({ pos: pos.clone(), quat: quat.clone(), iq: quat.clone().invert(), half: new V(size[0] / 2, size[1] / 2, size[2] / 2), shield: 0, kind: 'block', owner: -1, dead: false, flash: 0, st: 0, t0: W.t, nest: null, fixture: false }, o || {});
+    p.r = p.half.length(); return p;
+  }
+  function addPrism(W, p) { W.prisms.push(p); if (p.r > BIG) W.bigs.push(p); else W.grid.add(p); W.dirty = true; return p; }
+  function killPrism(W, p, by) {
+    if (p.dead || p.fixture) return false;
+    p.dead = true; W.dirty = true; if (!p.nest && p.r <= BIG) W.grid.remove(p);
+    if (by) { by.destroyed++; if (p.kind === 'cluster' || p.kind === 'panel') by.massBonus++; }
+    return true;
+  }
+  const toLocal = (p, x, out) => out.copy(x).sub(p.pos).applyQuaternion(p.iq);
+  function boxDist(p, x) { toLocal(p, x, _l); return Math.hypot(Math.max(Math.abs(_l.x) - p.half.x, 0), Math.max(Math.abs(_l.y) - p.half.y, 0), Math.max(Math.abs(_l.z) - p.half.z, 0)); }
+  function boxClosest(p, x) { toLocal(p, x, _l); return new V(clamp(_l.x, -p.half.x, p.half.x), clamp(_l.y, -p.half.y, p.half.y), clamp(_l.z, -p.half.z, p.half.z)).applyQuaternion(p.quat).add(p.pos); }
+  function rayBox(p, o, d, pad, maxT) {   // the entry distance of a ray (thickened by pad) into the box, or null
+    toLocal(p, o, _l); _d.copy(d).applyQuaternion(p.iq);
+    let t0 = 0, t1 = maxT;
+    for (const ax of ['x', 'y', 'z']) {
+      const h = p.half[ax] + pad, oo = _l[ax], dd = _d[ax];
+      if (Math.abs(dd) < 1e-9) { if (oo < -h || oo > h) return null; continue; }
+      let a = (-h - oo) / dd, b = (h - oo) / dd; if (a > b) { const t = a; a = b; b = t; }
+      if (a > t0) t0 = a; if (b < t1) t1 = b; if (t0 > t1) return null;
+    }
+    return t0;
+  }
+  function raySphere(o, d, c, r, len) { const ox = c.x - o.x, oy = c.y - o.y, oz = c.z - o.z, t = ox * d.x + oy * d.y + oz * d.z; if (t < -r || t > len + r) return null; const d2 = ox * ox + oy * oy + oz * oz - t * t; return d2 <= r * r ? Math.max(0, t) : null; }
+  function eachNear(W, pos, r, fn) {   // every live block within r (+ its size) of pos; fn returning true stops
+    const st = ++W.stamp;
+    for (const p of W.grid.near(pos, r + BIG, [])) if (!p.dead && p.st !== st) { p.st = st; if (fn(p)) return true; }
+    for (const p of W.bigs) if (!p.dead && p.pos.distanceTo(pos) < r + p.r) { if (fn(p)) return true; }
+    for (const n of W.nests) if (!n.dead && n.c.distanceTo(pos) < r + n.R) for (const p of n.blocks) if (!p.dead && fn(p)) return true;
+    return false;
+  }
+  function rayBlocks(W, o, d, len, pad, fn) {   // every live block a ray (thickened by pad) crosses within len: fn(p, t)
+    const st = ++W.stamp, step = 18;
+    for (let t = 0; t < len + step; t += step) {
+      const c = o.clone().addScaledVector(d, Math.min(t, len));
+      for (const p of W.grid.near(c, step + pad + BIG, [])) if (!p.dead && p.st !== st) { p.st = st; const h = rayBox(p, o, d, pad, len); if (h != null) fn(p, h); }
+    }
+    for (const p of W.bigs) if (!p.dead && raySphere(o, d, p.pos, p.r + pad, len) != null) { const h = rayBox(p, o, d, pad, len); if (h != null) fn(p, h); }
+    for (const n of W.nests) if (!n.dead && raySphere(o, d, n.c, n.R + pad, len) != null) for (const p of n.blocks) if (!p.dead) { const h = rayBox(p, o, d, pad, len); if (h != null) fn(p, h); }
+  }
+
+  // ---- the nest: super-shielded blocks in a cup behind the hull (the nose always clear), a turret flora on top ----
+  function buildNest(W, owner, c, q, n, isDen) {
+    const Rn = isDen ? 12 : 9, s = isDen ? 6 : 4.5;
+    const nest = { owner, c: c.clone(), q: q.clone(), R: Rn + s, isDen, blocks: [], locals: [], dead: false, health: isDen ? WORLD.denHealth : K.nestHealth, regen: 0, fireCd: 0,
+      turret: { local: new V(0, Rn + 2, Rn * 0.45), pos: new V(), alive: true }, dockedBy: -1, born: W.t };
+    const zMin = isDen ? -0.6 : -0.25;   // the shell wraps forward past the hull's sides; its mouth (the nose's way out) turns with the Shrike
+    for (let i = 0; i < n; i++) {
+      const z = 1 - (i + 0.5) / n * (1 - zMin), rr = Math.sqrt(1 - z * z), ph = i * 2.39996;
+      nest.locals.push(new V(rr * Math.cos(ph), rr * Math.sin(ph), z).multiplyScalar(Rn));
+      nest.blocks.push(mkBox(W, c, q, [s, s, s], { shield: 2, kind: 'nest', owner, nest }));
+    }
+    poseNest(nest); W.nests.push(nest); W.dirty = true; return nest;
+  }
+  function poseNest(n) {
+    n.locals.forEach((L, i) => { const b = n.blocks[i]; b.pos.copy(L).applyQuaternion(n.q).add(n.c); b.quat.copy(n.q); b.iq.copy(n.q).invert(); });
+    n.turret.pos.copy(n.turret.local).applyQuaternion(n.q).add(n.c);
+  }
+  function killTurret(W, n) {
+    if (!n.turret.alive) return; n.turret.alive = false;
+    W.loose.push({ pos: n.turret.pos.clone(), id: 'turret' + W.nests.indexOf(n) + '-' + Math.round(W.t * 10) });   // "revealing its crystal just like any other flora"
+    if (!n.isDen && n.blocks.every((b) => b.dead)) n.dead = true;
+  }
+
+  // ---- Thread the Needle: frames with a window, an anchor plate behind each (a fixture), panels and clusters by intensity ----
+  function buildThread(W, I) {
+    const r = W.rand, N = WORLD.walls, B = WORLD.block, hullR = K.hullRadius; W.walls = [];
+    let from = new V(0, 0, 0), n = new V(0, 0, -1);
+    for (let k = 0; k < N; k++) {
+      const c = from.clone().addScaledVector(n, WORLD.spacing), q = basisQuat(n), side = rightOf(q), up = upOf(q);
+      const win = B * Math.max(2, Math.round((I === 1 ? 42 - k * 30 / Math.max(1, N - 1) : 30 - k * 12 / Math.max(1, N - 1)) / B));   // I1 narrows 42 -> 12 u; else 30 -> 18
+      const outer = win + 2 * WORLD.border, cells = Math.round(outer / B);
+      for (let i = 0; i < cells; i++) for (let j = 0; j < cells; j++) {
+        const lx = (i - (cells - 1) / 2) * B, ly = (j - (cells - 1) / 2) * B;
+        if (Math.abs(lx) < win / 2 && Math.abs(ly) < win / 2) continue;
+        addPrism(W, mkBox(W, c.clone().addScaledVector(side, lx).addScaledVector(up, ly), q, [B * 0.96, B * 0.96, 4], { kind: 'frame' }));
+      }
+      const plate = addPrism(W, mkBox(W, c.clone().addScaledVector(n, 34), q, [30, 30, 4], { kind: 'plate', shield: 2, fixture: true }));
+      const panel = (I === 2 || (I === 3 && k < N - 1)) ? addPrism(W, mkBox(W, c.clone().addScaledVector(n, -4), q, [outer, outer, 2], { kind: 'panel' })) : null;
+      let cluster = null;
+      if (I === 4 || (I === 3 && k === N - 1)) {
+        cluster = c.clone().addScaledVector(n, -30); const CR = WORLD.clusterR, cb = 5;
+        for (let x = -CR; x <= CR; x += cb) for (let y = -CR; y <= CR; y += cb) for (let z = -CR; z <= CR; z += cb)
+          if (x * x + y * y + z * z <= CR * CR) addPrism(W, mkBox(W, cluster.clone().addScaledVector(side, x).addScaledVector(up, y).addScaledVector(n, z), q, [4.6, 4.6, 4.6], { kind: 'cluster' }));
+      }
+      W.walls.push({ c, n: n.clone(), q, win, outer, plate, panel, cluster, k });
+      // the next window: out to the side of this plate, so the docked Shrike turns and aims (the course meanders, never back on itself)
+      const dock = plate.pos.clone().addScaledVector(n, -(2 + hullR)), a0 = r() * Math.PI * 2;
+      let best = null;
+      for (let m = 0; m < 8; m++) {
+        const a = a0 + m * Math.PI / 4, t = side.clone().multiplyScalar(Math.cos(a)).addScaledVector(up, Math.sin(a) * 0.6), dir = t.addScaledVector(n, -0.15).normalize();
+        const cand = dock.clone().addScaledVector(dir, WORLD.spacing); let sc = Infinity;
+        for (const w of W.walls) { sc = Math.min(sc, cand.distanceTo(w.c), cand.distanceTo(w.plate.pos)); }
+        sc = Math.min(sc, cand.length() * 1.2);
+        if (!best || sc > best.sc) best = { sc, dir };
+      }
+      from = dock; n = best.dir;
+    }
+    W.start = { pos: new V(0, 0, 0), dir: new V(0, 0, -1) };
+    const ctr = new V(); for (const w of W.walls) ctr.add(w.c); ctr.divideScalar(N);
+    let rad = 0; for (const w of W.walls) rad = Math.max(rad, w.c.distanceTo(ctr)); rad = Math.max(rad, ctr.length());
+    W.arena = { c: ctr, r: Math.max(K.arkRange, rad + 200) };
+  }
+  // ---- Den Defense: the den (a pre-built nest with more blocks) at the centre; asteroids and creatures come at it ----
+  function buildDen(W) {
+    W.den = buildNest(W, -1, new V(0, 0, 0), basisQuat(new V(0, 0, -1)), WORLD.denBlocks, true);
+    W.arena = { c: new V(), r: K.arkRange }; W.nextSpawn = 2; W.wave = 0; W.coreR = 6;
+  }
+  function spawnAsteroid(W) {
+    const r = W.rand, I = W.I, el = I <= 2 ? (r() * 2 - 1) * 0.6 : (r() * 2 - 1) * 1.2, az = r() * Math.PI * 2;
+    const dir = new V(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
+    const pos = W.den.c.clone().addScaledVector(dir, 650), aim = W.den.c.clone().add(new V(r() * 2 - 1, r() * 2 - 1, r() * 2 - 1).multiplyScalar(22));
+    let rad = 6, spd = WORLD.astSpeed;
+    if (I >= 3) { rad = lerp(4, 14, r()); spd = WORLD.astSpeed * lerp(1.6, 0.6, (rad - 4) / 10); }   // big ones slow, small ones fast (the design's I3)
+    W.asteroids.push({ pos, vel: aim.sub(pos).normalize().multiplyScalar(spd), r: rad, hp: rad > 10 ? 2 : 1, dead: false, id: W.astN++, last: null, spin: r() * 6 });
+  }
+  function spawnFauna(W) {
+    const r = W.rand, az = r() * Math.PI * 2, el = (r() * 2 - 1) * 0.5;
+    const fierce = W.I >= 4;
+    W.fauna.push({ pos: W.den.c.clone().add(new V(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)).multiplyScalar(620)), vel: new V(), hp: WORLD.faunaHp + (fierce ? 1 : 0),
+      speed: fierce ? 30 : 18, biteEvery: fierce ? 0.6 : 1.2, bite: 0, dead: false, id: 'f' + W.faunaN++, spin: r() * 6 });
+  }
+
+  function makeWorld(game, I, pilotsSpec, seed) {
+    const W = { game, I, prisms: [], bigs: [], grid: new Grid(24), nests: [], pilots: [], missiles: [], beams: [], blasts: [], asteroids: [], fauna: [], loose: [], t: 0, rand: rng(seed), events: [], over: false, dirty: true, watch: 0, stamp: 0, astN: 0, faunaN: 0, den: null, denFell: null };
+    if (game === 'thread') buildThread(W, I); else buildDen(W);
+    pilotsSpec.forEach((spec, i) => {
+      const P = {
+        i, spec, domain: domainOf(spec.domain), pos: new V(), quat: new Q(), cmd: new Q(), speed: 0, push: new V(),
+        lv: Object.assign({}, spec.lv), m: mults(spec.lv), style: styleOf(spec.style),
+        docked: null, dockGrace: 0, sling: null, tether: null, lanceCd: 0, slingCd: 0, nestCd: 0, painting: false, lock: null, lockScan: 0, zoom: 1,
+        crystals: 0, crystal: null, finishT: null, destroyed: 0, massBonus: 0, lances: 0, lanceHits: 0, slings: 0, missiles: 0, nests: 0, hits: 0, petalsLost: 0, lastHitAt: -1,
+        trailAcc: 0, outT: 0, was: {}, idle: 0, held: false, aim: null, aiState: '', mistakes: 0, tunnelK: 0,
+        hc: spec.ai ? { level: DIFF[spec.ai], rng: rng(seed * 31 + i * 7 + 1), tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new V(), unnoticed: false } : null,
+        noSling: !!spec.noSling, noArray: !!spec.noArray,
+      };
+      W.pilots.push(P);
+      if (game === 'thread') {
+        P.pos.copy(W.start.pos).add(new V((i - (pilotsSpec.length - 1) / 2) * 14, 0, 0)); P.quat.copy(basisQuat(W.start.dir)); P.cmd.copy(P.quat);
+        P.crystal = { pos: W.walls[0].c.clone(), id: 0 };
+      } else if (i === 0) { P.quat.copy(W.den.q); P.cmd.copy(P.quat); dock(W, P, W.den.blocks[0]); }
+      else {   // the other players defend from nests of their own round the den
+        const a = i * Math.PI * 2 / 3, at = new V(Math.cos(a) * 70, 18, Math.sin(a) * 70), q = basisQuat(at.clone().normalize());
+        P.pos.copy(at); P.quat.copy(q); P.cmd.copy(q); const n = buildNest(W, i, at, q, P.m.nestBlocks, false); P.nests++; dock(W, P, n.blocks[0]);
+      }
+    });
+    return W;
+  }
+
+  // ---- the handicap: SkimRaceHandicap's two mistakes on what the AI believes (D24), plus a lab-only aim error ----
+  function believe(W, P, target, id, offR) {
+    const h = P.hc; if (!target) return null;
+    if (!h) return target;
+    if (h.tracking !== id) {
+      h.tracking = id; h.noticeAt = W.t + h.level.reaction * lerp(0.5, 1.5, h.rng()); h.misjudged = h.rng() < h.level.mistake;
+      const dist = target.distanceTo(P.pos), s = new V(h.rng() * 2 - 1, h.rng() * 2 - 1, h.rng() * 2 - 1).normalize();
+      h.jit = s.clone().multiplyScalar(dist * Math.tan(h.level.jitter * R * h.rng()));
+      if (h.misjudged) { P.mistakes++; h.off.copy(new V(h.rng() * 2 - 1, h.rng() * 2 - 1, h.rng() * 2 - 1).normalize().multiplyScalar(offR)); h.until = W.t + 6; }
+    }
+    h.unnoticed = W.t < h.noticeAt; if (h.unnoticed) return null;
+    if (h.misjudged && W.t > h.until) h.misjudged = false;
+    return target.clone().add(h.jit).add(h.misjudged ? h.off : new V());
+  }
+
+  // ================= one pilot's step: flight, docking, the four abilities =================
+  const ease2 = (x) => Math.sign(x) * (1 - Math.cos(clamp(Math.abs(x), 0, 1) * Math.PI / 2));   // BaseInputStrategy: Ease
+  const say = (W, P, m) => { if (P.i === W.watch) W.events.push(m); };
+  function cdBonus(P) {
+    if (!P.docked) return 1;
+    const p = P.docked.p; return P.docked.nest || (p && (p.shield === 2 || p.fixture)) ? K.dockBonusShielded : K.dockBonus;
+  }
+  function dock(W, P, p) {
+    P.sling = null; P.speed = 0; P.push.set(0, 0, 0);
+    if (p.nest && !p.nest.dead && p.nest.dockedBy < 0) {   // "docking anywhere on the nest snaps the Shrike to the correct location in the center"
+      P.docked = { nest: p.nest }; p.nest.dockedBy = P.i; P.pos.copy(p.nest.c); p.nest.q.copy(P.quat); poseNest(p.nest); W.dirty = true;
+      say(W, P, p.nest.isDen ? 'Docked in the den' : 'Docked in a nest');
+    } else {
+      const x = boxClosest(p, P.pos), nrm = P.pos.clone().sub(x); if (nrm.lengthSq() < 1e-6) nrm.copy(fwdOf(P.quat)).negate(); nrm.normalize();
+      P.pos.copy(x).addScaledVector(nrm, K.hullRadius); P.docked = { p, local: toLocal(p, P.pos, new V()), n: nrm };
+      say(W, P, 'Docked' + (p.kind === 'plate' ? ' on the anchor plate' : p.kind === 'frame' ? ' on the frame' : ''));
+    }
+    if (P.hc && !(P.docked.p && P.docked.p.kind === 'plate')) P.hc.misjudged = false;   // a misjudged line ends when it hits something
+  }
+  function undock(W, P, push) {
+    const d = P.docked; if (!d) return;
+    if (d.nest) d.nest.dockedBy = -1;
+    P.docked = null; P.dockGrace = 0.5;
+    if (push) P.push.copy(d.n || fwdOf(P.quat)).multiplyScalar(8);
+  }
+  function ownNests(W, P) { return W.nests.filter((n) => !n.dead && (n.owner === P.i || n.isDen)); }
+  function pickUp(W, P, from, to) {   // crystals swept by the hull's movement this substep
+    const hit = (c, rr) => { const ab = to.clone().sub(from), t = clamp(c.clone().sub(from).dot(ab) / Math.max(1e-6, ab.lengthSq()), 0, 1); return from.clone().addScaledVector(ab, t).distanceTo(c) < rr; };
+    if (P.crystal && hit(P.crystal.pos, 7 + K.hullRadius)) {
+      P.crystals++; P.slingCd = 0; for (const n of ownNests(W, P)) n.health = Math.min(K.nestHealthMax, n.health + K.crystalHealth);   // "resetting your void sling"; "each nest 3 health blocks"
+      if (P.crystals >= W.walls.length) { P.finishT = W.t; P.crystal = null; say(W, P, 'All crystals in ' + W.t.toFixed(1) + ' s'); }
+      else { P.crystal = { pos: W.walls[P.crystals].c.clone(), id: P.crystals }; say(W, P, 'Crystal ' + P.crystals + '/' + W.walls.length + ': sling reset'); }
+    }
+    for (const c of W.loose) if (!c.taken && hit(c.pos, 7 + K.hullRadius)) { c.taken = true; for (const n of ownNests(W, P)) n.health = Math.min(K.nestHealthMax, n.health + K.crystalHealth); say(W, P, 'Turret crystal: +' + K.crystalHealth + ' health per nest'); }
+  }
+  function contact(W, P) {   // the first block the hull is touching (not your own fresh trail), or null
+    let hit = null;
+    eachNear(W, P.pos, K.hullRadius + 1, (p) => {
+      if (p.kind === 'trail' && p.owner === P.i && W.t - p.t0 < 1) return false;
+      if (P.sling && P.sling.from && p === P.sling.from && P.sling.went < 8) return false;
+      if (boxDist(p, P.pos) < K.hullRadius) { hit = p; return true; }
+      return false;
+    });
+    return hit;
+  }
+  function layTrail(W, P, dir, thick) {   // "thin long blocks that get thicker while boosting with the void sling"
+    const s = thick ? K.trailThick : K.trailThin;
+    addPrism(W, mkBox(W, P.pos.clone().addScaledVector(dir, -(K.hullRadius + K.trailLength / 2 + 1)), basisQuat(dir), [s, s, K.trailLength], { kind: 'trail', owner: P.i, domain: P.domain.key }));
+  }
+  function move(W, P, delta, thick) {   // swept: substeps of 2 u, so a 1600 u/s sling never tunnels a block (L-ECO-4)
+    const len = delta.length(); if (len < 1e-6) return;
+    const n = Math.ceil(len / 2), step = delta.clone().divideScalar(n), dir = delta.clone().normalize();
+    for (let i = 0; i < n; i++) {
+      const from = P.pos.clone(); P.pos.add(step); pickUp(W, P, from, P.pos);
+      P.trailAcc += len / n; while (P.trailAcc >= P.m.wave) { P.trailAcc -= P.m.wave; layTrail(W, P, dir, thick); }
+      if (P.sling) { P.sling.went += len / n; }
+      if (P.dockGrace <= 0) { const p = contact(W, P); if (p) { dock(W, P, p); return; } }
+    }
+  }
+  function fireLance(W, P) {
+    const f = fwdOf(P.quat), o = P.pos.clone().addScaledVector(f, 4), r = P.m.lanceR, len = K.lanceRange;
+    P.lanceCd = K.lanceCooldown; P.lances++; let useful = 0;
+    rayBlocks(W, o, f, len, r, (p) => {
+      if (P.docked && (P.docked.p === p || (P.docked.nest && p.nest === P.docked.nest))) return;
+      if (killPrism(W, p, P) && (p.kind === 'cluster' || p.kind === 'panel' || (W.game === 'thread' && p.kind === 'frame'))) useful++;   // "destroys any block it hits, even if super shielded"
+    });
+    for (const n of W.nests) if (n.turret.alive && !(P.docked && P.docked.nest === n) && raySphere(o, f, n.turret.pos, 3 + r, len) != null) killTurret(W, n);
+    for (const a of W.asteroids) if (!a.dead && raySphere(o, f, a.pos, a.r + r, len) != null) { a.dead = true; useful++; P.destroyed++; }
+    for (const c of W.fauna) if (!c.dead && raySphere(o, f, c.pos, 3 + r, len) != null) { c.hp--; useful++; if (c.hp <= 0) { c.dead = true; say(W, P, 'Creature down'); } }
+    if (W.game === 'thread') for (const O of W.pilots) if (O !== P && raySphere(o, f, O.pos, K.hullRadius + r, len) != null) { petalHit(W, P, O); useful++; }
+    if (useful) P.lanceHits++;
+    W.beams.push({ a: o, b: o.clone().addScaledVector(f, len), t: 0, color: P.domain.color, w: r });
+  }
+  function petalHit(W, by, O) { if (W.t - O.lastHitAt < HIT_WINDOW) return; O.lastHitAt = W.t; by.hits++; O.petalsLost++; say(W, by, 'Petal hit on ' + O.domain.name); }
+  function stepTether(W, P, dt) {
+    const T = P.tether; if (!T) return;
+    const step = K.tetherSpeed * dt; let best = null;
+    rayBlocks(W, T.pos, T.dir, step, 0, (p, t) => {   // blocks only: "the Void Sling cannot tether to crystals or vessels"
+      if (p.kind === 'trail' && p.owner === P.i && W.t - p.t0 < 1) return;
+      if (P.docked && (P.docked.p === p || (P.docked.nest && p.nest === P.docked.nest))) return;
+      if (!best || t < best.t) best = { p, t };
+    });
+    if (best) {
+      const x = T.pos.clone().addScaledVector(T.dir, best.t); P.tether = null;
+      const dist = x.distanceTo(P.pos) - K.hullRadius; if (dist < 1) return;
+      const from = P.docked ? (P.docked.p || null) : null; if (P.docked) undock(W, P, false);
+      const dir = x.clone().sub(P.pos).normalize();
+      P.sling = { p: best.p, x, dir, dist, went: 0, speed: dist / K.slingSeconds, from };   // "a 1 second fixed boost (very big) pointing at the target"
+      P.cmd.copy(basisQuat(dir)); P.slings++; say(W, P, 'Sling: ' + Math.round(dist) + ' u'); return;
+    }
+    T.pos.addScaledVector(T.dir, step); T.went += step;
+    if (T.went > K.slingRange) { P.tether = null; say(W, P, 'Sling: nothing to anchor'); }
+  }
+  function stepSling(W, P, dt) {
+    const L = P.sling;
+    if (L.p.dead) { P.sling = null; P.speed = cruiseOf(); say(W, P, 'Sling anchor gone'); return; }
+    const mv = Math.min(L.speed * dt, L.dist - L.went); P.speed = L.speed;
+    move(W, P, L.dir.clone().multiplyScalar(mv), true);
+    if (P.sling && P.sling.went >= P.sling.dist - 0.01) dock(W, P, L.p);
+  }
+  // ---- the Targeting Array: enemies first, else the centre of mass near the aim (L: lock point) ----
+  function lockPoint(L) { return L.kind === 'mass' ? L.point : L.ref.pos; }
+  function lockAlive(L) { return L.kind === 'mass' || !L.ref.dead; }
+  function updateLock(W, P, dt) {
+    if (!P.painting) { P.lock = null; return; }
+    const f = fwdOf(P.quat), cone = P.m.cone * R, angOf = (x) => { const d = x.clone().sub(P.pos), l = d.length(); return l > K.lockRange || l < 1 ? 9 : Math.acos(clamp(d.dot(f) / l, -1, 1)); };
+    if (P.lock && P.lock.kind !== 'mass' && lockAlive(P.lock) && angOf(lockPoint(P.lock)) < cone * 1.6) return;   // keep an enemy lock through clutter
+    let best = null, ba = cone;
+    const consider = (kind, ref) => { const a = angOf(ref.pos); if (a < ba) { ba = a; best = { kind, ref }; } };
+    for (const a of W.asteroids) if (!a.dead) consider('ast', a);
+    for (const c of W.fauna) if (!c.dead) consider('fauna', c);
+    if (W.game === 'thread') for (const O of W.pilots) if (O !== P) consider('vessel', O);
+    if (best) { if (!P.lock || P.lock.ref !== best.ref) P.lockId = (P.lockId || 0) + 1; P.lock = best; return; }
+    if (P.lock && P.lock.kind === 'mass' && W.t < P.lockScan) return;
+    P.lockScan = W.t + 0.25;
+    // "query the map for volume density and path find into the centre of mass": the block nearest the paint ray, then the centre of the mass round it
+    let seed = null, sa = cone;
+    rayBlocks(W, P.pos, f, K.lockRange, Math.tan(cone) * 300, (p) => { if (p.fixture || p.kind === 'trail' || p.nest) return; const a = angOf(p.pos); if (a < sa) { sa = a; seed = p; } });
+    if (!seed) { P.lock = null; return; }
+    const old = P.lock && P.lock.kind === 'mass' ? P.lock.point : null;
+    const sum = new V(); let n = 0; eachNear(W, seed.pos, 35, (p) => { if (!p.fixture && !p.nest && p.kind !== 'trail' && p.pos.distanceTo(seed.pos) < 35) { sum.add(p.pos); n++; } return false; });
+    const pt = n ? sum.divideScalar(n) : seed.pos.clone(); if (!old || old.distanceTo(pt) > 15) P.lockId = (P.lockId || 0) + 1;   // the same mass keeps its lock as it is eaten away
+    P.lock = { kind: 'mass', point: pt };
+  }
+  function launchMissiles(W, P, dt) {
+    if (!P.painting || !P.lock || P.noArray) return;
+    for (const n of ownNests(W, P)) {
+      n.fireCd -= dt;
+      if (n.fireCd > 0 || !n.turret.alive || n.health <= 1 || n.firedFor === P.i + ':' + P.lockId) continue;   // one missile per nest per painted target; "they will not fire their last health block"
+      n.fireCd = K.missileEvery; n.firedFor = P.i + ':' + P.lockId; n.health--; P.missiles++;
+      const to = lockPoint(P.lock).clone().sub(n.turret.pos).normalize(), up = upOf(n.q), d = up.clone().add(to).normalize();
+      W.missiles.push({ pos: n.turret.pos.clone().addScaledVector(up, 3), vel: d.multiplyScalar(K.missileSpeed), owner: P.i, nest: n, t: 0, dead: false });
+    }
+  }
+  function stepMissiles(W, dt) {
+    for (const M of W.missiles) {
+      if (M.dead) continue; M.t += dt;
+      const P = W.pilots[M.owner], dir = M.vel.clone().normalize();
+      if (P.painting && P.lock && lockAlive(P.lock)) {   // "as long as the Shrike continues to paint the target, missiles actively home in"
+        const tgt = lockPoint(P.lock); let want = tgt.clone().sub(M.pos).normalize();
+        let ob = null;   // a look-ahead swerve round any block that is not part of the target's mass
+        rayBlocks(W, M.pos, dir, 45, 2.5, (p, t) => { if (p.nest === M.nest || (P.lock.kind === 'mass' && p.pos.distanceTo(tgt) < 40)) return; if (!ob || t < ob.t) ob = { p, t }; });
+        if (ob) { const away = M.pos.clone().addScaledVector(dir, ob.t).sub(ob.p.pos); away.addScaledVector(dir, -away.dot(dir)); if (away.lengthSq() < 1e-4) away.copy(upOf(basisQuat(dir))); want = want.multiplyScalar(0.3).add(away.normalize()).normalize(); }
+        const ang = Math.acos(clamp(dir.dot(want), -1, 1)), maxA = K.missileTurn * R * dt;
+        if (ang > 1e-4) { const ax = new V().crossVectors(dir, want); if (ax.lengthSq() < 1e-8) ax.copy(upOf(basisQuat(dir))); dir.applyAxisAngle(ax.normalize(), Math.min(ang, maxA)); }
+      }
+      M.vel.copy(dir).multiplyScalar(K.missileSpeed);
+      const len = K.missileSpeed * dt, n = Math.ceil(len / 2);
+      for (let i = 0; i < n && !M.dead; i++) {
+        M.pos.addScaledVector(dir, len / n);
+        let boom = eachNear(W, M.pos, 2, (p) => !(p.nest === M.nest && M.t < 0.4) && boxDist(p, M.pos) < 1.5);
+        if (!boom) for (const a of W.asteroids) if (!a.dead && a.pos.distanceTo(M.pos) < a.r + 1.5) { boom = true; break; }
+        if (!boom) for (const c of W.fauna) if (!c.dead && c.pos.distanceTo(M.pos) < 4) { boom = true; break; }
+        if (!boom && W.game === 'thread') for (const O of W.pilots) if (O !== P && O.pos.distanceTo(M.pos) < K.hullRadius + 1.5) { boom = true; break; }
+        if (boom) detonate(W, M);
+      }
+      if (!M.dead && M.t > K.missileLife) detonate(W, M);
+    }
+    if (W.missiles.length > 60) W.missiles = W.missiles.filter((m) => !m.dead);
+  }
+  function detonate(W, M) {   // "missiles detonate upon impact, destroying blocks in a medium radius"
+    M.dead = true; const P = W.pilots[M.owner], B = K.missileBlast;
+    eachNear(W, M.pos, B, (p) => { if (p.pos.distanceTo(M.pos) > B) return false; if (p.shield > 0) { p.shield--; p.flash = 1; W.dirty = true; } else killPrism(W, p, P); return false; });
+    for (const n of W.nests) if (n.turret.alive && n.turret.pos.distanceTo(M.pos) < B && !(n === M.nest && M.t < 0.4)) killTurret(W, n);
+    for (const a of W.asteroids) if (!a.dead && a.pos.distanceTo(M.pos) < B + a.r) { a.dead = true; P.destroyed++; }
+    for (const c of W.fauna) if (!c.dead && c.pos.distanceTo(M.pos) < B + 3) { c.hp -= 2; if (c.hp <= 0) { c.dead = true; say(W, P, 'Creature down'); } }
+    if (W.game === 'thread') for (const O of W.pilots) if (O !== P && O.pos.distanceTo(M.pos) < B + K.hullRadius) petalHit(W, P, O);
+    W.blasts.push({ pos: M.pos.clone(), t: 0, color: P.domain.color });
+  }
+
+  function stepPilot(W, P, inp, dt) {
+    const E = P.was, press = (k) => !!inp[k] && !E[k];
+    P.was = { lance: !!inp.lance, sling: !!inp.sling, dock: !!inp.dock, paint: !!inp.paint };
+    const k = cdBonus(P);   // "while docked the Shrike gets a cooldown reduction bonus on all of its abilities"
+    P.lanceCd = Math.max(0, P.lanceCd - dt * k); P.slingCd = Math.max(0, P.slingCd - dt * k); P.nestCd = Math.max(0, P.nestCd - dt * k); P.dockGrace = Math.max(0, P.dockGrace - dt);
+    if (P.finishT != null && W.game === 'thread') { P.painting = false; P.lock = null; if (!P.docked && !P.sling) { P.speed *= Math.exp(-1.5 * dt); P.pos.addScaledVector(fwdOf(P.quat), P.speed * dt); } return; }
+    // the stick: SingleStickVesselTransformer (bank, then yaw, then pitch into the command; the hull follows at 1.5/s). Docked, it aims.
+    if (!P.sling) {
+      const sx = ease2(inp.sx || 0), sy = ease2(inp.sy || 0), sp = P.speed * K.rotationThrottleScaler;
+      dq.setFromAxisAngle(AZ, -sx * (sp + K.rollScaler) * R * dt); P.cmd.multiply(dq);
+      dq.setFromAxisAngle(AY, -sx * (sp + K.yawScaler) * R * dt); P.cmd.multiply(dq);
+      dq.setFromAxisAngle(AX, sy * (sp + K.pitchScaler) * R * dt); P.cmd.multiply(dq);
+      P.cmd.normalize();
+    }
+    P.quat.slerp(P.cmd, Math.min(1, (P.sling ? 6 : FOLLOW) * dt)).normalize();
+    if (P.docked && P.docked.nest) { const n = P.docked.nest; n.q.copy(P.quat); poseNest(n); W.dirty = true; }   // "when docked to a nest, it rotates with the Shrike"
+    // Y / F: docked, undock; flying, build a nest round the hull (and dock in it)
+    if (press('dock') && !P.sling && !P.tether) {
+      if (P.docked) { undock(W, P, true); say(W, P, 'Undocked'); }
+      else if (P.nestCd <= 0) {
+        const mine = W.nests.filter((n) => !n.dead && n.owner === P.i);
+        if (mine.length >= K.maxNests) { for (const b of mine[0].blocks) b.dead = true; mine[0].dead = true; mine[0].turret.alive = false; }   // the oldest makes way
+        const n = buildNest(W, P.i, P.pos, P.quat, P.m.nestBlocks, false); P.nests++; P.nestCd = K.nestCooldown; dock(W, P, n.blocks[0]);
+      }
+    }
+    if (inp.lance && P.lanceCd <= 0 && !P.sling) fireLance(W, P);
+    if (press('sling') && P.slingCd <= 0 && !P.tether && !P.sling && !P.noSling) { const f = fwdOf(P.quat); P.tether = { pos: P.pos.clone().addScaledVector(f, 4), dir: f, went: 0 }; P.slingCd = P.m.slingCd; }
+    stepTether(W, P, dt);
+    if (press('paint')) P.lockId = (P.lockId || 0) + 1;   // a fresh paint is a fresh salvo, even on the same mass
+    P.painting = !!inp.paint && !P.noArray; updateLock(W, P, dt); launchMissiles(W, P, dt);
+    // movement
+    if (P.sling) stepSling(W, P, dt);
+    else if (P.docked) {
+      const d = P.docked;
+      if (d.nest) { if (d.nest.dead) undock(W, P, false); else P.pos.copy(d.nest.c); }
+      else if (d.p.dead) { undock(W, P, false); say(W, P, 'Dock broken'); }
+      else P.pos.copy(d.local).applyQuaternion(d.p.quat).add(d.p.pos);
+      P.speed = 0;
+    } else {
+      P.speed = lerp(P.speed, cruiseOf(), Math.min(1, FOLLOW * dt));
+      const c = W.arena, off = P.pos.clone().sub(c.c), dd = off.length();   // the Ark range: a countdown at the edge, then a gentle pull back
+      if (dd > c.r) { P.outT += dt; P.push.addScaledVector(off.normalize(), -12 * dt); } else P.outT = 0;
+      move(W, P, fwdOf(P.quat).multiplyScalar(P.speed * dt).addScaledVector(P.push, dt), false);
+      P.push.multiplyScalar(Math.exp(-2 * dt));
+    }
+    const z = inp.zoom || 0; if (z) P.zoom = clamp(P.zoom * Math.exp(z * 0.7 * S.zoomFeel * dt), 1, 8);
+  }
+
+  // ---- Den Defense: waves, asteroids, creatures ----
+  function stepDen(W, dt) {
+    const den = W.den, wave = Math.floor(W.t / WORLD.waveSeconds);
+    // a creature on the boss waves: every third wave at I2 and I3, every second at I4
+    if (wave !== W.wave) { W.wave = wave; W.events.push('Wave ' + (wave + 1)); if (W.I >= 2 && wave % (W.I >= 4 ? 2 : 3) === (W.I >= 4 ? 1 : 2)) { spawnFauna(W); W.events.push('A creature comes for the den'); } }
+    W.nextSpawn -= dt;
+    if (W.nextSpawn <= 0) { spawnAsteroid(W); W.nextSpawn = WORLD.spawnEvery * (1 - 0.06 * W.I) / (1 + 0.3 * wave); }   // "increasing in frequency every 20 seconds survived"
+    const fall = (why) => { if (W.denFell == null) { W.denFell = W.t; W.events.push('The den has fallen (' + why + ')'); } };
+    const coreHit = (what) => {   // a hit on the core breaks blocks of the den (lab-only: the den wears down, so one asteroid is never the whole run)
+      let n = WORLD.coreDamage; for (const b of den.blocks) { if (n <= 0) break; if (!b.dead) { b.dead = true; n--; } } W.dirty = true; W.events.push('Core hit by ' + what);
+    };
+    for (const a of W.asteroids) {
+      if (a.dead) continue;
+      a.pos.addScaledVector(a.vel, dt); a.spin += dt;
+      if (a.pos.distanceTo(den.c) > 900) { a.dead = true; continue; }
+      eachNear(W, a.pos, a.r + 1, (p) => {
+        if (p === a.last || boxDist(p, a.pos) > a.r) return false;
+        a.last = p; if (p.shield > 0) { p.shield--; p.flash = 1; W.dirty = true; } else killPrism(W, p, null);
+        a.hp--; if (a.hp <= 0) { a.dead = true; return true; } return false;
+      });
+      if (a.dead) continue;
+      for (const n of W.nests) if (n.turret.alive && n.turret.pos.distanceTo(a.pos) < a.r + 3) { killTurret(W, n); a.dead = true; }
+      if (!a.dead && a.pos.distanceTo(den.c) < W.coreR + a.r) { a.dead = true; coreHit('an asteroid'); }
+    }
+    for (const c of W.fauna) {
+      if (c.dead) continue; c.spin += dt * 3;
+      let near = null; eachNear(W, c.pos, 4, (p) => { if (boxDist(p, c.pos) < 3) { near = p; return true; } return false; });
+      if (near) { c.vel.multiplyScalar(0.8); c.bite += dt; if (c.bite >= c.biteEvery) { c.bite = 0; if (near.shield > 0) { near.shield--; near.flash = 1; W.dirty = true; } else killPrism(W, near, null); } }
+      else { const to = den.c.clone().sub(c.pos).normalize(); c.vel.lerp(to.multiplyScalar(c.speed), Math.min(1, 2 * dt)); c.pos.addScaledVector(c.vel, dt); }
+      if (c.pos.distanceTo(den.c) < W.coreR + 2) { c.dead = true; coreHit('a creature'); coreHit('a creature'); }
+    }
+    if (den.blocks.filter((b) => !b.dead).length <= Math.floor(den.blocks.length * 0.25)) fall('three quarters of its blocks are gone');
+    if (W.asteroids.length > 80) W.asteroids = W.asteroids.filter((a) => !a.dead);
+    if (W.denFell != null) { for (const P of W.pilots) P.finishT = W.denFell; W.over = true; }
+  }
+  function stepNests(W, dt) {   // the turret flora regrows health blocks, faster while its Shrike is docked in it
+    for (const n of W.nests) {
+      if (n.dead || !n.turret.alive) continue;
+      n.regen += dt * (n.dockedBy >= 0 ? 2 : 1);
+      if (n.regen >= K.turretRegen) { n.regen = 0; n.health = Math.min(K.nestHealthMax, n.health + 1); }
+      if (!n.isDen && n.blocks.every((b) => b.dead)) n.dead = true;
+    }
+  }
+  function stepWorld(W, dt, inputs) {
+    W.t += dt;
+    W.pilots.forEach((P, i) => stepPilot(W, P, inputs[i], dt));
+    stepMissiles(W, dt); stepNests(W, dt);
+    if (W.game === 'den') stepDen(W, dt);
+    for (const b of W.beams) b.t += dt; if (W.beams.length > 12) W.beams = W.beams.filter((b) => b.t < 0.4);
+    for (const b of W.blasts || []) b.t += dt; if (W.blasts && W.blasts.length > 12) W.blasts = W.blasts.filter((b) => b.t < 0.6);
+    for (const p of W.prisms) if (p.flash > 0) { p.flash = Math.max(0, p.flash - dt * 3); W.dirty = true; }
+    if (W.prisms.length > 8000) { W.prisms = W.prisms.filter((p) => !p.dead); W.bigs = W.bigs.filter((p) => !p.dead); W.dirty = true; }
+    if (W.game === 'thread' && W.pilots.every((P) => P.finishT != null)) W.over = true;
+    if (W.t >= CAP) { if (W.game === 'den') for (const P of W.pilots) P.finishT = CAP; W.over = true; }
+  }
+
+  // ================= the AI: writes the same input a gamepad does (D4) =================
+  const easeInv = (e) => { e = clamp(e, -0.999, 0.999); return Math.sign(e) * Math.acos(1 - Math.abs(e)) * 2 / Math.PI; };
+  function steer(P, to) {   // the stick that turns the nose's command toward a point: rate = error / 0.18 s, through the inverse ease
+    const d = to.clone().sub(P.pos).normalize(), f = fwdOf(P.cmd), lx = d.dot(rightOf(P.cmd)), ly = d.dot(upOf(P.cmd)), lz = d.dot(f);
+    const ey = Math.atan2(lx, lz), ep = Math.atan2(ly, Math.max(1e-3, Math.hypot(lx, lz)) * Math.sign(lz || 1));
+    const sp = P.speed * K.rotationThrottleScaler, yawMax = (K.yawScaler + sp) * R, pitchMax = (K.pitchScaler + sp) * R;
+    return { sx: easeInv(clamp(ey / (yawMax * 0.18), -1, 1)), sy: easeInv(clamp((lz < 0 ? Math.sign(ly || 1) * Math.PI : ep) / (pitchMax * 0.18), -1, 1)) };
+  }
+  const offNose = (P, x) => { const d = x.clone().sub(P.pos); const l = d.length(); return l < 1e-3 ? 0 : Math.acos(clamp(d.dot(fwdOf(P.quat)) / l, -1, 1)); };
+  function corridor(W, P, to, pad, skip) {   // what lies on the line from the hull to a point, thickened to the hull (cached 0.15 s)
+    const key = Math.round(to.x) + ',' + Math.round(to.y) + ',' + Math.round(to.z);
+    if (P.cor && P.cor.key === key && W.t < P.cor.until) return P.cor;
+    const d = to.clone().sub(P.pos), len = d.length() - 3; d.normalize();
+    const out = { key, until: W.t + 0.15, cluster: 0, frame: 0, panel: 0, other: 0, near: Infinity, com: new V(), n: 0 };
+    rayBlocks(W, P.pos.clone().addScaledVector(d, 4), d, Math.max(1, len - 4), pad, (p, t) => {
+      if (p === skip || p.dead) return; if (p.kind === 'trail' && p.owner === P.i && (W.t - p.t0 < 1 || p.pos.distanceTo(P.pos) < 16)) return;   // the trail you just laid behind you is not in the way
+      if (P.docked && (P.docked.p === p || (P.docked.nest && p.nest === P.docked.nest))) return;
+      if (p.kind === 'cluster') { out.cluster++; out.com.add(p.pos); out.n++; } else if (p.kind === 'frame') out.frame++; else if (p.kind === 'panel') out.panel++; else out.other++;
+      if (t < out.near) out.near = t;
+    });
+    if (out.n) out.com.divideScalar(out.n);
+    P.cor = out; return out;
+  }
+  function aiThread(W, P) {
+    const inp = { sx: 0, sy: 0, lance: false, sling: false, paint: false, dock: false };
+    const w = W.walls[P.crystals]; if (!w || P.sling || P.tether) { P.aiState = P.sling ? 'slinging' : P.tether ? 'tether out' : 'done'; return inp; }
+    const br = P.style.brain, panelUp = w.panel && !w.panel.dead;
+    const seen = believe(W, P, w.plate.pos, w.k * 2 + (panelUp ? 0 : 1), w.win / 2 + 4);
+    if (!seen) { P.aiState = 'notice'; P.aim = w.plate.pos; return inp; }
+    let aimAt = seen, why = 'window';
+    const pressDock = () => { inp.dock = !P.was.dock; };
+    if (panelUp) {   // I2+: a panel the size of the wall hides the window: one lance anywhere breaks it
+      why = 'panel'; aimAt = w.c.clone().add(seen.clone().sub(w.plate.pos));
+      if (offNose(P, aimAt) < Math.atan(w.outer * 0.3 / Math.max(1, aimAt.distanceTo(P.pos))) && P.lanceCd <= 0) inp.lance = true;
+    } else {
+      const cor = corridor(W, P, seen, K.hullRadius + 0.6, w.plate);
+      if (cor.cluster > 0 || cor.other > 0 || cor.panel > 0) {   // a cluster (or anything) on the line: tunnel it with the lance, missiles into its centre
+        why = 'tunnel';
+        const usable = ownNests(W, P).some((n) => n.turret.alive && n.health > 1 && n.c.distanceTo(P.pos) < 700);
+        if (br.nest && !P.noArray && !usable && P.nestCd <= 0 && !br.lanceFirst) { why = 'nest'; pressDock(); }
+        const d = seen.clone().sub(P.pos).normalize(), q = basisQuat(d), kk = P.tunnelK, rr = P.m.lanceR * 1.1 * Math.sqrt(kk);   // a spiral of shots round the line
+        aimAt = w.c.clone().add(seen.clone().sub(w.plate.pos)).addScaledVector(rightOf(q), Math.cos(kk * 2.4) * rr).addScaledVector(upOf(q), Math.sin(kk * 2.4) * rr);
+        if (br.paint && !P.noArray && usable && cor.n) {   // paint the cluster down the same line; let go and paint again for the next salvo once this one has landed
+          const inbound = W.missiles.some((m) => !m.dead && m.owner === P.i), spent = ownNests(W, P).every((n) => n.firedFor === P.i + ':' + P.lockId || !n.turret.alive || n.health <= 1);
+          inp.paint = !(P.was.paint && !inbound && spent && P.lock); why = 'paint';
+        }
+        if (P.lanceCd <= 0 && offNose(P, aimAt) < Math.atan(Math.max(0.5, P.m.lanceR * 0.7) / Math.max(1, aimAt.distanceTo(P.pos)))) { inp.lance = true; P.tunnelK = (P.tunnelK + 1) % 25; }
+      } else if (cor.frame > 0) {   // a bad angle (docked on the frame): fly to the window instead
+        why = 'line up'; if (P.docked && offNose(P, w.c) < 0.15) pressDock(); aimAt = w.c.clone().addScaledVector(w.n, P.pos.clone().sub(w.c).dot(w.n) > -8 ? 30 : -6);
+      } else {
+        const dWin = Math.max(1, w.c.distanceTo(P.pos)), tol = Math.max(0.2, w.win / 2 - K.hullRadius - br.margin) / dWin;
+        if (!P.noSling && P.slingCd <= 0) { why = 'sling'; if (offNose(P, seen) < tol && P.quat.angleTo(P.cmd) < 0.02) inp.sling = !P.was.sling; }
+        else if (P.noSling) { why = 'fly'; if (P.docked && offNose(P, seen) < 0.05) pressDock(); }
+        else why = 'wait';
+      }
+    }
+    const st = steer(P, aimAt); inp.sx = st.sx; inp.sy = st.sy;
+    P.aim = aimAt; P.aiState = why; return inp;
+  }
+  function aiDen(W, P) {
+    const inp = { sx: 0, sy: 0, lance: false, sling: false, paint: false, dock: false };
+    if (P.sling || P.tether) { P.aiState = 'slinging'; return inp; }
+    const br = P.style.brain, home = P.i === 0 ? W.den : W.nests.find((n) => n.owner === P.i && !n.dead);
+    if (br.guard && P.i === 0 && P.nests === 0 && W.t > 1) {   // the Nester flies out a few seconds and plants a forward nest, then defends from it
+      if (P.docked) { inp.dock = !P.was.dock; P.aiState = 'out'; return inp; }
+      if (!P.sling && !P.tether) { if (W.t > 3.5 && P.nestCd <= 0) inp.dock = !P.was.dock; P.aiState = 'nest'; return inp; }
+    }
+    if (!P.docked) {   // off station: back to a nest (sling onto it, or fly)
+      P.aiState = 'home'; const tgt = home ? home.c : W.den.c; const st = steer(P, tgt); inp.sx = st.sx; inp.sy = st.sy; P.aim = tgt;
+      if (!P.noSling && P.slingCd <= 0 && offNose(P, tgt) < 0.05) inp.sling = !P.was.sling;
+      if (P.nestCd <= 0 && (!home || home.dead) && br.guard) inp.dock = !P.was.dock;
+      return inp;
+    }
+    // the most urgent threat: an asteroid on course for the den, or a creature
+    let best = null, bt = Infinity;
+    const turn = (x) => offNose(P, x) / (K.yawScaler * R);   // the seconds to bring the nose round: a near threat off the nose can wait for one in front
+    for (const a of W.asteroids) {
+      if (a.dead) continue; const rel = W.den.c.clone().sub(a.pos), v = a.vel.length(), tca = rel.dot(a.vel) / (v * v);
+      if (tca < 0) continue; const miss = a.pos.clone().addScaledVector(a.vel, tca).distanceTo(W.den.c);
+      if (miss > 20 + a.r) continue; const cost = tca + turn(a.pos); if (cost < bt) { bt = cost; best = { ref: a, id: 'a' + a.id, r: a.r, big: a.hp > 1 }; }
+    }
+    for (const c of W.fauna) { if (c.dead) continue; const t = Math.max(0, c.pos.distanceTo(W.den.c) - 15) / Math.max(1, c.speed) * 0.3 + turn(c.pos); if (t < bt) { bt = t; best = { ref: c, id: c.id, r: 3, big: true }; } }   // the boss waves come first
+    // missiles in the air: keep painting their target until they land (they home only while it is painted)
+    const inbound = W.missiles.some((m) => !m.dead && m.owner === P.i);
+    if (inbound && P.lock && P.lock.kind !== 'mass' && lockAlive(P.lock)) {
+      const tgt = P.lock.ref.pos.clone(), st = steer(P, tgt); inp.sx = st.sx; inp.sy = st.sy; inp.paint = true; P.aim = tgt; P.aiState = 'paint'; return inp;
+    }
+    if (!best) { P.aiState = 'watch'; return inp; }
+    const seen = believe(W, P, best.ref.pos, best.id, best.r + 8);
+    if (!seen) { P.aiState = 'notice'; P.aim = best.ref.pos; return inp; }
+    const lead = seen.clone().addScaledVector(best.ref.vel || new V(), 0.15);
+    const st = steer(P, lead); inp.sx = st.sx; inp.sy = st.sy; P.aim = lead;
+    const dist = Math.max(1, lead.distanceTo(P.pos)), ok = offNose(P, lead) < Math.atan((best.r + P.m.lanceR * 0.8) / dist);
+    if (ok && P.lanceCd <= 0) inp.lance = true;
+    const many = W.asteroids.filter((a) => !a.dead).length;
+    const usable = ownNests(W, P).some((n) => n.turret.alive && n.health > 1);
+    // far threats go to the missiles (they need the flight time), near ones to the lance
+    const worth = best.id[0] === 'f' || (br.paintAt <= 1 && many >= 3);   // a creature (three lance hits); only the missile-minded brains paint a crowd: one asteroid is the lance's, it kills on the spot
+    if (br.paint && !P.noArray && usable && worth && dist > (best.id[0] === 'f' ? 120 : 220) && offNose(P, lead) < P.m.cone * R) { inp.paint = true; inp.lance = false; }
+    P.aiState = inp.paint ? 'paint' : 'lance'; return inp;
+  }
+  function aiInput(W, P) { return W.game === 'thread' ? aiThread(W, P) : aiDen(W, P); }
+
+  // ---- headless runs for the scorecard ----
+  function runHeadless(game, I, level, seed, extra) {
+    const st = (extra && extra.style) || 'Balanced';
+    const W = makeWorld(game, I, [Object.assign({ ai: level, domain: 'jade', lv: Object.assign({}, styleOf(st).lv), style: st }, extra || {})], seed); W.watch = -1;
+    const dt = 1 / 30; while (!W.over) stepWorld(W, dt, [aiInput(W, W.pilots[0])]);
+    const P = W.pilots[0];
+    return { finish: game === 'thread' ? P.finishT : (P.finishT ?? CAP), acc: P.lances ? P.lanceHits / P.lances : 0, lances: P.lances, slings: P.slings, missiles: P.missiles, nests: P.nests, destroyed: P.destroyed };
+  }
+
+  // ================= rendering =================
+  const canvas = $('c');
+  const renderer = VesselStudioTheme.renderer(THREE, { canvas, antialias: true });   // no WebGL: the stage says so, the rest loads (D34)
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(68, 16 / 10, 0.3, 9000);
+  const ENV = VesselStudioLook.install(scene, { field: 2400, prismScale: 2.4 });   // the Vessel Studio look (D19)
+  const mark = VesselStudioLook.marker($('viewport'));
+  const MAXP = 9000;
+  const prismMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.05, emissive: 0x0b1b4a, flatShading: true }), MAXP);
+  prismMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); prismMesh.frustumCulled = false; scene.add(prismMesh);
+  // prisms right in front of the camera dissolve (as the game's prism occlusion dither does); three.js keeps vViewPosition = -mvPosition
+  prismMesh.material.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n  { float dz = vViewPosition.z; if (dz < 14.0) { float a = clamp((dz - 3.0) / 11.0, 0.0, 1.0); float n = fract(sin(dot(floor(gl_FragCoord.xy), vec2(12.9898, 78.233))) * 43758.5453); if (n > a) discard; } }');
+  };
+  const shieldMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(1, 0), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, wireframe: true, transparent: true, opacity: 0.5 }), MAXP);
+  shieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); shieldMesh.frustumCulled = false; scene.add(shieldMesh);
+  const astMesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x8a7f74, roughness: 0.9, flatShading: true }), 120);
+  astMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); astMesh.frustumCulled = false; scene.add(astMesh);
+  const misMesh = new THREE.InstancedMesh(new THREE.ConeGeometry(0.7, 3.2, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }), 120);
+  misMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); misMesh.frustumCulled = false; scene.add(misMesh);
+  const COL = { world: new THREE.Color(0x3a4380), frame: new THREE.Color(0x4a5596), panel: new THREE.Color(0x2a3060), cluster: new THREE.Color(0x6a4f9a), plate: new THREE.Color(0xc48bff), den: new THREE.Color(0xd9dbe6) };
+  for (const d of DOMAINS) COL[d.key] = new THREE.Color(d.color);
+  const WHITE = new THREE.Color(0xffffff), m4 = new THREE.Matrix4(), tmpC = new THREE.Color(), sc = new V(), qI = new Q();
+  function prismColor(W, p) {
+    if (p.kind === 'trail') return COL[p.domain] || COL.world;
+    if (p.nest) return p.nest.isDen ? COL.den : (COL[W.pilots[p.nest.owner] ? W.pilots[p.nest.owner].domain.key : 'world']);
+    return COL[p.kind] || COL.world;
+  }
+  function drawPrisms(W) {
+    let n = 0, ns = 0;
+    const put = (p) => {
+      if (p.dead || n >= MAXP) return;
+      sc.set(p.half.x * 2, p.half.y * 2, p.half.z * 2); m4.compose(p.pos, p.quat, sc); prismMesh.setMatrixAt(n, m4);
+      tmpC.copy(prismColor(W, p)); if (p.flash > 0) tmpC.lerp(WHITE, p.flash); prismMesh.setColorAt(n, tmpC); n++;
+      if (p.shield && !p.fixture && ns < MAXP) { sc.multiplyScalar(p.shield === 2 ? 0.95 : 0.8); m4.compose(p.pos, p.quat, sc); shieldMesh.setMatrixAt(ns++, m4); }
+    };
+    for (const p of W.prisms) put(p);
+    for (const nst of W.nests) if (!nst.dead) for (const p of nst.blocks) put(p);
+    prismMesh.count = n; shieldMesh.count = ns;
+    prismMesh.instanceMatrix.needsUpdate = true; shieldMesh.instanceMatrix.needsUpdate = true;
+    if (prismMesh.instanceColor) prismMesh.instanceColor.needsUpdate = true;
+    W.dirty = false;
+  }
+  // ---- the hull: a long, thin sniper with a lance barrel under its beak and forward-swept wings ----
+  function makeHull(color) {
+    const g = new THREE.Group(), dom = new THREE.Color(color);
+    const shell = new THREE.MeshStandardMaterial({ color: 0xd9dbe6, roughness: 0.35, metalness: 0.55, flatShading: true });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x2a2f45, roughness: 0.4, metalness: 0.6, flatShading: true });
+    const accent = new THREE.MeshStandardMaterial({ color: dom, roughness: 0.4, metalness: 0.2, emissive: dom.clone().multiplyScalar(0.35), flatShading: true });
+    const body = new THREE.Mesh(new THREE.ConeGeometry(1.1, 7, 6), shell); body.rotation.x = -Math.PI / 2; g.add(body);
+    const head = new THREE.Mesh(new THREE.ConeGeometry(0.9, 2.2, 6), dark); head.rotation.x = -Math.PI / 2; head.position.z = -3.6; head.scale.set(1, 1, 0.8); g.add(head);
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 7.5, 8), accent); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, -0.75, -2.6); g.add(barrel);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff })); tip.position.set(0, -0.75, -6.4); g.add(tip);
+    for (const sx of [-1, 1]) {
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.16, 1.4), shell); wing.position.set(sx * 2.3, 0, 0.6); wing.rotation.y = sx * 0.42; g.add(wing);
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.18, 0.35), accent); stripe.position.set(sx * 3.1, 0.02, 0.15); stripe.rotation.y = sx * 0.42; g.add(stripe);
+    }
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.4, 1.8), accent); tail.position.set(0, 0.7, 2.8); g.add(tail);
+    const glow = new THREE.Mesh(new THREE.CircleGeometry(0.55, 14), new THREE.MeshBasicMaterial({ color: 0xffb066, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false })); glow.position.z = 3.55; g.add(glow);
+    g.userData = { glow, tip };
+    return g;
+  }
+  function turretMesh(color) {
+    const g = new THREE.Group(), dom = new THREE.Color(color);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.4, 3, 8), new THREE.MeshStandardMaterial({ color: 0x6a8f6a, roughness: 0.7, flatShading: true })); g.add(stem);
+    const bud = new THREE.Mesh(new THREE.OctahedronGeometry(1.8, 0), new THREE.MeshStandardMaterial({ color: dom, emissive: dom.clone().multiplyScalar(0.4), flatShading: true })); bud.position.y = 2.4; g.add(bud);
+    g.userData = { bud }; return g;
+  }
+  const view = { hulls: [], crystals: [], lines: [], tethers: [], turrets: [], loose: [], beams: [], blasts: [], fauna: [] };
+  function mountWorld(W) {
+    ENV.placeField(W.arena.c, W.arena.r / 0.75, Math.max(200, W.arena.r * 0.5));
+    for (const key of Object.keys(view)) { for (const o of view[key]) scene.remove(o); view[key] = []; }
+    for (const P of W.pilots) {
+      const h = makeHull(P.domain.color); scene.add(h); view.hulls.push(h);
+      const c = VesselStudioLook.crystal(P.domain.color, 6); scene.add(c); view.crystals.push(c);
+      const mk = (col, op) => { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V(), new V()]), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: op })); l.frustumCulled = false; scene.add(l); return l; };
+      view.lines.push(mk(P.domain.color, 0.85)); view.tethers.push(mk(0xc48bff, 0.95));
+    }
+    drawPrisms(W);
+  }
+  const pool = (arr, make) => (i) => { if (!arr[i]) { arr[i] = make(); scene.add(arr[i]); } return arr[i]; };
+  const turretAt = pool(view.turrets = [], () => turretMesh(0xffffff));
+  const looseAt = pool(view.loose = [], () => VesselStudioLook.crystal(0x8dffb0, 4));
+  const beamAt = pool(view.beams = [], () => { const m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false })); m.frustumCulled = false; return m; });
+  const blastAt = pool(view.blasts = [], () => new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({ color: 0xffcf8a, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false })));
+  const faunaAt = pool(view.fauna = [], () => {
+    const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: 0xff8fb1, emissive: 0x3a0b20, roughness: 0.6, flatShading: true });
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(2.6, 10, 8), mat));
+    for (let k = 0; k < 6; k++) { const s = new THREE.Mesh(new THREE.ConeGeometry(0.6, 6, 5), mat); s.position.setFromSphericalCoords(3.5, Math.acos(1 - 2 * (k + 0.5) / 6), k * 2.4); s.lookAt(0, 0, 0); s.rotateX(-Math.PI / 2); g.add(s); }
+    return g;
+  });
+  function drawWorld(W, t) {
+    if (W.dirty) drawPrisms(W);
+    W.pilots.forEach((P, i) => {
+      const h = view.hulls[i]; h.position.copy(P.pos); h.quaternion.copy(P.quat);
+      h.userData.glow.material.opacity = P.sling ? 1 : P.docked ? 0.15 : 0.85; h.userData.glow.scale.setScalar(P.sling ? 2.4 : 1);
+      h.visible = !(scopeView && i === S.view);
+      const c = view.crystals[i]; c.visible = !!P.crystal; if (P.crystal) { c.position.copy(P.crystal.pos); VesselStudioLook.spinCrystal(c, t + i); }
+      const ln = view.lines[i], show = S.thinking && (!!P.spec.ai || P.held) && !!P.aim && P.finishT == null; ln.visible = show;
+      if (show) {
+        const a = ln.geometry.attributes.position; a.setXYZ(0, P.pos.x, P.pos.y, P.pos.z); a.setXYZ(1, P.aim.x, P.aim.y, P.aim.z); a.needsUpdate = true;
+        ln.material.color.set(P.hc && P.hc.misjudged ? 0xff5c6c : P.aiState === 'notice' ? 0xffb454 : /panel|tunnel|nest|paint|line up/.test(P.aiState) ? 0xc48bff : 0x4be38f);
+      }
+      const tl = view.tethers[i], tt = P.tether || P.sling; tl.visible = !!tt;
+      if (tt) { const e = P.tether ? P.tether.pos : P.sling.x, a = tl.geometry.attributes.position; a.setXYZ(0, P.pos.x, P.pos.y, P.pos.z); a.setXYZ(1, e.x, e.y, e.z); a.needsUpdate = true; }
+    });
+    let k = 0;
+    for (const n of W.nests) { if (n.dead || !n.turret.alive) continue; const m = turretAt(k++); m.visible = true; m.position.copy(n.turret.pos); m.quaternion.copy(n.q); m.userData.bud.material.color.set(n.isDen ? 0xd9dbe6 : W.pilots[n.owner] ? W.pilots[n.owner].domain.color : 0xffffff); m.userData.bud.scale.setScalar(0.6 + 0.08 * n.health); }
+    for (; k < view.turrets.length; k++) view.turrets[k].visible = false;
+    k = 0; for (const c of W.loose) { if (c.taken) continue; const m = looseAt(k++); m.visible = true; m.position.copy(c.pos); VesselStudioLook.spinCrystal(m, t); }
+    for (; k < view.loose.length; k++) view.loose[k].visible = false;
+    k = 0;
+    for (const b of W.beams) {
+      if (b.t > 0.35) continue; const m = beamAt(k++), len = b.a.distanceTo(b.b); m.visible = true;
+      m.position.copy(b.a).lerp(b.b, 0.5); m.quaternion.setFromUnitVectors(AY, b.b.clone().sub(b.a).normalize()); m.scale.set(b.w * 0.5 * (1 - b.t / 0.35) + 0.15, len, b.w * 0.5 * (1 - b.t / 0.35) + 0.15);
+      m.material.color.set(b.color).lerp(WHITE, 0.6); m.material.opacity = 0.95 * (1 - b.t / 0.35);
+    }
+    for (; k < view.beams.length; k++) view.beams[k].visible = false;
+    k = 0;
+    for (const b of W.blasts || []) { if (b.t > 0.5) continue; const m = blastAt(k++); m.visible = true; m.position.copy(b.pos); m.scale.setScalar(Math.max(0.01, K.missileBlast * Math.min(1, b.t / 0.15))); m.material.opacity = 0.55 * (1 - b.t / 0.5); }
+    for (; k < view.blasts.length; k++) view.blasts[k].visible = false;
+    let na = 0; for (const a of W.asteroids) { if (a.dead || na >= 120) continue; qI.setFromAxisAngle(AY, a.spin); sc.setScalar(a.r); m4.compose(a.pos, qI, sc); astMesh.setMatrixAt(na++, m4); }
+    astMesh.count = na; astMesh.instanceMatrix.needsUpdate = true;
+    let nm = 0; for (const M of W.missiles) { if (M.dead || nm >= 120) continue; qI.setFromUnitVectors(AY, M.vel.clone().normalize()); sc.setScalar(1); m4.compose(M.pos, qI, sc); misMesh.setMatrixAt(nm, m4); misMesh.setColorAt(nm++, tmpC.copy(W.pilots[M.owner].domain.color).lerp(WHITE, 0.4)); }
+    misMesh.count = nm; misMesh.instanceMatrix.needsUpdate = true; if (misMesh.instanceColor) misMesh.instanceColor.needsUpdate = true;
+    k = 0; for (const c of W.fauna) { if (c.dead) continue; const m = faunaAt(k++); m.visible = true; m.position.copy(c.pos); m.rotation.set(c.spin * 0.3, c.spin, 0); }
+    for (; k < view.fauna.length; k++) view.fauna[k].visible = false;
+  }
+
+  // ---- cameras: Chase · Follow · Free (D16); docked, Chase becomes the scope ----
+  const camPos = new V(), camLook = new V(), free = { yaw: 2.6, pitch: 0.35, dist: 110 };
+  let scopeView = false;
+  function viewed(W) { return W.pilots[Math.min(S.view, W.pilots.length - 1)] || W.pilots[0]; }
+  function placeCamera(W, dt, snap) {
+    const P = viewed(W); let tag; scopeView = false; let fov = 68;
+    if (S.cam === 'Free') {
+      const k = (c) => keys.has(c) ? 1 : 0;
+      free.yaw += (k('KeyJ') - k('KeyL')) * 1.4 * dt; free.pitch = clamp(free.pitch + (k('KeyI') - k('KeyK')) * 1.1 * dt, -1.3, 1.3); free.dist = clamp(free.dist * (1 + (k('KeyO') - k('KeyU')) * 1.2 * dt), 15, 3000);
+      const want = new V(Math.sin(free.yaw) * Math.cos(free.pitch), Math.sin(free.pitch), Math.cos(free.yaw) * Math.cos(free.pitch)).multiplyScalar(free.dist).add(P.pos);
+      cam.position.lerp(want, snap ? 1 : 1 - Math.exp(-12 * dt)); cam.up.set(0, 1, 0); cam.lookAt(P.pos);
+      tag = 'Free: orbiting ' + P.domain.name + ' (drag, wheel)';
+    } else if (S.cam === 'Chase' && S.scope && P.docked) {   // "when stationary the trail silhouette turns into a pip zoomed into the reticle"
+      scopeView = true; const f = fwdOf(P.quat), up = upOf(P.quat), z = P.spec.ai ? 2 : P.zoom;
+      cam.position.copy(P.pos).addScaledVector(f, 2).addScaledVector(up, 0.6); cam.up.copy(up); cam.lookAt(P.pos.clone().addScaledVector(f, 100).addScaledVector(up, 0.6));
+      fov = 68 / z; camPos.set(0, CHASE[1], 0).applyQuaternion(P.quat).addScaledVector(f, CHASE[2]); camLook.copy(f).multiplyScalar(40);
+      tag = 'Scope: ' + P.domain.name + ' · x' + z.toFixed(1);
+    } else {
+      const wide = S.cam === 'Follow', f = fwdOf(P.quat), up = wide ? new V(0, 1, 0) : upOf(P.quat);
+      // the offset from the hull is smoothed, never the position, so the camera keeps up with a sling (vessel-studio section 7)
+      const wantOff = new V().addScaledVector(f, wide ? -90 : CHASE[2]).addScaledVector(up, wide ? 30 : CHASE[1]), lookOff = new V().addScaledVector(f, 40);
+      const k = snap ? 1 : 1 - Math.exp(-(P.sling ? 14 : 6) * dt); camPos.lerp(wantOff, k); camLook.lerp(lookOff, k);
+      cam.position.copy(P.pos).add(camPos); cam.up.copy(up); cam.lookAt(P.pos.clone().add(camLook));
+      tag = (wide ? 'Following ' : 'Chase: ') + P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : '');
+    }
+    if (Math.abs(cam.fov - fov) > 0.01) { cam.fov = fov; cam.updateProjectionMatrix(); }
+    $('camTag').textContent = tag + ' · ' + S.speed + '×';
+  }
+
+  // ================= input: gamepad, keys, phone =================
+  const keys = new Set(); let armed = false, keyPress = { sling: false, dock: false };
+  const isForm = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+  const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE', 'KeyQ', 'KeyF', 'KeyZ', 'KeyX', 'KeyR', 'KeyP', 'KeyC', 'KeyI', 'KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyO', 'Space', 'Enter']);
+  window.addEventListener('keydown', (e) => {
+    if (isForm(e.target) || !armed) return;
+    if (GAME_KEYS.has(e.code)) e.preventDefault(); if (e.repeat) return; keys.add(e.code);
+    if (e.code === 'Enter') startRace(); if (e.code === 'KeyR') stopRace(); if (e.code === 'KeyP') togglePause(); if (e.code === 'KeyC') cycleCamera();
+  });
+  window.addEventListener('keyup', (e) => keys.delete(e.code)); window.addEventListener('blur', () => keys.clear());
+  document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); }); canvas.addEventListener('focus', () => { armed = true; });
+  let drag = null;
+  canvas.addEventListener('pointerdown', (e) => { if (S.cam === 'Free' && !playMode) drag = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener('wheel', (e) => { if (S.cam !== 'Free') return; e.preventDefault(); free.dist = clamp(free.dist * (1 + Math.sign(e.deltaY) * 0.1), 15, 3000); }, { passive: false });
+  window.addEventListener('pointermove', (e) => { if (!drag) return; free.yaw -= (e.clientX - drag.x) * 0.008; free.pitch = clamp(free.pitch + (e.clientY - drag.y) * 0.006, -1.3, 1.3); drag = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('pointerup', () => { drag = null; });
+  function readPad() { let pads = []; try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : []; } catch (e) { return null; } for (const g of pads) if (g && g.connected && g.axes.length >= 4) return g; return null; }
+  function dz(x, y) { const m = Math.hypot(x, y); if (m < 0.15) return { x: 0, y: 0 }; const s = Math.min(1, (m - 0.15) / 0.85) / m; return { x: x * s, y: y * s }; }
+  let playMode = false;
+  const touch = { used: false, L: { x: 0, y: 0 }, b: { lance: false, sling: false, paint: false, dock: false }, zoom: 0 };
+  const STICK_R = 56;
+  (function bindStick() {
+    const zone = $('tzL'), el = $('tsL'), knob = el.firstElementChild; let id = null, ox = 0, oy = 0;
+    const home = () => { el.classList.add('idle'); el.style.left = '30%'; el.style.top = '72%'; knob.style.transform = ''; touch.L.x = touch.L.y = 0; };
+    home();
+    zone.addEventListener('pointerdown', (e) => { if (id !== null) return; id = e.pointerId; try { zone.setPointerCapture(id); } catch (err) { /* lost */ } touch.used = true; const r = zone.getBoundingClientRect(); ox = e.clientX - r.left; oy = e.clientY - r.top; el.classList.remove('idle'); el.style.left = ox + 'px'; el.style.top = oy + 'px'; e.preventDefault(); });
+    zone.addEventListener('pointermove', (e) => { if (e.pointerId !== id) return; const r = zone.getBoundingClientRect(); let dx = e.clientX - r.left - ox, dy = e.clientY - r.top - oy; const m = Math.hypot(dx, dy); if (m > STICK_R) { dx *= STICK_R / m; dy *= STICK_R / m; } knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; touch.L.x = dx / STICK_R; touch.L.y = -dy / STICK_R; e.preventDefault(); });
+    const end = (e) => { if (e.pointerId !== id) return; id = null; home(); }; zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
+  })();
+  for (const b of document.querySelectorAll('.tbtns button')) {
+    const k = b.dataset.b, on = (v) => (e) => { e.preventDefault(); e.stopPropagation(); touch.used = true; touch.b[k] = v; b.classList.toggle('held', v); };
+    b.addEventListener('pointerdown', on(true)); b.addEventListener('pointerup', on(false)); b.addEventListener('pointercancel', on(false)); b.addEventListener('pointerleave', on(false));
+  }
+  for (const b of document.querySelectorAll('.tzoom button')) {
+    const on = (v) => (e) => { e.preventDefault(); e.stopPropagation(); touch.used = true; touch.zoom = v; };
+    b.addEventListener('pointerdown', on(+b.dataset.z)); b.addEventListener('pointerup', on(0)); b.addEventListener('pointercancel', on(0)); b.addEventListener('pointerleave', on(0));
+  }
+  function setPlayMode(on) {
+    playMode = !!on; document.body.classList.toggle('play', playMode);
+    if (playMode) { const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen; if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed */ } } try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ } }
+    else { const ex = document.exitFullscreen || document.webkitExitFullscreen; if (document.fullscreenElement || document.webkitFullscreenElement) { try { const pr = ex.call(document); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* ignore */ } } touch.L.x = touch.L.y = 0; for (const k in touch.b) touch.b[k] = false; touch.used = false; }
+    lastW = lastH = 0; resize();
+  }
+  document.addEventListener('fullscreenchange', () => { lastW = lastH = 0; resize(); });
+  $('playBtn').addEventListener('click', () => setPlayMode(true)); $('tExit').addEventListener('click', () => setPlayMode(false));
+  const PLATFORM = VesselStudioIDE.platform();   // detected, never asked (D26): a phone enters touch play at the end of setup
+  $('touch').addEventListener('pointerdown', () => { if (playMode && !document.fullscreenElement && !document.webkitFullscreenElement) { const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen; if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed here */ } } } }, { capture: true });
+  const playPause = () => { if (race === 'running') togglePause(); else startRace(); };   // one toggle (D18)
+  $('tStart').addEventListener('click', playPause); $('tBack').addEventListener('click', () => stopRace()); $('tCam').addEventListener('click', () => cycleCamera());
+  $('tpPlay').addEventListener('click', playPause); $('tpStop').addEventListener('click', () => stopRace()); $('startBtn').addEventListener('click', () => startRace()); $('resetBtn').addEventListener('click', () => newRace());
+  let padWas = [];
+  function humanInput() {
+    let inp;
+    if (playMode && touch.used) inp = { sx: dz(touch.L.x, touch.L.y).x, sy: dz(touch.L.x, touch.L.y).y, lance: touch.b.lance, sling: touch.b.sling, paint: touch.b.paint, dock: touch.b.dock, zoom: touch.zoom };
+    else {
+      const g = readPad();
+      if (g) {
+        const L = dz(g.axes[0], -g.axes[1]), b = (i) => !!(g.buttons[i] && g.buttons[i].pressed), v = (i) => (g.buttons[i] && g.buttons[i].value) || 0;   // gamepad Y is inverted (L-STU-8)
+        if (b(9) && !padWas[9] && race !== 'running') startRace();
+        inp = { sx: L.x, sy: L.y, lance: v(7) > 0.3, sling: b(1), paint: b(2), dock: b(3), zoom: (b(5) ? 1 : 0) - Math.max(v(6), b(4) ? 1 : 0) };
+        padWas = g.buttons.map((x) => !!(x && x.pressed));
+      } else {
+        const k = (c) => keys.has(c) ? 1 : 0;
+        inp = { sx: k('KeyD') - k('KeyA'), sy: k('KeyS') - k('KeyW'), lance: keys.has('Space'), sling: keys.has('KeyE'), paint: keys.has('KeyQ'), dock: keys.has('KeyF'), zoom: k('KeyX') - k('KeyZ') };
+      }
+    }
+    inp.active = Math.abs(inp.sx) > 0.2 || Math.abs(inp.sy) > 0.2 || inp.lance || inp.sling || inp.paint || inp.dock || !!inp.zoom;
+    return inp;
+  }
+  // D31: with nobody on the controls for 3 s, the AI flies your hull; the first input hands it straight back
+  function pilotInput(W, P, hin, dt) {
+    if (P.spec.ai) return aiInput(W, P);
+    if (hin.active) { P.idle = 0; P.held = false; return hin; }
+    P.idle += dt;
+    if (S.idleHold && P.idle > 3 && race === 'running') { P.held = true; return aiInput(W, P); }
+    P.held = false; return hin;
+  }
+
+  // ================= race flow =================
+  let W = null, race = 'ready', paused = false, seedN = 1;
+  function pilotsSpec() {
+    return S.players.map((p, i) => ({ ai: p.ai ? p.level : null, domain: p.domain, style: i === 0 ? (p.ai ? p.style : S.style) : p.style,
+      lv: i === 0 ? Object.assign({}, p.ai ? styleOf(p.style).lv : S.lv) : Object.assign({}, S.typeToAll ? S.lv : styleOf(p.style).lv) }));
+  }
+  function newRace() {
+    W = makeWorld(S.game, S.course, pilotsSpec(), seedN++);
+    mountWorld(W); drawWorld(W, 0); placeCamera(W, 0, true);
+    race = 'ready'; paused = false; feed.length = 0; renderFeed();
+    const G = GAMES[S.game];
+    $('ovTitle').textContent = G.name + ', intensity ' + S.course; $('startBtn').textContent = 'Start'; $('overlay').hidden = false;
+    $('ovText').textContent = S.game === 'thread' ? 'Take the crystal in each of the ' + W.walls.length + ' windows, fast. Aim through a window at the anchor plate behind it and sling: the tether anchors on the first block it meets, and you dock where you land. ' + (S.course >= 2 ? 'Break a panel with the lance (anywhere on it); ' : '') + (S.course >= 3 ? 'tunnel a cluster with the lance and paint it for your nests\' missiles (fly, then Y builds a nest). ' : '') + 'A crystal resets the sling.'
+      : 'You start docked in the den. Lance the asteroids on course for it; paint the big ones and the creatures for the den\'s missiles. Anything that reaches its core breaks some of its blocks; it falls with a quarter left. A wave every 20 s.';
+    $('courseInfo').textContent = G.name + ' · I' + S.course + ' · ' + G.ladder[S.course];
+    $('gameNote').textContent = G.note; $('intensityNote').textContent = 'I1 to I4 as the design describes them: ' + [1, 2, 3, 4].map((i) => 'I' + i + ' ' + G.ladder[i]).join('; ') + '.';
+  }
+  function startRace() { if (race === 'finished') newRace(); race = 'running'; paused = false; $('overlay').hidden = true; canvas.focus({ preventScroll: true }); }
+  function stopRace() { newRace(); }   // Stop ends the run and holds at the start until Play (D18)
+  function togglePause() { if (race !== 'running') return; paused = !paused; say0(paused ? 'Paused' : 'Resumed'); }
+  const resultOf = (P) => W.game === 'thread' ? (P.finishT != null ? P.finishT.toFixed(1) + ' s' : 'DNF (' + P.crystals + '/' + W.walls.length + ')') : (P.finishT >= CAP ? CAP + '+ s' : (P.finishT ?? W.t).toFixed(1) + ' s');
+  function finishRace() {
+    race = 'finished';
+    const order = W.game === 'thread' ? W.pilots.slice().sort((a, b) => ((a.finishT ?? 1e9) - a.massBonus * 1e-4) - ((b.finishT ?? 1e9) - b.massBonus * 1e-4) || b.crystals - a.crystals) : W.pilots.slice().sort((a, b) => b.lanceHits / Math.max(1, b.lances) - a.lanceHits / Math.max(1, a.lances));
+    for (const P of W.pilots) runs.unshift({ game: GAMES[W.game].name + ' I' + W.I, pilot: P.i === 0 ? (P.spec.ai ? 'Your hull (AI ' + P.spec.ai + ')' : 'You') : P.domain.name + ' (AI ' + P.spec.ai + ')', style: P.spec.style, result: resultOf(P), acc: P.lances ? Math.round(100 * P.lanceHits / P.lances) + '%' : '·', destroyed: P.destroyed });
+    runs.length = Math.min(runs.length, 40); saveRuns(); renderRuns();
+    const me = W.pilots[0];
+    $('ovTitle').textContent = W.game === 'thread' ? (me.finishT != null ? 'Place ' + (order.indexOf(me) + 1) + ' · ' + me.finishT.toFixed(1) + ' s' : 'Run over') : (me.finishT >= CAP ? 'The den held for ' + CAP + ' s' : 'The den fell at ' + (me.finishT ?? W.t).toFixed(1) + ' s');
+    $('ovText').textContent = order.map((P, i) => (i + 1) + '. ' + P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : '') + ': ' + resultOf(P) + ', accuracy ' + (P.lances ? Math.round(100 * P.lanceHits / P.lances) + '%' : '·') + ', ' + P.destroyed + ' destroyed').join(' · ');
+    $('startBtn').textContent = 'Go again';
+    if (S.autoRestart) setTimeout(() => { if (race === 'finished') { newRace(); startRace(); } }, 1500); else $('overlay').hidden = false;
+  }
+  function cycleCamera() {
+    const n = W ? W.pilots.length : 1;
+    if (S.cam === 'Chase') S.cam = 'Follow';
+    else if (S.cam === 'Follow') { if (S.view + 1 < n) S.view++; else { S.cam = 'Free'; S.view = 0; } }
+    else S.cam = 'Chase';
+    racePanel.set('camera', S.cam, true); racePanel.set('view', S.view, true); save();
+  }
+  const feed = [];
+  function say0(m) { feed.unshift(m); feed.length = Math.min(feed.length, 4); renderFeed(); }
+  function renderFeed() { const el = $('feed'); el.textContent = ''; for (const m of feed) { const d = document.createElement('div'); d.textContent = m; el.appendChild(d); } }
+
+  // ================= the docks' panels =================
+  const elx = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+  const racePanel = StudioRacePanel.mount($('racePanel'), {   // the universal panel (D17), with the Players list (D25)
+    gameHost: $('intensityPanel'), sceneHost: $('scenePanel'),
+    courses: [1, 2, 3, 4].map((v) => ({ v, label: 'I' + v, note: GAMES[S.game].ladder[v] })),
+    players: { host: $('playersPanel'), max: 4, domains: VesselStudioDomains.list.map((d) => ({ key: d.key, name: d.name, color: d.color })) },
+    styles: STYLES.map((s) => s.name),
+    value: { course: S.course, camera: S.cam, speed: S.speed, thinking: S.thinking, autoRestart: S.autoRestart, players: S.players, view: S.view },
+    supports: { rivals: true, thinking: true, autoRestart: true },
+    levelNote: 'Hard is the studio pilot (lab-only: it breaks panels, tunnels clusters, builds a nest and paints, and slings only when the line through the window is clean; in Den Defense it lances the most urgent asteroid and paints the big ones). Medium and Easy are Hard plus SkimRaceDifficulty.asset\'s two mistakes in what it believes: it notices each new target late (0.25 / 0.5 s mean) and misjudges 4.5% / 9.9% of them (shooting or slinging at a point off to one side); plus a lab-only aim error of 0.2° / 0.5°. A play style changes its brain as well as its element levels.',
+    onChange: (key, v) => {
+      if (key === 'players') { S.players = v; save(); newRace(); return; }
+      if (key === 'view') { S.view = v; save(); return; }
+      if (key === 'camera') S.cam = v; else if (key === 'course') S.course = v; else if (key === 'speed') S.speed = v; else if (key === 'thinking') S.thinking = v; else if (key === 'autoRestart') S.autoRestart = v;
+      save(); if (key === 'course') newRace();
+    },
+  });
+  $('gameSel').value = S.game; $('gameSel').addEventListener('change', (e) => { S.game = e.target.value; save(); rebuildCourseNotes(); newRace(); renderScore(); renderStyles(); });
+  function rebuildCourseNotes() { const sel = document.querySelector('#intensityPanel select'); if (sel) [...sel.options].forEach((o) => { o.textContent = 'I' + o.value + ' · ' + GAMES[S.game].ladder[o.value]; }); }
+  $('idleHold').checked = S.idleHold; $('idleHold').addEventListener('change', (e) => { S.idleHold = e.target.checked; save(); });
+  $('typeToAll').checked = S.typeToAll; $('typeToAll').addEventListener('change', (e) => { S.typeToAll = e.target.checked; save(); newRace(); });
+  $('scopeOn').checked = S.scope; $('scopeOn').addEventListener('change', (e) => { S.scope = e.target.checked; save(); });
+  $('landingOn').checked = S.landing; $('landingOn').addEventListener('change', (e) => { S.landing = e.target.checked; save(); });
+  $('zoomFeel').value = String(S.zoomFeel); $('zoomFeel').addEventListener('change', (e) => { S.zoomFeel = +e.target.value; save(); });
+  $('shipSet').value = S.ship; $('shipSet').addEventListener('change', (e) => { S.ship = e.target.value; save(); syncRail(); });
+  for (const st of STYLES) { const o = elx('option', null, st.name + ' · ' + (st.el ? ELEMENTS.find((E) => E.key === st.el).name : 'all elements')); o.value = st.name; $('styleSel').appendChild(o); }
+  const custom = elx('option', null, 'Custom levels'); custom.value = 'Custom'; $('styleSel').appendChild(custom);
+  $('styleSel').addEventListener('change', (e) => { if (e.target.value === 'Custom') return; S.style = e.target.value; Object.assign(S.lv, styleOf(S.style).lv); syncRail(); save(); applyLevels(); });
+  const elRows = {};
+  for (const E of ELEMENTS) {
+    const row = elx('div', 'el'); row.style.setProperty('--accent', 'var(' + E.color + ')');
+    const lab = elx('label', null, E.name); lab.htmlFor = 'lv-' + E.key; lab.style.color = 'var(' + E.color + ')'; lab.title = E.param;
+    const inp = document.createElement('input'); inp.type = 'range'; inp.min = 0; inp.max = 10; inp.step = 1; inp.id = 'lv-' + E.key;
+    const out = elx('output'), what = elx('div', 'what'), wl = elx('span'), badge = elx('span', 'l5', 'L5: open'); badge.title = 'The design gives no level-5 upgrade for ' + E.name + ': an open design slot.'; what.append(wl, badge);
+    inp.addEventListener('input', () => { S.lv[E.key] = +inp.value; const m = STYLES.find((t) => ELEMENTS.every((x) => t.lv[x.key] === S.lv[x.key])); S.style = m ? m.name : 'Custom'; syncRail(); save(); applyLevels(); });
+    row.append(lab, inp, out, what); $('elements').appendChild(row); elRows[E.key] = { inp, out, wl };
+  }
+  function applyLevels() { if (!W) return; for (const P of W.pilots) { if (P.i === 0 && !P.spec.ai) { P.lv = Object.assign({}, S.lv); P.spec.style = S.style; P.style = styleOf(S.style); } else if (S.typeToAll && P.i !== 0) P.lv = Object.assign({}, S.lv); P.m = mults(P.lv); } }
+  function syncRail() {
+    $('styleSel').value = STYLES.some((s) => s.name === S.style) ? S.style : 'Custom';
+    $('typeName').textContent = S.style; const t = STYLES.find((x) => x.name === S.style); $('typeInfo').textContent = t ? t.info : 'Custom element levels.';
+    const m = mults(S.lv);
+    for (const E of ELEMENTS) {
+      const r = elRows[E.key]; r.inp.value = S.lv[E.key]; r.out.textContent = S.lv[E.key];
+      const val = E.key === 'charge' ? m.lanceR.toFixed(1) + ' u lance radius' : E.key === 'mass' ? m.nestBlocks + ' nest blocks, trail every ' + m.wave.toFixed(1) + ' u' : E.key === 'space' ? m.cone.toFixed(1) + '° lock-on' : m.slingCd.toFixed(1) + ' s sling cooldown';
+      r.wl.textContent = ''; r.wl.append(document.createTextNode(E.param + ': '), elx('b', null, val));
+    }
+  }
+  // The kit: the SPEC rows (/labmaker 2.2), [group, key, label, lo, hi, step, tip]. Every row is lab-only and quotes the design.
+  const KIT_ROWS = [
+    ['flight', 'cruise', 'Cruise', 4, 60, 1, 'u/s. "The ship flies incredibly slowly to allow for better aim. If the player wants to get around the map they will need to utilize their Void Sling." (Shrike.prefab ships 60.)'],
+    ['flight', 'hullRadius', 'Hull contact', 1, 6, 0.5, 'u. "The Shrike will dock to any block it runs into": the radius at which a touch docks it.'],
+    ['dock', 'dockBonus', 'Dock bonus', 1, 4, 0.1, 'x cooldown speed docked on an ordinary block. "While docked the Shrike gets a cooldown reduction bonus on all of its abilities."'],
+    ['dock', 'dockBonusShielded', 'Shielded bonus', 1, 6, 0.1, 'x cooldown speed docked on a super-shielded block or a nest. "This bonus is increased on super shielded blocks."'],
+    ['lance', 'lanceRange', 'Lance range', 300, 4000, 50, 'u. "Destroying even super shielded blocks from across the map."'],
+    ['lance', 'lanceCooldown', 'Lance cooldown', 0.2, 6, 0.1, 's. "The shot has a short cooldown before it can be fired again."'],
+    ['lance', 'lanceRadiusAt0', 'Lance radius', 0.3, 6, 0.1, 'u at Charge 0. "A long range pin point shot."'],
+    ['lance', 'lanceRadiusAt10', 'Lance at Charge 10', 0.5, 12, 0.5, 'u. Charge: "wider radius on void lance".'],
+    ['sling', 'slingRange', 'Sling range', 200, 3000, 50, 'u the tether flies before it gives up. "A long range shot that slings the Shrike across the map to its target."'],
+    ['sling', 'slingSeconds', 'Sling time', 0.2, 3, 0.1, 's. "Implemented as a 1 second fixed boost (very big) pointing at the target."'],
+    ['sling', 'slingCooldownAt0', 'Sling cooldown', 1, 15, 0.5, 's at Time 0. "Void Sling comes with a moderate cooldown."'],
+    ['sling', 'slingCooldownAt10', 'Sling at Time 10', 0.5, 10, 0.5, 's. Time: "shorter cooldown on void sling".'],
+    ['array', 'lockConeAt0', 'Lock-on cone', 1, 20, 0.5, 'degrees off the nose at Space 0: how close to the aim a target must be to be painted.'],
+    ['array', 'lockConeAt10', 'Lock at Space 10', 2, 30, 0.5, 'degrees. Space: "larger lock-on radius for targeting array (easier to keep target lock)".'],
+    ['array', 'lockRange', 'Lock range', 200, 3000, 50, 'u. "If there is no blocks or enemy vessels within the lock-on range then no missiles will be fired."'],
+    ['array', 'missileSpeed', 'Missile speed', 60, 600, 10, 'u/s. "The missile speed should be greater than the base speed of any class" (the Manta cruises at 180).'],
+    ['array', 'missileTurn', 'Missile turn', 20, 400, 10, 'deg/s. "Their turn radius does not allow them to follow overly complex paths."'],
+    ['array', 'missileBlast', 'Missile blast', 4, 50, 1, 'u. "Destroying blocks in a medium radius."'],
+    ['array', 'missileEvery', 'Missile interval', 0.2, 3, 0.1, 's between salvos from one nest. Each nest fires one missile per painted target: "the Shrike paints a target and homing missiles are launched from each active Shrike Nest, meaning multiple missiles can be launched at once"; a new target, a new salvo.'],
+    ['nest', 'nestBlocksAt0', 'Nest blocks', 4, 40, 1, 'super-shielded blocks at Mass 0. "The blocks on the nest are super shielded."'],
+    ['nest', 'nestBlocksAt10', 'Nest at Mass 10', 6, 60, 1, 'blocks. Mass: "more blocks in the nest".'],
+    ['nest', 'nestCooldown', 'Nest cooldown', 1, 30, 1, 's between nests.'],
+    ['nest', 'nestHealth', 'Nest health', 2, 12, 1, 'health blocks a new nest\'s turret holds. "Each nest plant spends 1 health block per missile. They will not fire their last health block."'],
+    ['nest', 'turretRegen', 'Turret regrowth', 1, 20, 0.5, 's per health block (half while docked in it). "The turret will generate blocks faster if the Shrike is docked to its nest."'],
+    ['nest', 'crystalHealth', 'Crystal health', 0, 8, 1, 'health blocks per nest. "Collecting crystals gives each nest 3 health blocks."'],
+    ['nest', 'maxNests', 'Most nests', 1, 6, 1, 'live at once; a new one past this retires your oldest. Lab-only: the design sets no limit.'],
+    ['trail', 'trailWaveAt0', 'Trail spacing', 2, 20, 0.5, 'u between trail blocks at Mass 0.'],
+    ['trail', 'trailWaveAt10', 'Trail at Mass 10', 1, 20, 0.5, 'u. Mass: "shorter trail wavelength".'],
+    ['trail', 'trailThick', 'Sling trail', 0.6, 6, 0.1, 'u thick while slinging. "Thin long blocks that get thicker while boosting with the void sling."'],
+    ['flight', 'arkRange', 'Ark range', 300, 3000, 50, 'u from the arena centre. "Ark maximum range: medium = 1 cell diameter"; past it, a countdown and a gentle pull back.'],
+  ];
+  const kitRows = {};
+  let lastGroup = null;
+  for (const [g, k, name, lo, hi, step, tip] of KIT_ROWS) {
+    if (g !== lastGroup) { lastGroup = g; $('kitSliders').appendChild(elx('div', 'sub-h', { flight: 'Flight', dock: 'Docking', lance: 'Void Lance', sling: 'Void Sling', array: 'Targeting Array', nest: 'Nest', trail: 'Trail' }[g])); }
+    const row = elx('label', 'slider'); row.title = tip + ' Proposal: ' + SHIPPED_AT_LOAD[k] + '. Lab-only.';
+    const inp = document.createElement('input'); inp.type = 'range'; inp.min = lo; inp.max = hi; inp.step = step; inp.value = K[k];
+    const lab = elx('span', null, name), out = elx('output', null, String(K[k]));
+    const mark = () => { lab.classList.toggle('changed', K[k] !== SHIPPED_AT_LOAD[k]); row.title = tip + ' Proposal: ' + SHIPPED_AT_LOAD[k] + ' · yours: ' + K[k] + '. Lab-only.'; };
+    inp.addEventListener('input', () => { K[k] = +inp.value; if (K[k] === SHIPPED_AT_LOAD[k]) delete S.kit[k]; else S.kit[k] = K[k]; out.textContent = String(K[k]); mark(); save(); syncRail(); applyLevels(); });
+    row.append(lab, inp, out); $('kitSliders').appendChild(row); kitRows[k] = { inp, out, mark }; mark();
+  }
+  $('kitReset').addEventListener('click', () => { Object.assign(K, SHIPPED_AT_LOAD); S.kit = {}; save(); for (const k in kitRows) { kitRows[k].inp.value = K[k]; kitRows[k].out.textContent = String(K[k]); kitRows[k].mark(); } syncRail(); applyLevels(); });
+  const WORLD_ROWS = [
+    ['walls', 'Windows', 1, 10, 1, (v) => String(v), 'Thread the Needle: windows (and crystals) per run.'],
+    ['spacing', 'Window spacing', 120, 600, 10, (v) => v + ' u', 'Thread the Needle: from one anchor plate to the next window. At the design\'s slow cruise this is what the sling saves.'],
+    ['clusterR', 'Cluster radius', 10, 30, 1, (v) => v + ' u', 'Thread the Needle (I3, I4): the mass cluster in front of a window, 5 u blocks.'],
+    ['waveSeconds', 'Wave', 5, 60, 1, (v) => v + ' s', 'Den Defense: "increasing in frequency every 20 seconds survived". The design\'s number.'],
+    ['spawnEvery', 'First wave gap', 0.8, 8, 0.1, (v) => v.toFixed(1) + ' s', 'Den Defense: seconds between asteroids in wave 1; each wave divides it by 1 + 0.3 x wave.'],
+    ['astSpeed', 'Asteroid speed', 10, 80, 1, (v) => v + ' u/s', 'Den Defense: an asteroid\'s speed (I3+: big ones x0.6, small ones x1.6).'],
+    ['denBlocks', 'Den blocks', 12, 80, 1, (v) => String(v), 'Den Defense: the den\'s super-shielded blocks (each takes three hits: two shield levels, then the block).'],
+    ['coreDamage', 'Core hit', 0, 10, 1, (v) => v + ' blocks', 'Den Defense: den blocks one asteroid breaks when it reaches the core (a creature: twice). The den falls with a quarter of its blocks left. Lab-only: the design says only "den is destroyed".'],
+    ['faunaHp', 'Creature HP', 1, 8, 1, (v) => v + ' hits', 'Den Defense: lance hits to kill a creature (a missile counts twice; I4 creatures +1).'],
+  ];
+  for (const [k, name, lo, hi, step, fmt, tip] of WORLD_ROWS) {
+    const row = elx('label', 'slider'); row.title = tip + ' Lab-only.';
+    const inp = document.createElement('input'); inp.type = 'range'; inp.min = lo; inp.max = hi; inp.step = step; inp.value = WORLD[k];
+    const out = elx('output', null, fmt(WORLD[k]));
+    inp.addEventListener('input', () => { WORLD[k] = +inp.value; S.world[k] = WORLD[k]; out.textContent = fmt(WORLD[k]); save(); if (race !== 'running') newRace(); });
+    row.append(elx('span', null, name), inp, out); $('worldSliders').appendChild(row);
+  }
+  const AB = [['lance', 'Void Lance', 'L', '--lance', 'charge'], ['nest', 'Nest / Dock', 'N', '--nest', 'mass'], ['array', 'Targeting Array', 'T', '--array', 'space'], ['sling', 'Void Sling', 'S', '--sling', 'time']];
+  const abCards = {};
+  for (const [k, nm, ic, col, el] of AB) { const c = elx('div', 'ab'); c.style.setProperty('--accent', 'var(' + col + ')'); c.title = ELEMENTS.find((E) => E.key === el).name + ': ' + ELEMENTS.find((E) => E.key === el).param; const st = elx('div', 'st'); c.append(elx('div', 'ic', ic), elx('div', 'nm', nm), st); $('abilities').appendChild(c); abCards[k] = { c, st }; }
+  let runs = []; try { runs = JSON.parse(localStorage.getItem(LS + '.runs') || '[]') || []; } catch (e) { runs = []; }
+  function saveRuns() { try { localStorage.setItem(LS + '.runs', JSON.stringify(runs)); } catch (e) { /* storage blocked */ } }
+  function renderRuns() {
+    const tb = $('runs'); tb.textContent = '';
+    if (!runs.length) { const tr = elx('tr'), td = elx('td', null, 'No runs yet. Finish one to add it.'); td.colSpan = 6; td.style.color = 'var(--muted)'; tr.appendChild(td); tb.appendChild(tr); return; }
+    for (const r of runs.slice(0, 12)) { const tr = elx('tr'); tr.append(elx('td', null, r.game), elx('td', null, r.pilot), elx('td', null, r.style || ''), elx('td', null, r.result), elx('td', null, r.acc), elx('td', null, String(r.destroyed))); tb.appendChild(tr); }
+  }
+  const COLS = ['Easy', 'Medium', 'Hard', 'NoSling', 'NoArray'], SEEDS = [11, 22, 33, 44, 55];   // five seeds: Den Defense's noise band is about +-20 s per cell
+  const scores = {}, styleScores = {};
+  try { Object.assign(scores, JSON.parse(localStorage.getItem(LS + '.score') || '{}')); Object.assign(styleScores, JSON.parse(localStorage.getItem(LS + '.styles') || '{}')); } catch (e) { /* storage blocked */ }
+  const fmtRes = (g, v) => v == null ? 'DNF' : g === 'den' && v >= CAP ? CAP + '+' : v.toFixed(1);
+  function renderScore(rows) {
+    rows = rows || scores[S.game]; const tb = $('score'); tb.textContent = '';
+    for (const c of [1, 2, 3, 4]) { const r = rows && rows[c]; const tr = elx('tr'); tr.append(elx('td', null, 'I' + c)); for (const d of COLS) tr.append(elx('td', null, r && d in r ? fmtRes(S.game, r[d]) : '·')); tb.appendChild(tr); }
+  }
+  function renderStyles(rows) {
+    rows = rows || styleScores[S.game]; const tb = $('styleScore'); tb.textContent = '';
+    for (const st of STYLES) { const r = rows && rows[st.name]; const tr = elx('tr'); tr.append(elx('td', null, st.name)); if (!r) for (let i = 0; i < 7; i++) tr.append(elx('td', null, '·')); else tr.append(elx('td', null, fmtRes(S.game, r.finish)), elx('td', null, Math.round(r.acc * 100) + '%'), elx('td', null, String(r.lances)), elx('td', null, String(r.slings)), elx('td', null, String(r.missiles)), elx('td', null, String(r.nests)), elx('td', null, String(r.destroyed))); tb.appendChild(tr); }
+  }
+  renderScore(); renderStyles();
+  const med = (a) => { const v = a.filter((x) => x != null).sort((x, y) => x - y); return v.length > a.length / 2 ? v[Math.floor(v.length / 2)] : null; };
+  function runScorecard(game, seeds, done, progress) {
+    const rows = {}, jobs = []; for (const c of [1, 2, 3, 4]) { rows[c] = {}; for (const d of COLS) jobs.push([c, d]); }
+    let j = 0;
+    const next = () => {
+      if (j >= jobs.length) { done(rows); return; }
+      const [c, d] = jobs[j++], extra = d === 'NoSling' ? { noSling: true } : d === 'NoArray' ? { noArray: true } : null;
+      rows[c][d] = med(seeds.map((s) => runHeadless(game, c, extra ? 'Hard' : d, s, extra).finish)); progress && progress(rows); setTimeout(next, 0);
+    };
+    setTimeout(next, 20);
+  }
+  function runStyles(game, seeds, done, progress) {
+    const rows = {}; let j = 0;
+    const next = () => {
+      if (j >= STYLES.length) { done(rows); return; }
+      const st = STYLES[j++], rs = seeds.map((s) => runHeadless(game, 4, 'Hard', s, { style: st.name, lv: Object.assign({}, st.lv) }));
+      const pick = (k) => med(rs.map((r) => r[k]));
+      rows[st.name] = { finish: pick('finish'), acc: pick('acc') || 0, lances: Math.round(pick('lances') || 0), slings: Math.round(pick('slings') || 0), missiles: Math.round(pick('missiles') || 0), nests: Math.round(pick('nests') || 0), destroyed: Math.round(pick('destroyed') || 0) };
+      progress && progress(rows); setTimeout(next, 0);
+    };
+    setTimeout(next, 20);
+  }
+  $('scoreBtn').addEventListener('click', () => {
+    const g = S.game; $('scoreBtn').disabled = true; $('scoreNote').textContent = 'Flying every level and both controls on every intensity of ' + GAMES[g].name + '…';
+    runScorecard(g, SEEDS, (rows) => { scores[g] = rows; try { localStorage.setItem(LS + '.score', JSON.stringify(scores)); } catch (e) { /* storage blocked */ } renderScore(); $('scoreBtn').disabled = false; $('scoreNote').textContent = GAMES[g].name + ': median of five seeds per cell, seconds. ' + (g === 'thread' ? 'Lower is better; DNF = not every crystal in ' + CAP + ' s. Hard should beat Medium and Easy, and the no-sling control should be far slower.' : 'Higher is better; ' + CAP + '+ = the den held to the cap. The no-sling control should match Hard (a drift control); the no-array control shows what the missiles are worth.'); }, (rows) => { if (S.game === g) renderScore(rows); });
+  });
+  $('styleBtn').addEventListener('click', () => {
+    const g = S.game; $('styleBtn').disabled = true;
+    runStyles(g, SEEDS, (rows) => { styleScores[g] = rows; try { localStorage.setItem(LS + '.styles', JSON.stringify(styleScores)); } catch (e) { /* storage blocked */ } renderStyles(); $('styleBtn').disabled = false; }, (rows) => { if (S.game === g) renderStyles(rows); });
+  });
+
+  // ---- the decision log (/labmaker 2.5): shared in the artifact's `decisions`, else kept in this browser ----
+  const LOCAL_LOG = LS + '.log';
+  let db = null, me = '', remote = [], localLog = [];
+  try { localLog = JSON.parse(localStorage.getItem(LOCAL_LOG) || '[]') || []; } catch (e) { localLog = []; }
+  const lsLog = () => { try { localStorage.setItem(LOCAL_LOG, JSON.stringify(localLog)); } catch (e) { /* storage blocked */ } };
+  function settingsDiff() { const d = {}; for (const k in K) if (K[k] !== SHIPPED_AT_LOAD[k]) d[k] = K[k]; return { changed: d, ship: S.ship, levels: Object.assign({}, S.lv), game: S.game, intensity: S.course }; }
+  function renderLog() {
+    const box = $('logList'); box.textContent = '';
+    const all = remote.filter((d) => d.studio === 'shrike').concat(localLog.map((d) => Object.assign({ local: true }, d)));
+    if (!all.length) { box.appendChild(elx('div', 'note', 'No decisions yet.')); return; }
+    for (const d of all.slice(0, 40)) { const row = elx('div'); row.append(elx('b', null, d.topic + ': '), document.createTextNode(d.choice + (d.note ? ' (' + d.note + ')' : '') + (d.local ? ' · this browser' : '') + ' · ' + new Date(d.createdAt).toLocaleString())); box.appendChild(row); }
+  }
+  $('logRecord').addEventListener('click', async () => {
+    const choice = $('logChoice').value.trim(); if (!choice) { $('logChoice').focus(); return; }
+    const body = { studio: 'shrike', topic: $('logTopic').value, choice, note: $('logNote').value.trim(), settings: settingsDiff(), style: S.style, createdAt: Date.now(), by: me };
+    $('logChoice').value = ''; $('logNote').value = '';
+    if (db) { try { await db.collection('decisions').add(body); return; } catch (e) { /* fall back to this browser */ } }
+    localLog.unshift(Object.assign({ localId: Date.now() }, body)); lsLog(); renderLog();
+  });
+  $('logCopy').addEventListener('click', () => { const txt = JSON.stringify(remote.filter((d) => d.studio === 'shrike').concat(localLog), null, 1); try { navigator.clipboard.writeText(txt); $('logStatus').textContent = 'Copied ' + txt.length + ' characters.'; } catch (e) { /* clipboard blocked */ } });
+  (async function connect() {
+    const status = $('logStatus'), c = window.claude;
+    if (!c || typeof c.use !== 'function') { status.textContent = 'Kept in this browser (Copy log to send it). Open the published artifact to share decisions.'; renderLog(); return; }
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u && u.id) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) { status.textContent = 'Kept in this browser (Copy log to send it).'; renderLog(); return; }
+    status.textContent = 'Shared log: saved with the studio, readable by Claude.';
+    for (const d of localLog.slice()) { const body = Object.assign({}, d); delete body.localId; try { await db.collection('decisions').add(body); localLog = localLog.filter((x) => x.localId !== d.localId); lsLog(); } catch (e) { break; } }
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); },
+      (err) => { status.textContent = 'Shared log unavailable (' + (err && err.code || 'error') + '); kept in this browser.'; db = null; renderLog(); });
+    renderLog();
+  })();
+
+  // ---- HUD ----
+  const pillCd = (id, frac, ready, on) => { const el = $(id); el.classList.toggle('ready', ready); el.classList.toggle('on', !!on); el.firstElementChild.style.width = Math.round(100 * clamp(frac, 0, 1)) + '%'; };
+  function hud() {
+    if (!W) return;
+    const P = viewed(W); W.watch = P.i;
+    $('hWho').textContent = P.domain.name + (P.spec.ai ? ' · AI ' + P.spec.ai : P.held ? ' · AI holding' : '') + ' · speed u/s';
+    $('hSpeed').textContent = Math.round(P.speed);
+    $('hSub').textContent = (P.sling ? 'Void Sling: ' + Math.round(P.sling.dist) + ' u in ' + K.slingSeconds + ' s' : P.docked ? (P.docked.nest ? (P.docked.nest.isDen ? 'docked in the den' : 'docked in a nest') + ': cooldowns x' + K.dockBonusShielded : 'docked: cooldowns x' + cdBonus(P)) : 'cruise ' + cruiseOf() + ' u/s') + ' · ' + (P.style ? P.style.name : '');
+    if (W.game === 'thread') { $('hGoal').textContent = 'Window ' + Math.min(P.crystals + 1, W.walls.length) + '/' + W.walls.length + (W.walls[P.crystals] ? ' · ' + W.walls[P.crystals].win + ' u' : ''); $('hMass').textContent = P.destroyed + ' destroyed'; }
+    else { $('hGoal').textContent = 'Wave ' + (W.wave + 1) + ' · den ' + W.den.blocks.filter((b) => !b.dead).length + ' blocks, ' + W.den.health + ' health'; $('hMass').textContent = 'accuracy ' + (P.lances ? Math.round(100 * P.lanceHits / P.lances) : 0) + '%'; }
+    pillCd('pLance', 1 - P.lanceCd / K.lanceCooldown, P.lanceCd <= 0);
+    pillCd('pSling', 1 - P.slingCd / Math.max(0.01, P.m.slingCd), P.slingCd <= 0 && !P.noSling, !!(P.sling || P.tether));
+    const nests = ownNests(W, P), ammo = nests.reduce((s, n) => s + (n.turret.alive ? Math.max(0, n.health - 1) : 0), 0);
+    pillCd('pArray', ammo > 0 ? 1 : 0, ammo > 0 && !P.noArray, P.painting);
+    pillCd('pNest', 1 - P.nestCd / K.nestCooldown, P.nestCd <= 0, !!(P.docked && P.docked.nest));
+    $('pArray').firstChild.textContent = P.painting ? (P.lock ? 'Locked' : 'Painting') : 'Array';
+    $('hDock').textContent = P.sling ? 'slinging' : P.tether ? 'tether out' : P.docked ? 'docked' : 'flying' + (P.outT > 0 ? ' · out of range' : '');
+    $('hNests').textContent = 'nests ' + nests.filter((n) => !n.isDen).length + ' · missiles ready ' + ammo;
+    const al = $('hAlert'); let msg = null, calm = false;
+    const lockedBy = W.pilots.find((O) => O !== P && O.painting && O.lock && O.lock.kind === 'vessel' && O.lock.ref === P);
+    if (W.denFell != null) msg = 'The den has fallen';
+    else if (lockedBy) msg = 'Locked on by ' + lockedBy.domain.name + ': evade';
+    else if (P.outT > 0) { msg = 'Out of range ' + P.outT.toFixed(1) + ' s: pulling back'; calm = true; }
+    al.hidden = !msg; if (msg) { al.textContent = msg; al.classList.toggle('calm', calm); }
+    $('vignette').classList.toggle('on', !!lockedBy);   // "enemy vessels that get locked on will have a vignette"
+    const b = $('board'); b.textContent = '';
+    const hd = elx('div', 'hd'); hd.append(elx('span', null, GAMES[W.game].name + ' I' + W.I + ' · ' + W.t.toFixed(1) + ' s'), elx('span', null, W.game === 'thread' ? 'crystals / ' + W.walls.length : 'accuracy')); b.appendChild(hd);
+    W.pilots.slice().sort((a, c) => W.game === 'thread' ? ((a.finishT ?? 1e9) - (c.finishT ?? 1e9) || c.crystals - a.crystals) : 0).forEach((X) => {
+      const row = elx('div', 'pl'), dot = elx('span', 'dot'); dot.style.background = X.domain.css;
+      const st = elx('span', 'st', W.game === 'thread' ? (X.finishT != null ? X.finishT.toFixed(1) + ' s' : X.crystals + (X.spec.ai || X.held ? ' · ' + X.aiState : '')) : (X.lances ? Math.round(100 * X.lanceHits / X.lances) + '%' : '·') + (X.spec.ai || X.held ? ' · ' + X.aiState : ''));
+      if (X.hc && X.hc.misjudged) st.style.color = 'var(--hard)'; else if (X.hc && X.hc.unnoticed) st.style.color = 'var(--medium)';
+      row.append(dot, elx('span', null, X.domain.name + (X.spec.ai ? ' · ' + X.spec.ai : '')), st); b.appendChild(row);
+    });
+    abCards.lance.st.textContent = P.lanceCd > 0 ? P.lanceCd.toFixed(1) + ' s' : 'ready · ' + P.m.lanceR.toFixed(1) + ' u'; abCards.lance.c.classList.toggle('on', P.lanceCd <= 0);
+    abCards.sling.st.textContent = P.sling ? 'slinging' : P.slingCd > 0 ? P.slingCd.toFixed(1) + ' s' : 'ready'; abCards.sling.c.classList.toggle('on', !!P.sling);
+    abCards.array.st.textContent = P.painting ? (P.lock ? 'locked: ' + P.lock.kind : 'no target') : ammo + ' missiles'; abCards.array.c.classList.toggle('on', P.painting);
+    abCards.nest.st.textContent = P.docked ? 'docked' : P.nestCd > 0 ? P.nestCd.toFixed(1) + ' s' : 'build ready'; abCards.nest.c.classList.toggle('on', !!P.docked);
+    $('readWho').textContent = P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : '');
+    const rows = [['speed', P.speed.toFixed(1) + ' u/s'], ['state', P.sling ? 'slinging' : P.docked ? 'docked' : 'flying'], ['cooldowns', 'x' + cdBonus(P)], ['lance radius', P.m.lanceR.toFixed(2) + ' u'],
+      ['sling cooldown', P.m.slingCd.toFixed(1) + ' s'], ['lock-on cone', P.m.cone.toFixed(1) + '°'], ['nest blocks', String(P.m.nestBlocks)], ['trail every', P.m.wave.toFixed(1) + ' u'],
+      ['lances / hits', P.lances + ' / ' + P.lanceHits], ['slings', String(P.slings)], ['missiles', String(P.missiles)], ['nests built', String(P.nests)], ['destroyed', String(P.destroyed)], ['petal hits dealt', String(P.hits)], ['petal hits taken', String(P.petalsLost)],
+      ['AI state', P.spec.ai || P.held ? P.aiState : 'player'], ['mistakes', P.spec.ai ? String(P.mistakes) : '—']];
+    const box = $('read'); if (box.childElementCount !== rows.length * 2) { box.textContent = ''; for (const [k] of rows) box.append(elx('span', null, k), elx('b')); }
+    rows.forEach(([, v], i) => { box.children[i * 2 + 1].textContent = v; });
+    const live = race === 'running' && !paused;   // the universal transport (D18)
+    $('tpPlay').textContent = live ? '❚❚ Pause' : '▶ Play'; $('tpPlay').classList.toggle('on', live); $('tpPlay').setAttribute('aria-pressed', paused ? 'true' : 'false');
+    $('tpStop').disabled = race === 'ready';
+    $('tStart').textContent = live ? '❚❚ Pause' : '▶ Play';
+    while (W.events.length) say0(W.events.shift());
+  }
+  // screen markers: the crystal, the paint lock, where the sling would anchor (drawn on the HUD, never in the scene: L-STU-53)
+  const toScreen = (x) => { const v = x.clone().project(cam); return v.z > 1 ? null : { x: (v.x + 1) / 2 * canvas.clientWidth, y: (1 - v.y) / 2 * canvas.clientHeight }; };
+  let landT = 0, landing = null;
+  function markers(W, dt) {
+    const P = viewed(W); cam.updateMatrixWorld();
+    $('scope').classList.toggle('on', scopeView); $('reticle').hidden = scopeView; $('zoomTag').textContent = 'x' + (P.spec.ai ? 2 : P.zoom).toFixed(1);
+    if (!P.crystal || race === 'finished') mark.hide();
+    else mark.set(cam, P.crystal.pos, 'Window ' + (P.crystals + 1) + '/' + W.walls.length + ' · ' + Math.round(P.crystal.pos.distanceTo(P.pos)) + ' u', '#' + new THREE.Color(P.domain.color).getHexString(), canvas.clientWidth, canvas.clientHeight);
+    const lb = $('lockbox'), lp = P.painting && P.lock ? toScreen(lockPoint(P.lock)) : null;
+    lb.classList.toggle('on', !!lp); if (lp) { lb.style.left = lp.x + 'px'; lb.style.top = lp.y + 'px'; }
+    landT -= dt;
+    if (S.landing && !P.sling && !P.tether && P.slingCd <= 0 && !P.noSling && landT <= 0) {   // the sling's anchor and whether the hull would clip on the way
+      landT = 0.1; landing = null; const f = fwdOf(P.quat), o = P.pos.clone().addScaledVector(f, 4); let best = null;
+      rayBlocks(W, o, f, K.slingRange, 0, (p, t) => { if (P.docked && (P.docked.p === p || (P.docked.nest && p.nest === P.docked.nest))) return; if (p.kind === 'trail' && p.owner === P.i && W.t - p.t0 < 1) return; if (!best || t < best.t) best = { p, t }; });
+      if (best) { const x = o.clone().addScaledVector(f, best.t), cor = corridor(W, P, x, K.hullRadius, best.p); landing = { x, clip: cor.cluster + cor.frame + cor.panel + cor.other > 0 }; }
+    } else if (!S.landing || P.sling || P.tether || P.slingCd > 0) landing = null;
+    const ld = $('landing'), sp = landing ? toScreen(landing.x) : null;
+    ld.classList.toggle('on', !!sp); if (sp) { ld.style.left = sp.x + 'px'; ld.style.top = sp.y + 'px'; ld.classList.toggle('clip', landing.clip); }
+  }
+
+  // ================= loop =================
+  let lastW = 0, lastH = 0;
+  function resize() { const w = canvas.clientWidth || 960, h = canvas.clientHeight || Math.round(w * 10 / 16); if (w === lastW && h === lastH) return; lastW = w; lastH = h; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+  window.addEventListener('resize', resize);
+  let last = performance.now(), hudT = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; resize();
+    const hin = humanInput();
+    if (W && race === 'running' && !paused && !LAB.manualClock) {   // the lab contract's manual clock stops the frame loop's sim
+      for (let s = 0; s < S.speed; s++) {
+        stepWorld(W, dt, W.pilots.map((P, i) => i === 0 ? pilotInput(W, P, hin, dt) : aiInput(W, P)));
+        if (W.over) { finishRace(); break; }
+      }
+    } else if (W && race !== 'running') {   // ready or paused: the stick still aims a docked hull's view, nothing else moves
+      const P = W.pilots[0]; if (hin.zoom) P.zoom = clamp(P.zoom * Math.exp(hin.zoom * 0.7 * S.zoomFeel * dt), 1, 8);
+    }
+    ENV.update(dt);
+    if (W) { drawWorld(W, now / 1000); placeCamera(W, dt, false); markers(W, dt); }
+    renderer.render(scene, cam);
+    hudT += dt; if (hudT > 0.1) { hudT = 0; hud(); }
+    requestAnimationFrame(frame);
+  }
+  // ================= the editor layout (D8, studio-ide.js): the six settings tabs in the universal order (D21, D25, D27) =================
+  const IDE = VesselStudioIDE.build({
+    key: 'shrike-studio-ide-v1', host: document.querySelector('.layout'), stage: $('viewport'),
+    right: [['scene', 'Scene Config', [$('grp-scene'), $('grp-world')]], ['game', 'Game Config', [$('grp-game'), $('grp-intensity'), $('grp-players')]], ['ai', 'AI Config', [$('grp-ai'), document.querySelector('.afternote')]],
+      ['style', 'Play Style Config', [$('grp-style'), $('grp-elements'), $('grp-kit')]], ['input', 'Input', [$('grp-controls'), $('grp-feel')]],
+      ['others', 'Vessel Config', [$('grp-abilities'), $('grp-hull'), $('grp-live')]]],
+    bottom: [['score', 'Scorecard', [$('grp-score')]], ['runs', 'Runs', [$('grp-runs')]], ['log', 'Decisions', [$('grp-log')]], ['about', 'About', [document.querySelector('header .sub'), $('grp-about')]]],
+    railW: 390, dockH: 250, winSize: { score: [820, 420], runs: [680, 360] },
+    onLayout: () => { lastW = lastH = 0; },
+  });
+  VesselStudioIDE.sectionPicker(document.querySelector('.vside-pane[data-tab="others"]'), 'shrike-studio', 'vessel');   // Vessel Config: one section at a time (D27)
+  syncRail(); renderRuns(); rebuildCourseNotes(); renderLog();
+  newRace(); hud();
+  requestAnimationFrame((t) => { last = t; frame(t); });
+  if (PLATFORM.device === 'phone') setPlayMode(true);   // detected, never asked (D26)
+
+  // the /labmaker contract (window.__lab, verify_lab.cjs): SHIPPED + its SPEC rows, the live numbers, a manual clock,
+  // a seeded reset, the scorecard and a deterministic headless batch (Hard, seed 11, both minigames at I1)
+  const idleIn = { sx: 0, sy: 0, lance: false, sling: false, paint: false, dock: false, active: false };
+  Object.assign(LAB, {
+    SHIPPED: SHIPPED_AT_LOAD, SPEC: KIT_ROWS, P: K, PLATFORM,
+    reset: (seed) => { seedN = seed == null ? 1 : seed; newRace(); race = 'running'; paused = false; $('overlay').hidden = true; },
+    tick: (dt, n) => { for (let i = 0; i < (n || 1); i++) { if (!W || W.over) break; stepWorld(W, dt, W.pilots.map((P, k) => k === 0 ? pilotInput(W, P, idleIn, dt) : aiInput(W, P))); } },
+    state: () => ({ t: W ? +W.t.toFixed(4) : 0, race, game: S.game }),
+    score: (done) => runScorecard(S.game, SEEDS, done || (() => {})),
+    runBatch: () => ({ threadI1: runHeadless('thread', 1, 'Hard', 11).finish, denI1: runHeadless('den', 1, 'Hard', 11).finish }),
+  });
+  window.__lab = LAB;
+  // test hook for scripted checks and later sessions (D14); no effect on play
+  window.__shrikeStudio = {
+    get state() { return { race, t: +W.t.toFixed(2), game: W.game, intensity: W.I, prisms: W.prisms.filter((p) => !p.dead).length, nests: W.nests.filter((n) => !n.dead).length, asteroids: W.asteroids.filter((a) => !a.dead).length, denFell: W.denFell, pilots: W.pilots.map((p) => ({ name: p.domain.name, ai: p.spec.ai, style: p.spec.style, docked: !!p.docked, slinging: !!p.sling, crystals: p.crystals, finishT: p.finishT, lances: p.lances, lanceHits: p.lanceHits, slings: p.slings, missiles: p.missiles, nests: p.nests, destroyed: p.destroyed, speed: +p.speed.toFixed(1), state: p.aiState })) }; },
+    get race() { return race; },
+    set: (k, v) => {
+      if (k === 'you') { const ps = S.players.map((x) => Object.assign({}, x)); ps[0].ai = v !== 'You'; if (v !== 'You') ps[0].level = v; racePanel.set('players', ps); return; }
+      if (k === 'game') { S.game = v; $('gameSel').value = v; save(); rebuildCourseNotes(); newRace(); return; }
+      if (k === 'course') { racePanel.set('course', v); return; }
+      S[k] = v; save(); newRace();
+    },
+    camera: (c) => { S.cam = c; racePanel.set('camera', c, true); save(); }, free,
+    startRace, stopRace, newRace, runHeadless, runScorecard, runStyles, mults, makeWorld, stepWorld, aiInput, KIT: K, WORLD, SHIPPED: SHIPPED_AT_LOAD, ide: IDE,
+    get world() { return W; },
+  };
+})();
+</script>
+</html>
+<script src="sync.js"></script>

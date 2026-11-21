@@ -5,8 +5,10 @@ namespace CosmicShore.UI
 	public class JustRotate : MonoBehaviour
 	{
 		public bool canRotate = true;
-		public float speed = 10;
-        public Vector3 direction;
+		[SerializeField] float speed = 10;
+		public float Speed => speed;
+        [SerializeField] Vector3 direction;
+        public Vector3 Direction => direction;
 
         void Update()
 		{

@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 
 
@@ -28,6 +29,18 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool lockToAngle = false;
         [SerializeField, Min(1f)] float maxTurnDegrees = 45f;
 
+        [Header("Elemental")]
+        [Tooltip("Element scaling on the turn rate. On the Manta's two Yawstery assets it is TIME, x1 at rest -> x1.5 at " +
+                 "Time 10 (floor x0.5): a Time-heavy Manta whips its flat turns round faster, a tempo dial beside the cruise " +
+                 "and soar speed Time already raises (2026-11-18, the element-placeholder pass). Disabled = a fixed rate.")]
+        [SerializeField] ElementalFloat turnRateMultiplier = new(1f);
+
+        [Header("Trail")]
+        [Tooltip("Drive the vessel's turn-trail state from this turn's intensity — the outer-" +
+                 "lane prism flare, and the Mass-5 Shielded Turn Trails window " +
+                 "(VesselPrismController.SetTurnTrail). The Manta's Yawstery assets author ON.")]
+        [SerializeField] bool driveTrailFlare = false;
+
         [Header("Animation (future)")]
         [SerializeField] string animatorParamFloat = "";
         [SerializeField] string animatorParamTriggerStart = "";
@@ -42,6 +55,10 @@ namespace CosmicShore.Gameplay
 
         public bool LockToAngle => lockToAngle;
         public float MaxTurnDegrees => maxTurnDegrees;
+        /// <summary>The live element multiplier on the turn rate; exactly 1 while disabled.</summary>
+        public float TurnRateMultiplier(IVesselStatus status)
+            => turnRateMultiplier.EvaluateLive(status);
+        public bool DriveTrailFlare => driveTrailFlare;
 
         public string AnimFloat => animatorParamFloat;
         public string AnimStart => animatorParamTriggerStart;

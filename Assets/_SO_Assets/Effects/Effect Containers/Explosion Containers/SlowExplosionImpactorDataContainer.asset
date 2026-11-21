@@ -12,6 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 841db4ce66da4384a711272307733e0f, type: 3}
   m_Name: SlowExplosionImpactorDataContainer
   m_EditorClassIdentifier: 
-  vesselExplosionEffects:
-  - {fileID: 11400000, guid: 9b73c6f4d4a27c7498feb2bfc951c835, type: 2}
+  vesselExplosionEffects: []
   explosionPrismEffects: []

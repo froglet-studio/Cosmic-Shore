@@ -71,11 +71,29 @@ namespace CosmicShore.Gameplay
                     maxTotalSpawnedObjects * tuning.MaxTotalSpawnedObjectsScale + 0.5f));
         }
 
+        /// <summary>
+        /// The ASSEMBLY half of the Mass/Space law (<c>Flora.ElementalReachScale</c>). This
+        /// family's leaf DOES carry a length, so the leaf transform already lengthens a Space
+        /// needle - but the branch STEP is a separate authored distance, and leaving it alone
+        /// would stretch the prisms past the gaps they are meant to span. Scaling the step with
+        /// them keeps a Space plant a wider skeleton and a Mass plant the neutral plant grown whole
+        /// (Docs/ECOSYSTEM.md §65), rather than either one changing how densely its own branches are packed.
+        /// </summary>
+        protected override void OnElementResolved()
+        {
+            base.OnElementResolved();
+
+            float reach = ElementalReachScale;
+            if (Mathf.Approximately(reach, 1f)) return;
+
+            branchingScaleFactor *= reach;
+        }
+
         public override void Initialize(Cell cell)
         {
             base.Initialize(cell);
 
-            // CrystalTransform is null in a cell that holds no crystal (it logs and returns null),
+            // CrystalTransform is null in a cell that holds no crystal (a normal state),
             // so resolve it ONCE and fall back to the plant's own growth axis - a crystal-less
             // cell should grow an unaimed plant, not throw on the first one it seeds.
             var crystalTransform = cellData ? cellData.CrystalTransform : null;
@@ -125,11 +143,14 @@ namespace CosmicShore.Gameplay
             var leaves = GetComponentsInChildren<HealthPrism>(true);
             if (leaves != null && leaves.Length != 0) yield break;
             CSDebug.LogWarning($"{name}: BranchingFlora had no HealthPrisms after {seconds}s. Auto-dying.");
-            Die();
+            DieOnce();
         }
         void SeedBranches()
         {
-            for (int i = 0; i < Random.Range(minTrunks, maxTrunks + 1); i++)
+            // Rolled ONCE. Re-rolling in the loop condition re-drew the bound every iteration,
+            // so the trunk count skewed hard toward minTrunks and maxTrunks was almost never hit.
+            int trunkCount = Random.Range(minTrunks, maxTrunks + 1);
+            for (int i = 0; i < trunkCount; i++)
             {
                 Branch branch = new Branch();
                 branch.gameObject = Instantiate(spindle, transform.position, transform.rotation).gameObject;
@@ -174,6 +195,15 @@ namespace CosmicShore.Gameplay
                     Branch newBranch = new Branch();
                     if (Random.value < leafChance)
                     {
+                        // THE HEART'S CLEARANCE (Docs/ECOSYSTEM.md §65): a branch that curls back onto its own
+                        // crystal ends there without a leaf, so no leaf - and no Mass leaf's shield - sits in the
+                        // heart's swing. The branch still terminates, exactly as a leaf would have ended it.
+                        if (IntrudesOnHeart(HeartTransform.position, ChildPosition(branch),
+                                branch.gameObject.transform.rotation, LeafSize))
+                        {
+                            branchesToRemove.Add(branch);
+                            continue;
+                        }
                         newBranch.gameObject = EnvironmentPrismPool.Get(healthPrism, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
                         ScaleAndPositionBranch(ref newBranch, branch);
                         var newHealthblock = newBranch.gameObject.GetComponent<HealthPrism>();
@@ -226,7 +256,7 @@ namespace CosmicShore.Gameplay
 
         public override void Plant()
         {
-            // A pinned position (the Lifeform Matrix toy's spawn-here stations) wins over dispersal.
+            // A pinned position (the Spawn Matrix toy's spawn-here stations) wins over dispersal.
             if (TryGetPlantPositionOverride(out var pinned))
             {
                 transform.position = pinned;
@@ -242,6 +272,15 @@ namespace CosmicShore.Gameplay
                 float radius = ResolvePlantRadius(legacyRadius: plantRadius);
                 transform.position = ResolvePlantCenter() + (radius * Random.onUnitSphere);
             }
+        }
+
+        /// <summary>Where <see cref="ScaleAndPositionBranch"/> puts a child of <paramref name="branch"/> - one step
+        /// forward, foreshortened past depth 1.</summary>
+        Vector3 ChildPosition(Branch branch)
+        {
+            Transform t = branch.gameObject.transform;
+            return branch.depth <= 1 ? t.position + branchingScaleFactor * t.forward
+                                     : t.position + branchingScaleFactor / (branch.depth - 1) * t.forward;
         }
 
         void ScaleAndPositionBranch(ref Branch newBranch, Branch branch)
@@ -299,7 +338,9 @@ namespace CosmicShore.Gameplay
 
                     if (rng.NextDouble() < leaf)
                     {
-                        into.Add(new SpawnPoint(childPos, rot, leafScale));
+                        // Grow()'s heart clearance: the plant's origin is its heart here.
+                        if (!IntrudesOnHeart(Vector3.zero, childPos, rot, leafScale))
+                            into.Add(new SpawnPoint(childPos, rot, leafScale));
                         continue; // a leaf terminates the branch, as in Grow()
                     }
 

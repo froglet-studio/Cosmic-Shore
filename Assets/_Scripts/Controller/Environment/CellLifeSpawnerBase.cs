@@ -170,7 +170,10 @@ namespace CosmicShore.Gameplay
             // The reconstruction path re-enters here with a pinned pose, so it must NOT be gated
             // out - it passes an explicit domainOverride, which is exactly what a decision that
             // came off the wire looks like and what a local roll never has.
-            if (config && config.NetworkSynced && !fromReplication && !FloraNetworkSync.IsSimAuthority)
+            // A SATELLITE cell (a voyage corridor's world, a mode preview) is stood by each peer for itself and has no
+            // network identity (CellConveyor strips it), so every peer seeds every species there, replicated or not
+            // (Docs/Voyages/PARTY.md §2; Garrett's claude/voyage-coop).
+            if (config && config.NetworkSynced && !fromReplication && !FloraNetworkSync.IsSimAuthority && !host.IsSatellite)
                 return null;
 
             // IsRecording-guarded label: this runs for EVERY gameplay spawn, so the disarmed
@@ -185,7 +188,7 @@ namespace CosmicShore.Gameplay
             flora.domain = domainOverride ?? PickRandomDomain(excludedDomain);
 
             // A caller-specified position PINS the planting spot - Plant() implementations
-            // honor it instead of dispersing the flora across the cell (the Lifeform Matrix
+            // honor it instead of dispersing the flora across the cell (the Spawn Matrix
             // toy roots the spawn where the player triggered it).
             // An authored planting site also carries the ground's normal, so a plant rooted in a
             // garden bed grows away from the bed instead of toward the cell crystal.
@@ -301,6 +304,12 @@ namespace CosmicShore.Gameplay
             pop.Initialize(host);
 
             RegisterSpawned(host, pop.gameObject);
+
+            // No config reaches this overload, so this newborn is never replicated - but it
+            // still carries the prefab's NetworkObject, and an un-spawned one is a scene-object
+            // index collision waiting for the next joiner. Resolve it here rather than leaving
+            // the hazard parked in an entry point that currently has no callers.
+            FaunaNetworkSync.ServerSpawn(pop);
             return pop;
         }
 
@@ -309,7 +318,8 @@ namespace CosmicShore.Gameplay
         /// instead of rolling randomly. Used by the regulated fauna spawn loop so new
         /// fauna track the live leader rather than producing inconsistent domain mixes.
         /// </summary>
-        public static Fauna SpawnFaunaWithDomain(Cell host, Fauna faunaPrefab, Vector3 goal, Domains domain, Vector3? spawnPosition = null)
+        public static Fauna SpawnFaunaWithDomain(Cell host, Fauna faunaPrefab, Vector3 goal, Domains domain,
+                                                 Vector3? spawnPosition = null, FaunaConfigurationSO cfg = null)
         {
             if (!host || !faunaPrefab) return null;
 
@@ -326,9 +336,40 @@ namespace CosmicShore.Gameplay
             pop.domain = domain;
             pop.Goal = goal;
 
+            // Per-world species data (FaunaConfigurationSO.SpeciesDataOverride) is bound BEFORE
+            // Initialize: a colony builds its chain, a substrate claims its block and a builder
+            // seeds its lattice in there, all off the data asset. Same seam argument as the
+            // lineage bind below - this is the one Instantiate every producer reaches.
+            if (cfg && pop is ISpeciesDataOverride speciesData)
+                speciesData.BindSpeciesData(cfg);
+
             pop.Initialize(host);
 
             RegisterSpawned(host, pop.gameObject);
+
+            // Lineage bind + replication seam, for EVERY producer.
+            //
+            // These used to live in SpawnFaunaBanded, one level up, with a comment asking the
+            // next author not to add a spawn site that skipped it. Three sites did anyway - the
+            // arcade mode preview, the Spawn Matrix toy and the Wanderway conveyor - because
+            // they legitimately need placement this method already does and had no reason to
+            // suspect a seam lived in a sibling. That is the platform's own rule arriving from a
+            // new direction: A RULE ENFORCED AT ONE PRODUCER CAN ONLY EVER SEE THAT PRODUCER.
+            // Here it is enforced at the one Instantiate every producer reaches, so a fourth
+            // site cannot bypass it by construction.
+            //
+            // What bypassing it COST is Docs/PartySystem/BUGS.md B5: an un-spawned NetworkObject
+            // is adopted by Netcode as an IN-SCENE object, and two of one prefab in one scene
+            // collide in the scene-object index and break synchronization for every LATER
+            // joiner. The preview alone released four of one prefab into Menu_Main.
+            //
+            // AFTER AssignLineage, never before: the lineage bind rolls this individual's
+            // element, and that element is the identity the spawn payload carries to peers.
+            // No-ops unless the species is rolled out (FaunaConfigurationSO.NetworkSynced); a
+            // newborn with NO config is neutralized, which is the correct reading of "a species
+            // with no config is never replicated".
+            if (cfg) pop.AssignLineage(host, cfg);
+            FaunaNetworkSync.ServerSpawn(pop);
             return pop;
         }
 
@@ -346,6 +387,10 @@ namespace CosmicShore.Gameplay
         // RandomLifeSpawner and the cell was running IntensityWiseLifeSpawner.
         //
         // Both spawners now call SpawnFaunaBanded. Do not add a third spawn site that does not.
+        //
+        // That plea used to cover REPLICATION as well, and three sites broke it (B5). The
+        // replication seam has since moved down into SpawnFaunaWithDomain, where no producer
+        // can miss it; what is left here is genuinely about BANDED PLACEMENT only.
 
         /// <summary>True when this species is penned to a band and needs banded placement.</summary>
         protected static bool IsBanded(FaunaConfigurationSO cfg) => cfg && cfg.BandOuterRadius > 0f;
@@ -412,6 +457,44 @@ namespace CosmicShore.Gameplay
             return centre + offset / d * RandomBandRadius(inner, outer);
         }
 
+        /// <summary>
+        /// A point in the cell's open water - volume-uniform between just outside the nucleus and
+        /// just inside the membrane. For a placement that has no band, no planting site and no
+        /// mass to steer by (an unbanded creature released into an empty cell), so it lands
+        /// somewhere in the cell instead of on the crystal or the centre.
+        /// </summary>
+        public static Vector3 RandomPointInCytoplasm(Cell host)
+        {
+            if (!host) return Vector3.zero;
+            float membrane = host.MembraneRadius;
+            if (membrane <= 0f) return host.transform.position;
+
+            float nucleus = Mathf.Max(host.NucleusWorldRadius, host.NucleusVisualWorldRadius);
+            float outer = membrane * 0.85f;
+            float inner = Mathf.Min(Mathf.Max(nucleus * 1.15f, membrane * 0.2f), outer * 0.9f);
+            return host.transform.position
+                   + UnityEngine.Random.onUnitSphere * RandomBandRadius(inner, outer);
+        }
+
+        /// <summary>
+        /// Plant one flora of this species where the species naturally grows. When the cell's
+        /// authored environment prepared ground (a garden's beds, trellis feet and hanging baskets
+        /// - <see cref="FloraPlantingSite"/>), the plant roots THERE, oriented to the bed;
+        /// otherwise its own <c>Plant()</c> disperses it through its planting band (threat flora
+        /// pick their grove site, Borromean honours its pens). Same spawn path either way - a
+        /// garden gets no privileged spawner, only better-chosen ground.
+        /// </summary>
+        public static Flora PlantFlora(Cell host, FloraConfigurationSO floraCfg, Domains? excluded)
+        {
+            if (!host || !floraCfg) return null;
+            // A scattering satellite (a voyage cell, Cell.ScatterLifeSpawns) roots every plant somewhere in its open water.
+            if (host.IsSatellite && host.ScatterLifeSpawns)
+                return SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg, RandomPointInCytoplasm(host));
+            return host.TryTakePlantingSite(floraCfg.PreferredSites, out var pos, out var up)
+                ? SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg, pos, up)
+                : SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
+        }
+
         /// <summary>How far a banded creature may be born from its own initial goal.</summary>
         protected const float BandSpawnJitter = 40f;
 
@@ -422,7 +505,7 @@ namespace CosmicShore.Gameplay
         /// <paramref name="fallbackPosition"/> exactly as before, so every existing biome is
         /// untouched.
         /// </summary>
-        protected static Fauna SpawnFaunaBanded(Cell host, FaunaConfigurationSO cfg, Domains color,
+        public static Fauna SpawnFaunaBanded(Cell host, FaunaConfigurationSO cfg, Domains color,
             Vector3 fallbackGoal, Vector3? fallbackPosition = null)
         {
             if (!host || !cfg || !cfg.FaunaPrefab) return null;
@@ -433,7 +516,8 @@ namespace CosmicShore.Gameplay
             // the banded placement is here - a gate added to one spawner is dead code in every
             // cell that runs the other. Unreplicated species (the default) fall straight through
             // and every peer seeds its own, exactly as today.
-            if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return null;
+            // A satellite cell is each peer's own (see SpawnFlora): every peer seeds it, nothing there replicates.
+            if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority && !host.IsSatellite) return null;
 
             Vector3 goal = fallbackGoal;
             Vector3? position = fallbackPosition;
@@ -447,13 +531,22 @@ namespace CosmicShore.Gameplay
                     goal + UnityEngine.Random.insideUnitSphere * BandSpawnJitter);
             }
 
+            // A scattering satellite (a voyage cell, Cell.ScatterLifeSpawns): an unbanded, unpenned creature is born at
+            // its own fresh point in the cell's open water and seeks it first, so a wave spreads through the whole cell
+            // instead of landing on one feeding ground. Its later goals are its own, as everywhere.
+            else if (host.IsSatellite && host.ScatterLifeSpawns && !host.HasFaunaPen)
+            {
+                goal = RandomPointInCytoplasm(host);
+                position = goal;
+            }
+
             // The CELL's own pen (outer containment + inner exclusion) applies to the birth
             // POSITION too. Fauna.Goal clamps itself in its setter, but a creature born inside a
             // closed pen would already be standing where it is not allowed to be - which reads as
             // the pen leaking. Applied here, at the one spawn call both spawners share, for the
             // same reason banded placement lives here (see the warning above). No-op for every
             // biome that authors no pen.
-            if (host.FaunaExclusionRadius > 0f || host.FaunaContainmentRadius > 0f)
+            if (host.HasFaunaPen)
             {
                 // No explicit position means "the cell centre", which is the one point a closed
                 // inner pen definitely forbids - so resolve it here rather than letting the
@@ -463,17 +556,9 @@ namespace CosmicShore.Gameplay
                 position = host.ClampToFaunaContainment(birth, birth);
             }
 
-            var fauna = SpawnFaunaWithDomain(host, cfg.FaunaPrefab, goal, color, position);
-            if (fauna) fauna.AssignLineage(host, cfg);
-
-            // Replication seam. It goes HERE - the one spawn call both spawners share, for
-            // exactly the reason banded placement does (see the warning above): a seam added to
-            // one spawner is dead code in every cell that runs the other. And it goes AFTER
-            // AssignLineage, because the lineage bind is what rolls this individual's element,
-            // and the element is the identity the spawn payload carries to every peer.
-            // No-ops unless the species is rolled out (FaunaConfigurationSO.NetworkSynced).
-            FaunaNetworkSync.ServerSpawn(fauna);
-            return fauna;
+            // Lineage and replication are SpawnFaunaWithDomain's now (see the seam there), so
+            // this reads as placement only - which is all this method was ever about.
+            return SpawnFaunaWithDomain(host, cfg.FaunaPrefab, goal, color, position, cfg);
         }
 
         protected float GetControllingVolume(GameDataSO gameData) =>
@@ -488,7 +573,7 @@ namespace CosmicShore.Gameplay
 
                 var wait = Mathf.Max(0f, getWaitSeconds?.Invoke() ?? 0f);
                 if (wait <= 0f) yield return null;
-                else yield return new WaitForSeconds(wait);
+                else yield return CosmicShore.Utility.WaitCache.About(wait);
             }
         }
 
@@ -501,13 +586,13 @@ namespace CosmicShore.Gameplay
                     spawnOnce?.Invoke();
                     var w = Mathf.Max(0f, trueWait?.Invoke() ?? 0f);
                     if (w <= 0f) yield return null;
-                    else yield return new WaitForSeconds(w);
+                    else yield return CosmicShore.Utility.WaitCache.About(w);
                 }
                 else
                 {
                     var w = Mathf.Max(0f, falseWait?.Invoke() ?? 0f);
                     if (w <= 0f) yield return null;
-                    else yield return new WaitForSeconds(w);
+                    else yield return CosmicShore.Utility.WaitCache.About(w);
                 }
             }
         }

@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-12-the-seam-walk-now-steers-toward-the-view-5ee504",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-12T04:39:08+00:00",
+  "area": "Charge crystal light (ChargeArcs.cs seam walk)",
+  "summary": "The seam walk now steers toward the viewer so the bolt stays on screen (Garrett's ask); new seamFaceViewer profile field, 0 restores the old walk. Your no-allocation loops are kept.",
+  "branch": "claude/project-thread-yoh2s6",
+  "commit": "670146b36"
+}

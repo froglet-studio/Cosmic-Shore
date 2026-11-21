@@ -39,6 +39,21 @@ namespace CosmicShore.Gameplay
         event Action<string> PlayerLeaving;
 
         /// <summary>
+        /// True once per roster change pushed by the session (a player joined, left, or changed
+        /// properties) since the last call, then false until the next one. Main thread only; the
+        /// caller syncs from <see cref="ActiveSession"/>'s Players, which the SDK has already updated.
+        /// </summary>
+        bool ConsumeRosterChanged();
+
+        /// <summary>
+        /// Moves the ids of the players the session's push said are leaving or left since the last
+        /// call into <paramref name="into"/> (cleared first), for
+        /// <see cref="IPartyMemberService.SyncFromSession"/> to remove at once (Block 5 step 7,
+        /// <see cref="AbsenceStrikes"/>). Main thread only.
+        /// </summary>
+        void TakeDepartures(System.Collections.Generic.ISet<string> into);
+
+        /// <summary>
         /// The wall-clock time (via <c>Time.unscaledTime</c>) when the current
         /// session was created.  Used to enforce the grace period that prevents
         /// premature RefreshAsync failures from nulling a freshly-provisioned session.
@@ -64,6 +79,14 @@ namespace CosmicShore.Gameplay
         /// lobby-events 23006) with back-off; non-transient errors throw to the caller.
         /// </remarks>
         UniTask JoinByIdAsync(string sessionId);
+
+        /// <summary>
+        /// Joins an existing session by its UGS session ID, optionally as a SPECTATOR.
+        /// A spectator carries the <c>spectator</c> player property so every peer's
+        /// party-member sync (<see cref="IPartyMemberService.SyncFromSession"/>) leaves it out
+        /// of the roster - it is a viewer of the match, never a member of the party.
+        /// </summary>
+        UniTask JoinByIdAsync(string sessionId, bool asSpectator);
 
         /// <summary>
         /// Leaves the active session gracefully (delete if host, leave if client).

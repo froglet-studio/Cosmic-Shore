@@ -1,0 +1,112 @@
+# Round 5 raw output (Docs/SWARM_FAUNA.md §10, §11). Regenerate:
+#   python3 Tools/Build/swarm_core_harness/score_combo.py --seeds 7,23,41 --samples 3 --modes research16,research8,game16,game8 --no-ref
+#   python3 Tools/Build/swarm_core_harness/score_combo.py --seeds 7,23,41 --samples 3 --modes researchEvo,gameEvo --no-ref
+#   python3 Tools/Build/swarm_core_harness/evofate_fixture.py fix.json && bash Tools/Build/swarm_core_harness/run.sh evofate <plans> fix.json
+
+## grid (combo) yardstick
+C# yardstick export: 576 records in 135s; self-inflicted deaths 0
+
+YARDSTICK (swarm_eval: 4 own + 12 switches, majority of samples, loss-8 bar)
+  C# research16      seed   7: 15/16  own 1.44 / 1.21 / 2.04 / 3.84  fails ['charge->time(8.02)']
+  C# research16      seed  23: 15/16  own 1.34 / 1.92 / 2.31 / 2.85  fails ['charge->time(9.2)']
+  C# research16      seed  41: 15/16  own 1.51 / 1.58 / 1.86 / 3.11  fails ['time->space(8.41)']
+  C# research8       seed   7: 16/16  own 1.26 / 1.19 / 2.29 / 4.31  fails []
+  C# research8       seed  23: 14/15  own 1.20 / 2.06 / 2.04 / 3.27  fails ['charge->time(8.83)']
+  C# research8       seed  41: 14/16  own 1.42 / 1.75 / 1.81 / 3.82  fails ['charge->time(8.9)', 'time->space(8.17)']
+  C# game16          seed   7: 12/13  own 1.15 / 0.95 / 1.31 / 1.98  fails ['time->mass(43.98)']
+  C# game16          seed  23: 12/13  own 0.98 / 0.81 / 1.18 / 2.04  fails ['time->mass(45.31)']
+  C# game16          seed  41: 13/13  own 0.95 / 0.85 / 1.26 / 2.00  fails []
+  C# game8           seed   7: 12/13  own 1.08 / 0.99 / 1.60 / 1.92  fails ['time->mass(43.49)']
+  C# game8           seed  23: 12/13  own 1.25 / 0.95 / 1.30 / 1.93  fails ['time->mass(42.28)']
+  C# game8           seed  41: 12/13  own 1.24 / 1.05 / 1.31 / 2.02  fails ['time->mass(44.23)']
+
+FEEL (swarm_feel.metrics, mean over plans and seeds)
+  csharp_research16  speed 0.205  jerk_rel 0.580  planar_frac 0.451  coherence 0.632  jitter 0.909  phase 0.837  stuck 0.000  osc 0.031
+  csharp_research8   speed 0.209  jerk_rel 0.571  planar_frac 0.469  coherence 0.629  jitter 0.897  phase 0.832  stuck 0.000  osc 0.030
+  csharp_game16      speed 0.203  jerk_rel 0.574  planar_frac 0.466  coherence 0.641  jitter 0.892  phase 0.710  stuck 0.000  osc 0.029
+  csharp_game8       speed 0.207  jerk_rel 0.567  planar_frac 0.478  coherence 0.648  jitter 0.875  phase 0.716  stuck 0.000  osc 0.029
+
+
+## pre-round-5 grid core (legacy) - first run, before the neighbour-bucket dedupe
+  C# legacy          seed   7:  6/13  own 4.75 / 1.46 / 3.18 / 4.00  fails ['charge->time(25.44)', 'mass->charge(10.24)', 'mass->space(25.5)', 'mass->time(27.02)', 'space->time(9.08)', 'time->mass(61.4)', 'time->space(8.31)']
+  C# legacy          seed  23:  5/13  own 5.81 / 1.27 / 3.66 / 3.51  fails ['charge->space(9.34)', 'charge->time(25.38)', 'mass->charge(10.09)', 'mass->space(25.08)', 'mass->time(26.51)', 'space->time(9.66)', 'time->mass(42.97)', 'time->space(9.91)']
+  C# legacy          seed  41:  6/13  own 5.22 / 1.56 / 3.79 / 3.22  fails ['charge->space(8.73)', 'charge->time(24.55)', 'mass->charge(10.29)', 'mass->space(25.24)', 'mass->time(27.02)', 'space->time(41.24)', 'time->space(9.89)']
+  csharp_legacy      speed 0.210  jerk_rel 0.574  planar_frac 0.458  coherence 0.581  jitter 1.025  phase 0.519  stuck 0.000  osc 0.031
+
+## Python combo (published, results/combo/scorecard.json): G8 16/16, 15/16, 15/16; G16 16/16, 16/16, 14/16; 12-14 ms/step
+
+## evofate yardstick - research mode
+  C# researchEvo     seed   7: 11/13  own 2.47 / 3.28 / 1.90 / 5.78  fails ['mass->time(8.08)', 'time->space(11.01)']
+  C# researchEvo     seed  23: 11/13  own 2.38 / 4.02 / 2.09 / 6.33  fails ['space->time(8.3)', 'time->space(9.11)']
+  C# researchEvo     seed  41: 10/13  own 2.27 / 4.20 / 2.12 / 5.40  fails ['charge->time(8.63)', 'mass->time(9.18)', 'time->space(8.6)']
+  csharp_researchEvo speed 0.107  jerk_rel 2.432  planar_frac 0.354  coherence 0.394  jitter 2.562  phase 0.155  stuck 0.000  osc 0.050
+
+## evofate yardstick - game mode (final: sync swim, latched free zone)
+C# yardstick export: 144 records in 62s; self-inflicted deaths 0
+
+YARDSTICK (swarm_eval: 4 own + 12 switches, majority of samples, loss-8 bar)
+  C# gameEvo         seed   7: 13/13  own 2.02 / 3.23 / 2.33 / 6.81  fails []
+  C# gameEvo         seed  23: 13/13  own 1.93 / 3.44 / 2.39 / 6.90  fails []
+  C# gameEvo         seed  41: 13/13  own 2.09 / 3.46 / 2.26 / 6.83  fails []
+
+FEEL (swarm_feel.metrics, mean over plans and seeds)
+  csharp_gameEvo     speed 0.153  jerk_rel 2.653  planar_frac 0.455  coherence 0.274  jitter 2.666  phase 0.246  stuck 0.007  osc 0.055
+
+
+## Python evofate (published, results/evofate/scorecard.json + feel.json): 12/13, 11/13, 12/13; own seed 7 2.95 / 3.65 / 1.58 / 6.28; feel speed 0.105 jerk_rel 2.435 planar 0.398 coherence 0.401 jitter 2.574 phase 0.067 stuck 0 osc 0.044; 5.6 ms/step
+
+## evofate exactness (evofate_fixture.py -> run.sh evofate), SIMD and scalar
+  state n= 77: worst feature error 2.38E-007, worst output error 9.54E-007 (relative 5.36E-007)
+  state n=146: worst feature error 2.38E-007, worst output error 5.96E-007 (relative 5.96E-007)
+  state n=176: worst feature error 2.98E-007, worst output error 5.96E-007 (relative 5.76E-007)
+  state n=116: worst feature error 2.38E-007, worst output error 8.34E-007 (relative 6.27E-007)
+  state n=128: worst feature error 2.38E-007, worst output error 8.34E-007 (relative 5.84E-007)
+  state n=206: worst feature error 1.79E-007, worst output error 7.15E-007 (relative 5.14E-007)
+  849 members: features within 2.98E-007, outputs within 9.54E-007 (relative 6.27E-007)
+  [ok] perception equals swarm_nca.SwarmRule.perceive + EvoFate's glob row (float32 rounding)
+  [ok] the network equals EvoRule.mlp on the shipped weights (float32 rounding)
+  849 members: features within 2.98E-007, outputs within 1.07E-006 (relative 6.08E-007)
+  [ok] perception equals swarm_nca.SwarmRule.perceive + EvoFate's glob row (float32 rounding)
+  [ok] the network equals EvoRule.mlp on the shipped weights (float32 rounding)
+
+## harness costs (uncontended)
+G9. cost per step, grown bodies (game mode, CoreCLR, Release): G = 16, G = 8, pre-round-5
+  G16   charge  n=180  1.116 ms/step
+  G16   mass    n=192  1.045 ms/step
+  G16   space   n= 88  0.633 ms/step
+  G16   time    n= 76  0.620 ms/step
+  G8    charge  n=180  0.700 ms/step
+  G8    mass    n=191  0.743 ms/step
+  G8    space   n= 88  0.230 ms/step
+  G8    time    n= 76  0.207 ms/step
+  legacy charge  n=180  0.815 ms/step
+  legacy mass    n=192  0.749 ms/step
+  legacy space   n= 88  0.401 ms/step
+  legacy time    n= 76  0.384 ms/step
+
+S10. cost per step, grown bodies (game mode, CoreCLR, Release)
+  charge  n=169  0.162 ms/step
+  mass    n=181  0.184 ms/step
+  space   n= 88  0.076 ms/step
+  time    n= 76  0.068 ms/step
+
+E7. cost per step, grown game bodies (CoreCLR, Release) - and how much of it is the network
+  charge n=169  1.571 ms/step  network 1.250 ms/step (80%), 85 forward passes/step, 14.78 us/pass
+  mass   n=181  1.688 ms/step  network 1.338 ms/step (79%), 91 forward passes/step, 14.77 us/pass
+  space  n= 88  0.744 ms/step  network 0.596 ms/step (80%), 44 forward passes/step, 13.55 us/pass
+  time   n= 76  0.769 ms/step  network 0.618 ms/step (80%), 38 forward passes/step, 16.21 us/pass
+
+E8. feel: reversals and freezes (swarm_feel osc / stuck) of a grown body, game vs research
+  charge game osc 0.041 stuck 0.000 speed 0.098   research osc 0.035 stuck 0.000 speed 0.095
+  mass   game osc 0.044 stuck 0.028 speed 0.060   research osc 0.063 stuck 0.000 speed 0.120
+  space  game osc 0.089 stuck 0.000 speed 0.095   research osc 0.055 stuck 0.000 speed 0.087
+  time   game osc 0.048 stuck 0.000 speed 0.345   research osc 0.038 stuck 0.000 speed 0.104
+  mean   game osc 0.055 stuck 0.007   research osc 0.048
+  [ok] the game body does not twitch (mean osc <= 0.08, swarm_feel's organic band)
+  [ok] no frozen members (mean stuck <= 0.02, swarm_feel's organic band)
+
+## evofate E7 on the SCALAR path (DOTNET_EnableHWIntrinsic=0 - Vector<T> off, what Unity's Mono runs)
+  charge n=169  3.485 ms/step  network 3.108 ms/step (89%), 85 forward passes/step, 36.74 us/pass
+  mass   n=181  3.732 ms/step  network 3.305 ms/step (89%), 91 forward passes/step, 36.50 us/pass
+  space  n= 88  1.583 ms/step  network 1.426 ms/step (90%), 44 forward passes/step, 32.44 us/pass
+  time   n= 76  1.330 ms/step  network 1.202 ms/step (90%), 38 forward passes/step, 31.52 us/pass

@@ -8,8 +8,10 @@ namespace CosmicShore.UI
         [Header("Bindings")]
         public RectTransform container;  // the moving rect (this or a child)
         public CanvasGroup   canvasGroup;
-        public TMP_Text      headerText;
-        public TMP_Text      titleText;
+        [SerializeField] TMP_Text headerText;
+        public TMP_Text HeaderText => headerText;
+        [SerializeField] TMP_Text titleText;
+        public TMP_Text TitleText => titleText;
         public CanvasFitHelper fitHelper;
 
         public void Bind(NotificationPayload p)

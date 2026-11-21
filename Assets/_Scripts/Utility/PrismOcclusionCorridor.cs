@@ -9,13 +9,15 @@ namespace CosmicShore.Utility
     /// the player's camera and the player's vessel dissolve so the ship is never hidden
     /// (Docs/PRISM_ANIMATION.md §4.7).
     ///
-    /// The corridor is a BARE CONE, and it is SHIP-SIZED: a point at the lens, widening to
-    /// the circle that circumscribes the bound vessel's hull, ending flat at the vessel's
-    /// plane with no cap at either end. Both radii are measured from the vessel itself at
-    /// bind time, so nothing about the size is authored per vessel.
+    /// The corridor is a BARE FRUSTUM, and it is SHIP-SIZED: a circle at the lens (so mass
+    /// right in front of the camera never blacks out the screen — a pure cone is thinnest
+    /// exactly there), widening linearly to the circle that circumscribes the bound vessel's
+    /// hull, ending flat at the vessel's plane with no cap at either end. Every radius is a
+    /// multiple of the vessel's own measured hull radius, so nothing about the size is
+    /// authored per vessel.
     ///
-    /// It publishes exactly TWO global shader uniforms once per frame and does nothing
-    /// else. There is no per-prism work of any kind — no trigger volumes, no material
+    /// It publishes exactly THREE global shader uniforms once per frame (target, params,
+    /// near radius) and does nothing else. There is no per-prism work of any kind — no trigger volumes, no material
     /// swaps, no per-instance overrides, no tracking dictionary. The corridor test runs
     /// per fragment in <c>PrismOcclusionCorridor.hlsl</c>, wired into BlockGraph.
     ///
@@ -51,12 +53,25 @@ namespace CosmicShore.Utility
     {
         static readonly int TargetId = Shader.PropertyToID("_PrismOcclusionTarget");
         static readonly int ParamsId = Shader.PropertyToID("_PrismOcclusionParams");
+        static readonly int NearRadiusId = Shader.PropertyToID("_PrismOcclusionNearRadius");
 
         const string ConfigResourcePath = "PrismOcclusionConfig";
 
         static Transform _target;
+        static Vector3 _viewShift;
         static float _targetRadius;
+        static float _targetBoundAt;
+        static float _nextRemeasureAt;
         static bool _suppressed;
+
+        /// <summary>How often a hull that measured to nothing is measured again, in seconds.</summary>
+        const float RemeasureEverySeconds = 0.25f;
+
+        /// <summary>How long a bound hull may stay unmeasurable before it is reported. A vessel is bound in
+        /// <c>VesselController.Initialize</c>, which can run while its model is still switched off (a spawn that
+        /// reveals the hull later, a seat taken on a hidden hull); that is a hull not shown YET, not a vessel
+        /// without one.</summary>
+        const float UnmeasurableGraceSeconds = 3f;
         static PrismOcclusionConfigSO _config;
         static bool _configResolved;
         static bool _publishedActive;
@@ -64,14 +79,106 @@ namespace CosmicShore.Utility
         /// <summary>The vessel the corridor currently opens onto, or null when it is off.</summary>
         public static Transform Target => _target;
 
+        /// <summary>
+        /// Where the corridor opens onto for the VIEW being drawn: the vessel, seen through any
+        /// portal the gameplay camera has not reached yet.
+        ///
+        /// <para>A wormhole (the pair a Butterfly fold leaves) moves the ship the instant it
+        /// enters, while the chase camera trails it through the mouth a moment later
+        /// (<c>CustomCameraController.CarryThroughSphere</c>). For that moment the camera and the
+        /// ship are on opposite sides of the world, and a corridor drawn between them would
+        /// dissolve a tube of prisms across the whole arena. The camera is framing the ship at its
+        /// position mapped BACK through the pair, so that is where the corridor must open too — it
+        /// is still exactly the camera→ship segment the pilot is looking down, just measured in the
+        /// frame the camera is in.</para>
+        /// </summary>
+        public static Vector3 ViewTargetPosition =>
+            _target ? _target.position - _viewShift : Vector3.zero;
+
+        /// <summary>
+        /// Set how far the gameplay camera still has to travel through a portal (zero when it is
+        /// not carrying one). Identity-guarded: only a subject that IS the bound vessel, or one of
+        /// its children (the camera follows the vessel's follow-target child), may set it, so a
+        /// death or replay camera following somebody else cannot move this corridor.
+        /// </summary>
+        public static void SetViewShift(Transform subject, Vector3 shift)
+        {
+            if (!subject || !_target) return;
+            if (subject != _target && !subject.IsChildOf(_target)) return;
+            _viewShift = shift;
+        }
+
+        /// <summary>
+        /// Re-point the published corridor at a world position for ONE render and nothing else —
+        /// the fold gate's window renders the far side from the far side, and there the corridor
+        /// opens onto the ship at its position through THAT portal. A no-op while the corridor is
+        /// off, so it can never switch one on. Pair every call with <see cref="RepublishTarget"/>
+        /// before the gameplay camera draws.
+        /// </summary>
+        public static void PublishTargetPosition(Vector3 worldPosition)
+        {
+            if (!_publishedActive) return;
+            Shader.SetGlobalVector(TargetId, new Vector4(worldPosition.x, worldPosition.y, worldPosition.z, 0f));
+        }
+
+        /// <summary>Restore the corridor's own target after <see cref="PublishTargetPosition"/>.</summary>
+        public static void RepublishTarget()
+        {
+            if (!_publishedActive || !_target) return;
+            PublishTargetPosition(ViewTargetPosition);
+        }
+
         /// <summary>True while the corridor is publishing a live cone.</summary>
         public static bool IsActive => _publishedActive;
 
+        static bool _viewOverride;
+        static Vector4 _savedTarget, _savedParams;
+        static float _savedNearRadius;
+
+        /// <summary>
+        /// Re-shape the corridor for ONE camera's render: a second view of the bound vessel's own play that looks
+        /// down a different line. The Kite's navigator board is the one caller (Controller/Vessel/Crew/
+        /// KiteNavigatorView.cs, PRISM_ANIMATION.md §4.7): a top-down orthographic camera over the hull's plane,
+        /// where the prisms between the lens and the plane hide the board the navigator flies on, so its corridor is
+        /// a cone from that lens down to the plane, sized to the board, and the mass above the plane dithers.
+        ///
+        /// <para>Identity-guarded like <see cref="SetViewShift"/>: only the bound vessel (or a child) may re-shape
+        /// it, so no mode gains a way to point the corridor somewhere else. Honours <see cref="SetSuppressed"/>.
+        /// Saves what was published and <see cref="EndViewOverride"/> restores it, so the cameras that render
+        /// after it (the pilot's, the Scene view) draw the corridor they always did. Call from
+        /// <c>RenderPipelineManager.beginCameraRendering</c> for that camera only, and pair it with the end
+        /// callback.</para>
+        /// </summary>
+        public static bool BeginViewOverride(Transform subject, Vector3 target, float outerRadius, float innerRadius,
+                                             float coreAlpha, float nearRadius)
+        {
+            if (_viewOverride || _suppressed || !subject || !_target) return false;
+            if (subject != _target && !subject.IsChildOf(_target)) return false;
+            _savedTarget = Shader.GetGlobalVector(TargetId);
+            _savedParams = Shader.GetGlobalVector(ParamsId);
+            _savedNearRadius = Shader.GetGlobalFloat(NearRadiusId);
+            _viewOverride = true;
+            Shader.SetGlobalVector(TargetId, new Vector4(target.x, target.y, target.z, 0f));
+            Shader.SetGlobalVector(ParamsId, new Vector4(outerRadius, Mathf.Min(innerRadius, outerRadius), Mathf.Clamp01(coreAlpha), 0f));
+            Shader.SetGlobalFloat(NearRadiusId, Mathf.Clamp(nearRadius, 0f, outerRadius));
+            return true;
+        }
+
+        /// <summary>Restore the corridor <see cref="BeginViewOverride"/> replaced. A no-op without one.</summary>
+        public static void EndViewOverride()
+        {
+            if (!_viewOverride) return;
+            _viewOverride = false;
+            Shader.SetGlobalVector(TargetId, _savedTarget);
+            Shader.SetGlobalVector(ParamsId, _savedParams);
+            Shader.SetGlobalFloat(NearRadiusId, _savedNearRadius);
+        }
+
         /// <summary>
         /// The bound vessel's circumscribing radius in world units — the sphere that encloses
-        /// its hull, measured once at bind. This is the corridor cone's radius AT THE VESSEL
-        /// (times the config's outer scale); it tapers to zero at the camera, so the corridor
-        /// is ship-sized rather than world-sized.
+        /// its hull, measured once at bind. This is the corridor's radius AT THE VESSEL
+        /// (times the config's outer scale); it tapers toward the config's near circle at the
+        /// camera, so the corridor is ship-sized rather than world-sized.
         /// </summary>
         public static float TargetRadius => _targetRadius;
 
@@ -105,7 +212,10 @@ namespace CosmicShore.Utility
         public static void SetTarget(Transform target)
         {
             _target = target;
+            _viewShift = Vector3.zero;
             _targetRadius = target != null ? MeasureCircumscribedRadius(target) : 0f;
+            _targetBoundAt = Time.unscaledTime;
+            _nextRemeasureAt = _targetBoundAt + RemeasureEverySeconds;
         }
 
         /// <summary>
@@ -211,6 +321,7 @@ namespace CosmicShore.Utility
             if (_target == target)
             {
                 _target = null;
+                _viewShift = Vector3.zero;
                 _targetRadius = 0f;
             }
         }
@@ -219,6 +330,7 @@ namespace CosmicShore.Utility
         public static void ClearTarget()
         {
             _target = null;
+            _viewShift = Vector3.zero;
             _targetRadius = 0f;
         }
 
@@ -233,6 +345,7 @@ namespace CosmicShore.Utility
         static void InstallPublisher()
         {
             _target = null;
+            _viewShift = Vector3.zero;
             _targetRadius = 0f;
             _suppressed = false;
             // Shader globals survive play-mode exit in the editor, so a stale corridor from
@@ -249,8 +362,10 @@ namespace CosmicShore.Utility
 
         static void PublishOff()
         {
+            _viewOverride = false;
             Shader.SetGlobalVector(TargetId, Vector4.zero);
             Shader.SetGlobalVector(ParamsId, Vector4.zero); // x <= 0 is the shader's "off" sentinel
+            Shader.SetGlobalFloat(NearRadiusId, 0f);
             _publishedActive = false;
         }
 
@@ -268,11 +383,22 @@ namespace CosmicShore.Utility
             // is not cosmetic: too small and the ship stays hidden, too large and the world
             // dissolves in front of the player. Both degrade to a sane corridor and scream —
             // never to a silently-absent one, which is the platform law failing quietly.
+            // The measurement is taken once, when the vessel is bound, and only enabled renderers on active
+            // objects count. A hull still hidden at that moment measured to nothing and the corridor stayed on
+            // the fallback guess for the whole flight (the Serpent and the Jacks, both of which have a hull).
+            // So an unmeasured hull is measured again until it shows, and only one that stays unmeasurable is
+            // reported.
             float radius = _targetRadius;
+            if (radius <= 0f && Time.unscaledTime >= _nextRemeasureAt)
+            {
+                _nextRemeasureAt = Time.unscaledTime + RemeasureEverySeconds;
+                _targetRadius = radius = MeasureCircumscribedRadius(_target);
+            }
             if (radius <= 0f)
             {
                 radius = config.FallbackVesselRadius;
-                PrismOcclusionDiagnostics.WarnUnmeasurableVessel(_target, radius);
+                if (Time.unscaledTime - _targetBoundAt >= UnmeasurableGraceSeconds)
+                    PrismOcclusionDiagnostics.WarnUnmeasurableVessel(_target, radius);
             }
             else
             {
@@ -292,16 +418,21 @@ namespace CosmicShore.Utility
                 return;
             }
 
-            Vector3 p = _target.position;
+            Vector3 p = ViewTargetPosition;
             Shader.SetGlobalVector(TargetId, new Vector4(p.x, p.y, p.z, 0f));
             Shader.SetGlobalVector(ParamsId, packed);
+            Shader.SetGlobalFloat(NearRadiusId, config.NearRadius(radius));
             _publishedActive = true;
         }
 
         /// <summary>
         /// LateUpdate so the corridor is published after the vessel has moved and after
-        /// Cinemachine has posed the camera for this frame.
+        /// Cinemachine has posed the camera for this frame. Ordered LATE for the same reason: the
+        /// gameplay camera's portal carry (and so <see cref="ViewTargetPosition"/>) is settled in
+        /// that camera's own LateUpdate, and publishing ahead of it would lag a carry by a frame
+        /// at each end — one frame of a corridor drawn across the whole arena.
         /// </summary>
+        [DefaultExecutionOrder(10000)]
         sealed class Publisher : MonoBehaviour
         {
             void LateUpdate() => Publish();

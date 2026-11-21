@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 43 - notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#8C93C7}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.abs{position:absolute}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;color:#C9CDEA}
+.btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;height:48px;padding:0 14px;white-space:nowrap;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.14em;text-transform:uppercase}
+.cta{background:#99FF80;color:#00010A}
+.sec{background:#2B3266;color:#E6E9FF}
+.gho{background:transparent;color:#C9CDEA;box-shadow:inset 0 0 0 1px #434C89}
+.btn .kc{border-color:currentColor;color:inherit;opacity:.8}
+.btn:focus-visible,.tab:focus-visible,.pick:focus-visible{outline:2px solid #3DB2FF;outline-offset:2px}
+.tab,.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.panel{background:#080C28;box-shadow:inset 0 0 0 1px #2B3266}
+.rule{border-top:1px solid #222645}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="abs" style="left:60px;top:44px;display:flex;flex-direction:column;gap:4px"><span class="lab">Rev 43 - notes</span><span style="font-size:30px">The Voyage window: map left, the card in three levels, six ways</span></div><div class="abs" style="left:60px;top:140px;width:860px;display:flex;flex-direction:column;gap:12px"><span class="lab">Asked (Shombith)</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">"Design the new voyage page after taking in Garrett's new PR. On the left the whole map preview and the edge on view below, opaque, high res. Each voyage is given to you by your crew; the card has 3 levels: the voyage (title, description, waypoints, the preset), the configuration (the 12 settings, a separate level), and the story (optional). Saga and Episodes keep their content, with LB and RB."</p><span class="lab" style="margin-top:10px">Shared by all six</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">The map and the edge view are the Voyage Board's own render at 2x (Neighbourhood tier, the 20 ly cells, Tumult to Lantern Reach), drawn opaque. Level 1: title, the crew's summary, who found it, course / sail / intensity / pays / finds / odds, the course cell by cell, the waypoints, and Your Ark: the Arks you configured (Skim Wing, Breakers) to choose from, or Configure. Level 2: three seats x vessel, pilot, element, artifact = the 12 settings, a preset switcher and Save as Ark. Level 3: who brought it, the place, the news, the water - optional. A Set sail, X Ark crew, Y Story, B back.</p><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">Every word is the slice's or the Voyage Board's (voyage_slice.json job.hunt.sighting, the crew's line, the place's blurb, the seed news).</p></div><div class="abs" style="left:1000px;top:140px;width:860px;display:flex;flex-direction:column;gap:12px"><span class="lab">Recommendation: A, the drawer</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">The map and edge view never move or shrink at any level; the card slides in like the arena preview's tray, each level is one press deeper, and the spines show where you are and take you back. B keeps the tray literally but hides two thirds of the map at levels 2 and 3. C and E are the quietest; E reads best with a pad. D gives the 12 settings the most room but covers the edge view. F shows brief and crew together at the cost of a narrow map.</p><span class="lab" style="margin-top:10px">Differs from the build</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">Built (Garrett, 94c1050b / a1922d78, #1717 open): SAGA and EPISODES as buttons opening modals; the map and edge view above a three-across grid of voyage cards that open over each other. This round: Saga | Voyages | Episodes are the window's tabs on LB / RB; the map and edge view take the left side, opaque; the grid becomes the voyage list (a strip on the map, or a list in the card); the open card gains the preset (an Ark), a level for the 12 settings and a story level.</p><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">Garrett's map (VoyageMapGraphic, VoyageEdgeGraphic) stays as it is; only where it sits changes. The build waits on a pick.</p></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

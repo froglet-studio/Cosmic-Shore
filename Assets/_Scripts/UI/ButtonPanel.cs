@@ -6,7 +6,8 @@ namespace CosmicShore.UI
 {
     public class ButtonPanel : MonoBehaviour
     {
-        public bool onBottomEdge = false;
+        [SerializeField] bool onBottomEdge = false;
+        public bool OnBottomEdge => onBottomEdge;
         [SerializeField] List<Vector2> buttonPositions = new List<Vector2>();
         [SerializeField] List<Vector2> bottomEdgeButtonPositions = new List<Vector2>();
         [SerializeField] List<GameObject> buttons = new List<GameObject>();

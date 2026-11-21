@@ -1,0 +1,19 @@
+{
+  "id": "2026-11-10-ship-now-merges-its-pr-into-bleeding-edg-cf9d41",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-10T15:50:39+00:00",
+  "area": "/ship and its lanes",
+  "summary": "/ship now merges its PR into bleeding-edge on a GO (new §5.7: merge commit, auto-merge when a review is required, never self-approve); 'PR only' opts out.",
+  "why": "Batch-testing shipped branches together on bleeding-edge is now faster than checking out each branch (Garrett, 2026-11-10).",
+  "branch": "cece/great-goodall-raz7gj",
+  "commit": "5525371c3",
+  "paths": [
+    ".claude/skills/ship-deep/SKILL.md",
+    ".claude/skills/ship-quick/SKILL.md",
+    ".claude/skills/ship/SKILL.md",
+    ".claude/skills/to-bleeding-edge/SKILL.md",
+    "CLAUDE.md",
+    "Docs/TEAM.md"
+  ]
+}

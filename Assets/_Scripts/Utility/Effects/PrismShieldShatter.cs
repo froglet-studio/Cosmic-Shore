@@ -85,6 +85,29 @@ namespace CosmicShore.Utility
         static float s_suspendedUntil;
         const float SuspendSeconds = 5f;
 
+        /// <summary>
+        /// Why the most recent <see cref="TryRequest"/> said no, for the caller's diagnostic.
+        ///
+        /// <para>It exists because the four refusal gates are not interchangeable — one is a
+        /// missing asset, one is the render service, one is a transient hold and one is a
+        /// STARTUP ORDERING — and the caller's warning is warn-once for the whole process, so
+        /// it gets exactly one chance to say something true. It previously printed
+        /// <c>PrismRenderService.StatusLine()</c> unconditionally, which describes the gate
+        /// that had just PASSED in three of the four cases and sent the reader to look at a
+        /// healthy subsystem.</para>
+        ///
+        /// <para>General rule: <b>a refusal with several causes must report the one that
+        /// fired</b> — a diagnostic naming a component that is fine is worse than none, because
+        /// it is evidence pointing the wrong way.</para>
+        /// </summary>
+        public static string LastRefusalReason { get; private set; } = "no request has been refused";
+
+        static bool Refuse(string reason)
+        {
+            LastRefusalReason = reason;
+            return false;
+        }
+
         /// <summary>Shard entities currently flying (diagnostics/readouts).</summary>
         public static int LiveShatterCount => s_live.Count - s_liveHead;
 
@@ -105,6 +128,7 @@ namespace CosmicShore.Utility
             s_liveEpoch = -1;
             s_host = null;
             s_suspendedUntil = 0f;
+            LastRefusalReason = "no request has been refused";
         }
 
         /// <summary>
@@ -123,11 +147,24 @@ namespace CosmicShore.Utility
         public static bool TryRequest(Mesh sharedShieldMesh, int layer, Transform host,
             Color bright, Color dark, Vector3 breakVelocity, float speedLimitOverride)
         {
-            if (sharedShieldMesh == null || host == null) return false;
-            if (!PrismRenderService.Enabled) return false;
-            if (Time.unscaledTime < s_suspendedUntil) return false;
-            if (!PrismDebris.TryGetExplosionConfig(out _, out float minSpeed, out float maxSpeed))
-                return false;
+            if (sharedShieldMesh == null || host == null)
+                return Refuse("the shield mesh or its host was null");
+            // No Entities Graphics on this device (a WebGL2 browser): the same shards, computed below with the
+            // same arithmetic, are drawn by the capped MeshRenderer carrier (Docs/PRISM_ANIMATION.md §4.11).
+            bool meshRendererPath = PrismMeshRendererStamps.Active;
+            if (!meshRendererPath && !PrismRenderService.Enabled)
+                return Refuse($"PrismRenderService is off [{PrismRenderService.StatusLine()}]");
+            // Play-mode exit / quit: a shield broken by the teardown cascade must not re-create
+            // the DontDestroyOnLoad host (it would leak as [PrismShieldShatter]).
+            if (PrismRenderService.IsQuitting)
+                return Refuse("the session is shutting down (play-mode exit / quit)");
+            if (!meshRendererPath && Time.unscaledTime < s_suspendedUntil)
+                return Refuse($"a batch spawn failed within the last {SuspendSeconds:F0}s, so " +
+                              "shatter overlays are on a cooling-off hold");
+            if (!PrismDebris.TryGetExplosionConfig(out var debrisMaterial, out float minSpeed, out float maxSpeed))
+                return Refuse("the explosion-debris pipeline is unconfigured — PrismFactory has " +
+                              "not come up with an explosionPool prefab yet, so there is no mesh, " +
+                              "material or clamp band to shed against");
 
             // From here, PrismDebris.TryRequestExplosion's computation verbatim (shields
             // are never the danger tier — PrismStateManager keeps danger and the shield
@@ -152,6 +189,17 @@ namespace CosmicShore.Utility
                 flight.y / Mathf.Max(1e-4f, Mathf.Abs(scale.y)),
                 flight.z / Mathf.Max(1e-4f, Mathf.Abs(scale.z)));
             float pad = 4f + 0.25f * Unity.Mathematics.math.length(objDisp);
+
+            if (meshRendererPath)
+            {
+                // A shield face is one triangle with its centroid baked into TEXCOORD1 — the same
+                // FacePivotFromCentroid the entity shards carry below.
+                if (PrismMeshRendererDebris.TrySpawnExplosion(sharedShieldMesh, debrisMaterial, layer,
+                        position, rotation, scale, bright, dark, velocity, speed, duration, in objDisp, pad,
+                        facePivotFromCentroid: 1f))
+                    return true;
+                return Refuse("the MeshRenderer debris carrier could not be created (quitting, or no debris material)");
+            }
 
             GetOrCreateGroup(sharedShieldMesh, layer).Spawns.Add(
                 new PrismRenderService.ExplosionDebrisSpawn
@@ -206,6 +254,7 @@ namespace CosmicShore.Utility
         static void EnsureHost()
         {
             if (s_host != null) return;
+            if (PrismRenderService.IsQuitting || !Application.isPlaying) return;
             // HideInHierarchy, NOT HideAndDontSave — same reasoning as the render
             // service's visibility flush host (play-mode-exit cleanup applies).
             var go = new GameObject("[PrismShieldShatter]") { hideFlags = HideFlags.HideInHierarchy };

@@ -3,7 +3,7 @@ Shader "Shader Graphs/ProjectileChargeField"
     Properties
     {
         // NEUTRAL is blue, DANGER is red. _CrackleColorA is EnvironmentColors.Danger
-        // from OriginalColorSetSO, verbatim — the shared, domain-independent danger
+        // from PhoticColorSetSO, verbatim — the shared, domain-independent danger
         // colour, so a round's hot core is the same red the arena's danger mass wears.
         [Header(Arc Colors   neutral blue plus danger red)]
         _CrackleColorA ("Core Arc Color", Color) = (1.4979111, 0.0058463, 0.0068495, 1.0)

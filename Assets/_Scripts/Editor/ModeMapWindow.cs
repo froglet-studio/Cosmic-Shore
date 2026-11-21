@@ -45,7 +45,7 @@ namespace CosmicShore.Editor
         static readonly Element[] ElementOrder =
             { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
-        [MenuItem("FrogletTools/Game Modes/Mode Map")]
+        [MenuItem("FrogletTools/Game Modes/Mode Map", false, 163)]
         [FrogletTool(FrogletToolCategory.GameModes, Importance = 4,
                      Description = "Every arcade card as a page: objective + icon, per-vessel " +
                                    "ability sections, controls filters, seats. Scan finds new " +
@@ -127,9 +127,8 @@ namespace CosmicShore.Editor
             var rules = new Dictionary<GameModes, ScoringRuleSO>();
             var aliases = new Dictionary<string, GameModes>
             {
-                { "CrystalCapture", GameModes.MultiplayerCrystalCapture },
-                { "Joust", GameModes.MultiplayerJoust },
-                { "CellularDuel", GameModes.MultiplayerCellularDuel },
+                { "Scurry", GameModes.Scurry },
+                { "Joust", GameModes.Joust },
             };
             foreach (var guid in AssetDatabase.FindAssets("t:ScoringRuleSO"))
             {

@@ -1,0 +1,119 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb3ae478d1f44c3094a018efb792f5cb, type: 3}
+  m_Name: StoatSlingConfig_Warpline
+  m_EditorClassIdentifier: 
+  holdExponent: 1.5
+  holdRampSeconds: 3
+  autopilotHold01: 1.0
+  catchAhead: 150
+  catchSide: 45
+  catchReach: 1.5
+  catchDegrees: 50
+  settleRate: 3
+  maxOrbitDegrees: 360
+  orbitRadiusWide: 150
+  orbitRadiusTight: 40
+  orbitReach:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.4
+    element: 3
+    UseFloor: 1
+    Floor: 0.5
+  radiusFollowRate: 3
+  radialCorrectionRate: 5
+  poleHorizon: 1.6
+  poleGM: 20000
+  ringDotSpacing: 5
+  ringDotSize: 0.9
+  detectionRingAlpha: 0.35
+  orbitRingAlpha: 0.6
+  slingBoostMin: 0.25
+  slingBoostMax: 0.9
+  slingBoostSeconds: 1.5
+  sweetSpotDegrees: 90
+  sweetSpotHalfWidth: 15
+  sweetSpotFalloff: 30
+  missKickShare: 0.2
+  sweetSpotEvent:
+    Guid:
+      Data1: 413717435
+      Data2: 1238803703
+      Data3: 1704894129
+      Data4: 1814326255
+    Path: event:/SFX/Oneshots/Menu/Confirmed
+  catchWarpShare: 1.15
+  catchWarpFromPress: 1
+  driftSpeed: 40
+  lifetime: 12
+  minStrength: 2
+  maxStrength: 12
+  aheadHorizons: 4
+  halfGapHorizons:
+    Enabled: 1
+    Value: 6
+    Min: 6
+    Max: 9
+    element: 3
+    UseFloor: 1
+    Floor: 3
+  aiSlingMinTurnDegrees: 7.84
+  aiReleaseConeDegrees: 15.999
+  aiCatchGiveUpSeconds: 4
+  aiSlingIntervalSeconds: 0.941
+  aiSlingMinDistance: 123.282
+  aiWarpMinDistance: 0
+  aiHoldForWindowDegrees: 120
+  holdStartEvent:
+    Guid:
+      Data1: -922617308
+      Data2: 1092038894
+      Data3: -167764571
+      Data4: -698904471
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Activate
+  slingEvent:
+    Guid:
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
+  trampolineTouchEvent:
+    Guid:
+      Data1: 310883003
+      Data2: 1266496358
+      Data3: -193662310
+      Data4: -709421328
+    Path: event:/SFX/Oneshots/Gameplay sfx/Track collide
+  trampolineBounceEvent:
+    Guid:
+      Data1: -1058858236
+      Data2: 1166390557
+      Data3: -939827049
+      Data4: 1519737688
+    Path: event:/SFX/Oneshots/Gameplay sfx/Vessel impact
+  swingStartEvent:
+    Guid:
+      Data1: -922617308
+      Data2: 1092038894
+      Data3: -167764571
+      Data4: -698904471
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Activate
+  swingFlingEvent:
+    Guid:
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst

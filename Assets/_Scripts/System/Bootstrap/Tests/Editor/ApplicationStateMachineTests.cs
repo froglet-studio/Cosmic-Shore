@@ -21,7 +21,7 @@ namespace CosmicShore.Core
             // created via CreateInstance (no serialization pass). Force-initialize it.
             if (_stateVariable.Value == null)
             {
-                var field = typeof(Obvious.Soap.ScriptableVariable<ApplicationStateData>)
+                var field = typeof(CosmicShore.Soap.ScriptableVariable<ApplicationStateData>)
                     .GetField("_value", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 field?.SetValue(_stateVariable, new ApplicationStateData());
             }
@@ -155,6 +155,31 @@ namespace CosmicShore.Core
 
             Assert.IsTrue(result);
             Assert.AreEqual(ApplicationState.MainMenu, _sm.Current);
+        }
+
+        [Test]
+        public void MainMenu_To_Authenticating_Succeeds_Reconnect()
+        {
+            AdvanceTo(ApplicationState.MainMenu);
+
+            bool result = _sm.TransitionTo(ApplicationState.Authenticating);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(ApplicationState.Authenticating, _sm.Current);
+            Assert.AreEqual(ApplicationState.MainMenu, _stateVariable.Value.PreviousState);
+        }
+
+        [TestCase(ApplicationState.LoadingGame)]
+        [TestCase(ApplicationState.InGame)]
+        [TestCase(ApplicationState.GameOver)]
+        public void ActiveGameStates_To_Authenticating_Succeeds_Reconnect(ApplicationState from)
+        {
+            AdvanceTo(from);
+
+            bool result = _sm.TransitionTo(ApplicationState.Authenticating);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(ApplicationState.Authenticating, _sm.Current);
         }
 
         [Test]

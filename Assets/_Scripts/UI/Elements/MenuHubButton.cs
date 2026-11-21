@@ -1,0 +1,124 @@
+using CosmicShore.Core;
+using CosmicShore.Utility;
+using Reflex.Attributes;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace CosmicShore.UI
+{
+    /// <summary>
+    /// One entry on the home screen's <b>hub</b> — Mission, Toy Box, Arena, Arcade. Each opens its
+    /// own modal, and each can be shipped before it is finished.
+    ///
+    /// <para>The button names a modal <b>TYPE</b> and lets <see cref="ScreenSwitcher"/> find it,
+    /// rather than holding a direct reference to the window. That is what keeps one authority over
+    /// a modal's lifecycle: the switcher already owns the modal stack, the return-to-modal
+    /// PlayerPrefs and the close-everything sweeps, and a button that reached past it to call
+    /// <c>ModalWindowIn</c> would be a second one.</para>
+    ///
+    /// <para><b>Availability is a state, not a missing button</b>, and that state is no longer this
+    /// component's to define. It lives in <see cref="MenuAvailability"/> and is drawn by
+    /// <see cref="MenuAvailabilityView"/>, which this button ENSURES on itself — the same enum and
+    /// the same visual states the nav-bar links and <see cref="NavLink"/> use. This class keeps only
+    /// what is genuinely its own: which modal it opens, and what Available means here.
+    /// See <c>Docs/HomeHub/ARCHITECTURE.md</c> §2.</para>
+    /// </summary>
+    [RequireComponent(typeof(Button))]
+    public class MenuHubButton : MonoBehaviour
+    {
+        [Header("Target")]
+        [SerializeField, Tooltip("Which modal this hub entry opens. Its ModalWindowManager must be " +
+                                 "in the ScreenSwitcher's Modals list - that is how it is found.")]
+        ScreenSwitcher.ModalWindows target = ScreenSwitcher.ModalWindows.ARCADE;
+
+        /// <summary>Which modal this entry opens - read by a guided path to find the Arcade entry.</summary>
+        public ScreenSwitcher.ModalWindows Target => target;
+
+        [SerializeField, Tooltip("Leave empty to find the one in the scene at Start.")]
+        ScreenSwitcher screenSwitcher;
+
+        [SerializeField, Tooltip("Where the pad lands on Home. One hub carries it (Arcade, the screen's primary " +
+                                 "action); with none flagged the first available hub is used.")]
+        bool preferredFocus;
+
+        /// <summary>True on the hub the pad should land on first.</summary>
+        public bool PreferredFocus => preferredFocus;
+
+        [Inject] AudioSystem audioSystem;
+
+        Button _button;
+        MenuAvailabilityView _availability;
+
+        void Awake()
+        {
+            _button = GetComponent<Button>();
+            // Ensured, not required: a hub entry authored before this split, or added to a scene by
+            // a tool, still gets its state rather than silently reading as Available.
+            _availability = MenuAvailabilityView.Ensure(gameObject);
+        }
+
+        void Start()
+        {
+            if (!screenSwitcher)
+                screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+
+            // The browser Toybox keeps the hub's layout and says what the other entries are:
+            // Locked, "In the full game" (the switcher refuses to open them as well).
+            if (WebToybox.IsBuild && !ScreenSwitcher.IsModalInWebToybox(target))
+            {
+                if (!_availability) _availability = MenuAvailabilityView.Ensure(gameObject);
+                _availability.SetLockedMessage(ScreenSwitcher.WebToyboxLockedMessage);
+                _availability.SetAvailability(MenuAvailability.Locked);
+            }
+
+            _button.onClick.AddListener(HandlePlayerClick);
+        }
+
+        void OnDestroy()
+        {
+            if (_button) _button.onClick.RemoveListener(HandlePlayerClick);
+        }
+
+        /// <summary>
+        /// Change this entry's state at runtime - the seam a progression unlock plugs into, so
+        /// opening Arena later needs no new plumbing here. Delegates to the shared view; there is
+        /// exactly one place the state is stored.
+        /// </summary>
+        public void SetAvailability(MenuAvailability value)
+        {
+            if (!_availability) _availability = MenuAvailabilityView.Ensure(gameObject);
+            _availability.SetAvailability(value);
+        }
+
+        /// <summary>
+        /// Presses this entry as if the player had: the same refusal while it is not Available, the same modal when it
+        /// is. The Ark's Squads tab launches through the hub this way, so a squad reaches a mode only where Home does.
+        /// </summary>
+        public void Press() => HandleClick();
+
+        // A press on Home itself: the player is going in on their own, not with the squad Take into carried
+        // (SquadLaunchIntent), so the windows it opens keep each card's own memory.
+        void HandlePlayerClick()
+        {
+            SquadLaunchIntent.Clear();
+            HandleClick();
+        }
+
+        void HandleClick()
+        {
+            // The view answers Locked and Unavailable itself - the sting, the wording and the
+            // silence are the same on every menu surface, so no host repeats them.
+            if (_availability && !_availability.TryPress()) return;
+
+            if (!screenSwitcher)
+            {
+                CSDebug.LogWarning($"[MenuHubButton] '{name}' has no ScreenSwitcher - " +
+                                   $"'{target}' cannot be opened.");
+                return;
+            }
+
+            if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OpenView);
+            screenSwitcher.OpenModal(target);
+        }
+    }
+}

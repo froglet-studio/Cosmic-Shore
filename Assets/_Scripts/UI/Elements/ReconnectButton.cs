@@ -47,7 +47,17 @@ namespace CosmicShore.UI
         Button _button;
         bool _subscribed;
 
-        void Awake() => _button = GetComponent<Button>();
+        void Awake()
+        {
+            // The browser Toybox cannot go online, so there is nothing to reconnect to.
+            if (WebToybox.IsBuild)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
+            _button = GetComponent<Button>();
+        }
 
         void OnEnable()
         {
@@ -116,7 +126,7 @@ namespace CosmicShore.UI
         {
             if (_reconnect == null || _reconnect.IsReconnecting) return;
 
-            CSDebug.Log("[ReconnectButton] Retry connection tapped.");
+            CSDebug.LogVerbose(CSLogChannel.Boot, "[ReconnectButton] Retry connection tapped.");
             _reconnect.ReconnectAsync().Forget();
         }
     }

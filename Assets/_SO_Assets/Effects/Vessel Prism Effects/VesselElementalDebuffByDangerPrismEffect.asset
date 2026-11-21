@@ -13,5 +13,7 @@ MonoBehaviour:
   m_Name: VesselElementalDebuffByDangerPrismEffect
   m_EditorClassIdentifier:
   debuffMagnitude: -0.5
+  tunedDebuffMagnitude: -0.1
   debuffDuration: 4
   cooldown: 1
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}

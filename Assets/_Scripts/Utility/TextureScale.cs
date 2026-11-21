@@ -26,7 +26,6 @@ namespace CosmicShore.Utility
         private static float ratioY;
         private static int w2;
         private static int finishCount;
-        private static Mutex mutex;
 
         public static void Point(Texture2D tex, int newWidth, int newHeight)
         {
@@ -54,14 +53,13 @@ namespace CosmicShore.Utility
             }
             w = tex.width;
             w2 = newWidth;
-            var cores = Mathf.Min(SystemInfo.processorCount, newHeight);
+            // A WebGL player has no threads, so it scales on this one (the single-slice path below).
+            var cores = Application.platform == RuntimePlatform.WebGLPlayer
+                ? 1
+                : Mathf.Min(SystemInfo.processorCount, newHeight);
             var slice = newHeight / cores;
 
             finishCount = 0;
-            if (mutex == null)
-            {
-                mutex = new Mutex(false);
-            }
             if (cores > 1)
             {
                 int i = 0;
@@ -82,7 +80,7 @@ namespace CosmicShore.Utility
                 {
                     PointScale(threadData);
                 }
-                while (finishCount < cores)
+                while (Volatile.Read(ref finishCount) < cores)
                 {
                     Thread.Sleep(1);
                 }
@@ -128,9 +126,7 @@ namespace CosmicShore.Utility
                 }
             }
 
-            mutex.WaitOne();
-            finishCount++;
-            mutex.ReleaseMutex();
+            Interlocked.Increment(ref finishCount);
         }
 
         public static void PointScale(System.Object obj)
@@ -146,9 +142,7 @@ namespace CosmicShore.Utility
                 }
             }
 
-            mutex.WaitOne();
-            finishCount++;
-            mutex.ReleaseMutex();
+            Interlocked.Increment(ref finishCount);
         }
 
         private static Color ColorLerpUnclamped(Color c1, Color c2, float value)

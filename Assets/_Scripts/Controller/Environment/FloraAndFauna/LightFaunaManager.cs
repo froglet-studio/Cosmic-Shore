@@ -17,6 +17,9 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class LightFaunaManager : Fauna
     {
+        /// <summary>A rider cannot steer this body (the Jewel Wasp, <see cref="IFaunaPossession"/>): no possession yet.</summary>
+        protected override bool CanBePossessed => false;
+
         [Header("Prefab")]
         [SerializeField] LightFauna lightFaunaPrefab;
 
@@ -53,8 +56,10 @@ namespace CosmicShore.Gameplay
                 cellData.OnPhaseChanged.OnRaised -= HandleCellPhaseChanged;
         }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Fauna.LightManager.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             // Poll fallback: covers two scenarios where OnPhaseChanged won't reach us -
             // (1) the SOAP event asset isn't wired into CellRuntimeDataSO so Raise NREs
             // before the listener gets called, and (2) the manager started after the
@@ -112,12 +117,31 @@ namespace CosmicShore.Gameplay
                 randomOffset.y = 0f;
 
                 Vector3 spawnPosition = transform.position + randomOffset;
+                // A school member is born outside a race path corridor too (Switchback); no-op elsewhere.
+                if (cell && cell.FaunaPathCorridor.IsActive)
+                    spawnPosition = cell.FaunaPathCorridor.PushOut(spawnPosition, transform.position);
 
                 LightFauna fauna = Instantiate(lightFaunaPrefab, spawnPosition, Random.rotation, transform);
                 fauna.domain = spawnDomain;
                 fauna.LightFaunaManager = this;
                 fauna.Phase = managerData.phaseIncrease * i;
                 fauna.Initialize(cell);
+
+                // The replication seam, for the one fauna producer that does not go through
+                // CellLifeSpawnerBase. A school member gets no config of its own - the MANAGER
+                // is the thing the spawner bound a lineage to - so this resolves to
+                // NeutralizeStray, which is the correct reading: a school is simulated locally
+                // on every peer and its members are never replicated. Neutralizing is not
+                // cosmetic. QuadFish.prefab and TadPoleFauna.prefab carry a NetworkObject, and
+                // an UN-SPAWNED one is adopted by Netcode as an in-scene object keyed on a hash
+                // every instance of a prefab shares - so a school of two breaks synchronization
+                // for every later joiner. See Docs/PartySystem/BUGS.md B16 and B5.
+                //
+                // Dormant today rather than absent: no shipped multiplayer cell wires a
+                // LightFaunaManager population (SO_Mission_Protect and two tool scenes do).
+                // Adding one consumer is what would ship it, which is exactly why it is closed
+                // here instead of being left to the sweep at connection approval.
+                FaunaNetworkSync.ServerSpawn(fauna);
 
                 activeFauna.Add(fauna);
             }

@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
@@ -14,6 +16,10 @@ namespace CosmicShore.Gameplay
     ///   - Prisms damaged (via VesselDamagePrismEffectSO)
     ///
     /// Subclass per vessel type to add vessel-specific stats.
+    ///
+    /// Only the telemetry on the local pilot's own vessel counts, and every value it raises is also reported to that
+    /// pilot's <see cref="RoundStats"/>, which the server shares with every peer - so each scoreboard shows every
+    /// pilot's numbers, not only its own (Docs/ScoringSystem/BUGS.md B21).
     /// </summary>
     public abstract class VesselTelemetry : MonoBehaviour
     {
@@ -72,12 +78,14 @@ namespace CosmicShore.Gameplay
 
         private void Awake()
         {
+            FillMissingBaseStats();
             RegisterStat(longestDriftStat);
             RegisterStat(maxBoostTimeStat);
             RegisterStat(prismsDamagedStat);
             RegisterStatsExtended();
 
-            Debug.Log($"[VesselTelemetry] {GetType().Name} Awake - " +
+            if (CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
+                CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[VesselTelemetry] {GetType().Name} Awake - " +
                 $"registered {_allStats.Count} stat(s), " +
                 $"gameData={(gameData != null ? "OK" : "NULL")}, " +
                 $"drift={(longestDriftStat != null ? "OK" : "NULL")}, " +
@@ -85,7 +93,28 @@ namespace CosmicShore.Gameplay
                 $"prismsDmg={(prismsDamagedStat != null ? "OK" : "NULL")}");
         }
 
-        protected virtual void OnEnable() => TrySubscribe();
+        /// <summary>
+        /// A telemetry added at runtime (<see cref="VesselTelemetryBootstrapper"/>: the Dolphin, Manta, Rhino, Serpent and
+        /// Swordfish) has no serialized links, so it counted and never raised - those pilots read 0 on every scoreboard.
+        /// The three base stats are the same assets for every hull; take any missing one from the shared profile.
+        /// </summary>
+        void FillMissingBaseStats()
+        {
+            if (longestDriftStat && maxBoostTimeStat && prismsDamagedStat) return;
+            var profile = GameModeStatsProfileSO.Load();
+            if (!profile) return;
+            if (!longestDriftStat)  longestDriftStat  = profile.VesselLongestDrift;
+            if (!maxBoostTimeStat)  maxBoostTimeStat  = profile.VesselMaxBoost;
+            if (!prismsDamagedStat) prismsDamagedStat = profile.VesselPrismsDamaged;
+        }
+
+        protected virtual void OnEnable()
+        {
+            TrySubscribe();
+            // Re-enabled mid-turn (deactivated and reactivated while tracking): the turn's
+            // hooks were released at OnDisable, so take them again.
+            if (IsTracking) AttachTurnHooks();
+        }
 
         private void Start() => TrySubscribe();
 
@@ -103,6 +132,13 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnDisable()
         {
+            // A turn that never ends (a scene reload mid-match, a return to the menu, the AI
+            // training watchdog) never raises OnMiniGameTurnEnd, and the turn's hooks are
+            // static events and persistent SOAP assets: left attached they keep this
+            // destroyed component — and through Vessel its vessel and whole trail — alive for
+            // the rest of the session. Release them here as well as at turn end.
+            DetachTurnHooks();
+
             if (!_subscribed) return;
 
             if (gameData != null)
@@ -120,15 +156,56 @@ namespace CosmicShore.Gameplay
             TrackDrift();
             TrackBoost();
             OnUpdateExtended();
+            if (_unreported.Count > 0 && Time.unscaledTime >= _nextReportTime)
+                ReportToRoundStats();
+        }
+
+        // ── Reporting (every pilot's numbers on every scoreboard) ──────────────
+
+        /// <summary>How often a changed value goes to the server: a ram raises Prisms Damaged many times a second.</summary>
+        const float ReportIntervalSeconds = 0.5f;
+
+        readonly Dictionary<VesselStatEventSO, float> _unreported = new();
+        float _nextReportTime;
+
+        /// <summary>
+        /// Raises a stat for this machine's listeners and queues it for the pilot's <see cref="RoundStats"/>.
+        /// Use this, not <c>stat.Raise</c>, for every value a telemetry tracks.
+        /// </summary>
+        protected void Publish(VesselStatEventSO stat, float value)
+        {
+            if (stat == null) return;
+            stat.Raise(value);
+            _unreported[stat] = value;
+        }
+
+        void ReportToRoundStats()
+        {
+            _nextReportTime = Time.unscaledTime + ReportIntervalSeconds;
+            if (_unreported.Count == 0) return;
+            if (gameData?.LocalPlayer?.RoundStats is RoundStats roundStats)
+                foreach (var kv in _unreported)
+                    roundStats.ReportVesselStat(kv.Key.name, kv.Value);
+            _unreported.Clear();
         }
 
         // ── Turn lifecycle ─────────────────────────────────────────────────────
 
         private void HandleTurnStarted()
         {
+            DetachTurnHooks(); // the previous turn never ended: never subscribe twice
             ResetAll();
 
             Vessel = gameData.LocalPlayer?.Vessel?.VesselStatus;
+
+            // Every hull carries a telemetry, and each one used to track the LOCAL pilot - so with four ships in the
+            // arena the local pilot was counted four times over. Only the one on that pilot's own ship counts now.
+            if (Vessel != null && !ReferenceEquals(Vessel, GetComponentInParent<IVesselStatus>()))
+            {
+                Vessel = null;
+                IsTracking = false;
+                return;
+            }
 
             if (Vessel == null || !Vessel.IsLocalUser)
             {
@@ -140,23 +217,49 @@ namespace CosmicShore.Gameplay
             }
 
             IsTracking = true;
-            Debug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnStarted - " +
+            if (CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
+                CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[VesselTelemetry] {GetType().Name} HandleTurnStarted - " +
                 $"tracking {Vessel.VesselType} for player '{Vessel.PlayerName}', " +
                 $"{_allStats.Count} stat(s) registered");
-            OnTurnStartedExtended();
+            AttachTurnHooks();
         }
 
         private void HandleTurnEnded()
         {
             FinalizeInProgressDrift();
             FinalizeInProgressBoost();
+            // The turn's last values go now, not at the next half second: the scoreboard follows the turn's end.
+            if (IsTracking) ReportToRoundStats();
             IsTracking = false;
-            OnTurnEndedExtended();
-            Debug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnEnded - " +
+            DetachTurnHooks();
+            if (CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
+                CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[VesselTelemetry] {GetType().Name} HandleTurnEnded - " +
                 $"drift={MaxDriftTime:F2}s, boost={MaxBoostTime:F2}s, prismsDmg={PrismsDamaged}");
         }
 
+        // Whether OnTurnStartedExtended's subscriptions are live. The base owns the pairing so
+        // a subclass can neither leak them (turn end never raised) nor double them (turn start
+        // raised twice).
+        bool _turnHooksAttached;
+
+        void AttachTurnHooks()
+        {
+            if (_turnHooksAttached) return;
+            _turnHooksAttached = true;
+            OnTurnStartedExtended();
+        }
+
+        void DetachTurnHooks()
+        {
+            if (!_turnHooksAttached) return;
+            _turnHooksAttached = false;
+            OnTurnEndedExtended();
+        }
+
         // ── Extension points ───────────────────────────────────────────────────
+        // OnTurnStartedExtended subscribes to the turn's events; OnTurnEndedExtended must ONLY
+        // undo exactly that. It also runs when the component is disabled or destroyed mid-turn,
+        // so it must not finalize or raise stats. The base guarantees the two alternate.
 
         protected virtual void RegisterStatsExtended() { }
         protected virtual void OnTurnStartedExtended() { }
@@ -170,7 +273,7 @@ namespace CosmicShore.Gameplay
         {
             if (!IsTracking || Vessel?.PlayerName != playerName) return;
             PrismsDamaged++;
-            prismsDamagedStat?.Raise(PrismsDamaged);
+            Publish(prismsDamagedStat, PrismsDamaged);
         }
 
         // ── Frame tracking ─────────────────────────────────────────────────────
@@ -198,7 +301,7 @@ namespace CosmicShore.Gameplay
             if (_currentDriftTime > MaxDriftTime)
             {
                 MaxDriftTime = _currentDriftTime;
-                longestDriftStat?.Raise(MaxDriftTime);
+                Publish(longestDriftStat, MaxDriftTime);
             }
             _currentDriftTime = 0f;
         }
@@ -209,7 +312,7 @@ namespace CosmicShore.Gameplay
             if (_currentBoostTime > MaxBoostTime)
             {
                 MaxBoostTime = _currentBoostTime;
-                maxBoostTimeStat?.Raise(MaxBoostTime);
+                Publish(maxBoostTimeStat, MaxBoostTime);
             }
             _currentBoostTime = 0f;
         }
@@ -225,6 +328,7 @@ namespace CosmicShore.Gameplay
             _currentBoostTime = 0f;
             IsTracking        = false;
             Vessel            = null;
+            _unreported.Clear();
 
             longestDriftStat?.Reset();
             maxBoostTimeStat?.Reset();

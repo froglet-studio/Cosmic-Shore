@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-dolphin-drift-charge-maxboostmultiplier-ac1124",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T09:49:12+00:00",
+  "area": "the Dolphin's Drift Charge boost",
+  "summary": "Dolphin Drift Charge maxBoostMultiplier 2.259 -> 2.82 (+25%, the cap), step 5 of the elemental loop for Regatta.",
+  "why": "The Dolphin is the slow end of the six. Real-game judge, 17 archive2 courses x 3 seeds: L5 95.7 -> 76.3 s (every seed faster), card 107.2 -> 102.8 s (inside its seed noise). Switchback (AI, seeds 1-3) stays inside the rung bars but the AI is slower with the bigger boost on I2/I3: I1 92 -> 86, I2 118 -> 130, I3 119 -> 132, I4 255 -> 255 s; a Dolphin retrain at the new boost would likely win that back.",
+  "branch": "claude/project-thread-cwavhz",
+  "lane": "dolphin",
+  "commit": "57289383d",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset"
+  ],
+  "loop": {
+    "vessels": [
+      "Dolphin"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "1"
+  }
+}

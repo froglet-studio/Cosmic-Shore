@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
     /// Uses virtual methods instead of abstract to satisfy LSP - subclasses only
     /// override what they need, and managers don't have to throw NotImplementedException.
     /// </summary>
-    public abstract class Fauna : MonoBehaviour, ILifeFormEntity
+    public abstract partial class Fauna : MonoBehaviour, ILifeFormEntity
     {
         [Header("Data References")]
         [Inject] GameDataSO gameData;
@@ -137,9 +137,154 @@ namespace CosmicShore.Gameplay
         /// mass it cannot reach or eat" is ONE rule, and a per-subclass copy is a rule you can
         /// forget to apply in the next grazer.
         /// </summary>
-        protected bool IsPreyForMe(Vector3 position, Domains preyDomain) =>
+        protected bool IsPreyForMe(Vector3 position, Domains preyDomain) => IsPreyForMe(position, preyDomain, domain);
+
+        /// <summary>The same rule for an eater that is not this creature's own domain - a MultiDomain swarm's
+        /// member eats as ITS domain (Docs/SWARM_FAUNA.md §16.4). One predicate, two callers.</summary>
+        protected bool IsPreyForMe(Vector3 position, Domains preyDomain, Domains eaterDomain) =>
             cell != null && IsInsideBand(position) &&
-            cell.IsPreyForHerbivore(position, domain, preyDomain);
+            cell.IsPreyForHerbivore(position, eaterDomain, preyDomain);
+
+        // ── The leash ─────────────────────────────────────────────────────────
+        //
+        // A vessel that tames and commands fauna (the Angler, R_VesselActions/ANGLER.md) holds an IFaunaLeash. While
+        // leashed, a creature steers where its holder says and eats only the prism its holder orders, re-checked by its
+        // OWN edibility rule and eaten by its OWN mouthful. Behaviour only: nothing is spawned, killed or recoloured, the
+        // starvation clock keeps running, and the cell's pens still clamp every goal (Goal's setter). One holder at a
+        // time; only the peer that SIMULATES the creature can leash it (a puppet's pose is replicated). Its one visual is
+        // the holder's MARK (IFaunaLeash.TryGetLeashMark): the spindles lean toward the holder's domain hue, replicated
+        // to puppets by FaunaNetworkSync; its domain, body prisms and diet are untouched.
+
+        /// <summary>The holder steering this creature, or null when it is wild.</summary>
+        public IFaunaLeash Leash { get; private set; }
+
+        /// <summary>True while a holder steers this creature.</summary>
+        public bool IsLeashed => Leash != null;
+
+        /// <summary>
+        /// True while the holder asks for more speed than <paramref name="ownTopSpeed"/> - a THROW (the Angler's sling).
+        /// Then the behaviour tick leaves the velocity to the leash's per-frame steer instead of clamping it back to the
+        /// creature's own range (ANGLER.md follow-up 11). Any order at or under the creature's own top speed returns false.
+        /// </summary>
+        protected bool LeashOwnsSpeed(float ownTopSpeed) =>
+            Leash != null && Leash.TrySteer(this, out _, out float speed, out _) && speed > ownTopSpeed + 0.01f;
+
+        /// <summary>Which creatures a leash can hold: those that eat prisms. A predator eats creatures, never prisms, so
+        /// there is nothing to order it to eat.</summary>
+        protected virtual bool CanBeLeashed => diet == FaunaDiet.Herbivore;
+
+        /// <summary>Whether a leash can take this creature (or, read on a prefab, this species): <see cref="CanBeLeashed"/>.</summary>
+        public bool Leashable => CanBeLeashed;
+
+        /// <summary>Put this creature on <paramref name="holder"/>'s leash. False when it cannot be leashed, is dying,
+        /// is a puppet on this peer, or another holder already has it - unless <paramref name="steal"/> (the Angler's
+        /// Mass level-5 upgrade, <c>R_VesselActions/ANGLER.md</c> §1d): then the other holder is told it lost the creature
+        /// (<see cref="IFaunaLeash.Released"/>) and this one takes it.</summary>
+        public bool TryLeash(IFaunaLeash holder, bool steal = false)
+        {
+            if (holder == null || !CanBeLeashed || !IsSimAuthority || _diedThisLife) return false;
+            if (Leash != null && !ReferenceEquals(Leash, holder))
+            {
+                if (!steal) return false;
+                var previous = Leash;
+                Leash = holder;
+                previous.Released(this);
+                ShowLeashMark();
+                return true;
+            }
+            Leash = holder;
+            ShowLeashMark();
+            return true;
+        }
+
+        /// <summary>Let go (a no-op unless <paramref name="holder"/> holds it). The holder's own release, so it is not told.</summary>
+        public void Unleash(IFaunaLeash holder)
+        {
+            if (!ReferenceEquals(Leash, holder)) return;
+            Leash = null;
+            if (!_diedThisLife) ShowLeashMark();
+        }
+
+        /// <summary>
+        /// Wear the holder's mark, or none when wild, and publish it to the puppets. On the simulating peer. A dying
+        /// creature keeps the mark it died in, so its wither does not change colour (<see cref="DropLeash"/> leaves it).
+        /// </summary>
+        void ShowLeashMark()
+        {
+            Domains markDomain = default;
+            float lean = 0f, glow = 0f;
+            if (Leash == null || !Leash.TryGetLeashMark(out markDomain, out lean, out glow)) lean = glow = 0f;
+            ApplyLeashMark(markDomain, lean, glow);
+            var sync = NetSync;
+            if (sync) sync.PublishLeashMark(markDomain, lean, glow);
+        }
+
+        /// <summary>
+        /// Re-read the holder's mark: its holder calls this when the mark changes while it holds the creature (the Jacks'
+        /// herd lights up while herding and while called, <see cref="IFaunaLeash.TryGetLeashMark"/>). A no-op on a puppet,
+        /// on a wild creature and on a dying one (it keeps the mark it died in).
+        /// </summary>
+        public void RefreshLeashMark()
+        {
+            if (Leash == null || !IsSimAuthority || _diedThisLife) return;
+            ShowLeashMark();
+        }
+
+        static readonly List<Spindle> s_markSpindles = new();
+
+        /// <summary>
+        /// The leash's mark (Garrett, 2026-10-21: "distinguish them by giving their spindles a slight hue shift in your
+        /// domain"): every spindle's colours lean <paramref name="lean"/> of the way toward <paramref name="markDomain"/>'s
+        /// prism hue; 0 takes the mark off. <paramref name="glow"/> lights them up (colours x (1 + glow), HDR); 0 = unlit.
+        /// Presentation only. Called by the leash on the simulating peer and by <see cref="FaunaNetworkSync"/> on a puppet.
+        /// </summary>
+        public void ApplyLeashMark(Domains markDomain, float lean, float glow)
+        {
+            var colors = PrismLit.ColorSet;
+            Color hue = default;
+            bool on = lean > 0f && colors && colors.TryGetPrismKindColors(markDomain, PrismKind.Plain, out hue, out _);
+            GetComponentsInChildren(true, s_markSpindles);
+            for (int i = 0; i < s_markSpindles.Count; i++)
+                if (s_markSpindles[i]) s_markSpindles[i].SetHueLean(hue, on ? lean : 0f, glow);
+            s_markSpindles.Clear();
+        }
+
+        /// <summary>The creature's own release: it is dying or being destroyed. The holder is told so it drops it.</summary>
+        void DropLeash()
+        {
+            var holder = Leash;
+            Leash = null;
+            holder?.Released(this);
+        }
+
+        /// <summary>The speed a leash plans with: this creature's top swim speed as it swims now (u/s).</summary>
+        public virtual float LeashTopSpeed => 0f;
+
+        /// <summary>This creature's minimum swim speed (u/s).</summary>
+        public virtual float LeashMinSpeed => 0f;
+
+        /// <summary>How far this creature's mouth reaches (it eats from this far; u).</summary>
+        public virtual float LeashMouthReach => 0f;
+
+        /// <summary>Whether this creature's own diet would eat <paramref name="prism"/> now (domain, nucleus claim, pens,
+        /// shields), asked by a holder BEFORE it gives the order, so it never sends a creature to a meal it will refuse
+        /// on arrival. The same predicate the creature applies to an ordered meal; true for a species with no rule of its
+        /// own.</summary>
+        public virtual bool LeashCanEat(Prism prism) => prism && !prism.destroyed;
+
+        /// <summary>Set the creature's velocity outright (a holder's throw: the creature leaves the ball at throw speed
+        /// instead of easing up to it, and lands at its own swim speed). A no-op on a creature that does not integrate
+        /// its own velocity, and on a puppet.</summary>
+        public virtual void LeashLaunch(Vector3 velocity) { }
+
+        /// <summary>A creature that DASHES toward a far goal (a forager boid's arrival-capped hunt) reports the dash
+        /// multiplier and its behaviour tick, which cap how fast it can follow; false for a steady swimmer.</summary>
+        public virtual bool TryGetLeashDash(out float dashMultiplier, out float tickSeconds)
+        {
+            dashMultiplier = 1f;
+            tickSeconds = 1f;
+            return false;
+        }
 
         // Stable per-instance offset so each fauna orbits its resolved goal at a
         // different point. Seeded once at Start so the spread is deterministic per
@@ -177,36 +322,117 @@ namespace CosmicShore.Gameplay
         // freshly-spawned creature is immune from frame zero, not only after its Start runs.
         float _spawnTime = -1f;
 
+        /// <summary>
+        /// Moves this creature's birth time back by <paramref name="ageSeconds"/>. For a creature whose GameObject is
+        /// younger than the creature itself - a swarm member's proxy, materialised for a member that has lived in the
+        /// simulation for minutes (Docs/SWARM_FAUNA.md §16.3) - so the post-spawn predation grace is measured from the
+        /// member's birth, not from the proxy's. A newborn member keeps its full grace.
+        /// </summary>
+        protected void BackdateSpawn(float ageSeconds)
+        {
+            if (ageSeconds > 0f) _spawnTime = Time.time - ageSeconds;
+        }
+
+        /// <summary>
+        /// A predator has this creature as its CURRENT target this frame. Nothing by default; a creature whose
+        /// GameObject would otherwise be retired (a swarm member's proxy) keeps itself alive while it is hunted.
+        /// </summary>
+        public virtual void NotifyHunted() { }
+
+        /// <summary>The authored post-spawn predation grace, in seconds (what <see cref="IsPredationImmune"/> measures).</summary>
+        public float PredationImmunitySeconds => predationImmunitySeconds;
+
         /// <summary>True during the post-spawn grace window when this fauna can't be predated.</summary>
         public bool IsPredationImmune =>
             predationImmunitySeconds > 0f && _spawnTime >= 0f && (Time.time - _spawnTime) < predationImmunitySeconds;
 
         [Header("Population control (prey-linked)")]
-        [Tooltip("Seconds this fauna can go without feeding before it starves and despawns. " +
-                 "Feeding (consuming any prism, or - for predators - eating a herbivore) resets " +
-                 "the clock; 0 = never starve. Concrete creature fauna (e.g. LightFauna) call " +
-                 "NotifyFed() on consume and despawn when IsStarving; manager-type Fauna " +
-                 "subclasses ignore it. See Docs/ECOSYSTEM.md §6.")]
+        [Tooltip("Seconds of upkeep ONE nominal meal buys (the authored starvation clock, migrated - round 11f, " +
+                 "Docs/ECOLOGY_LOD.md §2). The creature now has a conserved STOMACH: metabolism drains it " +
+                 "(Capacity / starvationSeconds per second, paid to the cell's soil), every feed fills it with the " +
+                 "volume actually eaten, and it starves when it is empty. A meal of at least one nominal prism (16) " +
+                 "refills it, so it starves exactly starvationSeconds after its last such meal - as the clock did; " +
+                 "smaller meals buy proportionally less. 0 = never starve. Concrete creature fauna (e.g. LightFauna) " +
+                 "call NotifyFed(volume) on consume and despawn when IsStarving; manager-type Fauna ignore it. " +
+                 "See Docs/ECOSYSTEM.md §6.")]
         [SerializeField] protected float starvationSeconds = 30f;
 
-        // -1 until the first Start tick so a fauna spawned when Time.time already exceeds
-        // starvationSeconds isn't reported starving before its clock begins.
-        float _lastFedTime = -1f;
+        [Tooltip("What the stomach holds, in prism volume. <= 0 (the default every existing asset carries) = one " +
+                 "nominal prism (16), which is what makes the migrated starvationSeconds behave as the clock did. " +
+                 "Raise it to let a creature bank several meals; its upkeep stays Capacity / starvationSeconds.")]
+        [SerializeField] protected float stomachCapacity = -1f;
 
-        /// <summary>True once this fauna has gone longer than starvationSeconds without feeding.</summary>
-        protected bool IsStarving =>
-            starvationSeconds > 0f && _lastFedTime >= 0f && (Time.time - _lastFedTime) > starvationSeconds;
+        // The conserved stomach (lazy: a level at a timestamp + a constant drain - nothing runs per frame).
+        FaunaStomach _stomach;
+        bool _stomachLive;
+        // What a predator took when it ate this creature (stomach + body), read by the eater right after Predated.
+        float _surrenderedMeal;
+
+        /// <summary>True once metabolism has burned this creature's stomach to zero (never with starvationSeconds 0), unless
+        /// its leash holder SUSTAINS it (<see cref="IFaunaLeash.Sustains"/>: the Angler's keeper and a herd's floor, the fenced exceptions).</summary>
+        protected bool IsStarving => _stomachLive && _stomach.IsEmpty(Time.time) && !(Leash != null && Leash.Sustains(this));
+
+        /// <summary>The stomach's current contents in prism volume (0 before the creature comes alive).</summary>
+        public float StomachVolume => _stomachLive ? _stomach.Level(Time.time) : 0f;
 
         /// <summary>
-        /// Reset the starvation clock - a subclass calls this whenever it consumes prey.
-        /// Feeding is also the reproduction trigger: prey converts to population
-        /// (Docs/ECOSYSTEM.md §6), so every feed advances the birth counter and may
-        /// birth offspring when the species' lineage config allows it.
+        /// The meal a predator took from this creature in its last successful <see cref="Predated"/>: its stomach plus
+        /// its body (<see cref="BodyMealVolume"/>). The eater passes it to <see cref="NotifyFed(float)"/> - predation
+        /// moves the prey's mass into the predator, exactly (Docs/ECOLOGY_LOD.md §2).
         /// </summary>
-        protected void NotifyFed()
+        public float SurrenderedMeal => _surrenderedMeal;
+
+        /// <summary>The body volume a devouring predator gains. One nominal prism unless a species says otherwise.</summary>
+        protected virtual float BodyMealVolume => CellPhaseThresholds.NominalPrismVolume;
+
+        void StartStomach()
         {
-            _lastFedTime = Time.time;
+            float cap = stomachCapacity > 0f ? stomachCapacity : CellPhaseThresholds.NominalPrismVolume;
+            _stomach = FaunaStomach.FromStarvationClock(starvationSeconds, cap);
+            _stomach.Fill(Time.time);   // born fed: the clock started at birth
+            _stomachLive = true;
+        }
+
+        void PayToSoil(float volume)
+        {
+            if (volume > 0f && cell) cell.DepositSoilNutrient(volume);
+        }
+
+        /// <summary>
+        /// A feed of one nominal meal - for feeds that are not a measured volume (an own-domain pilot's Nourish).
+        /// Feeding is also the reproduction trigger: prey converts to population (Docs/ECOSYSTEM.md §6), so every
+        /// feed advances the birth counter and may birth offspring when the species' lineage config allows it.
+        /// </summary>
+        protected void NotifyFed() => NotifyFed(CellPhaseThresholds.NominalPrismVolume);
+
+        /// <summary>
+        /// This creature ate <paramref name="volume"/> of prism mass (a consumed prism's volume, or a prey's
+        /// <see cref="SurrenderedMeal"/>): it fills the stomach, and the upkeep burned since the last feed plus any
+        /// overflow goes to the cell's soil - conserved, never a clock reset.
+        /// </summary>
+        protected void NotifyFed(float volume)
+        {
+            if (!_stomachLive) StartStomach();
+            if (UsesConservedStomach)
+                PayToSoil(_stomach.Feed(volume, Time.time));
+            else
+                _stomach.Fill(Time.time);   // the shipped rule: any feed is a full refill, as the clock reset did
             TryReproduce();
+        }
+
+        /// <summary>
+        /// True when this creature's cell opts into the conserved stomach (<see cref="CellConfigDataSO.ConservedFaunaStomach"/>,
+        /// the Swarm cell only). Everywhere else a feed refills the stomach completely - the shipped starvation-clock rule -
+        /// so the volume-paid metabolism stays contained to the cell that was tuned for it.
+        /// </summary>
+        bool UsesConservedStomach
+        {
+            get
+            {
+                var c = cell;
+                var cfg = c ? c.Config : null;
+                return cfg && cfg.ConservedFaunaStomach;
+            }
         }
 
         // -------------------------------------------------------------------
@@ -225,6 +451,9 @@ namespace CosmicShore.Gameplay
         /// cell's own spawn profile.</summary>
         public Cell HostCell => hostCell;
 
+        /// <summary>The cell this creature lives in (its host, else its runtime data's cell), or null.</summary>
+        public Cell HomeCell => cell;
+
         /// <summary>This individual's variant tuning block, or null if it rolled none.
         /// <see cref="FaunaNetworkSync"/> reads it to work out WHICH palette sibling supplied
         /// it, which is the half of the identity that element alone does not name.</summary>
@@ -233,6 +462,31 @@ namespace CosmicShore.Gameplay
         // This individual's rolled variant (element + the block expressing it). Passed to
         // offspring so a lineage breeds true instead of re-rolling per birth.
         LifeformVariantPick<FaunaVariantTuning>? _variantPick;
+
+        // The prefab's own root scale, read before any variant rewrites it - so a pooled body that comes back as a
+        // variant which keeps the prefab gets the prefab's size and proportions back, not the last variant's.
+        Vector3 _authoredRootScale = -Vector3.one;
+
+        /// <summary>The root scale the prefab authored (read before the first variant touched it).</summary>
+        protected Vector3 AuthoredRootScale => _authoredRootScale.x < 0f ? transform.localScale : _authoredRootScale;
+
+        /// <summary>This creature's element spread and reach (<see cref="FaunaElementalForm"/>): 1 unless it is Space.
+        /// Multiplied where a spacing or a reach is READ.</summary>
+        protected float ElementSpread { get; private set; } = 1f;
+        protected float ElementReach { get; private set; } = 1f;
+
+        /// <summary>The element this individual rolled (None before <see cref="AssignLineage"/>).</summary>
+        protected Element RolledElement { get; private set; } = Element.None;
+
+        // What an eroded Space spindle changed (the spindles' prefab meshes - a SkinnedMeshRenderer's or a static
+        // MeshFilter's - and the body prisms' prefab seats), so a pooled body that comes back as another element gets the
+        // prefab's body back. Null until a body is first eroded.
+        Dictionary<Component, Mesh> _authoredSpindleMeshes;
+        Dictionary<HealthPrism, Vector3> _authoredPrismSeats;
+
+        /// <summary>How thick this body's thickest section is against its root scale: 1, or the Space spindle's eroded
+        /// girth (<see cref="FaunaElementalForm.ThickestGirth"/>). A body-relative dial taken by GIRTH multiplies it in.</summary>
+        protected float BodyGirthFactor { get; private set; } = 1f;
         bool lineageRegistered;
         int _feedsSinceBirth;
         float _lastBirthTime = float.NegativeInfinity;
@@ -302,11 +556,15 @@ namespace CosmicShore.Gameplay
 
                 var pick = config.RollVariant(inherit);
                 _variantPick = pick;
+                RolledElement = pick.Element;
+                ElementSpread = FaunaElementalForm.Spread(pick.Element);
+                ElementReach = FaunaElementalForm.Reach(pick.Element);
 
                 if (pick.Element != Element.None)
                     ProvisionHeart(pick.Element);
                 if (pick.Tuning is { Enabled: true })
                     ApplyVariantTuning(pick.Tuning);
+                ApplyRuntimeTuningFrom(host);   // a run's overrides win over the variant's
 
                 // RE-SIZE THE HEART LAST, and unconditionally. This is load-bearing and it is
                 // easy to delete by accident, because from here it looks redundant with
@@ -318,8 +576,8 @@ namespace CosmicShore.Gameplay
                 // body's CURRENT root scale, and ApplyVariantTuning then REWRITES that root
                 // scale from the variant's BaseBodyScale. Without this line every creature that
                 // authors a body scale wears a heart of `authored x BaseBodyScale` - 0.4 and 0.7
-                // on the shipped tadpoles, i.e. a silent 2.5x and 1.43x cut to BOTH the collect
-                // reward and the live domain fauna buff, with nothing reporting it.
+                // on the shipped tadpoles, i.e. a silent 2.5x and 1.43x cut to the one elemental
+                // crystal size, with nothing reporting it.
                 //
                 // It also covers a SECOND inversion one level up: the Boid / LightFauna spawn
                 // path runs Initialize (which provisions and sizes the heart) BEFORE
@@ -330,12 +588,8 @@ namespace CosmicShore.Gameplay
                 //
                 // Until 2026-08 this job was done by Fauna.SetLevel, as an incidental
                 // side-effect of seeding the spawn level (Docs/ECOSYSTEM.md §40.3).
-                ApplyHeartSize(_heartWorldScale);
+                ApplyHeartSize();
             }
-
-            // A new living heart entered the world - let the domain fauna buff re-sum now
-            // instead of on its next reconcile sweep.
-            RaiseFaunaHeartsChanged();
         }
 
         /// <summary>
@@ -352,20 +606,6 @@ namespace CosmicShore.Gameplay
             if (crystal) crystal.SetEmbeddedIn(this);
         }
 
-        /// <summary>
-        /// Pokes <see cref="CellRuntimeDataSO.OnFaunaHeartsChanged"/> through the host cell's
-        /// runtime SO (always wired on a live cell) rather than the per-prefab cellData wire —
-        /// several fauna prefabs author cellData null or dangling, and every fauna that
-        /// participates in the buff pool has a host cell by construction (AssignLineage sets
-        /// it). cellData is the fallback for hostless deaths; the event field itself must fail
-        /// loud if unwired on the asset.
-        /// </summary>
-        void RaiseFaunaHeartsChanged()
-        {
-            var runtimeData = hostCell ? hostCell.RuntimeData : cellData;
-            if (runtimeData) runtimeData.OnFaunaHeartsChanged.Raise();
-        }
-
         void TryReproduce()
         {
             // Birth is a decision - only the ONE simulation makes it, and the child then
@@ -380,8 +620,12 @@ namespace CosmicShore.Gameplay
             // The cap is the CELL's, not the config's: a biome that scales its population
             // (SpawnProfileSO.FaunaPopulationScale) has to scale what reproduction may fill to,
             // or the seeder and the food web would be working to two different ceilings.
+            // A herd's holder scales the feeds a birth takes (IFaunaHerd: the Jacks' Mass element).
+            int feedsPerOffspring = Leash is IFaunaHerd herd
+                ? Mathf.Max(1, Mathf.RoundToInt(cfg.FeedsPerOffspring * Mathf.Max(0f, herd.FeedsPerOffspringScale(this))))
+                : cfg.FeedsPerOffspring;
             if (!FaunaReproductionRules.ShouldBirth(
-                    _feedsSinceBirth, cfg.FeedsPerOffspring,
+                    _feedsSinceBirth, feedsPerOffspring,
                     Time.time - _lastBirthTime, cfg.ReproductionCooldownSeconds,
                     host.GetLiveFaunaCount(cfg), host.ResolveFaunaCap(cfg)))
                 return;
@@ -396,11 +640,13 @@ namespace CosmicShore.Gameplay
                 // overshoot the performance backstop.
                 if (host.IsFaunaAtCap(cfg))
                     break;
-                SpawnOffspring(host, cfg);
+                var child = SpawnOffspring(host, cfg);
+                // A herded creature's offspring is born into the herd (IFaunaHerd.Born).
+                if (child && Leash is IFaunaHerd herdHolder) herdHolder.Born(this, child);
             }
         }
 
-        void SpawnOffspring(Cell host, FaunaConfigurationSO cfg)
+        Fauna SpawnOffspring(Cell host, FaunaConfigurationSO cfg)
         {
             Vector3 pos = transform.position + Random.insideUnitSphere * OffspringSpawnJitter;
             var child = Instantiate(cfg.FaunaPrefab, pos, Quaternion.identity);
@@ -419,13 +665,24 @@ namespace CosmicShore.Gameplay
             // AFTER AssignLineage: the lineage bind is what settles this child's element, and
             // the spawn payload carries that identity to every peer.
             FaunaNetworkSync.ServerSpawn(child);
+            return child;
         }
 
         protected virtual void OnDestroy()
         {
+            DropLeash();
             if (lineageRegistered && hostCell)
                 hostCell.UnregisterLiveFauna(this);
             lineageRegistered = false;
+
+            // Leave the cell's spawned-object list too. Flora does this in LifeForm.Die, but Fauna
+            // is not a LifeForm and nothing else removed it, so every creature that died (or was
+            // destroyed by a teardown, cell swap or split) left a dead entry behind and kept
+            // Cell's LifeFormsInCell stat inflated. Safe for every path: the removal is a no-op
+            // when the object was never registered or is already gone, and a cell that is itself
+            // being destroyed is skipped by the null check.
+            if (hostCell)
+                hostCell.UnregisterSpawnedObject(gameObject);
 
             // Last line of defence for a DEFERRED heart (see DefersHeartRelease): an interrupted
             // wither - a cell drain, a manager pulling the husk, a turn ending - never reaches
@@ -442,6 +699,13 @@ namespace CosmicShore.Gameplay
         public Domains Domain => domain;
         public GameObject GetGameObject() => gameObject;
 
+        /// <inheritdoc/>
+        /// <remarks>The exact flag <see cref="Nourish"/> and <see cref="ApplyReplicatedDeath"/>
+        /// already gate on. It is set at the TOP of <see cref="Die"/>, so it is true for the
+        /// whole of a deferred wither - the window in which this creature's heart is still
+        /// embedded but its owner is a corpse.</remarks>
+        public bool IsDying => _diedThisLife;
+
         // --- Elemental contract: one base prefab, FOUR data-defined variants ---
         // There is no level (Docs/ECOSYSTEM.md §40). A creature is its species and its element;
         // the element states its body scale, prism shape, survival numbers, flocking, audio and
@@ -449,15 +713,6 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The element this creature carries - single source: its crystal (the heart).</summary>
         public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
-
-        /// <summary>
-        /// The WORLD scale this creature's heart renders at — authored per element in the
-        /// species' variant tuning and sized to suit this body (Docs/ECOSYSTEM.md §40.2).
-        /// 0 means 'not authored' and resolves to the set's default.
-        /// </summary>
-        public float HeartWorldScale => _heartWorldScale;
-
-        float _heartWorldScale;
 
         /// <summary>Current travel speed (world units/s). Mobile subclasses (Boid, LightFauna)
         /// override with their live velocity; manager/rooted fauna read as stationary.</summary>
@@ -483,14 +738,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Sizes this creature's heart to the value its element authored. Called from the spawn
-        /// path BEFORE the creature is established, so it spawns AT size and nothing pops.
+        /// Sizes this creature's heart to the one elemental crystal size
+        /// (<see cref="CosmicShore.ScriptableObjects.ElementalCrystalSetSO.CrystalWorldScale"/>).
+        /// Called from the spawn path BEFORE the creature is established, so it spawns AT size
+        /// and nothing pops; called again whenever the body's scale is rewritten.
         /// </summary>
-        public void ApplyHeartSize(float authoredWorldScale)
+        public void ApplyHeartSize()
         {
-            _heartWorldScale = Mathf.Max(0f, authoredWorldScale);
             if (!crystal) crystal = GetComponentInChildren<Crystal>(true);
-            LifeFormCrystal.ApplyHeartSize(crystal, _heartWorldScale);
+            LifeFormCrystal.ApplyHeartSize(crystal);
         }
 
         /// <summary>
@@ -521,16 +777,25 @@ namespace CosmicShore.Gameplay
         {
             if (tuning == null) return;
 
-            if (tuning.BaseBodyScale > 0f)
-                transform.localScale = Vector3.one * tuning.BaseBodyScale;
+            if (_authoredRootScale.x < 0f) _authoredRootScale = transform.localScale;
+            var scaleBefore = transform.localScale;
+            transform.localScale = tuning.BaseBodyScale > 0f ? Vector3.one * tuning.BaseBodyScale : _authoredRootScale;
+            // A resized body REBINDS its rig: Animation Rigging records every constraint's offset (the spine's
+            // DampedTransforms, the jaws' aims) in WORLD units when the rig is built at spawn, so a body grown after it
+            // would be pulled back to the prefab's bone spacing - the skin bunched up round the prisms the bones still
+            // carry at their own scale (the Mass shark's clipping, 2026-10-27).
+            if (transform.localScale != scaleBefore) RebuildRig();
 
             if (tuning.StarvationSeconds >= 0f)
+            {
                 starvationSeconds = tuning.StarvationSeconds;
+                if (_stomachLive) StartStomach();   // re-derive the upkeep (spawn-time: nothing has been eaten yet)
+            }
 
-            // The element states the size of this creature's heart, like everything else it
-            // states (Docs/ECOSYSTEM.md §40.2). 0 is the sentinel every un-sized config carries,
-            // which resolves to the set's default rather than to a zero-sized crystal.
-            if (tuning.HeartWorldScale > 0f) ApplyHeartSize(tuning.HeartWorldScale);
+            // Every heart is the one elemental crystal size; the tuning's HeartWorldScale is no
+            // longer read (Docs/ECOSYSTEM.md §40.2). The body scale was just rewritten above,
+            // and AssignLineage re-applies this after the whole lineage lands.
+            ApplyHeartSize();
 
             // Per-element body PRISM shape: retarget every body HealthPrism's TargetScale (the
             // bloom target - the clock growth stamp blooms toward it, so a post-Initialize
@@ -538,7 +803,22 @@ namespace CosmicShore.Gameplay
             if (tuning.BodyPrismScale != Vector3.zero)
             {
                 foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
-                    if (hp) hp.TargetScale = tuning.BodyPrismScale;
+                {
+                    if (!hp) continue;
+                    hp.AdmitTargetScale(tuning.BodyPrismScale);   // a stated size, not one grown into a bound
+                    hp.TargetScale = tuning.BodyPrismScale;
+                }
+            }
+
+            // ...and a Space spindle is eroded, its prisms re-seated in it and given its element's leaf law (or a pooled
+            // body gets the prefab's skin, seats and prisms back).
+            if (tuning.ErodeSpindle) ErodeSpindle(RolledElement);
+            else if (_authoredPrismSeats != null)
+            {
+                RestoreSpindle();
+                if (tuning.BodyPrismScale == Vector3.zero)
+                    foreach (var hp in _authoredPrismSeats.Keys)
+                        if (hp) SeatAuthoredSize(hp);
             }
 
             // Per-element body look: swap the spindle renderers' shared material (never
@@ -589,6 +869,101 @@ namespace CosmicShore.Gameplay
         protected const float DegenerateSteeringSqr = 1e-6f;
 
         /// <summary>
+        /// Armour points this species wears off armour per bite: <paramref name="superShielded"/> picks the super-shield
+        /// rate. 0 (the default) = this species never gnaws that tier. Only matters in a cell whose
+        /// <see cref="Cell.ArmourIsFood"/> is set (the Ark escort's worlds); a species authors it on its own config.
+        /// </summary>
+        protected float ArmourBite(bool superShielded) => _biteScale * Mathf.Max(superShielded ? _superBiteMin : _shieldBiteMin,
+            superShielded ? _tunedSuperShieldBite ?? AuthoredArmourBite(true) : _tunedShieldBite ?? AuthoredArmourBite(false));
+
+        float _biteScale = 1f, _shieldBiteMin, _superBiteMin;
+
+        /// <summary>The species' authored armour bite (its config); <see cref="ArmourBite"/> lets a run's tuning win.</summary>
+        protected virtual float AuthoredArmourBite(bool superShielded) => 0f;
+
+        float? _tunedShieldBite, _tunedSuperShieldBite;
+        string _speciesKey;
+
+        /// <summary>This creature's species key for run tuning (<see cref="FaunaRuntimeTuning.SpeciesKey"/>).</summary>
+        public string SpeciesKey => _speciesKey ??= FaunaRuntimeTuning.SpeciesKey(name);
+
+        /// <summary>
+        /// Take a run's overrides for this species (<see cref="FaunaRuntimeTuning"/>; only in cells that carry one). Called
+        /// as the cell takes the creature (<see cref="Initialize"/>) and again after its variant tuning
+        /// (<see cref="AssignLineage(Cell, FaunaConfigurationSO, LifeformVariantPick{FaunaVariantTuning}?)"/>), so it
+        /// must be idempotent: set absolute values, never scale what is already there.
+        /// </summary>
+        protected virtual void ApplyRuntimeTuning(FaunaRuntimeTuning tuning, string species)
+        {
+            if (tuning.TryGet(species, "shieldBite", out float v)) _tunedShieldBite = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "superShieldBite", out v)) _tunedSuperShieldBite = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "biteScale", out v)) _biteScale = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "shieldBiteMin", out v)) _shieldBiteMin = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "superShieldBiteMin", out v)) _superBiteMin = Mathf.Max(0f, v);
+        }
+
+        void ApplyRuntimeTuningFrom(Cell host)
+        {
+            var tuning = host ? host.RuntimeFaunaTuning : null;
+            if (tuning == null || !tuning.HasAny || !tuning.Touches(SpeciesKey)) return;
+            ApplyRuntimeTuning(tuning, SpeciesKey);
+        }
+
+        /// <summary>True when this creature may wear through <paramref name="prism"/>'s armour: its cell lets armour be
+        /// food and this species bites that tier.</summary>
+        protected bool GnawsArmourOf(Prism prism)
+        {
+            var props = prism ? prism.prismProperties : null;
+            if (props == null || (!props.IsShielded && !props.IsSuperShielded)) return false;
+            var c = cell;
+            return c && c.ArmourIsFood && ArmourBite(props.IsSuperShielded) > 0f;
+        }
+
+        /// <summary>
+        /// One creature bite of <paramref name="prism"/>, through armour when this species gnaws it: an armoured prism
+        /// this creature may only gnaw takes one bite of wear (<see cref="Prism.GnawArmour"/>) and is consumed only on
+        /// the bite that cracks it; everything else is consumed as before (<paramref name="devastate"/> as the caller
+        /// states). Wear runs only on the simulation authority: a client puppet never cracks armour (it waits for the
+        /// shield drop to arrive). Returns <see cref="BiteResult.Ate"/> when mass was taken (feed the stomach then),
+        /// <see cref="BiteResult.Gnawed"/> for a bite of wear, <see cref="BiteResult.None"/> otherwise.
+        /// </summary>
+        protected BiteResult BiteMass(Prism prism, Transform mouth, Domains eaterDomain, string eaterName, bool devastate)
+        {
+            if (!prism || prism.destroyed) return BiteResult.None;
+            var props = prism.prismProperties;
+            bool armoured = props != null && (props.IsShielded || props.IsSuperShielded);
+            // A POSSESSED host eats every shield whole (IFaunaPossession, Garrett 2026-11-14): a super-shield is broken
+            // first, the sanctioned sequence (Prism.AbsorbSuperShieldHit), so the devastating consume below lands.
+            if (armoured && props.IsSuperShielded && Leash is IFaunaPossession)
+            {
+                if (!IsSimAuthority) return BiteResult.None;
+                prism.DeactivateShields();
+                devastate = true;
+            }
+            else if (armoured && GnawsArmourOf(prism) && !EatsShieldWhole(prism))
+            {
+                if (!IsSimAuthority) return BiteResult.None;
+                if (!prism.GnawArmour(ArmourBite(props.IsSuperShielded))) return BiteResult.Gnawed;
+                devastate = true;   // cracked: plain mass now, eaten in the same bite
+            }
+            prism.Consume(mouth, eaterDomain, eaterName, devastate, true);
+            return prism.destroyed ? BiteResult.Ate : BiteResult.None;
+        }
+
+        /// <summary>What a <see cref="BiteMass"/> did.</summary>
+        protected enum BiteResult { None, Gnawed, Ate }
+
+        /// <summary>A SHIELDED (never super) prism this creature's diet already eats whole: a Frenzy, or a herd upgrade.</summary>
+        bool EatsShieldWhole(Prism prism)
+        {
+            var props = prism.prismProperties;
+            if (props == null || props.IsSuperShielded || !props.IsShielded) return false;
+            var c = cell;
+            if (c && c.ShieldedMassIsFood) return true;
+            return Leash is IFaunaHerd herd && herd.EatsShields(this);
+        }
+
+        /// <summary>
         /// Shielded mass is not food for ANY herbivore - the one canonical rule every
         /// species' edibility predicate routes through, so no new grazer can re-acquire
         /// the bug. A SUPER-shielded prism is fully invulnerable and a SHIELDED one only
@@ -598,11 +973,39 @@ namespace CosmicShore.Gameplay
         /// mass. That is what parked brittlestars on Skim Race's super-shielded track
         /// prisms. Excluding shields from the predicate makes the creature skip straight
         /// to the next normal prism on the same behavior tick.
+        ///
+        /// <para>Public since round 11c: the threat flora (ThreatGrove) eat through the same rule, so a plant that
+        /// eats is held to it exactly as a creature is.</para>
         /// </summary>
-        protected static bool IsShieldedMass(Prism prism)
+        public static bool IsShieldedMass(Prism prism)
         {
             var properties = prism ? prism.prismProperties : null;
             return properties != null && (properties.IsShielded || properties.IsSuperShielded);
+        }
+
+        /// <summary>
+        /// The shield half of THIS creature's diet: true when <paramref name="prism"/> carries a shield it may not eat
+        /// through. Every grazer's edibility predicate routes through here (not <see cref="IsShieldedMass"/>), so the two
+        /// exceptions apply everywhere at once:
+        /// <list type="bullet">
+        /// <item>its cell is in a <b>Frenzy</b> (<see cref="Cell.ShieldedMassIsFood"/>; the designer, 2026-10-21: "in general
+        /// shielded prisms should be food during a frenzy when the cell has too many prism");</item>
+        /// <item>its herd's holder lets it eat shields (<see cref="IFaunaHerd.EatsShields"/>: the Jacks at Space 5).</item>
+        /// <item>it is POSSESSED (<see cref="IFaunaPossession"/>: the Jewel Wasp's host): every shield, super-shields too,
+        /// is food, and <see cref="BiteMass"/> breaks a super-shield before it eats.</item>
+        /// </list>
+        /// Otherwise super-shielded mass is never food. A shielded prism that is food is eaten whole: the grazer consumes it with
+        /// <c>devastate</c> (<see cref="Prism.Consume"/> otherwise only sheds the shield).
+        /// </summary>
+        protected bool IsInedibleShield(Prism prism)
+        {
+            if (!IsShieldedMass(prism)) return false;
+            if (Leash is IFaunaPossession) return false;   // a possessed host eats every shield (IFaunaPossession)
+            if (GnawsArmourOf(prism)) return false;
+            if (prism.prismProperties.IsSuperShielded) return true;
+            var c = cell;
+            if (c && c.ShieldedMassIsFood) return false;
+            return !(Leash is IFaunaHerd herd && herd.EatsShields(this));
         }
 
         /// <summary>
@@ -649,6 +1052,9 @@ namespace CosmicShore.Gameplay
                 ? s_nonPrismOverlapMask
                 : s_nonPrismOverlapMask = ~LayerMask.GetMask("TrailBlocks", "Mound");
 
+        /// <summary>The same mask for a cell-wide vessel sense outside a creature (CellEcologyLod, round 11f).</summary>
+        public static int VesselSenseMask => NonPrismOverlapMask;
+
         // --- Body prisms (the movers contract with PrismSpatialIndex) -------
         // Fauna bodies are HealthPrisms - registered prism mass that MOVES every
         // frame. The index stores positions, so the mover must keep them honest
@@ -657,6 +1063,319 @@ namespace CosmicShore.Gameplay
         // to be.
 
         HealthPrism[] _bodyPrisms;
+
+        /// <summary>How many times <see cref="GrowBody"/> has grown this body over its species' size (1 = never).</summary>
+        public float GrownBy => _grownBy;
+        float _grownBy = 1f;
+
+        /// <summary>How many times its BODY PRISMS have grown with it (= <see cref="GrownBy"/> unless the grow named a
+        /// smaller prism factor).</summary>
+        public float PrismsGrownBy => _prismsGrownBy;
+        float _prismsGrownBy = 1f;
+
+        /// <summary>How many times its authored DANGER prisms have grown with it (1 on a kaiju: a stinger keeps its
+        /// species' size).</summary>
+        public float DangerPrismsGrownBy => _dangerGrownBy;
+        float _dangerGrownBy = 1f;
+
+        /// <summary>
+        /// Grow the body <paramref name="factor"/> times, its prisms only <paramref name="prismFactor"/> times: the frame
+        /// (spindles, heart reach, spacing) takes the full size and each prism keeps nearer its species' own. A body
+        /// prism is a thin plate, and one grown 12-14x read as a flat, featureless square bigger than the Ark's plates
+        /// (Shombith, 2026-11-20: on a living kaiju). A prism factor of 0 or above the body's grows the prisms with it.
+        /// </summary>
+        public void GrowBody(float factor, float prismFactor)
+        {
+            GrowBody(factor);
+            if (factor <= 0f || Mathf.Approximately(factor, 1f) || prismFactor <= 0f || prismFactor >= factor) return;
+            float settle = prismFactor / factor;
+            // A DANGER plate (a stinger: the Brittlestar's five arm tips are flat 4 x 4 x 1 plates) keeps its species'
+            // size outright. Grown even 3x it was a big flat square, and the danger shader draws an arrow in a square on
+            // it (Shombith, 2026-11-20: "these sims like shapes are still there on the kaiju").
+            float dangerSettle = 1f / factor;
+            var prisms = _bodyPrisms ?? CacheBodyPrisms();
+            for (int i = 0; i < prisms.Length; i++)
+            {
+                var hp = prisms[i];
+                if (!hp || hp.destroyed) continue;
+                Vector3 size = hp.TargetScale * (IsAuthoredDanger(hp) ? dangerSettle : settle);
+                hp.AdmitTargetScale(size);
+                hp.TargetScale = size;
+            }
+            _prismsGrownBy *= settle;
+            _dangerGrownBy *= dangerSettle;
+        }
+
+        /// <summary>
+        /// A creature grown at birth beyond its species' size (a voyage's raiders, Shombith 2026-11-16: "bigger faunas ...
+        /// attack the ark"): its root scale times <paramref name="factor"/>, its rig re-bound and its heart re-sized, as a
+        /// variant's body scale does. Call in the spawn frame, right after <c>SpawnFaunaWithDomain</c>, so the body blooms
+        /// in at its grown size (continuity holds). A variant applied later re-sizes from the authored scale.
+        /// </summary>
+        public void GrowBody(float factor)
+        {
+            if (factor <= 0f || Mathf.Approximately(factor, 1f)) return;
+            if (_authoredRootScale.x < 0f) _authoredRootScale = transform.localScale;
+            transform.localScale *= factor;
+            _grownBy *= factor;
+            _prismsGrownBy *= factor;
+            _dangerGrownBy *= factor;
+            RebuildRig();
+            ApplyHeartSize();
+        }
+
+        /// <summary>The body's rig, re-bound at its current scale: the Animator back to its default pose, then every
+        /// RigBuilder rebuilt so its constraints record their offsets at this size.</summary>
+        void RebuildRig()
+        {
+            foreach (var animator in GetComponentsInChildren<Animator>(true))
+                if (animator && animator.isActiveAndEnabled) animator.Rebind();
+            foreach (var rig in GetComponentsInChildren<UnityEngine.Animations.Rigging.RigBuilder>(true))
+                if (rig && rig.isActiveAndEnabled) rig.Build();
+        }
+
+        /// <summary>
+        /// A body prism takes the size its prefab AUTHORED. <see cref="Prism.Initialize"/> re-reads the target through the
+        /// scale animator's [0.5, 10] window, which suits a trail prism grown into a bound and silently trims a stated
+        /// size: the shark's dorsal (19 long) came out 10, its wings 12 → 10, its teeth 15 → 10, the Brittlestar's 0.3
+        /// spines 0.5 - on every element, so no prism filled its socket (the Mass shark showed it). Call after
+        /// Initialize.
+        /// </summary>
+        protected static void SeatAuthoredSize(HealthPrism hp)
+        {
+            var authored = hp.AuthoredScale;
+            if (authored.x <= 0f || authored.y <= 0f || authored.z <= 0f) return;
+            hp.AdmitTargetScale(authored);
+            hp.TargetScale = authored;
+        }
+
+        // One eroded copy of each prefab spindle mesh, shared by every Space instance (never mutated once built).
+        sealed class ErodedSpindle
+        {
+            public SpindleErosion Map;
+            public Mesh Mesh;
+            public Vector3 Shift;          // mesh space: how far the spindle's root moved with the body it hangs from
+            public Vector3[] Vertices;     // the prefab mesh's, for finding which spindle a prism sits in
+        }
+        static readonly Dictionary<Mesh, ErodedSpindle> s_erodedSpindles = new();
+        static readonly HashSet<Mesh> s_unreadableSpindles = new();
+
+        /// <summary>
+        /// THE SPACE SPINDLE (Docs/ECOSYSTEM.md 64.9, Garrett 2026-10-28: "the space spindle needs to be universally
+        /// scaled to bigger than mass, but we must erode and thin its thickest sections so the whole spindle gets more
+        /// spindly"). The root is already scaled whole; this erodes every spindle of the body by
+        /// <see cref="SpindleErosion"/> - the BODY (the skin with the most vertices) along its spine through the heart,
+        /// every other skin of the body (the wings - never the heart, <see cref="IsSpindlePart"/>) along its own spine and then moved with the body where it is rooted, so it stays
+        /// attached. Each body prism moves with the skin it sits in, and takes THE LATTICE FLORA'S PROPORTIONAL RULES:
+        /// "an element authors the SHAPE of its plate, and the size is FITTED to the largest that clears" - the leaf law's
+        /// shape (<see cref="FloraElementalForm.ShapeLeaf"/>, Space's needle), spanning its eroded socket's length less
+        /// 3% (<see cref="FaunaElementalForm.FitClearance"/>), never thicker than the socket. Teeth keep their size.
+        /// Runs at spawn, in the bind pose.
+        /// </summary>
+        void ErodeSpindle(Element element)
+        {
+            RestoreSpindle();   // a pooled body is measured from the prefab's seats, never its last life's
+
+            // the body is the skin with the most vertices; where several share one mesh (a body built of braids, the
+            // /fauna-creation kit's), the one that spans furthest in the world - the spine
+            Component body = null;
+            float bodySpan = 0f;
+            var skins = SpindleMeshes();
+            _authoredSpindleMeshes ??= new Dictionary<Component, Mesh>();
+            foreach (var skin in skins)
+            {
+                if (!_authoredSpindleMeshes.ContainsKey(skin)) _authoredSpindleMeshes[skin] = MeshOf(skin);
+                var m = _authoredSpindleMeshes[skin];
+                float span = m ? RestMeshToWorld(skin, m).MultiplyVector(m.bounds.size).magnitude : 0f;
+                int count = m ? m.vertexCount : 0, bodyCount = body ? _authoredSpindleMeshes[body].vertexCount : -1;
+                if (!body || count > bodyCount || (count == bodyCount && span > bodySpan)) { body = skin; bodySpan = span; }
+            }
+            if (!body) return;
+
+            var bodyMesh = _authoredSpindleMeshes[body];
+            var bodyToWorld = RestMeshToWorld(body, bodyMesh);
+            var worldToBody = bodyToWorld.inverse;
+            var heart = crystal ? crystal.transform.position : transform.position;
+            var bodySpindle = Eroded(bodyMesh, () => SpindleErosion.Measure(bodyMesh.vertices, worldToBody.MultiplyPoint3x4(heart)), null);
+            if (bodySpindle == null) return;
+
+            var hosts = new List<(Component skin, ErodedSpindle spindle, Matrix4x4 toWorld)>();
+            foreach (var skin in skins)
+            {
+                if (!skin || !_authoredSpindleMeshes.TryGetValue(skin, out var mesh)) continue;
+                var toWorld = RestMeshToWorld(skin, mesh);
+                var spindle = skin == body ? bodySpindle : Eroded(mesh, () =>
+                {
+                    var v = mesh.vertices;
+                    return SpindleErosion.Measure(v, SpindleErosion.Centroid(v));
+                }, map =>
+                {
+                    // rooted where it comes nearest the body's spine; it moves as the body's skin there moves
+                    var meshToBody = worldToBody * toWorld;
+                    var v = mesh.vertices;
+                    Vector3 root = default; float best = float.MaxValue;
+                    for (int i = 0; i < v.Length; i++)
+                    {
+                        var p = meshToBody.MultiplyPoint3x4(v[i]);
+                        float r = bodySpindle.Map.OffSpine(p);
+                        if (r < best) { best = r; root = p; }
+                    }
+                    return meshToBody.inverse.MultiplyVector(bodySpindle.Map.Map(root) - root);
+                });
+                if (spindle == null) continue;
+                SetMesh(skin, spindle.Mesh);
+                hosts.Add((skin, spindle, toWorld));
+            }
+            BodyGirthFactor = bodySpindle.Map.Thickest;
+
+            _authoredPrismSeats ??= new Dictionary<HealthPrism, Vector3>();
+            // Each host's vertices in the world and its world-to-mesh inverse, once per refit instead of once per prism
+            // (perf pass 2026-11-02). The same MultiplyPoint3x4 / inverse on the same inputs, so every distance and seat
+            // is bit-identical to the per-prism version.
+            var worldVerts = new Vector3[hosts.Count][];
+            var worldToMeshOf = new Matrix4x4[hosts.Count];
+            for (int h = 0; h < hosts.Count; h++)
+            {
+                var toWorld = hosts[h].toWorld;
+                var verts = hosts[h].spindle.Vertices;
+                var w = worldVerts[h] = new Vector3[verts.Length];
+                for (int i = 0; i < verts.Length; i++) w[i] = toWorld.MultiplyPoint3x4(verts[i]);
+                worldToMeshOf[h] = toWorld.inverse;
+            }
+            foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
+            {
+                if (!hp || !hp.transform.parent || !IsSpindlePart(hp)) continue;
+                if (!_authoredPrismSeats.ContainsKey(hp)) _authoredPrismSeats[hp] = hp.transform.localPosition;
+
+                // the spindle it sits in: the one with a vertex nearest its centre
+                var centre = hp.transform.position;
+                int host = -1; float nearest = float.MaxValue;
+                for (int h = 0; h < hosts.Count; h++)
+                {
+                    // measured in the WORLD: a braid stretched along its length only (the shipped Branch, the tadpole's,
+                    // a /fauna-creation body) has no single unit, and one axis's would misjudge the nearest host
+                    var verts = worldVerts[h];
+                    for (int i = 0; i < verts.Length; i++)
+                    {
+                        float d = (verts[i] - centre).sqrMagnitude;
+                        if (d < nearest) { nearest = d; host = h; }
+                    }
+                }
+                if (host < 0) continue;
+                var (_, seat, meshToWorld) = hosts[host];
+                var worldToMesh = worldToMeshOf[host];
+                var local = worldToMesh.MultiplyPoint3x4(centre);
+                hp.transform.position = meshToWorld.MultiplyPoint3x4(seat.Map.Map(local) + seat.Shift);
+
+                // every prism is refit, authored danger too: "the stinger can thin on space. the stinger is just a danger
+                // prism" (Garrett 2026-11-01). A tooth or a stinger is a prism like any other; there is no danger exception.
+
+                var authored = hp.AuthoredScale;
+                var parent = hp.transform.parent.localToWorldMatrix;
+                Vector3 size = default, perLocal = default, socket = default;
+                for (int i = 0; i < 3; i++)
+                {
+                    var axis = parent.MultiplyVector(hp.transform.localRotation * (i == 0 ? Vector3.right : i == 1 ? Vector3.up : Vector3.forward));
+                    perLocal[i] = axis.magnitude;                                        // world units per local unit
+                    size[i] = authored[i] * perLocal[i];                                 // the prefab's prism, in world
+                    var inMesh = worldToMesh.MultiplyVector(axis).normalized;
+                    socket[i] = size[i] * seat.Map.MapDirection(local, inMesh).magnitude; // its seat, eroded
+                }
+                if (perLocal.x <= 1e-6f || perLocal.y <= 1e-6f || perLocal.z <= 1e-6f) continue;
+                var shape = FloraElementalForm.ShapeLeaf(size, element);
+                if (shape.x <= 0f || shape.y <= 0f || shape.z <= 0f) continue;
+                // it spans its socket's LENGTH (less the lattice's 3%), the law sets how THIN it is against that length,
+                // and it is never thicker than the socket
+                int lng = shape.x >= shape.y && shape.x >= shape.z ? 0 : shape.y >= shape.z ? 1 : 2;
+                float length = socket[lng] * FaunaElementalForm.FitClearance;
+                Vector3 target = default;
+                for (int i = 0; i < 3; i++)
+                    target[i] = (i == lng ? length
+                        : Mathf.Min(length * shape[i] / shape[lng], socket[i] * FaunaElementalForm.FitClearance)) / perLocal[i];
+                hp.AdmitTargetScale(target);   // a needle may be longer than the animator's default window
+                hp.TargetScale = target;
+            }
+        }
+
+        /// <summary>
+        /// True for a part of the creature's OWN body: not under its heart. Erosion is a change of shape, and anything
+        /// below the body in the hierarchy is carried along by it - the Space heart is a skinned mesh of its own
+        /// (<c>spacecrystalanim</c>) under the root, so the first pass eroded it with the wings, squashing the one round
+        /// crystal (and every crystal a dead Space shark dropped kept the squashed mesh). The heart has its own size law
+        /// (<see cref="LifeFormCrystal.ApplyHeartSize"/>); the body never reshapes it.
+        /// </summary>
+        static bool IsSpindlePart(Component part) => !part.GetComponentInParent<Crystal>(true);
+
+        /// <summary>The cached eroded copy of <paramref name="source"/>, built on first use (null when the mesh is not
+        /// readable - its import needs Read/Write - which is said once).</summary>
+        static ErodedSpindle Eroded(Mesh source, System.Func<SpindleErosion> measure, System.Func<SpindleErosion, Vector3> shift)
+        {
+            if (s_erodedSpindles.TryGetValue(source, out var cached)) return cached;
+            if (!source.isReadable)
+            {
+                if (s_unreadableSpindles.Add(source))
+                    CSDebug.LogWarning($"[Fauna] {source.name} cannot be eroded into a Space spindle: enable Read/Write on its model import.");
+                return null;
+            }
+            var map = measure();
+            if (map == null) return null;
+            var spindle = new ErodedSpindle { Map = map, Vertices = source.vertices };
+            spindle.Shift = shift?.Invoke(map) ?? Vector3.zero;
+            spindle.Mesh = map.Erode(source, spindle.Shift);
+            if (!spindle.Mesh) return null;
+            s_erodedSpindles[source] = spindle;
+            return spindle;
+        }
+
+        /// <summary>A spindle mesh's mesh-to-world matrix in the bind pose: a skin's through its first bone (the bone's
+        /// world matrix times its bind pose is the same for every bone at rest), anything else through its own transform.</summary>
+        static Matrix4x4 RestMeshToWorld(Component part, Mesh mesh)
+        {
+            if (part is SkinnedMeshRenderer skin)
+            {
+                var bones = skin.bones;
+                if (bones is { Length: > 0 } && bones[0] && mesh.bindposeCount > 0)
+                    return bones[0].localToWorldMatrix * mesh.bindposes[0];
+            }
+            return part.transform.localToWorldMatrix;
+        }
+
+        /// <summary>
+        /// The meshes the body is drawn with: every skin of the body, and every static mesh a <see cref="Spindle"/> draws
+        /// (the QuadFish, Clawfish and tadpole bodies are MeshFilters, not skins). Never the heart's (<see cref="IsSpindlePart"/>)
+        /// and never a prism's (its box and its shields are the prism's own geometry).
+        /// </summary>
+        List<Component> SpindleMeshes()
+        {
+            var parts = new List<Component>();
+            foreach (var skin in GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                if (skin && skin.sharedMesh && IsSpindlePart(skin)) parts.Add(skin);
+            foreach (var filter in GetComponentsInChildren<MeshFilter>(true))
+                if (filter && filter.sharedMesh && IsSpindlePart(filter) && !filter.GetComponentInParent<Prism>(true)
+                    && filter.GetComponentInParent<Spindle>(true))
+                    parts.Add(filter);
+            return parts;
+        }
+
+        static Mesh MeshOf(Component part) => part is SkinnedMeshRenderer skin ? skin.sharedMesh : ((MeshFilter)part).sharedMesh;
+
+        static void SetMesh(Component part, Mesh mesh)
+        {
+            if (part is SkinnedMeshRenderer skin) skin.sharedMesh = mesh;
+            else ((MeshFilter)part).sharedMesh = mesh;
+        }
+
+        /// <summary>Puts back what <see cref="ErodeSpindle"/> changed: the prefab skins and the prisms' prefab seats.</summary>
+        void RestoreSpindle()
+        {
+            BodyGirthFactor = 1f;
+            if (_authoredSpindleMeshes != null)
+                foreach (var kv in _authoredSpindleMeshes)
+                    if (kv.Key) SetMesh(kv.Key, kv.Value);
+            if (_authoredPrismSeats != null)
+                foreach (var kv in _authoredPrismSeats)
+                    if (kv.Key) kv.Key.transform.localPosition = kv.Value;
+        }
 
         /// <summary>
         /// Caches this fauna's body HealthPrisms for the per-frame movement
@@ -679,6 +1398,106 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The cached body prisms (see <see cref="CacheBodyPrisms"/>). May contain destroyed entries.</summary>
         protected HealthPrism[] BodyPrisms => _bodyPrisms;
+
+        // The body prisms its PREFAB made dangerous (a shark's teeth, a worm's fangs), captured the first time the body is
+        // armoured and before anything arms it - so a Charge body's elemental danger never reads as teeth. And the prisms
+        // the ELEMENT changed, so a pooled body that comes back as another element sheds exactly that and nothing its
+        // prefab authored (the worm head's shielded plate cage keeps its shield).
+        HashSet<HealthPrism> _authoredDanger;
+        readonly HashSet<HealthPrism> _elementArmed = new();
+        Coroutine _bodyShieldRegen;
+        WaitForSeconds _bodyShieldWait;
+
+        /// <summary>True for a body prism its prefab authored dangerous (teeth, fangs, a stinger) - never one the
+        /// element armed (<see cref="ArmourBody"/>). Mouths and jaws read this, not <c>IsDangerous</c>: on a Charge
+        /// creature every body prism is dangerous, and a mouth at the centroid of the whole body is no mouth.</summary>
+        protected bool IsAuthoredDanger(HealthPrism hp) =>
+            hp && (_authoredDanger != null ? _authoredDanger.Contains(hp) : hp.prismProperties is { IsDangerous: true });
+
+        /// <summary>
+        /// THE ELEMENTAL ARMOUR on a creature's body (<see cref="ElementalArmour"/>, Docs/ECOSYSTEM.md §65; Garrett,
+        /// 2026-10-28: "yes keep consistency" for fauna) - the same law a plant's leaves obey:
+        /// <list type="bullet">
+        /// <item><b>MASS is armoured.</b> Every plain body prism is shielded now and re-armoured one every
+        /// <see cref="ElementalArmour.ShieldPeriod"/> seconds while the creature lives, so a Mass creature takes two
+        /// passes. Its authored danger prisms stay danger (a shield clears danger - the two are exclusive by locked
+        /// design).</item>
+        /// <item><b>CHARGE is dangerous.</b> Every body prism is a danger prism, not only the teeth.</item>
+        /// <item>Every other element wears its prefab's own body.</item>
+        /// </list>
+        /// Call after the body prisms are initialised and the heart carrying the element is in place. A previous life's
+        /// elemental armour is taken off first, so a pooled body never keeps it; what the prefab authored is never touched.
+        /// </summary>
+        protected void ArmourBody()
+        {
+            var body = _bodyPrisms;
+            if (body == null) return;
+            if (_authoredDanger == null)
+            {
+                _authoredDanger = new HashSet<HealthPrism>();
+                for (int i = 0; i < body.Length; i++)
+                    if (body[i] && body[i].prismProperties is { IsDangerous: true }) _authoredDanger.Add(body[i]);
+            }
+
+            foreach (var hp in _elementArmed)
+            {
+                if (!hp || hp.destroyed || hp.prismProperties == null || _authoredDanger.Contains(hp)) continue;
+                hp.prismProperties.IsDangerous = false;
+                hp.DeactivateShields();
+            }
+            _elementArmed.Clear();
+            if (_bodyShieldRegen != null)
+            {
+                StopCoroutine(_bodyShieldRegen);
+                _bodyShieldRegen = null;
+            }
+
+            Element element = Element != Element.None ? Element : RolledElement;
+            bool dangerous = ElementalArmour.ArmsEveryPrism(element);
+            bool armoured = ElementalArmour.Shields(element);
+            if (!dangerous && !armoured) return;
+            for (int i = 0; i < body.Length; i++)
+            {
+                var hp = body[i];
+                if (!hp || hp.destroyed || hp.prismProperties is not { IsDangerous: false } props) continue;
+                if (dangerous)
+                {
+                    props.IsDangerous = true;
+                    hp.MakeDangerous();
+                    _elementArmed.Add(hp);
+                }
+                else if (!props.IsShielded && !props.IsSuperShielded)
+                {
+                    hp.ActivateShield();
+                    _elementArmed.Add(hp);
+                }
+            }
+            if (armoured) _bodyShieldRegen = StartCoroutine(RearmourBody());
+        }
+
+        /// <summary>Mass's re-armour: one plain body prism that has shed its shield takes it back every
+        /// <see cref="ElementalArmour.ShieldPeriod"/> seconds - a plant's regen (<c>LifeForm.ShieldRegenCoroutine</c>)
+        /// on a creature's body, which that coroutine never sees (a body prism is not the cell's grazeable mass).</summary>
+        IEnumerator RearmourBody()
+        {
+            _bodyShieldWait ??= new WaitForSeconds(ElementalArmour.ShieldPeriod);
+            int next = 0;
+            while (true)
+            {
+                yield return _bodyShieldWait;
+                var body = _bodyPrisms;
+                if (body == null || body.Length == 0) continue;
+                for (int tried = 0; tried < body.Length; tried++)
+                {
+                    var hp = body[next];
+                    next = (next + 1) % body.Length;
+                    if (!hp || hp.destroyed || hp.prismProperties is not { IsDangerous: false, IsShielded: false, IsSuperShielded: false })
+                        continue;
+                    hp.ActivateShield();
+                    break;
+                }
+            }
+        }
 
         /// <summary>True while any body prism is alive — the creature's health read.</summary>
         public bool HasLiveBodyPrisms
@@ -756,14 +1575,59 @@ namespace CosmicShore.Gameplay
         /// when a body crosses an 8m occupancy-bucket boundary; unregistered
         /// bodies (inside Prism.waitTime) no-op.
         /// </summary>
+        // Per-frame body sync for every moving creature: one index update, one shell refresh and
+        // one render-matrix write per body prism. Named so a Profiler capture can separate it
+        // from the rest of a creature's Update (PERFORMANCE_OPTIMIZATION.md §1, S5).
+        static readonly Unity.Profiling.ProfilerMarker s_BodySyncMarker = new("Fauna.BodySync");
+
+        // Far bodies sync at a third of the rate (Switchback perf pass 2026-11-02: 54 bodies, ~0.45 ms/frame). Beyond
+        // FarBodySyncDistance from the view camera a creature's index entry, shell and render matrix are refreshed every
+        // FarBodySyncEvery frames, staggered by instance; at that range a frame or two of lag is under a pixel and the
+        // senses that read the index tick slower than that anyway. Near ones, and any with no camera, sync every frame.
+        //
+        // The skip never lets a body's prisms fall more than FarBodySyncMaxDrift (radians as seen from the camera, about two
+        // pixels) behind the body, and never applies to a leashed creature (a voyage's kaiju and raiders, a herd): voyage
+        // cells are thousands of units across, so nearly every creature there was "far" and its prisms stepped at a third
+        // of the frame rate, which read as choppy fauna (Shombith, 2026-11-17). A still or slow creature still skips.
+        const float FarBodySyncDistance = 250f;
+        const int FarBodySyncEvery = 3;
+        const float FarBodySyncMaxDrift = 0.002f;
+        Vector3 _lastBodySyncPos;
+        static int s_farCheckFrame = -1;
+        static Vector3 s_viewPos;
+        static bool s_hasView;
+
+        bool SkipFarBodySyncThisFrame()
+        {
+            int frame = Time.frameCount;
+            if (s_farCheckFrame != frame)
+            {
+                s_farCheckFrame = frame;
+                var cam = CameraManager.ViewCamera;
+                s_hasView = cam;
+                if (s_hasView) s_viewPos = cam.transform.position;
+            }
+            if (!s_hasView || Leash != null) return false;
+            Vector3 at = transform.position;
+            float viewSq = (at - s_viewPos).sqrMagnitude;
+            if (viewSq < FarBodySyncDistance * FarBodySyncDistance) return false;
+            if ((at - _lastBodySyncPos).sqrMagnitude > viewSq * (FarBodySyncMaxDrift * FarBodySyncMaxDrift)) return false;
+            return (frame + GetInstanceID()) % FarBodySyncEvery != 0;
+        }
+
         protected void NotifyBodyPrismsMoved()
         {
             var prisms = _bodyPrisms;
             if (prisms == null) return;
-            for (int i = 0; i < prisms.Length; i++)
+            if (SkipFarBodySyncThisFrame()) return;
+            _lastBodySyncPos = transform.position;
+            using (s_BodySyncMarker.Auto())
             {
-                var hp = prisms[i];
-                if (hp) hp.NotifyPositionChanged();
+                for (int i = 0; i < prisms.Length; i++)
+                {
+                    var hp = prisms[i];
+                    if (hp) hp.NotifyPositionChanged();
+                }
             }
         }
 
@@ -773,6 +1637,12 @@ namespace CosmicShore.Gameplay
             // before the spawner calls Initialize or any predator's first behavior tick), so
             // predation immunity is active from the moment the creature exists.
             _spawnTime = Time.time;
+
+            // Emitter-driven loops (brittlestar / shark / tadpole) must honour the SFX slider:
+            // StudioEventEmitter never sets instance volume itself, so bind it here.
+            if (!TryGetComponent<CosmicShore.Gameplay.Audio.EmitterSfxVolumeBinder>(out _)
+                && GetComponentInChildren<FMODUnity.StudioEventEmitter>(true))
+                gameObject.AddComponent<CosmicShore.Gameplay.Audio.EmitterSfxVolumeBinder>();
         }
 
         protected virtual void Start()
@@ -781,7 +1651,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"{name}: Population domain is Blue (sentinel). Assign a real domain before spawning, or set it on the prefab.");
 
             _goalOrbitOffset = Random.onUnitSphere * Mathf.Max(0f, goalOrbitRadius);
-            _lastFedTime = Time.time; // start the starvation clock when the creature comes alive
+            StartStomach(); // the stomach starts full when the creature comes alive (the clock started here)
 
             // A replicated puppet resolves no goals: where it swims is the server's decision,
             // arriving through its NetworkTransform. (The client-side CPU this saves is the
@@ -800,6 +1670,15 @@ namespace CosmicShore.Gameplay
         public virtual void Initialize(Cell cell)
         {
             hostCell = cell;
+            ApplyRuntimeTuningFrom(cell);
+            if (cell && cell.CullOffscreenAnimation) CullOffscreenAnimation();
+        }
+
+        /// <summary>The rig stops animating while no camera sees it (<see cref="Cell.CullOffscreenAnimation"/>).</summary>
+        void CullOffscreenAnimation()
+        {
+            foreach (var animator in GetComponentsInChildren<Animator>(true))
+                if (animator) animator.cullingMode = AnimatorCullingMode.CullCompletely;
         }
 
         // ===================================================================
@@ -848,7 +1727,7 @@ namespace CosmicShore.Gameplay
         /// identity. This is not cosmetic: a lifeform is its species and its element and nothing
         /// else (Docs/ECOSYSTEM.md §40), and the element states the body scale, the variant
         /// tuning and the HEART SIZE - and a heart's world scale IS the collect reward and the
-        /// live domain fauna buff. A client that re-rolled its own element would pay a different
+        /// collect reward. A client that re-rolled its own element would pay a different
         /// price for the same kill.
         ///
         /// Routed through the ordinary <see cref="AssignLineage"/> inherit path, so the puppet
@@ -944,20 +1823,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected Crystal crystal;
 
-        /// <summary>
-        /// The living embedded heart: non-null only while this fauna is alive and its elemental
-        /// crystal is still embedded in it. <see cref="ReleaseHeart"/> is what frees it, so this
-        /// returns null from the exact moment the crystal becomes a collectible — the domain
-        /// fauna buff keys off this so a fauna's domain-wide power ends precisely when its
-        /// crystal (the same heart, at the same world scale, carrying the same value) hits the
-        /// open water. On an outside-in wither that moment is the END of the wither, not the
-        /// start of the death: the heart is the last thing standing, so a starving creature
-        /// keeps powering its domain until the wither reaches its core.
-        /// </summary>
-        public Crystal LiveHeart =>
-            crystal && crystal.gameObject.activeInHierarchy && ReferenceEquals(crystal.EmbeddedIn, this)
-                ? crystal
-                : null;
+        /// <summary>The heart while this creature LIVES with it embedded (null once released). What a
+        /// blast's lifeform-crystal effects act on when they reach a creature through its body rather
+        /// than through a collider overlap (<see cref="VirtualFauna"/>, Docs/SWARM_FAUNA.md §19).</summary>
+        public Crystal LivingHeart => crystal && crystal.IsEmbedded ? crystal : null;
+
+        /// <summary>The heart whether it is still embedded or already dropped - what a Manta bomb riding this
+        /// creature moves onto when the creature dies (MANTA_STING_KABLOOM.md §2: a bombed creature drops a bombed
+        /// crystal). Null for a manager-only fauna that never carried one.</summary>
+        public Crystal HeartCrystal => crystal;
 
         // How this creature came apart - see LifeformDeathStyle. Written by the force that
         // killed it (Jousted / the devour overload of Predated); starvation and every other
@@ -1001,6 +1875,15 @@ namespace CosmicShore.Gameplay
         protected void Die(string killerName = "")
         {
             _diedThisLife = true;
+            DropLeash();
+            // the stomach closes its books: what is left (0 after a predator took it) and the upkeep burned since the
+            // last settle go to the soil - the stomach never holds mass past its creature (round 11f)
+            if (_stomachLive)
+            {
+                float left = _stomach.SurrenderAll(Time.time, out float burned);
+                PayToSoil(left + burned);
+                _stomachLive = false;
+            }
 
             // Replicate the DECISION before running it, so every peer starts its own wither at
             // roughly the same moment rather than RTT after this one has finished. No-op when
@@ -1046,10 +1929,6 @@ namespace CosmicShore.Gameplay
 
             if (crystal && crystal.gameObject && crystal.gameObject.activeInHierarchy)
                 crystal.ActivateCrystal();
-
-            // The heart just left the living pool - poke the domain fauna buff so the
-            // domain's power drops with the death, not on the next reconcile sweep.
-            RaiseFaunaHeartsChanged();
         }
 
         /// <summary>
@@ -1066,12 +1945,27 @@ namespace CosmicShore.Gameplay
             var host = cell;
             Transform skeletonParent = host ? host.transform : null;
 
+            // A GROWN body (a voyage's kaiju at 12-14x, its raiders) leaves the frame its species leaves: each prism
+            // settles back to its species' size where it lies. Kept at the grown size, a kaiju's skeleton was a field of
+            // flat plates bigger than the Ark's own, standing in the open water beside it (Shombith, 2026-11-17: "what
+            // are these big sims like structure?").
+            float grown = _prismsGrownBy;
             var prisms = GetComponentsInChildren<HealthPrism>(true);
             for (int i = 0; i < prisms.Length; i++)
             {
                 var hp = prisms[i];
-                if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent);
+                if (!hp || hp.destroyed) continue;
+                hp.LeaveAsSkeleton(skeletonParent, recycleWhenDestroyed: true);
+                float by = IsAuthoredDanger(hp) ? _dangerGrownBy : grown;
+                if (by > 1.01f) SettleToSpeciesSize(hp, by);
             }
+        }
+
+        static void SettleToSpeciesSize(HealthPrism hp, float grown)
+        {
+            Vector3 size = hp.transform.localScale / grown;
+            hp.AdmitTargetScale(size);
+            hp.TargetScale = size;
         }
 
         /// <summary>
@@ -1096,9 +1990,19 @@ namespace CosmicShore.Gameplay
             if (string.IsNullOrEmpty(killerName)) return;
             if (killerName == StarvationKiller) return;
 
+            Killed?.Invoke(this, killerName);
+
             var runtimeData = hostCell ? hostCell.RuntimeData : cellData;
             if (runtimeData) runtimeData.OnFaunaKilled.Raise(killerName);
         }
+
+        /// <summary>
+        /// Raised for every ATTRIBUTED creature death on the simulation authority, with the creature and its killer's
+        /// name - the same deaths <see cref="CellRuntimeDataSO.OnFaunaKilled"/> carries, plus WHICH creature died, so a
+        /// tool can ask where it was (the Ark escort's kills-on-Ark split). A metrics hook: nothing in the food web
+        /// listens, and a listener must unsubscribe when it is done.
+        /// </summary>
+        public static event System.Action<Fauna, string> Killed;
 
         /// <summary>Attribution string every starvation death uses - never a scoring kill.</summary>
         public const string StarvationKiller = "starvation";
@@ -1147,26 +2051,134 @@ namespace CosmicShore.Gameplay
             // (its hunting tick is gated), so this is the belt to that braces.
             if (!IsSimAuthority) return false;
 
+            // A SILENCED pilot harms no creature (VesselSilence): a joust, a ripple or a black hole
+            // that names a silenced pilot as the killer lets the creature live. Creature predators
+            // are never silenced - only pilots are - so the food web is untouched.
+            if (VesselSilence.IsSilenced(predatorName)) return false;
+
+            // ALREADY DEAD - a corpse is not prey. Die() is sealed but NOT idempotent: it
+            // re-raises ReportKill (a second LifeformsKilled credit for one creature) and,
+            // because Jousted has by then stamped the style, it takes the ReleaseHeart branch
+            // and frees the heart while the wither is still eating inward - the exact ordering
+            // Docs/ECOSYSTEM.md §26 forbids ("the heart is the LAST thing standing").
+            //
+            // _consumedAsPrey was never the right gate for this: only Predated sets it, so a
+            // creature that starved or lost its last body prism arrives here with it false. The
+            // corpse window is REAL and seconds long - a deferred wither leaves the heart
+            // embedded for the whole animation - and it is exactly where a big AOE sweep looks.
+            // LifeForm.Jousted has always carried the equivalent guard (dying || isCleaningUp);
+            // Fauna is a SIBLING of LifeForm rather than a subclass, so it never inherited it,
+            // and Fauna.Jousted's own doc already promises the behaviour this restores
+            // ("a creature already dying ... leaves the style alone").
+            if (_diedThisLife) return false;
+
             if (_consumedAsPrey || IsPredationImmune) return false;
             _consumedAsPrey = true;
             DevourTarget = devourTarget;
             // A mouth to suction into IS the consumed style: the body transfers to the
             // eater, so there is no skeleton and no wither ordering to pick.
             if (devourTarget) _deathStyle = LifeformDeathStyle.Consumed;
+            // the eater takes the stomach and the body (conserved; the upkeep burned until now goes to the soil)
+            float burned = 0f;
+            float meal = _stomachLive ? _stomach.SurrenderAll(Time.time, out burned) : 0f;
+            PayToSoil(burned);
+            _surrenderedMeal = meal + BodyMealVolume;
             Die(predatorName);
             return true;
         }
 
         public void SetTeam(Domains domain)
         {
+            if (!AcceptsTeamRecolour) return;
             this.domain = domain;
+            OnTeamChanged();
+        }
+
+        /// <summary>
+        /// Whether a live <see cref="SetTeam"/> recolours this creature's whole body, so it can be STOLEN
+        /// (<see cref="StealInto"/>). False unless the species re-reads its colour in <see cref="OnTeamChanged"/>.
+        /// </summary>
+        public virtual bool CanBeStolen => false;
+
+        /// <summary>
+        /// STEAL this creature into <paramref name="thief"/>'s domain (Garrett, 2026-10-24: "if an opposing team's fauna is
+        /// netted it steals it"; the third sign-off on the one-colour law, <c>Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md</c>;
+        /// the fourth, 2026-11-19: a creature the Jewel Wasp possesses is stolen, <c>JewelWaspExecutor.Possess</c>):
+        /// its domain, its body prisms and its diet's side become the thief's, and its offspring are born the thief's
+        /// (birth copies the parent's domain). Nothing is spawned or killed. On the peer that simulates it; a puppet takes
+        /// it from <see cref="FaunaNetworkSync"/>. False when it cannot be stolen, is dying, or is already the thief's.
+        /// </summary>
+        public bool StealInto(Domains thief)
+        {
+            if (!CanBeStolen || !AcceptsTeamRecolour || !IsSimAuthority || _diedThisLife || domain == thief) return false;
+            ApplyStolenDomain(thief);
+            var sync = NetSync;
+            if (sync) sync.PublishStolenDomain(thief);
+            return true;
+        }
+
+        /// <summary>The stolen domain, applied (the simulating peer's <see cref="StealInto"/>, and a puppet's replica).</summary>
+        internal void ApplyStolenDomain(Domains thief)
+        {
+            if (!CanBeStolen || !AcceptsTeamRecolour || domain == thief) return;
+            SetTeam(thief);
+        }
+
+        /// <summary>
+        /// SHIELD this creature's body (Garrett, 2026-10-24: a creature of the player's domain "goes through the net shielding
+        /// ... its prisms"): every live plain body prism takes a shield; danger prisms stay danger (danger and shield are
+        /// exclusive by locked design) and a shielded one is left as it is. On the simulating peer; the puppets shield theirs
+        /// through <see cref="FaunaNetworkSync"/>. False when nothing was shielded.
+        /// </summary>
+        public bool ShieldBody()
+        {
+            if (!IsSimAuthority || _diedThisLife) return false;
+            if (!ApplyShieldBody()) return false;
+            var sync = NetSync;
+            if (sync) sync.PublishShieldBody();
+            return true;
+        }
+
+        internal bool ApplyShieldBody()
+        {
+            var body = _bodyPrisms;
+            if (body == null) return false;
+            bool any = false;
+            for (int i = 0; i < body.Length; i++)
+            {
+                var hp = body[i];
+                if (!hp || hp.destroyed || hp.prismProperties is not { IsDangerous: false, IsShielded: false, IsSuperShielded: false })
+                    continue;
+                hp.ActivateShield();
+                any = true;
+            }
+            return any;
+        }
+
+        /// <summary>False for a creature whose colours are its own history rather than its cell's controller
+        /// (a MultiDomain swarm, Docs/SWARM_FAUNA.md §16.4): <see cref="Cell.SetModeControlOverride"/>'s
+        /// one-colour re-colour does not apply to it.</summary>
+        protected virtual bool AcceptsTeamRecolour => true;
+
+        /// <summary>After <see cref="SetTeam"/> changed <see cref="domain"/> - a subclass that draws or caches
+        /// its colour re-reads it here.</summary>
+        protected virtual void OnTeamChanged() { }
+
+        /// <summary>Every live body prism takes this creature's domain: the recolour a species whose body is its own
+        /// <see cref="BodyPrisms"/> runs in <see cref="OnTeamChanged"/> (a steal, or a mode's recolour).</summary>
+        protected void RecolourBodyPrisms()
+        {
+            var body = _bodyPrisms;
+            if (body == null) return;
+            for (int i = 0; i < body.Length; i++)
+                if (body[i] && !body[i].destroyed) body[i].ChangeTeam(domain);
         }
 
         IEnumerator UpdateGoalCoroutine()
         {
             while (true)
             {
-                yield return new WaitForSeconds(GetAggressionScaledGoalInterval());
+                yield return CosmicShore.Utility.WaitCache.Seconds(GetAggressionScaledGoalInterval());
                 if (cell == null) continue;
                 Goal = ResolveGoal();
             }

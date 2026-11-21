@@ -31,8 +31,8 @@ could see one number on the reveal and a different one on the scoreboard.
 Canonical = **domain deficit**. **Done** as part of `REFACTOR.md` R10 (commit
 `7ea5b8ae`): both surfaces now read the rule's `ScoreResult` — `JoustScoringRuleSO`
 builds the loser line as the domain deficit once (`BuildResults` + `BuildReveal`),
-so they can't diverge. The per-mode `MultiplayerJoustEndGameController` /
-`MultiplayerJoustScoreboard` overrides were deleted.
+so they can't diverge. The per-mode `JoustEndGameController` /
+`JoustScoreboard` overrides were deleted.
 
 ### B3 — 🟢 `scoreboardRowStagger` is dead config
 `HUDAnimationSettingsSO.scoreboardRowStagger` was never read — `PlayerScoreCard`'s
@@ -62,26 +62,26 @@ result computation on the server so every surface reads the same ordered results
 ### B6 — 🟢 Score-card secondary stat never renders (field unwired in prefab)
 `secondaryStatText` was unassigned (`fileID: 0`) in the only score-card prefab
 (`_Prefabs/UI Elements/In Game/PlayerScoreCard.prefab`), so the secondary line
-that `HexRaceScoreboard` ("`N Crystals`") and `MultiplayerJoustScoreboard`
+that `SkimRaceScoreboard` ("`N Crystals`") and `JoustScoreboard`
 ("`N Jousts`") feed through `Scoreboard.ShowMultiplayerView` → `ShowSecondaryStat`
 was silently dropped. **Done** (commit `3aa3b5b7`): wired it to the existing
 orphaned `TextMeshProUGUI` (`ScoreText`, placeholder "expand to view") under
 `DataPanels` — sibling of `CrystalScore`, inactive by default. Data-only prefab
 change; composes with B1's `RefreshDataPanelsRoot`. Verify the element's on-card
-position visually in a HexRace/Joust end-game.
+position visually in a SkimRace/Joust end-game.
 
 ### B7 — 🟢 End-game vessel podium ranked golf modes backwards
 `EndGameVesselDisplayManager.GatherVesselData` ranked players by `RoundStatsList`
 sorted **descending by raw `Score`** — a second "who placed where" path that
-ignored the rule-produced `gameData.Results`. For golf modes (HexRace, Joust) the
+ignored the rule-produced `gameData.Results`. For golf modes (SkimRace, Joust) the
 winner's `Score` is a small finish time and the loser's is the `10000+` sentinel,
-so descending put the **loser 1st**: a solo HexRace win (5 crystals first) showed
+so descending put the **loser 1st**: a solo SkimRace win (5 crystals first) showed
 the AI as "1st" and the human as "2nd", and the winner vessel icon
 (`EndGameVesselDisplay` keys it off `ranking == 1`) went to the loser. **Done**
 (commit `fd0dee09`): the podium reads each player's rank from `gameData.Results`
 (the SSOT every other end-game surface uses — golf-aware, ranked once by the mode's
 `ScoringRuleSO`), keeping the legacy descending-Score sort only as a fallback for
-modes that produce no Results (e.g. WildlifeBlitz). CrystalCapture (points) was
+modes that produce no Results (e.g. WildlifeBlitz). Scurry (points) was
 already correct and is unchanged. This was the last end-game surface still
 re-deriving rank locally — completes `REFACTOR.md` R10 Phase B's consumer migration.
 File: `_Scripts/Utility/DataContainers/EndGameVesselDisplayManager.cs`.
@@ -99,7 +99,7 @@ n_Domain/n_Name callbacks now raise `OnAnyStatChanged`; `MultiplayerHUD` rebuild
 panel set reactively (idempotent `RebuildDomainPanels` + allocation-free
 `DomainLayoutChanged`), reconciles on each stat event, and subscribes `OnPlayerAdded`
 for late roster.
-Files: `_Scripts/Data/Enums/RoundStats.cs`, `_Scripts/UI/MultiplayerHUD.cs`.
+Files: `_Scripts/Controller/Player/RoundStats.cs` (was `Data/Enums/`), `_Scripts/UI/MultiplayerHUD.cs`.
 
 ### B9 — 🟢 Client's OWN metric count frozen on its own screen (domain layout)
 After B8, domains mapped correctly but a client's OWN crystal count stayed frozen
@@ -116,7 +116,7 @@ replicates it via 3 NetworkVariables; every peer mirrors it into
 client matches the host. Generalizes to all three domain modes via the per-mode
 `rule.Metric` (Crystals / Jousts). **Residual:** the LEGACY per-player layout still
 reads per-player stats and is NOT covered — `TODOS.md` **TD1**. Needs the 2-human
-play-test (HexRace / Joust / CrystalCapture — `TESTS.md` T11/T12).
+play-test (SkimRace / Joust / Scurry — `TESTS.md` T11/T12).
 Files: `_Scripts/Controller/Arcade/MultiplayerDomainGamesController.cs`,
 `_Scripts/Utility/DataContainers/GameDataSO.cs`, `_Scripts/UI/MultiplayerHUD.cs`.
 **Correction (post-B10):** the "owner replication unreliable" framing was disproven
@@ -153,10 +153,10 @@ re-rendered. **Done** in two commits:
 - `aaabc1b6` — retire `RoundStats.n_Domain`; `RoundStats.Domain` is a local mirror
   Player keeps in sync on every peer from the authoritative `NetDomain` (one source of
   truth), fixing every other `RoundStats.Domain` consumer too.
-Files: `_Scripts/UI/MultiplayerHUD.cs`, `_Scripts/Data/Enums/RoundStats.cs`,
+Files: `_Scripts/UI/MultiplayerHUD.cs`, `_Scripts/Controller/Player/RoundStats.cs` (was `Data/Enums/`),
 `_Scripts/Controller/Player/Player.cs`.
 **✅ Verified in engine** (2-human test — the client's own profile icon now sits in its
-own domain box). Broader mode coverage (CrystalCapture / Joust) continuing.
+own domain box). Broader mode coverage (Scurry / Joust) continuing.
 
 ### B11 — 🟢 Client-local menu domain writes desynced the live mirrors (B10-relapse class)
 `MainMenuController.ApplyMenuDomain` ran on each client at `OnClientReady` and (a)
@@ -209,30 +209,30 @@ Clicking Play Again on the Joust scoreboard did nothing (Crystal Capture had the
 identical defect). The controller side was already correct
 (`UseSceneReloadForReplay=true` since `21d538d3`) — the click never reached it.
 Root cause is a scene-wiring class: all three domain scenes share the
-`GameCanvas-HexRace` prefab, whose `PlayAgainButton.onClick` persistent call
+`GameCanvas-SkimRace` prefab, whose `PlayAgainButton.onClick` persistent call
 targets the prefab's INTERNAL `Scoreboard` component. Joust and Crystal Capture
 remove that internal Scoreboard from the instance and add their own scene-level
 `Scoreboard` (correctly wired to the mode's controller) — but the button was
 never retargeted: Joust's scene override pointed the call at `{fileID: 0}`, and
 Crystal Capture left the prefab default pointing at the now-removed component.
 A persistent call with a null target is silently skipped, so the button played
-its click audio and nothing else. HexRace never hit this because it KEEPS the
+its click audio and nothing else. SkimRace never hit this because it KEEPS the
 prefab's internal Scoreboard and overrides only its `gameController`
 (`multiplayerController` legacy path), which also proves the call's stale
-`m_TargetAssemblyTypeName` (the deleted `HexRaceScoreboard` type) is harmless at
+`m_TargetAssemblyTypeName` (the deleted `SkimRaceScoreboard` type) is harmless at
 runtime when the target is set — Unity resolves the method from the live
 target's type. **Done** (commit `e21c778a`): both scenes override
 `m_OnClick…m_Calls[0].m_Target` on the PlayAgainButton to the scene-added
 Scoreboard (+ refresh the type name to `CosmicShore.UI.Scoreboard`).
 **✅ Verified in engine** (Joust: Play Again reloads the scene and a fresh match
 plays; owner-tested). Wiring requirement recorded in `JOUST.md` §9 /
-`CRYSTAL_CAPTURE.md` §9 so the next scene edit doesn't reintroduce it.
+`SCURRY.md` §9 so the next scene edit doesn't reintroduce it.
 Files: `_Scenes/Multiplayer Scenes/MinigameJoust_Gameplay.unity`,
-`_Scenes/Multiplayer Scenes/MinigameCrystalCaptureMultiplayer_Gameplay.unity`.
+`_Scenes/Multiplayer Scenes/MinigameScurryMultiplayer_Gameplay.unity`.
 
 ### B14 — 🟢 Host-only scoreboard nav gating no-oped (fields unwired) + no anti-spam hide
 Same defect class as B6 (field unwired ⇒ silent no-op): `ConfigureLobbyButtons`
-hides Play Again / Main Menu for non-host clients, but the GameCanvas-HexRace
+hides Play Again / Main Menu for non-host clients, but the GameCanvas-SkimRace
 prefab's serialized Scoreboard data predates the `playAgainButton` /
 `mainMenuButton` fields, so they deserialized null and the gating silently
 no-oped — clients saw both buttons in ALL three domain modes (clicks were only
@@ -250,16 +250,16 @@ matters). **Done** (commit `3a021e50`):
 - Wired `playAgainButton` (PlayAgainButton GO), `mainMenuButton` (HomeButton
   GO), and the event asset in all three scenes — stripped-GO references on the
   scene-added Scoreboards (Joust/CC), property overrides on the prefab's
-  internal Scoreboard (HexRace).
+  internal Scoreboard (SkimRace).
 **✅ Verified in engine** (owner-tested). Clients see neither nav button and
 follow the host via the Netcode scene load; `PauseMenu` already gated its own
 Restart/Main Menu the same way.
 Files: `_Scripts/UI/Scoreboard.cs` + the three scene files above +
-`_Scenes/Multiplayer Scenes/MinigameHexRace.unity`.
+`_Scenes/Multiplayer Scenes/MinigameSkimRace.unity`.
 
 ### B15 — 🟢 Game end dead on the SECOND game after a menu return (stale RoundStats subscribers)
 **Reported (2026-06-12).** Party returns to Menu_Main together, host relaunches
-HexRace, the race plays normally — but when a domain reaches the crystal target,
+SkimRace, the race plays normally — but when a domain reaches the crystal target,
 the Game End flow never fires (no turn end, no cinematic, no scoreboard, on any
 machine). S9's "repeat the menu → game → menu cycle with no leftover state" is
 the failing case.
@@ -316,7 +316,7 @@ the original no longer resolves; change verified in code).**
   double-subscribing `StartMonitors`/`StopMonitors`);
   `CrystalCollisionTurnMonitor` made its `ownStats` subscribe idempotent.
 - **Diagnostics:** `[FLOW-10]` logs at the two end-detection chokepoints
-  (`TurnMonitorController` raise, `HexRaceController.OnTurnEndedCustom`
+  (`TurnMonitorController` raise, `SkimRaceController.OnTurnEndedCustom`
   objective-reached) so any future break pinpoints the failing link.
 - Also fixed: `CrystalsCollectedScoring.Subscribe`'s early-`return` (one
   unresolved name skipped all remaining players);
@@ -324,14 +324,14 @@ the original no longer resolves; change verified in code).**
   `ResetRuntimeData`'s comment already claimed.
 
 **✅ Verified in engine (2026-06-12)** — the reported repro (party menu-return →
-HexRace relaunch → objective reached) now runs the full end flow. The regression
-steps are codified as `TESTS.md` **T15**: (a) menu → HexRace → finish →
-scoreboard → Main Menu → HexRace again → finish: end flow fires on every
+SkimRace relaunch → objective reached) now runs the full end flow. The regression
+steps are codified as `TESTS.md` **T15**: (a) menu → SkimRace → finish →
+scoreboard → Main Menu → SkimRace again → finish: end flow fires on every
 machine; (b) same but exit the FIRST race mid-turn via pause-menu Main Menu —
 the second race must still end cleanly (the poison path); (c) repeat 2–3× per
 `../PartySystem/TESTS.md` S9.
 
-Files: `_Scripts/Data/Enums/RoundStats.cs`, `_Scripts/Controller/Player/Player.cs`,
+Files: `_Scripts/Controller/Player/RoundStats.cs` (was `Data/Enums/`), `_Scripts/Controller/Player/Player.cs`,
 `_Scripts/Controller/Arcade/TurnMonitorController.cs`,
 `_Scripts/Controller/Arcade/TurnMonitors/NetworkCrystalCollisionTurnMonitor.cs`,
 `_Scripts/Controller/Arcade/TurnMonitors/CrystalCollisionTurnMonitor.cs`,
@@ -339,7 +339,7 @@ Files: `_Scripts/Data/Enums/RoundStats.cs`, `_Scripts/Controller/Player/Player.c
 `_Scripts/UI/MiniGameHUD.cs`, `_Scripts/UI/MultiplayerHUD.cs`,
 `_Scripts/Controller/Arcade/Scoring/CrystalsCollectedScoring.cs`,
 `_Scripts/Utility/DataContainers/GameDataSO.cs`,
-`_Scripts/Controller/Arcade/HexRaceController.cs`.
+`_Scripts/Controller/Arcade/SkimRaceController.cs`.
 
 ### B16 — 🟡 Joust toasts without scores: client-observed jousts were never recorded (ghost feedback)
 **Reported (2026-07-16).** Most jousts never reach the scoreboard; the game feed
@@ -407,7 +407,7 @@ tracked in `TODOS.md` TD1). B11 (client-local menu domain writes) + B12 (stale
 pre-party RoundStats shadow) fixed 2026-06-11 — B12 verified in engine; B11's
 host-return sweep pending (`../PartySystem/BUGS.md` B9). B13 (dead Play Again,
 Joust + CC) + B14 (unwired host-nav gating + anti-spam hide) fixed 2026-06-12 and
-owner-verified in engine (Joust; HexRace/CC share the same fix shape — sweep with
+owner-verified in engine (Joust; SkimRace/CC share the same fix shape — sweep with
 `TESTS.md` T13/T14). B15 (stale RoundStats subscribers killing the second game's
 end flow) fixed & verified in engine 2026-06-12 — regression steps in `TESTS.md`
 T15. B5 remains scheduled into **R10** (the unified ranked `ScoreResult` list
@@ -511,9 +511,116 @@ mixed-domain forest wearing the destroying pilot's own colour. Domain was decora
 **Fix.** `PrismStats` carries the destroyed prism's `OwnDomain`, and
 `StatsManager.IsFriendlyEnvironmentPrism` applies to the world the rule trails always had — **your
 own colour is worth nothing** — with `Domains.Blue` (the "no team" sentinel) staying hostile to
-everyone so neutral structure still scores. Ribcage rides the same metric and is unaffected in
-practice: its cage is painted across the full triad plus Blue joints, so a team still reaches a
-2,000 target out of ~10,620 prisms.
+everyone so neutral structure still scores. Cleave rides the same metric and is unaffected in
+practice: every one of its four arenas is painted across the full triad plus Blue joints, and it
+no longer rests on an estimate — `Tools/Build/cleave_budget.py` check 1 subtracts the LARGEST
+per-domain share from each rung's measured prism count and asserts the remainder is 4x-12x that
+rung's own target. Measured 7.4x-9.3x on the shipped arenas (targets 1,200 / 1,200 / 1,500 /
+1,500 against 15,380 / 14,277 / 14,731 / 16,423 prisms).
 
 **Verification.** Both are compile-by-inspection + traced call paths; engine verification pending
 (MPPM, 1 host + 1 client — see RAMPAGE.md's checklist).
+
+## B19 — a remote client's steal never debited the victim (the trade the RPC now makes)
+
+**Symptom.** A client's Urchin converts 20 of a rival's trail prisms: the client is credited
+(`PrismStolen`, `VolumeStolen`, its own `PrismsRemaining` / `VolumeRemaining` all rise) but the
+rival's `PrismsRemaining` / `VolumeRemaining` do not fall. Those two tallies feed cell control and
+volume scoring, so every client-side steal minted mass out of nothing.
+
+**Root cause.** Two paths, and the debit was on neither for a remote thief. The server's own
+detection (`StatsManager.PrismStolen`) returns at `OwnsAttacker(thief)` before the victim debit, so
+that it does not double-credit a steal the client will report itself. The client's report
+(`Player.ReportPrismStolen_ServerRpc(float volume)`) carried only the thief's half, because the
+thief's identity comes from RPC ownership and the RPC had no victim to name. `Player.cs`'s docstring
+claimed the trade was recorded here; it was not (URCHIN_BACKLOG U2).
+
+**Fix — and the trade it makes.** The RPC now carries the victim's name
+(`ReportPrismStolen_ServerRpc(float volume, FixedString64Bytes victimName)`) and the server debits
+that player through `StatsManager.DebitPrismSteal`, the twin of `CreditPrismSteal`; the server-local
+path uses the same two helpers, so each steal is credited and debited exactly once on either path.
+**The victim's name is client-supplied and therefore trusted.** That was previously judged worse
+than a soft tally; it is accepted now because the alternative inflates a scored stat on every
+client steal, and the blast radius of a forged name is bounded: it must name a rostered player, it
+can only LOWER that player's remaining-mass tally, and only by the volume the credit half already
+takes on trust. The thief's identity still never comes from a name.
+
+**Verification.** Compiled against the Unity reference assemblies; engine verification pending
+(MPPM, 1 host + 1 client: steal ~20 of the host's trail prisms with the client's Urchin and
+confirm the host's `PrismsRemaining` / `VolumeRemaining` fall by the same count/volume the client
+gains; then steal with the host and confirm the client's tallies move exactly once, not twice).
+
+## B20 — a client's combat hit was scored twice (the host's replay of the round was credited too)
+
+**Symptom.** In Dog Fight (and every mode that prices a Sparrow round or an Urchin spike), one
+bullet a client lands on a host can score +2 instead of +1, and a rocket's centre-punch +60
+instead of +30. A client can also score a hit its own screen showed missing.
+
+**Root cause.** `StatsManager.CombatHitLanded` assumed a client's round "does not exist on the
+server at all", because projectiles are not networked. The round is not, but the PRESS is:
+`R_VesselActionHandler` sends it owner → `SendButtonPressed_ServerRpc` →
+`SendButtonPressed_ClientRpc` → every peer runs the press (`StartPressedActions`, against the
+device the press carries), the host included.
+`FireGunActionExecutor` / `FullAutoActionExecutor` have no ownership check, so the host spawns its
+own copy of the client's round. When that copy connects, the reporter (`VesselCombatHitByProjectile`
+/ `…ByExplosion`) raises with the client's name, and the server branch credits
+`TryGetRoundStats(client)` directly. The client's own copy connects too and arrives through
+`Player.ReportCombatHit_ServerRpc`, which credits the same `RoundStats` again. Nothing deduplicates
+the two: `VesselCombatHitLatch` is per machine, and the RPC calls `CombatHitScoring.Credit`
+without touching the server's latch. The client-side name check only ever filtered the reverse
+case (a client replaying the host's or an AI's round). The skimmer reporter and the Dolphin/Scarab
+crystal blasts already gated on the shooter's owner (`requireOwningMachine`), so they were never
+affected. Neither were the host's own shots or the AI's.
+
+**Fix.** One rule, the one the petal drain already follows (`Docs/ELEMENTAL_ECONOMY.md §7`):
+**a hit is decided on the machine that owns the shooter.** All three reporters return before the
+latch unless `ElementalTransfer.IsDecidedHere(shooter)`, which is true offline or on the owner of
+the shooter's hull (the client for its own shots, the server for the host and every AI). The
+server branch of `CombatHitLanded` also returns unless `OwnsAttacker(hit.ShooterName)`, the same
+second line B17 uses for environment kills. AI and offline scoring are unchanged: the server owns
+every AI, and an unspawned hull is always decided here.
+
+**Verification.** Compiled against the Unity reference assemblies (player + editor configs). The
+predicate is covered by `ElementalTransferRouteTests.AHitIsDecidedOnlyOnTheShootersOwner` and by
+harness T10, which is negative-controlled. Engine verification is pending (MPPM, 1 host + 1
+client, Dog Fight): the client lands single bullets on a stationary host, and each one is +1 on
+both machines' domain panels, never +2. `DOGFIGHT.md` verification step 9.
+
+## B21 — the scoreboard's stat block was this machine's pilot only, and some hulls always read 0
+
+**Symptom.** Yash and a friend, two players (2026-11-10): Yash's scoreboard read "Prisms Damaged 0", the friend's
+read 39. Neither board showed the other pilot's numbers.
+
+**Root cause.** Two faults on top of each other.
+
+1. **Never synced.** The stat block (Longest Drift, Max Boost, Prisms Damaged; the Sparrow's and Squirrel's extras)
+   comes from `VesselTelemetry`, which counts only the LOCAL pilot, raises local `VesselStatEventSO` assets, and
+   `EventDrivenStatsProvider` reads them on that machine alone. The block has no names on it, so each board showed
+   its own pilot's numbers: the friend's 39 was the friend's own count. Every telemetry also tracked the local pilot,
+   whichever hull it sat on, so the local pilot was counted once per ship in the arena.
+2. **Some hulls never reported.** The Dolphin, Manta, Rhino, Serpent and Swordfish carry only
+   `VesselTelemetryBootstrapper`, which added a `DefaultVesselTelemetry` with no stat links (it warned so in the log),
+   so those pilots counted and raised nothing: 0 on every board. The Urchin, Falcon, Grizzly, Termite and Tiger Moth
+   carried no telemetry at all.
+
+**Fix.**
+- `VesselTelemetry` fills a missing base link from `Resources/GameModeStatsProfile` (new `vesselLongestDrift`,
+  `vesselMaxBoost`, `vesselPrismsDamaged`), and `VesselController.Initialize` calls
+  `VesselTelemetryBootstrapper.Ensure`, so every hull has a telemetry with its three stats. The Urchin prefab
+  carries a wired `DefaultVesselTelemetry`.
+- Only the telemetry on the local pilot's own ship tracks.
+- Every value goes through `Publish`: raised locally as before and reported to the pilot's `RoundStats`
+  (`ReportVesselStat`, every 0.5 s and at the turn's end). `RoundStats.n_VesselStats` is a server-written
+  `NetworkList` keyed by the stat asset's name; a client reports through `ReportVesselStat_ServerRpc` (owner only).
+  Cleared with the rest of the stats at the game's start and on replay.
+- `EventDrivenStatsProvider` shows every human pilot's value, this machine's first ("Yash 12 · Garrett 39", a dash
+  for a pilot with no value). Solo play reads as before. A value arriving after the board is drawn redraws the block.
+- `ProtocolVersion` 30 (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
+
+**Not covered.** AI pilots fly no telemetry, so they are not on the block. The Port copies of `VesselTelemetry` and
+`RoundStats` were already behind the Unity source and are unchanged.
+
+**Verified.** Assembly-CSharp and Assembly-CSharp-Editor compiled with the editor's Roslyn and today's response files
+(0 errors); `check_console_logging.py`, `check_conditional_compilation.py` and `gamecanvas_unification_report.py
+--check` pass. Not run: the EditMode tests (`VesselStatsSyncTests`, 7) and a two-player match:
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "B21 (scoring)".

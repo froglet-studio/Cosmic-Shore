@@ -170,6 +170,7 @@ namespace CosmicShore.Gameplay
         bool _hasBearing;
         float _sweptDegrees;
         float _bestDistance;
+        float _lastDistance;
 
         /// <summary>Angle swept around the target since the last real progress, in degrees.</summary>
         public float SweptDegrees => _sweptDegrees;
@@ -190,7 +191,9 @@ namespace CosmicShore.Gameplay
         /// <paramref name="targetJumpFraction"/> guards the case that would otherwise produce a
         /// false positive out of nowhere: the objective being REPLACED (a crystal collected, a new
         /// one selected) teleports the bearing and the distance, and the accumulated sweep from the
-        /// old target means nothing about the new one.
+        /// old target means nothing about the new one. It is a PER-FRAME discontinuity test - the
+        /// range against the PREVIOUS frame's range, never against the window's best (see the
+        /// comment at the check for the orbit that comparison hid).
         /// </summary>
         public bool Tick(Vector3 toTarget, float orbitSweepDegrees, float progressFraction,
                          float targetJumpFraction)
@@ -209,21 +212,33 @@ namespace CosmicShore.Gameplay
                 _hasBearing = true;
                 _lastBearing = bearing;
                 _bestDistance = distance;
+                _lastDistance = distance;
                 _sweptDegrees = 0f;
                 return false;
             }
 
-            // A discontinuity in range is a different target, not a manoeuvre.
-            if (distance > _bestDistance * targetJumpFraction)
+            // A discontinuity in range is a different target, not a manoeuvre - and a
+            // discontinuity is a jump between ONE FRAME AND THE NEXT. This used to compare against
+            // _bestDistance (the closest range of the window), which reads an ordinary ECCENTRIC
+            // orbit as a stream of target swaps: an objective sitting off the centre of the
+            // pursuer's circle is seen at ranges from (R - e) to (R + e) every lap, and once that
+            // ratio passes the jump fraction (1.6 at e > 0.23R - most orbits, since the objective
+            // is rarely at the exact centre) the far side of every lap zeroed the sweep. The
+            // detector then never reached its threshold and the pilot circled its objective lap
+            // after lap - the reported "four, five, six rotations before it gets out". A real
+            // swap still trips this, because a new objective changes the range in a single frame.
+            if (distance > _lastDistance * targetJumpFraction)
             {
                 _lastBearing = bearing;
                 _bestDistance = distance;
+                _lastDistance = distance;
                 _sweptDegrees = 0f;
                 return false;
             }
 
             _sweptDegrees += Vector3.Angle(_lastBearing, bearing);
             _lastBearing = bearing;
+            _lastDistance = distance;
 
             // Real closing resets the case for the defence. The comparison is against the range at
             // the START of this accumulation window, NOT the previous frame's and NOT a running

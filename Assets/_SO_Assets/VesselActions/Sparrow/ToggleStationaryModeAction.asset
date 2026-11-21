@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 479d378d1661496ca46b785f7d143046, type: 3}
   m_Name: ToggleStationaryModeAction
   m_EditorClassIdentifier: 
-  mode: 0
+  stationaryMode: 1

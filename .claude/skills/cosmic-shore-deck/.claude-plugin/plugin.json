@@ -1,0 +1,9 @@
+{
+  "name": "cosmic-shore-deck",
+  "version": "0.1.0",
+  "description": "Cosmic Shore session deck: buttons for team activity, the C# gates, the reference compile, branch sync and ship, plus a branch status line.",
+  "author": {
+    "name": "Froglet Inc."
+  },
+  "types": "./types/index.d.ts"
+}

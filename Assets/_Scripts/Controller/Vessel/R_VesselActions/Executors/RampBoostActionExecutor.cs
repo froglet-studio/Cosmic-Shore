@@ -6,24 +6,69 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Runs a <see cref="RampBoostActionSO"/> while the triggering input is held: sets the
-    /// boosted throttle target and puts the transformer into constant-rate speed tracking,
-    /// so the vessel accelerates linearly toward top speed instead of the default
-    /// exponential lerp. On release the target drops back to the input-driven throttle
-    /// speed and tracking switches to the (much faster) return rate; the transformer
-    /// auto-reverts to normal smoothing once the speed arrives.
+    /// Runs a <see cref="RampBoostActionSO"/>: while the pilot is flying straight the boosted
+    /// throttle target is set and the transformer is put into constant-rate speed tracking, so
+    /// the vessel accelerates linearly toward top speed instead of the default exponential lerp.
+    ///
+    /// <para><b>It does not stop at the gesture's threshold.</b> Once armed, this executor reads
+    /// the live <see cref="StraightLineGesture"/> deviation every frame and GRADES its own output
+    /// by it (<see cref="RampBoostActionSO.MultiplierFor"/>): full power across the plateau, then
+    /// a linear fall to plain cruise at the SO's grace band. The input strategy's release at the
+    /// engage threshold is therefore deliberately NOT a disengagement — it is the top of the
+    /// slope, and the executor owns the rest of the way down. See RHINO_RAMP_BOOST.md.</para>
+    ///
+    /// <para><b>Every peer grades, from the same sticks.</b> Press and release round-trip through
+    /// <c>R_VesselActionHandler</c>, so this executor is live on every peer, and the sticks it
+    /// grades by are <c>InputStatus</c>'s owner-write NetworkVariables — the owner's fingers, or an
+    /// AI's writes on the server, read identically everywhere. Until 2026-10-16 only the owner
+    /// graded and a non-owning peer kept the full multiplier "while armed". But a graded ramp is
+    /// never disarmed by an input event (the release at the engage threshold is the top of the
+    /// slope, <see cref="ReleaseGesture"/>), only by leaving the grace band in <see cref="Tick"/> —
+    /// so every replica held <c>IsBoosting</c> and the ×16.8 multiplier for the rest of the turn
+    /// after the first ramp, and every per-peer reader of either (immunity windows, telemetry, the
+    /// roll controller) read a boost that had ended seconds ago.</para>
     /// </summary>
-    public sealed class RampBoostActionExecutor : ShipActionExecutorBase
+    public sealed class RampBoostActionExecutor : ShipActionExecutorBase, ITopSpeedSource
     {
         [Inject] AudioSystem _audioSystem;
 
-        [SerializeField] public Obvious.Soap.ScriptableEventNoParam OnMiniGameTurnEnd;
+        [SerializeField] public CosmicShore.Soap.ScriptableEventNoParam OnMiniGameTurnEnd;
+
+        [Tooltip("The ramp asset this hull binds - read only for TopSpeed before the ramp has been " +
+                 "armed once. Optional: once a ramp has run, the asset that armed it is used.")]
+        [SerializeField] RampBoostActionSO topSpeedAsset;
 
         IVesselStatus _status;
         RampBoostActionSO _activeSO;
+        RampBoostActionSO _lastSO;   // the asset that last armed us - the top-speed yardstick between ramps
         float _restingMultiplier = 1f;
+        GameplaySFXCategory _engagedSFX;   // the held engage sound Begin started; End stops it
 
         public bool IsEngaged => _activeSO != null;
+
+        /// <summary>
+        /// The hull's ramp TOP SPEED, u/s: its AUTHORED unboosted cruise (<c>DefaultMinimumSpeed +
+        /// DefaultThrottleScaler</c> - not the runtime mirrors, which read 0 on a replica whose
+        /// transformer never reset) times the ramp's <see cref="RampBoostActionSO.MaxBoostMultiplier"/>:
+        /// (0 + 50) × 16.8 = 840 on the Rhino. 0 with no ramp asset or no transformer. The yardstick
+        /// the Time level-5 ward measures "fast" against.
+        /// <para>Before the first ramp it falls back to the asset serialized here, so a ward reads a
+        /// real ceiling from the first frame rather than "unknown".</para>
+        /// </summary>
+        public float TopSpeed
+        {
+            get
+            {
+                var so = _activeSO ? _activeSO : _lastSO ? _lastSO : topSpeedAsset;
+                var transformer = _status?.VesselTransformer;
+                if (!so || !transformer) return 0f;
+                float cruise = Mathf.Max(0f, transformer.DefaultMinimumSpeed) + Mathf.Max(0f, transformer.DefaultThrottleScaler);
+                return cruise * so.MaxBoostMultiplier;
+            }
+        }
+
+        /// <summary>How much of the ramp the pilot is holding this frame, 0..1. HUD-facing.</summary>
+        public float Straightness01 { get; private set; }
 
         void OnEnable()
         {
@@ -47,25 +92,52 @@ namespace CosmicShore.Gameplay
         {
             if (status == null || so == null) return;
 
-            End();
+            // Re-arming while already engaged is ORDINARY here, not an error: the strategy
+            // re-raises the press every time deviation dips back under the threshold, which on a
+            // graded ramp happens on the exit of every corner. Refresh and keep the ramp — a
+            // full End()/Begin() would restore the resting multiplier for one frame and snapshot
+            // a graded value as the new resting one.
+            if (_activeSO != null)
+            {
+                _activeSO = so;
+                _status = status;
+                return;
+            }
 
             _status = status;
             _activeSO = so;
+            _lastSO = so;
             _restingMultiplier = status.BoostMultiplier;
-            status.IsBoosting = true;
             status.IsStationary = false;
-            status.BoostMultiplier = so.MaxBoostMultiplier;
 
-            // Element → parameter (Time → acceleration). Anchored at 1x at resting level;
-            // a high Time element winds the Rhino up to top speed faster.
-            float timeMultiplier = _status.ElementalAbilityHandler != null
-                ? _status.ElementalAbilityHandler.Multiplier(Element.Time)
-                : 1f;
+            Straightness01 = 1f;
+            // An empty tank arms the ramp STARVED: the gesture is held, the ramp climbs only to its empty-tank top, and
+            // fuel brings the full top in.
+            bool starved = TryFuelSlot(so, status, out var fuelRs, out int fuelIndex) &&
+                           fuelRs.Resources[fuelIndex].CurrentAmount <= 0f;
+            float armed = starved ? so.EmptyTankMaxBoostMultiplier : so.MaxBoostMultiplier;
+            status.IsBoosting = armed > 1f;
+            status.BoostMultiplier = armed;
             var transformer = status.VesselTransformer;
             if (transformer != null)
-                transformer.SetSpeedTrackingRate(so.AccelerationPerSecond * timeMultiplier);
+                transformer.SetSpeedTrackingRate(ClimbRate(so));
 
-            _audioSystem.PlayGameplaySFX(so.EngageSFX);
+            // Held for the whole ramp: the default EngageSFX (Boost Activate) is a looping bed
+            // that the one-shot path refuses. End() stops it; a one-shot category still just plays.
+            _engagedSFX = so.EngageSFX;
+            HeldVesselSfx.Begin(_audioSystem, _engagedSFX, this, status);
+        }
+
+        /// <summary>
+        /// The gesture lapsed at the engage threshold. On a GRADED ramp that is the top of the
+        /// slope and not a disengagement — <see cref="Tick"/> owns the rest, and ends the ramp
+        /// when the pilot leaves the grace band. An asset authored with no band (the legacy
+        /// binary latch) still ends here, so the old configuration behaves exactly as it did.
+        /// </summary>
+        public void ReleaseGesture()
+        {
+            if (_activeSO == null) return;
+            if (_activeSO.StraightnessGraceBand <= StraightLineGesture.EngageThreshold) End();
         }
 
         public void End()
@@ -74,17 +146,113 @@ namespace CosmicShore.Gameplay
 
             var so = _activeSO;
             _activeSO = null;
+            Straightness01 = 0f;
+            HeldVesselSfx.End(_audioSystem, _engagedSFX, this);
 
             if (_status == null) return;
 
             _status.BoostMultiplier = _restingMultiplier;
             _status.IsBoosting = false;
 
-            // Fast constant-rate return to the input-driven throttle speed; the transformer
+            // Constant-rate coast back to the input-driven throttle speed; the transformer
             // reverts to its normal smoothing once the speed lands on the target.
             var transformer = _status.VesselTransformer;
             if (transformer != null)
                 transformer.SetSpeedTrackingRate(so.ReturnPerSecond);
         }
+
+        void Update()
+        {
+            if (_activeSO == null) return;
+            Tick();
+        }
+
+        void Tick()
+        {
+            var so = _activeSO;
+            var status = _status;
+            if (status == null) { End(); return; }
+
+            var input = status.Player != null ? status.InputStatus : null;
+            // No input at all (a vessel with no pilot yet) has nothing to grade with; it keeps the
+            // multiplier it was armed with until the turn end or a disable ends it.
+            if (input == null) return;
+
+            float deviation = StraightLineGesture.DeviationFromFullSpeedStraight(input);
+            if (deviation >= so.StraightnessGraceBand) { End(); return; }
+
+            Straightness01 = so.Straightness01(deviation);
+            float graded = so.MultiplierFor(deviation);
+
+            // FUEL (Garrett, 2026-11-18): a fuelled ramp burns what ploughing or slicing earned. An empty tank does not
+            // end the ramp - the pilot is still holding the line - it starves it to the empty-tank top, and the next prism
+            // the hull ploughs or the bill slices brings the full ramp back without a new gesture.
+            bool starved = BurnFuel(so, status, graded, Time.deltaTime);
+            float multiplier = starved ? so.EmptyTankMultiplierFor(deviation) : graded;
+            status.BoostMultiplier = multiplier;
+            status.IsBoosting = multiplier > 1f;
+
+            var transformer = status.VesselTransformer;
+            if (transformer == null) return;
+
+            // Which way is the speed heading? Ask the transformer for the target it is actually
+            // going to use rather than re-deriving throttle x scaler x boost + minimum here —
+            // SingleStickVesselTransformer overrides that formula, and a second copy of it would
+            // be wrong on whichever vessel adopts this ability next.
+            // Against the transformer's OWN tracked speed, never the published status.Speed: that
+            // one is after the impact slow, the warp field and flight time scale, so under any of
+            // them it disagreed with the number StepTowardTarget actually steps and chose the climb
+            // rate for a bleed (or the reverse).
+            bool climbing = transformer.CurrentThrottleTarget >= transformer.TrackedSpeed;
+            // A starved ramp coasts down at the return rate, as a released one does: running dry is spending the
+            // speed you banked, not braking.
+            transformer.SetSpeedTrackingRate(climbing ? ClimbRate(so) : starved ? so.ReturnPerSecond : so.BleedPerSecond);
+        }
+
+        /// <summary>
+        /// The ramp's tank, 0..1 of its slot's max: 1 for a free ramp (no fuel slot, or a hull without the slot).
+        /// HUD-facing.
+        /// </summary>
+        public float Fuel01
+        {
+            get
+            {
+                var so = _activeSO ? _activeSO : _lastSO ? _lastSO : topSpeedAsset;
+                if (!TryFuelSlot(so, _status, out var rs, out int index)) return 1f;
+                var r = rs.Resources[index];
+                return r.MaxAmount > 0f ? Mathf.Clamp01(r.CurrentAmount / r.MaxAmount) : 0f;
+            }
+        }
+
+        /// <summary>
+        /// Burns this frame's fuel for a ramp at <paramref name="multiplier"/>. Returns true when the tank is empty (the
+        /// ramp is starved to its empty-tank top). A free ramp, or a hull whose ResourceSystem lacks the slot, never starves.
+        /// </summary>
+        static bool BurnFuel(RampBoostActionSO so, IVesselStatus status, float multiplier, float dt)
+        {
+            if (!TryFuelSlot(so, status, out var rs, out int index)) return false;
+            if (rs.Resources[index].CurrentAmount <= 0f) return true;
+            float burn = so.FuelBurn(multiplier, dt);
+            if (burn > 0f) rs.ChangeResourceAmount(index, -burn);
+            return false;
+        }
+
+        static bool TryFuelSlot(RampBoostActionSO so, IVesselStatus status, out ResourceSystem rs, out int index)
+        {
+            rs = null;
+            index = -1;
+            if (!so || !so.UsesFuel || status == null) return false;
+            rs = status.ResourceSystem;
+            index = so.FuelResourceIndex;
+            return rs && rs.Resources != null && index < rs.Resources.Count;
+        }
+
+        /// <summary>
+        /// The wind-up rate, with TIME read LIVE (Time → acceleration, ×1 at rest). It used to be
+        /// snapshotted when the ramp first engaged, and a graded ramp re-arms without re-engaging
+        /// (<see cref="Begin"/>'s early return), so it can stay engaged for a whole lap: a Time level
+        /// earned mid-ramp changed nothing until the pilot let the ramp fall off completely.
+        /// </summary>
+        float ClimbRate(RampBoostActionSO so) => so.AccelerationPerSecond * so.TimeAccelerationMultiplier(_status);
     }
 }

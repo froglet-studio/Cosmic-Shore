@@ -33,8 +33,7 @@ namespace CosmicShore.Gameplay
             // --- Resolve colliders ---
             if (!impactor.TryGetComponent<SphereCollider>(out var sphereCollider)) return;
 
-            var prismCollider = prismImpactee.GetComponent<Collider>();
-            if (prismCollider == null) return;
+            if (!prismImpactee.TryGetComponent(out Collider prismCollider)) return;
 
             // --- Compute impact point ---
             Vector3 sphereCenter = sphereCollider.transform.TransformPoint(sphereCollider.center);

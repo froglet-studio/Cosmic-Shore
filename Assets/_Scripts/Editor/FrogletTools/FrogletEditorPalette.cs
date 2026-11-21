@@ -42,12 +42,13 @@ namespace CosmicShore.Editor.Froglet
             { FrogletToolCategory.Vessels, Violet },
             { FrogletToolCategory.Ecology, Lime },
             { FrogletToolCategory.Performance, Gold },
-            { FrogletToolCategory.Validation, Ruby },
             { FrogletToolCategory.Interface, Cyan },
             { FrogletToolCategory.Services, Magenta },
-            { FrogletToolCategory.Misc, Slate },
+            { FrogletToolCategory.Utilities, Slate },
             { FrogletToolCategory.Diagnostics, Indigo },
             { FrogletToolCategory.Qa, Cyan },
+            { FrogletToolCategory.Ai, Ruby },
+            { FrogletToolCategory.Ftue, Violet },
         };
 
         public static Color ColorFor(FrogletToolCategory c)
@@ -56,17 +57,19 @@ namespace CosmicShore.Editor.Froglet
         public static string LabelFor(FrogletToolCategory c) => c switch
         {
             FrogletToolCategory.Build => "Build & Release",
-            FrogletToolCategory.SceneSetup => "Scene Setup",
+            FrogletToolCategory.SceneSetup => "Scenes",
             FrogletToolCategory.GameModes => "Game Modes",
             FrogletToolCategory.Vessels => "Vessels & HUD",
             FrogletToolCategory.Ecology => "Prisms & Ecology",
             FrogletToolCategory.Performance => "Performance",
-            FrogletToolCategory.Validation => "Validation",
-            FrogletToolCategory.Interface => "Interface",
+            FrogletToolCategory.Interface => "UI",
             FrogletToolCategory.Services => "Services & Data",
             FrogletToolCategory.Diagnostics => "Diagnostics & Health",
             FrogletToolCategory.Qa => "QA",
-            _ => "Misc",
+            FrogletToolCategory.Ai => "AI",
+            FrogletToolCategory.Ftue => "FTUE",
+            FrogletToolCategory.Utilities => "Utilities",
+            _ => "Utilities",
         };
 
         // ── Skin awareness ───────────────────────────────────────────────────────

@@ -8,6 +8,23 @@ paperwork, and store configuration. No code.
 
 ---
 
+## Which path this document describes
+
+This is the **Revision-1 paid path**: a paid Early Access release on one app, promoted through
+`beta` and `default`. It is still how the *paid* conversion ships, so nothing below is deleted or
+rewritten. The **live milestone is the Revision-2 Steam Playtest** — a free child app attached to
+the store page, with a signup queue, manual grant waves and compounding friend invites — and its
+half of Workstream A is a sibling runbook: **[`STEAM_PLAYTEST_RUNBOOK.md`](STEAM_PLAYTEST_RUNBOOK.md)**.
+Read that first for A4, A5 and A6, the branch model under two apps, and the two Valve constraints
+(Playtest participants cannot review the base game; charging for Playtest access is prohibited).
+
+The two revisions reuse item IDs with different meanings. Below, **A4 is the Early Access
+questionnaire and A6 is pricing** (Revision 1). On the live board, **A4 is the Playtest child app
+and A6 is the wave policy** (Revision 2). A1–A3 and the store-page mechanics of A5 are shared and
+are still done from here.
+
+---
+
 ## The one thing that determines your launch date
 
 > **Steam enforces a 30-day waiting period between paying the app fee and being allowed to release.**
@@ -171,6 +188,10 @@ confirms them.
 2. Smoke test the Steam install; verify the overlay renders (checklist B7)
 3. Promote to `beta` for the closed playtest (checklist E7)
 4. Mark the build for review. Store page review must pass **before** build review begins.
+
+> **Playtest model:** the invite channel is the Playtest child app's `default` branch, not this
+> app's `beta`. Steps 1–2 and 4 still apply, run with `--target playtest`; step 3 does not. See
+> [`STEAM_PLAYTEST_RUNBOOK.md`](STEAM_PLAYTEST_RUNBOOK.md) § *Branch model under two apps*.
 
 ---
 

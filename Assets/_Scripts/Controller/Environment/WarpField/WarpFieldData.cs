@@ -7,10 +7,14 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField] WarpFieldSO field;
 
-        public int fieldWidth;
-        public int fieldHeight;
-        public int fieldThickness;
-        public float fieldMax;
+        [SerializeField] int fieldWidth;
+        public int FieldWidth => fieldWidth;
+        [SerializeField] int fieldHeight;
+        public int FieldHeight => fieldHeight;
+        [SerializeField] int fieldThickness;
+        public int FieldThickness => fieldThickness;
+        [SerializeField] float fieldMax;
+        public float FieldMax => fieldMax;
 
         private bool initialized = false;
 

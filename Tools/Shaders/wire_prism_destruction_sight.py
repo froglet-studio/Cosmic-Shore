@@ -30,16 +30,27 @@ a graph revert to repair the wiring.
 What it adds to each graph:
 
   properties (all UNEXPOSED -> declared as globals, driven by Shader.SetGlobalVector from
-  PrismDestructionSight.cs; same shape as the existing _PrismClock / _PrismOcclusion* globals):
+  PrismLit.cs (_Scripts/Utility/Lit/, named PrismDestructionSight.cs until the LIT
+  fundamental promoted it); same shape as the existing _PrismClock / _PrismOcclusion* globals):
       _PrismSightApex     float3  blast apex, world space
       _PrismSightAxis     float3  sweep axis (unit)
       _PrismSightGape     float3  gape axis (unit, perpendicular to the sweep axis)
       _PrismSightParams   float3  (height, coreRadiusPerUnitDepth, halfLengthPerUnitDepth)
       _PrismSightStrength float   highlight fade, 0-1
 
+  property (HYBRID PER INSTANCE -> per prism, written by the ECS override
+  PrismSuperShieldedOverride; added to an already-wired graph by the UPGRADE pass below):
+      _PrismSuperShielded float   1 while THIS prism wears the super-shield
+
+  property (EXPOSED -> declared INSIDE UnityPerMaterial, so material.SetFloat can reach it;
+  stamped once per domain by ThemeManager.PaintPrismTier on the clones it already makes one per
+  domain, and read by the domain gate a light may carry — Docs/LIT.md):
+      _PrismLitDomain     float   THIS prism's domain (a Domains value; 0 = it has none)
+
   nodes:
       Position (World)                          -> fragment world position
       Property x5                               -> the five globals
+      Property x1                               -> _PrismLitDomain
       PrismDestructionSight (Custom Function)    -> PrismDestructionSight.hlsl
 
   edges (the splice — whatever fed SurfaceDescription.BaseColor is RETARGETED into the custom
@@ -50,6 +61,7 @@ What it adds to each graph:
       AFTER:   <colour source> -> CF.BaseColor
                Position(World) -> CF.PositionWS
                _PrismSightApex/Axis/Gape/Params/Strength -> CF.{Apex,Axis,Gape,Params,Strength}
+               _PrismLitDomain -> CF.Domain
                CF.Color -----------------------------> SurfaceDescription.BaseColor
 
 Usage:  python3 Tools/Shaders/wire_prism_destruction_sight.py [--check]
@@ -83,9 +95,25 @@ VEC3_PROPS = [
     ("PrismSightParams", "_PrismSightParams"),
 ]
 STRENGTH_PROP = ("PrismSightStrength", "_PrismSightStrength")
+# The one EXPOSED property: per MATERIAL, not per frame.
+LIT_DOMAIN_PROP = ("PrismLitDomain", "_PrismLitDomain")
+# The one HYBRID PER INSTANCE property: per PRISM. 1 while this prism wears the super-shield
+# (Prism.SetSuperShieldMark → PrismRenderService.SetSuperShieldMark → the ECS override
+# PrismSuperShieldedOverride). The sight paints a super-shield inside the OWN cone in the danger
+# colour, because a crystal blast that reaches one ends there. It has to be per-instance, not
+# per-material: a super-shielded prism wears the PLAIN team material (so the stellation reads),
+# so nothing about its material can say it is super-shielded.
+SUPER_SHIELD_PROP = ("PrismSuperShielded", "_PrismSuperShielded")
+# Same-file donor for a Hybrid-Per-Instance Vector1 (the shield morph's own duration stamp).
+HYBRID_V1_DONOR = "ShieldMorphDuration"
 
-# (integer slot id, display name, "Vector1"|"Vector3", is_output) — the integer ids MUST match the
-# HLSL parameter order (inputs first, then outputs).
+# (integer slot id, display name, "Vector1"|"Vector3", is_output).
+# LIST ORDER is what has to match the HLSL signature, not the ids: a Custom Function node builds
+# its call from m_Slots in array order (all inputs, then all outputs), which is the order this list
+# is written in. That is why Domain (8) sits BEFORE Color (7) — it was added as a ninth slot after
+# the first eight shipped, and it is an INPUT, so it belongs ahead of the output in the array even
+# though its id is higher. Getting this wrong renders every prism material unmateriald with
+# nothing in the console (Tools/Build/check_shadergraph_custom_function_signatures.py).
 CF_SLOTS = [
     (0, "PositionWS", "Vector3", False),
     (1, "Apex", "Vector3", False),
@@ -94,8 +122,12 @@ CF_SLOTS = [
     (4, "Params", "Vector3", False),
     (5, "Strength", "Vector1", False),
     (6, "BaseColor", "Vector3", False),
+    (8, "Domain", "Vector1", False),
+    (9, "SuperShielded", "Vector1", False),
     (7, "Color", "Vector3", True),
 ]
+# The slot the UPGRADE pass adds to a graph wired before it existed.
+SUPER_SHIELD_SLOT = 9
 
 COORDINATE_SPACE_WORLD = 2
 
@@ -168,6 +200,43 @@ def make_global_property(donor, donor_unexposed, name, reference, is_vector3):
     p["overrideHLSLDeclaration"] = donor_unexposed["overrideHLSLDeclaration"]
     p["hlslDeclarationOverride"] = donor_unexposed["hlslDeclarationOverride"]
     p["m_Value"] = {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0} if is_vector3 else 0.0
+    return p
+
+
+def make_exposed_property(donor_vector1, name, reference):
+    """A per-MATERIAL float: same shape as the unexposed donor, but IN UnityPerMaterial.
+
+    Exposure is the whole point here — an unexposed property lands outside UnityPerMaterial, no
+    material.SetFloat can reach it, and the domain gate then reads 0 on every prism, which means
+    "this has no domain" and silently excludes all mass from a gated light.
+    """
+    p = json.loads(json.dumps(donor_vector1))
+    p["m_ObjectId"] = new_oid()
+    p["m_Guid"] = {"m_GuidSerialized": str(uuid.uuid4())}
+    p["m_Name"] = name
+    p["m_RefNameGeneratedByDisplayName"] = name
+    p["m_DefaultReferenceName"] = reference
+    p["m_OverrideReferenceName"] = reference
+    p["m_GeneratePropertyBlock"] = True
+    p["m_Value"] = 0.0
+    return p
+
+
+def make_instance_property(donor_hybrid_v1, name, reference):
+    """A per-PRISM float: cloned from a same-file Hybrid-Per-Instance Vector1 so the declaration
+    flags are the ones Entities Graphics already reads on this graph. Unexposed or per-material,
+    an ECS override can never reach it and every super-shield reads 0."""
+    p = json.loads(json.dumps(donor_hybrid_v1))
+    p["m_ObjectId"] = new_oid()
+    p["m_Guid"] = {"m_GuidSerialized": str(uuid.uuid4())}
+    p["m_Name"] = name
+    p["m_RefNameGeneratedByDisplayName"] = name
+    p["m_DefaultReferenceName"] = reference
+    p["m_OverrideReferenceName"] = reference
+    p["m_GeneratePropertyBlock"] = True
+    p["overrideHLSLDeclaration"] = True
+    p["hlslDeclarationOverride"] = 3
+    p["m_Value"] = 0.0
     return p
 
 
@@ -296,6 +365,29 @@ def validate(docs, expect_wired):
         assert prop["m_GeneratePropertyBlock"] == 0, \
             f"{name} is exposed — it must be a global, not a per-material property"
 
+    # and the inverse for the one per-material property: the domain gate is a fact about THIS
+    # prism, stamped per material, so it MUST be exposed or nothing can write it
+    domain_prop = find_property(docs, LIT_DOMAIN_PROP[0])
+    assert domain_prop is not None, f"missing property {LIT_DOMAIN_PROP[0]}"
+    assert domain_prop["m_OverrideReferenceName"] == LIT_DOMAIN_PROP[1], \
+        f"{LIT_DOMAIN_PROP[0]} has the wrong reference"
+    assert domain_prop["m_GeneratePropertyBlock"], \
+        f"{LIT_DOMAIN_PROP[0]} is unexposed — it must be per-material, not a global"
+
+    # the per-PRISM super-shield bit must be Hybrid Per Instance, or no ECS override reaches it
+    ss_prop = find_property(docs, SUPER_SHIELD_PROP[0])
+    assert ss_prop is not None, f"missing property {SUPER_SHIELD_PROP[0]}"
+    assert ss_prop["m_OverrideReferenceName"] == SUPER_SHIELD_PROP[1], \
+        f"{SUPER_SHIELD_PROP[0]} has the wrong reference"
+    assert ss_prop["m_GeneratePropertyBlock"] and ss_prop["overrideHLSLDeclaration"] \
+        and ss_prop["hlslDeclarationOverride"] == 3, \
+        f"{SUPER_SHIELD_PROP[0]} is not an exposed Hybrid Per Instance property"
+
+    # the slot ARRAY order is the call order: every input, then the one output
+    order = [idx[s["m_Id"]]["m_Id"] for s in cf["m_Slots"]]
+    assert order == [s[0] for s in CF_SLOTS], \
+        f"sight node slot ORDER {order} != the HLSL signature order {[s[0] for s in CF_SLOTS]}"
+
 
 # ---------------------------------------------------------------------------
 # wiring
@@ -308,6 +400,10 @@ def wire_graph(rel_path, check_only):
     graph = find_graph(docs)
 
     if find_property(docs, VEC3_PROPS[0][0]) is not None:
+        if find_property(docs, SUPER_SHIELD_PROP[0]) is None:
+            if check_only:
+                return False, None  # wired before the super-shield bit existed: NOT wired
+            return upgrade_super_shield(rel_path, path, docs)
         validate(docs, expect_wired=True)
         return False, f"{os.path.basename(rel_path)}: already wired (validated)."
     if check_only:
@@ -346,12 +442,17 @@ def wire_graph(rel_path, check_only):
         props.append(make_global_property(donor_v3_prop, donor_unexposed, name, reference, True))
     props.append(make_global_property(donor_unexposed, donor_unexposed,
                                       STRENGTH_PROP[0], STRENGTH_PROP[1], False))
-    new_docs += props
-    graph["m_Properties"] += [{"m_Id": p["m_ObjectId"]} for p in props]
+    lit_domain = make_exposed_property(donor_unexposed, LIT_DOMAIN_PROP[0], LIT_DOMAIN_PROP[1])
+    donor_hybrid = find_property(docs, HYBRID_V1_DONOR)
+    assert donor_hybrid is not None, f"{rel_path}: no {HYBRID_V1_DONOR} property to clone"
+    super_shield = make_instance_property(donor_hybrid, SUPER_SHIELD_PROP[0], SUPER_SHIELD_PROP[1])
+    all_props = props + [lit_domain, super_shield]
+    new_docs += all_props
+    graph["m_Properties"] += [{"m_Id": p["m_ObjectId"]} for p in all_props]
 
     category = max((idx[c["m_Id"]] for c in graph["m_CategoryData"]),
                    key=lambda c: len(c["m_ChildObjectList"]))
-    category["m_ChildObjectList"] += [{"m_Id": p["m_ObjectId"]} for p in props]
+    category["m_ChildObjectList"] += [{"m_Id": p["m_ObjectId"]} for p in all_props]
 
     # ---- nodes ----
     made = []
@@ -364,9 +465,19 @@ def wire_graph(rel_path, check_only):
                                        prop["m_ObjectId"], prop["m_Name"], -1500.0, y))
         y += 90.0
 
+    lit_domain_node, dslots = make_property_node(donor_prop_node, donor_slot_v1,
+                                                lit_domain["m_ObjectId"], lit_domain["m_Name"],
+                                                -1500.0, y)
+
+    super_shield_node, sslots = make_property_node(donor_prop_node, donor_slot_v1,
+                                                   super_shield["m_ObjectId"], super_shield["m_Name"],
+                                                   -1500.0, y + 90.0)
+
     position_node, pslots = make_position_node(donor_pos, donor_pos_slot, -1500.0, 2320.0)
     cf_node, cslots = make_custom_function_node(donor_cf, donor_slot_v1, donor_slot_v3,
                                                 -1180.0, 2380.0)
+    made.append((lit_domain_node, dslots))
+    made.append((super_shield_node, sslots))
     made.append((position_node, pslots))
     made.append((cf_node, cslots))
 
@@ -391,8 +502,12 @@ def wire_graph(rel_path, check_only):
         f"found {retargeted}")
 
     graph["m_Edges"].append(edge(position_node["m_ObjectId"], 0, cf_node["m_ObjectId"], 0))
-    for slot_id, (node, _slots) in enumerate(made[:5], start=1):
+    # the five globals occupy the head of `made`, in CF input-slot order 1..5
+    for slot_id, (node, _slots) in enumerate(made[:len(props)], start=1):
         graph["m_Edges"].append(edge(node["m_ObjectId"], 0, cf_node["m_ObjectId"], slot_id))
+    graph["m_Edges"].append(edge(lit_domain_node["m_ObjectId"], 0, cf_node["m_ObjectId"], 8))
+    graph["m_Edges"].append(edge(super_shield_node["m_ObjectId"], 0, cf_node["m_ObjectId"],
+                                 SUPER_SHIELD_SLOT))
     graph["m_Edges"].append(edge(cf_node["m_ObjectId"], 7, base_block["m_ObjectId"], 0))
 
     docs += new_docs
@@ -401,7 +516,54 @@ def wire_graph(rel_path, check_only):
     open(path, "w", encoding="utf-8").write(dump_docs(docs))
     validate(load_docs(path), expect_wired=True)  # re-read from disk and re-check
     return True, (f"{os.path.basename(rel_path)}: wired and validated "
-                  f"(+5 globals, +7 nodes, +{len(new_docs) - 12} slots, 7 new edges, 1 retargeted).")
+                  f"(+5 globals, +1 per-material, +1 per-instance property, +9 nodes, "
+                  f"+{len(new_docs) - 16} slots, 9 new edges, 1 retargeted).")
+
+
+def upgrade_super_shield(rel_path, path, docs):
+    """Adds the per-instance super-shield bit to a graph wired BEFORE it existed: one Hybrid Per
+    Instance property, one property node, one CF input slot inserted AHEAD of the Color output
+    (the slot ARRAY is the call order, and the HLSL takes SuperShielded before `out Color`), and
+    one edge. Everything else the fresh pass built is left exactly as it is."""
+    graph = find_graph(docs)
+    idx = index(docs)
+    cf = next(idx[r["m_Id"]] for r in graph["m_Nodes"]
+              if idx[r["m_Id"]].get("m_FunctionName") == FUNCTION_NAME)
+    present = [idx[s["m_Id"]]["m_Id"] for s in cf["m_Slots"]]
+    assert SUPER_SHIELD_SLOT not in present, f"{rel_path}: slot {SUPER_SHIELD_SLOT} already present"
+    assert present[-1] == 7, f"{rel_path}: the Color output is not the last slot ({present})"
+
+    donor_hybrid = find_property(docs, HYBRID_V1_DONOR)
+    assert donor_hybrid is not None, f"{rel_path}: no {HYBRID_V1_DONOR} property to clone"
+    # Donors from THIS node, so the new slot and node are schema-identical to their neighbours.
+    domain_slot = next(idx[s["m_Id"]] for s in cf["m_Slots"] if idx[s["m_Id"]]["m_Id"] == 8)
+    domain_prop = find_property(docs, LIT_DOMAIN_PROP[0])
+    domain_node = next(idx[r["m_Id"]] for r in graph["m_Nodes"]
+                       if idx[r["m_Id"]].get("m_Property", {}).get("m_Id") == domain_prop["m_ObjectId"])
+    domain_node_slot = idx[domain_node["m_Slots"][0]["m_Id"]]
+
+    prop = make_instance_property(donor_hybrid, SUPER_SHIELD_PROP[0], SUPER_SHIELD_PROP[1])
+    pos = domain_node["m_DrawState"]["m_Position"]
+    node, nslots = make_property_node(domain_node, domain_node_slot, prop["m_ObjectId"],
+                                      prop["m_Name"], pos["x"], pos["y"] + 90.0)
+    slot = make_slot(domain_slot, SUPER_SHIELD_SLOT, "SuperShielded", False)
+
+    graph["m_Properties"].append({"m_Id": prop["m_ObjectId"]})
+    category = next(idx[c["m_Id"]] for c in graph["m_CategoryData"]
+                    if any(o["m_Id"] == domain_prop["m_ObjectId"]
+                           for o in idx[c["m_Id"]]["m_ChildObjectList"]))
+    category["m_ChildObjectList"].append({"m_Id": prop["m_ObjectId"]})
+    graph["m_Nodes"].append({"m_Id": node["m_ObjectId"]})
+    cf["m_Slots"].insert(len(cf["m_Slots"]) - 1, {"m_Id": slot["m_ObjectId"]})
+    graph["m_Edges"].append(edge(node["m_ObjectId"], 0, cf["m_ObjectId"], SUPER_SHIELD_SLOT))
+
+    docs += [prop, node] + nslots + [slot]
+    validate(docs, expect_wired=True)  # nothing has been written yet
+
+    open(path, "w", encoding="utf-8").write(dump_docs(docs))
+    validate(load_docs(path), expect_wired=True)  # re-read from disk and re-check
+    return True, (f"{os.path.basename(rel_path)}: upgraded with the super-shield bit "
+                  f"(+1 per-instance property, +1 node, +1 input slot, +1 edge).")
 
 
 def main():

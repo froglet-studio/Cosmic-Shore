@@ -1,0 +1,71 @@
+# Loop Atlas model: loops, sitting. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+- id: sitting
+  parent: era
+  at: 2
+  core: true
+  name: A sitting
+  tier: 5
+  kind: hub
+  t: [600, 2700]
+  is: 'One time you open the game. Home is the hub: every change of place passes through it.'
+  phases:
+  - n: Home
+    d: The hub screen, with the menu freestyle flying behind it.
+  - n: Choose a place
+    d: Toybox, Arcade, Arena or Voyage.
+  - n: Play rounds
+    d: The place's own loop.
+  - n: Results
+    d: Placing, the scoreboard, the payout.
+  - n: Again, cross over, or grow
+    d: Rematch, another place, or the Hangar and the Ark.
+  - n: Leave
+  drivers: [joy, crew, goal, reward]
+  reps: null
+  repsOf: sittings per pass of the long game
+  now:
+    s: built
+    note: Home, Hangar and Profile are open; the Ark screen is the Elemental Converter; Port is locked and the Store has
+      no screen.
+  plan:
+    note: 'Four places: Toybox, Arcade, Arena, Voyages. Voyages are the culminating experience.'
+  prop:
+    s: change
+    note: Add the breath between rounds so that crossing to another place is offered, never left to the menu.
+  holes:
+  - 'on': np
+    q: Nothing in the game points a player from one place to another. A crossing happens only if the player opens Home and
+      thinks of it.
+    fill: 'The breath (new loop): after each result, one offered next step chosen from what the round just trained.'
+  - 'on': np
+    q: Rounds per sitting and places per sitting are not measured.
+    fill: Aim for 5 to 8 rounds and 1 or 2 places in a sitting; read it from the analytics events.
+  src:
+  - Docs/MENU_PROGRESSION_AND_IAP.md section 1
+  - Docs/Voyages/VOYAGES.md section 1
+- id: breath
+  parent: sitting
+  at: 4
+  in: x
+  name: The breath
+  tier: 3
+  kind: loop
+  t: [8, 30]
+  is: 'Proposed. The pause between rounds, treated as a loop of its own: the one place where the game hands you up, down
+    or across.'
+  phases:
+  - n: See what you did
+    d: Placing, plus the one number your role moved (time, petals, volume made and removed).
+  - n: See what it paid
+    d: Crystals, a rung, a petal on the vessel's flower.
+  - n: One offered next step
+    d: 'Rematch, next rung, or a crossing: ''this trained you for Regatta''.'
+  - n: Take it or go Home
+  drivers: [reward, mastery, find]
+  reps: '1'
+  repsOf: per round
+  prop:
+    s: add
+    note: Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.
+  src: [proposal]

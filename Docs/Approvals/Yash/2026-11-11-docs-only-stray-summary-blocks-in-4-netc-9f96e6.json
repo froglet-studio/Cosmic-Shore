@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-11-docs-only-stray-summary-blocks-in-4-netc-9f96e6",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-11T02:28:14+00:00",
+  "area": "Multiplayer netcode (your Ys-bleeding-edge)",
+  "summary": "Docs only: stray /// <summary> blocks in 4 netcode files now sit on their members (RosterPullRetryLoop, SpawnVesselForPlayer, OnPlayerReadyToSpawnAsync, PlacedAiDomains); no code line changed.",
+  "why": "Garrett decided to go ahead while the lane was occupied (2026-11-11). Ys-bleeding-edge shares 8 of this branch's files (ClientPlayerVesselInitializer, ServerPlayerVesselInitializer, HostConnectionService, GameDataSO, GateRaceController, MiniGameHUD, ArcadeGameConfigureModal, Scoreboard); the in-memory trial merge is clean in all of them.",
+  "branch": "cece/loving-volta-kkvnex",
+  "lane": "netcode",
+  "commit": "7b63c63dc",
+  "paths": [
+    "Assets/_Scripts/Controller/Multiplayer/ArcadeConfigSyncManager.cs",
+    "Assets/_Scripts/Controller/Multiplayer/ClientPlayerVesselInitializer.cs",
+    "Assets/_Scripts/Controller/Multiplayer/MenuServerPlayerVesselInitializer.cs",
+    "Assets/_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializer.cs"
+  ]
+}

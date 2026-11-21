@@ -33,23 +33,13 @@ namespace CosmicShore.Gameplay
             return built;
         }
 
-        /// <summary>As above, painted with a material the caller owns (see the ToyModelBuilder overload).</summary>
-        public static bool TryBuild(Transform prefabRoot, float targetRadius, Material sharedMaterial, out GameObject model)
-        {
-            bool built = ToyModelBuilder.TryBuild(prefabRoot, targetRadius, sharedMaterial, out model, IsHull);
-            if (built && model) model.name = "VesselModel";
-            return built;
-        }
-
         /// <summary>
         /// A mini hull wearing the ship's OWN materials — the actual model, not a silhouette of it.
         ///
         /// <para>The flat preview fill existed because a vessel's real materials are dark unlit
         /// theme shaders that read as a black blob with nothing to say which team they belong to.
-        /// The vessel vision band answers both halves of that now (Docs/VESSEL_VISION.md): a
-        /// station wears its domain in a flat cel silhouette while you are choosing at range, and
-        /// resolves into the real hull as you close on it. So the fill can go, and a station can
-        /// show the ship.</para>
+        /// The vessel vision band answers both halves of that now (Docs/VESSEL_VISION.md), so a
+        /// preview can show the ship.</para>
         ///
         /// <para><paramref name="domainMaterial"/> replaces the prefab's authored DOMAIN-role
         /// slots, resolved from the prefab's own <see cref="VesselCustomization"/> exactly the way
@@ -65,13 +55,9 @@ namespace CosmicShore.Gameplay
 
             bool built = ToyModelBuilder.TryBuild(
                 prefabRoot, targetRadius, sharedMaterial: null, out model, IsHull,
-                (node, source, authored) => ResolveMaterials(authored, custom, domainMaterial));
+                (node, source, authored) => ResolveMaterials(authored, custom, domainMaterial, source is SkinnedMeshRenderer));
 
-            if (built && model)
-            {
-                model.name = "VesselModel";
-                model.AddComponent<ToyLiveHull>();
-            }
+            if (built && model) model.name = "VesselModel";
             return built;
         }
 
@@ -86,12 +72,30 @@ namespace CosmicShore.Gameplay
         /// a vessel that changes which slot carries its domain changes both at once.
         /// </summary>
         static Material[] ResolveMaterials(Material[] authored, VesselCustomization custom,
-            Material domainMaterial)
+            Material domainMaterial, bool skinned) =>
+            custom == null
+                ? authored
+                : ResolveDomainMaterials(authored, custom.DomainReplacesMaterials,
+                    custom.DomainMaterialSlot, domainMaterial, skinned);
+
+        /// <summary>
+        /// The same swap, for a caller that has already read the rule off the
+        /// <see cref="VesselCustomization"/> and no longer holds the component — the theater's
+        /// ghost builder strips it before painting, because the strip has to happen while the
+        /// instance is still inert. One implementation either way, so a vessel that changes which
+        /// slot carries its domain moves every consumer with it.
+        /// </summary>
+        /// <param name="skinned">The renderer is a SkinnedMeshRenderer: with no identities named, its domain slot is
+        /// 0, as the live ship paints it (<c>ShipHelper.ApplyShipMaterial</c> writes a skinned mesh's
+        /// <c>materials[0]</c>, the fleet's Domain slot, whatever the index). Display hulls used the index for every
+        /// renderer, so a toybox or preview Goby or Squirrel wore its team colour on the body and the Ruby placeholder on
+        /// its accent.</param>
+        public static Material[] ResolveDomainMaterials(Material[] authored,
+            IReadOnlyList<Material> identities, int domainMaterialSlot, Material domainMaterial, bool skinned = false)
         {
             if (authored == null || authored.Length == 0) return authored;
-            if (!domainMaterial || custom == null) return authored;
+            if (!domainMaterial) return authored;
 
-            var identities = custom.DomainReplacesMaterials;
             bool byIdentity = false;
             if (identities != null)
                 for (int i = 0; i < identities.Count && !byIdentity; i++)
@@ -109,7 +113,7 @@ namespace CosmicShore.Gameplay
                 return result;
             }
 
-            int index = Mathf.Clamp(custom.DomainMaterialSlot, 0, result.Length - 1);
+            int index = skinned ? 0 : Mathf.Clamp(domainMaterialSlot, 0, result.Length - 1);
             result[index] = domainMaterial;
             return result;
         }
@@ -122,8 +126,9 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        /// <summary>Whether this renderer is part of the ship hull we want to display.</summary>
-        static bool IsHull(Transform prefabRoot, Transform node, Mesh mesh, Renderer renderer)
+        /// <summary>Whether this renderer is part of the ship hull we want to display. Public so every picture of a
+        /// ship - the Codex baker's included - drops the same skimmer sphere, trails and VFX.</summary>
+        public static bool IsHull(Transform prefabRoot, Transform node, Mesh mesh, Renderer renderer)
         {
             if (mesh && PrimitiveMeshNames.Contains(mesh.name)) return false;
             return !ToyModelBuilder.AnyAncestorNameContains(node, prefabRoot, NonHullNameHints);

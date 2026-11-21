@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Corona
+  m_EditorClassIdentifier:
+  Mode: 87
+  Notes: 'The shells at each intensity - more shells, narrower gates, then danger rims, and fewer crystals in
+    the heart. OPEN-ENDED - it scores on blooms catching rival pilots and a solo preview has none; what it
+    teaches is skimming a shell, the gates and the heart. Vessel pinned to Manta(1).'
+  PreviewCell: {fileID: 11400000, guid: 09413916614656b7f2c6e9da7c7f7b2b, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 09413916614656b7f2c6e9da7c7f7b2b, type: 2}
+  - {fileID: 11400000, guid: 258ccda2ca8d9cdb9b867130de35d5cf, type: 2}
+  - {fileID: 11400000, guid: a5aac120926bb31e21992be0bf61f5b8, type: 2}
+  - {fileID: 11400000, guid: 3031ea0ae90ea6f6cf5c0a648c05dee7, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 1
+  ObjectiveText: Skim a shell, graze a rival, then touch a crystal in the heart
+  ObjectiveMetric: 8
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 380
+  SpawnRingRadiusFloorByIntensity:
+  - 380
+  - 410
+  - 450
+  - 500
+  SpawnFormation: 0
+  SpawnPoints: []

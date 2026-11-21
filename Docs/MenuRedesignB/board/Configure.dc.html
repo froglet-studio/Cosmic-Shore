@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Game configure</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.big>span{padding:14px 28px;font-size:18px}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.btn:disabled{cursor:default}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csDrop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes csGlow{0%,100%{box-shadow:0 0 18px rgba(153,255,128,.22)}50%{box-shadow:0 0 34px rgba(153,255,128,.5)}}
+@keyframes csShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes csSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes csSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes csDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes csCeremony{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile,.card{transition:filter 120ms ease-out}
+.tile:hover,.card:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+.tile{transition:filter 120ms ease-out}
+.tile:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+  <img src="/_blob/c480f7802bf9e34b00948517f6c3b602" alt="" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover">
+  <div style="position: absolute; left: 0; top: 84px; width: 1920px; height: 996px; background: rgba(0, 1, 10, 0.72)"></div>
+  <nav aria-label="Menu screens" style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 56px; background: rgba(0, 4, 31, 0.6); border-bottom: 1px solid rgba(67, 76, 137, 0.7)">
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">LT</span></span>
+    <span class="tab" style="color: #747BAD">HANGAR</span>
+    <span class="tab" style="color: #747BAD">ARK</span>
+    <span class="tab" style="color: #00D4FF; padding: 8px 0 6px; border-bottom: 2px solid #00D4FF">HOME</span>
+    <span class="tab" style="color: #5C5F70; display: flex; align-items: center; gap: 8px"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg>PORT</span>
+    <span class="tab" style="color: #747BAD">PROFILE</span>
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">RT</span></span>
+  </nav>
+  <div style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; background: rgba(0, 1, 10, 0.5)"></div>
+
+  <header style="position: absolute; left: 40px; top: 108px; width: 1840px; height: 64px; display: flex; align-items: flex-end; justify-content: space-between">
+    <div style="display: flex; flex-direction: column; gap: 6px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) both">
+      <span class="lab">{{eyebrow}}</span>
+      <div style="display: flex; align-items: center; gap: 14px">
+        <h1 style="margin: 0; font-weight: 400; font-size: 36px; line-height: 1.1">{{title}}</h1>
+        <button class="tile" type="button" aria-label="Favourite" onClick="{{star}}" style="display: grid; place-items: center; width: 36px; height: 36px; background: transparent; color: {{starColor}}"><sc-if value="{{fav}}" hint-placeholder-val="{{ false }}"><span style="display: flex; animation: csPop 320ms cubic-bezier(.34,1.56,.64,1) both"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 1.8l2.5 5.3 5.8.7-4.3 4 1.1 5.8L10 14.8l-5.1 2.8 1.1-5.8-4.3-4 5.8-.7z"></path></svg></span></sc-if><sc-if value="{{notFav}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 1.8l2.5 5.3 5.8.7-4.3 4 1.1 5.8L10 14.8l-5.1 2.8 1.1-5.8-4.3-4 5.8-.7z"></path></svg></sc-if></button>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px">
+      <sc-if value="{{showBoard}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" onClick="{{openBoard}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Leaderboard</span></button></sc-if>
+      <button class="btn" type="button" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span><span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 1px 8px; color: #747BAD; font-size: 12px">B</span></span>Back</span></button>
+    </div>
+  </header>
+
+  <section aria-label="Preview" style="position: absolute; left: 40px; top: 196px; width: 900px; height: 506px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 40ms both">
+    <button class="tile sl" type="button" aria-label="{{previewAria}}" onClick="{{togglePreview}}" style="display: block; width: 900px; height: 506px; background: {{previewBorder}}; padding: {{previewPad}}; box-sizing: border-box; cursor: {{previewCursor}}">
+      <span class="sl" style="position: relative; display: block; width: 100%; height: 100%; overflow: hidden; background: #00041F">
+        <img src="{{art}}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: csPan 14s ease-in-out infinite alternate">
+        <span style="position: absolute; left: 0; right: 0; bottom: 0; height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: rgba(0, 1, 10, 0.72)">
+          <span class="lab" style="color: {{hintColor}}; animation: {{hintAnim}}">{{previewHint}}</span>
+          <span class="lab">{{previewTag}}</span>
+        </span>
+        <sc-if value="{{plusShown}}" hint-placeholder-val="{{ false }}">
+          <span class="sls" style="position: absolute; right: 20px; top: 20px; background: {{localMain}}; padding: 1px; animation: csPop 320ms cubic-bezier(.34,1.56,.64,1) both"><span class="sls num" style="display: block; background: #00010A; padding: 6px 12px; font-size: 20px; color: {{localLight}}">+1</span></span>
+        </sc-if>
+      </span>
+    </button>
+  </section>
+
+  <sc-if value="{{hasObjective}}" hint-placeholder-val="{{ true }}">
+    <section aria-label="Objective" class="sls" style="position: absolute; left: 40px; top: 722px; width: 900px; height: 64px; background: #222645; padding: 1px; box-sizing: border-box; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 80ms both">
+      <div class="sls" style="height: 100%; box-sizing: border-box; background: #00041F; display: flex; align-items: center; gap: 14px; padding: 0 20px">
+        <span style="color: {{objIconColor}}; display: flex"><svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 2l7 6-7 10-7-10z"></path><path d="M3.6 8h12.8"></path></svg></span>
+        <span class="lab" style="color: #747BAD">{{objectiveLabel}}</span>
+        <span style="flex: 1; font-size: 18px">{{objective}}</span>
+        <sc-if value="{{hasCounter}}" hint-placeholder-val="{{ true }}"><span class="num" style="font-size: 20px; color: {{localLight}}">{{count}}</span></sc-if>
+      </div>
+    </section>
+  </sc-if>
+
+  <section aria-label="Briefing" class="sl" style="position: absolute; left: 40px; top: {{lowerTop}}px; width: 440px; height: {{lowerH}}px; background: #222645; padding: 1px; box-sizing: border-box; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 120ms both">
+    <div class="sl" style="height: 100%; box-sizing: border-box; background: #00041F; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+      <span class="lab" style="color: #E6E9FF">Briefing</span>
+      <span style="font-size: 18px; line-height: 1.45">{{desc}}</span>
+    </div>
+  </section>
+
+  <section aria-label="{{sideTitle}}" class="sl" style="position: absolute; left: 500px; top: {{lowerTop}}px; width: 440px; height: {{lowerH}}px; background: #222645; padding: 1px; box-sizing: border-box; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 160ms both">
+    <div class="sl" style="height: 100%; box-sizing: border-box; background: #00041F; padding: 20px 22px; display: flex; flex-direction: column; gap: 6px">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px"><span class="lab" style="color: #E6E9FF">{{sideTitle}}</span><span class="lab">{{sideTag}}</span></div>
+      <sc-for list="{{controls}}" as="r" hint-placeholder-count="4">
+        <div style="display: flex; align-items: center; gap: 12px; height: 34px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) {{r.delay}}ms both">
+          <img src="{{r.petal}}" alt="{{r.el}}" style="width: 22px; height: 22px; object-fit: contain">
+          <span style="flex: 1; font-size: 17px; color: {{r.color}}">{{r.label}}</span>
+          <sc-if value="{{r.hasPad}}" hint-placeholder-val="{{ false }}"><span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 1px 8px; color: #747BAD; font-size: 12px">{{r.pad}}</span></span></sc-if>
+        </div>
+      </sc-for>
+      <sc-for list="{{format}}" as="f" hint-placeholder-count="0">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; height: 34px; border-bottom: 1px solid #222645">
+          <span style="font-size: 17px; color: #747BAD">{{f.k}}</span><span class="num" style="font-size: 18px">{{f.v}}</span>
+        </div>
+      </sc-for>
+      <sc-if value="{{noControls}}" hint-placeholder-val="{{ false }}"><span style="font-size: 15px; color: #747BAD">Pick a hull to see its controls.</span></sc-if>
+    </div>
+  </section>
+
+  <section aria-label="Configure" class="sl" style="position: absolute; left: 980px; top: 196px; width: 900px; height: 844px; background: #222645; padding: 1px; box-sizing: border-box; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 40ms both">
+    <div class="sl grid" style="position: relative; height: 100%; box-sizing: border-box; padding: 28px">
+      <span aria-hidden="true" style="position: absolute; width: 22px; height: 22px; left: 10px; top: 10px; border-left: 1px solid #434C89; border-top: 1px solid #434C89"></span><span aria-hidden="true" style="position: absolute; width: 22px; height: 22px; right: 10px; top: 10px; border-right: 1px solid #434C89; border-top: 1px solid #434C89"></span><span aria-hidden="true" style="position: absolute; width: 22px; height: 22px; left: 10px; bottom: 10px; border-left: 1px solid #434C89; border-bottom: 1px solid #434C89"></span><span aria-hidden="true" style="position: absolute; width: 22px; height: 22px; right: 10px; bottom: 10px; border-right: 1px solid #434C89; border-bottom: 1px solid #434C89"></span>
+      <div style="position: relative; width: 842px; height: 786px">
+        <sc-for list="{{lines}}" as="l" hint-placeholder-count="0">
+          <div style="position: absolute; left: {{l.x}}px; top: {{l.y}}px; width: {{l.w}}px; height: {{l.h}}px; background: {{l.c}}; overflow: hidden; transform-origin: {{l.origin}}; animation: {{l.anim}}">
+            <sc-if value="{{l.spark}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; left: {{l.sx}}; top: {{l.sy}}; width: {{l.sw}}; height: {{l.sh}}; background: {{l.sbg}}; animation: {{l.sanim}}"></span></sc-if>
+          </div>
+        </sc-for>
+
+        <sc-for list="{{gutter}}" as="g" hint-placeholder-count="3">
+          <div style="position: absolute; left: 0; top: {{g.y}}px; width: 150px; display: flex; flex-direction: column; gap: 6px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) {{g.delay}}ms both">
+            <span class="num" style="font-size: 44px; line-height: 1; color: #434C89">{{g.step}}</span>
+            <span class="lab" style="color: #E6E9FF">{{g.label}}</span>
+            <span style="font-size: 18px; color: {{g.valueColor}}">{{g.value}}</span>
+            <span style="font-size: 15px; line-height: 1.4; color: #747BAD">{{g.hint}}</span>
+            <sc-if value="{{g.claim}}" hint-placeholder-val="{{ false }}"><span style="margin-top: 6px"><button class="btn" type="button" onClick="{{claim}}" style="--bc: #99FF80; --bf: #12222B; --bt: #99FF80"><span>Claim</span></button></span></sc-if>
+          </div>
+        </sc-for>
+
+        <sc-for list="{{tiles}}" as="t" hint-placeholder-count="8">
+          <button class="tile sls" type="button" aria-label="{{t.aria}}" onClick="{{t.pick}}" style="position: absolute; left: {{t.x}}px; top: {{t.y}}px; width: {{t.w}}px; height: {{t.h}}px; background: {{t.border}}; padding: {{t.bw}}; box-sizing: border-box; cursor: {{t.cursor}}; animation: csRise 320ms cubic-bezier(.22,1,.36,1) {{t.delay}}ms both">
+            <span class="sls" style="position: relative; display: block; width: 100%; height: 100%; overflow: hidden; background: {{t.fill}}">
+              <sc-if value="{{t.isVessel}}" hint-placeholder-val="{{ true }}">
+                <span style="position: absolute; inset: 0; display: grid; place-items: center; opacity: {{t.alpha}}"><img src="{{t.art}}" alt="" style="width: {{t.artS}}; height: {{t.artS}}; object-fit: contain; animation: {{t.float}}"></span>
+                <span class="lab" style="position: absolute; left: 0; right: 0; bottom: 0; padding: 6px 0; text-align: center; font-size: 12px; color: {{t.capColor}}; background: rgba(0, 1, 10, 0.7)">{{t.caption}}</span>
+              </sc-if>
+              <sc-if value="{{t.isIntensity}}" hint-placeholder-val="{{ false }}">
+                <span style="position: absolute; left: 16px; top: 12px; display: flex; flex-direction: column; gap: 2px; opacity: {{t.alpha}}">
+                  <span class="num" style="font-size: 44px; line-height: 1; color: {{t.numColor}}">{{t.caption}}</span>
+                  <span class="lab" style="font-size: 12px; color: {{t.capColor}}">{{t.sub}}</span>
+                </span>
+                <sc-if value="{{t.unlockedTile}}" hint-placeholder-val="{{ true }}">
+                  <span style="position: absolute; left: 16px; bottom: 16px; display: flex; align-items: flex-end; gap: 4px; opacity: {{t.alpha}}">
+                    <sc-for list="{{t.bars}}" as="b" hint-placeholder-count="4"><span style="width: 12px; height: {{b.h}}px; background: {{b.c}}; transform-origin: bottom; animation: csGrowY 200ms cubic-bezier(.33,1,.68,1) {{b.d}}ms both"></span></sc-for>
+                  </span>
+                </sc-if>
+                <sc-if value="{{t.locked}}" hint-placeholder-val="{{ false }}">
+                  <span style="position: absolute; right: 14px; top: 14px; display: flex"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg></span>
+                  <span style="position: absolute; left: 16px; right: 14px; bottom: 14px; font-size: 13px; line-height: 1.35; color: #747BAD">{{t.goal}}</span>
+                </sc-if>
+              </sc-if>
+              <sc-if value="{{t.isDomain}}" hint-placeholder-val="{{ false }}">
+                <span style="position: absolute; left: 0; top: 10px; width: 3px; height: 44px; background: {{t.swatch}}"></span>
+                <span style="position: absolute; left: 18px; top: 0; bottom: 0; right: 16px; display: flex; align-items: center; justify-content: space-between; opacity: {{t.alpha}}">
+                  <span style="display: flex; flex-direction: column; gap: 4px"><span class="lab" style="font-size: 16px; color: {{t.capColor}}">{{t.caption}}</span><span style="font-size: 13px; color: #747BAD">{{t.sub}}</span></span>
+                  <span class="num" style="font-size: 28px; color: {{t.capColor}}">{{t.count}}</span>
+                </span>
+              </sc-if>
+              <sc-if value="{{t.taken}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; right: 5px; top: 5px"><span class="oct" style="display: block; width: 22px; height: 22px; overflow: hidden; background: #222645"><img src="{{t.takenBy}}" alt="" style="width: 22px; height: 22px; object-fit: cover"></span></span></sc-if>
+              <sc-if value="{{t.claimed}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; right: 7px; top: 7px; color: #99FF80; display: flex"><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5l3.5 3.5 7.5-8.5"></path></svg></span></sc-if>
+            </span>
+          </button>
+        </sc-for>
+
+        <sc-if value="{{hasHero}}" hint-placeholder-val="{{ true }}">
+          <div style="position: absolute; left: {{heroX}}px; top: 0; width: {{heroW}}px; height: 150px; display: flex; flex-direction: column; justify-content: center; gap: 10px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 120ms both">
+            <span class="lab" style="color: #747BAD">Class</span>
+            <span style="font-size: 28px; line-height: 1">{{heroName}}</span>
+            <span style="font-size: 15px; line-height: 1.45; color: #747BAD; max-height: 66px; overflow: hidden">{{heroDesc}}</span>
+          </div>
+        </sc-if>
+
+        <sc-for list="{{seats}}" as="s" hint-placeholder-count="0">
+          <div class="sls" style="position: absolute; left: {{s.x}}px; top: {{s.y}}px; width: 208px; height: 40px; background: {{s.border}}; padding: 1px; box-sizing: border-box; animation: csRise 320ms cubic-bezier(.22,1,.36,1) {{s.delay}}ms both">
+            <div class="sls" style="display: flex; align-items: center; gap: 10px; height: 100%; box-sizing: border-box; padding: 0 6px 0 6px; background: {{s.fill}}">
+              <sc-if value="{{s.filled}}" hint-placeholder-val="{{ true }}">
+                <span class="oct" style="display: grid; place-items: center; width: 32px; height: 32px; flex: none; background: {{s.ring}}"><span class="oct" style="display: block; width: 26px; height: 26px; overflow: hidden; background: #222645"><img src="{{s.src}}" alt="" style="width: 26px; height: 26px; object-fit: cover"></span></span>
+                <span style="flex: 1; min-width: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.name}}</span>
+                <span class="lab" style="font-size: 11px; color: {{s.tagColor}}">{{s.tag}}</span>
+                <sc-if value="{{s.removable}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" aria-label="Remove AI" onClick="{{s.remove}}" style="--bc: #747BAD; --bf: #0E1230; --bt: #E6E9FF"><span style="padding: 4px"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 2l6 6M8 2l-6 6"></path></svg></span></button></sc-if>
+              </sc-if>
+              <sc-if value="{{s.open}}" hint-placeholder-val="{{ false }}">
+                <span style="flex: 1; padding-left: 8px; font-size: 15px; color: #5C5F70">Open seat</span>
+                <sc-if value="{{s.canAdd}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" aria-label="Add an AI pilot" onClick="{{s.add}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span style="padding: 4px 10px; font-size: 12px"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 1v10M1 6h10"></path></svg>AI</span></button></sc-if>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+
+        <sc-if value="{{hasPool}}" hint-placeholder-val="{{ false }}">
+          <div style="position: absolute; left: 0; top: {{poolY}}px; width: 842px; height: {{poolH}}px; display: flex; flex-direction: column; gap: 8px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 280ms both">
+            <div style="display: flex; justify-content: space-between"><span class="lab" style="color: #E6E9FF">Game pool</span><span class="lab num">{{poolSummary}}</span></div>
+            <div class="scroll" style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 4px; padding-right: 6px">
+              <sc-for list="{{pool}}" as="p" hint-placeholder-count="6">
+                <div class="sls" style="display: flex; align-items: center; gap: 14px; flex: none; height: 46px; padding: 0 14px; background: #0B0F29; opacity: {{p.alpha}}">
+                  <img src="{{p.icon}}" alt="" style="width: 30px; height: 30px; object-fit: contain">
+                  <span style="flex: 1; font-size: 17px">{{p.name}}</span>
+                  <span class="lab" style="color: {{p.detailColor}}">{{p.detail}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="position: absolute; left: 0; top: 690px; width: 842px; height: 1px; background: #222645"></div>
+        <div style="position: absolute; left: 0; top: 708px; width: 842px; height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 20px">
+          <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0">
+            <span style="font-size: 17px; line-height: 1.35; color: {{statusColor}}">{{status}}</span>
+            <div style="display: flex; gap: 8px">
+              <sc-for list="{{chips}}" as="c" hint-placeholder-count="3"><span class="sls lab" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; background: #0B0F29; color: #E6E9FF; font-size: 12px">{{c}}</span></sc-for>
+            </div>
+          </div>
+          <sc-if value="{{canStart}}" hint-placeholder-val="{{ true }}">
+            <button class="btn big" type="button" onClick="{{start}}" style="--bc: #80EAFF; --bf: linear-gradient(90deg, #00D4FF, #80EAFF); --bt: #00010A">
+              <span style="position: relative; overflow: hidden; padding: 18px 44px; font-size: 18px">Start game<span aria-hidden="true" style="position: absolute; top: 0; left: -80px; width: 70px; height: 100%; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)); animation: csSweep 2.8s ease-in-out infinite"></span></span>
+            </button>
+          </sc-if>
+          <sc-if value="{{blocked}}" hint-placeholder-val="{{ false }}"><button class="btn big" type="button" disabled="disabled" style="--bc: #5C5F70; --bf: #0B0F29; --bt: #5C5F70"><span style="padding: 18px 44px; font-size: 18px">Start game</span></button></sc-if>
+          <sc-if value="{{waiting}}" hint-placeholder-val="{{ false }}"><button class="btn big" type="button" disabled="disabled" style="--bc: #5C5F70; --bf: #0B0F29; --bt: #5C5F70"><span style="padding: 18px 44px; font-size: 18px"><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5l3.5 3.5 7.5-8.5"></path></svg>Ready</span></button></sc-if>
+        </div>
+      </div>
+    </div>
+  </section>
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 0; right: 0; top: 112px; display: flex; justify-content: center; z-index: 5; animation: csDrop 320ms cubic-bezier(.22,1,.36,1) both"><div class="sl" style="background: #434C89; padding: 1px">
+      <div class="sl" style="background: #00041F; padding: 12px 22px; font-size: 17px">{{toastText}}</div>
+    </div></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 1080}, "start": {"editor": null}}'>
+const DATA = {"games": {"Skim Race": {"name": "Skim Race", "art": "/_blob/33b45ebe5f51c2b0d213c122ea74892a", "desc": "Find the fastest path to the crystal by skimming trails for a speed boost.", "hulls": ["Squirrel"], "minI": 1, "maxI": 4, "seats": 4, "domains": ["JADE", "RUBY", "GOLD"], "objective": "Skim the tracks.", "weekly": {"line": "Finish the race", "intensity": 1, "domain": "JADE", "ends": "6d 3h"}, "icons": {"Squirrel": "/_blob/1e9d1aac634b11e0c3bbe058a246f84e"}, "controls": {"Squirrel": [{"el": "Charge", "petal": "/_blob/146f0db34a0fb1fd240e6ec4b6ee3be3", "label": "Crystal Joust", "pad": ""}, {"el": "Mass", "petal": "/_blob/6cbe6dea086cb1497b611aa43d345e92", "label": "Boost Ring", "pad": "RT"}, {"el": "Space", "petal": "/_blob/d1fa841ca6b542c08c18c935d9a28670", "label": "Steal", "pad": ""}, {"el": "Time", "petal": "/_blob/c39bb9b2681dac53359d12c921a7bfc3", "label": "Skimming", "pad": ""}]}, "previews": {"Squirrel": "/_blob/b9c23a15cc3620c737d974cd5f402158"}}, "Joust": {"name": "Joust", "art": "/_blob/1efac15c724589a0f77c042d666ebb18", "desc": "Joust joust joust", "hulls": ["Squirrel"], "minI": 1, "maxI": 4, "seats": 4, "domains": ["JADE", "RUBY", "GOLD"], "objective": "Overtake rivals to joust them", "weekly": null, "icons": {"Squirrel": "/_blob/1e9d1aac634b11e0c3bbe058a246f84e"}, "controls": {"Squirrel": [{"el": "Charge", "petal": "/_blob/146f0db34a0fb1fd240e6ec4b6ee3be3", "label": "Crystal Joust", "pad": ""}, {"el": "Mass", "petal": "/_blob/6cbe6dea086cb1497b611aa43d345e92", "label": "Boost Ring", "pad": "RT"}, {"el": "Space", "petal": "/_blob/d1fa841ca6b542c08c18c935d9a28670", "label": "Steal", "pad": ""}, {"el": "Time", "petal": "/_blob/c39bb9b2681dac53359d12c921a7bfc3", "label": "Skimming", "pad": ""}]}, "previews": {"Squirrel": "/_blob/b9c23a15cc3620c737d974cd5f402158"}}, "Broadside": {"name": "Broadside", "art": "/_blob/9bca09500e4563cafe045aea5f28e293", "desc": "Fight with what you brought.", "hulls": ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Sparrow", "Scarab"], "minI": 1, "maxI": 4, "seats": 6, "domains": ["JADE", "RUBY", "GOLD"], "objective": "Fight with what you brought", "weekly": null, "icons": {"Manta": "/_blob/8c982fb3b1311931aa946a7f5337d47b", "Dolphin": "/_blob/0fa7978ec882f85c851f541bb20b17bc", "Rhino": "/_blob/1ce285176825995d5760aa32191fb823", "Urchin": "/_blob/955585ad0ea3df6c91ff0328e8f7609e", "Squirrel": "/_blob/1e9d1aac634b11e0c3bbe058a246f84e", "Sparrow": "/_blob/61381b53669b7110e41be12509cbb817", "Scarab": "/_blob/7398e80012e26922f395bd11fbaa95de"}, "controls": {"Manta": [{"el": "Charge", "petal": "/_blob/146f0db34a0fb1fd240e6ec4b6ee3be3", "label": "Sting", "pad": ""}, {"el": "Mass", "petal": "/_blob/6cbe6dea086cb1497b611aa43d345e92", "label": "Yastri", "pad": "LT"}, {"el": "Space", "petal": "/_blob/d1fa841ca6b542c08c18c935d9a28670", "label": "Kabloom", "pad": ""}, {"el": "Time", "petal": "/_blob/c39bb9b2681dac53359d12c921a7bfc3", "label": "Soar", "pad": ""}], "Dolphin": [{"el": "Charge", "petal": "/_blob/146f0db34a0fb1fd240e6ec4b6ee3be3", "label": "Echo Sight", "pad": "RT"}, {"el": "Mass", "petal": "/_blob/6cbe6dea086cb1497b611aa43d345e92", "label": "Crystal Seeding", "pad": ""}, {"el": "Space", "petal": "/_blob/d1fa841ca6b542c08c18c935d9a28670", "label": "Echo Obliteration", "pad": ""}, {"el": "Time", "petal": "/_blob/c39bb9b2681dac53359d12c921a7bfc3", "label": "Charge Fill Rate", "pad": "LT"}], "Rhino": [{"el": "Charge", "petal": "/_blob/146f0db34a0fb1fd240e6ec4b6ee3be3", "label": "(open design slot)", "pad": ""}, {"el": "Mass", "petal": "/_blob/6cbe6dea086cb1497b611aa43d345e92", "label": "Trail Slabs", "pad": ""}, {"el": "Space", "petal": "/_blob/d1fa841ca6b542c08c18c935d9a28670", "label": "(open design slot)", "pad": ""}, {"el": "Time", "petal": "/_blob/c39bb9b2681dac53359d12c921a7bfc3", "label": "Ramp Spool", "pad": ""}], "Urchin": [{"el": "Charge", "petal": "/_blob/146f0db34a0fb1fd240e6ec4b6ee3be3", "label": "Chain Spikes", "pad": "RT"}, {"el": "Mass", "petal": "/_blob/6cbe6dea086cb1497b611aa43d345e92", "label": "Trail Rider", "pad": ""}, {"el": "Space", "petal": "/_blob/d1fa841ca6b542c08c18c935d9a28670", "label": "Track Projector", "pad": "LT"}, {"el": "Time", "petal": "/_blob/c39bb9b2681dac53359d12c921a7bfc3", "label": "Slip", "pad": "B"}], "Squirrel": [{"el": "Charge", "petal": "/_blob/146f0db34a0fb1fd240e6ec4b6ee3be3", "label": "Crystal Joust", "pad": ""}, {"el": "Mass", "petal": "/_blob/6cbe6dea086cb1497b611aa43d345e92", "label": "Boost Ring", "pad": "RT"}, {"el": "Space", "petal": "/_blob/d1fa841ca6b542c08c18c935d9a28670", "label": "Steal", "pad": ""}, {"el": "Time", "petal": "/_blob/c39bb9b2681dac53359d12c921a7bfc3", "label": "Skimming", "pad": ""}], "Sparrow": [{"el": "Space", "petal": "/_blob/d1fa841ca6b542c08c18c935d9a28670", "label": "Pulsefire Cannons", "pad": "RT"}, {"el": "Time", "petal": "/_blob/c39bb9b2681dac53359d12c921a7bfc3", "label": "Afterburner", "pad": "B"}, {"el": "Mass", "petal": "/_blob/6cbe6dea086cb1497b611aa43d345e92", "label": "Turret Stance", "pad": "A"}, {"el": "Charge", "petal": "/_blob/146f0db34a0fb1fd240e6ec4b6ee3be3", "label": "Skyburst Rockets", "pad": "LT"}], "Scarab": [{"el": "Charge", "petal": "/_blob/146f0db34a0fb1fd240e6ec4b6ee3be3", "label": "Cavitation Blast", "pad": ""}, {"el": "Mass", "petal": "/_blob/6cbe6dea086cb1497b611aa43d345e92", "label": "Switch", "pad": "A"}, {"el": "Space", "petal": "/_blob/d1fa841ca6b542c08c18c935d9a28670", "label": "Ball Forge", "pad": ""}, {"el": "Time", "petal": "/_blob/c39bb9b2681dac53359d12c921a7bfc3", "label": "Throttle", "pad": "RT"}]}, "previews": {"Manta": "/_blob/88502af5e4dca8a74c575a5b8cf2666d", "Dolphin": "/_blob/aacc24c01c767c790116dd1340c00e85", "Rhino": "/_blob/267d6d4d70a40f135866b318cab2e29d", "Urchin": "/_blob/dfe6b23c6651c7d26beefeb12bff12f0", "Squirrel": "/_blob/b9c23a15cc3620c737d974cd5f402158", "Sparrow": "/_blob/cd8fa4dc480b7782c61dd7ddecf0e3fd"}}, "Maelstrom": {"name": "Maelstrom", "art": "/_blob/e5ff645affc0bc6995957b95d3a8c0c7", "desc": "A multi-game gauntlet - compete across a lineup of games for the crown.", "hulls": [], "minI": 1, "maxI": 4, "seats": 4, "domains": ["JADE", "RUBY", "GOLD"], "objective": "", "weekly": null, "pool": [{"tier": 1, "name": "Skim Race", "hull": "Squirrel", "icon": "/_blob/1e9d1aac634b11e0c3bbe058a246f84e"}, {"tier": 1, "name": "Joust", "hull": "Squirrel", "icon": "/_blob/1e9d1aac634b11e0c3bbe058a246f84e"}, {"tier": 1, "name": "Scurry", "hull": "Sparrow", "icon": "/_blob/61381b53669b7110e41be12509cbb817"}, {"tier": 1, "name": "Wildlife Liberation", "hull": "Sparrow", "icon": "/_blob/61381b53669b7110e41be12509cbb817"}, {"tier": 1, "name": "Salvo", "hull": "Sparrow", "icon": "/_blob/61381b53669b7110e41be12509cbb817"}, {"tier": 1, "name": "Switchback", "hull": "Dolphin", "icon": "/_blob/0fa7978ec882f85c851f541bb20b17bc"}, {"tier": 2, "name": "Rampage", "hull": "Dolphin", "icon": "/_blob/0fa7978ec882f85c851f541bb20b17bc"}, {"tier": 2, "name": "Cleave", "hull": "Rhino", "icon": "/_blob/1ce285176825995d5760aa32191fb823"}, {"tier": 2, "name": "Dog Fight", "hull": "Sparrow", "icon": "/_blob/61381b53669b7110e41be12509cbb817"}, {"tier": 2, "name": "Headlong", "hull": "Rhino", "icon": "/_blob/1ce285176825995d5760aa32191fb823"}, {"tier": 3, "name": "Scarab Scramble", "hull": "Scarab", "icon": "/_blob/7398e80012e26922f395bd11fbaa95de"}, {"tier": 3, "name": "Breakwater", "hull": "Sparrow", "icon": "/_blob/61381b53669b7110e41be12509cbb817"}, {"tier": 3, "name": "Hijack", "hull": "Urchin", "icon": "/_blob/955585ad0ea3df6c91ff0328e8f7609e"}, {"tier": 4, "name": "The Bends", "hull": "Dolphin", "icon": "/_blob/0fa7978ec882f85c851f541bb20b17bc"}, {"tier": 4, "name": "Skein", "hull": "Urchin", "icon": "/_blob/955585ad0ea3df6c91ff0328e8f7609e"}, {"tier": 4, "name": "Tollway", "hull": "Scarab", "icon": "/_blob/7398e80012e26922f395bd11fbaa95de"}], "format": [["First to", "6 points"], ["Games", "up to 7"], ["Points by place", "2 / 1 / 0"], ["Seats", "4"]], "previews": {}}}, "domains": {"JADE": {"main": "#00D4FF", "light": "#80EAFF", "dark": "#004D81", "tint": "#000D2B", "tintSel": "#00254B"}, "RUBY": {"main": "#A600FF", "light": "#D280FF", "dark": "#530080", "tint": "#0A042B", "tintSel": "#25024B"}, "GOLD": {"main": "#FFAE00", "light": "#FFD780", "dark": "#805700", "tint": "#0F0E1B", "tintSel": "#3A2911"}}, "av": ["/_blob/860a8243b9a9a2911fdcfbe053e14241", "/_blob/d7aa7de2d1a05b56f5211883f7e5f297", "/_blob/1cae1b61986f843f4fe7e2e25a30ef13", "/_blob/6ee84524bd6daeaa9e67ab3f6c657cc2", "/_blob/f0ce5926c4d430eff7e7eb4e4abc0620", "/_blob/b4b6f9f2a337cb3a010e12edc1fc0760"]};
+const HULL_DESC = {"Sparrow": "The classic arcade flyer. Use your Pulsefire Cannons and Skyburst Rockets to destroy enemy blocks, flora, fauna, structures, everything...", "Manta": "Soar at high speed through open spaces to create the biggest blocks in the Hypersea, or skim your opponents trail to steal theirs.", "Serpent": "Navigate with just one thumb and place seeds that will steal ALL local blocks into a wall that can be sheilded. Use walls to disrupt enemy volume and navigation.", "Rhino": "Smash things with your face to gain boost and volume. Hunt down other players to stop them from making volume. Watch out for collateral damage.", "Squirrel": "Get in your flow and stay there. Hard decisions are for other classes. You're here to bounce around and ride your speed tubes, leaving a wake of creation and destruction.", "Dolphin": "Thread the narrowest needles at the highest speeds to build max charge, then drift sideways into a crystal to release one of the biggest blasts in the Hypersea.", "Urchin": "Don't mess with me or I will shoot. I will shoot anyway, but don't mess with me.", "Butterfly": "Slow, wide and quiet. The Butterfly paints broad surfaces through the hypersea while everyone else is fighting ' and folds space when it wants to be somewhere else.", "Thresher": "A small, nimble hull towing a heavy wrecking ball on a chain. Turn hard and snap back and the ball whips round; wind the chain out and let it reel in, and it cracks red-hot through everything. Plant it and swing round it to sling yourself off.", "Scarab": "Roll a ball you made yourself. Analog throttle and drift, a side-bump juke, and crystal-funded switch rings - the Rocket League vessel, tuned for Astro League.", "Stoat": "Never flies straight for long. The Stoat throws a wormhole pair across itself - attractor on one side, repulsor on the other - and goes where the pull throws it."};
+const DEFAULT = {
+  game: 'Skim Race', variant: 'arcade', role: 'host', weekly: false, spent: false,
+  intensity: 2, unlocked: 2, domain: 'JADE', fav: false,
+  seats: [ { d: 'JADE', kind: 'you', av: 0, name: 'Gradies' }, { d: 'RUBY', kind: 'pilot', av: 1, name: 'NovaKite' } ],
+  ready: false, focus: false, sel: null, claimed: null, taken: {}, count: 0, toast: ''
+};
+const GOAL = { 3: 'Play Intensity 2 to unlock', 4: 'Play Intensity 3 to unlock' };
+const LIGHT = '#E6E9FF', DIM = '#434C89', MUTED = '#747BAD', W = 842, AX = 170, AW = 672, EASE = 'cubic-bezier(.33,1,.68,1)';
+const SPARK_X = 'linear-gradient(90deg, rgba(128, 234, 255, 0), #FFFFFF, rgba(128, 234, 255, 0))';
+const SPARK_Y = 'linear-gradient(180deg, rgba(128, 234, 255, 0), #FFFFFF, rgba(128, 234, 255, 0))';
+const AI_NAMES = ['Wingman', 'Escort', 'Drone', 'Sentry'];
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const s = Object.assign({}, DEFAULT, props.start || {});
+    this.state = Object.assign({}, s, { toast: s.toast || '', plus: false });
+    this.timer = null; this.tick = null;
+  }
+  componentWillUnmount() { if (this.timer) clearTimeout(this.timer); if (this.tick) clearInterval(this.tick); }
+  say(text) {
+    if (this.timer) clearTimeout(this.timer);
+    this.setState({ toast: text });
+    this.timer = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+  setFocus(on) {
+    if (this.tick) { clearInterval(this.tick); this.tick = null; }
+    if (on) this.tick = setInterval(() => {
+      this.setState({ count: this.state.count + 1, plus: true });
+      setTimeout(() => this.setState({ plus: false }), 700);
+    }, 1800);
+    this.setState({ focus: on });
+  }
+  renderVals() {
+    const st = this.state, g = DATA.games[st.game], dom = DATA.domains;
+    const mael = st.variant === 'maelstrom', arena = st.variant === 'arena', guest = st.role === 'guest';
+    const wk = st.weekly && g.weekly;
+    const local = dom[st.domain];
+    const lines = [], tiles = [], gutter = [], seatsOut = [];
+    let order = 0;
+    const delay = () => 120 + Math.min(order++, 8) * 40;
+    // A hairline. The live route is a 2 px emphasis stroke that draws in, then carries a travelling spark.
+    const line = (x, y, w, h, on, d) => {
+      const vert = h > w;
+      lines.push({ x, y, w: on && !vert ? w : w, h: on && vert ? h : h, c: on ? LIGHT : DIM,
+        origin: vert ? 'top' : 'left', anim: (vert ? 'csGrowY' : 'csGrowX') + ' 200ms ' + EASE + ' ' + d + 'ms both',
+        spark: on, sx: vert ? '0' : '-48px', sy: vert ? '-36px' : '0', sw: vert ? '100%' : '48px', sh: vert ? '36px' : '100%',
+        sbg: vert ? SPARK_Y : SPARK_X, sanim: (vert ? 'csSparkY' : 'csSparkX') + ' 1.8s linear ' + (d + 400) + 'ms infinite' });
+    };
+    const connect = (p, kids, selIdx, d) => {
+      if (!p || !kids.length) return;
+      const pb = p.y + p.h, kt = kids[0].y, mid = Math.round(pb + (kt - pb) / 2);
+      const pcx = p.x + Math.round(p.w / 2);
+      const cx = kids.map((k) => k.x + Math.round(k.w / 2));
+      const lo = Math.min(pcx, cx[0]), hi = Math.max(pcx, cx[cx.length - 1]);
+      line(lo, mid, hi - lo + 1, 1, false, d);
+      kids.forEach((k, i) => { if (i !== selIdx) line(cx[i], mid, 1, kt - mid, false, d + 60); });
+      line(pcx - (1), pb, 2, mid - pb, true, d);
+      if (selIdx >= 0) {
+        const a = Math.min(pcx, cx[selIdx]), b = Math.max(pcx, cx[selIdx]);
+        line(a, mid - 1, b - a + 2, 2, true, d + 80);
+        line(cx[selIdx] - 1, mid, 2, kt - mid, true, d + 160);
+      }
+    };
+    let y = 0, parent = null, step = 1;
+    // -- 01 vessel
+    let hero = null;
+    if (!mael) {
+      const hulls = g.hulls, n = hulls.length;
+      const s = arena ? Math.min(104, Math.floor((AW - (n - 1) * 12) / n)) : 150;
+      const sel = arena ? (st.claimed || st.sel) : hulls[0];
+      const row = hulls.map((h, i) => {
+        const taken = arena && st.taken[h] !== undefined && st.claimed !== h;
+        const on = h === sel;
+        const t = { x: AX + i * (s + 12), y, w: s, h: s, isVessel: true, isIntensity: false, isDomain: false,
+          art: (!arena && g.previews[h]) || g.icons[h], artS: arena ? '62%' : '92%', float: on ? 'csFloat 3.2s ease-in-out infinite' : 'none',
+          caption: h, aria: h, alpha: taken ? 0.35 : 1,
+          border: on ? LIGHT : '#222645', bw: on ? '2px' : '1px', fill: on ? '#222645' : '#00041F',
+          capColor: on ? LIGHT : MUTED, cursor: arena && !st.claimed && !taken ? 'pointer' : 'default',
+          locked: false, taken, takenBy: taken ? DATA.av[st.taken[h]] : '', claimed: arena && st.claimed === h, delay: delay(),
+          pick: () => {
+            if (!arena || st.claimed) return;
+            if (taken) { this.say(h + ' is flown by another pilot.'); return; }
+            this.setState({ sel: h });
+          } };
+        tiles.push(t); return t;
+      });
+      gutter.push({ y, step: '0' + step++, label: 'Vessel', delay: 120,
+                    value: arena ? (st.claimed || sel || 'Pick a hull') : hulls[0],
+                    valueColor: arena && st.claimed ? '#99FF80' : LIGHT,
+                    hint: arena ? (st.claimed ? 'Claimed - yours for this match.' : 'Every pilot flies a different hull.') : 'Set by the card.',
+                    claim: arena && !st.claimed && !!st.sel });
+      if (!arena) hero = { x: AX + s + 28, w: W - (AX + s + 28), name: hulls[0], desc: HULL_DESC[hulls[0]] || '' };
+      parent = sel ? row[Math.max(0, hulls.indexOf(sel))] : null;
+      y += Math.max(s, 150) + 48;
+    }
+    // -- 02 intensity
+    const iSel = wk ? g.weekly.intensity : st.intensity;
+    const iRow = [1, 2, 3, 4].map((n, i) => {
+      const inRange = n >= g.minI && n <= g.maxI;
+      const pinned = wk && n === g.weekly.intensity;
+      const locked = !wk && inRange && n > st.unlocked;
+      const live = wk ? pinned : (inRange && !guest);
+      const on = n === iSel;
+      const d = delay();
+      const t = { x: AX + i * 174, y, w: 150, h: 150, isVessel: false, isIntensity: true, isDomain: false,
+        bars: [1, 2, 3, 4].map((b) => ({ h: 14 + b * 6, c: b <= n ? (on ? LIGHT : (live || locked ? MUTED : '#5C5F70')) : (on ? '#00041F' : '#222645'), d: d + 120 + b * 40 })),
+        unlockedTile: !locked,
+        caption: String(n), sub: locked ? 'Locked' : (on ? 'Selected' : 'Intensity'), goal: GOAL[n] || '', numColor: on ? LIGHT : (live || locked ? MUTED : '#5C5F70'),
+        aria: 'Intensity ' + n + (locked ? ', locked' : ''),
+        alpha: on || live || locked ? 1 : 0.45, border: on ? LIGHT : '#222645', bw: on ? '2px' : '1px',
+        fill: on ? '#222645' : '#00041F', capColor: on ? LIGHT : (live || locked ? MUTED : '#5C5F70'),
+        cursor: (live && !on) || locked ? 'pointer' : 'default', locked, taken: false, claimed: false, delay: d,
+        pick: () => {
+          if (locked) { this.say(GOAL[n] || ('Play Intensity ' + (n - 1) + ' to unlock')); return; }
+          if (!live || on) return;
+          this.setState({ intensity: n });
+        } };
+      tiles.push(t); return t;
+    });
+    connect(parent, iRow, iSel - 1, 200);
+    gutter.push({ y, step: '0' + step++, label: 'Intensity', delay: 160, value: String(iSel), valueColor: LIGHT,
+                  hint: wk ? 'Set by the challenge.' : (guest ? 'The host sets it.' : (st.unlocked < g.maxI ? 'Higher levels unlock as you play.' : 'Every level is open.')),
+                  claim: false });
+    parent = iRow[iSel - 1];
+    y += 150 + 48;
+    // -- 03 pilots: one column per domain, the domain node on top and its seats under it
+    const myDomain = wk ? g.weekly.domain : st.domain;
+    const seats = wk ? [{ d: myDomain, kind: 'you', av: 0, name: 'Gradies' }] : st.seats;
+    const full = seats.length >= g.seats;
+    const dRow = g.domains.map((d, i) => {
+      const on = d === myDomain, live = !wk;
+      const inD = seats.filter((x) => x.d === d);
+      const t = { x: AX + i * 232, y, w: 208, h: 64, isVessel: false, isIntensity: false, isDomain: true,
+        swatch: dom[d].main, caption: d, sub: on ? 'Your domain' : (live ? 'Tap to join' : ''), count: String(inD.length),
+        aria: d + ' domain', alpha: live || on ? 1 : 0.4,
+        border: on ? LIGHT : dom[d].light, bw: on ? '2px' : '1px', fill: on ? dom[d].tintSel : dom[d].tint,
+        capColor: live || on ? dom[d].light : '#5C5F70', cursor: live && !on ? 'pointer' : 'default',
+        locked: false, taken: false, claimed: false, delay: delay(),
+        pick: () => {
+          if (!live || on) return;
+          const next = st.seats.slice();
+          const me = next.findIndex((x) => x.kind === 'you');
+          next[me] = Object.assign({}, next[me], { d });
+          this.setState({ seats: next, domain: d });
+        } };
+      tiles.push(t);
+      inD.forEach((x, k) => {
+        const idx = st.seats.indexOf(x);
+        seatsOut.push({ x: t.x, y: y + 74 + k * 46, filled: true, open: false, src: DATA.av[x.av],
+          ring: x.kind === 'you' ? dom[d].main : (x.kind === 'ai' ? '#434C89' : dom[d].dark),
+          name: x.name || AI_NAMES[k % 4], tag: x.kind === 'you' ? (guest ? 'You' : 'You / host') : (x.kind === 'ai' ? 'AI' : (guest && k === 0 ? 'Host' : 'Pilot')),
+          tagColor: x.kind === 'you' ? LIGHT : MUTED, border: x.kind === 'you' ? dom[d].light : '#222645', fill: '#00041F',
+          removable: x.kind === 'ai' && !guest && !wk, remove: () => this.setState({ seats: st.seats.filter((_, j) => j !== idx) }),
+          delay: delay() });
+      });
+      if (!full && !wk) seatsOut.push({ x: t.x, y: y + 74 + inD.length * 46, filled: false, open: true, canAdd: !guest,
+        add: () => this.setState({ seats: st.seats.concat([{ d, kind: 'ai', av: 2 + (st.seats.length % 4), name: AI_NAMES[st.seats.length % 4] }]) }),
+        border: '#222645', fill: 'rgba(0, 1, 10, 0.6)', delay: delay() });
+      return t;
+    });
+    connect(parent, dRow, g.domains.indexOf(myDomain), 360);
+    const ais = seats.filter((x) => x.kind === 'ai').length;
+    gutter.push({ y, step: '0' + step++, label: 'Pilots', delay: 200, value: seats.length + ' of ' + g.seats, valueColor: LIGHT,
+                  hint: wk ? 'You fly ' + myDomain.charAt(0) + myDomain.slice(1).toLowerCase() + ' for the challenge.' : (guest ? 'Pick your domain.' : 'Pick your domain; fill open seats with AI.'),
+                  claim: false });
+    const pilotsBottom = y + 74 + 3 * 46;
+    // -- footer
+    const unclaimed = arena && !st.claimed;
+    const reason = st.spent ? 'Played today - come back tomorrow.' : (unclaimed ? 'Claim a hull to start.' : '');
+    const status = st.ready ? 'Waiting for others...' : (reason || (wk ? 'Weekly challenge - ends in ' + g.weekly.ends : 'Ready to launch'));
+    const chips = [(mael ? 'Maelstrom' : (arena ? (st.claimed || st.sel || 'No hull') : g.hulls[0])), 'Intensity ' + iSel, seats.length + (seats.length === 1 ? ' pilot' : ' pilots') + (ais ? ' - ' + ais + ' AI' : '')];
+    const pool = mael ? g.pool.map((p) => {
+      const inPool = p.tier <= iSel;
+      return { name: p.name, icon: p.icon, alpha: inPool ? 1 : 0.4,
+               detail: inPool ? 'Tier ' + p.tier + '  -  ' + p.hull : 'Intensity ' + p.tier, detailColor: inPool ? MUTED : '#5C5F70' };
+    }) : [];
+    const ctrls = arena ? (st.claimed || st.sel ? g.controls[st.claimed || st.sel] : []) : (mael ? [] : g.controls[g.hulls[0]]);
+    const focusable = !mael && !wk;
+    return {
+      eyebrow: mael ? 'Arcade - Maelstrom' : (arena ? 'Arena' : (wk ? 'Weekly challenge' : 'Arcade')), title: g.name,
+      fav: st.fav, notFav: !st.fav, starColor: st.fav ? '#00D4FF' : MUTED,
+      star: () => this.setState({ fav: !st.fav }),
+      showBoard: !!wk, openBoard: () => this.say('Opens the weekly leaderboard.'),
+      art: g.art, previewAria: focusable ? 'Fly the preview' : 'Preview',
+      togglePreview: () => { if (focusable) this.setFocus(!st.focus); },
+      previewBorder: st.focus ? '#99FF80' : '#222645', previewPad: st.focus ? '2px' : '1px', previewCursor: focusable ? 'pointer' : 'default',
+      previewHint: mael ? 'Clip' : (wk ? 'Preview' : (st.focus ? 'Flying - Start or Esc to release' : 'Tap to fly')),
+      hintColor: st.focus ? '#99FF80' : LIGHT, hintAnim: focusable && !st.focus ? 'csBlink 2.4s ease-in-out infinite' : 'none',
+      previewTag: mael ? '' : (arena ? (st.claimed || st.sel || '') : g.hulls[0]),
+      plusShown: st.plus, localMain: local.main, localLight: local.light,
+      hasObjective: !mael, objective: wk ? g.weekly.line : g.objective, objectiveLabel: wk ? 'Weekly objective' : 'Objective',
+      objIconColor: wk ? '#FFAE00' : LIGHT, hasCounter: !wk, count: String(st.count),
+      lowerTop: mael ? 722 : 806, lowerH: mael ? 318 : 234, desc: g.desc,
+      sideTitle: mael ? 'Format' : 'Controls', sideTag: mael ? '' : (arena ? (st.claimed || st.sel || '') : g.hulls[0]),
+      controls: (ctrls || []).map((r, i) => ({ el: r.el, petal: r.petal, label: r.label, pad: r.pad, hasPad: !!r.pad, delay: 200 + i * 40,
+                                               color: /open design slot/.test(r.label) ? '#5C5F70' : LIGHT })),
+      format: mael ? g.format.map((f) => ({ k: f[0], v: f[1] })) : [],
+      noControls: arena && !(st.claimed || st.sel),
+      lines, tiles, gutter, seats: seatsOut,
+      hasHero: !!hero, heroX: hero ? hero.x : 0, heroW: hero ? hero.w : 0, heroName: hero ? hero.name : '', heroDesc: hero ? hero.desc : '',
+      claim: () => this.setState({ claimed: st.sel }),
+      hasPool: mael, poolY: pilotsBottom + 10, poolH: 676 - pilotsBottom - 10, pool,
+      poolSummary: pool.filter((p) => p.alpha === 1).length + ' of ' + pool.length + ' games',
+      status, statusColor: st.ready ? MUTED : (reason ? '#FFAE00' : LIGHT), chips,
+      canStart: !st.ready && !reason, blocked: !st.ready && !!reason, waiting: st.ready,
+      start: () => this.setState({ ready: true }),
+      toast: !!st.toast, toastText: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

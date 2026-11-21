@@ -1,0 +1,23 @@
+# Installed by .github/workflows/ios-testflight.yml (app-icon alpha flattening), in the same job
+# that later holds the signing key. Pinned by version AND hash, so a changed or substituted
+# package fails the install instead of running. Hashes: every macOS wheel of Pillow 13.0.0
+# from https://pypi.org/pypi/Pillow/13.0.0/json. To upgrade, regenerate the whole list.
+Pillow==13.0.0 \
+    --hash=sha256:04a63720f79e22fd54d897c233a68314c50ca0603360f54ce2bd5db8f0f43782 \
+    --hash=sha256:1c774b9c0ba0d0b356f71530677b39028878a2cae5a93e0a13779cfd17120f88 \
+    --hash=sha256:20722cd5375533ad754053363a80b8fb30c79d37930a6f7228030e237ce3bd5d \
+    --hash=sha256:21c32061a5512dc13f87cc7303e120e4d77c2f70df89a35af0e3ce246e5ac57f \
+    --hash=sha256:37290fbef0c73e2d51d594eb78fded7dc7170d1c3ad0a890269e6fd8c8c4e061 \
+    --hash=sha256:405be6058e206a86fedce2f715ecc2343f94072d7925251632dffa2c05f70dca \
+    --hash=sha256:49c12af515073e9bf511e4ef736743bf70d531a643668722279314b937742ba4 \
+    --hash=sha256:67871a13cf47275201553b536c025da777f997fa562a19eb798af4ad4b97c18f \
+    --hash=sha256:67c8d44ad89fa7eb88de5d6ef6199b1e03dd24974f85a67639fc8badb801fe79 \
+    --hash=sha256:6f38f3f885a09cafc93fd667b1173a92f379e43785d635e7983c893f0da319fb \
+    --hash=sha256:7b999816b5850a35ada08443e6e03945f1f6488144a83afe2d37b240a552aafa \
+    --hash=sha256:7e91e97a929232cdb828889ee6ad0e48d7f40f4ec38818f4e4a8968b2b1af22e \
+    --hash=sha256:8619685cad8efc4c38c66d3b36aad854523297c43d748b3b6f0cc03c90ba3463 \
+    --hash=sha256:b84be41387fc00db28c13c02e30d42b02d8d8f6a4a741a1aee6012ca7f1f6039 \
+    --hash=sha256:d9b0a2bee3f3e03e9f29057aedb807dbf1e1d96ee1b9d0f422d9db6c8583271d \
+    --hash=sha256:ef5fe6b7db3f501c56000ba8fe7c7e1a35ca1d45824fbeb95a67daa85cff4dbe \
+    --hash=sha256:f11a3c1358bb3c68012a7b1f41b223c3db9f7bfde90b481df028cfe1c3363313 \
+    --hash=sha256:fc481f742ccda20e9ed760b8f978dff50f2a4e9bc253ac167fb0a05b0783ef52

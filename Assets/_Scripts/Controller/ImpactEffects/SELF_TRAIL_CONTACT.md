@@ -28,7 +28,7 @@ The consequences were gameplay, not cosmetics:
   `VesselChangeBoostByPrismEffectSO` each keep only `retainedFraction` (0.5) of the meter, so a
   self-ram cost **half the banked skim energy and half the charged boost** — plus
   `VesselDamagePrismEffect` shredding the pilot's own mass and an impact SFX to sell it.
-The **Rhino** is deliberately NOT in that list. `RhinoSkimmerDamagePrismEffect` carries no domain,
+The **Rhino** is deliberately NOT in that list. `SwordfishSkimmerDamagePrismEffect` carries no domain,
 owner or age guard either, so the grace does technically apply to its sword — but the Rhino cannot
 come about onto the ribbon it just laid inside a one-second window, so the gate never fires for it
 in practice. This matters because cutting your own trail to bank sword energy is a **signed-off
@@ -55,7 +55,7 @@ per-vessel and per-moment, so the gate is:
 
 `ownerID` (not `PlayerName`) because it records **who laid it** and a steal does not reassign it —
 a prism taken off an opponent was never yours to be making, so it stays interactable.
-`IsEnvironmentOwned` mass (flora, fauna, cell structure, the HexRace track) is never anyone's own
+`IsEnvironmentOwned` mass (flora, fauna, cell structure, the SkimRace track) is never anyone's own
 trail and is excluded outright.
 
 ## 3. Where it is enforced

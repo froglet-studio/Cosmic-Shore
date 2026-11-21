@@ -1,9 +1,12 @@
 using System.Collections;
+using System.Collections.Generic;
 using CosmicShore.Data;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 namespace CosmicShore.UI
 {
     public class SparrowHUDController : VesselHUDController
@@ -14,10 +17,14 @@ namespace CosmicShore.UI
         [Header("Executors")]
         [SerializeField] private FireGunActionExecutor fireGunExecutor;
 
-        [Tooltip("Drives the boost ability icon's charge ring: the Sparrow's boost is indefinite, so " +
-                 "the icon shows whether the once-per-press strafing roll is still available instead " +
-                 "of a heat/boost gauge.")]
-        [SerializeField] private BarrelRollController barrelRollController;
+        // The palette, for the Time card's hull part (the pilot's domain colour). Injected rather
+        // than serialized so the slot reads the same ColorSet the rest of the HUD does; vessels DO
+        // get GameObjectInjector.InjectRecursive at spawn (the Dolphin's HUD controller is the pattern).
+        [Inject] GameDataSO _gameData;
+
+        [Tooltip("The guns' heat/accuracy state. Drives the guns (Space) card's heat gauge, " +
+                 "its phase-transition marks and the spray's live cone. Resolved off the vessel if left empty.")]
+        [SerializeField] private GunSprayAccuracy gunSprayAccuracy;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventBool stationaryModeChanged;
@@ -25,6 +32,12 @@ namespace CosmicShore.UI
 
         Coroutine _initialAmmoRoutine;
         IVesselStatus _vesselStatus;
+
+        bool _pollGunHeat;
+        bool _pollAfterburner;
+        GunSpreadProfile _paintedProfile;
+        float _paintedFullSpread = -1f;
+        readonly List<float> _phaseJoins = new();
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -57,13 +70,14 @@ namespace CosmicShore.UI
             if (onInputEventBlocked)
                 onInputEventBlocked.OnRaised += HandleInputEventBlocked;
 
-            if (barrelRollController)
-            {
-                barrelRollController.OnRollChargeChanged += HandleRollChargeChanged;
-                view.SetRollCharge(barrelRollController.IsRollArmed
-                    ? RollChargeState.Armed
-                    : RollChargeState.Lapsed);
-            }
+            // The Time card's hull part: polled per frame (PushAfterburner) - the boost flag is
+            // written on the status by the boost action, and the domain can change mid-match.
+            _pollAfterburner = true;
+            PushAfterburner();
+
+            if (!gunSprayAccuracy && _vesselStatus is Component vesselComponent)
+                gunSprayAccuracy = vesselComponent.GetComponentInChildren<GunSprayAccuracy>(true);
+            _pollGunHeat = gunSprayAccuracy;
 
             if (fireGunExecutor == null) return;
             fireGunExecutor.OnAmmoChanged += HandleAmmoChanged;
@@ -85,8 +99,10 @@ namespace CosmicShore.UI
 
         void Unsubscribe()
         {
-            if (barrelRollController)
-                barrelRollController.OnRollChargeChanged -= HandleRollChargeChanged;
+            _pollGunHeat = false;
+            _pollAfterburner = false;
+            _paintedProfile = null;
+            _paintedFullSpread = -1f;
 
             if (stationaryModeChanged)
                 stationaryModeChanged.OnRaised -= HandleStationaryModeChanged;
@@ -98,10 +114,52 @@ namespace CosmicShore.UI
                 fireGunExecutor.OnAmmoChanged -= HandleAmmoChanged;
         }
 
+        /// <summary>
+        /// Heat is continuous (it integrates every frame while firing and while cooling) and has
+        /// no event, so it is POLLED - one float compare per frame on the local pilot's HUD only.
+        /// The phase marks are re-laid only when the profile the heat is measured against changes.
+        /// </summary>
+        void Update()
+        {
+            if (_pollAfterburner) PushAfterburner();
+            if (!_pollGunHeat || !view || !gunSprayAccuracy) return;
+
+            var profile = gunSprayAccuracy.Profile;
+            float full = profile?.SecondsToFullSpread ?? 0f;
+            if (profile != _paintedProfile || !Mathf.Approximately(full, _paintedFullSpread))
+            {
+                _paintedProfile = profile;
+                _paintedFullSpread = full;
+                gunSprayAccuracy.CollectPhaseJoins01(_phaseJoins);
+                view.SetGunHeatPhaseJoins(_phaseJoins);
+            }
+
+            view.SetGunHeat(gunSprayAccuracy.Heat01);
+
+            // The Space card's spray: the REAL half-angle and the profile's three caps (0 for a stage it does
+            // not author); the view maps them onto the card's readable angles.
+            if (profile == null)
+            {
+                view.SetGunSpread(0f, 0f, 0f, 0f);
+                return;
+            }
+            var stages = profile.Stages;
+            view.SetGunSpread(gunSprayAccuracy.HalfAngleDegrees, stages.MaxHalfAngleDegrees,
+                              stages.BlowsOut ? stages.BlowoutMaxHalfAngleDegrees : 0f,
+                              stages.Collapses ? stages.CollapseMaxHalfAngleDegrees : 0f);
+        }
+
         private IEnumerator InitialAmmoPaintRoutine()
         {
             yield return null;
             view?.InitializeMissileIcon();
+
+            // Seed the bay from the LIVE tank, not from a resting value: the pilot may arrive
+            // mid-match (a vessel swap, a replay) with a part-charged bay, and a bay that starts
+            // empty and then jumps on the next destroyed prism reads as a bug.
+            if (fireGunExecutor != null)
+                HandleAmmoChanged(fireGunExecutor.Ammo01);
+
             _initialAmmoRoutine = null;
         }
 
@@ -114,19 +172,62 @@ namespace CosmicShore.UI
         private void HandleStationaryModeChanged(bool isStationary)
         {
             if (!view) return;
-            view.SetWeaponMode(isStationary);
+            view.SetWeaponMode(isStationary);   // the Space card: bullets <-> prism rounds
+            view.SetStance(isStationary);       // the Mass card: the ghost rounds turn solid
         }
 
-        private void HandleRollChargeChanged(RollChargeState state)
+        /// <summary>
+        /// The Time card's hull part: the Sparrow folds while the boost is held (IsBoosting, written
+        /// by the boost action on the status) and wears the pilot's domain colour. The card shows
+        /// nothing else - the boost is indefinite, and the strafing roll's armed state is not worth
+        /// a readout (Garrett 2026-10-26: "its cooldown is so low").
+        /// </summary>
+        void PushAfterburner()
         {
-            if (!view) return;
-            view.SetRollCharge(state);
+            if (!view || _vesselStatus == null) return;
+            var domain = ResolveDomainSignalColor();
+            view.SetAfterburnerHullColor(domain);
+            view.SetStanceColors(domain, ResolveShieldedColor());
+            view.SetGunSprayColor(domain);
+            view.SetBayColor(domain);
+            view.SetBoosting(_vesselStatus.IsBoosting);
         }
 
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _vesselStatus == null) return Color.white;
+            return colorSet.GetDomainSignalColor(_vesselStatus.Domain);
+        }
+
+        // The domain's SHIELDED colour for the Mass card's level-5 rounds; alpha 0 until the palette
+        // resolves (the view keeps the domain colour), never a plausible stand-in (Docs/PALETTE.md 2.8).
+        Color ResolveShieldedColor()
+        {
+            var theme = _gameData?.ThemeManagerData;
+            if (theme == null || _vesselStatus == null || _vesselStatus.Domain == Domains.Blue) return new Color(0f, 0f, 0f, 0f);
+            return theme.GetShieldedSignalColor(_vesselStatus.Domain);
+        }
+
+        /// <summary>
+        /// One ammo change, two readouts on the Charge card's bay: how many rockets it HOLDS (solid),
+        /// and how close the next one is (the rocket after them, filling tail to nose). They are driven from the same
+        /// event so they can never disagree, and the charge is asked of the executor rather than
+        /// derived here — the shot's cost is the weapon's business, and re-deriving it in the HUD
+        /// is how a UI number drifts from the one the gun spends.
+        /// </summary>
         private void HandleAmmoChanged(float ammo01)
         {
             if (!view) return;
-            view.SetMissilesFromAmmo01(ammo01);
+
+            // The COST comes from the executor, never from the HUD: the bay counts
+            // rockets, and a count re-derived here would drift from the number the gun spends
+            // the moment the weapon's price changes (it just did - a base rocket is half what
+            // it was, so the bay holds four).
+            view.SetMissilesFromAmmo01(ammo01, fireGunExecutor != null ? fireGunExecutor.ShotCost01 : 0f);
+
+            if (fireGunExecutor != null)
+                view.SetMissileCharge(fireGunExecutor.ChargeToNextShot01);
         }
     }
 }

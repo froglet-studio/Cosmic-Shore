@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-21-after-the-boot-s-presence-join-the-ident-9dc7ac",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-21T02:00:11+00:00",
+  "area": "the party layer's boot (HostConnectionService, PresenceLobbyService, PartySessionService, UgsRequestPolicy)",
+  "summary": "After the boot's presence join the identity is republished only when it changed during the join; timing lines and the refused SDK call added to the Party channel",
+  "why": "The join already carries the name and avatar. The extra read and write landed on the party session's create, which UGS refused as rate-limited in 9 of 11 measured boots; 1 of 6 after.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "a7361e0e0"
+}

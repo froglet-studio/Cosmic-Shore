@@ -42,7 +42,7 @@ namespace CosmicShore.Editor
     {
         static readonly string[] SceneFolders = { "Assets/_Scenes", "Assets/FTUE" };
 
-        [MenuItem("FrogletTools/Ecology/Audit Cell-Owned Visuals")]
+        [MenuItem("FrogletTools/Ecology/Audit Cell-Owned Visuals", false, 140)]
         [FrogletTool(FrogletToolCategory.Ecology, Importance = 3,
             Description = "Find scene-placed duplicates of a Cell's membrane/nucleus/cytoplasm, " +
                           "and dead Cell overrides naming retired fields.")]

@@ -22,24 +22,31 @@ namespace CosmicShore.Gameplay
         // THERE IS NO LEVEL. A lifeform is its species and its element, and nothing else — a
         // creature you meet is exactly what its four-variant config says it is, with no hidden
         // per-individual history multiplying its body, its leaves or its heart
-        // (Docs/ECOSYSTEM.md §40, which retires §33). Every value an element needs — including
-        // the size of its heart — is authored ONCE in that element's own tuning block.
+        // (Docs/ECOSYSTEM.md §40, which retires §33). Every value an element needs is authored
+        // ONCE in that element's own tuning block. Its heart is not one of them: every heart is
+        // the one elemental crystal size (ElementalCrystalSetSO.CrystalWorldScale).
 
         /// <summary>The element this lifeform carries (its crystal's element; None if uncrystaled).</summary>
         Element Element { get; }
 
-        /// <summary>
-        /// The WORLD scale this lifeform's heart renders at — authored per element in the
-        /// species' own variant tuning and sized to suit that lifeform's body, so a tadpole's
-        /// heart is a tadpole's heart and a shark's is a shark's (Docs/ECOSYSTEM.md §40.2).
-        /// Read at the one gate every heart passes through (<see cref="Crystal.SetEmbeddedIn"/>).
-        /// A non-positive value means 'no authored size' and falls back to the set's default.
-        /// </summary>
-        float HeartWorldScale { get; }
-
         /// <summary>This lifeform's current travel speed (world units/s). 0 for rooted flora -
         /// which is what makes them trivially joustable (the jouster must be moving faster).</summary>
         float CurrentSpeed { get; }
+
+        /// <summary>
+        /// This lifeform has already died and is playing out its death - it is a corpse, not a
+        /// creature. TRUE from the moment the death is decided, which is well BEFORE the heart
+        /// stops being embedded: a progressive wither re-homes the heart onto the cell while
+        /// deliberately leaving it embedded and uncollectable for the whole animation
+        /// (<see cref="Crystal.DetachHeartToCell"/>, Docs/ECOSYSTEM.md §26). So
+        /// <c>IsEmbedded</c> answers "is this a heart rather than a pickup", NOT "is its owner
+        /// alive", and anything that wants the second question has to ask THIS one.
+        ///
+        /// <para>Both concrete lifeforms already gated on this fact privately -
+        /// <c>LifeForm.Jousted</c> on <c>dying</c>, <c>Fauna.Nourish</c> on
+        /// <c>_diedThisLife</c> - so this only publishes what the contract already assumed.</para>
+        /// </summary>
+        bool IsDying { get; }
 
         /// <summary>
         /// A vessel jousted this lifeform's embedded crystal (its heart) while moving faster than

@@ -1,0 +1,1197 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using CosmicShore.Core;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace CosmicShore.UI
+{
+    /// <summary>
+    /// The Toy Box's <b>second window</b>: one toy, what it does, its variants, and two verbs —
+    /// <b>Navigate</b> (fly to what a toy made) and a <b>commit</b> button captioned by the toy itself
+    /// (SWITCH for a world, SPAWN for a lifeform, START for a run - <see cref="ToyShellOption.CommitVerb"/>).
+    ///
+    /// <para><b>The window IS the toybox.</b> Toys have no world body (2026-11-01): every toy is
+    /// chosen here, and the window calls the toy's OWN <see cref="ToyShellOption.Apply"/>, so
+    /// "change your domain" is literally the toy's own call - one implementation, never a second
+    /// authority. Navigate is lit only for a row with a live place in the world
+    /// (<see cref="ToyShellOption.WorldAnchor"/>: a creature the Spawn Matrix released).</para>
+    ///
+    /// <para><b>A row SELECTS; Switch COMMITS — except where the toy says otherwise.</b> A cell
+    /// swap suctions the world away and grows another behind a veil, so firing one from a stray
+    /// tap in a scroll list is a multi-second thing nobody asked for. A domain change is instant
+    /// and undone by picking another row, and its world form is a flip-set with no commit step
+    /// either. Which of the two an option is, is declared by the toy
+    /// (<see cref="ToyShellOption.AppliesOnSelect"/>) rather than decided per toy here, for the
+    /// reason <see cref="ToyDefinitionSO.Category"/> is declared in code: the cost of applying is
+    /// a property of what the option does. Switch is drawn only for a list that has something for
+    /// it to commit, so the domain changer never shows a button that can never light up.</para>
+    ///
+    /// <para><b>A branch opens in place.</b> The Spawn Matrix is a tree in the world — kingdom,
+    /// then species, then element — so it is a tree here, and the way back out is a synthesized
+    /// row at the top of the list rather than a control somebody has to author. Only the FIRST
+    /// layer is ever rebuilt from the surface: the deeper ones came from an option's
+    /// <c>Expand</c>, which no longer exists once its parent list is rebuilt, and they are trees of
+    /// authored content rather than live state.</para>
+    ///
+    /// <para><b>The picture</b> (<see cref="ToyPreviewCamera"/>) is the selected option's own
+    /// model, or the live thing a press just made.</para>
+    ///
+    /// <para><b>Navigate places the vessel BEFORE the transition, not after it — that ordering is
+    /// the whole of why the arrival reads smoothly.</b> Entering freestyle is a single eased
+    /// camera blend (<see cref="MainMenuCameraController"/>, smootherstep over
+    /// <see cref="MenuCrystalClickHandler.TransitionDuration"/>) whose FAR endpoint is recomputed
+    /// every frame from the vessel's live pose. Teleport first and that one blend simply arrives at
+    /// the target: the player watches the camera fly there. Teleport after
+    /// <c>OnGameStateTransitionEnd</c> — which is what this did at first — and the blend eases all
+    /// the way to wherever the autopilot happened to leave the ship, hands over to the gameplay
+    /// camera, and only THEN does the world jump: a hard cut at the end of a two-second ease, which
+    /// is the most abrupt place a cut can land.</para>
+    ///
+    /// <para><b>The arrival distance carries the COAST, because the ship is already flying.</b>
+    /// <c>TransitionToFreestyle</c> drops the autopilot and holds input paused for the whole blend,
+    /// so the vessel cruises forward at its minimum speed for those seconds, pointed at the target.
+    /// So Navigate stands the vessel off by the intended distance PLUS that coast.</para>
+    /// </summary>
+    public class ToyConfigureModal : ModalWindowManager
+    {
+        [Header("Content")]
+        [SerializeField] TMP_Text titleText;
+        [SerializeField, Tooltip("The toy's own authored description (ToyDefinitionSO.Description).")]
+        TMP_Text descriptionText;
+        [SerializeField, Tooltip("Which fundamental this toy changes - Pilot / World / Creation.")]
+        TMP_Text categoryText;
+
+        [SerializeField, Tooltip("The selected option's model, or what a press just made. Sits where " +
+                 "the arcade card puts its arena preview.")]
+        ToyPreviewCamera preview;
+
+        [Header("Variants")]
+        [SerializeField, Tooltip("The scroll view holding the toy's variants. Hidden for a toy " +
+                 "that offers none, so the window does not draw an empty list.")]
+        GameObject variantsRoot;
+
+        [SerializeField, Tooltip("The scroll view's Content. Cards are pooled and reused here.")]
+        Transform variantContent;
+
+        [SerializeField, Tooltip("One card per variant.")]
+        ToyVariantCard variantCardPrefab;
+
+        [Header("Controls")]
+        [SerializeField, Tooltip("Takes the player to what the selected row made (a released " +
+                 "creature). Disabled while no selected row has a live place in the world.")]
+        Button navigateButton;
+
+        [SerializeField, Tooltip("Commits the SELECTED variant without flying anywhere - the " +
+                 "chosen cell, the chosen Ark. Hidden for a list with nothing to commit (the " +
+                 "domain changer applies on the row itself), disabled until a row is selected.")]
+        Button switchButton;
+
+        [SerializeField, Tooltip("Back. Inside a branch (Fauna > Tadpole) it steps back ONE " +
+                 "layer; on the toy's own top layer it closes the window - the same rule " +
+                 "gamepad B follows, so the two cannot disagree.")]
+        Button backButton;
+
+        [Header("Style-B panel (all optional)")]
+        [SerializeField, Tooltip("The breadcrumb over the variants: 'Spawn Matrix / Fauna / Shark'.")]
+        TMP_Text pathText;
+        [SerializeField, Tooltip("How many variants the layer offers.")]
+        TMP_Text countText;
+        [SerializeField, Tooltip("The panel's own Back, shown inside a branch. Wiring it drops the " +
+                 "'<  Back' row the list otherwise carries.")]
+        Button layerBackButton;
+        [SerializeField, Tooltip("Shows / hides the panel's Back.")]
+        CanvasGroup layerBackGroup;
+        [SerializeField, Tooltip("The footer's status line: 'Mass selected', or 'Pick a variation.'.")]
+        TMP_Text statusText;
+        [SerializeField, Tooltip("The preview's caption: the selected variant's name.")]
+        TMP_Text previewCaption;
+        [SerializeField, Tooltip("The description panel's heading: what it is describing.")]
+        TMP_Text aboutHeading;
+
+        [Header("Words (empty shows nothing)")]
+        [SerializeField, Tooltip("The status line once a variant is picked. {variant} is its name.")]
+        string selectedLine = "{variant} selected";
+        [SerializeField, Tooltip("The status line while the layer offers variants and none is picked.")]
+        string pickLine = "Pick a variation.";
+        [SerializeField, Tooltip("The description heading when nothing picked or opened names it.")]
+        string aboutLine = "About";
+        [SerializeField, Tooltip("The row that steps back out of a branch (when no panel Back is wired).")]
+        string backRowLabel = "<  Back";
+
+        [Header("Freestyle handoff")]
+        [SerializeField, Tooltip("The scene's freestyle toggle. REQUIRED - without it Navigate " +
+                 "can only warn.")]
+        MenuCrystalClickHandler crystalClickHandler;
+
+        [Header("Arrival")]
+        [SerializeField, Min(1f), Tooltip("How far in front of the target the vessel arrives, as a " +
+                 "multiple of the row's WorldAnchorRadius.")]
+        float arrivalDistanceFactor = 7.2f;
+
+        [SerializeField, Min(1f), Tooltip("Seconds to wait for the freestyle transition to " +
+                 "finish before giving up on a variant that only means something in flight.")]
+        float freestyleHandoffTimeout = 8f;
+
+        // The DI-registered shared asset, not a reach into MenuCrystalClickHandler's private
+        // serialized copy - one reader, one registration, per the project's DI pattern.
+        [Inject] GameDataSO gameData;
+
+        // The transition bracket a variant that needs the player flying waits on. Injected rather
+        // than read off the click handler for the same reason.
+        [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
+
+        IToyShellSurface _surface;
+
+        // Captured at bind, and deliberately not re-read from the surface afterwards. A cell swap
+        // fired from this very window destroys the toy, and the definition is the one thing about
+        // it that survives - it is an ASSET. Everything that still needs to name the toy after
+        // that (the back row's accent, finding the toy's replacement) reads this instead.
+        ToyDefinitionSO _boundDefinition;
+
+        readonly List<ToyVariantCard> _variantCards = new();
+
+        // The path into a toy: entry 0 is the toy's own top layer, each later entry a layer an
+        // option expanded into. Held as BUILT lists rather than as the options that produced them,
+        // so going back redraws exactly what was there instead of re-running a surface that has
+        // since moved on.
+        readonly List<Layer> _stack = new();
+
+        // The rows as DRAWN, which is the layer plus the synthesized back row when there is one.
+        // Kept separate from the layer so the back row never has to be excluded from an index.
+        readonly List<ToyShellOption> _rows = new();
+
+        int _selected = -1;
+        CancellationTokenSource _handoffCts;
+
+        readonly struct Layer
+        {
+            public readonly List<ToyShellOption> Options;
+            // The label of the branch row that opened this layer; null on the toy's own top
+            // layer. Read back as the PATH a committed variant is remembered under.
+            public readonly string OpenedBy;
+            // The opening row's own Description, shown while the player is inside this layer (a
+            // species' element row is still "about" that species).
+            public readonly string Description;
+            public Layer(List<ToyShellOption> options, string openedBy = null, string description = null)
+            {
+                Options     = options;
+                OpenedBy    = openedBy;
+                Description = description;
+            }
+        }
+
+        // The synthesized back row of the layer being drawn, so a press on it is never mistaken
+        // for a variant worth remembering (it applies on select like a flip-set row does).
+        ToyShellOption _backRow;
+
+        /// <summary>
+        /// The bound surface, or null once it has gone away.
+        ///
+        /// <para>The plain <c>_surface != null</c> is not enough and the difference is a real trap:
+        /// every surface is a MonoBehaviour but the FIELD is typed as the interface, so the null
+        /// check is a reference comparison and keeps answering true after a cell swap has destroyed
+        /// the toy - at which point reading <c>ShellAvailable</c> throws rather than returning
+        /// false. Unity's own lifetime check has to be done against the MonoBehaviour.</para>
+        /// </summary>
+        IToyShellSurface LiveSurface =>
+            _surface != null && (_surface is not MonoBehaviour mb || mb) ? _surface : null;
+
+        // ── Open / close ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Bind this window to a toy. Called by <see cref="ToyboxModal"/> BEFORE it opens the
+        /// window, so the panel never renders a frame of the previous toy.
+        /// </summary>
+        public void Bind(IToyShellSurface surface)
+        {
+            BindInternal(surface, restoreRemembered: true);
+        }
+
+        /// <summary>
+        /// Bind this window to a toy and open it ON a named option - the labels of the branches to
+        /// walk and the leaf to select, exactly the shape <see cref="ToyPreferenceStore"/> records.
+        /// <paramref name="onApplied"/> is raised if and when the player actually commits THAT
+        /// option, and never for any other row.
+        ///
+        /// <para>It SELECTS and does not apply, for the same reason the remembered variant does:
+        /// nothing changes the world because a window was opened. The Toy Box's daily-activity
+        /// button uses this - the press names the day's activity and arms its commit, and the
+        /// reward is claimed on the commit rather than on the press, because the reward is for
+        /// TRYING the thing.</para>
+        ///
+        /// <para>The callback is deliberately an opaque <see cref="Action"/>: this window knows how
+        /// to apply an option and nothing about rewards, days or claims, so a caller can hang
+        /// anything off the commit without this class learning what it is.</para>
+        /// </summary>
+        public void BindToPath(IToyShellSurface surface, IReadOnlyList<string> path,
+                               Action onApplied = null)
+        {
+            BindInternal(surface, restoreRemembered: false);
+
+            var leaf = DescendPath(path);
+            if (leaf == null)
+            {
+                // The path no longer resolves (a painting renamed, a toy rebuilt by a cell swap).
+                // The window is still open on the right TOY, which is most of what the press
+                // promised, so fall back to the player's own remembered variant rather than
+                // leaving them looking at an arbitrary row.
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[ToyBox] BindToPath could not resolve '{string.Join(" > ", path ?? new List<string>())}' " +
+                    "- opened the toy without a selection.");
+                RestoreRememberedVariant();
+                return;
+            }
+
+            _watchedOption = leaf;
+            _onWatchedApplied = onApplied;
+        }
+
+        /// <summary>
+        /// The bind proper. Opening from the grid RESTORES the variant the player last committed
+        /// (<see cref="RestoreRememberedVariant"/>); the registry's re-bind after a cell swap does
+        /// not - the press that caused the swap has just been applied, and lighting the button on
+        /// it again would ask the player to re-arm what they just did.
+        /// </summary>
+        void BindInternal(IToyShellSurface surface, bool restoreRemembered)
+        {
+            _surface = surface;
+            _boundDefinition = surface?.ShellDefinition;
+
+            // Cleared on EVERY bind, including the registry's re-bind after a cell swap: a watch
+            // left armed would fire a previous card's callback on whatever the player pressed next.
+            _watchedOption = null;
+            _onWatchedApplied = null;
+
+            Redraw();
+            if (restoreRemembered) RestoreRememberedVariant();
+        }
+
+        /// <summary>The key a toy's remembered variant is filed under: its definition ASSET's name.</summary>
+        string RememberKey => _boundDefinition ? _boundDefinition.name : null;
+
+        /// <summary>
+        /// The path of the option the player is about to commit: the labels of every branch
+        /// opened below the top layer, then the option's own.
+        /// </summary>
+        List<string> PathTo(ToyShellOption option)
+        {
+            var path = new List<string>();
+            for (int i = 1; i < _stack.Count; i++)
+                if (!string.IsNullOrEmpty(_stack[i].OpenedBy)) path.Add(_stack[i].OpenedBy);
+            path.Add(option.Label);
+            return path;
+        }
+
+        /// <summary>
+        /// Walk the remembered path back into the toy: expand each branch it names, then SELECT
+        /// the leaf it ends on - select, never apply. A row that applies on select (a domain, a
+        /// cell you are not in) is not re-applied on open; nothing changes the world because a
+        /// window was opened. The walk stops silently at the first label that no longer matches
+        /// - the toy's options moved on, and the window opens where it would have anyway.
+        /// </summary>
+        void RestoreRememberedVariant()
+        {
+            if (!ToyPreferenceStore.TryGetPath(RememberKey, out var path)) return;
+            if (DescendPath(path) != null)
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[ToyBox] Restored '{RememberKey}': {string.Join(" > ", path)}.");
+        }
+
+        /// <summary>
+        /// Walk a path of labels into the toy: expand each branch it names, then SELECT the leaf it
+        /// ends on - select, never apply. Returns the selected leaf, or null when the path did not
+        /// resolve to one.
+        ///
+        /// <para>A row that applies on select (a domain, a cell you are not in) is deliberately NOT
+        /// selected: nothing changes the world because a window was opened. The walk stops silently
+        /// at the first label that no longer matches - the toy's options moved on, and the window
+        /// opens where it would have anyway.</para>
+        /// </summary>
+        ToyShellOption DescendPath(IReadOnlyList<string> path)
+        {
+            if (path is not { Count: > 0 }) return null;
+            if (_stack.Count == 0) return null;
+
+            for (int step = 0; step < path.Count; step++)
+            {
+                string label = path[step];
+                bool last = step == path.Count - 1;
+                int index = IndexOfRow(label);
+                if (index < 0) return null;
+
+                var option = _rows[index];
+                if (!last)
+                {
+                    if (!option.IsBranch) return null;
+                    var next = option.Expand();
+                    if (next is not { Count: > 0 }) return null;
+                    PushLayer(next, option.Label, option.Description);
+                    continue;
+                }
+
+                if (option.IsBranch || option.AppliesOnSelect || option.Apply == null) return null;
+                Select(index);
+                return option;
+            }
+
+            return null;
+        }
+
+        int IndexOfRow(string label)
+        {
+            for (int i = 0; i < _rows.Count; i++)
+                if (!ReferenceEquals(_rows[i], _backRow) && _rows[i].Label == label) return i;
+            return -1;
+        }
+
+        protected override void Start()
+        {
+            base.Start();
+            // Bound HERE as well as in OnEnable, and idempotently. A modal that is already active
+            // at scene load runs its OnEnable before anything has bound it, and this window is
+            // wired by a tool rather than by hand - so "the button did nothing" must not be able to
+            // come down to which of the two ran first.
+            BindControls();
+        }
+
+        void OnEnable()
+        {
+            BindControls();
+
+            // Whatever closes this window - the back button, the Navigate handoff, gamepad B, or
+            // ScreenSwitcher.CloseAllModals before a flight - the preview camera has to stop
+            // rendering. Hooking the modal's OWN close event is one subscription instead of one
+            // rule per caller, and it is the only place that covers the routes this class is not
+            // on. (A modal closes by fading its CanvasGroup and stays ACTIVE, so OnDisable does
+            // not fire on close and cannot be used for this.)
+            OnModalClosed -= HandleSelfClosed;
+            OnModalClosed += HandleSelfClosed;
+
+            // A cell swap tears the toybox down and builds it again, which destroys the very
+            // surface this window is bound to - and it is THIS window that fires the swap now, so
+            // that is the ordinary path rather than an edge case.
+            ToyShellRegistry.OnChanged -= HandleRegistryChanged;
+            ToyShellRegistry.OnChanged += HandleRegistryChanged;
+        }
+
+        void BindControls()
+        {
+            // A bound button that is INACTIVE in the hierarchy can never be pressed, and the
+            // symptom is indistinguishable from "the listener did not fire" - so say so, once.
+            if (navigateButton && !navigateButton.gameObject.activeInHierarchy)
+                CSDebug.LogWarning($"[ToyConfigureModal] navigateButton '{navigateButton.name}' is " +
+                                   "inactive in the hierarchy - the lit button on screen is a " +
+                                   "different object. Re-run FrogletTools > UI > Home Hub Wiring.");
+
+            if (navigateButton)
+            {
+                navigateButton.onClick.RemoveListener(Navigate);
+                navigateButton.onClick.AddListener(Navigate);
+            }
+
+            if (switchButton)
+            {
+                switchButton.onClick.RemoveListener(SwitchToSelected);
+                switchButton.onClick.AddListener(SwitchToSelected);
+            }
+
+            if (backButton)
+            {
+                backButton.onClick.RemoveListener(OnBackPressed);
+                backButton.onClick.AddListener(OnBackPressed);
+            }
+
+            if (layerBackButton)
+            {
+                layerBackButton.onClick.RemoveListener(OnBackPressed);
+                layerBackButton.onClick.AddListener(OnBackPressed);
+            }
+        }
+
+        /// <summary>
+        /// One step back, whatever "back" means where the player is: out of a branch onto its
+        /// parent layer, or off the toy's top layer and back to the grid. The window used to close
+        /// outright from three layers down, so a player who had opened Fauna and then a species
+        /// and wanted the other species was thrown back to the catalogue instead.
+        /// </summary>
+        public void OnBackPressed()
+        {
+            if (_stack.Count > 1)
+            {
+                PlayMenuAudio(MenuAudioCategory.OptionClick);
+                GoBackLayer();
+                return;
+            }
+            OnCloseModal();
+        }
+
+        /// <summary>
+        /// Gamepad B steps back the same way the Back button does. The base closes the window on
+        /// B; here a branch is popped first, so B out of a nested layer lands on the layer above
+        /// it and only the top layer's B closes the window.
+        /// </summary>
+        protected override void Update()
+        {
+            if (_stack.Count > 1 && IsOpen
+                && UnityEngine.InputSystem.Gamepad.current != null
+                && UnityEngine.InputSystem.Gamepad.current.buttonEast.wasPressedThisFrame
+                && (Switcher == null || Switcher.ModalIsActive(ModalType)))
+            {
+                OnBackPressed();
+                return;
+            }
+            base.Update();
+        }
+
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+            if (navigateButton) navigateButton.onClick.RemoveListener(Navigate);
+            if (switchButton) switchButton.onClick.RemoveListener(SwitchToSelected);
+            if (backButton) backButton.onClick.RemoveListener(OnBackPressed);
+            if (layerBackButton) layerBackButton.onClick.RemoveListener(OnBackPressed);
+            OnModalClosed -= HandleSelfClosed;
+            ToyShellRegistry.OnChanged -= HandleRegistryChanged;
+
+            // The freestyle handoff is deliberately NOT cancelled here. A modal normally closes
+            // without being deactivated at all, but SetActive(false) IS a close route in this
+            // project (ModalWindowManager.ModalWindowIn carries an externally-deactivated recovery
+            // path for it) - and a handoff closes this window as its first act, so a cancel here
+            // could kill the deferred variant on exactly that route. It is cancelled on destroy,
+            // and superseded when a second handoff starts.
+        }
+
+        void OnDestroy() => CancelHandoff();
+
+        void HandleSelfClosed()
+        {
+            if (preview) preview.Hide();
+
+            // Come back to the toy's own top layer, so a re-bind never lands the player inside a
+            // branch they left behind three windows ago (the next open from the grid re-descends
+            // only to the variant they last COMMITTED). The rows are REDRAWN rather than just
+            // forgotten: a stack and a drawn list that disagree would leave live, pressable cards
+            // for a layer this window no longer thinks it is on.
+            if (_stack.Count > 1) _stack.RemoveRange(1, _stack.Count - 1);
+            _selected = -1;
+            DrawRows();
+        }
+
+        public void OnCloseModal() => ModalWindowOut();
+
+        // ── Drawing ──────────────────────────────────────────────────────────
+
+        void Redraw()
+        {
+            var surface = LiveSurface;
+            var def = surface?.ShellDefinition;
+            bool ready = surface != null && surface.ShellAvailable;
+
+            if (titleText) titleText.text = def ? def.DisplayName : "";
+            if (categoryText) categoryText.text = def ? ToyPortraitLibrary.Section(def) : "";
+
+            // The codex's authored BODY copy - a paragraph, where the card gets the one-line
+            // tagline - falling back to the toy definition's own line for a toy the codex has not
+            // been scanned for. Never a string table in the UI layer: that would be a second place
+            // to describe a toy, and it would drift from the toy's own assets.
+            UpdateDescription();
+
+            if (preview) preview.Show();
+
+            RebuildFromSurface();
+            UpdateNavigateButton();
+        }
+
+        // ── Variants ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Re-ask the toy for its top layer and draw it from scratch. Called on every bind, and
+        /// whenever the toybox changes underneath the window.
+        /// </summary>
+        void RebuildFromSurface()
+        {
+            _stack.Clear();
+            _selected = -1;
+
+            var surface = LiveSurface;
+            if (surface != null && surface.ShellAvailable)
+            {
+                var options = new List<ToyShellOption>();
+                surface.BuildShellOptions(options);
+                if (options.Count > 0) _stack.Add(new Layer(options));
+            }
+
+            DrawRows();
+        }
+
+        /// <summary>
+        /// Re-ask the toy for the layer the player is looking at, after something they did changed
+        /// what it says ("current", "flying", a painting's progress).
+        ///
+        /// <para>Only the FIRST layer can be refreshed this way. A deeper one came from an option's
+        /// <c>Expand</c>, and that closure belongs to a list this call would replace - so a deeper
+        /// layer is left alone, which is also correct: those are trees of authored content, not
+        /// live state. A rebuild that comes back EMPTY is a toy mid-swap rather than a toy with
+        /// nothing to offer, so the drawn rows stay and the registry's own event redraws them when
+        /// it settles.</para>
+        /// </summary>
+        void RebuildTopLayer()
+        {
+            if (_stack.Count != 1) return;
+
+            var surface = LiveSurface;
+            if (surface == null || !surface.ShellAvailable) { DrawRows(); return; }
+
+            var options = new List<ToyShellOption>();
+            surface.BuildShellOptions(options);
+            if (options.Count == 0) { DrawRows(); return; }
+
+            _stack[0] = new Layer(options);
+            _selected = -1;
+            DrawRows();
+        }
+
+        void PushLayer(List<ToyShellOption> options, string openedBy = null, string description = null)
+        {
+            _stack.Add(new Layer(options, openedBy, description));
+            _selected = -1;
+            if (preview) preview.ClearVariant();
+            DrawRows();
+        }
+
+        void GoBackLayer()
+        {
+            if (_stack.Count <= 1) return;
+            _stack.RemoveAt(_stack.Count - 1);
+            _selected = -1;
+            if (preview) preview.ClearVariant();
+            DrawRows();
+        }
+
+        /// <summary>
+        /// The way out of a branch, as a row rather than as a control somebody has to author. It
+        /// applies on select for the same reason every flip-set row does: going back is the act,
+        /// there is nothing to commit.
+        /// </summary>
+        ToyShellOption MakeBackRow()
+        {
+            return new ToyShellOption
+            {
+                Label = backRowLabel,
+                Accent = _boundDefinition ? _boundDefinition.AccentColor : Color.white,
+                AppliesOnSelect = true,
+                Apply = GoBackLayer,
+            };
+        }
+
+        void DrawRows()
+        {
+            _rows.Clear();
+            // The panel's own Back replaces the row when it is wired (style B); the row stays the
+            // way out of a branch for a window that has none.
+            _backRow = _stack.Count > 1 && !layerBackButton ? MakeBackRow() : null;
+            if (_backRow != null) _rows.Add(_backRow);
+            if (_stack.Count > 0) _rows.AddRange(_stack[^1].Options);
+
+            if (variantsRoot) variantsRoot.SetActive(_rows.Count > 0);
+
+            EnsurePool(_variantCards, variantCardPrefab, variantContent, _rows.Count);
+            var cta = CtaColor;
+            for (int i = 0; i < _variantCards.Count; i++)
+            {
+                var card = _variantCards[i];
+                if (!card) continue;
+                card.SetCtaColor(cta);
+
+                bool used = i < _rows.Count;
+                card.gameObject.SetActive(used);
+                if (!used) continue;
+
+                int index = i;
+                card.Bind(_rows[i], i == _selected);
+                card.Button.onClick.RemoveAllListeners();
+                card.Button.onClick.AddListener(() => ChooseRow(index));
+            }
+
+            AutoSelectLoneRow();
+            UpdateSwitchButton();
+            UpdateDescription();
+            DrawLabels();
+        }
+
+        /// <summary>
+        /// The style-B panel's words: where the player is (the toy, then each row that opened a
+        /// layer), how many variants this layer offers, what is selected, and the panel's Back
+        /// inside a branch. Every field is optional.
+        /// </summary>
+        void DrawLabels()
+        {
+            var def = LiveSurface?.ShellDefinition;
+            if (pathText)
+            {
+                var path = new System.Text.StringBuilder(def ? def.DisplayName : "");
+                foreach (var layer in _stack)
+                    if (!string.IsNullOrEmpty(layer.OpenedBy)) path.Append(" / ").Append(layer.OpenedBy);
+                pathText.text = path.ToString();
+            }
+
+            int offered = _rows.Count - (_backRow != null ? 1 : 0);
+            if (countText) countText.text = offered.ToString();
+
+            bool inBranch = _stack.Count > 1;
+            KitVisibility.SetShown(layerBackGroup, inBranch);
+            // Out of the header row's layout while hidden, so the breadcrumb starts at the edge.
+            if (layerBackGroup && layerBackGroup.TryGetComponent(out LayoutElement backLayout))
+                backLayout.ignoreLayout = !inBranch;
+            if (layerBackButton) layerBackButton.interactable = inBranch;
+
+            bool picked = _selected >= 0 && _selected < _rows.Count;
+            string selectedLabel = picked ? _rows[_selected].Label : "";
+            if (statusText) statusText.text = picked ? TemplateText.Fill(selectedLine, "variant", selectedLabel) : offered > 0 ? pickLine : "";
+            if (previewCaption) previewCaption.text = selectedLabel;
+            if (aboutHeading)
+            {
+                string opened = inBranch ? _stack[^1].OpenedBy : null;
+                aboutHeading.text = picked && !string.IsNullOrEmpty(_rows[_selected].Description) ? selectedLabel
+                    : !string.IsNullOrEmpty(opened) ? opened
+                    : aboutLine;
+            }
+        }
+
+        /// <summary>
+        /// The description panel says what the player is LOOKING AT: the selected row's own
+        /// <see cref="ToyShellOption.Description"/>, else the description of the row that opened
+        /// the layer they are in (a species, while its elements are listed), else the toy's codex
+        /// body. A list of forty creature names is unreadable without it.
+        /// </summary>
+        void UpdateDescription()
+        {
+            if (!descriptionText) return;
+
+            if (_selected >= 0 && _selected < _rows.Count &&
+                !string.IsNullOrEmpty(_rows[_selected].Description))
+            {
+                descriptionText.text = _rows[_selected].Description;
+                return;
+            }
+            for (int i = _stack.Count - 1; i >= 0; i--)
+            {
+                if (string.IsNullOrEmpty(_stack[i].Description)) continue;
+                descriptionText.text = _stack[i].Description;
+                return;
+            }
+            // The codex's authored BODY copy - a paragraph, where the card gets the one-line
+            // tagline - falling back to the toy definition's own line for a toy the codex has not
+            // been scanned for. Never a string table in the UI layer: that would be a second place
+            // to describe a toy, and it would drift from the toy's own assets.
+            descriptionText.text = ToyPortraitLibrary.Body(LiveSurface?.ShellDefinition);
+        }
+
+        /// <summary>
+        /// A layer with exactly ONE row that can be committed - a Wander card while the other one
+        /// is under way, say - is selected on arrival, so the window opens with its Start
+        /// button lit rather than asking the player to pick the only thing there is to pick. A
+        /// layer with two or more leaves stays unselected: the choice is the player's.
+        /// </summary>
+        void AutoSelectLoneRow()
+        {
+            if (_selected >= 0) return;
+            // A press just released something and the picture is on it: the row was deselected
+            // ON PURPOSE (see ApplyOption), and re-selecting the only row would light the button
+            // the player was just asked to re-arm.
+            if (preview && preview.IsWatching) return;
+
+            int lone = -1, committable = 0;
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                var row = _rows[i];
+                if (row is not { AppliesOnSelect: false, Apply: not null }) continue;
+                committable++;
+                lone = i;
+            }
+            if (committable != 1) return;
+
+            _selected = lone;
+            if (preview) preview.ShowVariant(_rows[lone].BuildPreview);
+            if (lone < _variantCards.Count && _variantCards[lone])
+                _variantCards[lone].Bind(_rows[lone], true);
+        }
+
+        /// <summary>
+        /// Switch is drawn only for a list that has something for it to commit, and lit only once
+        /// a row is selected. A list where every row applies on its own press - the domain changer
+        /// - would otherwise carry a button that can never light up, which reads as broken rather
+        /// than as unnecessary.
+        /// </summary>
+        void UpdateSwitchButton()
+        {
+            UpdateNavigateButton();
+            if (!switchButton) return;
+
+            bool anyToCommit = false;
+            for (int i = 0; i < _rows.Count && !anyToCommit; i++)
+            {
+                var row = _rows[i];
+                anyToCommit = row is { AppliesOnSelect: false, Apply: not null };
+            }
+
+            switchButton.gameObject.SetActive(anyToCommit);
+            bool selectedCommits =
+                anyToCommit && _selected >= 0 && _selected < _rows.Count && _rows[_selected].Apply != null;
+            switchButton.interactable = selectedCommits;
+
+            // The button says what the press DOES, in the toy's own word: SWITCH for a world you
+            // move to, SPAWN for a lifeform released into the cell, START for a run that takes you
+            // flying. Read off the selected row, else off the first committable one, so a layer
+            // that has not been picked from yet already names its verb.
+            ToyShellOption verbSource = selectedCommits ? _rows[_selected] : null;
+            for (int i = 0; verbSource == null && i < _rows.Count; i++)
+                if (_rows[i] is { AppliesOnSelect: false, Apply: not null }) verbSource = _rows[i];
+
+            var caption = SwitchCaption;
+            if (caption && verbSource != null)
+            {
+                string want = verbSource.EffectiveCommitVerb.ToUpperInvariant();
+                if (caption.text != want) caption.text = want;
+            }
+        }
+
+        TMP_Text _switchCaption;
+        TMP_Text SwitchCaption =>
+            _switchCaption ? _switchCaption
+                           : _switchCaption = switchButton ? switchButton.GetComponentInChildren<TMP_Text>(true) : null;
+
+        void ChooseRow(int index)
+        {
+            if (index < 0 || index >= _rows.Count) return;
+            var option = _rows[index];
+
+            if (option.IsBranch)
+            {
+                var next = option.Expand();
+                if (next is not { Count: > 0 })
+                {
+                    CSDebug.LogWarning($"[ToyConfigureModal] '{option.Label}' expanded to nothing - " +
+                                       "staying on this layer.");
+                    return;
+                }
+
+                PlayMenuAudio(MenuAudioCategory.OptionClick);
+                PushLayer(next, option.Label, option.Description);
+                return;
+            }
+
+            if (option.AppliesOnSelect)
+            {
+                if (option.Apply == null) return;
+                PlayMenuAudio(MenuAudioCategory.Confirmed);
+                // The picture turns onto where the option LIVES before the act, when it has one.
+                var anchor = option.WorldAnchor?.Invoke();
+                if (anchor && preview) preview.Watch(anchor, option.WorldAnchorRadius);
+                ApplyOption(option);
+                return;
+            }
+
+            // A row with no Apply is there to be READ - the hull you are flying, the domain you
+            // already wear. The card is already non-interactable; this is the belt to that braces.
+            if (option.Apply == null) return;
+
+            PlayMenuAudio(MenuAudioCategory.OptionClick);
+            Select(index);
+        }
+
+        void Select(int index)
+        {
+            _selected = index;
+
+            // The picture answers "what IS that" for a name the player has never seen.
+            if (preview) preview.ShowVariant(_rows[index].BuildPreview);
+
+            for (int i = 0; i < _variantCards.Count && i < _rows.Count; i++)
+                if (_variantCards[i]) _variantCards[i].Bind(_rows[i], i == _selected);
+
+            UpdateSwitchButton();
+            UpdateDescription();
+            DrawLabels();
+        }
+
+        void SwitchToSelected()
+        {
+            if (_selected < 0 || _selected >= _rows.Count) return;
+
+            var option = _rows[_selected];
+            if (option.Apply == null) return;
+
+            PlayMenuAudio(MenuAudioCategory.Confirmed);
+            ApplyOption(option);
+        }
+
+        // The option BindToPath armed, and what to raise when the player commits it. Both are
+        // cleared by every bind (see BindInternal) and by the raise itself, so a callback fires
+        // at most once per bind.
+        ToyShellOption _watchedOption;
+        Action _onWatchedApplied;
+
+        /// <summary>
+        /// Do the thing, then tell whoever armed this option that it happened. The ONE place an
+        /// option's <see cref="ToyShellOption.Apply"/> is called, so the three routes into it (an
+        /// immediate commit, a commit while already flying, a commit after the freestyle handoff)
+        /// cannot disagree about whether the callback ran.
+        /// </summary>
+        void ApplyAndNotify(ToyShellOption option)
+        {
+            option.Apply();
+
+            if (!ReferenceEquals(option, _watchedOption)) return;
+
+            // Disarmed BEFORE the callback: an Action that reopens or re-binds this window would
+            // otherwise re-enter, and a claim must be paid once.
+            var callback = _onWatchedApplied;
+            _watchedOption = null;
+            _onWatchedApplied = null;
+            callback?.Invoke();
+        }
+
+        void ApplyOption(ToyShellOption option)
+        {
+            // Remembered at the press, whichever verb it was (Switch, Spawn, Start, or a row that
+            // applies on select), so the window re-opens on it next time. The back row is a way
+            // out of a layer, not a variant.
+            if (!ReferenceEquals(option, _backRow))
+                ToyPreferenceStore.SavePath(RememberKey, PathTo(option));
+
+            if (option.RequiresFreestyle)
+            {
+                ApplyAfterFreestyle(option);
+                return;
+            }
+
+            ApplyAndNotify(option);
+
+            // The picture turns onto what the press MADE, where it landed: a Spawn shows the
+            // creature blooming into the cell instead of a list that merely says it did. An
+            // option that made nothing (a domain change, a cell swap) answers null and the
+            // picture stays where it was.
+            var made = option.WatchAfterApply?.Invoke();
+            if (made && preview)
+                preview.Watch(made, option.WatchRadius);
+
+            if (made && !option.Repeatable)
+            {
+                // The button is SPENT: the row is deselected, so the verb goes dark until the
+                // player picks a card again - which is also what brings the picture back from what
+                // was made to the preview. A REPEATABLE row (Spawn) stays armed instead: each
+                // press releases more, and the selection is also what Navigate follows to the
+                // thing it made (ResolveDestination).
+                _selected = -1;
+                for (int i = 0; i < _variantCards.Count && i < _rows.Count; i++)
+                    if (_variantCards[i]) _variantCards[i].Bind(_rows[i], false);
+                UpdateSwitchButton();
+            }
+
+            // The press changed live state the rows describe, so the layer is re-asked rather than
+            // left showing what was true before it.
+            RebuildTopLayer();
+            UpdateNavigateButton();
+        }
+
+        /// <summary>
+        /// The call-to-action colour the selected row glows in - the lime the palette reserves for
+        /// "act on me" (<c>Docs/PALETTE.md</c> §2.5), read LIVE off the theme like every other
+        /// palette-tinted UI here. Alpha 0 (no palette, or none authored) lets the card fall back.
+        /// </summary>
+        Color CtaColor
+        {
+            get
+            {
+                var set = gameData && gameData.ThemeManagerData ? gameData.ThemeManagerData.ColorSet : null;
+                return set ? set.GetCtaSignalColor() : new Color(0f, 0f, 0f, 0f);
+            }
+        }
+
+        // ── The freestyle handoff ────────────────────────────────────────────
+
+        /// <summary>
+        /// Close, enter freestyle, then do the thing — for a variant that only means something with
+        /// the player at the stick (a wander, a voyage, a painting).
+        ///
+        /// <para>The wait is on the transition's own END event rather than on
+        /// <see cref="MenuCrystalClickHandler.IsInFreestyle"/>: that flag flips at the START of the
+        /// transition, while the vessel's input is still paused and the camera is still blending,
+        /// and a run begun then would start against a vessel nobody is flying yet.</para>
+        /// </summary>
+        void ApplyAfterFreestyle(ToyShellOption option)
+        {
+            if (!crystalClickHandler)
+            {
+                CSDebug.LogWarning($"[ToyConfigureModal] '{option.Label}' needs the player flying, " +
+                                   "but no MenuCrystalClickHandler is wired - nothing happened. " +
+                                   "Wire the scene's freestyle toggle on this modal.");
+                return;
+            }
+
+            // Already flying (the Toy Box was opened mid-freestyle): nothing to wait for.
+            if (crystalClickHandler.IsInFreestyle)
+            {
+                OnCloseModal();
+                ApplyAndNotify(option);
+                return;
+            }
+
+            CancelHandoff();
+            _handoffCts = CancellationTokenSource.CreateLinkedTokenSource(
+                this.GetCancellationTokenOnDestroy());
+
+            OnCloseModal();
+            crystalClickHandler.ToggleTransition();
+            WaitForFreestyleThenApply(option, _handoffCts.Token).Forget();
+        }
+
+        async UniTaskVoid WaitForFreestyleThenApply(ToyShellOption option, CancellationToken ct)
+        {
+            bool arrived = false;
+            void OnArrived() => arrived = true;
+
+            var channel = freestyleEvents ? freestyleEvents.OnGameStateTransitionEnd : null;
+            if (channel != null) channel.OnRaised += OnArrived;
+
+            try
+            {
+                float deadline = Time.unscaledTime + Mathf.Max(1f, freestyleHandoffTimeout);
+                while (!arrived && Time.unscaledTime < deadline)
+                {
+                    if (!crystalClickHandler) return;
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
+
+                if (!arrived)
+                {
+                    CSDebug.LogWarning($"[ToyConfigureModal] Freestyle did not settle within " +
+                                       $"{freestyleHandoffTimeout:0.#}s - '{option.Label}' was not started.");
+                    return;
+                }
+
+                ApplyAndNotify(option);
+            }
+            finally
+            {
+                if (channel != null) channel.OnRaised -= OnArrived;
+            }
+        }
+
+        void CancelHandoff()
+        {
+            if (_handoffCts == null) return;
+            _handoffCts.Cancel();
+            _handoffCts.Dispose();
+            _handoffCts = null;
+        }
+
+        // ── The toybox moved underneath us ───────────────────────────────────
+
+        /// <summary>
+        /// A toy appeared or went away. Switching cells from this very window is the ordinary way
+        /// that happens now: the swap tears the toybox down and builds it again, so the surface
+        /// this window holds is destroyed and a NEW one speaks for the same toy.
+        ///
+        /// <para>Re-bound by DEFINITION, falling back to display name for the code-built default
+        /// toybox, whose definitions are <c>CreateInstance</c>d per build and so match no earlier
+        /// reference at all. That is the same two-step, for the same reason, that
+        /// <see cref="ToyPortraitLibrary"/> uses to find a toy's codex page.</para>
+        /// </summary>
+        void HandleRegistryChanged()
+        {
+            if (LiveSurface != null) { RebuildTopLayer(); return; }
+
+            var wanted = _boundDefinition;
+            string wantedName = wanted ? wanted.DisplayName : null;
+            if (string.IsNullOrEmpty(wantedName)) return;
+
+            foreach (var candidate in ToyShellRegistry.Surfaces)
+            {
+                var def = candidate?.ShellDefinition;
+                if (!def) continue;
+                if (def != wanted && !string.Equals(def.DisplayName, wantedName,
+                                                    System.StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                BindInternal(candidate, restoreRemembered: false);
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Grow <paramref name="pool"/> to at least <paramref name="needed"/>. Cards are reused and
+        /// hidden, never destroyed - the list is redrawn on every layer change.
+        /// </summary>
+        static void EnsurePool<T>(List<T> pool, T prefab, Transform parent, int needed)
+            where T : MonoBehaviour
+        {
+            if (!prefab || !parent) return;
+            while (pool.Count < needed) pool.Add(Instantiate(prefab, parent));
+        }
+
+        // ── Navigate ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Navigate is lit only while the SELECTED row has a live place in the world - a toy has no
+        /// world body to fly to, so with nothing made there is nowhere to go.
+        /// </summary>
+        void UpdateNavigateButton()
+        {
+            if (!navigateButton) return;
+            var surface = LiveSurface;
+            navigateButton.interactable = surface != null && surface.ShellAvailable
+                                          && ResolveDestination().HasValue;
+        }
+
+        void Navigate()
+        {
+            CSDebug.LogVerbose(CSLogChannel.ToyBox, "[ToyBox] Navigate pressed.");
+
+            // Resolved BEFORE the window closes: closing deselects the row.
+            var found = ResolveDestination();
+            if (!found.HasValue)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    "[ToyBox] Navigate: the selected row has no live place in the world - nothing to fly to.");
+                UpdateNavigateButton();
+                return;
+            }
+            var destination = found.Value;
+
+            if (!crystalClickHandler)
+            {
+                CSDebug.LogWarning("[ToyConfigureModal] No MenuCrystalClickHandler is wired, so " +
+                                   "Navigate cannot enter freestyle. Wire the scene's freestyle " +
+                                   "toggle on this modal.");
+                return;
+            }
+
+            // Already flying (the player opened the Toy Box mid-freestyle): there is no blend to
+            // ride and no coast to allow for, so this is a straight teleport to the stand-off.
+            if (crystalClickHandler.IsInFreestyle)
+            {
+                OnCloseModal();
+                PlaceVesselAt(destination, 0f);
+                return;
+            }
+
+            OnCloseModal();
+
+            // ToggleTransition runs synchronously up to its first await, so by the time this
+            // returns IsInFreestyle is the honest answer to "did the toggle take?". A refusal must
+            // not leave the ship teleported across the menu with the autopilot still driving it.
+            crystalClickHandler.ToggleTransition();
+            if (!crystalClickHandler.IsInFreestyle)
+            {
+                CSDebug.LogWarning("[ToyConfigureModal] The freestyle toggle declined (already " +
+                                   "transitioning, or no local vessel yet) - the player was not " +
+                                   $"moved to '{destination.Label}'.");
+                return;
+            }
+
+            // Placed inside the SAME frame the blend started, and before the camera's LateUpdate,
+            // so the very first blend frame already aims at the target.
+            PlaceVesselAt(destination, crystalClickHandler.TransitionDuration);
+        }
+
+        /// <summary>Where Navigate takes the player, and how big that place is.</summary>
+        readonly struct NavigateDestination
+        {
+            public readonly Transform Target;
+            public readonly float Radius;
+            public readonly string Label;
+
+            public NavigateDestination(Transform target, float radius, string label)
+            {
+                Target = target;
+                Radius = Mathf.Max(1f, radius);
+                Label = label;
+            }
+        }
+
+        /// <summary>
+        /// Where Navigate goes: the SELECTED row's live place in the world
+        /// (<see cref="ToyShellOption.WorldAnchor"/>), or null. A spawner's variant row anchors on
+        /// what it last released, so after a Spawn, Navigate takes the player to it.
+        /// </summary>
+        NavigateDestination? ResolveDestination()
+        {
+            if (_selected < 0 || _selected >= _rows.Count) return null;
+            var option = _rows[_selected];
+            var anchor = option.WorldAnchor?.Invoke();
+            return anchor ? new NavigateDestination(anchor, option.WorldAnchorRadius, option.Label) : null;
+        }
+
+        /// <summary>
+        /// Put the vessel in front of the target (the thing a toy made), facing it, approached from
+        /// INSIDE the cell so the arrival looks at the target with the world behind it.
+        /// <paramref name="coastSeconds"/> is how long the vessel flies itself before the pilot is
+        /// handed the stick (the enter-freestyle blend); that coast is added to the stand-off.
+        /// </summary>
+        void PlaceVesselAt(NavigateDestination destination, float coastSeconds)
+        {
+            var target = destination.Target;
+            float radius = destination.Radius;
+            string label = destination.Label;
+            if (!target) return; // released creature died between the press and the handoff
+            var player = gameData ? gameData.LocalPlayer : null;
+            if (player?.Vessel == null)
+            {
+                CSDebug.LogWarning("[ToyConfigureModal] Freestyle started but there is no local " +
+                                   "vessel to move - the player is flying, just not repositioned.");
+                return;
+            }
+
+            var toyPos = target.position;
+
+            // The lane that keeps the player inside the world is the target's INWARD radial. Falls
+            // back to the target's own forward when it sits exactly on the centre.
+            var cellCentre = ResolveCellCentre(toyPos);
+            var approach = cellCentre - toyPos;
+            approach = approach.sqrMagnitude > 0.001f ? approach.normalized : target.forward;
+
+            float standOff = radius * Mathf.Max(1.1f, arrivalDistanceFactor);
+            float speed = player.Vessel.VesselStatus != null
+                ? Mathf.Max(0f, player.Vessel.VesselStatus.Speed)
+                : 0f;
+            float coast = speed * Mathf.Max(0f, coastSeconds);
+
+            // Inward is a BOUNDED direction in a way outward was not: run far enough along it and
+            // the arrival is past the core and out the other side, facing the target across the
+            // whole cell. A fast hull's coast is the realistic way to get there, so the whole lane is
+            // capped short of the centre rather than trusting the numbers to stay small.
+            float lane = Vector3.Distance(toyPos, cellCentre);
+            float reach = standOff + coast;
+            if (lane > 1f) reach = Mathf.Min(reach, lane * 0.8f);
+
+            var stand = toyPos + approach * reach;
+            player.SetPoseOfVessel(new Pose(stand, Quaternion.LookRotation(toyPos - stand, Vector3.up)));
+
+            // The platform's own off-screen arrow, for the frames after the arrival: the target is
+            // dead ahead on the frame the player lands, so the indicator hides itself immediately
+            // and only speaks up once they have turned away. It takes itself down on arrival.
+            ToyNavigationBeacon.PointAt(target, radius, label, player, crystalClickHandler);
+
+            CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                $"[ToyBox] placed at {stand} facing '{label}' (ring {radius:0.#}, " +
+                $"stand-off {standOff:0.#} + {coast:0.#} coast at {speed:0.#} u/s, " +
+                $"reach {reach:0.#} along a {lane:0.#} inward lane).");
+        }
+
+        static Vector3 ResolveCellCentre(Vector3 position)
+        {
+            var cell = Cell.FindNearestActiveCell(position);
+            return cell ? cell.transform.position : Vector3.zero;
+        }
+    }
+}

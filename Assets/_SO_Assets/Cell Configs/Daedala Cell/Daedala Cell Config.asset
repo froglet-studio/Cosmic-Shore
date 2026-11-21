@@ -34,7 +34,7 @@ MonoBehaviour:
     RestlessExit: 34358
     FrenzyEnter: 37458
     FrenzyExit: 36858
-    RestlessEnterVolume: 648504
-    RestlessExitVolume: 645304
-    FrenzyEnterVolume: 694904
-    FrenzyExitVolume: 685304
+    RestlessEnterVolume: 432298
+    RestlessExitVolume: 429098
+    FrenzyEnterVolume: 478698
+    FrenzyExitVolume: 469098

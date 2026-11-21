@@ -8,7 +8,7 @@ namespace CosmicShore.Core
     /// <summary>
     /// Drives real-money "support" purchases through a hosted web checkout page.
     ///
-    /// The game ships on Steam/PC with no in-app store SDK, so purchases are taken on an
+    /// The desktop build has no in-app store SDK, so purchases are taken on an
     /// external payment page (Stripe / Froglet page) opened in the system browser via
     /// <see cref="Application.OpenURL"/>. URLs and prices are config-driven through
     /// <see cref="SO_IAPConfig"/> and per-episode fields on <see cref="SO_EpisodeData"/>,
@@ -25,6 +25,20 @@ namespace CosmicShore.Core
     /// entitlement on return is "trust the client" until a backend order-verification step is
     /// wired into <see cref="ConfirmPendingPurchase"/>. That seam is intentionally left as the
     /// single grant point so it can be made server-authoritative later.
+    ///
+    /// <para><b>DE-SCOPED for the invite build.</b> <c>OpenCheckout</c> declines while
+    /// <c>SO_CommerceAvailability.AllowRealMoneyCheckout</c> is off, which is its default — so this
+    /// class stays wired, keeps formatting prices, and cannot open a payment page
+    /// (<c>Docs/STEAM_RELEASE_TASKS.md</c> R4). The verification gap above is the reason it must
+    /// stay off until a backend exists, not merely a scheduling one.</para>
+    ///
+    /// <para><b>DESKTOP BUILDS ONLY.</b> The browser checkout can open only where
+    /// <c>UNITY_STANDALONE</c> is defined. On iOS and Android, digital goods must be sold through
+    /// the platform's own billing (Apple App Review Guideline 3.1.1, Google Play's payments policy),
+    /// so every other build declines through the same refusal as the de-scope, whatever
+    /// <c>CommerceAvailability</c> says. That fence is compiled in, so no asset can lift it. The
+    /// public API is the same on every platform, so callers compile everywhere and just get
+    /// <see cref="OnPurchaseComplete"/>(false) where checkout is fenced off.</para>
     /// </summary>
     public class IAPManager : MonoBehaviour
     {
@@ -66,6 +80,18 @@ namespace CosmicShore.Core
             }
         }
         SO_IAPConfig _runtimeDefaultConfig;
+        bool _reportedDeScopedCheckout;
+
+        // PLATFORM FENCE: true only in builds where a browser checkout is an allowed way to take
+        // payment (see the class comment). The Editor also defines UNITY_STANDALONE while a desktop
+        // build target is active, so checkout can still be tested there. The Editor deliberately
+        // gets no extra UNITY_EDITOR term: with an iOS or Android target active it refuses exactly
+        // as that player build would, rather than opening a checkout the device never could.
+#if UNITY_STANDALONE
+        static bool WebCheckoutPermittedOnThisPlatform => true;
+#else
+        static bool WebCheckoutPermittedOnThisPlatform => false;
+#endif
 
         void Awake()
         {
@@ -78,8 +104,8 @@ namespace CosmicShore.Core
 
             // Web checkout has no SDK handshake - it is ready as soon as a config (real or
             // default) is resolvable. We are "initialized" whenever we have a base URL to open.
-            IsInitialized = !string.IsNullOrWhiteSpace(Config.checkoutBaseUrl) ||
-                            !string.IsNullOrWhiteSpace(Config.supportUrl);
+            IsInitialized = !string.IsNullOrWhiteSpace(Config.CheckoutBaseUrl) ||
+                            !string.IsNullOrWhiteSpace(Config.SupportUrl);
         }
 
         void OnDestroy()
@@ -102,8 +128,8 @@ namespace CosmicShore.Core
                 return;
             }
 
-            string productId = string.IsNullOrEmpty(episode.episodeId) ? supportProductId : episode.episodeId;
-            string url = Config.BuildCheckoutUrl(productId, episode.priceUsd, episode.checkoutUrl);
+            string productId = string.IsNullOrEmpty(episode.EpisodeId) ? supportProductId : episode.EpisodeId;
+            string url = Config.BuildCheckoutUrl(productId, episode.PriceUsd, episode.CheckoutUrl);
             OpenCheckout(productId, url);
         }
 
@@ -112,14 +138,48 @@ namespace CosmicShore.Core
         /// </summary>
         public void InitiateSupportPurchase()
         {
-            string url = string.IsNullOrWhiteSpace(Config.supportUrl)
+            string url = string.IsNullOrWhiteSpace(Config.SupportUrl)
                 ? Config.BuildCheckoutUrl(supportProductId, 0f, null)
-                : Config.supportUrl;
+                : Config.SupportUrl;
             OpenCheckout(supportProductId, url);
         }
 
         void OpenCheckout(string productId, string url)
         {
+            // DE-SCOPED: nothing in the invite build sells anything, and external-browser checkout
+            // still has no way to verify an order (see the class comment and
+            // Docs/MENU_PROGRESSION_AND_IAP.md section 5). This is the choke point BOTH entry points
+            // share, so it is where the posture is enforced rather than on either screen - an
+            // un-gated or re-enabled screen still cannot open a payment page. The UI refuses with a
+            // reason of its own; a service has no graphics, so here it declines and says why once.
+            //
+            // PLATFORM FENCE: outside a desktop build the answer is no before the posture is even
+            // read, through the same refusal. It is a separate check because it is a store-policy
+            // fact about the platform, not a setting, and it must hold even if the posture is
+            // flipped on for the desktop build.
+            bool platformPermitsCheckout = WebCheckoutPermittedOnThisPlatform;
+            if (!platformPermitsCheckout || !SO_CommerceAvailability.Instance.AllowRealMoneyCheckout)
+            {
+                // Once per session, not per press: unlike the offline gate below this is a build
+                // POSTURE rather than a transient condition, so it would otherwise report the same
+                // unchanging fact on every press for the life of the build. It is still worth saying
+                // once, because reaching here at all means a UI gate was bypassed or lost.
+                if (!_reportedDeScopedCheckout)
+                {
+                    _reportedDeScopedCheckout = true;
+                    CSDebug.LogWarning(platformPermitsCheckout
+                        ? $"[IAPManager] Real-money checkout is de-scoped for this build - " +
+                          $"declining '{productId}'. Flip allowRealMoneyCheckout on " +
+                          "Resources/CommerceAvailability to re-open it."
+                        : $"[IAPManager] Browser checkout is desktop-only and this is not a desktop " +
+                          $"build - declining '{productId}'. Purchases on this platform must go " +
+                          "through its store's own billing; no asset setting re-opens this path.");
+                }
+
+                OnPurchaseComplete?.Invoke(false);
+                return;
+            }
+
             // OFFLINE session: checkout is a hosted web page. Opening a browser at a URL that
             // cannot load - and then arming a pending purchase waiting on a confirmation that
             // can never arrive - is worse than declining. The store UI should be gated
@@ -141,7 +201,7 @@ namespace CosmicShore.Core
             }
 
             PendingProductId = productId;
-            CSDebug.Log($"[IAPManager] Opening web checkout for '{productId}': {url}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[IAPManager] Opening web checkout for '{productId}': {url}");
             Application.OpenURL(url);
             OnCheckoutOpened?.Invoke(productId);
         }
@@ -157,7 +217,7 @@ namespace CosmicShore.Core
             PendingProductId = null;
 
             if (success)
-                CSDebug.Log($"[IAPManager] Purchase confirmed for '{productId}'.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[IAPManager] Purchase confirmed for '{productId}'.");
             else
                 CSDebug.LogWarning($"[IAPManager] Purchase NOT confirmed for '{productId}'.");
 

@@ -72,6 +72,7 @@ namespace CosmicShore.Gameplay
         protected override SpawnTrailData[] GenerateTrailData()
         {
             var trailDataList = new List<SpawnTrailData>();
+            var fibres = new List<(SpawnPoint[] points, float theta, float phi)>();
 
             // --- Main fibration: sample latitude bands on S² ---
             for (int band = 0; band < latitudeBands; band++)
@@ -91,9 +92,14 @@ namespace CosmicShore.Gameplay
 
                     var points = GenerateFiberPoints(theta, phi, blocksPerFiber, blockScale);
                     if (points.Count > 0)
-                        trailDataList.Add(new SpawnTrailData(points.ToArray(), false, bandDomain));
+                    {
+                        var fitted = FitFlushLoop(points);
+                        fibres.Add((fitted, theta, phi));
+                        trailDataList.Add(new SpawnTrailData(fitted, false, bandDomain));
+                    }
                 }
             }
+            ClearFibreCrossings(fibres);
 
             // --- Polar fibers ---
             if (includePolarFibers)
@@ -101,12 +107,12 @@ namespace CosmicShore.Gameplay
                 // North pole (theta=0): projects to a circle at the "equator" of the projection
                 var northPoints = GeneratePolarFiberPoints(isNorth: true);
                 if (northPoints.Count > 0)
-                    trailDataList.Add(new SpawnTrailData(northPoints.ToArray(), false, Domains.Gold));
+                    trailDataList.Add(new SpawnTrailData(FitFlushLoop(northPoints), false, Domains.Gold));
 
                 // South pole (theta=π): projects to a line through the origin (the axis)
                 var southPoints = GeneratePolarFiberPoints(isNorth: false);
                 if (southPoints.Count > 0)
-                    trailDataList.Add(new SpawnTrailData(southPoints.ToArray(), false, Domains.Gold));
+                    trailDataList.Add(new SpawnTrailData(FitFlushLoop(southPoints), false, Domains.Gold));
             }
 
             // --- Villarceau circles: oblique linked circles ---
@@ -119,7 +125,7 @@ namespace CosmicShore.Gameplay
 
                     var points = GenerateVillarceauFiberPoints(thetaV, phiV);
                     if (points.Count > 0)
-                        trailDataList.Add(new SpawnTrailData(points.ToArray(), false, Domains.Ruby));
+                        trailDataList.Add(new SpawnTrailData(FitFlushLoop(points), false, Domains.Ruby));
                 }
             }
 
@@ -246,6 +252,18 @@ namespace CosmicShore.Gameplay
                 // CreateBlock used flip=true (default), so forward = position - lookTarget
                 var rotation = SpawnPoint.LookRotation(lookTarget, position, Vector3.up);
 
+                // The south fibre lies in the (x3, x4) plane, which CONTAINS the projection centre
+                // (0, 0, 0, projectionPole), so it does not project to a circle: it lands on the z
+                // axis TWICE - once from the arc nearer than the pole (pole - x4 > 0) and once from
+                // the arc beyond it - and the far arc's blocks sat on the near arc's line, two
+                // pairs with coincident centres among them (the origin is hit at t = pi/2 and
+                // 3pi/2). No length fixes a shared centre, so the far arc is shifted sideways by
+                // one block width: the two passes lie side by side, faces touching, every block
+                // still on its own z. Only that arc moves (23 of 128 blocks at the shipped 64 per
+                // fibre); the north fibre's plane misses the centre and is a true circle.
+                if (!isNorth && projectionPole - x4 < 0f)
+                    position += (rotation * Vector3.right) * (blockScale.x * 1.5f);
+
                 points.Add(new SpawnPoint(position, rotation, blockScale * 1.5f));
             }
 
@@ -303,6 +321,145 @@ namespace CosmicShore.Gameplay
             }
 
             return points;
+        }
+
+        /// <summary>How far under exact contact a fitted block stops, so float noise in the poses
+        /// can never flip two touching faces into a clip.</summary>
+        const float FlushMargin = 0.998f;
+
+        /// <summary>
+        /// FLUSH, not overlapping (Docs/ECOSYSTEM.md 49.10). Every fibre is a closed loop of equal
+        /// steps on S³, and stereographic projection stretches it: in R³ the blocks bunch where a
+        /// fibre passes near the axis and spread where it swings wide, so a fixed-length block
+        /// crossed its neighbours on the tight side of every torus (the polar circle's 9 u blocks
+        /// sat 4.6 u apart). Each block keeps its cross-section and pose and takes the longest
+        /// length it can share with each neighbour along its loop and only touch
+        /// (<see cref="FlushPairLength"/>), the tighter side kept; the loop wraps, last to first.
+        /// A neighbour across a projection's infinity is thousands of units away and asks nothing.
+        /// </summary>
+        static SpawnPoint[] FitFlushLoop(List<SpawnPoint> points)
+        {
+            int n = points.Count;
+            var fitted = new SpawnPoint[n];
+            if (n == 0) return fitted;
+            float prevPair = FlushPairLength(points[n - 1], points[0]);
+            for (int i = 0; i < n; i++)
+            {
+                var p = points[i];
+                float nextPair = FlushPairLength(p, points[(i + 1) % n]);
+                float length = Mathf.Min(p.Scale.z, FlushMargin * Mathf.Min(prevPair, nextPair));
+                fitted[i] = new SpawnPoint(p.Position, p.Rotation, new Vector3(p.Scale.x, p.Scale.y, length));
+                prevPair = nextPair;
+            }
+            return fitted;
+        }
+
+        /// <summary>
+        /// Where two fibres of DIFFERENT bands pass each other. On S³ no two fibres meet, but the
+        /// projection is not conformal from an interior pole, and it squeezes them where both cross
+        /// the plane x3 = 0 (z = 0 in R³): fibre (θ, φ) crosses it at t = φ/2 ± π/2, at a radius of
+        /// <c>s cos(θ/2) / (pole ∓ sin(θ/2))</c> on a bearing set by φ - so two bands whose
+        /// crossing radii nearly agree, on fibres whose bearings line up, pass a block's width
+        /// apart (the shipped prefab: bands 1 and 3 at 247.0 u and 244.8 u, two block pairs
+        /// crossing at 71° by 0.03 u). Those crossings are found in closed form - 2 per fibre, a
+        /// distance test per pair of them, nothing per block - and only the blocks nearest each
+        /// close crossing are narrowed, just enough (<see cref="ClearCrossing"/>). A fibre whose
+        /// projection dropped a sample is skipped (its indices no longer map to t).
+        /// </summary>
+        void ClearFibreCrossings(List<(SpawnPoint[] points, float theta, float phi)> fibres)
+        {
+            var crossings = new List<(int fibre, int index, Vector3 at)>(fibres.Count * 2);
+            for (int f = 0; f < fibres.Count; f++)
+            {
+                var (points, theta, phi) = fibres[f];
+                int n = points.Length;
+                if (n != blocksPerFiber || n == 0) continue;
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    float t = Mathf.Repeat(phi * 0.5f + side * 0.5f * Mathf.PI, 2f * Mathf.PI);
+                    int index = Mathf.RoundToInt(t * n / (2f * Mathf.PI)) % n;
+                    crossings.Add((f, index, FiberPoint(theta, phi, t)));
+                }
+            }
+
+            float reach = blockScale.magnitude;   // two half-diagonals: any closer pair may touch
+            for (int a = 0; a < crossings.Count; a++)
+            for (int b = a + 1; b < crossings.Count; b++)
+            {
+                var ca = crossings[a]; var cb = crossings[b];
+                if (ca.fibre == cb.fibre || (ca.at - cb.at).sqrMagnitude > reach * reach) continue;
+                var pa = fibres[ca.fibre].points; var pb = fibres[cb.fibre].points;
+                for (int da = -1; da <= 1; da++)
+                for (int db = -1; db <= 1; db++)
+                    ClearCrossing(ref pa[(ca.index + da + pa.Length) % pa.Length],
+                                  ref pb[(cb.index + db + pb.Length) % pb.Length]);
+            }
+        }
+
+        /// <summary>
+        /// Narrow two crossing blocks (x and y together, length untouched) by the smallest factor
+        /// that leaves them only touching on one separating axis - the larger of the two closed
+        /// forms: the common perpendicular of their long axes (where two blocks crossing at an
+        /// angle actually meet; their lengths project to nothing on it) and the line between their
+        /// centres (blocks nearly parallel). Leaves a pair that already clears alone. A narrower
+        /// cross-section only loosens each block against its own fibre neighbours.
+        /// </summary>
+        static void ClearCrossing(ref SpawnPoint a, ref SpawnPoint b)
+        {
+            Vector3 d = b.Position - a.Position;
+            Vector3 za = a.Rotation * Vector3.forward, zb = b.Rotation * Vector3.forward;
+            float k1 = ClearFactor(a, b, d, Vector3.Cross(za, zb));
+            float k2 = ClearFactor(a, b, d, d);
+            if (k1 >= 1f || k2 >= 1f) return;                // already clear on one of them
+            float best = Mathf.Max(k1, k2);
+            if (best <= 0f) return;                          // no closed form separates them here
+            float k = FlushMargin * best;
+            a.Scale = new Vector3(a.Scale.x * k, a.Scale.y * k, a.Scale.z);
+            b.Scale = new Vector3(b.Scale.x * k, b.Scale.y * k, b.Scale.z);
+        }
+
+        /// <summary>The factor on both blocks' cross-sections at which they only touch on
+        /// <paramref name="raw"/>: what the separation along it leaves after their lengths' reach,
+        /// over their cross-sections' reach. 0 when the axis is degenerate or cannot separate.</summary>
+        static float ClearFactor(in SpawnPoint a, in SpawnPoint b, Vector3 d, Vector3 raw)
+        {
+            if (raw.sqrMagnitude < 1e-8f) return 0f;
+            Vector3 m = raw.normalized;
+            Quaternion ra = a.Rotation, rb = b.Rotation;
+            float room = Mathf.Abs(Vector3.Dot(d, m))
+                       - 0.5f * (a.Scale.z * Mathf.Abs(Vector3.Dot(ra * Vector3.forward, m)) + b.Scale.z * Mathf.Abs(Vector3.Dot(rb * Vector3.forward, m)));
+            float need = 0.5f * (a.Scale.x * Mathf.Abs(Vector3.Dot(ra * Vector3.right, m)) + a.Scale.y * Mathf.Abs(Vector3.Dot(ra * Vector3.up, m))
+                               + b.Scale.x * Mathf.Abs(Vector3.Dot(rb * Vector3.right, m)) + b.Scale.y * Mathf.Abs(Vector3.Dot(rb * Vector3.up, m)));
+            if (need <= 1e-6f) return room >= 0f ? float.PositiveInfinity : 0f;
+            return Mathf.Max(0f, room / need);
+        }
+
+        /// <summary>A main fibre's point at parameter t - <see cref="GenerateFiberPoints"/>'s map.</summary>
+        Vector3 FiberPoint(float theta, float phi, float t)
+        {
+            float c = Mathf.Cos(theta * 0.5f), s = Mathf.Sin(theta * 0.5f), h = phi * 0.5f;
+            return StereographicProject(c * Mathf.Cos(t + h), c * Mathf.Sin(t + h), s * Mathf.Cos(t - h), s * Mathf.Sin(t - h));
+        }
+
+        /// <summary>
+        /// The longest length two neighbouring blocks (+z along the fibre) can BOTH take and still
+        /// only touch: separated on the plane normal to the chord between their centres, each box
+        /// reaches <c>half-length |z.n| + half-width |x.n| + half-height |y.n|</c> along it, and the
+        /// two reaches may sum to the chord and no more. Closed form; for blocks laid down a curve
+        /// the chord is the separating axis.
+        /// </summary>
+        static float FlushPairLength(SpawnPoint a, SpawnPoint b)
+        {
+            Vector3 d = b.Position - a.Position;
+            float dist = d.magnitude;
+            if (dist < 1e-5f) return 0f;
+            Vector3 n = d / dist;
+            Quaternion ra = a.Rotation, rb = b.Rotation;
+            float lateral = 0.5f * (a.Scale.x * Mathf.Abs(Vector3.Dot(ra * Vector3.right, n)) + b.Scale.x * Mathf.Abs(Vector3.Dot(rb * Vector3.right, n)))
+                          + 0.5f * (a.Scale.y * Mathf.Abs(Vector3.Dot(ra * Vector3.up, n)) + b.Scale.y * Mathf.Abs(Vector3.Dot(rb * Vector3.up, n)));
+            float along = Mathf.Abs(Vector3.Dot(ra * Vector3.forward, n)) + Mathf.Abs(Vector3.Dot(rb * Vector3.forward, n));
+            if (along < 1e-5f) return float.PositiveInfinity;
+            return 2f * Mathf.Max(0f, dist - lateral) / along;
         }
 
         protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)

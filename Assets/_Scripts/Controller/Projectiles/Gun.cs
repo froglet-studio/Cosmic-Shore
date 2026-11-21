@@ -28,6 +28,9 @@ namespace CosmicShore.Gameplay
         private IVesselStatus _vesselStatus;
         private Projectile _lastProjectile;
 
+        /// <summary>Most recently fired projectile — may be despawned; callers must guard with FlightGeneration.</summary>
+        public Projectile LastProjectile => _lastProjectile;
+
         private bool _onCooldown;
 
         /// <summary>
@@ -48,6 +51,26 @@ namespace CosmicShore.Gameplay
         public void Initialize(IVesselStatus vesselStatus)
         {
             _vesselStatus = vesselStatus;
+            PaintOwnDomain();
+        }
+
+        Renderer _renderer;
+        bool _rendererResolved;
+
+        /// <summary>
+        /// A gun that draws a body of its own (the AI Gunner's) is authored with the domain placeholder: it wears its
+        /// vessel's domain ship material, read live like the domain a round is fired in (ThemeManagerDataContainerSO
+        /// .PaintDomainPlaceholders).
+        /// </summary>
+        void PaintOwnDomain()
+        {
+            if (_vesselStatus == null || !ThemeManager.Data) return;
+            if (!_rendererResolved)
+            {
+                TryGetComponent(out _renderer);
+                _rendererResolved = true;
+            }
+            if (_renderer) ThemeManager.Data.PaintDomainPlaceholders(_renderer, _vesselStatus.Domain);
         }
 
         /// <summary>
@@ -76,13 +99,19 @@ namespace CosmicShore.Gameplay
             int energy = 0, bool detachAfterSpawn = false,
             bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false,
             Vector3? aimDirection = null, float flightGrowthFactor = 1f,
-            int sphericalPoints = 0)
+            int sphericalPoints = 0, ProjectilePayload? payload = null)
         {
             if (_onCooldown && !ignoreCooldown) return;
 
             switch (firingPattern)
             {
                 case FiringPatterns.Spherical:
+                    // NOTE: payload is deliberately NOT forwarded here. A spherical burst is a
+                    // fan of many rounds and no caller carries a per-shot payload onto one (the
+                    // Urchin's spikes are its only user and pass none), so plumbing it through
+                    // FireSpherical would add surface for a case that does not exist. If a
+                    // spherical weapon ever needs one, forward it rather than discovering that a
+                    // payload handed to this pattern is silently ignored.
                     FireSpherical(containerTransform, speed, inheritedVelocity,
                         projectileScale, projectileTime, charge, energy, sphericalPoints);
                     break;
@@ -93,9 +122,12 @@ namespace CosmicShore.Gameplay
                     // itself owns no spread policy and rolls no dice: it is handed a direction.
                     FireSingle(containerTransform, speed, inheritedVelocity,
                         projectileScale, Vector3.zero, projectileTime, charge, energy, aimDirection, detachAfterSpawn,
-                        stopOnFirstPrismImpact, spareOwnDomain, flightGrowthFactor);
+                        stopOnFirstPrismImpact, spareOwnDomain, flightGrowthFactor, payload);
                     break;
             }
+
+            // The camera following the shooter recoils (Docs/CAMERA_FEEL.md); it rate-limits a held trigger itself.
+            VesselCameraFeel.Shot(_vesselStatus);
 
             if (!ignoreCooldown)
             {
@@ -116,7 +148,6 @@ namespace CosmicShore.Gameplay
 
         public void DetonateProjectile()
         {
-            CSDebug.Log("Gun DetonateProjectile called");
             // Example: if (_lastProjectile is ExplodableProjectile ep) ep.Detonate();
         }
         #endregion
@@ -173,6 +204,8 @@ namespace CosmicShore.Gameplay
                         projectileScale, dir * sideLength, projectileTime, charge, energy, dir);
                 }
             }
+
+            VesselCameraFeel.Shot(_vesselStatus);   // one recoil per blast, not per spike
         }
 
         #region Firing Implementations
@@ -223,7 +256,7 @@ namespace CosmicShore.Gameplay
                 // differently per peer and the prismscape would diverge on the very first
                 // cascade. It would also perturb UnityEngine.Random's shared stream, which
                 // deterministic systems seed - a gun firing dozens of times a second must not
-                // be able to change what the HexRace track looks like.
+                // be able to change what the SkimRace track looks like.
                 //
                 // Seeded from the volley's ORIGIN and depth: two peers whose spike reached the
                 // same prism fire the same pattern, so the cascade re-converges rather than
@@ -271,13 +304,15 @@ namespace CosmicShore.Gameplay
             bool detachAfterSpawn = false,
             bool stopOnFirstPrismImpact = false,
             bool spareOwnDomain = false,
-            float flightGrowthFactor = 1f)
+            float flightGrowthFactor = 1f,
+            ProjectilePayload? payload = null)
         {
             if (_vesselStatus == null)
             {
                 CSDebug.LogError("Gun.FireSingle - VesselStatus is null!");
                 return;
             }
+            PaintOwnDomain();   // domains re-pick at runtime: the body follows, as the round's colour does
 
             Vector3 direction = customDirection ?? containerTransform.forward;
             Vector3 spawnPos  = containerTransform.position;   // using container for spawn point
@@ -321,6 +356,11 @@ namespace CosmicShore.Gameplay
             // MASS in-flight growth: set BEFORE launch, which is where the round captures the
             // scale it will grow from. The gun owns no growth policy - it is handed a factor.
             projectile.SetFlightGrowth(flightGrowthFactor);
+
+            // What this FLIGHT is carrying, as distinct from what the prefab authors. Null =
+            // the prefab's own payloads and no flight trail, which Initialize has already
+            // restored - so every caller that does not opt in is byte-identical to before.
+            if (payload.HasValue) projectile.SetPayload(payload.Value);
 
             projectile.Velocity = direction * speed + inheritedVelocity;
             projectile.LaunchProjectile(projectileTime);

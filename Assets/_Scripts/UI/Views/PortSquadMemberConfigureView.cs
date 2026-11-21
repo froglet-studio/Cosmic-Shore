@@ -8,7 +8,7 @@ namespace CosmicShore.UI
     {
         [SerializeField] SquadMemberCard squadMemberCard;
         [SerializeField] PortSquadCaptainSelectionView captainSelectView;
-        [SerializeField] ShipSelectionView shipSelectionView;
+        [SerializeField] VesselSelectionView shipSelectionView;
         [SerializeField] PortSquadView squadView;
         [SerializeField] PortSquadView homeSquadView;
 

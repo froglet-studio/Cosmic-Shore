@@ -3,6 +3,7 @@ using CosmicShore.Gameplay;
 using Unity.Profiling;
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
@@ -26,6 +27,19 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>
+    /// A component on a blast PREFAB that acts on each prism the blast's prism-effect sweep
+    /// reaches (<see cref="ExplosionImpactor"/>, a blast with <c>affectsPrisms</c> OFF). The
+    /// sibling of the container's <c>explosionPrismEffects</c>, for a payload that belongs to one
+    /// blast prefab and needs its own per-blast state beside the outcome — the Butterfly bloom's
+    /// dust (<see cref="ButterflyBloomDust"/>) applies the capsule's roll AND draws a puff where
+    /// it landed. Same once-per-blast ledger, same per-frame budget, same identity test.
+    /// </summary>
+    public interface IExplosionPrismPayload
+    {
+        void OnPrismReached(ExplosionImpactor blast, PrismImpactor prism);
+    }
+
     [RequireComponent(typeof(AOEExplosion))]
     public class ExplosionImpactor : ImpactorBase
     {
@@ -37,6 +51,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool shielding;
 
         AOEExplosion explosion;
+
+        /// <summary>The explosion driving this impactor — effects use it for impact vectors and impulse.</summary>
+        public AOEExplosion Explosion => explosion;
 
         public override Domains OwnDomain => explosion.Domain;
 
@@ -81,9 +98,36 @@ namespace CosmicShore.Gameplay
         // The buffer is bounded, deliberately: a blast engulfing more than 16 crystals at once
         // reaches the rest on a later frame as it grows (_crystalsHit stops the ones already
         // handled from repeating), and no shipped cell places 16 crystals in one blast radius.
-        private static readonly Collider[] s_crystalHits = new Collider[16];
+        /// <summary>
+        /// Broadphase scratch for <see cref="SweepCrystals"/>. It is sized against the WORST cell
+        /// rather than the busiest mode: every lifeform heart is a crystal on the Crystals layer,
+        /// and the type filter that rejects them runs AFTER the buffer is filled — so in a
+        /// flora-dense cell the arena's own ecology can saturate a small buffer and hide the omni
+        /// crystal the blast was actually reaching for. It was 16, which the mirrored plate's
+        /// 2.4x larger sphere made materially riskier. `OverlapSphereNonAlloc` truncates SILENTLY,
+        /// so the size is paired with the saturation warning below: a cap that can be hit without
+        /// saying so is the failure mode this project keeps re-learning.
+        /// </summary>
+        private static readonly Collider[] s_crystalHits = new Collider[64];
+        static bool s_warnedCrystalSweepSaturated;
         private int _crystalLayerMask;
         private HashSet<int> _crystalsHit;
+
+        // Living lifeform HEARTS this blast has already acted on, the twin of _crystalsHit and
+        // for the same reason: a blast grows over many frames and its sweep re-finds a creature
+        // that is still standing inside it. Its own buffer, sized for a forest rather than for
+        // the handful of omni crystals a cell places — a 95-unit warhead in a seeded cell can
+        // legitimately contain dozens of hearts.
+        // Growable, for the reason Projectile's fuze records: OverlapSphereNonAlloc fills in
+        // unspecified order and silently drops the remainder, and every discriminating test here
+        // (embedded, alive, fauna-not-flora, domain) runs AFTER the fill. Layer 9 is dominated by
+        // hearts this sweep rejects - one always-on collider per FLORA plant, and a lattice
+        // colony or a Hesperides garden stands hundreds inside a 95-unit warhead - so a fixed
+        // buffer means the creatures the rocket visibly engulfed are arbitrarily not passed to
+        // the effect. A full buffer is a POSSIBLY-TRUNCATED result, so grow and re-ask.
+        private static Collider[] s_heartHits = new Collider[128];
+        private const int HeartSweepBufferCap = 1024;
+        private HashSet<int> _heartsHit;
 
         // Distinct VESSELS this blast has landed on, keyed by instance ID. Same once-per-blast
         // ledger shape as _crystalsHit and for the same reason: a blast grows over many frames and
@@ -91,31 +135,79 @@ namespace CosmicShore.Gameplay
         // climb every frame a target loiters in the cone. Only vessels that passed the domain /
         // friendly-fire gate are recorded, so the count is "pilots this blast actually debuffed",
         // not "pilots it overlapped".
+        //
+        // It is also the GATE on vessel-effect dispatch, not only the tally - see AcceptImpactee.
+        // A blast lives far longer than the combat-hit latch's window, so nothing else can stop
+        // one detonation paying a re-entering pilot twice.
         private HashSet<int> _vesselsHit;
+
+        // Blast -> prism EFFECT dispatch for a blast that does not touch mass itself (see
+        // SweepPrismEffects). _prismEffectsSeen is the once-per-blast ledger keyed by prism
+        // instance id; _prismEffectsPending holds what the per-frame budget deferred, each entry
+        // stamped with the prism's TimeCreated so a prism that died and came back out of the pool
+        // as somebody else's mass in the meantime is skipped rather than dusted.
+        HashSet<int> _prismEffectsSeen;
+        Queue<(Prism prism, float laidAt)> _prismEffectsPending;
+        static readonly List<Prism> s_prismEffectHits = new(256);
+        static bool s_warnedPrismEffectsNoIndex;
+
+        /// <summary>Prism effect dispatches one blast may spend per frame; the remainder is
+        /// deferred and drained like <c>_batchPending</c>. Same budget the Burst damage pass uses
+        /// (PrismSpatialIndex.MAX_NEW_HITS_PER_FRAME) — both spawn debris per prism.</summary>
+        const int MaxPrismEffectsPerFrame = 48;
+
+        /// <summary>Distinct prisms this blast's prism-effect sweep has reached so far (queued for
+        /// its effects). Telemetry: the bloom's dust reports it beside what it did to them.</summary>
+        public int PrismEffectsReached => _prismEffectsSeen?.Count ?? 0;
+
+        /// <summary>Of those, how many had at least one effect actually run on them. Reached but
+        /// not dispatched means every slot was empty or failed to load.</summary>
+        public int PrismEffectsDispatched { get; private set; }
 
         public bool IsBatchProcessing => _useBatchProcessing;
 
         /// <summary>True while budget-deferred damage is still waiting to resolve.</summary>
-        public bool HasPendingBatchWork => _batchPending != null && _batchPending.Count > 0;
+        public bool HasPendingBatchWork =>
+            (_batchPending != null && _batchPending.Count > 0) || (_virtualHeartsPending != null && _virtualHeartsPending.Count > 0)
+            || (_prismEffectsPending != null && _prismEffectsPending.Count > 0);
+
+        // ── round 11a (Docs/SWARM_FAUNA.md §19): the hearts of creatures that are only DATA ──
+        // A virtual-population member's BODY is a PrismSpatialIndex virtual entry, so the Burst prism pass meets it
+        // like any prism (the index materialises it under the owner's budget, sparing first). Its HEART is not a
+        // prism and has no collider until it materialises, so SweepVirtualHearts asks VirtualFauna for the hearts
+        // in the heart sweep's own volume. _virtualHeartsPending holds index ids past the owner's per-frame
+        // materialisation budget, drained on the following frames like _batchPending; _virtualHeartsSeen is the
+        // once-per-blast ledger (a blast grows over frames and re-finds the same member).
+        HashSet<int> _virtualHeartsSeen;
+        Queue<int> _virtualHeartsPending;
+        static readonly List<int> s_virtualHeartIds = new(32);
+        static readonly List<Vector3> s_virtualHeartPoints = new(32);
 
         /// <summary>
         /// When true, BeginBatchProcessing() is a no-op - forces Physics OnTriggerEnter
-        /// for all collisions. Used by AOEBenchmarkOverlay for A/B comparison.
+        /// for all collisions. An A/B switch for benchmark harnesses; never set in a normal session.
         /// </summary>
         public static bool ForceLegacyPhysics { get; set; }
 
-        // A/B switch owned by the benchmark overlay; must not survive into a normal session.
+        // A/B switch for benchmark harnesses; must not survive into a normal session.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetForceLegacy() => ForceLegacyPhysics = false;
+        static void ResetForceLegacy()
+        {
+            ForceLegacyPhysics = false;
+            s_warnedPrismEffectsNoIndex = false;
+        }
 
         // --- ProfilerMarkers ---
         private static readonly ProfilerMarker s_onTriggerEnter = new("AOE.OnTriggerEnter");
         private static readonly ProfilerMarker s_onTriggerSkipped = new("AOE.OnTriggerEnter.Skipped");
         private static readonly ProfilerMarker s_processBatch = new("AOE.ProcessBatchFrame");
 
+        IExplosionPrismPayload[] _prismPayloads;
+
         void Awake()
         {
             explosion ??= GetComponent<AOEExplosion>();
+            _prismPayloads = GetComponents<IExplosionPrismPayload>();
             if (_trailBlockLayer < 0)
                 _trailBlockLayer = LayerMask.NameToLayer("TrailBlocks");
         }
@@ -127,7 +219,20 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void BeginBatchProcessing()
         {
+            _virtualHeartsSeen?.Clear();
+            _virtualHeartsPending?.Clear();
+            _prismEffectsSeen?.Clear();
+            _prismEffectsPending?.Clear();
+            PrismEffectsDispatched = 0;
             if (ForceLegacyPhysics) return;
+
+            // A blast that does not touch mass never starts the prism pass at all. ONE gate here
+            // rather than one per explosion SHAPE: the spherical, conic and cylindrical blasts
+            // each own their ExplodeAsync but all three begin batch processing through this
+            // method, so a flag honoured here cannot be silently ignored by two of the three.
+            // The prism layer is additionally excluded on such a blast's own trigger collider
+            // (authored on the prefab), so the Physics fallback cannot reach a prism either.
+            if (explosion != null && !explosion.AffectsPrisms) return;
 
             var registry = PrismSpatialIndex.Instance;
             if (registry == null || !registry.IsAvailable)
@@ -150,10 +255,56 @@ namespace CosmicShore.Gameplay
                 _batchPending.Clear();
 
             _crystalsHit?.Clear();
+            _heartsHit?.Clear();
             _vesselsHit?.Clear();
 
             if (explosion != null && explosion.Vessel != null)
                 OnBlastBegan?.Invoke(explosion.Vessel);
+        }
+
+        /// <summary>
+        /// Does this blast SPARE anything it touches? If so it has a passthrough to express, and
+        /// every frame of its sweep publishes a LIT volume so the mass it spares is visibly
+        /// acknowledged rather than looking clipped through.
+        ///
+        /// This REPLACED a 2-second temporary shield applied per prism
+        /// (<c>Prism.ActivateShield(2f, ...)</c>, removed from both this class and its Burst twin
+        /// <c>PrismSpatialIndex.ResolveExplosionHit</c>). The shield was reached for as a visual —
+        /// "the prism armours up instead of the explosion passing through it" — and it carried
+        /// three gameplay side effects nobody had designed: shielded mass is not food and is
+        /// re-filed out of the cell's fauna targeting grids
+        /// (<c>PrismStateManager.SyncAOERegistryShieldState</c>), so a friendly blast blacked out
+        /// its own footprint for the food web and churned the grids twice; and
+        /// <c>ApplyShieldState</c> plays one <c>ShieldActivate</c> SFX per prism. A light says the
+        /// same thing to the player, costs one volume rather than N shield transitions, N timers
+        /// and N shed-debris entities, and says nothing at all to the simulation.
+        /// <c>Docs/LIT.md</c> records the swap and what it costs.
+        ///
+        /// A blast that destroys everything it touches publishes nothing, so every fully
+        /// destructive blast in the game looks exactly as it did.
+        /// </summary>
+        bool SparesWhatItTouches => !affectSelf || !destructive;
+
+        /// <summary>
+        /// Publish this frame's swept volume as a light in the blast's own domain. Keyed on the
+        /// impactor's instance id, so one blast holds one slot for its whole life however many
+        /// frames it sweeps, and the bank fades it out by itself once the blast is destroyed —
+        /// which matters here more than anywhere, because an explosion cannot fade anything
+        /// itself: it is <c>Destroy</c>ed the frame its sweep ends.
+        ///
+        /// It is the one producer that publishes OWN-DOMAIN ONLY, and that is the whole sentence
+        /// rather than a tuning: what this light says is "that blast went through here and SPARED
+        /// this", which is only true of mass the blast declined to touch. Everything else inside
+        /// the volume is being destroyed, so lighting it says the opposite of what is happening —
+        /// and a dying prism's debris, which carries no domain at all, falls outside every gated
+        /// light for free. The two AIM producers stay ungated on purpose: their sentence is about
+        /// mass their owner does NOT own.
+        /// </summary>
+        void PublishLit(in LitVolume volume)
+        {
+            if (!SparesWhatItTouches) return;
+            PrismLit.PublishLight(GetInstanceID(), volume, 1f, explosion.Domain,
+                                  ownDomainOnly: true);
         }
 
         /// <summary>
@@ -171,8 +322,16 @@ namespace CosmicShore.Gameplay
             using (s_processBatch.Auto())
             {
                 // Runs whether or not the batch path is available: crystals are not prisms and
-                // are not in the spatial index, so nothing below would ever reach them.
+                // are not in the spatial index, so nothing below would ever reach them. That is
+                // also what makes a NON-PRISM blast (AffectsPrisms off, so batch never began)
+                // still able to act on crystals and creatures.
                 SweepCrystals(center, radius);
+                SweepLifeformHearts(center, radius);
+                SweepPrismEffects(center, radius);
+
+                // The blast's own volume, this frame. A sphere needs no direction, which is why
+                // LitVolume.Sphere takes none.
+                PublishLit(LitVolume.Sphere(center, radius));
 
                 if (!_useBatchProcessing) return true;
                 var registry = PrismSpatialIndex.Instance;
@@ -213,8 +372,16 @@ namespace CosmicShore.Gameplay
                 // discrete, once-per-blast event, so the sphere's slight over-reach at the cone's
                 // flanks is not worth an exact test.
                 float coneReach = Mathf.Max(sliceMax, 0f);
-                SweepCrystals(apex + axis * (coneReach * 0.5f),
-                              coneReach * (0.5f + Mathf.Max(tanCoreHalfAngle, tanGapePerUnit)));
+                float coneSweepRadius = coneReach * (0.5f + Mathf.Max(tanCoreHalfAngle, tanGapePerUnit));
+                Vector3 coneSweepCentre = apex + axis * (coneReach * 0.5f);
+                SweepCrystals(coneSweepCentre, coneSweepRadius);
+
+                // Swept-so-far, not this frame's slab: the light marks everywhere the blast has
+                // reached, so mass it passed through a moment ago stays acknowledged while the
+                // front runs on.
+                PublishLit(LitVolume.Cone(apex, axis, gapeAxis, sliceMax,
+                                          tanCoreHalfAngle, tanGapePerUnit));
+                SweepLifeformHearts(coneSweepCentre, coneSweepRadius);
 
                 if (!_useBatchProcessing) return true;
                 var registry = PrismSpatialIndex.Instance;
@@ -241,12 +408,17 @@ namespace CosmicShore.Gameplay
         /// The cross-section is a DISC of constant <paramref name="radius"/>, and every prism the
         /// plate claims is shoved along <paramref name="axis"/> — the blast's own velocity —
         /// rather than radially from an origin.
+        ///
+        /// With <paramref name="mirrored"/> the slab is reflected through the start plane as well,
+        /// so one frame claims |axial| ∈ [sliceMin, sliceMax] rather than the forward interval.
+        /// The impulse is untouched: the mirrored half throws mass the SAME way, which is what
+        /// makes the back half drag mass forward through the emitter instead of away from it.
         /// Returns true if the explosion should continue, false if it should be destroyed
         /// (e.g. hit a super-shielded enemy prism).
         /// </summary>
         public bool ProcessBatchCylinderFrame(
             Vector3 origin, Vector3 axis, float sliceMin, float sliceMax, float radius,
-            in ExplosionImpulse impulse)
+            in ExplosionImpulse impulse, bool mirrored = false)
         {
             using (s_processBatch.Auto())
             {
@@ -259,23 +431,55 @@ namespace CosmicShore.Gameplay
                 // built a ball out of mass it visibly missed while its prism half, running the
                 // exact slab, agreed it had touched nothing there.
                 float depth = Mathf.Max(sliceMax, 0f);
-                float half = depth * 0.5f;
-                SweepCrystals(origin + axis * half,
-                              Mathf.Sqrt(half * half + radius * radius),
-                              new SweptCylinder(origin, axis, depth, radius));
+                // A MIRRORED plate is centred on the emitter and spans depth BOTH ways, so its
+                // bounding sphere is centred on the origin with the full half-diagonal - not on a
+                // midpoint that no longer exists. Getting this wrong under-reaches behind the
+                // pilot, which is the half of the volume the mirror was added for. Both sweeps
+                // ride the SAME broadphase and the SAME narrowphase: a heart is spent exactly as
+                // a crystal is, so a mirror that reached one and not the other would be a blast
+                // whose two halves disagree about what they touched.
+                float half = mirrored ? depth : depth * 0.5f;
+
+                // Swept-so-far, and the mirror rides along: a mirrored plate's light claims both
+                // slabs exactly as its query does, so the half that drags mass THROUGH the pilot
+                // is lit too. That half is the one the mirror exists for and the one a player
+                // cannot otherwise read.
+                PublishLit(LitVolume.Cylinder(origin, axis, depth, radius, mirrored));
+                float cylinderSweepRadius = Mathf.Sqrt(half * half + radius * radius);
+                Vector3 cylinderSweepCentre = mirrored ? origin : origin + axis * half;
+                var cylinderNarrowphase = new SweptCylinder(origin, axis, depth, radius, mirrored);
+                SweepCrystals(cylinderSweepCentre, cylinderSweepRadius, cylinderNarrowphase);
+                SweepLifeformHearts(cylinderSweepCentre, cylinderSweepRadius, cylinderNarrowphase);
 
                 if (!_useBatchProcessing) return true;
                 var registry = PrismSpatialIndex.Instance;
                 if (registry == null) return true;
 
-                return registry.ProcessExplosionCylinderFrame(
-                    origin, axis, sliceMin, sliceMax, radius, impulse,
+                bool shouldContinue = registry.ProcessExplosionCylinderFrame(
+                    origin, axis, sliceMin, sliceMax, radius, mirrored, impulse,
                     explosion.Domain,
                     affectSelf, destructive, devastating, shielding,
                     explosion.AnonymousExplosion,
                     explosion.Vessel,
                     _batchHitTracker,
                     _batchPending);
+
+                // A MIRRORED PLATE CANNOT BE BLOCKED, and that is a consequence of the mirror
+                // rather than a waiver of the rule. `shouldContinue = false` means "a super-
+                // shielded prism physically stopped the front here", which is a statement about
+                // ONE expanding front — and a mirrored plate has two, claiming |axial| so that
+                // frame 1 evaluates mass BEHIND the pilot before anything ahead of them. Left
+                // alone, a super-shielded prism the pilot had already flown past would abort the
+                // punch on its first frame, and in Scarab Scramble the pilot's own dais pays out
+                // super-shielded sun cores — so a player's reward would silently cancel their
+                // weapon, with nothing on screen to explain it.
+                //
+                // Nothing is made destructible: the shielded prism is still fully invulnerable and
+                // still rocks on the shared gate (Prism.AbsorbSuperShieldHit). The stated cost is
+                // that a super-shielded wall no longer truncates this blast's remaining sweep
+                // either — bounded by the plate's own authored reach, which is a fixed 54 u over
+                // 0.21 s rather than an expanding shell.
+                return mirrored || shouldContinue;
             }
         }
 
@@ -290,14 +494,18 @@ namespace CosmicShore.Gameplay
             using (s_processBatch.Auto())
             {
                 if (!HasPendingBatchWork) return false;
+                DrainVirtualHearts(force: false);
+                DrainPrismEffects();
+                if (_batchPending == null || _batchPending.Count == 0) return HasPendingBatchWork;
                 var registry = PrismSpatialIndex.Instance;
-                if (registry == null) { _batchPending.Clear(); return false; }
+                if (registry == null) { _batchPending.Clear(); return HasPendingBatchWork; }
 
-                return registry.DrainPendingExplosionDamage(
+                registry.DrainPendingExplosionDamage(
                     _batchPending, impulse,
                     explosion.Domain,
                     affectSelf, destructive, devastating, shielding,
                     explosion.AnonymousExplosion, explosion.Vessel);
+                return HasPendingBatchWork;
             }
         }
 
@@ -334,11 +542,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void EndBatchProcessing()
         {
+            // A blast that ends with virtual hearts still queued resolves them now - a member's fate is decided by
+            // whether the blast CONTAINED it, never by how long the VFX ran (the _batchPending rule, §16.2 / §19).
+            DrainVirtualHearts(force: true);
             if (_useBatchProcessing && explosion != null && explosion.Vessel != null)
                 OnBlastResolved?.Invoke(explosion.Vessel,
                     new BlastTally(BatchHitCount, VesselHitCount));
 
             _useBatchProcessing = false;
+            // Same rule for deferred prism effects: a blast ending normally has already drained
+            // them (ExplodeAsync waits on HasPendingBatchWork); one cut short by turn end must not
+            // keep editing mass after the turn is over.
+            _prismEffectsPending?.Clear();
             // Keep HashSet/Queue allocated for reuse - cleared on next BeginBatchProcessing.
             // Any hits still pending here are abandoned deliberately: EndBatchProcessing
             // runs on cancellation (turn end) and on the destroy paths, where further
@@ -387,13 +602,32 @@ namespace CosmicShore.Gameplay
                 case VesselImpactor vesselImpactee:
                     if (vesselImpactee.Vessel.VesselStatus.Domain == explosion.Domain && !affectSelf)
                         break;
+                    // A hull inside a Soliton Tunnel is in another dimension: a blast out here does not reach it, nor a
+                    // rider's blast anyone out here (SolitonIsolation). Before the ledger, so it can still be caught once out.
+                    if (SolitonIsolation.Apart(SourceVessel?.VesselStatus, vesselImpactee.Vessel.VesselStatus))
+                        break;
 
                     // Recorded BEFORE the effect container is consulted: a pilot who passed the
                     // friendly-fire gate has been caught by this blast whether or not the firing
                     // vessel happens to author any vessel effects, and the tally is a report of the
                     // blast's reach, not of one container's wiring.
+                    //
+                    // ONE BLAST PAYS A VICTIM ONCE, and the ledger is the GATE rather than only the
+                    // tally. A blast is a trigger that GROWS for its whole duration - three seconds
+                    // on the skyburst's destructive sphere - so a pilot who is swept up, flies out
+                    // and turns back in re-enters the same detonation and raises OnTriggerEnter
+                    // again. VesselCombatHitLatch cannot answer that: its window is half a second,
+                    // which is the anti-spam floor between two DIFFERENT rockets and is deliberately
+                    // much shorter than a blast's life, so past it the second entry would land the
+                    // debuff and the points a second time for one shot. The three missile TIERS are
+                    // the other question and are a separate blast instance each; the latch folds
+                    // those onto one window and pays only the closest.
                     _vesselsHit ??= new HashSet<int>(4);
-                    _vesselsHit.Add(vesselImpactee.Vessel.Transform.GetInstanceID());
+                    if (!_vesselsHit.Add(vesselImpactee.Vessel.Transform.GetInstanceID())) break;
+
+                    // The camera following the caught vessel rocks with the blast (Docs/CAMERA_FEEL.md) - once per
+                    // blast, under the same ledger, whatever the container carries.
+                    VesselCameraFeel.Blast(vesselImpactee.Vessel.VesselStatus, transform.position);
 
                     if (!explosionImpactorDataContainer) return;
                     var vesselExplosionEffects = explosionImpactorDataContainer.vesselExplosionEffects;
@@ -405,6 +639,16 @@ namespace CosmicShore.Gameplay
                     break;
                 
                 case PrismImpactor prismImpactee:
+                    // A blast that does not touch mass declines here TOO, not only in
+                    // BeginBatchProcessing. The flag has to hold on BOTH paths or it holds on
+                    // neither in practice: the batch early-return leaves _useBatchProcessing
+                    // false, which is exactly the state in which OnTriggerEnter does NOT skip the
+                    // prism layer - so a prism trigger would fall straight through to
+                    // ExecuteCommonPrismCommands, whose first branch on a non-destructive blast
+                    // ARMOURS the prism (ActivateShield) instead of ignoring it. The prefab's
+                    // authored layer exclusion is a second line, not the only one; an explosion
+                    // authored tomorrow without it would otherwise shield half an arena.
+                    if (explosion != null && !explosion.AffectsPrisms) return;
                     ExecuteCommonPrismCommands(prismImpactee.Prism, impactVector);
                     if (!explosionImpactorDataContainer) return;
                     var explosionPrismEffects = explosionImpactorDataContainer.explosionPrismEffects;
@@ -431,18 +675,20 @@ namespace CosmicShore.Gameplay
         public ExplosionImpulse BlastImpulse => explosion != null ? explosion.Impulse : default;
 
         /// <summary>
-        /// Blast → CRYSTAL, dispatched by an explicit overlap rather than through the trigger.
-        /// Layer 9 (Crystals) × layer 10 (Explosions) is off in the collision matrix, so no
-        /// trigger pair is ever generated for this contact; the alternative to querying here was
-        /// turning that pair on project-wide, which would mint trigger pairs between EVERY blast
-        /// and EVERY crystal in every mode to serve one weapon.
+        /// Which way this blast throws what it claims, at <paramref name="at"/> — the blast's own
+        /// <see cref="AOEExplosion.CalculateImpactVector"/>, exposed for effects that need to LAUNCH
+        /// something rather than damage it.
         ///
-        /// The query is skipped entirely unless this blast AUTHORS crystal effects — which today
-        /// is only the Scarab's cavitation punch, so the other twelve AOE prefabs pay one array
-        /// null-check per frame and nothing else. `_crystalsHit` is the once-per-blast ledger, the
-        /// same shape as the prism batch tracker: a blast grows over many frames and would
-        /// otherwise re-convert the same crystal on each of them.
+        /// It exists because "away from the centre" is only one blast shape's answer. A spherical
+        /// blast does radiate, so this is the radial there and nothing changes; a swept plate throws
+        /// everything it claims ALONG THE SWEEP, at every position, which is the whole of what makes
+        /// a mirrored plate DRAG mass forward instead of pushing it further away. An effect that
+        /// re-derives the direction from (target − blastOrigin) is correct for exactly one of those
+        /// and silently backwards for the other half of the other.
         /// </summary>
+        public Vector3 BlastImpactVector(Vector3 at) =>
+            explosion != null ? explosion.CalculateImpactVector(at) : Vector3.zero;
+
         /// <summary>
         /// Exact swept-CYLINDER narrowphase for the crystal sweep, when the caller's blast is one.
         /// A sphere cannot bound a squat cylinder tightly — for the Scarab's 45-wide, 54-long plate
@@ -458,10 +704,12 @@ namespace CosmicShore.Gameplay
             public readonly Vector3 Axis;
             public readonly float Depth;
             public readonly float Radius;
+            public readonly bool Mirrored;
 
-            public SweptCylinder(Vector3 origin, Vector3 axis, float depth, float radius)
+            public SweptCylinder(Vector3 origin, Vector3 axis, float depth, float radius,
+                                 bool mirrored = false)
             {
-                Origin = origin; Axis = axis; Depth = depth; Radius = radius;
+                Origin = origin; Axis = axis; Depth = depth; Radius = radius; Mirrored = mirrored;
             }
 
             public bool IsValid => Radius > 0f;
@@ -473,11 +721,29 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 rel = point - Origin;
                 float s = Vector3.Dot(rel, Axis);
-                if (s < 0f || s > Depth) return false;
+                // A MIRRORED plate claims its own reflection through the start plane, so the axial
+                // test is on |s| and the volume runs [-Depth, +Depth]. Same expression the Burst
+                // job runs — these two must not drift, or the crystal half of a blast disagrees
+                // with the prism half about what it touched.
+                if (Mirrored) { if (s < -Depth || s > Depth) return false; }
+                else if (s < 0f || s > Depth) return false;
                 return Vector3.ProjectOnPlane(rel, Axis).sqrMagnitude <= Radius * Radius;
             }
         }
 
+        /// <summary>
+        /// Blast → CRYSTAL, dispatched by an explicit overlap rather than through the trigger.
+        /// Layer 9 (Crystals) × layer 10 (Explosions) is off in the collision matrix, so no
+        /// trigger pair is ever generated for this contact; the alternative to querying here was
+        /// turning that pair on project-wide, which would mint trigger pairs between EVERY blast
+        /// and EVERY crystal in every mode to serve one weapon.
+        ///
+        /// The query is skipped entirely unless this blast AUTHORS crystal effects — which today
+        /// is only the Scarab's cavitation punch, so the other twelve AOE prefabs pay one array
+        /// null-check per frame and nothing else. `_crystalsHit` is the once-per-blast ledger, the
+        /// same shape as the prism batch tracker: a blast grows over many frames and would
+        /// otherwise re-convert the same crystal on each of them.
+        /// </summary>
         void SweepCrystals(Vector3 centre, float radius) =>
             SweepCrystals(centre, radius, default);
 
@@ -487,17 +753,21 @@ namespace CosmicShore.Gameplay
             var effects = explosionImpactorDataContainer.explosionCrystalEffects;
             if (!DoesEffectExist(effects)) return;
 
-            if (_crystalLayerMask == 0)
-            {
-                int layer = LayerMask.NameToLayer("Crystals");
-                _crystalLayerMask = layer >= 0 ? 1 << layer : -1;   // -1 = resolved-and-absent
-            }
-            if (_crystalLayerMask <= 0) return;
+            int mask = ResolveCrystalLayerMask();
+            if (mask <= 0) return;
 
             _crystalsHit ??= new HashSet<int>(8);
 
             int found = Physics.OverlapSphereNonAlloc(centre, radius, s_crystalHits,
-                                                      _crystalLayerMask, QueryTriggerInteraction.Collide);
+                                                      mask, QueryTriggerInteraction.Collide);
+            if (found == s_crystalHits.Length && !s_warnedCrystalSweepSaturated)
+            {
+                s_warnedCrystalSweepSaturated = true;
+                CosmicShore.Utility.CSDebug.LogWarning(
+                    $"[ExplosionImpactor] Crystal broadphase saturated its {s_crystalHits.Length}-slot " +
+                    $"buffer (r={radius:F0} at {centre}) — a crystal inside this blast may have been " +
+                    "silently skipped. Raise s_crystalHits, or narrow the query. Reported once.");
+            }
             for (int i = 0; i < found; i++)
             {
                 var col = s_crystalHits[i];
@@ -522,6 +792,241 @@ namespace CosmicShore.Gameplay
             }
         }
         
+        /// <summary>
+        /// The Crystals layer as a mask, resolved once. 0 means "not looked up yet" and -1 means
+        /// "resolved, and this project has no Crystals layer" — the same sentinel pair both
+        /// sweeps read, so they cannot disagree about where crystals live.
+        /// </summary>
+        int ResolveCrystalLayerMask()
+        {
+            if (_crystalLayerMask != 0) return _crystalLayerMask;
+            int layer = LayerMask.NameToLayer("Crystals");
+            _crystalLayerMask = layer >= 0 ? 1 << layer : -1;
+            return _crystalLayerMask;
+        }
+
+        void SweepLifeformHearts(Vector3 centre, float radius) =>
+            SweepLifeformHearts(centre, radius, default);
+
+        /// <summary>
+        /// Blast → a LIVING lifeform's HEART, dispatched by an explicit overlap for exactly the
+        /// reason <see cref="SweepCrystals"/> is: layer 9 (Crystals) × layer 10 (Explosions) is
+        /// off in the collision matrix, so no trigger pair is ever generated and a case in
+        /// <see cref="AcceptImpactee"/> would compile, read correctly and never fire.
+        ///
+        /// Skipped entirely unless this blast AUTHORS lifeform-crystal effects — today only the
+        /// Sparrow's missile warhead — so every other AOE prefab pays one array null-check per
+        /// frame. <c>_heartsHit</c> is the once-per-blast ledger: a growing blast re-finds a
+        /// creature that has not finished dying yet, and <c>Jousted</c> is idempotent but the
+        /// effect list should not run twice for one creature.
+        ///
+        /// A heart stops matching on its own once the creature dies —
+        /// <c>Crystal.ActivateCrystal</c> clears <c>EmbeddedIn</c> and it becomes an ordinary
+        /// free pickup — so the sweep never re-kills what it already killed.
+        /// </summary>
+        void SweepLifeformHearts(Vector3 centre, float radius, in SweptCylinder narrowphase)
+        {
+            if (!explosionImpactorDataContainer || radius <= 0f) return;
+            var effects = explosionImpactorDataContainer.explosionLifeformCrystalEffects;
+            if (!DoesEffectExist(effects)) return;
+
+            int mask = ResolveCrystalLayerMask();
+            if (mask <= 0) return;
+
+            _heartsHit ??= new HashSet<int>(16);
+
+            int found;
+            while (true)
+            {
+                found = Physics.OverlapSphereNonAlloc(centre, radius, s_heartHits,
+                                                      mask, QueryTriggerInteraction.Collide);
+                if (found < s_heartHits.Length || s_heartHits.Length >= HeartSweepBufferCap) break;
+                s_heartHits = new Collider[s_heartHits.Length * 2];
+            }
+            for (int i = 0; i < found; i++)
+            {
+                var col = s_heartHits[i];
+                if (col == null) continue;
+                if (!col.TryGetComponent(out Crystal crystal)) continue;
+                if (!crystal.IsEmbedded) continue;
+                // EMBEDDED IS NOT ALIVE. A creature with a progressive wither re-homes its heart
+                // onto the cell at the TOP of its death and deliberately leaves it embedded for
+                // the whole animation (Docs/ECOSYSTEM.md §26), so a corpse's heart is swept for
+                // seconds after it died. Jousting one re-runs the sealed death: a second kill
+                // credit for one creature, and - because the joust stamps the style first - the
+                // heart pops free while the wither is still eating inward. Fauna.Predated now
+                // declines a corpse outright, so this is the belt to that brace; it also keeps
+                // the sweep from spending effect dispatches on the dead.
+                if (crystal.EmbeddedIn is { IsDying: true }) continue;
+                // The sphere is only the broadphase when the caller supplied a real shape.
+                if (narrowphase.IsValid && !narrowphase.Contains(col.transform.position)) continue;
+                if (!_heartsHit.Add(crystal.GetInstanceID())) continue;
+                ApplyLifeformEffects(effects, crystal);
+            }
+
+            SweepVirtualHearts(centre, radius, narrowphase);
+        }
+
+        void ApplyLifeformEffects(ExplosionLifeformCrystalEffectSO[] effects, Crystal crystal)
+        {
+            for (int e = 0; e < effects.Length; e++)
+            {
+                if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
+                        nameof(ExplosionImpactorDataContainerSO.explosionLifeformCrystalEffects), e))
+                    continue;
+                effects[e].Execute(this, crystal);
+            }
+        }
+
+        /// <summary>
+        /// The heart half of <see cref="SweepLifeformHearts"/> for creatures that are only data (Docs/SWARM_FAUNA.md
+        /// §19): a member's heart is a point where it is drawn, so the sphere is widened by the largest heart radius
+        /// a member carries (<see cref="VirtualHeartAllowance"/>, the over-reach a collider overlap would have) and
+        /// the caller's narrowphase is asked of the point. Each heart found is materialised under its owner's budget
+        /// and handed to the SAME effects; the rest wait in <see cref="_virtualHeartsPending"/>. The effects make
+        /// their own domain decision, so nothing is pre-filtered here. Runs only when the blast authors lifeform
+        /// effects (the early return in the caller), so every other blast pays nothing.
+        /// </summary>
+        void SweepVirtualHearts(Vector3 centre, float radius, in SweptCylinder narrowphase)
+        {
+            if (!VirtualFauna.Any) return;
+            s_virtualHeartIds.Clear();
+            s_virtualHeartPoints.Clear();
+            VirtualFauna.CollectHearts(centre, radius + VirtualHeartAllowance, s_virtualHeartIds, s_virtualHeartPoints);
+            if (s_virtualHeartIds.Count == 0) return;
+            _virtualHeartsSeen ??= new HashSet<int>(32);
+            _virtualHeartsPending ??= new Queue<int>(32);
+            for (int k = 0; k < s_virtualHeartIds.Count; k++)
+            {
+                if (narrowphase.IsValid && !narrowphase.Contains(s_virtualHeartPoints[k])) continue;
+                if (_virtualHeartsSeen.Add(s_virtualHeartIds[k])) _virtualHeartsPending.Enqueue(s_virtualHeartIds[k]);
+            }
+            DrainVirtualHearts(force: false);
+        }
+
+        /// <summary>The largest heart radius a swarm member is drawn with (Charge/Space 2.298 world scale).</summary>
+        const float VirtualHeartAllowance = 2.4f;
+
+        void DrainVirtualHearts(bool force)
+        {
+            if (_virtualHeartsPending == null || _virtualHeartsPending.Count == 0) return;
+            var effects = explosionImpactorDataContainer ? explosionImpactorDataContainer.explosionLifeformCrystalEffects : null;
+            if (!DoesEffectExist(effects)) { _virtualHeartsPending.Clear(); return; }
+            _heartsHit ??= new HashSet<int>(16);
+            while (_virtualHeartsPending.Count > 0)
+            {
+                int id = _virtualHeartsPending.Peek();
+                var crystal = VirtualFauna.MaterialiseHeart(id, force, out bool retry);
+                if (retry) return;   // the owner's budget is spent this frame - the rest next frame
+                _virtualHeartsPending.Dequeue();
+                if (!crystal || crystal.EmbeddedIn is { IsDying: true }) continue;
+                if (!_heartsHit.Add(crystal.GetInstanceID())) continue;   // the collider sweep must not run them twice
+                ApplyLifeformEffects(effects, crystal);
+            }
+        }
+
+        /// <summary>
+        /// Blast → PRISM EFFECTS, for a blast that does not touch mass itself
+        /// (<see cref="AOEExplosion.AffectsPrisms"/> OFF). Such a blast never starts the Burst
+        /// prism pass and its trigger declines every prism (see <see cref="AcceptImpactee"/>), so
+        /// without this the container's <c>explosionPrismEffects</c> — and any
+        /// <see cref="IExplosionPrismPayload"/> component on the blast — could never run, which is
+        /// exactly how the Butterfly's omni-crystal bloom shipped: a 900-unit blast that changed
+        /// nothing. With the generic damage/shield pass off, those payloads ARE the blast's whole
+        /// effect on mass, and each prism gets them once.
+        ///
+        /// A blast that DOES affect prisms is deliberately not swept: its mass is already decided
+        /// by the batch pass, and dispatching effects on top would be a second outcome per prism.
+        ///
+        /// Broadphase is <see cref="PrismSpatialIndex.QuerySphere"/> (live prisms only, centre
+        /// test) over this frame's sphere, so outcomes ride the wavefront. At most
+        /// <see cref="MaxPrismEffectsPerFrame"/> dispatch per frame; the rest wait in
+        /// <c>_prismEffectsPending</c> and drain after the visual, like budget-deferred damage —
+        /// a prism's fate is decided by whether the blast contained it, not by how long the VFX
+        /// ran. Spherical blasts only: the conic and cylindrical frames do not call it, and no
+        /// shipped cone or plate authors prism effects.
+        /// </summary>
+        void SweepPrismEffects(Vector3 centre, float radius)
+        {
+            if (radius <= 0f || !HasPrismPayload) return;
+            if (explosion == null || explosion.AffectsPrisms) return;
+
+            var registry = PrismSpatialIndex.Instance;
+            if (registry == null || !registry.IsAvailable)
+            {
+                if (!s_warnedPrismEffectsNoIndex)
+                {
+                    s_warnedPrismEffectsNoIndex = true;
+                    CosmicShore.Utility.CSDebug.LogWarning(
+                        $"[ExplosionImpactor] '{name}' authors prism effects but the PrismSpatialIndex " +
+                        "is unavailable, so its sweep cannot reach a single prism. Reported once.", this);
+                }
+                return;
+            }
+
+            _prismEffectsSeen ??= new HashSet<int>(256);
+            _prismEffectsPending ??= new Queue<(Prism, float)>(256);
+
+            registry.QuerySphere(centre, radius, s_prismEffectHits);
+            for (int i = 0; i < s_prismEffectHits.Count; i++)
+            {
+                var prism = s_prismEffectHits[i];
+                if (!prism || prism.destroyed || prism.prismProperties == null) continue;
+                if (!_prismEffectsSeen.Add(prism.GetInstanceID())) continue;
+                _prismEffectsPending.Enqueue((prism, prism.prismProperties.TimeCreated));
+            }
+            s_prismEffectHits.Clear();
+
+            DrainPrismEffects();
+        }
+
+        /// <summary>Does this blast carry anything to do to a prism it reaches — container
+        /// effects or an <see cref="IExplosionPrismPayload"/> component?</summary>
+        bool HasPrismPayload =>
+            (explosionImpactorDataContainer && DoesEffectExist(explosionImpactorDataContainer.explosionPrismEffects))
+            || _prismPayloads is { Length: > 0 };
+
+        /// <summary>Dispatch up to <see cref="MaxPrismEffectsPerFrame"/> deferred prisms to the
+        /// container's prism effects and every <see cref="IExplosionPrismPayload"/>.</summary>
+        void DrainPrismEffects()
+        {
+            if (_prismEffectsPending == null || _prismEffectsPending.Count == 0) return;
+            if (!HasPrismPayload) { _prismEffectsPending.Clear(); return; }
+            var effects = explosionImpactorDataContainer ? explosionImpactorDataContainer.explosionPrismEffects : null;
+            int effectCount = DoesEffectExist(effects) ? effects.Length : 0;
+
+            int budget = MaxPrismEffectsPerFrame;
+            while (budget > 0 && _prismEffectsPending.Count > 0)
+            {
+                var (prism, laidAt) = _prismEffectsPending.Dequeue();
+                // Identity, not liveness: a pooled prism that died and was re-issued since it was
+                // queued is ALIVE, but it is no longer the mass this blast contained.
+                if (!prism || prism.destroyed || prism.prismProperties == null
+                    || prism.prismProperties.TimeCreated != laidAt) continue;
+                if (!prism.TryGetComponent(out PrismImpactor prismImpactor)) continue;
+
+                budget--;
+                bool ran = false;
+                for (int e = 0; e < effectCount; e++)
+                {
+                    if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
+                            nameof(ExplosionImpactorDataContainerSO.explosionPrismEffects), e))
+                        continue;
+                    effects[e].Execute(this, prismImpactor);
+                    ran = true;
+                }
+                if (_prismPayloads != null)
+                {
+                    for (int k = 0; k < _prismPayloads.Length; k++)
+                    {
+                        _prismPayloads[k].OnPrismReached(this, prismImpactor);
+                        ran = true;
+                    }
+                }
+                if (ran) PrismEffectsDispatched++;
+            }
+        }
+
         /// <summary>
         /// The Physics-trigger fallback's per-prism resolution. Mirrors
         /// <c>PrismSpatialIndex.ResolveExplosionHit</c>, INCLUDING the debris ceiling:
@@ -556,12 +1061,19 @@ namespace CosmicShore.Gameplay
                 // root. It is also the SAME expression the Burst twin uses
                 // (PrismSpatialIndex.ResolveExplosionHit) - these two must not drift, or a
                 // blast pops shields differently with the spatial index up.
-                float impactSpeed = explosion.Impulse.Speed * explosion.Impulse.Inertia;
-                float limit = explosion.Impulse.DebrisSpeedLimit;
+                // The blast is ACCEPTED, not ignored - and since 2026-09 what says so is LIT
+                // (PublishLit above), not a 2-second shield on every prism. See
+                // SparesWhatItTouches for what that swap removed; Docs/LIT.md for why.
+                //
+                // An AUTHORED shield still lands: `shielding` is a real ability (the Sparrow's
+                // CHARGE-5 "Shielded Prisms"), it is PERMANENT rather than timed, and it is a
+                // gameplay grant rather than a stand-in for a visual. Only the timed stand-in
+                // went away.
                 if (shielding && prism.Domain == explosion.Domain)
-                    prism.ActivateShieldFromImpact(impactSpeed, limit);
-                else 
-                    prism.ActivateShield(2f, impactSpeed, limit);
+                {
+                    float impactSpeed = explosion.Impulse.Speed * explosion.Impulse.Inertia;
+                    prism.ActivateShieldFromImpact(impactSpeed, explosion.Impulse.DebrisSpeedLimit);
+                }
                 return;
             }
             

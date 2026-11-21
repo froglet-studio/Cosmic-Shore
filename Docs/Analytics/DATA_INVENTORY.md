@@ -17,18 +17,19 @@ string fallback on load.
 
 | # | Key | Model | Status | Debounce | Writes |
 |---|---|---|---|---|---|
-| 1 | `player_profile` | `PlayerProfileData` | **ACTIVE** | 1.5s | Per mutation (crystals, rewards, avatar/name) |
+| 1 | `player_profile` | `PlayerProfileData` | **ACTIVE** | 1.5s | Per mutation (crystals, rewards, avatar/name; the `xp` field is dormant) |
 | 2 | `PLAYER_STATS_PROFILE` | `PlayerStatsProfile` | **ACTIVE** | 2.0s | Game end (only when a best is beaten) |
 | 3 | `VESSEL_STATS` | `VesselStatsCloudData` | **ACTIVE** | 2.0s | Every game end |
 | 4 | `GAME_MODE_PROGRESSION` | `GameModeProgressionData` | **ACTIVE** | 1.5s + immediate | Quest claims, intensity unlocks, stat reports |
 | 5 | `HANGAR_DATA` | `HangarCloudData` | **ACTIVE** | 1.5s | Vessel lock/unlock |
 | 6 | `PLAYER_SETTINGS` | `PlayerSettingsCloudData` | **ACTIVE** | 1.5s | Per settings change |
-| 7 | `WEEKLY_CHALLENGE` | `WeeklyChallengeCloudData` | **WIRED, DEFERRED** — repo loads/flushes; system still on PlayerPrefs+PlayFab. Migration deferred (PlayFab economy coupling). | 1.5s | none yet |
+| 7 | `WEEKLY_CHALLENGE` | `WeeklyChallengeCloudData` | **WIRED, DEFERRED** — repo loads/flushes; system still on PlayerPrefs. Migration deferred (legacy economy coupling; the PlayFab half was removed 12 Sep 2026). | 1.5s | none yet |
 | 8 | `TRAINING_PROGRESS` | `TrainingProgressCloudData` | **WIRED** — repo loads/flushes; system still writes local file. Migration held for Unity review. | 1.5s | none yet |
 | 9 | `CAPTAIN_PROGRESS` | `CaptainProgressCloudData` | **DISABLED** — `CaptainManager` stubbed since PlayFab retirement (repo not wired) | 1.5s | none |
 | 10 | `EPISODE_PROGRESS` | `EpisodeProgressCloudData` | **SCAFFOLD** — `ReportMissionCompleted` has no callers | 1.5s | none |
-| 11 | `SQUAD_DATA` | `SquadCloudData` | **WIRED** (new) — repo loads/flushes; system still writes `squad.data`. Migration held for Unity review. | 1.5s | none yet |
+| 11 | `SQUAD_DATA` | `SquadCloudData` | **ACTIVE** (2026-10-27) — the player's saved squads (`SquadBook`, at most 4 made + joined: named squads of vessel + element + pilot id + artifact id per slot, plus who flies each seat - AI, open, or a player id - and the squad's domain, one active; `Docs/PILOTS_AND_ARTIFACTS.md` §10). Written by the Ark's Squads tab (`SquadsPage`, `Docs/MENU_REDESIGN_B.md` §92, §95). Its PUBLIC twin `SQUADS_PUBLIC` (`SquadPublicRecord`, written with the public access class by `SquadDirectory`) carries the squads the player made and the seats they claimed in friends' squads, so friends can join; any signed-in player can read it by player id. | 1.5s | Per squad change (public record 2 s after the last change, and after each read of friends' records) |
 | 12 | `LOADOUT_DATA` | `LoadoutCloudData` | **WIRED** (new) — repo loads/flushes; system still writes local files. Migration held for Unity review. | 1.5s | none yet |
+| 13 | `DRILL_PROGRESS` | `DrillProgressCloudData` | **WIRED** (new, 2026-10-01) — the microgame drill's account keys (`CompletedAnyLesson`, `CompletedTwoThumbLesson`), seen Mentor tip ids, best practice laps. `DrillProgressStore` writes it beside a PlayerPrefs mirror; every field only grows, so reads merge the two. Nothing calls the store yet (Docs/ModePreview/TRAINING_PLAN.md §10.1). | 1.5s | none yet |
 
 ### 1.1 `player_profile` — `PlayerProfileData` (`_Scripts/UI/Views/PlayerProfileData.cs`)
 
@@ -48,7 +49,8 @@ string fallback on load.
 (Phase 2) — used for install-relative cohorting / retention analysis.
 
 Writer: `PlayerDataService` (sole writer; `AddCrystals`, `TrySpendCrystals`, `UnlockReward`,
-profile edits → `MarkDirty`).
+profile edits → `MarkDirty`). XP was removed (no `AddXP`, no `ParticipationXpAwarder`); the
+`PlayerProfileData.xp` field persists dormant for back-compat.
 Read once per session, merged with cloud (`MergeCloudProfile` unions reward IDs).
 **Note for the data team: "omnicrystals" in the instrumentation doc == `crystalBalance` here.**
 
@@ -58,9 +60,9 @@ Read once per session, merged with cloud (`MergeCloudProfile` unions reward IDs)
 {
   "LastLoginTick": 638537251200000000,
   "BlitzStats":          { "HighScores": { "WildlifeBlitz_2": 1840 }, "LifetimeCrystalsCollected": 0 },
-  "MultiHexStats":       { "BestMultiplayerRaceTimes": { "HexRace_2": 93.41 } },
-  "JoustStats":          { "BestRaceTimes": { "MultiplayerJoust_1": 75.2 } },
-  "CrystalCaptureStats": { "HighScores": { "MultiplayerCrystalCapture_3": 42 } }
+  "MultiHexStats":       { "BestMultiplayerRaceTimes": { "SkimRace_2": 93.41 } },
+  "JoustStats":          { "BestRaceTimes": { "Joust_1": 75.2 } },
+  "ScurryStats": { "HighScores": { "Scurry_3": 42 } }
 }
 ```
 
@@ -100,8 +102,8 @@ extension point for new per-vessel stats — no schema change needed.
 
 ```json
 {
-  "UnlockedModes": ["WildlifeBlitz", "HexRace"],
-  "CompletedQuests": ["HexRace"],
+  "UnlockedModes": ["WildlifeBlitz", "SkimRace"],
+  "CompletedQuests": ["SkimRace"],
   "BestStats": { "WildlifeBlitz": 1840.0 },
   "MaxUnlockedIntensity": { "WildlifeBlitz": 3 },
   "IntensityPlayCounts": { "WildlifeBlitz_2": 11 }
@@ -199,7 +201,7 @@ revenue funnel (VSlice in the instrumentation doc) will persist.
 
 | Store | Data | Owner |
 |---|---|---|
-| `squad.data` (file) | `Squad` — leader + 2 rogues (class + element each) | `SquadSystem` |
+| `squad.data` (file) | `Squad` — leader + 2 rogues (class + element each). Legacy: read only by the dormant `PortSquadView`; superseded by `SQUAD_DATA` schema 1 and retired with it in pilots-and-artifacts slice 5 | `SquadSystem` |
 | `game_favorites.data` (file) | `List<GameModes>` favorited minigames | `FavoriteSystem` |
 | loadout file | `Loadout` — intensity, player count, vessel, mode, isMultiplayer | `LoadoutSystem` |
 | PlayerPrefs | daily challenge state (→ §1.7), settings mirror, `Client_guid`, volumes | various |
@@ -233,7 +235,9 @@ favorites is a referral signal), and should get cloud keys + events when touched
 |---|---|---|
 | UGS Analytics | `play_again_pressed` (no params) | Scoreboard "Play Again" → `UGSStatsManager.TrackPlayAgain()` (also calls `Flush()` per event) |
 | UGS Analytics | built-in auto events (session, device, newPlayer) | `UnityAnalytics.cs` starts collection on sign-in; network-aware pause/resume |
-| UGS Leaderboards | HexRace time, WildlifeBlitz score, Joust time, CrystalCapture crystals — per intensity, IDs from `LeaderboardConfigSO` | per-mode trackers at game end → `UGSStatsManager.SubmitScoreInternal()` |
+| UGS Leaderboards | **Weekly-challenge completion TIME only.** One board, id on `WeeklyChallengeCatalogSO.leaderboardId`. | `WeeklyChallengeService.FinishAttempt` on a completion → `WeeklyChallengeLeaderboardService.SubmitCompletionAsync()` |
+
+> **Retired:** the per-mode × intensity board path (`LeaderboardConfigSO`, `UGSStatsManager.SubmitScoreInternal`, ids like `mp_joust_intensity_1`) submitted on every arcade game end and is **deleted**. Leaderboards are a weekly-challenge feature only. Per-mode bests still land in Cloud Save `MODE_STATS`; they are simply not ranked globally.
 | UGS Cloud Save | everything in §1 (active keys) | see §1 |
 | Firebase | `app_open` | SDK init (`FirebaseAnalyticsController`) |
 | Firebase | `ad_impression` | `AdsSystem.AdLoaded` |
@@ -248,8 +252,11 @@ favorites is a referral signal), and should get cloud keys + events when touched
   instead of resurrecting the Firebase path.**
 - `level_start` / `level_end` in `FirebaseAnalyticsController` — subscriptions commented out.
 - `screen_view` — method exists, never called.
-- `UserJourneySystem` / `QuestSystem` — full funnel state machine, emits zero analytics.
-- PlayFab PlayStream `AnalyticsController` — disabled, delete when convenient.
+- `QuestGraphRunner` (`Assets/FTUE/Scripts/Graph/Runtime/`) — the quest graph, emits zero
+  analytics. It REPLACED `UserJourneySystem` / `QuestSystem`, which are deleted; instrument the
+  runner's `FTUEEventManager.OnQuestPhaseCompleted` / `OnQuestCompleted`, not the old classes.
+  Note it does not run at all while `DeveloperUnlockGate.AllUnlocked` is on (the default until
+  the FTUE is designed), so a build taken today emits nothing here by construction.
 
 ### 2.3 Consent
 
@@ -321,8 +328,11 @@ itself doesn't exist).
     (or a new `PLAYER_STYLE` key) and as a UGS Analytics user property. Note: "altitude bands /
     map coverage" from the data-team doc translate to **cell occupancy / cell coverage** in our IA.
 14. **Squad cloud migration** + `squad_configured` (activation gate in the data team's funnel).
-15. **Quest/UserJourney analytics**: `quest_completed` / `journey_stage_reached` from
-    `UserJourneySystem` (currently silent).
+15. **Quest analytics**: `journey_stage_reached` is still unbuilt. `quest_completed` IS raised
+    again — `GameModeProgressionService.RecordQuestCompletedAnalytics`, at both quest-completion
+    paths — after the quest-graph branch deleted its old producer (`QuestSystem`) and left the
+    event documented LIVE with nothing raising it. `UserJourneySystem` is deleted; do not plan
+    against it.
 
 ### 3.3 Explicitly out of scope until VLater
 
@@ -337,7 +347,7 @@ bunk space, prism→omni conversion, store-page/UTM attribution (storefront-side
 > **Phase 3 status (2026-06-15):** infrastructure fixes #2, #4, #6, #9 shipped; deprecated field
 > (#7's cousin) dropped; all 12 repos wired (incl. new Squad/Loadout). Issues #5 (per-event Flush)
 > shipped in Phase 1. The local→cloud system migrations (#1) are **held for Unity review**; Daily
-> Challenge is **deferred** (PlayFab economy coupling).
+> Challenge is **deferred** (legacy economy coupling).
 
 ### What's already good
 

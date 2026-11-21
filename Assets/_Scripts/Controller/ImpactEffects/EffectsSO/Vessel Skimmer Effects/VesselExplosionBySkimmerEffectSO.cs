@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.UI;
 using CosmicShore.Data;
@@ -66,6 +66,15 @@ namespace CosmicShore.Gameplay
             var impactorVessel = impactor.Vessel;
             var impacteeVessel = impactee.Skimmer.VesselStatus.Vessel;
 
+            // A joust is scored between two PILOTS: its domain test, its scorer and its feed post
+            // all read the vessels' players. A hull with no live player (mid-swap in the Vessel
+            // Changer, a despawning hull, a crew seat nobody sits in) has nobody to score or lose,
+            // and reading it threw on IsLocalUser after "No Player found to get domain!" (Bug
+            // Ledger E-775c564039 / E-6e925c3b8b, Andrew 2026-10-20).
+            if (!UnityLiveness.Alive(impactorVessel.VesselStatus.Player) ||
+                !UnityLiveness.Alive(impacteeVessel.VesselStatus.Player))
+                return;
+
             // Only trigger if the skimmer's vessel is faster than the impactor
             if (impacteeVessel.VesselStatus.Speed <= impactorVessel.VesselStatus.Speed)
                 return;
@@ -74,6 +83,23 @@ namespace CosmicShore.Gameplay
             // same-domain teammate buffs them (VesselOvertakeBySkimmerEffectSO) but
             // never scores - skip the explosion, joust point, and feed post.
             if (impacteeVessel.VesselStatus.Domain == impactorVessel.VesselStatus.Domain)
+                return;
+
+            // A joust point is a scored hit, and a scored hit is a petal theft (2026-10-10): a
+            // pilot warded against contact (the stopped Serpent, a boosting Sparrow at Time 5)
+            // yields no petals to the overtake, so it yields no joust point either. The same ward
+            // CombatHitDrain.TryAdmit asks about for the overtake's own steal.
+            if (impactorVessel.VesselStatus.IsImmuneToElementalDebuff(ElementalDebuffSources.VesselContact))
+                return;
+
+            // ...and a SILENCED jouster scores nothing, for the same reason: CombatHitDrain.TryAdmit
+            // refuses their overtake's steal (VesselSilence), so the joust point goes with it.
+            if (VesselSilence.IsSilenced(impacteeVessel.VesselStatus))
+                return;
+
+            // ...and a contact too SLOW to be a joust is not one (the Squirrel's minimum joust speed, its Charge): its
+            // steal is refused by the same rule, so the joust point and the blast go with it.
+            if (!ContactAdmission.AdmittedBySiblings(impactee, impacteeVessel.VesselStatus, impactorVessel.VesselStatus))
                 return;
 
             var impacteeVesselImpactor = impacteeVessel.Transform.GetComponent<VesselImpactor>();

@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.UI;
 using CosmicShore.Gameplay;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
@@ -15,15 +17,51 @@ namespace CosmicShore.Gameplay
     public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
         [Inject] private SceneTransitionManager _sceneTransitionManager;
+        [Inject] private CosmicShore.Core.SceneLoader _sceneLoader;
         [Inject] private HostConnectionDataSO _hostConnectionData;
 
         protected virtual int InitDelayMs => 1000;
         private bool _isResetting;
 
+        [Header("Element ladder (I3 team crystals)")]
+        [Tooltip("Crystals of the game's element each team gets from I3 up (the standard element ladder, " +
+                 "ElementLadderCrystals; Garrett 2026-11-16). Each is taken only by its team and regrows. 0 turns the " +
+                 "rung off for this mode.")]
+        [SerializeField, Min(0)] int ladderCrystalsPerTeam = 4;
+
+        [Tooltip("Seconds after a team's ladder crystal is taken before it grows back in the same place.")]
+        [SerializeField, Min(0.5f)] float ladderCrystalRegrowSeconds = 12f;
+
+        /// <summary>The I3 rung's crystals per team (<see cref="ElementLadderCrystals"/>).</summary>
+        public int LadderCrystalsPerTeam => ladderCrystalsPerTeam;
+
+        /// <summary>The I3 rung's regrow delay (<see cref="ElementLadderCrystals"/>).</summary>
+        public float LadderCrystalRegrowSeconds => ladderCrystalRegrowSeconds;
+
+        /// <summary>
+        /// True for a mode that lays its own team crystals at I3 (Harvest, Shatterplane), so the platform's
+        /// <see cref="ElementLadderCrystals"/> stands down.
+        /// </summary>
+        public virtual bool LaysOwnLadderCrystals => false;
+
+        /// <summary>
+        /// Where the I3 rung puts <paramref name="team"/>'s <paramref name="count"/> crystals, drawn from
+        /// <paramref name="rng"/> (the same stream on every peer). Default: scattered through the cell between the
+        /// nucleus and the membrane. A mode with a better answer (a race: beside its rings) overrides it.
+        /// </summary>
+        public virtual void CollectLadderCrystalPoints(Domains team, int count, System.Random rng, List<Vector3> into)
+        {
+            var cell = FindAnyObjectByType<Cell>();
+            if (!cell) return;
+            float outer = cell.MembraneRadius * 0.8f;
+            float inner = Mathf.Min(outer * 0.5f, cell.NucleusWorldRadius * 1.5f);
+            ElementLadderCrystals.ScatterInShell(cell.transform.position, inner, outer, count, rng, into);
+        }
+
         /// <summary>
         /// When true, Play Again performs a full network scene reload instead of an in-place reset.
         /// Override to true in game modes where the environment doesn't fully reset in-place
-        /// (e.g., HexRace with flora/fauna spawning).
+        /// (e.g., SkimRace with flora/fauna spawning).
         /// </summary>
         protected virtual bool UseSceneReloadForReplay => false;
 
@@ -33,6 +71,9 @@ namespace CosmicShore.Gameplay
 
             RearmGameStartStatsReset();   // fresh scene = fresh game
 
+            // Fair play (Threat Board T4, T9): every peer reports each match to the server.
+            if (CosmicShore.Core.MatchReportGate.IsActive) MatchReporter.Attach(gameObject, gameData);
+
             LoadInsights.Mark($"Game controller spawned ({GetType().Name}, IsServer={IsServer})");
 
             if (IsServer)
@@ -40,7 +81,19 @@ namespace CosmicShore.Gameplay
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
                 gameData.OnSessionStarted.OnRaised += SubscribeToSessionEvents;
 
+                // The ready gate is re-decided when the ROSTER changes, not only when somebody
+                // presses - otherwise a player leaving mid-wait strands everyone else at the ready
+                // screen permanently. See EvaluateReadyGate.
+                if (NetworkManager.Singleton != null)
+                    NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnectedForReadyGate;
+
                 StampMatchEnvelope();
+
+                // The course variant, drawn ONCE per match before the broadcast below carries it (a Cell that
+                // chooses its config by it waits for this; see CellTypeChoiceOptions.CourseVariantWise). A mode
+                // may already have drawn it on the way here (Regatta's start line asks for the circuit during
+                // the spawn chain), so an existing draw stands.
+                if (gameData.CourseVariant < 0) gameData.CourseVariant = DrawCourseVariant();
 
                 // The server IS the authority, so its config is synced by definition. Set before
                 // the broadcast: Cell.AssignConfig gates its (sticky) IntensityWise choice on this
@@ -50,6 +103,8 @@ namespace CosmicShore.Gameplay
                 // Sync game config to all clients now that we're in the game scene.
                 // Previously this was done by SceneLoader via ClientRpc before scene load,
                 // but SceneLoader is now a plain MonoBehaviour (no RPCs).
+                VesselStartingElements.Pack(gameData.StartingElements,
+                    out var startClasses, out var startIntensities, out var startLevels);
                 SyncGameConfigToClients_ClientRpc(
                     gameData.SceneName,
                     (int)gameData.GameMode,
@@ -59,11 +114,14 @@ namespace CosmicShore.Gameplay
                     gameData.SelectedPlayerCount.Value,
                     gameData.RequestedAIBackfillCount,
                     gameData.RequestedDomainCount,
-                    gameData.IsTournamentMode,
+                    gameData.IsMaelstromMode,
                     gameData.ComebackRatePerScoreDeficit,
                     gameData.MatchId,
                     gameData.PartyId,
-                    gameData.InviteTriggered
+                    gameData.InviteTriggered,
+                    gameData.IsArenaMatch,
+                    startClasses, startIntensities, startLevels,
+                    gameData.CourseVariant
                 );
             }
 
@@ -83,8 +141,15 @@ namespace CosmicShore.Gameplay
             // REQUIRED for every party game: the elemental comeback system. Scene-authored
             // instances are respected; a scene that forgot one gets it created and configured
             // for this game mode (comeback runs locally on every machine, so this executes on
-            // host and clients alike). UseGolfRules travels with it so a Score-sourced mode
-            // knows which direction "ahead" is.
+            // host and clients alike). Its deficit is the mode's own ScoringRuleSO.DomainValue;
+            // UseGolfRules travels with it only for the legacy rule-less Score fallback.
+            //
+            // The comeback reads gameData.ScoringRule, and GameDataSO outlives the scene - so a
+            // rule-less legacy mode launched after a rule-scored one would otherwise inherit the
+            // PREVIOUS mode's rule and catch up on its stat. Every subclass that has a rule
+            // publishes it immediately after this base call returns, so clearing here costs none
+            // of them anything.
+            gameData.ScoringRule = null;
             ElementalComebackSystem.EnsureExists(gameObject, gameData, UseGolfRules);
 
             InitializeAfterDelay().Forget();
@@ -96,7 +161,16 @@ namespace CosmicShore.Gameplay
             {
                 gameData.OnMiniGameTurnEnd.OnRaised -= HandleTurnEnd;
                 gameData.OnSessionStarted.OnRaised -= SubscribeToSessionEvents;
+
+                if (NetworkManager.Singleton != null)
+                    NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnectedForReadyGate;
             }
+            ResetReadyGate();
+            ResetRematchVotes();
+
+            // A replay fade still armed (the vessel never readied) must not outlive this
+            // controller: GameDataSO does, and the next scene's OnClientReady would call into it.
+            gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
             
             UnsubscribeFromSessionEvents();
             
@@ -137,33 +211,64 @@ namespace CosmicShore.Gameplay
         /// </summary>
         async UniTaskVoid InitializeAfterDelay()
         {
+            // The arena build is ANNOUNCED from here until InitializeGame has started it: the connecting
+            // panel can come up inside the InitDelayMs wait, and without this bracket its arena-ready gate
+            // sees nothing pending and can release on an empty arena. Its 4 s minimum used to hide that
+            // window; the bracket lets the minimum shrink (Docs/MENU_REDESIGN_B.md section 99.3).
+            PrismTrailBuilder.BeginArenaBuild();
+            bool buildAnnounced = true;
             try
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}</color>");
+                // On replay scene reload, fade in once the player vessel is ready.
+                // Runs on ALL machines (server + clients) since each needs to fade their own overlay.
+                //
+                // Subscribed BEFORE the InitDelayMs wait, not after it: on a reload the persistent
+                // human Players are re-processed at the vessel initializer's OnNetworkSpawn and the
+                // host's vessel spawns after preSpawnDelayMs (~200 ms; a client's pair lands after
+                // postSpawnDelayMs too), so OnClientReady fires inside the 1000 ms window.
+                // Subscribed after it, the fade was missed and Play Again left the screen black.
+                // The fade itself still waits for InitializeGame below, so it never reveals the
+                // scene earlier than before.
+                _replayGameInitialized = false;
+                _replayFadeDeferred = false;
+                if (gameData.IsReplayReload)
+                {
+                    gameData.IsReplayReload = false;
+                    gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
+                    gameData.OnClientReady.OnRaised += FadeFromBlackOnReplay;
+                }
+
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}");
                 using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                            $"InitDelayMs gate before InitializeGame ({InitDelayMs}ms)", isWait: true))
                 {
-                    await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
+                    // Bound to this controller: destroyed inside the wait (a client bounced by host
+                    // loss, a quick quit), InitializeGame would otherwise fire into the NEXT scene's
+                    // listeners and the server branch would run on a dead controller.
+                    await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime,
+                        cancellationToken: this.GetCancellationTokenOnDestroy());
                 }
 
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}");
                 using (LoadInsights.Measure(LoadInsightCategory.GameFlow,
                            "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)"))
                 {
                     gameData.InitializeGame();
                 }
+                buildAnnounced = false;
+                PrismTrailBuilder.EndArenaBuild();
 
-                // On replay scene reload, fade in once the player vessel is ready.
-                // Runs on ALL machines (server + clients) since each needs to fade their own overlay.
-                if (gameData.IsReplayReload)
+                // The replay fade-in, if OnClientReady already arrived during the wait.
+                _replayGameInitialized = true;
+                if (_replayFadeDeferred)
                 {
-                    gameData.IsReplayReload = false;
-                    gameData.OnClientReady.OnRaised += FadeFromBlackOnReplay;
+                    _replayFadeDeferred = false;
+                    RevealAfterReplayReload();
                 }
 
                 if (!IsServer)
                 {
-                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Not server, skipping session start + round setup</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-7] [MultiplayerMiniGameBase] Not server, skipping session start + round setup");
                     return;
                 }
 
@@ -171,16 +276,21 @@ namespace CosmicShore.Gameplay
                 // Without this, the loading screen overlay persists because no
                 // scene-placed MultiplayerSetup fires InvokeSessionStarted().
                 // Safe: ApplicationStateMachine validates transitions and no-ops on invalid ones.
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Server: InvokeSessionStarted (AppState → InGame)</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-7] [MultiplayerMiniGameBase] Server: InvokeSessionStarted (AppState → InGame)");
                 gameData.InvokeSessionStarted();
 
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Server: SetupNewRound()</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-7] [MultiplayerMiniGameBase] Server: SetupNewRound()");
                 SetupNewRound();
             }
             catch (OperationCanceledException)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFA500>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay CANCELLED</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay CANCELLED");
                 // Task was cancelled, ignore
+            }
+            finally
+            {
+                // A wait cancelled (or a throw) before InitializeGame must not wedge the next gate.
+                if (buildAnnounced) PrismTrailBuilder.EndArenaBuild();
             }
         }
         
@@ -241,6 +351,11 @@ namespace CosmicShore.Gameplay
             // OnValueChanged when the value actually changes, so it cannot fix a client that
             // drifted on its own.
             ZeroStatsForGameStartOnce();
+
+            // The standard element ladder's I3 rung: each team's own crystals of the game's element, laid locally and
+            // identically on every peer (ElementLadderCrystals; nothing below I3, on an arena card or in a mode that
+            // lays its own).
+            ElementLadderCrystals.EnsureOn(this, gameData).Lay();
 
             gameData.SetPlayersActive();
             gameData.StartTurn();
@@ -342,6 +457,7 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void SyncGameEnd_ClientRpc()
         {
+            MatchRejoin.Forget();   // the match is over: nothing to rejoin (section 103)
             if (!ShowEndGameSequence) return;
 
             gameData.SortRoundStats(UseGolfRules);
@@ -376,6 +492,237 @@ namespace CosmicShore.Gameplay
             RaiseToggleReadyButtonEvent(true);
         }
 
+        // ---------------- Rematch vote ----------------
+
+        /// <summary>
+        /// How many players have asked for a rematch on the current scoreboard.
+        ///
+        /// <para>
+        /// Play Again is host-authoritative - one player's replay forces everyone into it - so a
+        /// client's press cannot BE the restart. But hiding the button left a client with no way to
+        /// say "again", which is the most common thing anybody wants to say at a scoreboard, and it
+        /// put the host in the position of guessing. So a client's press is a VOTE: it is recorded,
+        /// announced to everyone as a toast, and the host decides.
+        /// </para>
+        ///
+        /// <para>The record used to be a server-side <c>HashSet</c> of client ids here, with only
+        /// the COUNT broadcast. That answered "how many" and never "who", so the host got a number
+        /// on a button and a toast that had already scrolled away - and the set was a second place
+        /// a disconnect had to be pruned from. The vote now lives on the VOTER
+        /// (<see cref="Player.NetRematchVote"/>): the identity is replicated state every peer can
+        /// read and draw a face from, the count is a derivation that cannot drift from it, and a
+        /// leaver drops out for free when their Player despawns and leaves the roster.</para>
+        /// </summary>
+        public int RematchVoteCount
+        {
+            get
+            {
+                int votes = 0;
+                var players = gameData != null ? gameData.Players : null;
+                if (players == null) return 0;
+                for (int i = 0; i < players.Count; i++)
+                {
+                    var p = players[i];
+                    if (p == null || p.IsInitializedAsAI) continue;
+                    if (p.HasVotedRematch) votes++;
+                }
+                return votes;
+            }
+        }
+
+        /// <summary>Raised on every peer when the tally changes, so the host's button can react.</summary>
+        public event System.Action<int, int> OnRematchVotesChanged;
+
+        [ServerRpc(RequireOwnership = false)]
+        internal void RequestRematch_ServerRpc(string playerName, int domain, ServerRpcParams rpcParams = default)
+        {
+            if (!IsServer) return;
+
+            // Keyed on the RPC's OWN sender id, never on anything the client sent, so a client can
+            // only ever vote for itself - the same rule the stat-report round trips follow.
+            var voter = FindVoter(rpcParams.Receive.SenderClientId);
+            if (voter == null)
+            {
+                CSDebug.LogWarning($"[MultiplayerController] Rematch vote from client {rpcParams.Receive.SenderClientId} has no Player - ignored.");
+                return;
+            }
+
+            // A player leaning on the button votes once: the flag IS the dedupe.
+            if (voter.HasVotedRematch) return;
+            voter.SetRematchVoteServer(true);
+
+            int humans = SpectatorSession.CountHumanClients(NetworkManager.Singleton);
+            AnnounceRematchVote_ClientRpc(playerName, domain, RematchVoteCount, humans);
+        }
+
+        /// <summary>
+        /// The Player behind a connection. Resolved through the connection's own
+        /// <c>PlayerObject</c> first because that is exact: AI share the HOST's OwnerClientId, so
+        /// a roster scan on owner id alone can hand back a bot for the host's own vote.
+        /// </summary>
+        Player FindVoter(ulong clientId)
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.ConnectedClients.TryGetValue(clientId, out var client))
+            {
+                var playerObj = client.PlayerObject;
+                if (playerObj != null && playerObj.TryGetComponent<Player>(out var owned) && owned.IsSpawned)
+                    return owned;
+            }
+
+            var players = gameData != null ? gameData.Players : null;
+            if (players == null) return null;
+            for (int i = 0; i < players.Count; i++)
+                if (players[i] is Player p && p.IsSpawned && !p.IsInitializedAsAI && p.OwnerClientId == clientId)
+                    return p;
+            return null;
+        }
+
+        [ClientRpc]
+        void AnnounceRematchVote_ClientRpc(string playerName, int domain, int votes, int humans)
+        {
+            GameToastAPI.Post(GameToastSituation.RematchRequested, (Domains)domain,
+                playerName, votes.ToString(), humans.ToString());
+            OnRematchVotesChanged?.Invoke(votes, humans);
+        }
+
+        /// <summary>
+        /// Clears the tally - a new game is not carrying the last one's votes. Server-side the
+        /// flags themselves are cleared (they are replicated state, so a stale one would put a
+        /// face on the next scoreboard); every peer drops its local view through the event.
+        /// </summary>
+        protected void ResetRematchVotes()
+        {
+            if (IsServer)
+            {
+                var players = gameData != null ? gameData.Players : null;
+                if (players != null)
+                    for (int i = 0; i < players.Count; i++)
+                        if (players[i] is Player p) p.SetRematchVoteServer(false);
+            }
+
+            OnRematchVotesChanged?.Invoke(0, 0);
+        }
+
+        // ---------------- Ready gate (shared) ----------------
+
+        /// <summary>
+        /// WHICH clients have pressed Ready this turn, server-side.
+        ///
+        /// <para>
+        /// This lives on the BASE because it was written twice - once in
+        /// <c>MultiplayerDomainGamesController</c>, once in the retired <c>CoOpWildlifeBlitzMiniGame</c> - and
+        /// both copies carried the same two defects. Two copies of a rule is how the second one
+        /// gets forgotten, and a third mode would have written a third.
+        /// </para>
+        ///
+        /// <para>
+        /// Defect 1: both kept a bare COUNT, so a double-press (a rebound tap, or a Ready button
+        /// not yet hidden on a laggy client) satisfied the gate on behalf of somebody who had not
+        /// pressed, and the match started without them. Keying on the sender makes a press
+        /// idempotent.
+        /// </para>
+        ///
+        /// <para>
+        /// Defect 2, the expensive one: the gate was only ever evaluated INSIDE the press RPC,
+        /// against a human count read live at that instant. So when a player left, dropped or
+        /// crashed while the others were waiting on them, the comparison that would now pass was
+        /// never run again. Three humans, two pressed, the third leaves - and the remaining two sit
+        /// at the ready screen FOREVER: the match cannot start, nothing logs, nothing times out.
+        /// A count is a snapshot of an answer; the ROSTER is the question, and it keeps changing -
+        /// so the gate is re-decided whenever the roster does.
+        /// </para>
+        /// </summary>
+        readonly HashSet<ulong> _readyClients = new();
+
+        /// <summary>Records a Ready press. Idempotent per client.</summary>
+        protected void MarkClientReady(ulong clientId)
+        {
+            if (!IsServer) return;
+            _readyClients.Add(clientId);
+        }
+
+        /// <summary>Clears the gate - a new turn/round starts with nobody ready.</summary>
+        protected void ResetReadyGate()
+        {
+            _readyClients.Clear();
+        }
+
+        /// <summary>
+        /// Re-decides whether the turn can start, from the CURRENT roster. Called on every Ready
+        /// press AND on every client disconnect. Calls <see cref="OnAllPlayersReady"/> exactly once
+        /// per satisfied gate, then clears it.
+        /// </summary>
+        protected void EvaluateReadyGate(string because)
+        {
+            if (!IsServer) return;
+
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsListening) return;
+
+            // A running turn has no gate to pass: it opened before the countdown and closes at the next turn.
+            if (gameData.IsTurnRunning) return;
+
+            // Departed clients are pruned rather than trusted: the set is keyed on client id and a
+            // stale entry would let the gate pass on behalf of somebody who is gone.
+            _readyClients.RemoveWhere(id => !IsClientConnected(nm, id));
+
+            // Connected clients minus SPECTATORS: humans who own a Ready button (AI never connect,
+            // viewers never press).
+            int humanCount = SpectatorSession.CountHumanClients(nm);
+
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                $"[FLOW-9] [{GetType().Name}] Ready gate ({because}): {_readyClients.Count}/{humanCount}");
+
+            // humanCount can legitimately reach 0 - the last human left and only AI remain. Starting
+            // a countdown for nobody is worse than holding, and this host is on its way out anyway.
+            if (humanCount <= 0) return;
+
+            if (_readyClients.Count < humanCount) return;
+
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                $"[FLOW-9] [{GetType().Name}] All players ready - starting countdown.");
+            NetSessionRecorder.Mark("readyGate", $"{GetType().Name}: {because}");
+            _readyClients.Clear();
+            OnAllPlayersReady();
+        }
+
+        /// <summary>What a mode does once every human has pressed Ready. Server-side.</summary>
+        protected virtual void OnAllPlayersReady() { }
+
+        /// <summary>
+        /// Is <paramref name="clientId"/> still in the server's connected roster? False for a null
+        /// NetworkManager, so a caller need not null-check first.
+        /// </summary>
+        /// <remarks>
+        /// Deliberately an indexed scan rather than <c>nm.ConnectedClientsIds.Contains(id)</c>.
+        /// <c>ConnectedClientsIds</c> is an <see cref="IReadOnlyList{T}"/>, whose <c>Contains</c>
+        /// lives in <c>System.Linq</c> - which this file does not import. Without it the compiler
+        /// binds to <c>MemoryExtensions.Contains(ReadOnlySpan&lt;char&gt;, ...)</c> and fails with a
+        /// missing <c>comparisonType</c> argument: an error that names a SPAN API for a LIST call
+        /// and points at neither the collection nor the absent using. Indexing needs no using,
+        /// allocates no enumerator, and matches <see cref="SpectatorSession.CountHumanClients"/>,
+        /// which walks the same roster the same way.
+        /// </remarks>
+        static bool IsClientConnected(NetworkManager nm, ulong clientId)
+        {
+            if (nm == null) return false;
+            var ids = nm.ConnectedClientsIds;
+            for (int i = 0; i < ids.Count; i++)
+                if (ids[i] == clientId) return true;
+            return false;
+        }
+
+        void HandleClientDisconnectedForReadyGate(ulong clientId)
+        {
+            if (!IsServer) return;
+
+            // Netcode fires this BEFORE the id leaves ConnectedClientsIds on some paths, so drop it
+            // here as well as in the prune - the gate must never count a departed player's vote.
+            _readyClients.Remove(clientId);
+            EvaluateReadyGate($"client {clientId} disconnected");
+        }
+
         // ---------------- Reset / Replay Logic ----------------
 
         protected override void OnResetForReplay()
@@ -403,6 +750,11 @@ namespace CosmicShore.Gameplay
         {
             if (_isResetting) return;
             _isResetting = true;
+
+            // The votes asked for THIS replay and it is now happening. Cleared here rather than in
+            // either branch below because only one of them reloads the scene (which would clear
+            // them via PrepareForNewScene) - the in-place path keeps the same Player objects.
+            ResetRematchVotes();
 
             if (UseSceneReloadForReplay && IsServer)
                 ExecuteSceneReloadReplay().Forget();
@@ -461,7 +813,7 @@ namespace CosmicShore.Gameplay
                 var nm = NetworkManager.Singleton;
                 if (nm != null && nm.IsServer && nm.SceneManager != null)
                 {
-                    Debug.Log($"[MultiplayerController] Scene reload replay - loading {gameData.SceneName}");
+                    CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[MultiplayerController] Scene reload replay - loading {gameData.SceneName}");
                     nm.SceneManager.LoadScene(gameData.SceneName, LoadSceneMode.Single);
                 }
             }
@@ -502,12 +854,48 @@ namespace CosmicShore.Gameplay
         void ShowReturnToMenuVeil_ClientRpc()
         {
             _sceneTransitionManager?.SetFadeImmediate(1f);
+
+            // This RPC is where a REAL client's screen goes black, and until now nothing watched
+            // what happened next: the veil goes fully opaque here and only lifts when Menu_Main
+            // finishes loading. If the host's networked scene load never completes for this client,
+            // the veil stays up with no timeout, no error and no way out but killing the game.
+            //
+            // SceneLoader's own defer guards cannot cover this. They are reached through SOAP
+            // events, and a SOAP raise is local - so on separate machines a client never runs
+            // ReturnToMainMenu at all; those guards only fire for MPPM virtual players sharing one
+            // GameDataSO in one process. This is the call site that protects a shipped build.
+            //
+            // The host is excluded because it DRIVES the load - it cannot be waiting on itself, and
+            // bouncing it would tear down the party it is trying to move.
+            if (!IsServer)
+            {
+                _sceneLoader?.ArmClientMenuReturnWatchdog("Return to menu (host-driven)");
+                // Behind the veil now: take this machine's copy of the world down in slices while the host
+                // does the same and holds the load for it (SceneLoader.DrainSceneForExitAsync).
+                _sceneLoader?.BeginSceneExitDrain();
+            }
         }
+
+        // Play Again (scene reload): OnClientReady can arrive before InitializeGame has run, and
+        // the fade waits for whichever of the two comes second.
+        bool _replayGameInitialized;
+        bool _replayFadeDeferred;
 
         private void FadeFromBlackOnReplay()
         {
             gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
 
+            if (!_replayGameInitialized)
+            {
+                _replayFadeDeferred = true;
+                return;
+            }
+
+            RevealAfterReplayReload();
+        }
+
+        private void RevealAfterReplayReload()
+        {
             // Play Again reloads bypass SceneLoader.LoadSceneAsync entirely, so
             // neither host nor clients would ever take the scheduled scene-change
             // GC on repeated replays. This runs on every peer with the overlay
@@ -521,11 +909,22 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void ResetForReplay_ClientRpc()
         {
-            CSDebug.Log("[MultiplayerController] Resetting Environment...");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[MultiplayerController] Resetting environment for replay");
             _isResetting = false;
 
             gameData.ResetStatsDataForReplay();
             gameData.ResetPlayers();
+
+            // A rematch is a new GAME, so the round/turn counters start from zero on EVERY peer.
+            // This in-place path (OnlineDuelForTheCellController, which CoOp Wildlife Blitz runs
+            // on, does not reload the scene) reset the scores but not these two, so the rematch
+            // started with the previous game's RoundsPlayed: it ended early, and
+            // OnlineDuelForTheCellController.SetupNewRound saw
+            // RoundsPlayed > 0 on the first round and swapped vessels straight away (BH-1.6).
+            // Only the two counters - GameDataSO.ResetRuntimeDataForReplay also clears
+            // GameConfigSynced and the spawn poses, which a live multiplayer session must keep.
+            gameData.RoundsPlayed = 0;
+            gameData.TurnsTakenThisRound = 0;
 
             // Snap player camera to the vessel's new spawn position after
             // ResetPlayers teleported it, clearing any stale cinematic position.
@@ -552,6 +951,14 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnResetForReplayCustom() { }
 
+        /// <summary>
+        /// The course-pool entry this match lays, drawn once on the server before the game config is broadcast,
+        /// or -1 for a mode whose course is not a pool (the default). Regatta deals from its
+        /// <c>RegattaCoursePoolSO</c>; the value reaches every client in <c>SyncGameConfigToClients_ClientRpc</c> as
+        /// <c>GameDataSO.CourseVariant</c>.
+        /// </summary>
+        protected virtual int DrawCourseVariant() => -1;
+
         // ---------------- Game Config Sync ----------------
 
         /// <summary>
@@ -573,6 +980,8 @@ namespace CosmicShore.Gameplay
                 }
             };
 
+            VesselStartingElements.Pack(gameData.StartingElements,
+                out var startClasses, out var startIntensities, out var startLevels);
             SyncGameConfigToClients_ClientRpc(
                 gameData.SceneName,
                 (int)gameData.GameMode,
@@ -582,13 +991,37 @@ namespace CosmicShore.Gameplay
                 gameData.SelectedPlayerCount.Value,
                 gameData.RequestedAIBackfillCount,
                 gameData.RequestedDomainCount,
-                gameData.IsTournamentMode,
+                gameData.IsMaelstromMode,
                 gameData.ComebackRatePerScoreDeficit,
                 gameData.MatchId,
                 gameData.PartyId,
                 gameData.InviteTriggered,
+                gameData.IsArenaMatch,
+                startClasses, startIntensities, startLevels,
+                gameData.CourseVariant,
                 target
             );
+        }
+
+        readonly List<VesselStartingElements> _startingElementsScratch = new();
+
+        /// <summary>
+        /// Seed every vessel this machine already holds from the freshly published starting
+        /// element table. Idempotent: a vessel with no row is left alone, and one already seeded
+        /// at spawn is seeded again with the same numbers. Elements are per-machine state, so
+        /// applying to replicas as well as the local hull is harmless and keeps every peer's
+        /// reading of a remote pilot's levels consistent with the host's.
+        /// </summary>
+        void ReapplyStartingElementsToLiveVessels()
+        {
+            var vessels = gameData.Vessels;
+            for (int i = 0; i < vessels.Count; i++)
+            {
+                var vessel = vessels[i];
+                if (vessel?.VesselStatus == null) continue;
+                if (gameData.TryGetStartingElements(vessel.VesselStatus.VesselType, out var levels))
+                    vessel.SetResourceLevels(levels);
+            }
         }
 
         /// <summary>
@@ -600,8 +1033,11 @@ namespace CosmicShore.Gameplay
         void SyncGameConfigToClients_ClientRpc(
             string sceneName, int gameMode, bool isMultiplayer,
             int vesselClass, int intensity, int playerCount, int aiBackfillCount,
-            int domainCount, bool isTournament, float comebackRate,
+            int domainCount, bool isMaelstrom, float comebackRate,
             string matchId, string partyId, bool inviteTriggered,
+            bool isArenaMatch,
+            int[] startClasses, int[] startIntensities, float[] startLevels,
+            int courseVariant,
             ClientRpcParams rpcParams = default)
         {
             if (IsServer) return;
@@ -612,6 +1048,10 @@ namespace CosmicShore.Gameplay
             gameData.PartyId = partyId;
             gameData.InviteTriggered = inviteTriggered;
 
+            // A guest remembers the match it is in, so a drop or a restart can offer to rejoin it (section 103).
+            if (isMultiplayer && !SpectatorSession.IsLocalSpectator)
+                MatchRejoin.Remember(partyId, (GameModes)gameMode);
+
             gameData.SceneName = sceneName;
             gameData.GameMode = (GameModes)gameMode;
             gameData.IsMultiplayerMode = isMultiplayer;
@@ -620,8 +1060,23 @@ namespace CosmicShore.Gameplay
             gameData.SelectedPlayerCount.Value = playerCount;
             gameData.RequestedAIBackfillCount = aiBackfillCount;
             gameData.RequestedDomainCount = domainCount;
-            gameData.IsTournamentMode = isTournament;
+            gameData.IsMaelstromMode = isMaelstrom;
             gameData.ComebackRatePerScoreDeficit = comebackRate;
+            gameData.IsArenaMatch = isArenaMatch;   // arena seating: unique hulls + pilot swap
+
+            // The course-pool entry the host drew (-1: this mode has no pool). Before GameConfigSynced below,
+            // because a CourseVariantWise Cell makes its sticky config choice the moment that flag is true.
+            gameData.CourseVariant = courseVariant;
+
+            // The card's per-hull starting element levels (SO_ArcadeGame.StartingElements). A
+            // client never runs SyncFromArcadeGame, and element levels are simulated on the
+            // machine that OWNS a vessel and never replicate - so without this a guest's own
+            // hull would race at rest while the host's replica of it carried the handicap.
+            // Re-applied to any vessel already initialised on this machine, because a client's
+            // pending player/vessel pairs can resolve before this RPC lands.
+            VesselStartingElements.Unpack(startClasses, startIntensities, startLevels, _startingElementsScratch);
+            gameData.PublishStartingElements(_startingElementsScratch);
+            ReapplyStartingElementsToLiveVessels();
 
             // Clients began recording before these values replicated — refresh the report header
             // with the authoritative config now that it has arrived.

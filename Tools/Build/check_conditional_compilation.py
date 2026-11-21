@@ -306,7 +306,7 @@ def main() -> int:
     for cur, dirnames, files in os.walk(args.root):
         # Third-party code is not ours to police.
         dirnames[:] = [d for d in dirnames if d not in
-                       ("PackageCache", "Plugins", "PlayFabSDK", "Wwise",
+                       ("PackageCache", "Plugins", "Wwise",
                         "NiceVibrations", "Unity Assests")]
         for fn in files:
             if not fn.endswith(".cs"):

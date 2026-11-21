@@ -4,6 +4,7 @@ using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
 using System.Linq;
+using System.Collections.Generic;
 namespace CosmicShore.Gameplay
 {
     // TODO: move to enum folder
@@ -57,9 +58,16 @@ namespace CosmicShore.Gameplay
         [SerializeField] float DestroyedTerrainSpeed;
 
         [Tooltip("How quickly the ride's speed chases its target (1/s, exponential). The rail's " +
-                 "weight: crossing from a friendly prism (150) onto a hostile one (10) becomes " +
+                 "weight: crossing from a friendly prism (300) onto a hostile one (20) becomes " +
                  "a braking slide rather than a 15x snap, and letting go coasts to a stop.")]
         [SerializeField] float speedTrackingRate = 5f;
+
+        [Header("Element")]
+        [Tooltip("TIME paces the ride: a multiplier on the rail speed (friendly, hostile and " +
+                 "destroyed terrain alike), Min at the resting level, Max at level 10. Off by " +
+                 "default, so a follower that does not author it rides at x1 (the Urchin's Time " +
+                 "pace lever, 2026-11-17).")]
+        [SerializeField] ElementalFloat rideSpeedMultiplier = new(1f);
 
         [HideInInspector]
         public float Throttle;
@@ -130,10 +138,15 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
-            if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
+            if (attachedTrail != null)
+            {
+                attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
+                attachedTrail.OnMembersRemoved -= HandleMembersRemoved;
+            }
             attachedTrail = prism.Trail;
             attachedBlockIndex = index;
             attachedTrail.OnOldestRemoved += HandleOldestRemoved;
+            attachedTrail.OnMembersRemoved += HandleMembersRemoved;
 
             // Seed the initial direction from the vessel's own motion - the ride's first frames
             // continue the way you were flying. (Per frame thereafter the transformer resolves
@@ -189,7 +202,11 @@ namespace CosmicShore.Gameplay
 
         public void Detach()
         {
-            if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
+            if (attachedTrail != null)
+            {
+                attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
+                attachedTrail.OnMembersRemoved -= HandleMembersRemoved;
+            }
             attachedTrail = null;
             _rideSpeed = 0f;
             ReachedEnd = false;
@@ -201,18 +218,50 @@ namespace CosmicShore.Gameplay
         /// index so the rider stays on the prism it was actually on. Reaching -1 means the ridden
         /// prism is the one that just left, so let go.
         ///
-        /// Only the Wanderway's rolling tether removes from the front today
-        /// (<see cref="Trail.RemoveOldest"/>); without this the rider would race forward along the
-        /// ribbon at the recycle rate.
+        /// The recorded front-removers (<see cref="Trail.RemoveOldest()"/> lists them: the Wanderway
+        /// tether, the Arkway corridor, the Ark's wake, and the MobileLow race trail cap); without
+        /// this the rider would race forward along the ribbon at the recycle rate.
         /// </summary>
         void HandleOldestRemoved()
         {
             if (--attachedBlockIndex < 0) Detach();
         }
 
+        /// <summary>
+        /// <see cref="PrismRecycler"/> compacted dead prisms out of the trail (<see cref="Trail.RemoveMembers"/>).
+        /// Same rule as <see cref="HandleOldestRemoved"/>: follow the mass - step back one slot per removed index
+        /// below ours. If the ridden prism itself left, stay on the survivor that slid into its slot with no lerp
+        /// carried over; an emptied trail lets go. (Defensive: the recycler holds vessel-trail recycling while any
+        /// Urchin - the only rider - exists, so in play this should not fire under a live ride.)
+        /// </summary>
+        void HandleMembersRemoved(IReadOnlyList<int> removedAscending)
+        {
+            if (attachedTrail == null) return;
+            int below = 0;
+            bool riddenLeft = false;
+            for (int i = 0; i < removedAscending.Count; i++)
+            {
+                int r = removedAscending[i];
+                if (r < attachedBlockIndex) { below++; continue; }
+                riddenLeft = r == attachedBlockIndex;
+                break;
+            }
+            attachedBlockIndex -= below;
+
+            int last = attachedTrail.TrailList.Count - 1;
+            if (last < 0) { Detach(); return; }
+            if (riddenLeft) percentTowardNextBlock = 0f;
+            if (attachedBlockIndex > last) { attachedBlockIndex = last; percentTowardNextBlock = 0f; }
+            if (attachedBlockIndex < 0) { attachedBlockIndex = 0; percentTowardNextBlock = 0f; }
+        }
+
         void OnDestroy()
         {
-            if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
+            if (attachedTrail != null)
+            {
+                attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
+                attachedTrail.OnMembersRemoved -= HandleMembersRemoved;
+            }
         }
 
         /// <summary>
@@ -223,6 +272,14 @@ namespace CosmicShore.Gameplay
         public float RideSpeed => _rideSpeed;
         float _rideSpeed;
 
+        /// <summary>
+        /// True when riding <paramref name="prism"/> runs SLOWER than this hull's own colour - a
+        /// rival's mass without the Time-5 Slipstream. Read-only, and the same rule the ride
+        /// itself applies (<see cref="GetTerrainAwareBlockSpeed"/>), so an autopilot asking "am I
+        /// crawling?" cannot disagree with the speed it is actually riding at.
+        /// </summary>
+        public bool IsCrawlTerrain(Prism prism) => prism && GetTerrainAwareBlockSpeed(prism) < FriendlyTerrainSpeed;
+
         public void RideTheTrail()
         {
             ReachedEnd = false;
@@ -230,21 +287,27 @@ namespace CosmicShore.Gameplay
 
             // ONE speed for the frame, smoothed toward the block-under-the-rider's target.
             //
-            // Terrain speed is a per-BLOCK step (friendly 150 vs hostile 10 - a 15x cliff at a
+            // Terrain speed is a per-BLOCK step (friendly 300 vs hostile 20 - a 15x cliff at a
             // domain boundary), and the old walk re-read it per block WITHIN the frame and
             // published each value to vesselData.Speed in turn, so the ride's speed jumped
             // block to block and the last block of the frame won. Chasing one target
             // exponentially turns every one of those cliffs - terrain change, throttle
             // change, release - into a deceleration you can feel rather than a snap.
             //
-            // A frame covers ~2.5u at full grind (150 u/s at 60fps) against blocks 4u and
-            // longer, so treating speed as constant across the frame costs nothing real and
-            // removes the entire per-block time-accounting walk (and with it the LookAhead
-            // call, whose <2-block early-out fought the hole bridging: a ribbon whose
-            // survivors are sparse would refuse to move at all).
+            // A frame covers ~5u at full grind (300 u/s at 60fps) against blocks 4-8u, so a
+            // frame can now span a block boundary where it used to sit inside one. What that
+            // costs is bounded and small: Project still walks as many blocks as the distance
+            // needs, so only the TERRAIN sample is one block stale, and only for a rider
+            // crossing a domain boundary - where the exponential chase was already turning the
+            // 15x cliff into a slide rather than a step. The per-block time-accounting walk
+            // stays gone (and with it the LookAhead call, whose <2-block early-out fought the
+            // hole bridging: a ribbon whose survivors are sparse would refuse to move at all).
+            // If this ever needs to be exact, sample the terrain at the frame's MIDPOINT rather
+            // than restoring the walk.
             var block = AttachedPrism;
             float terrain = block ? GetTerrainAwareBlockSpeed(block) : FriendlyTerrainSpeed;
             float multiplier = vesselData.VesselTransformer ? vesselData.VesselTransformer.SpeedMultiplier : 1f;
+            multiplier *= rideSpeedMultiplier.EvaluateLive(vesselData);
 
             _rideSpeed = Mathf.Lerp(_rideSpeed, Throttle * terrain * multiplier,
                                     1f - Mathf.Exp(-speedTrackingRate * Time.deltaTime));

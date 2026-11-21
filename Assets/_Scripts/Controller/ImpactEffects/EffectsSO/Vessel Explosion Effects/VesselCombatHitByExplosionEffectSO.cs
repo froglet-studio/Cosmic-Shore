@@ -16,10 +16,12 @@ namespace CosmicShore.Gameplay
     /// so for a clean centre-punch both effects fire for one rocket and exactly one of them
     /// scores.
     ///
-    /// <b>Authority.</b> The blast is instantiated by the machine that owned the projectile, so
-    /// like the direct-hit effect this runs on the shooter's machine alone and raises
-    /// unconditionally; <c>StatsManager.CombatHitLanded</c> arbitrates server-vs-client
-    /// attribution.
+    /// <b>Authority.</b> The blast is instantiated by whichever machine flew the projectile, and a
+    /// human's press is replicated, so every peer detonates its own copy. Like the direct-hit
+    /// effect, this therefore reports only on the machine that OWNS the shooter
+    /// (<see cref="ElementalTransfer.IsDecidedHere"/>). Before Oct 2026 it raised on every copy,
+    /// and the server credited its replay of a client's rocket on top of the client's own
+    /// <c>ReportCombatHit_ServerRpc</c>.
     /// </summary>
     [CreateAssetMenu(
         fileName = "VesselCombatHitByExplosionEffect",
@@ -27,9 +29,13 @@ namespace CosmicShore.Gameplay
     public class VesselCombatHitByExplosionEffectSO : VesselExplosionEffectSO
     {
         [Header("Scoring")]
-        [Tooltip("Which weapon class this blast counts as. Missile for the Sparrow's skyburst; " +
-                 "the field exists so a future non-rocket blast can be scored differently.")]
-        [SerializeField] CombatHitClass hitClass = CombatHitClass.Missile;
+        [Tooltip("Which weapon class this blast counts as. A rocket lands in THREE ranked " +
+                 "classes and an explosion can be two of them: MissileBlast for the skyburst's " +
+                 "prism detonation, MissileShockwave for the warhead's outer blast. They share " +
+                 "one latch window per victim, so the closest one a rocket achieves is what " +
+                 "pays - see VesselCombatHitLatch. The field exists so a future non-rocket " +
+                 "blast can be scored differently.")]
+        [SerializeField] CombatHitClass hitClass = CombatHitClass.MissileBlast;
 
         [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager listens on. " +
                  "Fail-loud: a missing reference throws rather than silently un-scoring the mode.")]
@@ -40,16 +46,6 @@ namespace CosmicShore.Gameplay
                  "and that shared window is what stops a rocket scoring twice (direct strike + " +
                  "its own blast) on a clean hit.")]
         [SerializeField, Min(0f)] float sameVictimCooldownSeconds = 0.5f;
-
-        [Tooltip("Only score if the victim could actually BE debuffed - i.e. is not warded against " +
-                 "Explosion-class elemental debuffs. Off for a missile (a rocket that hits you hit " +
-                 "you, whatever your immunity state); ON for a DEBUFF-class blast, where the whole " +
-                 "event being scored IS the element drain and a warded pilot takes none of it " +
-                 "(ResourceSystem.ApplyElementalEffect drops negative magnitudes while immune). " +
-                 "Without this the scoring effect and the debuff effect - siblings in one " +
-                 "container, dispatched from one contact - would disagree about whether " +
-                 "anything happened.")]
-        [SerializeField] bool requireDebuffableVictim = false;
 
         [Tooltip("Only report the hit on the machine that OWNS the shooting vessel. Off for a " +
                  "weapon whose blast exists on exactly one machine - a projectile is a pooled " +
@@ -62,7 +58,11 @@ namespace CosmicShore.Gameplay
                  "the server's own copy, once from the client's forwarded RPC - and the " +
                  "per-machine VesselCombatHitLatch cannot see across machines to stop it. " +
                  "IsNetworkOwner (not IsLocalUser) is the test, because an AI's vessel is " +
-                 "server-owned and its hits must still be recorded.")]
+                 "server-owned and its hits must still be recorded. Since Oct 2026 every blast " +
+                 "is gated on the shooter's owner regardless (ElementalTransfer.IsDecidedHere), " +
+                 "because a replicated press puts EVERY blast on more than one machine; this " +
+                 "field is kept because the mode generators author it, and in a spawned match it " +
+                 "adds nothing to that gate.")]
         [SerializeField] bool requireOwningMachine = false;
 
         public override void Execute(VesselImpactor impactor, ExplosionImpactor impactee)
@@ -76,14 +76,11 @@ namespace CosmicShore.Gameplay
             // scores for nobody, which is correct: nobody fired it.
             if (victimStatus == null || shooterStatus == null) return;
 
-            // Exactly one machine may report a blast that exists on several. See the field.
+            // Exactly one machine may report a blast that exists on several: the shooter's owner,
+            // the machine CombatHitDrain settles from (see the class doc). The field below is the
+            // older, opt-in form of the same rule and is kept because the mode generators author it.
+            if (!ElementalTransfer.IsDecidedHere(shooterStatus)) return;
             if (requireOwningMachine && shooterStatus.Player is { IsNetworkOwner: false }) return;
-
-            // The score follows the effect: no drain, no point. Asked about THIS blast's own debuff
-            // class - a victim warded only against danger prisms is still fully debuffable here, and
-            // scoring must agree with the sibling debuff effect rather than with a broader state.
-            if (requireDebuffableVictim &&
-                victimStatus.IsImmuneToElementalDebuff(ElementalDebuffSources.Explosion)) return;
 
             // Never score a pilot for their own blast, and never for a teammate's. The
             // ExplosionImpactor already skips own-domain vessels unless the blast is running
@@ -93,17 +90,35 @@ namespace CosmicShore.Gameplay
             if (victimStatus.Domain == shooterStatus.Domain) return;
             if (ReferenceEquals(victimStatus, shooterStatus)) return;
 
-            string shooterName = shooterStatus.PlayerName;
-            string victimName = victimStatus.PlayerName;
-
-            if (!VesselCombatHitLatch.TryAdmit(shooterName, victimName, hitClass, sameVictimCooldownSeconds))
+            // One gate for the score and the petals: a warded victim is neither scored on nor
+            // robbed (CombatHitDrain.TryAdmit). Asked about THIS blast's own class, Explosion, the
+            // same one the drain below and the sibling debuff effect are warded by. This used to be
+            // an opt-in flag (requireDebuffableVictim) that rockets left off, so a rocket scored
+            // through a ward its victim's petals were safe behind.
+            if (!CombatHitDrain.TryAdmit(victimStatus, shooterStatus, hitClass, sameVictimCooldownSeconds,
+                                         ElementalDebuffSources.Explosion, out int supersededRank))
                 return;
+
+            // A hit bites in proportion to what it is worth - ten points to the petal, netted
+            // against whatever tier this admission supersedes, so one rocket drains its BEST
+            // tier and never the sum of the three it can land in. See CombatHitDrain: the
+            // Debuff class is absent from that table because its drain is authored per weapon
+            // (this same container carries it), so adding this call cannot double it.
+            // BlastImpactVector is the blast's own answer for "which way, how hard, at this
+            // point" - radial for a sphere, the sweep axis for a plate - so an ejected petal
+            // leaves the way the blast was travelling rather than along some invented normal.
+            // This is the same accessor the crystal->ball forge had to adopt for the same reason.
+            Vector3 blastVelocity = impactee.BlastImpactVector(impactor.transform.position);
+
+            CombatHitDrain.Apply(victimStatus, shooterStatus, hitClass, supersededRank,
+                                 blastVelocity, ElementalDebuffSources.Explosion);
 
             onCombatHitLanded.Raise(new CombatHitStats
             {
-                ShooterName = shooterName,
-                VictimName = victimName,
+                ShooterName = shooterStatus.PlayerName,
+                VictimName = victimStatus.PlayerName,
                 HitClass = hitClass,
+                SupersededRank = supersededRank,
             });
         }
     }

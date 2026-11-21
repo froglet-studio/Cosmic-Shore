@@ -14,7 +14,6 @@ namespace CosmicShore.UI
         }
         public void AdjustMusicLevel(float level)
         {
-            CSDebug.Log($"Music Level: {level}");
             gameSetting.SetMusicLevel(level);
         }
         public void AdjustSFXLevel(float level)

@@ -12,6 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 841db4ce66da4384a711272307733e0f, type: 3}
   m_Name: SkyBurstExplosionImpactorDataContainer
   m_EditorClassIdentifier:
-  vesselExplosionEffects:
-  - {fileID: 11400000, guid: 1cfa7e482e3529dfe505a1ed6a4bcda6, type: 2}
+  vesselExplosionEffects: []
   explosionPrismEffects: []

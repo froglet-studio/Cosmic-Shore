@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-16-dolphin-regatta-noseleadgain-2-5-1-0-aut-e75918",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-16T21:01:14+00:00",
+  "area": "the Dolphin's Regatta race line",
+  "summary": "Dolphin_Regatta NoseLeadGain 2.5 -> 1.0 (author_race_lines.py).",
+  "why": "Real-game judge (Amoebius, I1 alone): at 2.5 the Dolphin AI overshoots, circles and finishes none of 3 races in 400 s; at 1.0 it finishes 7 of 7 (108-144 s); 1.5 and 2.0 finish only some; 0 finishes in 164 s.",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "b4f944c69",
+  "paths": [
+    "Assets/Resources/RaceLines/Dolphin_Regatta.asset",
+    "Tools/Build/author_race_lines.py"
+  ]
+}

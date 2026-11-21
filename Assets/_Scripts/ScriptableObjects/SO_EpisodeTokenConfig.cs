@@ -44,7 +44,8 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Tokens")]
         [Tooltip("Tokens required to unlock one episode. 1 = the shipped design (1 episode = 1 token).")]
-        [Min(1)] public int tokensPerEpisode = 1;
+        [SerializeField, Min(1)] int tokensPerEpisode = 1;
+        public int TokensPerEpisode => tokensPerEpisode;
 
         [Tooltip("Purchasable bundles, in display order.")]
         public List<TokenBundle> bundles = new()
@@ -54,20 +55,24 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Display")]
         [Tooltip("Currency symbol for display prices.")]
-        public string currencySymbol = "$";
+        [SerializeField] string currencySymbol = "$";
+        public string CurrencySymbol => currencySymbol;
 
         [Tooltip("Word for a single token, used in UI strings.")]
-        public string tokenNoun = "Episode Token";
+        [SerializeField] string tokenNoun = "Episode Token";
+        public string TokenNoun => tokenNoun;
 
         [Tooltip("Plural form of the token noun.")]
-        public string tokenNounPlural = "Episode Tokens";
+        [SerializeField] string tokenNounPlural = "Episode Tokens";
+        public string TokenNounPlural => tokenNounPlural;
 
         [Header("Safety")]
         [Tooltip("MUST stay false for any build that takes real money. When true, purchases are " +
                  "granted locally with no order verification - useful only for editor testing of " +
                  "the spend flow. EpisodeTokenService refuses to honour this in a non-development " +
                  "build, so it cannot be shipped on by accident.")]
-        public bool allowUnverifiedGrantsInEditor;
+        [SerializeField] bool allowUnverifiedGrantsInEditor;
+        public bool AllowUnverifiedGrantsInEditor => allowUnverifiedGrantsInEditor;
 
         /// <summary>Formats a display price, e.g. "$2.00".</summary>
         public string FormatPrice(float usd) =>

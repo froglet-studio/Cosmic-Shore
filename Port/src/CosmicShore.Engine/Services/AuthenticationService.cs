@@ -1,0 +1,244 @@
+namespace CosmicShore.Engine.Services
+{
+    /// <summary>
+    /// Placeholder shim for the Unity Gaming Services authentication singleton
+    /// (<c>Unity.Services.Authentication.AuthenticationService</c>) until the
+    /// services phase ports the real auth layer (E13 — same precedent as the
+    /// <c>ISession</c> placeholder). Harness-configurable: tests / the CLI set
+    /// <see cref="PlayerName"/> / <see cref="PlayerId"/> / <see cref="IsSignedIn"/>
+    /// directly (or swap a subclass into <see cref="Instance"/> — the sign-in/out
+    /// methods are virtual); defaults are benign (signed out, empty identity) so
+    /// verbatim call sites like <c>Player</c>'s tier-3 display-name fallback keep
+    /// working headless.
+    ///
+    /// Grown 2026-07-08 (bootstrap arc) with the surface AuthenticationServiceFacade
+    /// drives: <see cref="SessionTokenExists"/>, virtual
+    /// <see cref="SignInAnonymouslyAsync"/> / <see cref="SignOut"/> /
+    /// <see cref="ClearSessionToken"/>, and the four auth notifications
+    /// (<see cref="SignedIn"/>, <see cref="SignInFailed"/>, <see cref="SignedOut"/>,
+    /// <see cref="Expired"/>). The shim's local sign-in mirrors the real SDK's
+    /// observable contract (identity set, token cached, SignedIn raised) without a
+    /// wire; the real SDK binding replaces the bodies at the services phase.
+    /// </summary>
+    /// <summary>The service surface (original: Unity.Services.Authentication.IAuthenticationService).</summary>
+    public interface IAuthenticationService
+    {
+        string PlayerName { get; }
+        string PlayerId { get; }
+        bool IsSignedIn { get; }
+        bool IsAuthorized { get; }
+        bool IsExpired { get; }
+        bool SessionTokenExists { get; }
+        string AccessToken { get; }
+        string Profile { get; }
+        event System.Action SignedIn;
+        event System.Action<RequestFailedException> SignInFailed;
+        event System.Action SignedOut;
+        event System.Action Expired;
+        System.Threading.Tasks.Task SignInAnonymouslyAsync(SignInOptions options = null);
+        void SignOut(bool clearCredentials = false);
+        void ClearSessionToken();
+        void SwitchProfile(string profile);
+        System.Threading.Tasks.Task<string> GetPlayerNameAsync(bool autoGenerate = true);
+        System.Threading.Tasks.Task<string> UpdatePlayerNameAsync(string playerName);
+        System.Threading.Tasks.Task DeleteAccountAsync();
+
+        // Steam sign-in (SteamSignIn, fair play T1). Amoebius has no Steam client, so SteamPlatform never
+        // starts and these are not reached; they exist so the shared source compiles.
+        PlayerInfo PlayerInfo { get; }
+        System.Threading.Tasks.Task<PlayerInfo> GetPlayerInfoAsync();
+        System.Threading.Tasks.Task SignInWithSteamAsync(string sessionTicket, string identity, SignInOptions options = null);
+        System.Threading.Tasks.Task LinkWithSteamAsync(string sessionTicket, string identity, LinkOptions options = null);
+
+        // Game Center and Play Games sign-in (GameCenterSignIn, PlayGamesSignIn). Amoebius runs on neither platform,
+        // so their platform plugins never return an identity and these are not reached in practice.
+        System.Threading.Tasks.Task SignInWithAppleGameCenterAsync(string signature, string teamPlayerId, string publicKeyURL, string salt, ulong timestamp, SignInOptions options = null);
+        System.Threading.Tasks.Task LinkWithAppleGameCenterAsync(string signature, string teamPlayerId, string publicKeyURL, string salt, ulong timestamp, LinkOptions options = null);
+        System.Threading.Tasks.Task SignInWithGooglePlayGamesAsync(string authCode, SignInOptions options = null);
+        System.Threading.Tasks.Task LinkWithGooglePlayGamesAsync(string authCode, LinkOptions options = null);
+    }
+
+    public class SignInOptions { public bool CreateAccount { get; set; } = true; }
+
+    /// <summary>Original: Unity.Services.Authentication.LinkOptions.</summary>
+    public class LinkOptions { public bool ForceLink { get; set; } }
+
+    /// <summary>The account's linked identities (original: Unity.Services.Authentication.PlayerInfo).</summary>
+    public class PlayerInfo
+    {
+        public string Id { get; set; } = string.Empty;
+        public string SteamId { get; set; } = string.Empty;
+        public string GetSteamId() => SteamId;
+
+        /// <summary>Original contract: every external identity linked to the account.</summary>
+        public System.Collections.Generic.List<Identity> Identities { get; set; } = new();
+
+        /// <summary>Original contract: the linked Play Games id, or null.</summary>
+        public string GetGooglePlayGamesId()
+        {
+            foreach (var i in Identities) if (i?.TypeId == "playgames.com") return i.UserId;
+            return null;
+        }
+    }
+
+    /// <summary>One external identity on an account (original: Unity.Services.Authentication.Identity).</summary>
+    public class Identity
+    {
+        public string TypeId { get; set; }
+        public string UserId { get; set; }
+    }
+
+    /// <summary>Original: Unity.Services.Authentication.AuthenticationException.</summary>
+    public sealed class AuthenticationException : RequestFailedException
+    {
+        public AuthenticationException(int errorCode, string message) : base(errorCode, message) { }
+    }
+
+    /// <summary>The codes the game reads (original: Unity.Services.Authentication.AuthenticationErrorCodes).</summary>
+    public static class AuthenticationErrorCodes
+    {
+        public static readonly int AccountAlreadyLinked = 10003;
+    }
+
+    public class AuthenticationService : IAuthenticationService
+    {
+        /// <summary>Settable so harnesses can swap in a configured instance; never null.</summary>
+        public static AuthenticationService Instance { get; set; } = new();
+
+        /// <summary>UGS player name (may carry a <c>#XXXX</c> suffix in the original service).</summary>
+        public string PlayerName { get; set; } = string.Empty;
+
+        public string PlayerId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Where an anonymous sign-in gets its identity (the player installs a per-install id, as the
+        /// real service mints one per device); null keeps the fixed placeholder id.
+        /// </summary>
+        public static System.Func<string> AnonymousIdProvider;
+
+        /// <summary>
+        /// When set (the player online: a UGS sign-in), an anonymous sign-in signs in there and takes the
+        /// returned UGS player id, so the game's own id is the one UGS Lobby lists it by. A failure raises
+        /// <see cref="SignInFailed"/> and throws, as the real SDK does; the game then plays offline.
+        /// </summary>
+        public static System.Func<System.Threading.Tasks.Task<string>> RemoteSignIn;
+
+        public bool IsSignedIn { get; set; }
+
+        /// <summary>True when a cached session token allows silent re-authentication.</summary>
+        public bool SessionTokenExists { get; set; }
+
+        /// <summary>Raised after a successful sign-in.</summary>
+        public event System.Action SignedIn;
+
+        /// <summary>Raised when a sign-in attempt fails.</summary>
+        public event System.Action<RequestFailedException> SignInFailed;
+
+        /// <summary>Raised after sign-out.</summary>
+        public event System.Action SignedOut;
+
+        /// <summary>Raised when the session expires server-side.</summary>
+        public event System.Action Expired;
+
+        /// <summary>
+        /// Local anonymous sign-in: assigns a stable placeholder identity when none is
+        /// configured, caches the session token, and raises <see cref="SignedIn"/> —
+        /// the same observable sequence the real SDK produces.
+        /// </summary>
+        public virtual async System.Threading.Tasks.Task SignInAnonymouslyAsync(SignInOptions options = null)
+        {
+            if (string.IsNullOrEmpty(PlayerId))
+            {
+                if (RemoteSignIn != null)
+                {
+                    try { PlayerId = await RemoteSignIn(); }
+                    catch (System.Exception e)
+                    {
+                        var failure = e as RequestFailedException ?? new RequestFailedException(0, "UGS sign-in failed: " + e.Message, e);
+                        SignInFailed?.Invoke(failure);
+                        throw failure;
+                    }
+                }
+                else PlayerId = AnonymousIdProvider?.Invoke() ?? "local-player";
+            }
+            IsSignedIn = true;
+            SessionTokenExists = true;
+            SignedIn?.Invoke();
+        }
+
+        /// <summary>Sign out, keeping the cached session token (the real SDK's default).</summary>
+        public virtual void SignOut(bool clearCredentials = false)
+        {
+            IsSignedIn = false;
+            PlayerId = string.Empty;
+            SignedOut?.Invoke();
+        }
+
+        /// <summary>Drop the cached session token so the next sign-in is a fresh identity.</summary>
+        public virtual void ClearSessionToken() => SessionTokenExists = false;
+
+        /// <summary>
+        /// Async name read (original contract: the SDK fetches the stored player name).
+        /// The shim returns the local mirror.
+        /// </summary>
+        public virtual System.Threading.Tasks.Task<string> GetPlayerNameAsync(bool autoGenerate = true)
+            => System.Threading.Tasks.Task.FromResult(PlayerName);
+
+        /// <summary>
+        /// Update the UGS player name (original contract: the SDK persists it server-side
+        /// and returns the stored value, possibly suffixed). The shim stores it locally.
+        /// </summary>
+        public virtual System.Threading.Tasks.Task<string> UpdatePlayerNameAsync(string name)
+        {
+            PlayerName = name;
+            return System.Threading.Tasks.Task.FromResult(name);
+        }
+
+        public bool IsAuthorized => IsSignedIn;
+        public bool IsExpired { get; set; }
+        public string AccessToken => IsSignedIn ? "local-access-token" : null;
+        public string Profile { get; private set; } = "default";
+        public void SwitchProfile(string profile) => Profile = profile;
+
+        public virtual System.Threading.Tasks.Task DeleteAccountAsync()
+        {
+            SignOut(true);
+            ClearSessionToken();
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+
+        public PlayerInfo PlayerInfo => IsSignedIn ? new PlayerInfo { Id = PlayerId } : null;
+
+        public virtual System.Threading.Tasks.Task<PlayerInfo> GetPlayerInfoAsync()
+            => System.Threading.Tasks.Task.FromResult(PlayerInfo);
+
+        /// <summary>No Steam in Amoebius: refused the way UGS refuses a provider that is not set up.</summary>
+        public virtual System.Threading.Tasks.Task SignInWithSteamAsync(string sessionTicket, string identity, SignInOptions options = null)
+            => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Steam is not available in Amoebius."));
+
+        public virtual System.Threading.Tasks.Task LinkWithSteamAsync(string sessionTicket, string identity, LinkOptions options = null)
+            => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Steam is not available in Amoebius."));
+
+        /// <summary>No Game Center or Play Games in Amoebius: refused as Steam is.</summary>
+        public virtual System.Threading.Tasks.Task SignInWithAppleGameCenterAsync(string signature, string teamPlayerId, string publicKeyURL, string salt, ulong timestamp, SignInOptions options = null)
+            => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Game Center is not available in Amoebius."));
+
+        public virtual System.Threading.Tasks.Task LinkWithAppleGameCenterAsync(string signature, string teamPlayerId, string publicKeyURL, string salt, ulong timestamp, LinkOptions options = null)
+            => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Game Center is not available in Amoebius."));
+
+        public virtual System.Threading.Tasks.Task SignInWithGooglePlayGamesAsync(string authCode, SignInOptions options = null)
+            => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Play Games is not available in Amoebius."));
+
+        public virtual System.Threading.Tasks.Task LinkWithGooglePlayGamesAsync(string authCode, LinkOptions options = null)
+            => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Play Games is not available in Amoebius."));
+
+        /// <summary>Harness entry: raise <see cref="SignInFailed"/> as the SDK would.</summary>
+        public void NotifySignInFailed(RequestFailedException e) => SignInFailed?.Invoke(e);
+
+        /// <summary>Harness entry: raise <see cref="Expired"/> as the SDK would.</summary>
+        public void NotifyExpired() => Expired?.Invoke();
+
+        /// <summary>Restore the benign signed-out defaults (test isolation helper).</summary>
+        public static void Reset() => Instance = new AuthenticationService();
+    }
+}

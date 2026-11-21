@@ -12,8 +12,8 @@ the interference rather than scrambling it.
 
 The splice sits AFTER the corridor, on its Alpha output:
 
-  BEFORE:  PrismOcclusionFade.Alpha ---------------------> SurfaceDescription.Alpha
-  AFTER:   PrismOcclusionFade.Alpha -> BACKFACE.BaseAlpha
+  BEFORE:  <corridor>.Alpha -----------------------------> SurfaceDescription.Alpha
+  AFTER:   <corridor>.Alpha -> BACKFACE.BaseAlpha
            Position(World) ----------> BACKFACE.PositionWS   (the corridor's own node, reused)
            Normal(World) ------------> BACKFACE.NormalWS     (new)
            BACKFACE.Alpha -----------------------------> SurfaceDescription.Alpha
@@ -50,7 +50,21 @@ NORMAL_DONOR = "Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph"
 
 HLSL_GUID = "bf8e2c1fa76142c89ba03b2e1ae46201"
 FUNCTION_NAME = "PrismBackFaceFade"
-CORRIDOR_FUNCTION = "PrismOcclusionFade"
+# The corridor entry point, PER GRAPH: live mass keeps the nose clearance, debris gets
+# none (PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE). Same body, same slots, same alpha
+# output — only the wrapper name differs, which is why this is a lookup and not a
+# second code path.
+CORRIDOR_FUNCTION_BY_GRAPH = {
+    "BlockGraph.shadergraph": "PrismOcclusionFade",
+    "ExplodingBlockGraph.shadergraph": "PrismOcclusionFadeDebris",
+}
+
+
+def corridor_function_for(rel_path):
+    base = os.path.basename(rel_path)
+    assert base in CORRIDOR_FUNCTION_BY_GRAPH, f"no corridor entry point declared for {base}"
+    return CORRIDOR_FUNCTION_BY_GRAPH[base]
+
 CORRIDOR_ALPHA_SLOT = 4          # PrismOcclusionFade's Alpha output
 ALPHA_BLOCK = "SurfaceDescription.Alpha"
 
@@ -129,7 +143,7 @@ def edge(out_node, out_slot, in_node, in_slot):
     }
 
 
-def validate(docs, expect_wired):
+def validate(docs, expect_wired, corridor_function):
     idx = index(docs)
     graph = find_graph(docs)
 
@@ -179,7 +193,7 @@ def validate(docs, expect_wired):
         sources[(e["m_InputSlot"]["m_Node"]["m_Id"], e["m_InputSlot"]["m_SlotId"])] = \
             (e["m_OutputSlot"]["m_Node"]["m_Id"], e["m_OutputSlot"]["m_SlotId"])
 
-    corridor = cf_by_function(idx, graph, CORRIDOR_FUNCTION)
+    corridor = cf_by_function(idx, graph, corridor_function)
     assert corridor is not None, "corridor node missing"
 
     src = sources.get((back["m_ObjectId"], 2))
@@ -204,19 +218,20 @@ def validate(docs, expect_wired):
 
 def wire(rel_path, check_only):
     path = os.path.join(REPO, rel_path)
+    corridor_function = corridor_function_for(rel_path)
     docs = load_docs(path)
     graph = find_graph(docs)
     idx = index(docs)
 
     if cf_by_function(idx, graph, FUNCTION_NAME) is not None:
-        validate(docs, expect_wired=True)
+        validate(docs, expect_wired=True, corridor_function=corridor_function)
         return False, f"{os.path.basename(rel_path)}: already wired (validated)."
     if check_only:
         return False, None
 
-    validate(docs, expect_wired=False)
+    validate(docs, expect_wired=False, corridor_function=corridor_function)
 
-    corridor = cf_by_function(idx, graph, CORRIDOR_FUNCTION)
+    corridor = cf_by_function(idx, graph, corridor_function)
     assert corridor is not None, (
         f"{rel_path}: no corridor node — run wire_prism_occlusion_corridor.py first")
     donor_slot_v3 = next(idx[s["m_Id"]] for s in corridor["m_Slots"]
@@ -284,10 +299,10 @@ def wire(rel_path, check_only):
     ]
 
     docs += new_docs
-    validate(docs, expect_wired=True)   # nothing written yet
+    validate(docs, expect_wired=True, corridor_function=corridor_function)   # nothing written yet
 
     open(path, "w", encoding="utf-8").write(dump_docs(docs))
-    validate(load_docs(path), expect_wired=True)
+    validate(load_docs(path), expect_wired=True, corridor_function=corridor_function)
     return True, (f"{os.path.basename(rel_path)}: wired and validated "
                   f"(+2 nodes, +{len(new_docs) - 2} slots, 3 new edges, 1 retargeted).")
 

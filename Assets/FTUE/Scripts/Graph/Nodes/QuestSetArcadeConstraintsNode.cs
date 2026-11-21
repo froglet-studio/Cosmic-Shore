@@ -1,0 +1,62 @@
+using System.Collections;
+using CosmicShore.Data;
+using UnityEngine;
+using CosmicShore.Utility;
+
+namespace CosmicShore.Core
+{
+    /// <summary>
+    /// Applies (or clears) <see cref="QuestArcadeConstraints"/> — the quest-graph funnel over
+    /// the arcade UI: only one game card clickable, one intensity selectable, and player/domain
+    /// steppers defaulted for the best first-game experience. The constraints are static so they
+    /// survive the Menu → game → Menu scene round-trip; author an explicit Clear node once the
+    /// funnel is over. Advances immediately.
+    /// </summary>
+    public class QuestSetArcadeConstraintsNode : QuestNodeSO
+    {
+        public override QuestNodeCategory Category => QuestNodeCategory.Gameplay;
+        public override bool AppliesLock => !clearConstraints;
+        public override string TypeTooltip =>
+            "Funnels the arcade UI: locks every game card except Allowed Mode, disables every intensity except Forced Intensity, and defaults the configure modal's player count (max) and domain count. Survives scene reloads — pair with a Clear node when the funnel ends.";
+        public override string EditorSummary => clearConstraints
+            ? "Clear all constraints"
+            : $"Only {allowedMode}"
+              + (forcedIntensity > 0 ? $" @ intensity {forcedIntensity}" : string.Empty)
+              + (forcedPlayerCount > 0 ? $" · {forcedPlayerCount} players" : string.Empty)
+              + (forcedDomainCount > 0 ? $" · {forcedDomainCount} domains" : string.Empty);
+
+        [Tooltip("Clear every constraint instead of applying (end of the funnel).")]
+        [SerializeField] bool clearConstraints;
+        public bool ClearConstraints => clearConstraints;
+
+        [Tooltip("The one game card left clickable. Random = no card restriction.")]
+        [SerializeField] GameModes allowedMode = GameModes.Scurry;
+        public GameModes AllowedMode => allowedMode;
+
+        [Tooltip("The only selectable intensity in the configure modal (0 = no restriction).")]
+        [SerializeField, Range(0, 4)] int forcedIntensity = 1;
+        public int ForcedIntensity => forcedIntensity;
+
+        [Tooltip("Exact player count the configure modal defaults to (0 = no override).")]
+        [SerializeField, Range(0, 12)] int forcedPlayerCount = 2;
+        public int ForcedPlayerCount => forcedPlayerCount;
+
+        [Tooltip("Default the configure modal's domain (team) count (0 = no override).")]
+        [SerializeField, Range(0, 3)] int forcedDomainCount = 2;
+        public int ForcedDomainCount => forcedDomainCount;
+
+        public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
+        {
+            // Apply/Clear raise QuestArcadeConstraints.OnChanged — the arcade card grid
+            // subscribes and refreshes its lock state immediately, even if already open.
+            if (clearConstraints)
+                QuestArcadeConstraints.Clear();
+            else
+                QuestArcadeConstraints.Apply(allowedMode, forcedIntensity, forcedPlayerCount, forcedDomainCount);
+
+            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Arcade constraints {(clearConstraints ? "cleared" : $"applied: {EditorSummary}")}.");
+            advance(QuestPorts.Next);
+            yield break;
+        }
+    }
+}

@@ -31,7 +31,8 @@ namespace CosmicShore.Gameplay
     /// guest could ever complete synchronization again. The guest's log showed only the far end
     /// of it: deferred spawn messages for objects it never received, then the 30s connect
     /// timeout and a bounce. "Restart the game" worked because it restored the cold-boot order.
-    /// See Docs/PartySystem/BUGS.md B16.</para>
+    /// See Docs/PartySystem/BUGS.md B16. Since 2026-11-01 the cold boot loads Menu_Main first too
+    /// (B36: a Relay host must not be live during that load), so every host start now needs the sweep.</para>
     ///
     /// <para><b>The rule.</b> A prefab instance is not an in-scene object, so it must never be
     /// adopted as one. Where the creating code knows it will never spawn the thing (the fauna
@@ -79,6 +80,10 @@ namespace CosmicShore.Gameplay
             if (netObj.IsSpawned) return false;   // Netcode already owns it - never touch a live object.
 
             var go = netObj.gameObject;
+            // Read the prefab's hash BEFORE the NetworkObject is destroyed: read after, the destroyed component answers
+            // no hash, so the once-per-prefab report below fired on EVERY birth (a voyage profile, 2026-11-17: 10-11
+            // warnings per species, 7.9 ms of console logging in one spawn frame).
+            bool known = TryGetHash(netObj, out uint hash);
 
             // NetworkBehaviours first: a NetworkBehaviour whose NetworkObject vanished logs an
             // error on its next enable/disable, and they are inert on an object that will never
@@ -97,7 +102,7 @@ namespace CosmicShore.Gameplay
 
             UnityEngine.Object.DestroyImmediate(netObj);
 
-            if (TryGetHash(netObj, out uint hash) && !_reported.Add(hash))
+            if (known && !_reported.Add(hash))
                 return true;   // already reported this prefab once
 
             CSDebug.LogWarning(

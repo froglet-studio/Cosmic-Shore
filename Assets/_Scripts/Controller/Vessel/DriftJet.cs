@@ -11,6 +11,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool flip = false;
 
         [SerializeField] VesselStatus vesselStatus;
+
+        /// <summary>The way this jet points when not drifting: its mount bone's right axis (left when
+        /// flipped). DriftEngineSwivel turns the mount onto Course along this axis, so pod and plume
+        /// line up while drifting.</summary>
+        public Vector3 FlightAxis => flip ? -transform.parent.right : transform.parent.right;
+
         private void Update()
         {
             if (vesselStatus.IsDrifting)
@@ -19,7 +25,7 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(flip ? -transform.parent.right : transform.parent.right, transform.parent.forward), .06f);
+                transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(FlightAxis, transform.parent.forward), .06f);
             }
         }
     }

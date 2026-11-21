@@ -11,6 +11,9 @@ namespace CosmicShore.Gameplay
 {
     public class AOEBlockCreation : AOEExplosion
     {
+        /// <summary>This blast LAYS prisms - see <see cref="AOEExplosion.CreatesMass"/>.</summary>
+        public override bool CreatesMass => true;
+
         [Header("Block Creation")]
         [SerializeField] protected Vector3 blockScale = new Vector3(20f, 10f, 5f);
         [SerializeField] protected bool shielded = true;
@@ -36,15 +39,15 @@ namespace CosmicShore.Gameplay
             // 1. Stop any active spawning tasks
             CancelExplosion();
 
-            // 2. Destroy all the blocks we spawned
-            foreach (var block in from trail in trails where trail != null from block in trail.TrailList where block select block)
-            {
-                Destroy(block.gameObject);
-            }
+            // 2. Forget the blocks we laid - but never Destroy them. They are POOLED prisms
+            //    (PrismType.Interactive through the spawn channel), and one may already have gone
+            //    back to the pool and been reissued into somebody else's trail; destroying it
+            //    corrupts the pool (CellConveyor's note). Prism lifetime belongs to the pool, as in
+            //    every sibling AOE spawner.
             trails.Clear();
 
-            // 3. Destroy this spawner object
-            Destroy(gameObject);
+            // 3. Retire this spawner object (back to AOEExplosionPool when it came from there)
+            Retire();
         }
 
         public virtual void BeginExplosion()
@@ -82,6 +85,13 @@ namespace CosmicShore.Gameplay
                 }
             }
             catch (OperationCanceledException) { /* expected on TurnEnd/Reset */ }
+            finally
+            {
+                // Nothing left to own once the rings are laid: retire the shell instead of leaving
+                // one subscribed AOE object behind per Kabloom (AOEBlockSpawner's lifecycle).
+                if (!ct.IsCancellationRequested && this != null)
+                    Retire();
+            }
         }
 
         protected void CreateRingBlock(int i, float phase, float scale, float tilt, float sweep, Trail trail)

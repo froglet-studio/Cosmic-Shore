@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using CosmicShore.Utility;
 using UnityEngine;
 using CosmicShore.Data;
@@ -56,13 +56,14 @@ namespace CosmicShore.Gameplay
         {
             var spawnProfile = config.SpawnProfile;
             if (!spawnProfile) yield break;
-            if (spawnProfile.SupportedFaunas is not { Count: > 0 })
+            var roster = host.FaunaRoster;   // the profile's species, or the element ladder's at I4 (Cell.FaunaRoster)
+            if (roster is not { Count: > 0 })
                 yield break;
 
             // Fauna spawn in the cell's controlling color (see SpawnFaunaPopulation), so
             // there is no excluded-domain roll here - that exclusion is exactly what kept
             // the controller's own color (e.g. Jade) from ever appearing.
-            foreach (var faunaCfg in spawnProfile.SupportedFaunas)
+            foreach (var faunaCfg in roster)
             {
                 if (!faunaCfg || !faunaCfg.FaunaPrefab) continue;
 
@@ -96,7 +97,7 @@ namespace CosmicShore.Gameplay
                 // and the food web (fauna grazing) is the only down-force. Replaces the
                 // old scored-volume ceiling (~0 in Menu_Main, so it never bounded planting).
                 if (host && host.FloraPlantingEnabled && !host.IsFloraAtCap(floraCfg))
-                    PlantOne(host, floraCfg, excluded);
+                    PlantFlora(host, floraCfg, excluded);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
                 // is configured; otherwise yield a single frame so a large InitialSpawnCount
@@ -117,7 +118,7 @@ namespace CosmicShore.Gameplay
                     ? Mathf.Max(0f, (float)floraCfg.NewPlantPeriod)
                     : floraCfg.FloraPrefab.PlantPeriod;
 
-                if (waitPeriod > 0f) yield return new WaitForSeconds(waitPeriod);
+                if (waitPeriod > 0f) yield return CosmicShore.Utility.WaitCache.About(waitPeriod);
                 else yield return null;
 
                 if (!host) yield break;
@@ -127,7 +128,7 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < toPlant; i++)
                 {
                     if (!host || !host.FloraPlantingEnabled) break;
-                    PlantOne(host, floraCfg, excluded);
+                    PlantFlora(host, floraCfg, excluded);
                     // Spread instantiation across frames - a species recovering from a crash
                     // seeds its whole floor on one tick, and every plant is a prism-bodied
                     // lifeform (the same reason the initial batch yields).
@@ -136,21 +137,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-
-        /// <summary>
-        /// Plant one flora of this species. When the cell's authored environment prepared ground
-        /// (a garden's beds, trellis feet and hanging baskets - <see cref="FloraPlantingSite"/>),
-        /// the plant roots THERE, oriented to the bed; otherwise it disperses itself across the
-        /// membrane shell exactly as before. Same spawn path either way - a garden gets no
-        /// privileged spawner, only better-chosen ground.
-        /// </summary>
-        static void PlantOne(Cell host, FloraConfigurationSO floraCfg, Domains? excluded)
-        {
-            if (host.TryTakePlantingSite(floraCfg.PreferredSites, out var pos, out var up))
-                SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg, pos, up);
-            else
-                SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
-        }
 
         IEnumerator SpawnFaunaTypeLoop_Random(
             Cell host,
@@ -204,7 +190,7 @@ namespace CosmicShore.Gameplay
                 // Seed floor AND cap come from the CELL, so a profile's FaunaPopulationScale moves
                 // both together - scaling the floor alone would be clamped away by the authored
                 // cap and read as doing nothing. See Cell.ResolveFaunaPopulation.
-                int seedFloor = Mathf.Max(1, host.ResolveFaunaPopulation(faunaCfg.PopulationSize));
+                int seedFloor = Mathf.Max(1, host.ResolveFaunaFloor(faunaCfg, faunaCfg.PopulationSize));
                 int cap = host.ResolveFaunaCap(faunaCfg);
 
                 int toSpawn = spawnProfile.SeedFullWaveEveryTick
@@ -223,16 +209,19 @@ namespace CosmicShore.Gameplay
                     isPredator, host.GetLiveHerbivoreCount(), host.OpposingVolume(color), spawnProfile.FaunaFoodFloor);
 
                 // Staged release: a mode may hold a species closed until its own scored
-                // signal opens it (Ribcage releases the brood at 25% of the cage, the
+                // signal opens it (Cleave releases the brood at 25% of the cage, the
                 // predator at 50%). Default tiers - config 0, cell int.MaxValue - leave
                 // every shipped biome released from the first tick.
                 bool released = faunaCfg.ReleaseTier <= host.FaunaReleaseTier;
 
+                // A diagnostic production hold (Cell.DiagnosticProductionHold) skips this tick
+                // like a famine does: the clock below still turns, so releasing the hold never
+                // hatches the waves that were held.
                 int spawned = 0;
-                if (toSpawn > 0 && preyAvailable && released)
+                if (toSpawn > 0 && preyAvailable && released && !Cell.DiagnosticProductionHold)
                 {
                     // Spread across frames - a densely-stocked biome seeds tens of prism-bodied
-                    // creatures on one tick (Ribcage hatches 85 across four species loops that all
+                    // creatures on one tick (Cleave hatches 85 across four species loops that all
                     // start in the same frame), and instantiating them together is the same frame
                     // spike the flora batch above already yields to avoid.
                     yield return SpawnFaunaPopulation(host, runtime, spawnProfile, faunaCfg, color, toSpawn, wave);
@@ -278,6 +267,11 @@ namespace CosmicShore.Gameplay
         /// <summary>Creatures instantiated per frame while seeding a population (see the caller).</summary>
         const int FaunaSpawnBatchPerFrame = 6;
 
+        /// <summary>Creatures instantiated per frame in a SATELLITE cell (a voyage's corridor world), which seeds beside
+        /// live play: a voyage profile (2026-11-17) caught a 41 ms spawn frame at the scene batch, ~2.7 ms per creature,
+        /// and the next one 13.9 ms at two a frame. One a frame (Shombith, 2026-11-17: "very choppy").</summary>
+        const int SatelliteFaunaSpawnBatchPerFrame = 1;
+
         IEnumerator SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
             FaunaConfigurationSO faunaCfg, Domains color, int count, int wave)
         {
@@ -317,7 +311,7 @@ namespace CosmicShore.Gameplay
                 SpawnFaunaBanded(host, faunaCfg, color, goal,
                     banded ? null : goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter);
 
-                if (i + 1 < count && (i + 1) % FaunaSpawnBatchPerFrame == 0)
+                if (i + 1 < count && (i + 1) % (host.IsSatellite ? SatelliteFaunaSpawnBatchPerFrame : FaunaSpawnBatchPerFrame) == 0)
                     yield return null;
             }
         }

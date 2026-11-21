@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Compiles the SHIPPED CrystalMorphMeshBuilder + IcosphereMeshGenerator and BOTH shipped
+       edit-mode suites (hull + panel census), the Dolphin's cone cast suite, against UnityStub.cs, and runs them with NUnitLite.
+       Also the elemental crystal's hull fusion geometry (CrystalHullFusionGeometry + its suite), and the
+       spherical-blast morph geometry (SphereBlastMorphGeometry + its suite: Butterfly, Rhino, Manta), and the
+       fauna-birth heart pick (FaunaHeartMorphGeometry + its suite: Angler, Jacks).
+       Nothing under Assets/ is copied or edited: the files are included by path. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>9.0</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>CS8981;CS0162;CS1591</NoWarn>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnityStub.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="ElementPlatesShim.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/CrystalMorphMeshBuilder.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/Foundation/IcosphereMeshGenerator.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalMorphMeshBuilderTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalMorphPanelCensusTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/DolphinCrystalMorphGeometryTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/CrystalHullFusionGeometry.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalHullFusionGeometryTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/CrystalMorphRecast.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/ShrikeCrystalMorphGeometryTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/SphereBlastMorphGeometry.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/SphereBlastCrystalMorphGeometryTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/FaunaHeartMorphGeometry.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/FaunaBirthCrystalMorphGeometryTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/HiveCombMorphGeometry.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/HoneyguideCrystalMorphGeometryTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/VesselAbsorbMorphGeometry.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/VesselAbsorbCrystalMorphGeometryTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnitLite" Version="3.14.0" />
+  </ItemGroup>
+</Project>

@@ -11,10 +11,14 @@ namespace CosmicShore.UI
     /// Handles both friend requests and incoming party invites.
     /// Shows avatar, name, status label (e.g. "PARTY INVITE" / "FRIEND REQUEST"),
     /// and Accept/Decline buttons.
+    ///
+    /// <para>The status line and the buttons' visibility go through virtual hooks, so the style-B
+    /// row (<see cref="KitRequestRow"/>) draws the same states without a second copy of the expiry
+    /// rules. This class draws the legacy look.</para>
     /// </summary>
     public class RequestInfoEntry : MonoBehaviour
     {
-        public enum Kind { FriendRequest, PartyInvite }
+        public enum Kind { FriendRequest = 0, PartyInvite = 1 }
 
         [Header("Display")]
         [SerializeField] private Image avatarIcon;
@@ -54,6 +58,21 @@ namespace CosmicShore.UI
         /// <summary>What kind of request this row represents.</summary>
         public Kind EntryKind => _kind;
 
+        /// <summary>Shows or hides the accept / decline button. Legacy: the GameObject.</summary>
+        protected virtual void SetPartShown(Component part, bool shown) => part.gameObject.SetActive(shown);
+
+        /// <summary>
+        /// Writes the status line. <paramref name="expiry"/> runs 0 to 1 as the request's time runs
+        /// out (always 0 for a request that never expires).
+        /// </summary>
+        protected virtual void DrawLabel(Kind kind, string text, float expiry)
+        {
+            if (!labelText) return;
+            Color baseColor = kind == Kind.PartyInvite ? partyInviteColor : friendRequestColor;
+            labelText.text = text;
+            labelText.color = Color.Lerp(baseColor, expiringSoonColor, expiry);
+        }
+
         /// <summary>
         /// Populates the entry. Supports friend requests and party invites.
         /// </summary>
@@ -92,7 +111,7 @@ namespace CosmicShore.UI
 
             if (acceptButton)
             {
-                acceptButton.gameObject.SetActive(true);
+                SetPartShown(acceptButton, true);
                 acceptButton.interactable = true;
                 acceptButton.onClick.RemoveAllListeners();
                 acceptButton.onClick.AddListener(HandleAcceptClicked);
@@ -100,7 +119,7 @@ namespace CosmicShore.UI
 
             if (declineButton)
             {
-                declineButton.gameObject.SetActive(true);
+                SetPartShown(declineButton, true);
                 declineButton.interactable = true;
                 declineButton.onClick.RemoveAllListeners();
                 declineButton.onClick.AddListener(HandleDeclineClicked);
@@ -135,24 +154,13 @@ namespace CosmicShore.UI
 
         void UpdateStatusLabel()
         {
-            if (!labelText) return;
-
             string label = _kind == Kind.PartyInvite ? "PARTY INVITE" : "FRIEND REQUEST";
-            Color baseColor = _kind == Kind.PartyInvite ? partyInviteColor : friendRequestColor;
-
-            labelText.text = label;
 
             // Shift toward expiring-soon color as the timer runs out.
-            if (_expirationSeconds > 0f)
-            {
-                float elapsed = Time.unscaledTime - _receivedTime;
-                float t = Mathf.Clamp01(elapsed / _expirationSeconds);
-                labelText.color = Color.Lerp(baseColor, expiringSoonColor, t);
-            }
-            else
-            {
-                labelText.color = baseColor;
-            }
+            float t = _expirationSeconds > 0f
+                ? Mathf.Clamp01((Time.unscaledTime - _receivedTime) / _expirationSeconds)
+                : 0f;
+            DrawLabel(_kind, label, t);
         }
 
         void HandleAcceptClicked()

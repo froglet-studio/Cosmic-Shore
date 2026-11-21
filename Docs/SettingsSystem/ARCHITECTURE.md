@@ -23,7 +23,7 @@ is respected.
 
 | Tab | Settings | Store / method |
 |---|---|---|
-| **GENERAL** | Colorblind mode · Subtitles · Subtitle scale · Analytics+crash consent · Bug Report / Privacy Policy / Delete My Data · Version | `AccessibilitySettings`, `AnalyticsServiceFacade.SetConsent`, `Application.OpenURL` |
+| **GENERAL** | Colour sets (a breadcrumb to Profile › Colour sets) · Subtitles · Subtitle scale · Analytics+crash consent · Bug Report / Privacy Policy / Delete My Data · Version | `AccessibilitySettings`, `AnalyticsServiceFacade.SetConsent`, `Application.OpenURL` |
 | **DISPLAY** | Display mode · Resolution · Frame Rate Limit · V-Sync · Field of View | `DisplayGraphicsSettings` (device-local) |
 | **PERFORMANCE** | Quality preset · Anti-aliasing · Texture quality · Upscaling · Adaptive performance · Physics detail · Auto-Detect · Benchmark | `DisplayGraphicsSettings` |
 | **OTHER** | Invert Y · Invert Throttle · Music+vol · SFX+vol · Haptics+vol | `GameSetting` (cloud-roaming) |
@@ -52,7 +52,7 @@ cloud-sync (a phone and a PC must not share a resolution). They live in `Display
 | Auto-detect heuristic (SystemInfo, CPU-weighted) | `_Scripts/Controller/Settings/SettingsAutoDetector.cs` |
 | Accessibility store | `_Scripts/Controller/Settings/AccessibilitySettings.cs` |
 | Benchmark scene launcher (Settings button) | `_Scripts/Controller/Settings/BenchmarkSceneLauncher.cs` |
-| Endless sandbox controller | `_Scripts/Controller/Arcade/SandboxBenchmarkController.cs` |
+| Benchmark scene controller (Editor-only path) | `_Scripts/Controller/Arcade/SinglePlayerWildlifeBlitzController.cs` (plus ScoreTracker / TurnMonitor / `WildlifeBlitzHUD` / `WildlifeBlitzStatsProvider`) |
 | Settings panel controller (binds canvas → backend) | `_Scripts/UI/Modals/GameSettingsPanelController.cs` |
 | Tab navigation (content + underline + scale) | `_Scripts/UI/Modals/SettingsTabBar.cs` |
 | In-scene benchmark HUD controller | `_Scripts/UI/BenchmarkSceneHud.cs` |
@@ -98,19 +98,38 @@ then VRAM) → a `QualityPresetSetting` + sensible display/CPU defaults. For acc
 the in-scene **Benchmark**, which measures real frame cost via the author's
 `PerformanceBenchmarkRunner` and saves a full report.
 
+**Device tiers (2026-10-05).** `RecommendSettings` first asks the device's `PlatformProfileSO`
+(`PlatformProfile.Current`, resolved once per session from `Resources/PlatformProfiles` - see
+`Docs/PLATFORM_UNIFICATION.md` §3). A profile with `useCapabilityHeuristic` on gets exactly the
+heuristic above (`RecommendByCapability`): **Desktop and MobileHigh, so Windows and iPhones are
+unchanged**. MobileLow turns it off and gets its own authored recommendation
+(`RecommendFromProfile`: preset, pixel budget, upscaler, AA, frame cap), because the core-count
+score ranked a budget 8-core Android phone above an iPhone. `DisplayGraphicsSettings` settings v3
+re-seeds a MobileLow device's saved graphics once, only while they still equal the old heuristic's
+output (i.e. the player never touched them). FrogletTools ▸ Performance ▸ **Device Tier** shows the
+tier and why, and simulates another tier from the next Play. The same profile carries the tier's
+render choices (HDR, baked sky, membrane and fold-gate caps - §3.5 of the plan) and content choices
+(menu/freestyle trail policy, the Skim Race / Joust trail cap, menu teardown while flying, the HUD
+glow, cytoplasm, the Wanderway budget - §3.6); each is read by the system that owns it, and every
+field's default is "no change".
+
 ## Benchmark scene
 
-- **The scene:** `BenchmarkStressTest.unity` (Singleplayer Scenes) is committed to the repo and
-  registered in Build Settings — there is exactly ONE and it is never re-created (the one-shot
-  creation tool has been removed). It was originally cloned from `MinigameWildlifeBlitz`
+- **The scene:** `BenchmarkStressTest.unity` (Singleplayer Scenes) is committed to the repo — there is exactly ONE and it is never re-created (the one-shot
+  creation tool has been removed). **Correction (2026-09): it is NOT in Build Settings or the Linux build profile**, so a Netcode
+  load of it is expected to fail in a player build. It was originally cloned from `MinigameWildlifeBlitz` (retired 2026-09)
   (preserving NetworkObjects, ContainerScope, Cell + RandomLifeSpawner, crystal manager, camera);
   its Cell now runs the menu's Blob Cell Config on all four intensity slots.
 - **Launch:** Settings → Run Benchmark calls `BenchmarkSceneLauncher.LaunchBenchmark()` → sets
   `GameDataSO` (Squirrel, single-player, WildlifeBlitz mode) → `InvokeGameLaunch()` → the always-on
   host loads it via Netcode scene management (the Relay just idles for a single-player scene).
-- **Endless + flyable:** `SandboxBenchmarkController` (`HasEndGame=false`) auto-activates players;
-  the human flies a Squirrel, AI Squirrels fly via the same `StartPlayer→ToggleAIPilot` path
-  WildlifeBlitz uses. No win condition (no TurnMonitor).
+- **Controller stack:** the scene keeps the cloned single-player Wildlife Blitz stack —
+  `SinglePlayerWildlifeBlitzController` with `SinglePlayerWildlifeBlitzScoreTracker`,
+  `SingleplayerWildlifeBlitzTurnMonitor` / `TimeBasedTurnMonitor`, `WildlifeBlitzHUD`, and
+  `WildlifeBlitzStatsProvider`. (`SandboxBenchmarkController` was deleted as an unused orphan in
+  BH-5.6; it was never what this scene referenced.) Launch configures a Squirrel human + AI
+  backfill via `GameDataSO.ConfigurePlayerCounts`; the scene's `PlayerSpawner` / adapter path
+  starts them. Editor-only — not in Build Settings (BH-5.3).
 - **Gradual spawn (no single-frame spike):** the existing `RandomLifeSpawner` already frame-spreads
   spawns via `yield return null` / `WaitForSeconds` (it has a comment about fixing a ~48% spike that
   way). A high-density benchmark `SpawnProfileSO` raises counts/lowers intervals — **production only,
@@ -135,7 +154,15 @@ the menu Cinemachine brain camera if you want SMAA/TAA there, or the benchmark-s
 
 Music / SFX / Haptics volume sliders are **min 0, max 1, whole-numbers off, default 1.0**. The legacy
 `AudioSource` path scales ×1/5 internally (the intentional "max .2" attenuation in `AudioSystem`), and
-the FMOD SFX path is `Clamp01(SFXLevel)` — both assume a 0–1 slider.
+the FMOD path is `AudioVolumeMath.InstanceVolume` (mute → 0, else slider × per-emitter trim) — both
+assume a 0–1 slider.
+
+**Persistence is last-writer-wins between PlayerPrefs and the cloud** (`GameSetting.ShouldApplyCloud`,
+stamped by `PlayerPrefKeys.SettingsModifiedUtc` ↔ `PlayerSettingsCloudData.ModifiedUtcTicks`). The
+cloud snapshot used to be applied unconditionally on every launch, which is why a slider set to 0
+came back at 1.0. The level keys are FLOATS — seeding them with `SetInt` made every fresh install read
+0 (silent). A slider prefab talks to `GameSetting` only (`AudioLevelSlider`; the old `Mixer` wrote to
+an FMOD VCA that controls no bus). Record: `Docs/AudioSystem/FMOD_AUDIT.md`.
 
 ## In-game restrictions (real-game pattern)
 
@@ -155,7 +182,14 @@ Auto-Detect also logs via `CSDebug`. Wire `menuOnlyHint` + `restartRequiredNotic
 These settings are stored and broadcast change events; the systems that *read* them need a small
 hook (each is its own follow-up, some are ecology-sensitive — use the `/ecology` skill):
 
-- **Colorblind / Reduce-flashing** → a screen-space color/flash post-process.
+- **Colorblind** → REPLACED 2026-11-05 by colour sets, not a post-process (Garrett: "put the thing where it
+  belongs"). The sets made for colour blindness, low vision and contrast (Contrast, Protanopia, Deuteranopia,
+  Tritanopia, Achromatopsia, Low Vision; `Docs/VesselModels/colour_sets.json`, rule 5) sit in the Profile's colour-set
+  rail with every other set. General's first row is a breadcrumb, **Colour sets**, whose button closes Settings and
+  opens the Profile on Colour sets showing the first vision set (`ProfileColorSetsPanel.ShowColourSetsWhenOpen`; main
+  menu only, like Credits). The colorblind dropdown is gone, so nothing writes `AccessibilitySettings.ColorblindMode`
+  any more; it and `ColorblindModeSetting` are vestigial and can be removed by the settings owner.
+- **Reduce-flashing** → a screen-space flash post-process.
 - **Subtitles / scale** → Dialogue System (`DialogueManager`) subtitle rendering.
 - **Ecosystem density / physics detail / AI crowd / VFX density** → spawn profile scaling, collider
   LOD, AI count, explosion-VFX budget (ecology-sensitive: tune production, never add decay).
@@ -182,8 +216,9 @@ hook (each is its own follow-up, some are ecology-sensitive — use the `/ecolog
    so the panel shows/hides with the modal.
 2. **Benchmark button:** add `BenchmarkSceneLauncher` and hook the button → `LaunchBenchmark()`.
 3. **Benchmark scene:** `BenchmarkStressTest.unity` already exists in the repo (one only — never
-   re-create it). Wiring changes (Squirrel vessel on the spawner's AI entries, endless controller,
-   spawn profile, `BenchmarkSceneHud`, the Exit event) are edited directly in that scene.
+   re-create it). Wiring changes (Squirrel vessel on the spawner's AI entries, the Wildlife Blitz
+   controller stack above, spawn profile, optional `BenchmarkSceneHud`, the Exit event) are edited
+   directly in that scene.
 4. **If you map dropdown indices to enums**, match the order in `GraphicsSettingsEnums.cs`: Display
    mode = Fullscreen/Borderless/Windowed; Quality = Very Low..Ultra; AA =
    Off/FXAA/SMAA/MSAA2x/4x/8x/TAA; frame cap your own list (pass the int to `SetTargetFrameRate`).

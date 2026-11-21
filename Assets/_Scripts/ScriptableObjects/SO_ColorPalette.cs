@@ -7,7 +7,7 @@ namespace CosmicShore.ScriptableObjects
 {
     [CreateAssetMenu(fileName = "New Color Palette", menuName = "ScriptableObjects/Color Palette", order = 30)]
     [System.Serializable]
-    public class SO_Color_Palette : ScriptableObject
+    public class SO_ColorPalette : ScriptableObject
     {
         [SerializeField] public string PaletteUUID;
         [SerializeField] public Color Team_One_Color_1;

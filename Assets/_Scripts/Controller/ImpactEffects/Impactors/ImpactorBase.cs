@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError(
                     $"[{GetType().Name}] '{path}'.{containerField} is not assigned — this impactor " +
                     "dispatches no effects until it is wired (reported once; contacts are skipped, " +
-                    "not thrown). Run FrogletTools > Vessels > Audit Vessel Skimmers to see every " +
+                    "not thrown). Run FrogletTools > Vessels > Audits > Audit Vessel Skimmers to see every " +
                     "unwired skimmer.", this);
             }
             return true;
@@ -96,7 +96,10 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError(
                     $"[{GetType().Name}] '{(container ? container.name : "<missing container>")}'." +
                     $"{field}[{index}] is empty — that slot dispatches nothing and the rest of the " +
-                    "list still runs. Assign the effect asset, or remove the slot.", container);
+                    "list still runs. Assign the effect asset, or remove the slot. If the container " +
+                    "already names an asset there, that asset FAILED TO LOAD: select it, and if it " +
+                    "reports a script that cannot be loaded, Reimport it (an asset imported before " +
+                    "its new script compiled stays broken until it is).", container);
             }
             return true;
         }
@@ -126,15 +129,26 @@ namespace CosmicShore.Gameplay
             }
             catch (System.Exception ex)
             {
-                int effectId = effect ? effect.GetInstanceID() : 0;
-                long key = ((long)effectId << 32) ^ (uint)GetType().Name.GetHashCode();
-                if (s_reportedThrowingEffects.Add(key))
-                {
-                    CSDebug.LogError(
-                        $"[{GetType().Name}] Effect '{(effect ? effect.name : "<null>")}' threw during " +
-                        $"Execute - reported once; the rest of this contact's effect list still runs.\n{ex}",
-                        effect);
-                }
+                ReportEffectThrow(ex, effect);
+            }
+        }
+
+        /// <summary>
+        /// The catch half of <see cref="RunEffectIsolated"/>, for the per-contact effect loops: write the
+        /// <c>Execute</c> call in a <c>try</c> and hand its exception here. A lambda per effect per contact
+        /// allocated a closure on every hit - the Amoebius marker run measured it as
+        /// <c>VesselImpactor.AcceptImpactee</c>'s whole 3.8 KB/frame in Skim Race (2026-10-15).
+        /// </summary>
+        protected void ReportEffectThrow(System.Exception ex, UnityEngine.Object effect)
+        {
+            int effectId = effect ? effect.GetInstanceID() : 0;
+            long key = ((long)effectId << 32) ^ (uint)GetType().Name.GetHashCode();
+            if (s_reportedThrowingEffects.Add(key))
+            {
+                CSDebug.LogError(
+                    $"[{GetType().Name}] Effect '{(effect ? effect.name : "<null>")}' threw during " +
+                    $"Execute - reported once; the rest of this contact's effect list still runs.\n{ex}",
+                    effect);
             }
         }
 
@@ -252,9 +266,17 @@ namespace CosmicShore.Gameplay
             if (!other.TryGetComponent(out ImpactCollider impacteeCollider))
                 return;
 
+            // Both sides must be initialized, not only this one. A skimmer or vessel whose hull has
+            // no live pilot yet (freshly spawned, mid-swap in the Vessel Changer) skips its OWN
+            // impacts through the gate above, but as the IMPACTEE it reached e.g. an omni crystal,
+            // which read its domain and threw (Bug Ledger E-79b40242f7, Garrett/jtgjones).
+            var impactee = impacteeCollider.Impactor;
+            if (impactee is ImpactorBase impacteeBase && !impacteeBase.isInitialized)
+                return;
+
             EnsureAcceptMarker();
             using (_acceptMarker.Auto())
-                AcceptImpactee(impacteeCollider.Impactor);
+                AcceptImpactee(impactee);
         }
     }
 }

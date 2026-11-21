@@ -1,0 +1,784 @@
+<title>Fleet Codex</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&family=Saira:wght@400;500;600&display=swap">
+<script src="theme.js"></script>
+<link rel="stylesheet" href="themes.css">
+<style>
+/* The Fleet Codex, design C of the board's Rev 68 drawn whole as Rev 69 (Shombith picked it 2026-11-08, "Go ahead build
+   it"; Docs/MENU_REDESIGN_B.md sections 143-144). One vessel at a time, every detail, calm: a switcher in the top bar
+   instead of a fleet grid; the flight-deck window (the hull flying, the pilot briefing, its element games, the picked
+   ability's MOVE playing with the controller button, key and phone touch pressing in time, the ability row); then
+   hairline sections: Abilities (what each does, what more of its element does with the authored numbers, its level 5),
+   Missions (the games, filtered by element, Arcade, Arena), Flight and controls, Docs. #fleet is the whole fleet as one
+   table. Data: fleet.json from Tools/Build/fleet_codex.py (the game's own files); every icon is the game's art.
+   Themes: the game's colour sets Nocturne, Photic, Dart Frog (theme.js / themes.css, written by the generator with the
+   analytics console's make_themes.py). Type: Saira Condensed and Saira, picked on the board for the website.
+   Motion: only transform and opacity, on one eased curve; one 3.2 s clock for a move and its devices; reduced motion
+   holds the pressed pose still. */
+:root{
+  --ease:cubic-bezier(.45,0,.2,1);
+  --ink:var(--fs-text); --soft:var(--fs-text-soft); --off:var(--fs-text-off); --line:var(--fs-line);
+  --hair:color-mix(in srgb,var(--fs-line) 60%,transparent); --panel:var(--fs-surface); --deep:var(--fs-ground-deep);
+  --sel:var(--fs-selection); --cta:var(--fs-cta-fill); --warn:var(--fs-danger);
+  --disp:"Saira Condensed","Arial Narrow",sans-serif; --body:"Saira",system-ui,sans-serif;
+  --dom:#2cfffb; --dom-sh:#552345; --omni:#96eb29; --petal-grey:#82828a; --petal-white:#f5f5ff;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--fs-ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
+.disp{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.lab{font-size:12px;letter-spacing:.22em;color:var(--soft);text-transform:uppercase}
+.wrap{max-width:1760px;margin:0 auto;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.empty{color:var(--soft)}
+/* the sea behind the page (the menu's SeaLines in the theme's rims) */
+.sea{position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse 70% 55% at 50% 22%,color-mix(in srgb,var(--sea-glow) 12%,transparent),transparent 70%),
+    linear-gradient(180deg,var(--sea-wash) 0%,color-mix(in srgb,var(--sea-wash) 40%,var(--fs-ground)) 50%,var(--fs-ground) 100%)}
+.sea-lines{position:absolute;inset:0;-webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 14%,#000 86%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0%,#000 14%,#000 86%,transparent 100%)}
+.sea-layer{position:absolute;inset:0;background:linear-gradient(90deg,var(--sea-1),var(--sea-2) 50%,var(--sea-3));-webkit-mask-repeat:repeat-x;mask-repeat:repeat-x;animation:sea-slide 90s linear infinite}
+@keyframes sea-slide{from{-webkit-mask-position:0 0;mask-position:0 0}to{-webkit-mask-position:-480px 0;mask-position:-480px 0}}
+
+/* ---------- top bar ---------- */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--fs-ground) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 1px 0 var(--hair)}
+.top .wrap{display:flex;align-items:center;gap:20px;min-height:72px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+.brand{font-family:var(--disp);font-weight:700;font-size:26px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;display:flex;align-items:center;gap:10px}
+.brand img{width:24px;height:24px}
+.navl{font-size:13px;color:var(--soft);text-decoration:none;letter-spacing:.08em;text-transform:uppercase}
+.navl:hover,.navl[aria-current="page"]{color:var(--ink)}
+.switch{display:flex;align-items:center;gap:6px;margin:0 auto;position:relative}
+.step{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 10px;font-size:13px;color:var(--soft);text-decoration:none;transition:color .2s var(--ease)}
+.step:hover{color:var(--ink)}
+.cur{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border:0;cursor:pointer;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line)}
+.cur img{width:46px;height:26px;object-fit:cover}
+.cur .disp{font-size:22px}
+.cur small{font-size:12px;color:var(--soft)}
+.menu{position:absolute;top:52px;left:50%;transform:translateX(-50%);width:min(560px,92vw);max-height:70vh;overflow:auto;z-index:30;padding:10px;background:var(--fs-ground);box-shadow:inset 0 0 0 1px var(--line),0 24px 60px rgba(0,0,0,.5)}
+.menu h4{margin:8px 6px;font-weight:500}
+.menu .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}
+.menu a{display:flex;align-items:center;gap:8px;padding:6px;text-decoration:none;font-size:14px;transition:background .2s var(--ease)}
+.menu a:hover,.menu a[aria-current="page"]{background:var(--panel)}
+.menu a img{width:52px;height:30px;object-fit:cover;flex:none}
+.tools{display:flex;align-items:center;gap:10px}
+.search{display:flex;align-items:center;gap:8px;height:40px;width:240px;padding:0 12px;color:var(--soft);box-shadow:inset 0 0 0 1px var(--line)}
+.search input{all:unset;font-size:13px;width:100%;color:var(--ink)}
+.tbtn{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:0;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px var(--line);font-size:13px}
+.sw{display:inline-flex;gap:2px}.sw i{display:block;width:7px;height:14px}
+.themes{position:relative}
+.tmenu{position:absolute;right:0;top:48px;width:320px;padding:8px;z-index:30;background:var(--fs-ground);box-shadow:inset 0 0 0 1px var(--line),0 24px 60px rgba(0,0,0,.5)}
+.titem{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:0;cursor:pointer;background:none;padding:10px}
+.titem:hover,.titem[aria-checked="true"]{background:var(--panel)}
+.titem[aria-checked="true"]{box-shadow:inset 2px 0 0 var(--sel)}
+.titem .sw i{width:10px;height:22px}
+.titem b{display:block;font-family:var(--disp);font-size:20px;text-transform:uppercase}
+.titem span.d{display:block;font-size:12px;color:var(--soft);line-height:1.4}
+.dompick{display:flex;gap:4px}
+.dompick button{width:30px;height:30px;border:0;cursor:pointer;background:transparent;display:flex;align-items:center;justify-content:center}
+.dompick i{display:block;width:16px;height:16px;background:var(--c);transform:rotate(45deg);transition:box-shadow .2s var(--ease)}
+.dompick button[aria-checked="true"] i{box-shadow:0 0 0 3px var(--fs-ground),0 0 0 5px var(--c)}
+
+/* ---------- the window ---------- */
+.win{position:relative;height:860px;margin-top:28px;overflow:hidden;background:radial-gradient(ellipse at 52% 46%,var(--face),var(--fs-ground) 74%);box-shadow:inset 0 0 0 1px var(--line)}
+.hullbox{position:absolute;inset:0;pointer-events:none}
+.hullbox img{position:absolute;left:27%;top:8%;width:52%;-webkit-mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%)}
+.hud{position:absolute;padding:22px 24px;background:color-mix(in srgb,var(--fs-ground) 84%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.brief{left:40px;top:40px;width:520px}
+.brief h1{font-size:96px;margin:6px 0 0}
+.brief p{margin:12px 0 0;font-size:17px;line-height:1.55}
+.stats{display:flex;gap:26px;margin-top:18px;flex-wrap:wrap}
+.stats .disp{font-size:30px}
+.stats small{display:block;font-size:11px;color:var(--soft)}
+.egs{right:40px;top:40px;width:400px}
+/* the flight certificate (Rev 84 A, picked 2026-11-10, section 155 of Docs/MENU_REDESIGN_B.md): five checks read from the
+   game, ink for done, Gold only for Arena Ready and an S tier (the style guide's first place); solo vessels only */
+.win.certified{height:1060px}
+.cert{margin-top:18px}
+.cline{display:flex;align-items:baseline;gap:14px;margin:6px 0 10px}
+.cline .disp{font-size:52px;font-variant-numeric:tabular-nums}
+.cline .gold,.fcert .gold{color:var(--fs-gold)}.cline .dim,.fcert .dim{color:var(--soft)}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg i{display:block;height:7px;background:var(--line);opacity:.5}
+.seg i.on{background:var(--ink);opacity:1}
+.seg i.part{background:linear-gradient(90deg,var(--ink) var(--p),var(--line) var(--p));opacity:1}
+.seg.thin i{height:4px}
+.chks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:10px 0 0;padding:0;list-style:none}
+.chks li{display:flex;flex-direction:column;gap:3px;padding:7px 8px;background:color-mix(in srgb,var(--deep) 70%,transparent);box-shadow:inset 0 0 0 1px var(--hair);font-size:12px;line-height:1.3;min-width:0;overflow-wrap:anywhere}
+.chks li b{display:flex;align-items:center;gap:4px;font-weight:600;font-size:13px}
+.chks li span{font-size:10px;letter-spacing:.12em;color:var(--soft);text-transform:uppercase}
+.chks li.no{color:var(--off)}
+.chks svg{width:13px;height:13px;flex:none}
+.next{margin:10px 0 0;font-size:14px;color:var(--sel)}
+.tier{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;font-family:var(--disp);font-weight:700;font-size:17px;flex:none}
+.tier.tS{background:var(--fs-gold);color:var(--fs-ground)}
+.tier.tA{box-shadow:inset 0 0 0 2px var(--ink);color:var(--ink)}
+.tier.tB{box-shadow:inset 0 0 0 1px var(--line);color:var(--soft)}
+.tier.tC{box-shadow:inset 0 0 0 1px var(--hair);color:var(--off)}
+.tier.tu{box-shadow:inset 0 0 0 1px var(--hair);color:var(--off);font-size:14px}
+.tier.tn{color:var(--off);font-size:14px}
+.tier.hot{outline:2px solid var(--sel);outline-offset:1px}
+.eg{display:grid;grid-template-columns:18px 76px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--hair);font-size:15px}
+.eg .flower{width:16px;height:16px}
+.eg span{font-size:11px;letter-spacing:.16em;color:var(--soft)}
+.eg.none{color:var(--off)}
+.cta{display:inline-flex;align-items:center;justify-content:center;height:46px;padding:0 22px;margin-top:18px;background:var(--cta);color:var(--fs-ground);font-family:var(--disp);font-size:20px;font-weight:700;letter-spacing:.1em;text-decoration:none;text-transform:uppercase}
+.move{left:40px;bottom:40px;width:660px}
+.move .mhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.move .mhead .disp{font-size:34px}
+.trig{color:var(--sel);font-size:14px}
+.l5tog{margin-left:auto;display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer;height:32px;padding:0 12px;background:transparent;color:var(--soft);box-shadow:inset 0 0 0 1px var(--line);font-family:var(--disp);font-size:15px;letter-spacing:.1em;text-transform:uppercase;transition:color .2s var(--ease),background .2s var(--ease)}
+.l5tog:hover{color:var(--ink)}
+.l5tog[aria-pressed="true"]{background:var(--cta);color:var(--fs-ground);box-shadow:none}
+.mhead .mic{display:inline-flex;align-self:center;width:40px;height:40px}
+.mhead .mic img,.mhead .mic .ico{width:40px;height:40px;object-fit:contain}
+.abrow{position:absolute;right:40px;bottom:40px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 780px)}
+.ab{display:flex;flex-direction:column;align-items:center;gap:6px;width:96px;border:0;cursor:pointer;background:transparent;padding:0;transition:transform .3s var(--ease)}
+.ab .i{width:84px;height:84px;display:flex;align-items:center;justify-content:center;background:transparent;box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow .3s var(--ease)}
+.ab .i img,.ab .i .ico{width:58px;height:58px;object-fit:contain}
+.ab small{font-size:12px;color:var(--soft);text-align:center;line-height:1.2;min-height:2.4em}
+.ab:hover{transform:translateY(-4px)}
+.ab[aria-pressed="true"]{transform:translateY(-8px)}
+.ab[aria-pressed="true"] .i{box-shadow:inset 0 0 0 2px var(--sel)}
+.ab[aria-pressed="true"] small{color:var(--ink)}
+/* an icon as the HUD tints it: domain parts (d) and shielded parts (s) are masks filled with the picked domain */
+.ico{position:relative;display:block}
+.ico>*{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.ico .lay{-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
+
+/* ---------- the move: a scene of the ability happening, and the devices pressing on its clock ---------- */
+.stage{position:relative;overflow:hidden;height:150px;margin-top:12px;background:color-mix(in srgb,var(--deep) 72%,transparent);box-shadow:inset 0 0 0 1px var(--line)}
+.stage .lane{position:absolute;left:0;right:0;top:50%;height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent)}
+.shull{position:absolute;top:50%;left:0;width:46px;height:26px;margin-top:-13px;animation:fly 3.2s var(--ease) infinite;will-change:transform}
+.shull svg{width:100%;height:100%;display:block}
+@keyframes fly{0%{transform:translateX(-60px)}100%{transform:translateX(720px)}}
+.shull.low{top:40%}
+.crys{position:absolute;left:52%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border:2px solid var(--ink);transform:rotate(45deg);animation:crys 3.2s var(--ease) infinite}
+@keyframes crys{0%,40%{transform:translateX(0) rotate(45deg) scale(1);opacity:1}52%{transform:translateX(12px) rotate(45deg) scale(1.35);opacity:1}62%,100%{transform:translateX(14px) rotate(45deg) scale(0);opacity:0}}
+.plus{position:absolute;left:54%;top:26%;font-weight:600;font-size:14px;color:var(--sel);opacity:0;animation:plus 3.2s var(--ease) infinite}
+@keyframes plus{0%,52%{opacity:0;transform:translateY(8px)}62%{opacity:1;transform:translateY(0)}86%,100%{opacity:0;transform:translateY(-14px)}}
+.ringwrap{position:absolute;left:58%;top:50%;width:0;height:0}
+.blk{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;background:var(--fs-ruby);opacity:0;animation:blk 3.2s var(--ease) infinite}
+@keyframes blk{0%,16%{transform:rotate(var(--a)) translateX(10px) scale(0);opacity:0}28%,70%{transform:rotate(var(--a)) translateX(34px) scale(1);opacity:1}84%,100%{transform:rotate(var(--a)) translateX(40px) scale(0);opacity:0}}
+.streak{position:absolute;left:30%;top:50%;width:46%;height:2px;margin-top:-1px;background:linear-gradient(90deg,transparent,var(--sel));transform-origin:left;transform:scaleX(0);opacity:0;animation:streak 3.2s var(--ease) infinite}
+@keyframes streak{0%,50%{transform:scaleX(0);opacity:0}60%{transform:scaleX(1);opacity:1}80%,100%{transform:scaleX(1);opacity:0}}
+.prow{position:absolute;left:8%;right:8%;top:62%;display:flex;justify-content:space-between}
+.pr{position:relative;width:22px;height:22px}
+.pr i,.pr b{position:absolute;inset:0;transform:rotate(45deg) scale(.8)}
+.pr i{background:var(--fs-ruby);animation:prA 3.2s var(--ease) infinite;animation-delay:var(--d)}
+.pr b{background:var(--fs-jade);opacity:0;animation:prB 3.2s var(--ease) infinite;animation-delay:var(--d)}
+@keyframes prA{0%,10%{opacity:1}20%,88%{opacity:0}100%{opacity:1}}
+@keyframes prB{0%,10%{opacity:0;transform:rotate(45deg) scale(.8)}18%{opacity:1;transform:rotate(45deg) scale(1.05)}26%,88%{opacity:1;transform:rotate(45deg) scale(.8)}100%{opacity:0}}
+.pr.g i{background:var(--line);animation:none}.pr.g b{display:none}
+.meter{position:absolute;left:8%;right:8%;bottom:12%;height:6px;background:var(--deep);box-shadow:inset 0 0 0 1px var(--line)}
+.meter i{position:absolute;inset:0;background:var(--sel);transform-origin:left;animation:meter 3.2s var(--ease) infinite}
+@keyframes meter{0%{transform:scaleX(.18)}90%{transform:scaleX(1)}100%{transform:scaleX(.18)}}
+.burst{position:absolute;left:50%;top:50%;width:0;height:0}
+.oc{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border:2px solid var(--omni);transform:rotate(45deg);animation:oc 3.2s var(--ease) infinite}
+@keyframes oc{0%,10%{transform:rotate(45deg) scale(1);opacity:1}24%{transform:rotate(45deg) scale(1.3);opacity:1}32%,100%{transform:rotate(45deg) scale(0);opacity:0}}
+.sb{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;background:var(--ink);box-shadow:0 0 0 2px var(--sel);opacity:0;animation:sb 3.2s var(--ease) infinite}
+@keyframes sb{0%,26%{transform:rotate(var(--a)) translateX(0) scale(.2);opacity:0}40%,78%{transform:rotate(var(--a)) translateX(44px) scale(1);opacity:1}92%,100%{transform:rotate(var(--a)) translateX(48px) scale(.6);opacity:0}}
+.dev{display:flex;gap:10px;margin-top:12px}
+.dv{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px;background:var(--deep);box-shadow:inset 0 0 0 1px var(--line);min-width:0}
+.dl{font-size:10px;letter-spacing:.16em;color:var(--soft)}
+.dg{height:44px;display:flex;align-items:center;justify-content:center;gap:4px}
+.dg img{width:40px;height:40px;object-fit:contain}
+.dc{font-size:12px;text-align:center;line-height:1.3}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:56px;height:34px;padding:0 10px;font-size:13px;font-weight:600;background:var(--panel);box-shadow:inset 0 -4px 0 var(--line),inset 0 0 0 1px var(--line);white-space:nowrap}
+.ph{display:inline-flex;align-items:center;justify-content:space-between;width:74px;height:40px;padding:0 9px;border:2px solid var(--line);border-radius:9px}
+.th{width:14px;height:18px;border-radius:50%;background:var(--soft)}
+.tbtn2{width:40px;height:40px;border-radius:50%;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line);display:flex;align-items:center;justify-content:center}
+.tbtn2 img,.tbtn2 .ico{width:28px;height:28px}
+/* the gestures: tap, hold, hold then release, tap on / tap off; a passive ability just flies */
+.g-tap .pp{animation:p-tap 3.2s var(--ease) infinite}
+.g-hold .pp{animation:p-hold 3.2s var(--ease) infinite}
+.g-release .pp{animation:p-rel 3.2s var(--ease) infinite}
+.g-toggle .pp{animation:p-tog 3.2s var(--ease) infinite}
+.g-tap .kp{animation:k-tap 3.2s var(--ease) infinite}
+.g-hold .kp{animation:k-hold 3.2s var(--ease) infinite}
+.g-release .kp{animation:k-rel 3.2s var(--ease) infinite}
+.g-toggle .kp{animation:k-tog 3.2s var(--ease) infinite}
+.g-tap .lf,.g-toggle .lf{animation:l-tap 3.2s var(--ease) infinite}
+.g-hold .lf,.g-release .lf{animation:l-hold 3.2s var(--ease) infinite}
+.dr{animation:drift 3.2s var(--ease) infinite}
+@keyframes p-tap{0%,16%{transform:scale(1)}20%,24%{transform:scale(.84)}30%,100%{transform:scale(1)}}
+@keyframes p-hold{0%,12%{transform:scale(1)}16%,70%{transform:scale(.84)}76%,100%{transform:scale(1)}}
+@keyframes p-rel{0%,12%{transform:scale(1)}16%,56%{transform:scale(.84)}60%{transform:scale(1.12)}68%,100%{transform:scale(1)}}
+@keyframes p-tog{0%,12%{transform:scale(1)}15%,19%{transform:scale(.84)}23%,52%{transform:scale(1)}55%,59%{transform:scale(.84)}63%,100%{transform:scale(1)}}
+@keyframes k-tap{0%,16%{transform:translateY(0)}20%,24%{transform:translateY(3px)}30%,100%{transform:translateY(0)}}
+@keyframes k-hold{0%,12%{transform:translateY(0)}16%,70%{transform:translateY(3px)}76%,100%{transform:translateY(0)}}
+@keyframes k-rel{0%,12%{transform:translateY(0)}16%,56%{transform:translateY(3px)}60%{transform:translateY(-1px)}66%,100%{transform:translateY(0)}}
+@keyframes k-tog{0%,12%{transform:translateY(0)}15%,19%{transform:translateY(3px)}23%,52%{transform:translateY(0)}55%,59%{transform:translateY(3px)}63%,100%{transform:translateY(0)}}
+@keyframes l-tap{0%,14%{transform:translateY(0) scale(1);opacity:1}20%,30%{transform:translateY(-9px) scale(1.2);opacity:.3}38%,100%{transform:translateY(0) scale(1);opacity:1}}
+@keyframes l-hold{0%,12%{transform:translateY(0) scale(1);opacity:1}18%,66%{transform:translateY(-9px) scale(1.2);opacity:.3}74%,100%{transform:translateY(0) scale(1);opacity:1}}
+@keyframes drift{0%,100%{transform:translate(0,0)}30%{transform:translate(4px,-3px)}65%{transform:translate(-3px,3px)}}
+
+/* ---------- sections ---------- */
+.sec{display:flex;align-items:center;gap:18px;margin:56px 0 8px;flex-wrap:wrap}
+.sec .disp{font-size:30px}
+.sec .rule{flex:1;height:1px;background:var(--line);min-width:40px}
+.row{position:relative;display:grid;grid-template-columns:minmax(260px,400px) minmax(0,1fr) minmax(220px,380px) minmax(220px,330px);gap:36px;align-items:start;width:100%;text-align:left;border:0;cursor:pointer;padding:26px 0 26px 20px;background:transparent;border-bottom:1px solid var(--hair);transition:background .3s var(--ease),box-shadow .3s var(--ease)}
+.row:hover{cursor:pointer;background:color-mix(in srgb,var(--panel) 35%,transparent)}
+.row.on{background:color-mix(in srgb,var(--panel) 55%,transparent);box-shadow:inset 3px 0 0 var(--sel)}
+.who{display:grid;grid-template-columns:72px 1fr;gap:16px;align-items:center}
+.who .ic{width:72px;height:72px;padding:6px}
+.who .ic img,.who .ic .ico{width:60px;height:60px;object-fit:contain}
+.row b.n{display:block;font-family:var(--disp);font-size:30px;text-transform:uppercase;line-height:1}
+.row p{margin:0;font-size:16px;line-height:1.55}
+.k{display:block;font-size:11px;letter-spacing:.2em;color:var(--soft);margin-bottom:6px;text-transform:uppercase}
+.dial{display:block;font-size:13px;margin-top:6px}
+.dial i{display:block;font-style:normal;font-size:11px;color:var(--off)}
+.dial.off{color:var(--off);text-decoration:line-through}
+.l5 b{font-family:var(--disp);font-size:22px;text-transform:uppercase}
+.pickhead{all:unset;cursor:pointer;display:block}
+.pickhead:focus-visible{outline:2px solid var(--sel);outline-offset:4px}
+.l5top{display:flex;align-items:center;gap:12px}
+.l5go{display:inline-flex;align-items:center;gap:10px;border:0;cursor:pointer;background:transparent;padding:4px 12px 4px 4px;box-shadow:inset 0 0 0 1px var(--line);font-family:var(--disp);font-size:16px;letter-spacing:.08em;text-transform:uppercase;transition:box-shadow .2s var(--ease),color .2s var(--ease)}
+.l5go:hover{box-shadow:inset 0 0 0 1px var(--sel)}
+/* an element's flower, drawn as the HUD draws it (KitElementFlower): its petal sprite five times, each turned 72 degrees
+   clockwise from the last, a petal grey (tick 0) or white (tick 1); Play L5 lights them one at a time, petal 0 first */
+.flower{position:relative;display:inline-block;width:22px;height:22px;flex:none;vertical-align:middle}
+.flower i{position:absolute;inset:0;background:var(--petal-grey);transform:rotate(var(--r));-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
+.flower i.on{background:var(--petal-white)}
+.flower.big{width:58px;height:58px}
+.flw .flower{width:40px;height:40px}
+.flw .flower.go i{animation:petal-on .55s var(--ease) forwards;animation-delay:var(--d)}
+@keyframes petal-on{0%{background:var(--petal-grey);opacity:1}40%{background:var(--petal-white);opacity:.55}100%{background:var(--petal-white);opacity:1}}
+.flw .flower.go{animation:bloom .5s var(--ease) 2.5s}
+@keyframes bloom{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+.l5.lit b{color:var(--cta);transition:color .4s var(--ease) 1.8s}
+.l5 p{font-size:14px;color:var(--soft);margin-top:4px}
+.pill{display:inline-block;margin-top:8px;font-size:11px;letter-spacing:.16em;padding:2px 8px;box-shadow:inset 0 0 0 1px currentColor;color:var(--soft)}
+.pill.good{color:var(--cta)}.pill.warn{color:var(--warn)}
+.seat{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:26px 0 0;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.seat .disp{font-size:26px}
+.seat p{margin:0;color:var(--soft);font-size:14px;flex:1 1 360px}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:0;cursor:pointer;height:34px;padding:0 14px;background:transparent;color:var(--soft);box-shadow:inset 0 0 0 1px var(--line);font-size:13px;letter-spacing:.06em;transition:color .2s var(--ease),background .2s var(--ease)}
+.chip:hover{color:var(--ink)}
+.chip[aria-pressed="true"]{color:var(--fs-ground);background:var(--sel);box-shadow:none}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:14px}
+.gm{position:relative;height:210px;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;overflow:hidden;background:var(--panel);transition:transform .35s var(--ease)}
+.gm:hover{transform:translateY(-4px)}
+.gm>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s var(--ease)}
+.gm:hover>img{transform:scale(1.05)}
+.gm::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,var(--fs-ground) 8%,transparent 72%)}
+.gm>*:not(img){position:relative;z-index:1}
+.gm .disp{font-size:26px}
+.gm span{font-size:12px;color:var(--soft)}
+.gm span .flower{width:14px;height:14px;vertical-align:-2px}
+.gm p{margin:4px 0 0;font-size:13px;color:var(--soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fc2{display:grid;grid-template-columns:minmax(220px,420px) minmax(0,1fr);gap:56px;margin-top:20px}
+.flight{display:grid;grid-template-columns:1fr 1fr;gap:26px 30px;align-content:start}
+.flight .disp{font-size:44px}
+.flight small{display:block;font-size:13px;color:var(--soft)}
+.tbl{width:100%;border-collapse:collapse;font-size:15px}
+.tbl th{font-size:11px;letter-spacing:.2em;color:var(--soft);font-weight:400;text-align:left;padding:10px 12px 10px 0;border-bottom:1px solid var(--hair)}
+.tbl td{padding:12px 12px 12px 0;border-bottom:1px solid var(--hair);vertical-align:middle}
+.tbl td img{width:24px;height:24px;vertical-align:middle;margin-right:4px}
+.notes{margin:14px 0 0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--soft)}
+.fc3{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+.fc2>*{min-width:0}
+.upd{margin:6px 0 0;padding:0;list-style:none}
+.upd li{display:flex;gap:16px;padding:11px 0;border-bottom:1px solid var(--hair);font-size:15px;overflow-wrap:anywhere;min-width:0}
+.upd li span{flex:none;width:110px;color:var(--soft);font-size:13px}
+.upd a{text-decoration:none}.upd a:hover{color:var(--sel)}
+footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
+/* ---------- the whole fleet (#fleet): one card per vessel ---------- */
+.fhead{display:flex;align-items:flex-end;gap:20px 40px;flex-wrap:wrap;margin-top:32px}
+.fhead h1{font-size:72px;margin:4px 0 0}
+.fstats{display:flex;gap:28px;margin-left:auto}
+.fstats .disp{font-size:30px}.fstats small{display:block;font-size:11px;color:var(--soft)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:20px}
+.fcard{display:flex;flex-direction:column;text-decoration:none;overflow:hidden;background:color-mix(in srgb,var(--panel) 42%,transparent);box-shadow:inset 0 0 0 1px var(--hair);transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.fcard:hover,.fcard:focus-visible{transform:translateY(-4px);box-shadow:inset 0 0 0 1px var(--sel)}
+.fcard .pic{position:relative;height:140px;overflow:hidden;background:radial-gradient(ellipse at 50% 55%,var(--face),transparent 72%)}
+.fcard .pic img{width:100%;height:100%;object-fit:cover;-webkit-mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 50%,transparent 100%);transition:transform .5s var(--ease)}
+.fcard:hover .pic img{transform:scale(1.06)}
+.seats{position:absolute;right:10px;top:10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:2px 8px;color:var(--fs-ruby);box-shadow:inset 0 0 0 1px currentColor}
+.fbody{display:flex;flex-direction:column;gap:10px;padding:10px 14px 14px}
+.fname{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.fname .disp{font-size:26px}.fname small{font-size:12px;color:var(--soft)}
+.fab{display:flex;gap:8px}
+.fab span{width:34px;height:34px;display:flex;align-items:center;justify-content:center}
+.fab img,.fab .ico{width:30px;height:30px;object-fit:contain}
+.fels{display:flex;align-items:center;gap:6px}
+.fel .flower{width:22px;height:22px;display:block}
+.fel.none{opacity:.28}
+.fels small{margin-left:auto;font-size:12px;color:var(--soft)}
+.fcert{display:flex;flex-direction:column;gap:6px}
+.fcert .row1{display:flex;align-items:baseline;gap:8px}
+.fcert .row1 b{font-family:var(--disp);font-size:20px;font-variant-numeric:tabular-nums}
+.ftiers{display:flex;gap:6px}
+.ftiers span{display:flex;flex-direction:column;align-items:center;gap:2px}
+.ftiers small{font-size:9px;letter-spacing:.1em;color:var(--soft)}
+/* sort and filter: one quiet row of three dropdowns (Shombith 2026-11-11: the chip rows were "big" and "noisy") */
+.ftools{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;margin-top:22px;padding-top:14px;border-top:1px solid var(--hair)}
+.fsel{position:relative;display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.fsel select{appearance:none;-webkit-appearance:none;height:34px;padding:0 30px 0 12px;border:0;cursor:pointer;background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font:inherit;font-size:14px;letter-spacing:.02em;text-transform:none;transition:box-shadow .2s var(--ease)}
+.fsel select:hover{box-shadow:inset 0 0 0 1px var(--soft)}
+.fsel select.on{box-shadow:inset 0 0 0 1px var(--sel)}
+.fsel select option,.fsel select optgroup{background:var(--fs-ground);color:var(--ink)}
+.fsel svg{position:absolute;right:10px;pointer-events:none;color:var(--soft)}
+.fclear{border:0;background:none;cursor:pointer;color:var(--sel);font-size:13px;padding:6px 2px;text-decoration:underline;text-underline-offset:3px}
+.fcount{margin-left:auto;font-size:13px;color:var(--soft)}
+/* ---------- phone ---------- */
+@media (max-width:1100px){
+  .win{height:auto;display:flex;flex-direction:column;gap:22px;background:none;box-shadow:none;overflow:visible}
+  .hullbox{position:relative;height:280px;margin:0 -24px;overflow:hidden;background:radial-gradient(ellipse at 50% 50%,var(--face),var(--fs-ground) 72%)}
+  .hullbox img{left:-4%;top:2%;width:108%}
+  .hud{position:static;width:auto;padding:0;background:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .brief{order:1}.abrow{order:2;position:static;max-width:none;justify-content:space-between;gap:6px}.move{order:3;padding:16px;background:color-mix(in srgb,var(--panel) 50%,transparent);box-shadow:inset 0 0 0 1px var(--line)}.egs{order:4}
+  .brief h1{font-size:60px}
+  .abrow{gap:4px}.ab{width:60px}.ab .i{width:56px;height:56px}.ab .i img,.ab .i .ico{width:40px;height:40px}.ab small{font-size:10px}
+  .row{grid-template-columns:1fr;gap:12px;padding:20px 0 20px 14px}
+  .who{grid-template-columns:56px 1fr}.who .ic{width:56px;height:56px}.who .ic img,.who .ic .ico{width:44px;height:44px}
+  .row b.n{font-size:24px}.row p{font-size:14px}
+  .games{grid-template-columns:1fr 1fr;gap:8px}.gm{height:150px}.gm .disp{font-size:20px}.gm p{display:none}
+  .fc2{grid-template-columns:1fr;gap:28px}
+  .fc3{grid-template-columns:1fr}
+  .switch{order:3;width:100%;margin:0}.cur{flex:1;justify-content:center}
+  .search{width:auto;flex:1}
+  .win.certified{height:auto}.ftools{gap:10px}.fcount{margin-left:0;width:100%}.chks{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fhead h1{font-size:52px}.fstats{margin-left:0}.fgrid{grid-template-columns:1fr 1fr;gap:8px}.fcard .pic{height:100px}.fname .disp{font-size:20px}.fab span{width:26px;height:26px}.fab img,.fab .ico{width:24px;height:24px}
+}
+@media (max-width:640px){.dc{font-size:11px}.kc{min-width:48px;font-size:11px}.dv{padding:8px 4px}.step span{display:none}.stats{gap:16px}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .g-tap .pp,.g-hold .pp,.g-release .pp,.g-toggle .pp{transform:scale(.84)}
+  .g-tap .kp,.g-hold .kp,.g-release .kp,.g-toggle .kp{transform:translateY(3px)}
+  .lf{transform:translateY(-9px) scale(1.2);opacity:.3}
+}
+</style>
+
+<div class="sea" aria-hidden="true"><div class="sea-lines"><div class="sea-layer"></div><div class="sea-layer"></div><div class="sea-layer"></div></div></div>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#fleet"><img id="logo" alt="">Fleet Codex</a>
+    <a class="navl" href="#fleet" id="navFleet">The fleet</a>
+    <div class="switch" id="switch"></div>
+    <div class="tools">
+      <label class="search"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" aria-label="Search the fleet" placeholder="Search vessels, abilities, games"></label>
+      <div class="themes">
+        <button class="tbtn" id="tbtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="tmenu"><span class="sw" id="tsw"></span><span id="tname">Nocturne</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="tmenu" id="tmenu" role="menu" aria-label="Theme" hidden></div>
+      </div>
+      <div class="dompick" id="dompick" role="radiogroup" aria-label="Domain"></div>
+    </div>
+  </div>
+</header>
+<main class="wrap" id="app"><p class="empty">Reading the fleet&hellip;</p></main>
+<footer class="wrap" id="foot"></footer>
+
+<script>
+(function(){
+  var TH = window.FC_THEMES || {themes:[], current:function(){ return ""; }, pick:function(){}};
+  var D = null, query = "", pick = null, filt = "All", dom = "Jade", menuOpen = false, lv5 = false;
+  var app = document.getElementById("app"), q = document.getElementById("q"), sw = document.getElementById("switch");
+  var L5 = {wired:["good","WIRED"], open:["","OPEN"], off:["warn","SWITCHED OFF"], "label-only":["warn","NAMED, NOT GATED"], "gate-only":["warn","GATED, NOT NAMED"]};
+  var HULL_SVG = '<svg viewBox="0 0 46 26" aria-hidden="true"><path d="M2 13 L16 4 L44 13 L16 22 Z" fill="currentColor"/><path d="M2 13 L16 9 L16 17 Z" fill="var(--sel)"/></svg>';
+  var CARET = '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5l3 3 3-3"/></svg>';
+  var ARROW_L = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3L5 8l5 5"/></svg>';
+  var ARROW_R = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3l5 5-5 5"/></svg>';
+
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function num(v){ return v == null ? "&ndash;" : String(Math.round(v * 100) / 100); }
+  function file(p){ return (p || "").split("/").pop(); }
+  function cap(s){ s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
+  var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function day(d){ var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ""); return m ? (+m[3]) + " " + MONTHS[+m[2] - 1] + " " + m[1] : d; }
+  function img(src, alt, cls){ return src ? '<img src="' + esc(src) + '" alt="' + esc(alt || "") + '"' + (cls ? ' class="' + cls + '"' : '') + ' loading="lazy">' : ''; }
+  function ico(src, layers, alt, tint){
+    if(!layers) return img(src, alt);
+    var fill = tint === "omni" ? "var(--omni)" : "var(--dom)";
+    function lay(u, bg){ return u ? '<i class="lay" style="-webkit-mask-image:url(' + esc(u) + ');mask-image:url(' + esc(u) + ');background:' + bg + '"></i>' : ''; }
+    return '<span class="ico" role="img" aria-label="' + esc(alt || "") + '">' + lay(layers.d, fill) + lay(layers.s, "var(--dom-sh)") + (layers.f ? '<img src="' + esc(layers.f) + '" alt="">' : '') + '</span>';
+  }
+  function flower(el, lit, cls){
+    var u = D && D.ui["petal/" + el], h = '<span class="flower' + (cls ? ' ' + cls : '') + '" role="img" aria-label="' + esc(el) + '">';
+    if(!u) return h + '</span>';
+    for(var i = 0; i < 5; i++) h += '<i class="' + (i < lit ? 'on' : '') + '" style="--r:' + (72 * i) + 'deg;--d:' + (i * 0.5).toFixed(1) + 's;-webkit-mask-image:url(' + esc(u) + ');mask-image:url(' + esc(u) + ')"></i>';
+    return h + '</span>';
+  }
+  /* ---------- the flight certificate and tiers (solo vessels; fleet_codex.py certificate() / tiers_of()) ---------- */
+  /* only the percentage shows, never a stage name (Shombith 2026-11-10); the completion filter is in percentage bands */
+  var BANDS = ["100%", "80-95%", "60-75%", "Under 60%"], TRANK = {S:0, A:1, B:2, C:3};
+  function band(c){ return c.pct >= 100 ? BANDS[0] : c.pct >= 80 ? BANDS[1] : c.pct >= 60 ? BANDS[2] : BANDS[3]; }
+  var TICK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+  var DASH = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h8"/></svg>';
+  function pctCls(c){ return c.pct >= 100 ? "gold" : c.pct < 60 ? "dim" : ""; }
+  function segs(c, thin){
+    return '<span class="seg' + (thin ? ' thin' : '') + '" aria-hidden="true">' + c.checks.map(function(k, i){
+      return i === 1 && !k.done && c.wired ? '<i class="part" style="--p:' + (c.wired * 25) + '%"></i>' : '<i class="' + (k.done ? 'on' : '') + '"></i>'; }).join("") + '</span>';
+  }
+  function tierRank(t){ return t == null ? 4 : t === "-" ? 5 : TRANK[t]; }
+  function tierBadge(t, el, hot){
+    var cls = t == null ? "tu" : t === "-" ? "tn" : "t" + t, txt = t == null ? "?" : t;
+    var tip = t == null ? el + ": not rated yet" : t === "-" ? el + ": no " + el + " game yet" : el + " tier " + t;
+    return '<span class="tier ' + cls + (hot ? ' hot' : '') + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + txt + '</span>';
+  }
+  function nextWords(c){
+    if(!c.next) return "Certified for the arena";
+    return "Next: " + ({"Abilities":"an ability in every element", "Level 5":"wire its level-5 upgrades", "Time game":"a Time game",
+      "Mass or Space game":"a Mass or a Space game", "Charge game":"a Charge game"}[c.next] || c.next);
+  }
+  function certBlock(c){
+    return '<div class="cert"><div class="lab">Flight certificate</div><div class="cline"><span class="disp ' + pctCls(c) + '">' + c.pct + '%</span></div>' + segs(c) +
+      '<ul class="chks">' + c.checks.map(function(k){ return '<li class="' + (k.done ? '' : 'no') + '"><span>' + esc(k.name) + '</span><b>' + (k.done ? TICK + 'Done' : DASH + 'Not yet') + '</b>' + esc(k.detail) + '</li>'; }).join("") + '</ul>' +
+      '<p class="next">' + esc(nextWords(c)) + '</p></div>';
+  }
+  function vimg(v){ return v.domainImages && v.domainImages[dom] || v.image; }
+  function isCrew(v){ return v.crew && v.crew.seats > 1; }
+  function crewName(v){ return v.crew && v.crew.names && v.crew.names.length ? v.crew.names.join(" & ") : v.name; }
+  function listed(){ var vs = D.vessels.filter(function(v){ return v.status.hasMap; }); vs.sort(function(a, b){ return (isCrew(a) - isCrew(b)) || a.id - b.id; }); return vs; }
+  function current(){ var k = decodeURIComponent(location.hash.slice(1)); return D.vessels.filter(function(v){ return v.key === k; })[0] || null; }
+  function matches(v){
+    if(!query) return true;
+    var hay = [v.name, crewName(v), v.key, v.description].concat(
+      Object.keys(v.elements).map(function(n){ var e = v.elements[n]; return e.ability + " " + e.upgrade.label; }),
+      v.cards.map(function(c){ return c.name; }), v.omni ? [v.omni.label] : []).join(" ").toLowerCase();
+    return query.split(/\s+/).every(function(w){ return hay.indexOf(w) >= 0; });
+  }
+
+  /* ---------- themes and domains ---------- */
+  function swatch(t){ return (t.swatch || []).map(function(p){ return '<i style="background:' + p[0] + '"></i>'; }).join(""); }
+  function applyTheme(id){
+    if(id) TH.pick(id);
+    var cur = TH.current(), t = TH.themes.filter(function(x){ return x.id === cur; })[0] || TH.themes[0];
+    if(!t) return;
+    document.getElementById("tname").textContent = t.name;
+    document.getElementById("tsw").innerHTML = swatch(t);
+    var m = document.getElementById("tmenu");
+    m.innerHTML = '<p class="lab" style="margin:6px 10px 8px;letter-spacing:.12em">A colour set changes how you see the HyperSea</p>' + TH.themes.map(function(x){
+      return '<button class="titem" type="button" role="menuitemradio" aria-checked="' + (x.id === t.id) + '" data-t="' + x.id + '"><span class="sw">' + swatch(x) + '</span><span><b>' + esc(x.name) + '</b><span class="d">' + esc(x.line) + '</span></span></button>'; }).join("");
+    Array.prototype.forEach.call(m.querySelectorAll(".titem"), function(b){ b.addEventListener("click", function(){ applyTheme(b.dataset.t); openTheme(false); document.getElementById("tbtn").focus(); }); });
+  }
+  function openTheme(open){
+    var m = document.getElementById("tmenu"), b = document.getElementById("tbtn");
+    m.hidden = !open; b.setAttribute("aria-expanded", String(open));
+    if(open){ var c = m.querySelector('[aria-checked="true"]'); if(c) c.focus(); }
+  }
+  document.getElementById("tbtn").addEventListener("click", function(e){ e.stopPropagation(); openTheme(document.getElementById("tmenu").hidden); });
+  applyTheme(null);
+  function applyDomain(name){
+    var P = D && D.palette; if(!P) return;
+    if(!P.domains[name]) name = P["default"];
+    dom = name;
+    var c = P.domains[name], root = document.documentElement.style;
+    root.setProperty("--dom", c.signal); root.setProperty("--dom-sh", c.shielded); root.setProperty("--omni", P.omni);
+    if(P.petal){ root.setProperty("--petal-grey", P.petal.grey); root.setProperty("--petal-white", P.petal.white); }
+    try { localStorage.setItem("fleetCodexDomain", name); } catch(e){}
+    var box = document.getElementById("dompick");
+    box.innerHTML = Object.keys(P.domains).map(function(k){
+      return '<button type="button" role="radio" aria-checked="' + (k === name) + '" aria-label="' + k + ' domain" title="' + k + '" data-dom="' + k + '" style="--c:' + P.domains[k].signal + '"><i></i></button>'; }).join("");
+    Array.prototype.forEach.call(box.querySelectorAll("[data-dom]"), function(b){ b.addEventListener("click", function(){ applyDomain(b.dataset.dom); route(true); }); });
+  }
+
+  /* ---------- the sea lines (the analytics console's sea(), the menu's SeaLines maths) ---------- */
+  (function sea(){
+    var layers = document.querySelectorAll(".sea-layer");
+    if(!TH.sea || layers.length !== 3) return;
+    var sp = TH.sea.spacing, loop = TH.sea.loop, amp = TH.sea.amplitude, tall = 2400, k1 = 2 * Math.PI / loop, k2 = 3 * k1;
+    function mod3(x){ return x - 3 * Math.floor(x / 3); }
+    TH.sea.layers.forEach(function(layer, n){
+      var lines = "";
+      for(var i = 0; i * sp <= tall + sp; i++){
+        if(mod3(i) !== n) continue;
+        var a1 = amp * (1 + 0.45 * mod3(i * 7)), a2 = amp * (0.45 + 0.22 * mod3(i * 5)), pts = [];
+        for(var x = 0; x <= loop; x += 6) pts.push(x + "," + (i * sp + a1 * Math.sin(k1 * x + i * 0.9) + a2 * Math.sin(k2 * x + i * 1.7)).toFixed(1));
+        lines += "<polyline points='" + pts.join(" ") + "' fill='none' stroke='#fff' stroke-opacity='" + layer.alpha + "' stroke-width='" + layer.width + "'/>";
+      }
+      var url = 'url("data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='" + loop + "' height='" + tall + "' viewBox='0 0 " + loop + " " + tall + "'>" + lines + "</svg>") + '")';
+      var el = layers[n];
+      el.style.webkitMaskImage = url; el.style.maskImage = url;
+      el.style.webkitMaskSize = loop + "px " + tall + "px"; el.style.maskSize = loop + "px " + tall + "px";
+      el.style.animationDuration = layer.seconds + "s";
+    });
+  })();
+
+  /* ---------- the switcher: previous, the vessel (opens the whole fleet), next ---------- */
+  function drawSwitch(){
+    var vs = listed(), cur = current();
+    if(!cur){ sw.innerHTML = ''; return; }
+    var i = vs.indexOf(cur), prev = vs[(i + vs.length - 1) % vs.length], next = vs[(i + 1) % vs.length];
+    var shown = vs.filter(matches);
+    function entry(v){ return '<a href="#' + esc(v.key) + '"' + (v === cur ? ' aria-current="page"' : '') + '>' + img(vimg(v), "") + '<span>' + esc(crewName(v)) + '</span></a>'; }
+    sw.innerHTML = '<a class="step" href="#' + esc(prev.key) + '" aria-label="Previous vessel: ' + esc(crewName(prev)) + '">' + ARROW_L + '<span>' + esc(crewName(prev)) + '</span></a>' +
+      '<button class="cur" type="button" id="curbtn" aria-haspopup="true" aria-expanded="' + menuOpen + '">' + img(vimg(cur), "") + '<span class="disp">' + esc(crewName(cur)) + '</span><small>' + (i + 1) + ' of ' + vs.length + '</small>' + CARET + '</button>' +
+      '<a class="step" href="#' + esc(next.key) + '" aria-label="Next vessel: ' + esc(crewName(next)) + '"><span>' + esc(crewName(next)) + '</span>' + ARROW_R + '</a>' +
+      (menuOpen ? '<div class="menu" role="menu" aria-label="The fleet"><p class="lab" style="margin:6px">Solo vessels</p><div class="grid">' + shown.filter(function(v){ return !isCrew(v); }).map(entry).join("") +
+        '</div><p class="lab" style="margin:14px 6px 6px">Crews</p><div class="grid">' + shown.filter(isCrew).map(entry).join("") + '</div>' +
+        (shown.length ? '' : '<p class="empty" style="margin:6px">No vessel matches.</p>') + '<p style="margin:12px 6px 4px"><a class="navl" href="#fleet" style="display:inline;padding:0">Every vessel in one table</a></p></div>' : '');
+    document.getElementById("curbtn").addEventListener("click", function(e){ e.stopPropagation(); menuOpen = !menuOpen; drawSwitch(); });
+  }
+  document.addEventListener("click", function(e){
+    if(!e.target.closest(".themes")) openTheme(false);
+    if(menuOpen && !e.target.closest(".switch")){ menuOpen = false; drawSwitch(); }
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key !== "Escape") return;
+    if(!document.getElementById("tmenu").hidden){ openTheme(false); document.getElementById("tbtn").focus(); }
+    if(menuOpen){ menuOpen = false; drawSwitch(); var b = document.getElementById("curbtn"); if(b) b.focus(); }
+  });
+
+  /* ---------- what the page can pick: "el:<Element>", "omni", "doc:<seat>:<n>" ---------- */
+  function picks(v){
+    var out = [];
+    if(v.seats){
+      v.seats.list.forEach(function(s, si){ s.abilities.forEach(function(a, ai){
+        if(a.linked && v.elements[a.element]) out.push({key:"el:" + a.element, el:a.element, e:v.elements[a.element], name:a.name, seat:si});
+        else out.push({key:"doc:" + si + ":" + ai, el:a.element, doc:a, name:a.name, seat:si});
+      }); });
+    } else {
+      D.elements.forEach(function(el){ var e = v.elements[el]; if(e) out.push({key:"el:" + el, el:el, e:e, name:e.open ? "Open slot" : e.ability}); });
+    }
+    if(v.omni) out.push({key:"omni", el:"Omni", omni:v.omni, name:(v.omni.words && v.omni.words.ability) || v.omni.label || "Omni crystal"});
+    return out;
+  }
+  function rowOf(v, el){ return v.controls ? v.controls.rows.filter(function(r){ return r.element === el; })[0] : null; }
+  function pressable(s){ return s && s !== "no button" && s !== "passive"; }
+  /* the gesture, from the ability's own trigger words (abilities.json, each entry citing its source) */
+  function gesture(p, r){
+    var w = p.e && p.e.words || p.omni && p.omni.words || {};
+    var t = String(w.trigger || "").toLowerCase();
+    if(!r || !(pressable(r.pad) || pressable(r.pc) || pressable(r.touch))) return "passive";
+    if(/release|throw|flick|launch/.test(t)) return "release";
+    if(/toggle|switch mode|cycle|tap to stop|latch/.test(t) || /latches|toggle/.test(r.touch || "")) return "toggle";
+    if(/hold|squeeze|pull|deeper/.test(t)) return "hold";
+    return "tap";
+  }
+  var GWORD = {tap:"Tap", hold:"Hold", release:"Hold, then release", toggle:"Tap on, tap off", passive:"No press: fly"};
+
+  /* a scene of the ability happening, by its element, on the 3.2 s clock its devices press on */
+  function scene(el){
+    var hull = '<span class="shull' + (el === "Space" || el === "Time" ? ' low' : '') + '" style="color:var(--ink)">' + HULL_SVG + '</span>', body = '', n;
+    if(el === "Charge") body = '<span class="crys"></span><span class="plus">+ petals</span>' + hull;
+    else if(el === "Mass"){ body = '<span class="ringwrap">'; for(n = 0; n < 360; n += 45) body += '<i class="blk" style="--a:' + n + 'deg"></i>'; body += '</span><span class="streak"></span>' + hull; }
+    else if(el === "Space"){ body = '<span class="prow">'; for(n = 0; n < 6; n++) body += '<span class="pr" style="--d:' + (0.42 * n + 0.15).toFixed(2) + 's"><i></i><b></b></span>'; body += '</span>' + hull; }
+    else if(el === "Time"){ body = '<span class="prow">'; for(n = 0; n < 6; n++) body += '<span class="pr g"><i></i></span>'; body += '</span>' + hull + '<span class="meter"><i></i></span>'; }
+    else { body = '<span class="burst"><span class="oc"></span>'; for(n = 0; n < 360; n += 45) body += '<i class="sb" style="--a:' + n + 'deg"></i>'; body += '</span>'; }
+    return '<div class="stage" aria-hidden="true"><span class="lane"></span>' + body + '</div>';
+  }
+  function thumbs(touch){
+    var t = String(touch || "").toLowerCase(), l = /left|both|either/.test(t), r = /right|both/.test(t);
+    return '<span class="ph"><span class="th' + (l ? ' lf' : '') + '"></span><span class="th' + (r ? ' lf' : '') + '"></span></span>';
+  }
+  function devices(v, p){
+    var r = p.e ? rowOf(v, p.el) : null, g = gesture(p, r), cells;
+    if(p.doc) cells = [["CONTROLLER", '<span class="kc">Seat</span>', "Seat control"], ["KEYBOARD", '<span class="kc">Seat</span>', "Seat control"], ["PHONE", '<span class="kc">Seat</span>', "Seat control"]];
+    else if(g === "passive"){
+      var how = p.omni ? "Fly into an omni crystal" : "Just fly";
+      cells = [["CONTROLLER", '<span class="ph dr" style="width:56px"><span class="th"></span><span class="th"></span></span>', how], ["KEYBOARD", '<span class="kc dr" style="opacity:.6">W A S D</span>', how], ["PHONE", '<span class="ph"><span class="th dr"></span><span class="th dr"></span></span>', how]];
+    } else {
+      var pad = r.pad === "LT+RT" ? img(PADMAP.LT, "LT", "pp") + img(PADMAP.RT, "RT", "pp") : PADMAP[r.pad] ? img(PADMAP[r.pad], r.pad, "pp") : '<span class="kc pp">' + esc(r.pad) + '</span>';
+      var keys = (r.pc === "Both shifts" ? ["L-Shift", "R-Shift"] : [r.pc]).map(function(k){ return '<span class="kc kp">' + esc(k) + '</span>'; }).join("");
+      var touch = /^lift|thumb/i.test(r.touch || "") ? thumbs(r.touch) : (lv5 && hasL5(p) && /card/i.test(r.touch || "")) ? '<span class="tbtn2 pp">' + iconOf(p) + '</span>' : r.touchArt ? '<span class="tbtn2 pp">' + img(r.touchArt, r.touch) + '</span>' : '<span class="kc pp">' + esc(r.touch || "-") + '</span>';
+      cells = [["CONTROLLER", pressable(r.pad) ? pad : '<span class="kc" style="opacity:.5">-</span>', pressable(r.pad) ? r.pad : "No button"],
+               ["KEYBOARD", pressable(r.pc) ? keys : '<span class="kc" style="opacity:.5">-</span>', pressable(r.pc) ? r.pc : "No key"],
+               ["PHONE", pressable(r.touch) ? touch : '<span class="kc" style="opacity:.5">-</span>', pressable(r.touch) ? r.touch : "No touch"]];
+    }
+    return {g:g, html:'<div class="dev g-' + g + '">' + cells.map(function(c){ return '<div class="dv"><span class="dl">' + c[0] + '</span><span class="dg">' + c[1] + '</span><span class="dc">' + esc(c[2]) + '</span></div>'; }).join("") + '</div>'};
+  }
+  function hasL5(p){ return !!(p.e && p.e.upgrade && p.e.upgrade.icon); }
+  function iconOf(p, size){
+    if(lv5 && hasL5(p)){ var u = p.e.upgrade, t5 = (p.e.words && p.e.words.tint) || {}; return ico(u.icon, u.layers, p.name + " level 5", t5.rest); }
+    if(p.omni) return p.omni.icon ? ico(p.omni.icon, p.omni.layers, p.name) : img(p.omni.mark, p.name);
+    if(p.doc) return flower(p.el, 5, "big");
+    var e = p.e, tint = (e.words && e.words.tint) || {};
+    return e.icon ? ico(e.icon, e.layers, p.name, tint.rest) : flower(p.el, 5, "big");
+  }
+  function trigOf(p){
+    if(p.doc) return "Seat control";
+    var w = p.e ? p.e.words || {} : p.omni.words || {};
+    return w.trigger || (p.omni ? "Fly into an omni crystal" : "Passive");
+  }
+
+  /* ---------- the games, by element ---------- */
+  function isArcade(c){ return (c.rosters || []).indexOf("ArcadeGames") >= 0 || !(c.rosters || []).length; }
+  function elementGames(v){
+    var by = {};
+    D.elements.forEach(function(el){ by[el] = []; });
+    v.cards.forEach(function(c){ var els = c.elements || []; if(els.length && isArcade(c)) by[els[0]].push(c); });
+    return by;
+  }
+  function gameLabel(c){ var els = c.elements || []; return els.length ? els.join(" + ") + (isArcade(c) ? " game" : " arena") : "Party game"; }
+
+  /* ---------- the vessel page ---------- */
+  function vesselView(v, keep){
+    var ps = picks(v);
+    var sel = ps.filter(function(p){ return p.key === pick; })[0];
+    if(!sel){ sel = ps.filter(function(p){ return p.e && gesture(p, rowOf(v, p.el)) !== "passive"; })[0] || ps[0]; pick = sel ? sel.key : null; }
+    var f = v.flight, s = v.status, by = elementGames(v), dv = sel ? devices(v, sel) : null;
+    var tag = "VESSEL " + v.id + (isCrew(v) ? " &middot; CREW &middot; " + v.crew.seats + " SEATS" : v.controls ? (v.controls.oneStick ? " &middot; ONE-STICK" : " &middot; TWO-STICK") : "") + (s.inToybox ? " &middot; IN THE VESSEL CHANGER" : "");
+    var stats = f ? [[num(f.cruise), "u/s cruise"], [num(f.pitch), "deg/s turn"], [s.upgradesWired + " / 4", "level 5 wired"], [v.cards.length, "games"]] : [[s.upgradesWired + " / 4", "level 5 wired"], [v.cards.length, "games"]];
+    var cert = v.certificate, tiers = v.tiers;
+    var html = '<section class="win' + (cert ? ' certified' : '') + '" aria-label="' + esc(crewName(v)) + '">' +
+      '<div class="hullbox">' + img(vimg(v), crewName(v) + " in the " + dom + " domain's livery") + '</div>' +
+      '<div class="hud brief"><div class="lab" style="color:var(--sel)">' + tag + '</div><h1 class="disp">' + esc(crewName(v)) + '</h1>' + (v.description ? '<p>' + esc(v.description) + '</p>' : '') +
+        (cert ? certBlock(cert) : '<div class="stats">' + stats.map(function(x){ return '<div><span class="disp">' + x[0] + '</span><small>' + x[1] + '</small></div>'; }).join("") + '</div>') + '</div>' +
+      '<div class="hud egs"><div class="lab">' + (tiers ? 'Its element games and tiers' : 'Its element games') + '</div><div style="margin-top:8px">' + D.elements.map(function(el){
+          var cs = by[el]; return '<div class="eg' + (cs.length ? '' : ' none') + '">' + flower(el, 5) + '<span>' + el.toUpperCase() + '</span>' + esc(cs.length ? cs.map(function(c){ return c.name; }).join(", ") : "None yet") + (tiers ? tierBadge(tiers[el], el) : '') + '</div>'; }).join("") +
+        '</div>' + (v.cards.length ? '<a class="cta" href="#missions" data-jump="missions">Play the ' + esc(crewName(v)) + '</a>' : '') + '</div>' +
+      (sel ? '<div class="hud move"><div class="mhead"><span class="mic">' + iconOf(sel) + '</span><span class="disp">' + esc(lv5 && sel.e && sel.e.upgrade.label ? sel.e.upgrade.label : sel.name) + '</span><span class="trig">' + esc(trigOf(sel)) + '</span><span class="lab">' + GWORD[dv.g] + '</span>' + (sel.e && !sel.e.open ? '<button type="button" class="l5tog" id="l5tog" aria-pressed="' + lv5 + '" aria-label="Show the level 5 upgrade"' + (hasL5(sel) ? '' : ' title="Level 5 reuses this icon (lockup bloom and plate lift)"') + '>Level 5</button>' : '') + '</div>' + scene(sel.el) + dv.html + '</div>' : '') +
+      '<div class="abrow" role="group" aria-label="Abilities">' + ps.map(function(p){
+          return '<button type="button" class="ab" data-pick="' + p.key + '" aria-pressed="' + (p === sel) + '"><span class="i">' + iconOf(p) + '</span><small>' + esc(p.name) + '</small></button>'; }).join("") + '</div>' +
+      '</section>';
+
+    /* abilities, in full */
+    html += '<div class="sec"><span class="disp">Abilities</span><span class="lab">' + (v.omni ? "The four elements and the omni crystal" : "The four elements") + ' &middot; pick one to play its move above</span><span class="rule"></span></div>';
+    var lastSeat = -1;
+    ps.forEach(function(p){
+      if(v.seats && p.seat != null && p.seat !== lastSeat){
+        lastSeat = p.seat; var st = v.seats.list[p.seat];
+        html += '<div class="seat"><span class="disp">' + esc(st.name) + '</span><span class="lab">' + (st.seats > 1 ? st.seats + " seats" : "Seat " + (p.seat + 1)) + '</span><p>' + esc(st.role) + '</p></div>';
+      } else if(v.seats && p.omni){ html += '<div class="seat"><span class="disp">The hull</span><span class="lab">Every seat</span></div>'; }
+      html += abilityRow(v, p, p === sel);
+    });
+
+    /* missions */
+    var shown = v.cards.filter(function(c){ var els = c.elements || []; return filt === "All" || (filt === "Arcade" && isArcade(c)) || (filt === "Arena" && !isArcade(c)) || els.indexOf(filt) >= 0; });
+    shown.sort(function(a, b){ return (isArcade(b) - isArcade(a)) || D.elements.indexOf((a.elements || [])[0]) - D.elements.indexOf((b.elements || [])[0]); });
+    html += '<div class="sec" id="missions"><span class="disp">Missions</span><span class="lab">Every game that seats it</span><span class="rule"></span><div class="filters" role="group" aria-label="Filter the games">' +
+      ["All"].concat(D.elements, ["Arcade", "Arena"]).map(function(x){ return '<button type="button" class="chip" data-filt="' + x + '" aria-pressed="' + (x === filt) + '">' + x + '</button>'; }).join("") + '</div></div>' +
+      (shown.length ? '<div class="games">' + shown.map(function(c){
+        var els = c.elements || [];
+        return '<div class="gm">' + img(c.art, "") + '<span>' + (els.length ? flower(els[0], 5) + ' ' : '') + esc(gameLabel(c)) + ' &middot; ' + (c.hullsOnCard > 1 ? c.hullsOnCard + ' hulls' : 'this hull only') + (c.intensity ? ' &middot; I' + c.intensity[0] + '&ndash;I' + c.intensity[1] : '') + '</span><span class="disp">' + esc(c.name) + '</span>' +
+          (c.description && c.description.split(" ").length > 4 ? '<p>' + esc(c.description) + '</p>' : '') + '</div>'; }).join("") + '</div>'
+        : '<p class="empty">' + (v.cards.length ? 'No ' + esc(filt) + ' game seats the ' + esc(crewName(v)) + ' yet.' : 'No game card seats this vessel yet.') + '</p>');
+
+    /* flight and controls */
+    var c = v.controls;
+    html += '<div class="sec"><span class="disp">Flight and controls</span><span class="rule"></span></div><div class="fc2">' +
+      '<div class="flight">' + (f ? [[num(f.cruise), "u/s cruise"], [num(f.pitch) + " / " + num(f.yaw), "pitch / yaw deg/s"], [num(f.minimum), "minimum speed"], ["x" + num(f.boost), "boost"]].map(function(x){ return '<div><span class="disp">' + x[0] + '</span><small>' + x[1] + '</small></div>'; }).join("") : '<p class="empty">No flight numbers on the prefab.</p>') + '</div>' +
+      '<div>' + (c ? '<table class="tbl"><thead><tr><th>ACTION</th><th>CONTROLLER</th><th>KEYBOARD</th><th>PHONE</th></tr></thead><tbody>' + c.rows.map(function(r){
+          return '<tr><td>' + esc(r.action) + '</td><td>' + (r.padArt ? img(r.padArt, "") : '') + esc(r.pad) + '</td><td>' + esc(r.pc) + '</td><td>' + (r.touchArt ? img(r.touchArt, "") : '') + esc(r.touch || "-") + '</td></tr>'; }).join("") + '</tbody></table>' +
+        (c.notes.length ? '<ul class="notes">' + c.notes.map(function(n){ return '<li>' + esc(n) + '</li>'; }).join("") + '</ul>' : '') : '<p class="empty">No controls: this vessel has no ability map.</p>') + '</div></div>';
+
+    /* recent updates: what changed, in plain words, never a commit message */
+    var ups = (v.changes || []).filter(function(u){ return u.parts && (u.parts.length || u.games.length); }).slice(0, 6);
+    html += '<div class="sec"><span class="disp">Recent updates</span><span class="rule"></span></div>' + (ups.length ? '<ul class="upd">' + ups.map(function(u){
+        var bits = [];
+        if(u.parts.length) bits.push(cap(u.parts.join(", ")) + ' updated');
+        if(u.games.length) bits.push((u.games.length > 1 ? 'Games updated: ' : 'Game updated: ') + u.games.join(", "));
+        return '<li><span>' + esc(day(u.date)) + '</span>' + esc(bits.join(". ")) + '.</li>'; }).join("") + '</ul>' : '<p class="empty">No update in the history read.</p>');
+
+    app.innerHTML = html;
+    Array.prototype.forEach.call(app.querySelectorAll("[data-pick]"), function(b){ b.addEventListener("click", function(){
+      pick = b.dataset.pick; var y = window.scrollY, inRow = b.classList.contains("pickhead"); vesselView(v, true); window.scrollTo(0, y);
+      var w = app.querySelector(".win"); if(inRow && w && w.getBoundingClientRect().bottom < 120) w.scrollIntoView({behavior:"smooth", block:"start"});
+      var n = app.querySelector((inRow ? '.pickhead' : '.ab') + '[data-pick="' + pick + '"]'); if(n) n.focus({preventScroll:true}); }); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-row]"), function(r){ r.addEventListener("click", function(e){
+      if(e.target.closest("button,a")) return; var h = r.querySelector(".pickhead"); if(h) h.click(); }); });
+    var tg = document.getElementById("l5tog");
+    if(tg) tg.addEventListener("click", function(){ lv5 = !lv5; var y = window.scrollY; vesselView(v, true); window.scrollTo(0, y); var n = document.getElementById("l5tog"); if(n) n.focus({preventScroll:true}); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-l5]"), function(b){ b.addEventListener("click", function(){
+      var f = b.querySelector(".flw .flower"), l = b.closest(".l5"); f.classList.remove("go"); if(l) l.classList.remove("lit"); void f.offsetWidth; f.classList.add("go"); if(l) l.classList.add("lit"); }); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-filt]"), function(b){ b.addEventListener("click", function(){
+      filt = b.dataset.filt; var y = window.scrollY; vesselView(v, true); window.scrollTo(0, y); var n = app.querySelector('[data-filt="' + filt + '"]'); if(n) n.focus({preventScroll:true}); }); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-jump]"), function(a){ a.addEventListener("click", function(e){ e.preventDefault(); var t = document.getElementById(a.dataset.jump); if(t) t.scrollIntoView({behavior:"smooth", block:"start"}); }); });
+  }
+  function abilityRow(v, p, on){
+    var head = '<span class="who"><span class="ic">' + iconOf(p) + '</span><span><span class="k">' + esc(p.el.toUpperCase()) + '</span><b class="n">' + esc(p.name) + '</b><span class="trig">' + esc(trigOf(p)) + '</span></span></span>';
+    var does, more, l5;
+    if(p.doc){
+      does = '<span><span class="k">What it does</span><p>' + esc(p.doc.text || "A control of this seat, in " + file(v.seats.source) + ".") + '</p></span>';
+      more = '<span><span class="k">Seat control</span><p style="font-size:14px;color:var(--soft)">Read from ' + esc(file(v.seats.source)) + '.</p></span>';
+      l5 = '<span class="l5"><span class="k">Level 5</span><p>The ability map carries one ability per element for the hull; this seat ability has no level 5 of its own.</p></span>';
+    } else if(p.omni){
+      var ow = p.omni.words || {};
+      does = '<span><span class="k">What it does</span><p>' + esc(ow.does || (p.omni.effects.length ? "Its crystal effects: " + p.omni.effects.join(", ") + "." : "No omni crystal effect of its own.")) + '</p></span>';
+      more = '<span><span class="k">Omni crystal</span><p style="font-size:15px">Flown into, never pressed.</p></span>';
+      l5 = '<span class="l5"><span class="k">Level 5</span><b>No level 5</b><p>The omni crystal has no level-5 upgrade.</p></span>';
+    } else {
+      var e = p.e, w = e.words || {}, u = e.upgrade, st = L5[u.status] || L5.open;
+      does = '<span><span class="k">What it does</span><p>' + esc(w.does || e.description) + '</p></span>';
+      more = '<span><span class="k">More ' + esc(p.el) + '</span>' + (w.scales ? '<p style="font-size:15px">' + esc(w.scales) + '</p>' : '') + e.scaling.filter(function(x){ return x.field && x.min != null; }).map(function(x){
+          return '<span class="dial' + (x.on ? '' : ' off') + '">' + esc(x.field) + ' &times;' + num(x.min) + ' to &times;' + num(x.max) + (x.on ? '' : ' (switched off)') + '<i>' + esc(file(x.asset || x.script)) + '</i></span>'; }).join("") +
+        (!w.scales && !e.scaling.length ? '<p style="font-size:14px;color:var(--soft)">This element changes no number.</p>' : '') + '</span>';
+      var frames = flower(p.el, 0);
+      l5 = '<span class="l5"><span class="l5top"><span class="k" style="margin:0">Level 5</span><button type="button" class="l5go" data-l5="' + p.key + '" aria-label="Play level 5 of ' + esc(p.name) + '"><span class="flw">' + frames + '</span>Play L5</button></span><b>' + esc(u.label || (u.status === "open" ? "Not designed yet" : "Unnamed")) + '</b><p>' + esc(u.description || (u.status === "open" ? "Unlocks at level " + u.unlockLevel + ", relocks below " + u.relockBelow + "." : "")) + '</p><span class="pill ' + st[0] + '">' + st[1] + '</span></span>';
+    }
+    return '<div class="row' + (on ? ' on' : '') + '" data-row="' + p.key + '"><button type="button" class="pickhead" data-pick="' + p.key + '" aria-pressed="' + on + '" aria-label="Play the move of ' + esc(p.name) + '">' + head + '</button>' + does + more + l5 + '</div>';
+  }
+
+  /* ---------- the whole fleet: one card per vessel, every vessel on a screen or two ---------- */
+  var fleetFilt = "All", fleetSort = "Completion", fleetStage = "Any", tierEl = "Time", tierPick = "Any tier";
+  function fleetView(){
+    var all = listed(), vs = all.filter(matches).filter(function(v){ return fleetFilt === "All" || (fleetFilt === "Crews") === !!isCrew(v); });
+    var wired = all.reduce(function(a, v){ return a + v.status.upgradesWired; }, 0);
+    var sortEl = fleetSort === "Completion" ? null : fleetSort.split(" ")[0];
+    /* completion and tier filter and sort the solo vessels on their own (Shombith 2026-11-10: "sort and filter ... as per
+       tier and completion separately"); crews carry no certificate, so a stage or tier filter leaves them out */
+    var certFilter = fleetStage !== "Any" || tierPick !== "Any tier";
+    function card(v){
+      var by = elementGames(v), ps = picks(v), c = v.certificate;
+      var flowers = D.elements.map(function(el){
+        var g = by[el]; return '<span class="fel' + (g.length ? '' : ' none') + '" title="' + esc(el + ': ' + (g.length ? g.map(function(c){ return c.name; }).join(", ") : 'no game yet')) + '">' + flower(el, 5) + '</span>'; }).join("");
+      var cert = c ? '<span class="fcert"><span class="row1"><span class="lab" style="flex:1">Completion</span><b class="' + pctCls(c) + '">' + c.pct + '%</b></span>' + segs(c, true) +
+        '<span class="ftiers">' + D.elements.map(function(el){ return '<span>' + tierBadge(v.tiers[el], el, el === sortEl || (tierPick !== "Any tier" && el === tierEl)) + '<small>' + el.charAt(0) + '</small></span>'; }).join("") +
+        '<small style="margin-left:auto;align-self:center;font-size:12px;color:var(--soft)">' + v.cards.length + ' game' + (v.cards.length === 1 ? '' : 's') + '</small></span></span>' : '';
+      return '<a class="fcard" href="#' + esc(v.key) + '"><span class="pic">' + img(vimg(v), "") + (isCrew(v) ? '<span class="seats">' + v.crew.seats + ' seats</span>' : '') + '</span>' +
+        '<span class="fbody"><span class="fname"><span class="disp">' + esc(crewName(v)) + '</span><small>' + (isCrew(v) ? 'Crew' : 'Vessel ' + v.id) + ' &middot; L5 ' + v.status.upgradesWired + '/4</small></span>' +
+        '<span class="fab">' + ps.slice(0, 6).map(function(p){ return '<span title="' + esc(p.name) + '">' + iconOf(p) + '</span>'; }).join("") + '</span>' +
+        (c ? cert : '<span class="fels">' + flowers + '<small>' + v.cards.length + ' game' + (v.cards.length === 1 ? '' : 's') + '</small></span>') + '</span></a>';
+    }
+    var solo = vs.filter(function(v){ return !isCrew(v) && v.certificate; }).filter(function(v){
+      return (fleetStage === "Any" || band(v.certificate) === fleetStage) && (tierPick === "Any tier" || v.tiers[tierEl] === tierPick); });
+    solo.sort(function(a, b){ return (sortEl ? tierRank(a.tiers[sortEl]) - tierRank(b.tiers[sortEl]) : 0) || (b.certificate.pct - a.certificate.pct) || (a.id - b.id); });
+    var crews = certFilter ? [] : vs.filter(isCrew);
+    var certified = all.filter(function(v){ return v.certificate; });
+    function chips(list, cur, attr, label){ return list.map(function(x){ return '<button type="button" class="chip" data-' + attr + '="' + esc(x) + '" aria-pressed="' + (x === cur) + '">' + esc(label ? label(x) : x) + '</button>'; }).join(""); }
+    function sel(id, label, opts, cur, on){
+      return '<label class="fsel">' + label + '<select id="' + id + '" class="' + (on ? 'on' : '') + '">' + opts.map(function(o){
+        if(o.group) return '<optgroup label="' + esc(o.group) + '">' + o.items.map(function(i){ return '<option value="' + esc(i.v) + '"' + (i.v === cur ? ' selected' : '') + '>' + esc(i.t) + '</option>'; }).join("") + '</optgroup>';
+        return '<option value="' + esc(o.v) + '"' + (o.v === cur ? ' selected' : '') + '>' + esc(o.t) + '</option>'; }).join("") + '</select>' + CARET + '</label>';
+    }
+    var tierCur = tierPick === "Any tier" ? "any" : tierEl + ":" + tierPick;
+    var tools = '<div class="ftools" role="group" aria-label="Sort and filter the solo vessels">' +
+      sel("fsort", "Sort", ["Completion"].concat(D.elements.map(function(e){ return e + " tier"; })).map(function(x){ return {v:x, t:x}; }), fleetSort, false) +
+      sel("fstage", "Completion", [{v:"Any", t:"Any"}].concat(BANDS.map(function(x){ return {v:x, t:x + "  (" + certified.filter(function(v){ return band(v.certificate) === x; }).length + ")"}; })), fleetStage, fleetStage !== "Any") +
+      sel("ftier", "Tier", [{v:"any", t:"Any"}].concat(D.elements.map(function(e){ return {group:e + " games", items:["S", "A", "B", "C"].map(function(t){
+        return {v:e + ":" + t, t:e + " " + t + "  (" + certified.filter(function(v){ return v.tiers[e] === t; }).length + ")"}; })}; })), tierCur, tierPick !== "Any tier") +
+      (certFilter ? '<button type="button" class="fclear" id="fclear">Clear filters</button>' : '') +
+      '<span class="fcount">' + solo.length + ' of ' + certified.length + ' solo vessels</span></div>';
+    app.innerHTML = '<div class="fhead"><div><div class="lab" style="color:var(--sel)">The fleet</div><h1 class="disp">Pick a vessel</h1></div>' +
+      '<div class="fstats">' + [[all.length, "vessels"], [all.filter(isCrew).length, "crews"], [wired + " / " + all.length * 4, "level 5 wired"],
+        [certified.filter(function(v){ return v.certificate.pct >= 100; }).length + " / " + certified.length, "at 100%"]].map(function(x){ return '<div><span class="disp">' + x[0] + '</span><small>' + x[1] + '</small></div>'; }).join("") + '</div>' +
+      '<div class="filters" role="group" aria-label="Show">' + chips(["All", "Solo", "Crews"], fleetFilt, "ff") + '</div></div>' +
+      (fleetFilt !== "Crews" ? tools : '') +
+      (solo.length ? '<div class="fgrid">' + solo.map(card).join("") + '</div>' : '') +
+      (crews.length ? '<div class="sec" style="margin-top:36px"><span class="disp">Crews</span><span class="lab">Two or more pilots, one hull &middot; no certificate</span><span class="rule"></span></div><div class="fgrid">' + crews.map(card).join("") + '</div>' : '') +
+      (solo.length || crews.length ? '' : '<p class="empty">' + (certFilter ? 'No solo vessel matches both filters.' : 'No vessel matches.') + '</p>');
+    function bind(attr, set){ Array.prototype.forEach.call(app.querySelectorAll("[data-" + attr + "]"), function(b){ b.addEventListener("click", function(){
+      set(b.getAttribute("data-" + attr)); var y = window.scrollY; fleetView(); window.scrollTo(0, y);
+      var n = app.querySelector('[data-' + attr + '="' + b.getAttribute("data-" + attr) + '"]'); if(n) n.focus({preventScroll:true}); }); }); }
+    bind("ff", function(x){ fleetFilt = x; });
+    function onSel(id, set){ var el = document.getElementById(id); if(el) el.addEventListener("change", function(){
+      set(el.value); var y = window.scrollY; fleetView(); window.scrollTo(0, y); var n = document.getElementById(id); if(n) n.focus({preventScroll:true}); }); }
+    onSel("fsort", function(x){ fleetSort = x; }); onSel("fstage", function(x){ fleetStage = x; });
+    onSel("ftier", function(x){ if(x === "any"){ tierPick = "Any tier"; } else { tierEl = x.split(":")[0]; tierPick = x.split(":")[1]; } });
+    var fc = document.getElementById("fclear"); if(fc) fc.addEventListener("click", function(){ fleetStage = "Any"; tierPick = "Any tier"; fleetView(); });
+  }
+
+  var PADMAP = {};
+  function route(keep){
+    if(!D) return;
+    var v = current();
+    drawSwitch();
+    document.getElementById("navFleet").setAttribute("aria-current", v ? "false" : "page");
+    if(v){ vesselView(v, keep === true); document.title = crewName(v) + " - Fleet Codex"; } else { fleetView(); document.title = "Fleet Codex"; }
+  }
+  q.addEventListener("input", function(){ query = q.value.trim().toLowerCase(); if(current()){ menuOpen = !!query; drawSwitch(); } else fleetView(); });
+  fetch("fleet.json", {cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); }).then(function(d){
+    D = d;
+    var saved = null; try { saved = localStorage.getItem("fleetCodexDomain"); } catch(e){}
+    applyDomain(saved || (d.palette && d.palette["default"]));
+    D.vessels.forEach(function(v){ if(v.controls) v.controls.rows.forEach(function(r){ if(r.padArt && !PADMAP[r.pad]) PADMAP[r.pad] = r.padArt; }); });
+    document.getElementById("logo").src = d.ui.omni || "";
+    document.getElementById("foot").innerHTML = 'Read from the game&rsquo;s own files every day: the ability maps, the vessel prefabs and their HUDs, the class assets, the touch profiles and the game cards. Every icon is the game&rsquo;s own.';
+    route();
+  }).catch(function(err){ app.innerHTML = '<p class="empty">The fleet data did not load (' + esc(err.message) + '). Reload the page.</p>'; });
+  window.addEventListener("hashchange", function(){ pick = null; filt = "All"; lv5 = false; menuOpen = false; route(); window.scrollTo(0, 0); });
+})();
+</script>

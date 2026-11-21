@@ -1,0 +1,144 @@
+{
+  "id": "eel",
+  "order": 8,
+  "name": "Eel",
+  "tagline": "the body: coil, whip, shed",
+  "round": "concept · round 1",
+  "accent": "#b9ff5a",
+  "kind": "body",
+  "chip": "concept · round 1",
+  "summary": "The body. A head leading a train of segments that follow its exact path: the body IS its trail, shielded mass a rival's hull bounces off. Longer is slower (72 u/s at 8 segments, 45 at 30), and it grows on crystals and skims. LT coils: the turn doubles and the body bunches up behind you; let go and the tail whips straight, cutting any rival or neutral mass it sweeps. RT sheds five segments as standing prisms for a speed burst.",
+  "spec": [
+    {
+      "k": "Mechanic",
+      "v": "LT coil, release to whip · RT shed · the body is the trail"
+    },
+    {
+      "k": "Body",
+      "v": "8 → 30 segments, 6 u apart"
+    },
+    {
+      "k": "Speed",
+      "v": "72 u/s short → 45 u/s long"
+    },
+    {
+      "k": "Why",
+      "v": "snake and trail games: Snake.io, Slither, Hole.io (mobile top 10), Tron"
+    }
+  ],
+  "fantasy": "You are the obstacle. Lay yourself across a corner and the race comes to you; coil, and the tail is a blade.",
+  "why": "The snake / trail loop is still a mass-market hit on mobile (Snake.io and Slither's lineage, Hole.io in 2025's global top ten, hypercasual the only download segment still growing), and cutting someone off is instantly legible. Every Cosmic Shore hull lays a trail; the Eel is the hull whose trail is alive and moves with it, with a length-for-speed trade every snake player already knows.",
+  "flight": {
+    "cruise": 72,
+    "pitchYaw": 120,
+    "roll": 130,
+    "grip": 30,
+    "accel": 1.5,
+    "topSpeed": 160
+  },
+  "params": {},
+  "elements": {
+    "charge": {
+      "name": "Shed Burst",
+      "param": "shedKick",
+      "range": [
+        1,
+        1.3
+      ],
+      "l5": "Molt",
+      "tip": "Charge is the speed burst of a shed."
+    },
+    "mass": {
+      "name": "Girth",
+      "param": "segScale",
+      "range": [
+        1,
+        1.6
+      ],
+      "l5": "Armoured Body",
+      "tip": "Mass is the size of each body segment: a wider wall."
+    },
+    "space": {
+      "name": "Whip Reach",
+      "param": "whipReach",
+      "range": [
+        1,
+        1.8
+      ],
+      "l5": "Long Lash",
+      "tip": "Space is how far from the body the whip cuts."
+    },
+    "time": {
+      "name": "Tight Coil",
+      "param": "coilTurn",
+      "range": [
+        1,
+        1.3
+      ],
+      "l5": "Spring Coil",
+      "tip": "Time is the turn multiplier while coiled."
+    }
+  },
+  "styles": [
+    {
+      "name": "Balanced",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Every element at 0: the recipe's numbers."
+    },
+    {
+      "name": "Wall",
+      "lv": {
+        "charge": 0,
+        "mass": 10,
+        "space": 0,
+        "time": 0
+      },
+      "info": "A thick body: the blocker."
+    },
+    {
+      "name": "Lash",
+      "lv": {
+        "charge": 10,
+        "mass": 0,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Tight coils, a long whip, fast sheds: the cutter."
+    },
+    {
+      "name": "Maxed",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Every element at 10. A ceiling, not a match state."
+    }
+  ],
+  "players": [
+    {
+      "ai": false,
+      "domain": "jade",
+      "level": "Hard",
+      "style": "Balanced"
+    }
+  ],
+  "controls": {
+    "lt": "coil (hold), release to whip",
+    "rt": "shed 5 segments"
+  },
+  "notModelled": [
+    "The body here is drawn, not laid: only shed segments become conserved prisms. A shipped Eel would be a moving prismscape, which the mass pipeline does not have (the Ark is the nearest mover).",
+    "A rival hull in the body is a reset, the platform contact; what the body does to rival prisms it is dragged through is open."
+  ],
+  "sources": [
+    "Design: Docs/Studios/CONCEPT_FLEET.md (Eel). Nearest shipped relatives: the Squirrel's rails and the Serpent's Seed Wall."
+  ],
+  "docs": "Docs/Studios/CONCEPT_FLEET.md"
+}

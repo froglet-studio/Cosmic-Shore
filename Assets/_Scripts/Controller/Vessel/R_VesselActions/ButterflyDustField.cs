@@ -1,0 +1,458 @@
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
+using Reflex.Attributes;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// The Butterfly's ONE skimmer: a capsule that hangs BELOW the hull and is live only in Dust
+    /// mode. Design record: <c>R_VesselActions/BUTTERFLY.md</c> §3.1.
+    ///
+    /// <para><b>What it is.</b> A trigger <see cref="CapsuleCollider"/> on this GameObject, axis
+    /// local Y, authored with height 1 / radius 0.5 and its centre at (0, -0.5, 0) — so the capsule
+    /// runs from the hull DOWN. The sibling <see cref="Skimmer"/> authors <c>elongateYOnly</c>, so
+    /// SPACE's <c>Scale</c> drives only this transform's local Y: <b>Space lengthens the dust
+    /// column and nothing else</b>. Everything the dust DOES lives in the skimmer's effect
+    /// container; this component only owns whether it is on, and what it looks like.</para>
+    ///
+    /// <para><b>Off is OFF.</b> In Mass mode the collider is disabled (PhysX sends no trigger
+    /// callbacks — Unity would otherwise deliver them to a DISABLED MonoBehaviour) AND the
+    /// <see cref="SkimmerImpactor"/> is disabled, whose own OnDisable clears its overlap set and
+    /// unregisters its shell-tier probes. Disabling only the collider leaves a stale overlap set,
+    /// because a disabled collider fires no OnTriggerExit.</para>
+    ///
+    /// <para><b>The dust is the ONLY thing drawn.</b> There is no mesh and no forcefield overlay —
+    /// the two sphere skimmers this replaced each carried the crackle overlay and read as two
+    /// visible bubbles. The visual is a particle column built at runtime (no authored particle
+    /// asset to drift), sized to the live capsule, and it honours continuity of existence at both
+    /// ends: switching on starts emission and the column fills in over a particle lifetime;
+    /// switching off STOPS EMITTING and lets the motes already in the air finish and fade, rather
+    /// than clearing them. The particle object lives beside the capsule rather than under it, so
+    /// the capsule's non-uniform scale never stretches a mote.</para>
+    /// </summary>
+    [RequireComponent(typeof(CapsuleCollider))]
+    public sealed class ButterflyDustField : MonoBehaviour
+    {
+        [Header("Look")]
+        [Tooltip("Particle material for the dust motes. A URP Particles/Unlit material; a missing " +
+                 "one falls back to that shader and is reported once.")]
+        [SerializeField] Material particleMaterial;
+
+        [Tooltip("FALLBACK mote colour, used only while the vessel has no playable domain or no " +
+                 "palette is reachable. In play each mote wears one of THREE colours of the vessel's " +
+                 "own domain - danger, plain and shielded (see ResolveMotePalette). Alpha is shaped over each mote's life (in, " +
+                 "hold, out) and this alpha is the peak in both cases.")]
+        [SerializeField] Color dustColor = new(1f, 0.86f, 0.52f, 0.9f);
+
+        [Tooltip("Motes emitted per second per 100 cubic units of dust column, so a longer column " +
+                 "(more Space) is equally dense rather than thinner.")]
+        [SerializeField, Min(0f)] float motesPer100Volume = 3.5f;
+
+        [Tooltip("Hard ceiling on motes per second, whatever the column's size.")]
+        [SerializeField, Min(1f)] float maxMotesPerSecond = 260f;
+
+        [SerializeField, Min(0.05f)] float moteLifetime = 1.1f;
+
+        [Tooltip("Mote size range in WORLD units. Sized for the Butterfly's own camera, which sits " +
+                 "~204 units back: at that range a world unit is ~2.6 px at 1080p, so the original " +
+                 "0.5-1.6 motes were 1-4 px and Dust mode read as nothing happening at all.")]
+        [SerializeField] Vector2 moteSize = new(2.5f, 6f);
+
+        [Tooltip("Motes drift slowly downward, as dust falls off a wing.")]
+        [SerializeField] float fallSpeed = 6f;
+
+        [Header("Audio")]
+        [Tooltip("SCALE DUST (Charge) - FMOD event when the dust first reaches an opposing pilot (the " +
+                 "shred starts). Played on every peer that resolves the contact, at the " +
+                 "victim. Already rate-limited per victim by the effect's own cooldown. Leave " +
+                 "empty for silence - never point it at a borrowed event to hear something.")]
+        [SerializeField] FMODUnity.EventReference scaleDustBiteEvent;
+
+        [Tooltip("DUST REACH (Space) - FMOD event when the dust TENDS the pilot's own mass (a " +
+                 "prism grows, turns dangerous, shields or super-shields). At the prism. Leave " +
+                 "empty for silence.")]
+        [SerializeField] FMODUnity.EventReference dustTendEvent;
+
+        [Tooltip("DUST REACH (Space) - FMOD event when the dust BLIGHTS opposing mass (a prism is " +
+                 "destroyed, shrunk or stolen). At the prism. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference dustBlightEvent;
+
+        [Tooltip("SCALE DUST (Charge) - FMOD event when the dust WITHERS an opposing creature " +
+                 "(its heart passed through the capsule and it began to die). At the heart. " +
+                 "Played by SkimmerWitherLifeformByCrystalEffectSO only when the kill actually " +
+                 "landed. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference heartWitherEvent;
+
+        [Tooltip("DUST (ally lifeform) - FMOD event when the dust NOURISHES a lifeform of the " +
+                 "pilot's own domain (a creature's starvation clock resets, a plant's growth " +
+                 "advances). At the heart. Played by SkimmerNourishLifeformByCrystalEffectSO only " +
+                 "when the refresh actually landed. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference heartNourishEvent;
+
+        [Tooltip("Minimum seconds between two Dust Reach one-shots of the SAME kind. The capsule " +
+                 "sweeps a whole wall of prisms in a few frames, and one voice per prism would be " +
+                 "a hundred one-shots stacked on one frame. The heart wither / nourish voices share " +
+                 "this interval, each on its own clock.")]
+        [SerializeField, Min(0f)] float dustReachSoundInterval = 0.08f;
+
+        // The palette. Injected: the dust skimmer is a child of the vessel prefab, and vessels are
+        // GameObjectInjector.InjectRecursive'd on every spawn path.
+        [Inject] GameDataSO _gameData;
+
+        [Header("Lit (every prism in the dust)")]
+        [Tooltip("Light every prism standing in the live capsule - any domain, any tier (super-shielded, shielded, " +
+                 "growing, plain), whatever the dust does or does not do to it (Garrett, 2026-10-29: \"the dust should be " +
+                 "causing the lit state on any prism it does or doesn't affect\"). One ungated PrismLit bank light that " +
+                 "follows the capsule; off while the capsule is (Mass mode, the Tiger Moth's incorporeal drop).")]
+        [SerializeField] bool lightsPrisms = true;
+
+        [Tooltip("Strength of that light, 0..1. Under the full 1 that a blast's or an aimed instrument's light uses, " +
+                 "because the dust is on for as long as Dust mode is.")]
+        [SerializeField, Range(0f, 1f)] float litStrength = 0.6f;
+
+        IVesselStatus _status;
+        Domains _paintedDomain;
+        bool _litPublished;
+        bool _painted;
+        int _paintedColorVersion;   // the colour set (ColorTrace.Version) the motes were last painted from
+
+        CapsuleCollider _capsule;
+        SkimmerImpactor _impactor;
+        ParticleSystem _particles;
+        bool _active;
+        bool _built;
+        static bool s_warnedNoMaterial;
+        float _nextTendSoundTime;
+        float _nextBlightSoundTime;
+        float _nextWitherSoundTime;
+        float _nextNourishSoundTime;
+
+        /// <summary>True while the dust is live.</summary>
+        public bool IsActive => _active;
+
+        void Awake()
+        {
+            _capsule = GetComponent<CapsuleCollider>();
+            TryGetComponent(out _impactor);
+            // Default to OFF: a Butterfly spawns in Mass mode, and a skimmer live for its first
+            // frame would dust whatever it spawned inside.
+            ApplyColliderState(false);
+        }
+
+        /// <summary>
+        /// Hand the field the vessel it belongs to, so the motes can wear that vessel's domain.
+        /// Called from <see cref="SpreadWingsActionExecutor"/>'s Initialize, which re-runs on a
+        /// re-init, so a vessel handed to another pilot repaints on the next frame.
+        /// </summary>
+        public void Bind(IVesselStatus status)
+        {
+            _status = status;
+            _painted = false;
+        }
+
+        /// <summary>Switch the dust on or off. Idempotent.</summary>
+        public void SetActive(bool active)
+        {
+            if (_built && _active == active) return;
+            _active = active;
+            ApplyColliderState(active);
+
+            EnsureParticles();
+            if (!_particles) return;
+            if (active)
+            {
+                if (!_particles.isPlaying) _particles.Play(true);
+            }
+            else
+            {
+                // StopEmitting, never StopEmittingAndClear: the motes in the air finish their
+                // lives and fade out — continuity of existence.
+                _particles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            }
+        }
+
+        // ── audio — called by the dust's effect SOs, which find this component on the skimmer ──
+
+        /// <summary>Scale Dust bit an opposing pilot. Empty slot = silence.</summary>
+        public void PlayScaleDustBite(Vector3 position)
+        {
+            LastBiteTime = Time.time;
+            Play(scaleDustBiteEvent, position);
+        }
+
+        /// <summary>When the dust last bit an opposing pilot (<see cref="Time.time"/>), on this peer; negative infinity
+        /// until it has. The Tiger Moth's HUD turns its Charge card's rival red on it.</summary>
+        public float LastBiteTime { get; private set; } = float.NegativeInfinity;
+
+        /// <summary>Dust Reach touched a prism: <paramref name="ownMass"/> = tended (own domain),
+        /// otherwise blighted. Throttled per kind; empty slot = silence.</summary>
+        public void PlayDustReach(bool ownMass, Vector3 position)
+        {
+            float now = Time.time;
+            if (ownMass)
+            {
+                if (dustTendEvent.IsNull || now < _nextTendSoundTime) return;
+                _nextTendSoundTime = now + dustReachSoundInterval;
+                Play(dustTendEvent, position);
+            }
+            else
+            {
+                if (dustBlightEvent.IsNull || now < _nextBlightSoundTime) return;
+                _nextBlightSoundTime = now + dustReachSoundInterval;
+                Play(dustBlightEvent, position);
+            }
+        }
+
+        /// <summary>Scale Dust withered an opposing lifeform. Throttled by
+        /// <c>dustReachSoundInterval</c>; empty slot = silence.</summary>
+        public void PlayHeartWither(Vector3 position)
+            => PlayThrottled(heartWitherEvent, ref _nextWitherSoundTime, position);
+
+        /// <summary>The dust nourished an ally lifeform. Throttled by
+        /// <c>dustReachSoundInterval</c>; empty slot = silence.</summary>
+        public void PlayHeartNourish(Vector3 position)
+            => PlayThrottled(heartNourishEvent, ref _nextNourishSoundTime, position);
+
+        void PlayThrottled(FMODUnity.EventReference reference, ref float nextTime, Vector3 position)
+        {
+            if (reference.IsNull) return;
+            float now = Time.time;
+            if (now < nextTime) return;
+            nextTime = now + dustReachSoundInterval;
+            Play(reference, position);
+        }
+
+        static void Play(FMODUnity.EventReference reference, Vector3 position)
+        {
+            if (reference.IsNull) return;
+            var audio = CosmicShore.Core.AudioSystem.Instance;
+            if (audio) audio.PlaySFXEvent(reference, position);
+        }
+
+        /// <summary>Put the capsule's collider and impactor back to what the MODE says. Called by an ability that switched
+        /// every collider on the hull off for a while (the Tiger Moth's incorporeal drop), so a mode changed meanwhile wins.</summary>
+        public void ReassertColliders() => ApplyColliderState(_active);
+
+        void ApplyColliderState(bool active)
+        {
+            if (_capsule) _capsule.enabled = active;
+            if (_impactor) _impactor.enabled = active;
+        }
+
+        void OnDisable()
+        {
+            ClearLit();
+            if (_particles) _particles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+
+        void OnDestroy()
+        {
+            if (_particles) Destroy(_particles.gameObject);
+        }
+
+        /// <summary>Publish the dust's light every frame the capsule is live: PrismLit flushes in LateUpdate, so the
+        /// light is published from Update. Ungated on purpose (every domain's mass, debris included): the sentence is
+        /// "this is in my dust", not "this is mine". A cylinder the capsule's length and radius, mirrored about its
+        /// centre (PrismLit has no capsule; the caps' rounding is the only part the cylinder over-lights).</summary>
+        void Update()
+        {
+            // The shred keeps taking while a rival stays in the dust: a skimmer runs its vessel effects
+            // on entry only, so the standing contact is re-run here every frame and the dust reporter's
+            // Charge-scaled latch window paces it (VesselElementalDebuffBySkimmerEffectSO, TIGER_MOTH.md).
+            if (_active && _impactor && _impactor.enabled) _impactor.ReapplyVesselEffectsToOverlapping();
+
+            bool live = lightsPrisms && _active && _capsule && _capsule.enabled;
+            if (!live)
+            {
+                ClearLit();
+                return;
+            }
+            MeasureCapsule(out float length, out float radius);
+            Vector3 centre = transform.TransformPoint(_capsule.center);
+            var domain = _status != null && _status.Player != null ? _status.Domain : Domains.Blue;
+            PrismLit.PublishLight(GetInstanceID(),
+                LitVolume.Cylinder(centre, -transform.up, length * 0.5f, radius, mirrored: true),
+                litStrength, PrismLit.DomainTint(domain));
+            _litPublished = true;
+        }
+
+        void ClearLit()
+        {
+            if (!_litPublished) return;
+            _litPublished = false;
+            PrismLit.ClearLight(GetInstanceID());
+        }
+
+        void LateUpdate()
+        {
+            if (!_particles) return;
+            FitParticlesToCapsule();
+            RefreshColour();
+        }
+
+        /// <summary>
+        /// Repaint when the vessel's domain changes. Read LIVE rather than snapshotted, so the
+        /// freestyle domain changer and every replicated NetDomain change reach the dust on the
+        /// next frame. Only NEW motes take the colour - the ones already in the air finish in
+        /// the colour they were born in, which is continuity rather than a snap.
+        /// </summary>
+        void RefreshColour()
+        {
+            var domain = _status != null && _status.Player != null ? _status.Domain : Domains.Blue;
+            // Another colour set worn repaints too: the palette and the fallback both come from the worn set.
+            if (_painted && domain == _paintedDomain && _paintedColorVersion == ColorTrace.Version) return;
+            _painted = true;
+            _paintedDomain = domain;
+            _paintedColorVersion = ColorTrace.Version;
+
+            var main = _particles.main;
+            ResolveMotePalette(_gameData, domain, ColorTrace.Retrace(ColorTrace.World, dustColor), _palette);
+            main.startColor = MotePaletteGradient(_palette);
+        }
+
+        readonly Color[] _palette = new Color[MotePaletteSize];
+
+        /// <summary>How many colours the dust is made of: danger, plain (the domain) and shielded.</summary>
+        internal const int MotePaletteSize = 3;
+
+        /// <summary>
+        /// The one mote colour rule, shared with the omni-crystal bloom's dust (<see cref="ButterflyBloomDust"/>) and the
+        /// HUD's ability icons, so all three read as the same dust. Garrett, 2026-11-01: "make a dust made of danger
+        /// color, team domain color, team shielded domain color". Each mote wears ONE of the three prism tiers of
+        /// <paramref name="domain"/> (the DANGER, PLAIN and SHIELDED tiers' bright rims, through
+        /// <c>SO_ColorSet.TryGetPrismKindColors</c>, the single source every prism tier is painted from), so the dust is
+        /// the three things it turns your mass into. The rim rather than the base face because a mote is a point of light.
+        /// Blue (no team) or no palette: every entry is <paramref name="fallback"/>. Alpha is
+        /// <paramref name="fallback"/>'s throughout.
+        /// </summary>
+        internal static void ResolveMotePalette(GameDataSO gameData, Domains domain, Color fallback, Color[] into)
+        {
+            var colorSet = gameData && gameData.ThemeManagerData ? gameData.ThemeManagerData.ColorSet : null;
+            Fill(PrismKind.Danger, 0);
+            Fill(PrismKind.Plain, 1);
+            Fill(PrismKind.Shielded, 2);
+
+            void Fill(PrismKind kind, int i)
+            {
+                if (domain == Domains.Blue || colorSet == null ||
+                    !colorSet.TryGetPrismKindColors(domain, kind, out var rim, out _))
+                {
+                    into[i] = fallback;
+                    return;
+                }
+                rim.a = fallback.a;
+                into[i] = rim;
+            }
+        }
+
+        /// <summary>A start colour that gives each new mote one of <paramref name="palette"/>'s colours at random (a
+        /// FIXED-mode gradient read at a random point: three equal steps, no blends between them).</summary>
+        internal static ParticleSystem.MinMaxGradient MotePaletteGradient(Color[] palette)
+        {
+            int n = palette.Length;
+            var colours = new GradientColorKey[n];
+            for (int i = 0; i < n; i++) colours[i] = new GradientColorKey(palette[i], (i + 1f) / n);
+            var g = new Gradient { mode = GradientMode.Fixed };
+            g.SetKeys(colours, new[] { new GradientAlphaKey(palette[0].a, 0f), new GradientAlphaKey(palette[0].a, 1f) });
+            return new ParticleSystem.MinMaxGradient(g) { mode = ParticleSystemGradientMode.RandomColor };
+        }
+
+        /// <summary>The capsule's world length and radius, read the way PhysX sizes it.</summary>
+        void MeasureCapsule(out float length, out float radius)
+        {
+            var lossy = transform.lossyScale;
+            length = _capsule ? _capsule.height * Mathf.Abs(lossy.y) : Mathf.Abs(lossy.y);
+            float r = Mathf.Max(Mathf.Abs(lossy.x), Mathf.Abs(lossy.z));
+            radius = _capsule ? _capsule.radius * r : 0.5f * r;
+        }
+
+        void FitParticlesToCapsule()
+        {
+            MeasureCapsule(out float length, out float radius);
+            var pt = _particles.transform;
+            // Centre the emitter on the capsule's own centre, in world terms.
+            pt.position = transform.TransformPoint(_capsule ? _capsule.center : new Vector3(0f, -0.5f, 0f));
+            pt.rotation = transform.rotation;
+
+            var shape = _particles.shape;
+            shape.scale = new Vector3(radius * 2f, length, radius * 2f);
+
+            var emission = _particles.emission;
+            float volume = Mathf.PI * radius * radius * length;
+            emission.rateOverTime = Mathf.Min(maxMotesPerSecond, volume / 100f * motesPer100Volume);
+        }
+
+        void EnsureParticles()
+        {
+            if (_built) return;
+            _built = true;
+
+            var go = new GameObject("DustMotes");
+            // BESIDE the capsule, not under it: the capsule carries a non-uniform scale (Space
+            // stretches its Y), and a child would inherit it.
+            go.transform.SetParent(transform.parent ? transform.parent : transform, false);
+            go.layer = gameObject.layer;
+
+            _particles = go.AddComponent<ParticleSystem>();
+            _particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var main = _particles.main;
+            main.loop = true;
+            main.playOnAwake = false;
+            main.simulationSpace = ParticleSystemSimulationSpace.World; // dust trails behind the hull
+            main.scalingMode = ParticleSystemScalingMode.Local;
+            main.startLifetime = moteLifetime;
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(moteSize.x, moteSize.y);
+            main.startColor = ColorTrace.Retrace(ColorTrace.World, dustColor);
+            main.gravityModifier = 0f;
+            main.maxParticles = Mathf.CeilToInt(maxMotesPerSecond * moteLifetime * 1.25f);
+
+            var shape = _particles.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.boxThickness = Vector3.zero;
+
+            var velocity = _particles.velocityOverLifetime;
+            velocity.enabled = true;
+            velocity.space = ParticleSystemSimulationSpace.Local;
+            velocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocity.y = new ParticleSystem.MinMaxCurve(-fallSpeed, -fallSpeed);
+            velocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+
+            // In, hold, out: a mote is never born or retired at full alpha.
+            var colour = _particles.colorOverLifetime;
+            colour.enabled = true;
+            var g = new Gradient();
+            g.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.2f),
+                    new GradientAlphaKey(1f, 0.65f), new GradientAlphaKey(0f, 1f),
+                });
+            colour.color = new ParticleSystem.MinMaxGradient(g);
+
+            var renderer = go.GetComponent<ParticleSystemRenderer>();
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+            renderer.sharedMaterial = ResolveMaterial();
+
+            FitParticlesToCapsule();
+        }
+
+        Material ResolveMaterial()
+        {
+            if (particleMaterial) return particleMaterial;
+            if (!s_warnedNoMaterial)
+            {
+                s_warnedNoMaterial = true;
+                CSDebug.LogWarning("[ButterflyDustField] no particle material wired — falling " +
+                                   "back to URP Particles/Unlit. Wire one on the dust skimmer.", this);
+            }
+            var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+            return shader ? new Material(shader) : null;
+        }
+    }
+}

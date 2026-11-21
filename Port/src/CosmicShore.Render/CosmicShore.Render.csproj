@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The port's renderer: draws the engine's scene + uGUI the way the Unity build's
+       URP does (linear color space, sRGB textures, stencil masks, HDR + post).
+       Backend: OpenGL 3.3 core through Silk.NET (MIT). -->
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The Shader Graph custom functions, ported to GLSL once (GraphProgramCache prepends it). -->
+    <EmbeddedResource Include="Glsl/ShaderGraphLibrary.glsl" LogicalName="CosmicShore.Render.Glsl.ShaderGraphLibrary.glsl" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
+  </ItemGroup>
+
+  <!-- UnityEngine.GL has a look-alike (CosmicShore.Engine.GL); in renderer code GL is Silk's OpenGL API. -->
+  <ItemGroup>
+    <Using Include="Silk.NET.OpenGL.GL" Alias="GL" />
+  </ItemGroup>
+</Project>

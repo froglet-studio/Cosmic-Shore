@@ -4,18 +4,22 @@ using CosmicShore.Core;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Utility;
 using System;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
     [System.Serializable]
     public class MineModelData
     {
-        public GameObject model;
-        public Material defaultMaterial;
-        public Material explodingMaterial;
-        public Material inactiveMaterial;
+        [SerializeField] GameObject model;
+        public GameObject Model => model;
+        [SerializeField] Material defaultMaterial;
+        public Material DefaultMaterial => defaultMaterial;
+        [SerializeField] Material explodingMaterial;
+        public Material ExplodingMaterial => explodingMaterial;
+        [SerializeField] Material inactiveMaterial;
+        public Material InactiveMaterial => inactiveMaterial;
     }
 
     public class Mine : MonoBehaviour
@@ -84,7 +88,7 @@ namespace CosmicShore.Gameplay
                 if (!impact) continue;
 
                 impact.transform.localScale = transform.lossyScale;
-                impact.HandleImpact(velocity, modelData.explodingMaterial, "");
+                impact.HandleImpact(velocity, modelData.ExplodingMaterial, "");
             }
             // Invoke(nameof(DestroyMine));
             DestroyMine();
@@ -92,7 +96,6 @@ namespace CosmicShore.Gameplay
 
         private void DestroyMine()
         {
-            CSDebug.Log("Mine Exploding");
             Destroy(gameObject);
         }
     }

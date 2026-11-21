@@ -9,10 +9,10 @@ namespace CosmicShore.Gameplay
 {
     public enum BlockState
     {
-        Normal,
-        Shielded,
-        SuperShielded,
-        Dangerous
+        Normal = 0,
+        Shielded = 1,
+        SuperShielded = 2,
+        Dangerous = 3
     }
 
     public class PrismStateManager : MonoBehaviour
@@ -87,8 +87,9 @@ namespace CosmicShore.Gameplay
             // it; otherwise we add one at runtime so existing prefabs don't
             // need to be touched individually. The component's Awake resolves
             // BoxCollider / MeshFilter / Rigidbody from the same GameObject.
-            octahedronShield = GetComponent<PrismOctahedronShield>();
-            if (octahedronShield == null)
+            // TryGetComponent, not GetComponent: this lookup misses on most prefabs by design, and a
+            // missed GetComponent allocates its error message in the editor - on every prism laid.
+            if (!TryGetComponent(out octahedronShield))
                 octahedronShield = gameObject.AddComponent<PrismOctahedronShield>();
         }
 
@@ -166,7 +167,7 @@ namespace CosmicShore.Gameplay
             float popSpeedLimit = 0f)
         {
             // Cancel any pending timer before applying new state
-            PrismTimerManager.EnsureInstance().CancelTimers(this);
+            PrismTimerManager.EnsureInstance()?.CancelTimers(this);
 
             // Written unconditionally: a re-shield by a different force must not pop on
             // the previous force's magnitude.
@@ -177,13 +178,13 @@ namespace CosmicShore.Gameplay
 
             if (duration.HasValue)
             {
-                PrismTimerManager.EnsureInstance().ScheduleShieldDeactivation(this, duration.Value);
+                PrismTimerManager.EnsureInstance()?.ScheduleShieldDeactivation(this, duration.Value);
             }
         }
 
         public void ActivateSuperShield()
         {
-            PrismTimerManager.EnsureInstance().CancelTimers(this);
+            PrismTimerManager.EnsureInstance()?.CancelTimers(this);
 
             prism.prismProperties.IsSuperShielded = true;
             prism.prismProperties.IsShielded = false;
@@ -204,9 +205,10 @@ namespace CosmicShore.Gameplay
             bool birth = IsBirthTransition;
             GetShedColors(PrismKind.Shielded, out var octBright, out var octDark);
             if (octahedronShield != null) octahedronShield.Disengage(birth, default, 0f, octBright, octDark);
-            if (stellatedShield == null)
-                stellatedShield = GetComponent<PrismStellatedOctahedronShield>()
-                                  ?? gameObject.AddComponent<PrismStellatedOctahedronShield>();
+            // TryGetComponent, never `GetComponent() ?? AddComponent()`: a missing component is a
+            // fake-null object in the Editor, so the coalesce never added one and Engage threw.
+            if (stellatedShield == null && !TryGetComponent(out stellatedShield))
+                stellatedShield = gameObject.AddComponent<PrismStellatedOctahedronShield>();
             stellatedShield.Engage(birth);
 
             SyncAOERegistryShieldState();
@@ -226,11 +228,11 @@ namespace CosmicShore.Gameplay
         public void DeactivateShields(float? delay = null, Vector3 breakVelocity = default,
             float debrisSpeedLimit = 0f)
         {
-            PrismTimerManager.EnsureInstance().CancelTimers(this);
+            PrismTimerManager.EnsureInstance()?.CancelTimers(this);
 
             if (delay.HasValue)
             {
-                PrismTimerManager.EnsureInstance().ScheduleShieldDeactivation(this, delay.Value);
+                PrismTimerManager.EnsureInstance()?.ScheduleShieldDeactivation(this, delay.Value);
             }
             else
             {
@@ -244,10 +246,14 @@ namespace CosmicShore.Gameplay
         /// <c>DeactivateShields(delay)</c> both land here), and the one and only place a
         /// shield comes off with no BREAKING force behind it.
         ///
-        /// That is exactly the case the temporary shield exists for: an explosion meeting
-        /// its own domain's mass shields the prism rather than passing through it, so the
-        /// blast reads as ACCEPTED instead of as clipping. The pop that ends it therefore
-        /// has to read as a pop — so the shards are shed along
+        /// That was exactly the case the temporary shield existed for: an explosion meeting
+        /// its own domain's mass shielded the prism rather than passing through it, so the
+        /// blast read as ACCEPTED instead of as clipping. Since 2026-09 a blast says that
+        /// with LIGHT instead (<c>ExplosionImpactor.PublishLit</c>, <c>Docs/LIT.md</c>), so
+        /// no timed shield in the game carries a blow any more and every timed pop takes the
+        /// impactless branch. The two timed producers left — a prism leaving a crystal's
+        /// trigger, and a projectile's Shield impact effect — never had one. The pop that ends
+        /// a timed shield still has to read as a pop, so the shards are shed along
         /// <see cref="TimedPopBreakVelocity"/>: a random direction on the unit sphere at
         /// HALF the magnitude of the blast that shielded it. Without it every timed pop
         /// handed the shatter a zero vector, which <c>GeometryUtils.ClampMagnitude</c>
@@ -363,6 +369,9 @@ namespace CosmicShore.Gameplay
             // grids on every shield transition. The cell no-ops when the classification
             // did not actually change, so re-applying an existing shield costs a compare.
             PrismSpatialIndex.Instance?.ForwardShieldChangeToCell(prism.SpatialIndexId);
+
+            // The shell's volume is the owner's (Garrett, 2026-11-18): book it as it goes up or comes off.
+            prism.BookShieldVolume();
         }
 
         private void OnDisable()

@@ -10,7 +10,7 @@ namespace CosmicShore.UI
     /// Fields are grouped rather than flat, and the grouping is load-bearing - see
     /// Docs/Analytics/DATA_ARCHITECTURE.md §2.1. Each group maps 1:1 to a privacy class
     /// (so a GDPR export or erasure operates on a group, not a field hunt) and 1:1 to a
-    /// PostHog person-property prefix (so the mirror is mechanical, not hand-maintained).
+    /// Froglet Analytics person-property prefix (so the mirror is mechanical, not hand-maintained).
     ///
     /// Sole writer: <see cref="PlayerDataService"/>.
     /// </summary>
@@ -34,17 +34,23 @@ namespace CosmicShore.UI
     {
         /// <summary>
         /// UGS authentication PlayerId. The canonical identity everywhere: Cloud Save,
-        /// Leaderboards, UGS Analytics, and the PostHog distinct_id.
+        /// Leaderboards, UGS Analytics, and the Froglet Analytics distinct_id.
         /// </summary>
         public string UserId = "";
 
         /// <summary>
-        /// Player-chosen free text. Searchable in PostHog, but never the identity key -
+        /// Player-chosen free text. Searchable in Froglet Analytics, but never the identity key -
         /// it is mutable and not unique.
         /// </summary>
         public string DisplayName = "";
 
         public int AvatarId;
+
+        /// <summary>
+        /// The pilot the player picked as their favourite (Docs/MENU_REDESIGN_B.md §56): the SO_Captain asset's
+        /// name, which stays fixed while its display name may be re-authored. Empty: none picked.
+        /// </summary>
+        public string FavouritePilot = "";
     }
 
     /// <summary>Balances and entitlements. Loss here is player-visible, so writes must not be dropped.</summary>
@@ -84,6 +90,40 @@ namespace CosmicShore.UI
         /// player opening the same receipt twice.
         /// </summary>
         public List<string> RedeemedOrderIds = new();
+
+        /// <summary>
+        /// The Hangar's bought elemental levels (<c>HangarUpgradeStore</c>): one entry per vessel and element
+        /// with a level above 0. Here, beside the balance, because they are paid for with it: the debit and the
+        /// level go up in the same save, so a reinstall or a second device keeps both.
+        /// </summary>
+        public List<HangarUpgradeLevel> HangarUpgrades = new();
+
+        /// <summary>
+        /// The player's ELEMENTAL crystals, one entry per element that has ever had any (Docs/MENU_REDESIGN_B.md
+        /// section 97; Shombith 2026-10-27: "put them in cloud data"). Held is what the player has now; Earned and
+        /// Spent are lifetime totals, so the Hangar can show held and spent and the Ark can convert them. Here beside
+        /// the OmniCrystal balance because they are the same kind of money and ride the same save.
+        /// </summary>
+        public List<ElementalCrystalBalance> ElementalCrystals = new();
+    }
+
+    /// <summary>One element's crystals. Element is the enum's stored value (Charge 1 .. Time 4).</summary>
+    [Serializable]
+    public class ElementalCrystalBalance
+    {
+        public int Element;
+        public int Held;
+        public long Earned;
+        public long Spent;
+    }
+
+    /// <summary>One bought Hangar level. Vessel and Element are the enums' stored values.</summary>
+    [Serializable]
+    public class HangarUpgradeLevel
+    {
+        public int Vessel;
+        public int Element;
+        public int Level;
     }
 
     /// <summary>Account timeline and last-known client facts. Retention/segmentation denominators.</summary>

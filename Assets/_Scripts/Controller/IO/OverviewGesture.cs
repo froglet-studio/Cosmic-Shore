@@ -4,7 +4,9 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// "Take me to the overview." The keyboard and pad counterpart of the on-screen
-    /// <b>Volume / Pause</b> button — <b>Escape</b>, or the pad's <b>Start</b>.
+    /// <b>Volume / Pause</b> button — <b>Escape</b>, or the pad's <b>Select / View</b>. The pad
+    /// binding was Start until 2026-10-21, when Garrett moved the app shell's in/out toggle to
+    /// Select and gave Start to Settings, so the one gesture moved with it.
     ///
     /// <para>One predicate, asked by both HUDs (<c>MiniGameHUD</c> in a game scene,
     /// <c>MenuMiniGameHUD</c> in Menu_Main freestyle), because the two must not drift: the whole
@@ -25,7 +27,7 @@ namespace CosmicShore.Gameplay
             if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame) return true;
 
             var pad = Gamepad.current;
-            return pad != null && pad.startButton.wasPressedThisFrame;
+            return pad != null && pad.selectButton.wasPressedThisFrame;
         }
     }
 }

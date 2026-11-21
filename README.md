@@ -65,7 +65,7 @@ Maneuvering through the HyperSea is usually a thrilling delight. Knowing where a
 - **Ransack Rally** (1-4 players) — Skim past trails on your way to a biome. Whoever steals more along the way wins.
 - **Freestyle Toybox** (1 player) — No rules, time, or score. Do what you want for as long as you like.
 - **Duel for the Cell** (1v1) — Create mass as trail blocks and disrupt your opponent's. Greatest mass volume wins.
-- **HexRace** (1-4 players) — Crystal-collection racing on procedurally generated tracks. First player to collect all crystals wins. Supports solo with AI opponents, multiplayer with friends, or mixed human+AI lobbies. Intensity scales track complexity (segment count, helix radius). Features elemental comeback mechanics and server-authoritative scoring with golf rules (lower time = better rank).
+- **SkimRace** (1-4 players) — Crystal-collection racing on procedurally generated tracks. First player to collect all crystals wins. Supports solo with AI opponents, multiplayer with friends, or mixed human+AI lobbies. Intensity scales track complexity (segment count, helix radius). Features elemental comeback mechanics and server-authoritative scoring with golf rules (lower time = better rank).
 - **Wildlife Blitz** (1-4 players) — Co-op and competitive variants.
 - **Joust** (multiplayer) — Head-to-head combat mode.
 
@@ -97,11 +97,11 @@ A stepping stone to our future dreams of a multi-biome esport, Duel for the Cell
 - **Camera**: Cinemachine 3.1.2 with per-vessel settings
 - **VFX**: VFX Graph, custom HLSL shaders, Shader Graph, procedural skybox
 - **Input**: Unity Input System with platform-specific strategy pattern (keyboard/mouse, gamepad, touch)
-- **Audio**: Wwise integration + SOAP gameplay SFX events for decoupled audio triggers
+- **Audio**: FMOD Studio (`FMODUnity`) + SOAP gameplay SFX events for decoupled audio triggers
 - **Haptics**: NiceVibrations (mobile)
 - **Animation**: Timeline, DOTween
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance, DOTS Entities (incremental adoption)
-- **Backend**: Unity Gaming Services (Analytics, CloudSave, Leaderboards, Multiplayer, IAP, Ads), PlayFab (legacy, migrating off)
+- **Backend**: Unity Gaming Services (Analytics, CloudSave, Leaderboards, Multiplayer, IAP, Ads)
 - **Testing**: Unity Test Framework (NUnit)
 - **Tutorial**: Custom FTUE system with adapter pattern
 - **Dialogue**: Custom dialogue system with editor tools
@@ -144,19 +144,19 @@ An `ApplicationStateMachine` (pure C# DI singleton) tracks the top-level applica
 
 Authentication is handled by the `AuthenticationServiceFacade` which writes to a shared SOAP `AuthenticationDataVariable`. On sign-in, `MultiplayerSetup` starts the network host, a `FriendsServiceFacade` initializes the UGS Friends service (syncing into `FriendsDataSO`), and the menu is loaded as a networked scene. Scene loading is managed by `SceneLoader`, a `NetworkBehaviour` that auto-selects local vs network scene loading and handles game restarts.
 
-The Menu_Main scene uses a `ScreenSwitcher` that manages horizontal sliding navigation between five screen panels. A `MenuServerPlayerVesselInitializer` spawns an autopilot Squirrel vessel in the background with camera tracking. Screens implement the `IScreen` interface for lifecycle callbacks (`OnScreenEnter`/`OnScreenExit`), allowing the switcher to notify screens without hard-coded references. See the [Menu Screen Navigation](./CLAUDE.md#menu-screen-navigation-menu_main-scene) and [Authentication & Session Flow](./CLAUDE.md#authentication--session-flow) sections in CLAUDE.md for details.
+The Menu_Main scene uses a `ScreenSwitcher` that manages horizontal sliding navigation between five screen panels. A `MenuServerPlayerVesselInitializer` spawns an autopilot Squirrel vessel in the background with camera tracking. Screens implement the `IScreen` interface for lifecycle callbacks (`OnScreenEnter`/`OnScreenExit`), allowing the switcher to notify screens without hard-coded references. See the [Menu Screen Navigation](./Docs/claude/MENU_AND_LAVA_LAMP.md#menu-screen-navigation-menu_main-scene) and [Authentication & Session Flow](./Docs/claude/ARCHITECTURE_CORE.md#authentication--session-flow) sections (moved from CLAUDE.md into `Docs/claude/`) for details.
 
 ### Architecture Audits
 
 - **[Bootstrap Scene Audit](./Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md)** — All 16 root GameObjects, execution order map, applied fixes, and deferred refactoring issues
-- **[Prism Performance Audit](./Assets/_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md)** — Per-prism component stack, Jobs+Burst optimizations, and remaining main-thread bottlenecks
+- **[Performance — State, History & Plan](./Docs/PERFORMANCE_OPTIMIZATION.md)** — where performance stands, what was done, the ranked lever list, and how to measure (raw evidence frozen in `Docs/archive/PERFORMANCE_LOG_2026.md`)
 
 ### Project Structure
 
 ```
 Assets/
-├── _Scripts/                  # All first-party C# code (~1,100 files)
-│   ├── Controller/            # Gameplay systems (~536 files)
+├── _Scripts/                  # All first-party C# code (3,061 files, 2026-11-01)
+│   ├── Controller/            # Gameplay systems (1,373 files)
 │   │   ├── Vessel/            # Vessel core, actions, prisms, trails
 │   │   ├── Environment/       # Cells, crystals, flora/fauna, spawning
 │   │   ├── ImpactEffects/     # Impactors + Effect SOs
@@ -165,10 +165,9 @@ Assets/
 │   │   ├── Camera/            # Per-vessel camera system
 │   │   ├── AI/                # AIPilot, AIGunner
 │   │   └── ...                # Projectiles, IO, FX, Managers, etc.
-│   ├── System/                # Application-level systems (~126 files)
+│   ├── System/                # Application-level systems (157 files)
 │   │   ├── Bootstrap/         # BootstrapConfigSO, SceneTransitionManager, ApplicationLifecycleManager
 │   │   ├── Systems/Auth/      # AuthenticationController (MonoBehaviour adapter)
-│   │   ├── Playfab/           # Legacy PlayFab integration (deprecated auth)
 │   │   ├── Instrumentation/   # Analytics (UGS)
 │   │   ├── Runtime/           # Dialogue runtime
 │   │   ├── AppManager.cs      # Top-level orchestrator + Reflex DI root
@@ -180,10 +179,10 @@ Assets/
 │   │   ├── SplashToAuthFlow.cs
 │   │   ├── NetworkMonitor.cs
 │   │   └── ...                # Audio, LoadOut, Quest, Ads, etc.
-│   ├── UI/                    # Game & app UI (~188 files)
+│   ├── UI/                    # Game & app UI (460 files)
 │   │   ├── Screens/           # Menu screens (Home, Arcade, Store, Hangar, Leaderboards, Episodes)
 │   │   ├── Interfaces/        # IScreen, IVesselHUDController, IVesselHUDView
-│   │   ├── Elements/          # Reusable components (NavLink, NavGroup, ProfileDisplayWidget)
+│   │   ├── Elements/          # Reusable components (NavLink, NavGroup, card and lobby widgets)
 │   │   ├── Views/             # PlayerDataService, screen views
 │   │   ├── Controller/        # HUD controllers
 │   │   ├── Modals/            # ModalWindowManager, Settings, Profile, Purchase dialogs

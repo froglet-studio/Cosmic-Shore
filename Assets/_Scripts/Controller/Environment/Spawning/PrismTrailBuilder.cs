@@ -40,8 +40,22 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class PrismTrailBuilder
     {
-        /// <summary>The one place a prism is born into a trail. Kind is applied AFTER Initialize.</summary>
-        public static Prism LayOne(Prism prefab, PrismLay e, Transform parent, Trail trail, string ownerId)
+        /// <summary>
+        /// The one place a prism is born into a trail. Kind is applied AFTER Initialize.
+        ///
+        /// <paramref name="admitAuthoredScale"/> widens the prism's own scale clamp to admit a
+        /// size the config STATES (see <see cref="Prism.AdmitTargetScale"/>).
+        ///
+        /// <paramref name="watchForReveal"/> defaults true because every historical caller lays a
+        /// FINITE cohort that an arena build is waiting on. Pass FALSE for a CONTINUOUS source —
+        /// mass a live game keeps producing for as long as it runs (the Ark's wake). The reveal
+        /// watch is the arena-ready gate's "is everything materialized yet" set, and a source
+        /// that keeps adding to it can never all-clear: the veil holds forever while the count
+        /// hovers, which reads on screen as "N settling" jittering and a load that never
+        /// finishes. That is a HANG, not a slow load, and no amount of waiting fixes it.
+        /// </summary>
+        public static Prism LayOne(Prism prefab, PrismLay e, Transform parent, Trail trail, string ownerId,
+            bool admitAuthoredScale = false, bool watchForReveal = true)
         {
             // Load Time Insights hot-path breakdown: per-stage accumulators (NOT per-item spans —
             // a 25k-prism lay would blow the span budget). Inert (t stays 0) unless a load
@@ -52,7 +66,7 @@ namespace CosmicShore.Gameplay
             var block = EnvironmentPrismPool.Get(prefab, parent);
             t = LoadInsights.AccumulateSample("Prism lay: pool Get + component Awakes", t);
 
-            ConfigureLaid(block, e, trail, ownerId, t);
+            ConfigureLaid(block, e, trail, ownerId, t, admitAuthoredScale, watchForReveal);
             return block;
         }
 
@@ -62,7 +76,8 @@ namespace CosmicShore.Gameplay
         /// definition of the prism spawn contract with the per-item path (the drift surface the
         /// environment audit flagged — now it cannot diverge).
         /// </summary>
-        static void ConfigureLaid(Prism block, in PrismLay e, Trail trail, string ownerId, long t)
+        static void ConfigureLaid(Prism block, in PrismLay e, Trail trail, string ownerId, long t,
+            bool admitAuthoredScale, bool watchForReveal = true)
         {
             block.ChangeTeam(e.Domain);
             block.ownerID = ownerId;
@@ -76,6 +91,30 @@ namespace CosmicShore.Gameplay
             block.Initialize();
             t = LoadInsights.AccumulateSample("Prism lay: Initialize (reset + grow coroutine start)", t);
 
+            // A lay STATES a size, so a caller may widen the animator's clamp to admit it.
+            // PrismScaleAnimator.SetTargetScale clamps PER AXIS into the prefab's serialized
+            // [minScale, maxScale] INSIDE the setter, with no log and no return value — so an
+            // authored 132-long plank on a prefab whose maxScale is 100 becomes a 100-long plank
+            // and nothing anywhere reports the difference (Docs/PRISM_ANIMATION.md; three passes
+            // of flora fitting measured and shipped sizes the engine never used).
+            //
+            // It is OPT-IN rather than always, because the environment prism prefab is shared by
+            // ~30 spawnables: admitting a size one of them is currently relying on the clamp to
+            // cut is a behaviour change for THAT spawnable, not for the one asking. Only ever
+            // WIDENS, and pool reuse restores the authored window.
+            //
+            // AFTER Initialize, and that ordering is load-bearing (ScarabSwitch.TryLay records
+            // the same trap): Initialize → ResetState → RestoreAuthoredScaleWindow() undoes any
+            // widening and then re-clamps the target against the restored window, so a size
+            // stated before Initialize is silently trimmed twice over. The plain path above is
+            // deliberately left where it is so an un-admitting caller lays byte-for-byte as before.
+            if (admitAuthoredScale)
+            {
+                block.AdmitTargetScale(e.Point.Scale);
+                block.TargetScale = e.Point.Scale;
+                t = LoadInsights.AccumulateSample("Prism lay: authored-scale admission", t);
+            }
+
             // AFTER Initialize: pool-reuse reset clears trail membership, so a stamp made
             // before it is silently wiped (AssignTrail's contract).
             block.AssignTrail(trail);
@@ -88,7 +127,7 @@ namespace CosmicShore.Gameplay
             // REVEAL — created (renderer on; creation completions are frame-budgeted, so a laid
             // prism stays invisible until the queue reaches it) AND at final scale. Laid or
             // grown is not enough: un-created prisms pop in batches after the match starts.
-            WatchForReveal(block);
+            if (watchForReveal) WatchForReveal(block);
         }
 
         /// <summary>
@@ -107,11 +146,12 @@ namespace CosmicShore.Gameplay
 
         // ── Sync ─────────────────────────────────────────────────────────────
 
-        public static void LaySync(Prism prefab, IReadOnlyList<PrismLay> elems, Transform parent, Trail trail, string ownerPrefix)
+        public static void LaySync(Prism prefab, IReadOnlyList<PrismLay> elems, Transform parent, Trail trail,
+            string ownerPrefix, bool admitAuthoredScale = false)
         {
             if (!prefab) return;
             for (int i = 0; i < elems.Count; i++)
-                LayOne(prefab, elems[i], parent, trail, $"{ownerPrefix}::{i}");
+                LayOne(prefab, elems[i], parent, trail, $"{ownerPrefix}::{i}", admitAuthoredScale);
         }
 
         /// <summary>Convenience overload for the single-domain, plain-kind environment path.</summary>
@@ -134,7 +174,7 @@ namespace CosmicShore.Gameplay
                 if (!parent) yield break;
                 var block = LayOne(prefab, new PrismLay(points[i], domain), parent, trail, $"{ownerPrefix}::{i}");
                 onEach?.Invoke(block);
-                if (interval > 0f) yield return new WaitForSeconds(interval);
+                if (interval > 0f) yield return CosmicShore.Utility.WaitCache.Seconds(interval);
             }
         }
 
@@ -182,6 +222,8 @@ namespace CosmicShore.Gameplay
             UseBatchedInstantiate = true;
             LoadGateLayBudgetOverrideMs = 0f;
             LoadGateCreationBudgetMsOverride = 0f;
+            LoadGateCovered = false;
+            s_integrationMsBeforeGate = -1f;
         }
 
         // All budgeted lays draw from ONE per-frame time pool, so three concurrently-streaming
@@ -208,7 +250,7 @@ namespace CosmicShore.Gameplay
         static readonly List<Prism> s_growWatch = new(1024);
 
         // Builds announced (BeginArenaBuild) but not yet executed — covers the window where a
-        // controller is still WAITING to build (e.g. HexRace's netcode track-seed wait) and no
+        // controller is still WAITING to build (e.g. SkimRace's netcode track-seed wait) and no
         // lay has started, which absence-of-activity checks would misread as "arena done".
         static int s_pendingArenaBuilds;
 
@@ -241,7 +283,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Announce an arena build whose SegmentSpawner.Initialize happens LATER than scene
-        /// start (e.g. HexRace initializes only after the netcode track seed arrives). While
+        /// start (e.g. SkimRace initializes only after the netcode track seed arrives). While
         /// any build is pending, the arena-ready gate stays closed even though no lay has
         /// started yet. Pair with exactly one <see cref="EndArenaBuild"/>.
         /// </summary>
@@ -286,6 +328,8 @@ namespace CosmicShore.Gameplay
                 // veil's own clears stay as the explicit statement of intent.
                 LoadGateLayBudgetOverrideMs = 0f;
                 LoadGateCreationBudgetMsOverride = 0f;
+                LoadGateCovered = false;
+                RestoreIntegrationSlice();
             }
             EndSettleSpan();
         }
@@ -302,14 +346,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool PollArenaReady()
         {
-            // Stall detection: any advance in laying or settling counts as progress (readings
-            // lag one poll for GrowRemainingCount, which is updated by the sweep below - fine).
-            if (s_layDoneTotal != s_lastLayDone || GrowRemainingCount != s_lastGrowRemaining)
-            {
-                s_lastLayDone = s_layDoneTotal;
-                s_lastGrowRemaining = GrowRemainingCount;
+            // Stall detection, and it must count PROGRESS rather than CHANGE. s_layDoneTotal is
+            // monotone, so any advance in it is real work done. GrowRemainingCount is a LEVEL —
+            // it goes up when prisms are added to the reveal watch and down as they settle — so
+            // "it is different from last poll" is satisfied just as well by churn as by
+            // progress. A source that keeps ADDING work (a continuous lay that should never have
+            // been watched at all) therefore held the number bouncing around a small value
+            // forever, the gate never all-cleared, and the stall detector read the bouncing as
+            // healthy progress and never fired: an unbounded hang with an animated readout.
+            // Only a FALLING remaining count is progress.
+            if (s_layDoneTotal != s_lastLayDone || GrowRemainingCount < s_lastGrowRemaining)
                 s_lastProgressTime = Time.unscaledTime;
-            }
+            s_lastLayDone = s_layDoneTotal;
+            s_lastGrowRemaining = GrowRemainingCount;
 
             if (s_loadGateHolding && Time.unscaledTime - s_lastProgressTime > LoadGateHardCapSeconds)
             {
@@ -368,10 +417,18 @@ namespace CosmicShore.Gameplay
         static int SettleGrowWatch()
         {
             var list = s_growWatch;
+            bool snapCovered = s_loadGateHolding && LoadGateCovered;
             for (int i = list.Count - 1; i >= 0; i--)
             {
                 var p = list[i];
                 bool drop = p == null || !p.isActiveAndEnabled || p.IsSettledForReveal;
+                if (!drop && snapCovered && p.IsCreationComplete)
+                {
+                    // Behind an opaque veil the bloom is invisible: settle it now (one clock
+                    // stamp rewrite, Prism.CompleteGrowthImmediately) rather than wait it out.
+                    p.CompleteGrowthImmediately();
+                    drop = p.IsSettledForReveal;
+                }
 
                 if (drop)
                 {
@@ -501,6 +558,49 @@ namespace CosmicShore.Gameplay
         /// </summary>
         const int CloneBatchSize = 256;
 
+        /// <summary>
+        /// Prisms cloned per batch while the load gate holds. Each batch is awaited before the next
+        /// starts, so a lay can never clone faster than one batch per frame: at 256 the Orrery's
+        /// 34,573 prisms took ~125 frames, 16 s of a 21 s Cell Selector swap at 7.8 fps (Load Time
+        /// Insights, 2026-10-21), while the per-prism work inside the lay was 0.8 s. Behind a
+        /// covered screen the readout only needs a few updates a second, so a batch is bigger.
+        /// </summary>
+        const int LoadGateCloneBatchSize = 2048;
+
+        /// <summary>Unity's async-instantiate integration slice from before the gate raised it,
+        /// or -1 while it is not raised (see <see cref="ApplyGateIntegrationSlice"/>).</summary>
+        static float s_integrationMsBeforeGate = -1f;
+
+        /// <summary>
+        /// While the load gate holds, let Unity integrate async clones for as long per frame as the
+        /// gate lets the lay configure them (<see cref="EffectiveLayBudget"/>: 80 ms under the
+        /// menu veil, 250 ms behind the connecting screen). Its own default is a few milliseconds,
+        /// sized for loading under live play, which would turn a bigger batch into many frames.
+        /// Restored when the gate releases.
+        /// </summary>
+        static void ApplyGateIntegrationSlice()
+        {
+            if (!s_loadGateHolding) return;
+            float slice = EffectiveLayBudget(0f);
+            if (s_integrationMsBeforeGate < 0f)
+            {
+                s_integrationMsBeforeGate = AsyncInstantiateOperation.GetIntegrationTimeMS();
+                if (slice <= s_integrationMsBeforeGate)
+                {
+                    s_integrationMsBeforeGate = -1f;
+                    return;
+                }
+            }
+            AsyncInstantiateOperation.SetIntegrationTimeMS(slice);
+        }
+
+        static void RestoreIntegrationSlice()
+        {
+            if (s_integrationMsBeforeGate < 0f) return;
+            AsyncInstantiateOperation.SetIntegrationTimeMS(s_integrationMsBeforeGate);
+            s_integrationMsBeforeGate = -1f;
+        }
+
         /// <summary>Seconds an async clone batch may sit unintegrated before the watchdog
         /// forces synchronous completion (normal integration is well under a second).</summary>
         const float CloneStallSeconds = 4f;
@@ -520,6 +620,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         static async UniTask<Prism[]> CloneBatchAsync(Prism prefab, int count, Transform parent)
         {
+            ApplyGateIntegrationSlice();
             var (clones, batchedFailed) = await EnvironmentPrismPool.GetBatchAsync(
                 prefab, count, parent, UseBatchedInstantiate, CloneStallSeconds);
             if (batchedFailed) UseBatchedInstantiate = false;
@@ -557,7 +658,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static async UniTask LayBudgetedAsync(Prism prefab, IReadOnlyList<PrismLay> elems,
             Transform parent, Trail trail, string ownerPrefix, float budgetMsPerFrame,
-            List<Prism> collected = null, CancellationToken ct = default)
+            List<Prism> collected = null, CancellationToken ct = default, bool admitAuthoredScale = false)
         {
             if (!prefab || elems == null || elems.Count == 0) return;
 
@@ -590,7 +691,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (!parent || ct.IsCancellationRequested) return; // container destroyed — stop laying
 
-                    int batch = Mathf.Min(CloneBatchSize, count - i);
+                    int batch = Mathf.Min(s_loadGateHolding ? LoadGateCloneBatchSize : CloneBatchSize, count - i);
                     var clones = await CloneBatchAsync(prefab, batch, parent);
                     if (clones == null || !parent) return;
 
@@ -602,7 +703,8 @@ namespace CosmicShore.Gameplay
                         long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                         long acc = LoadInsights.AccumulateStart();
                         if (acc != 0L) LoadInsights.Count("Prisms laid during load");
-                        ConfigureLaid(block, elems[i + k], trail, $"{ownerPrefix}::{i + k}", acc);
+                        ConfigureLaid(block, elems[i + k], trail, $"{ownerPrefix}::{i + k}", acc,
+                            admitAuthoredScale);
                         collected?.Add(block);
 
                         // Local pose, read straight off the plan - no transform resolve, no
@@ -657,6 +759,18 @@ namespace CosmicShore.Gameplay
         /// whoever holds the gate; cleared with the hold.
         /// </summary>
         public static float LoadGateLayBudgetOverrideMs { get; set; }
+
+        /// <summary>
+        /// True while the hold is behind a screen that is fully OPAQUE: the menu's
+        /// <see cref="EnvironmentLoadVeil"/> once it has faded in. Nobody can see the world then, so
+        /// the gate snaps each laid prism's grow-in the moment its creation completes instead of
+        /// waiting out the bloom. At growthRate 0.5 a 10-30 u prism takes 3.7-4.6 s to count as
+        /// settled, and an Orrery swap spent ~4 s of its 5.8 s settle on bloom nobody could see
+        /// (Load Time Insights, 2026-10-21). NOT set by the game's connecting screen, which shows
+        /// the arena building in a live preview: a snap there would be a visible pop
+        /// (continuity of existence). Owned by the veil; cleared with the hold.
+        /// </summary>
+        public static bool LoadGateCovered { get; set; }
 
         /// <summary>
         /// Per-frame TIME slice for prism CREATION completions while the gate holds, in

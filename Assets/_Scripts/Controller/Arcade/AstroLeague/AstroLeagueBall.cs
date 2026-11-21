@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -31,7 +33,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(SphereCollider))]
-    public class AstroLeagueBall : NetworkBehaviour
+    public partial class AstroLeagueBall : NetworkBehaviour
     {
         [Header("Config")]
         [SerializeField] AstroLeagueSettingsSO settings;
@@ -55,25 +57,32 @@ namespace CosmicShore.Gameplay
                  "match ball on its first approach to any edge.")]
         [SerializeField] bool destroyedBySuperShielded;
 
+        [Tooltip("Slow down when it eats (destroys) a prism, by the prism's volume against the " +
+                 "ball's mass. ON for the Astro League match ball; OFF for the Scarab's balls " +
+                 "(Garrett, 2026-10-29: a Scarab ball is never slowed by what it destroys).")]
+        [SerializeField] bool slowedByEatenMass = true;
+
         /// <summary>Every live ball, for systems that must find them without a per-frame
         /// FindObjectsByType (the Scarab's switch rings). Registered on enable, removed on
         /// disable, so it is exact and costs nothing to maintain.</summary>
         public static readonly List<AstroLeagueBall> Live = new();
 
         [Header("Cell overload")]
-        [Tooltip("How many balls may be LOOSE IN ONE CELL at once. The ball whose arrival crosses " +
-                 "this count detonates every loose ball in that cell, ITSELF INCLUDED, regardless " +
-                 "of domain. 0 disables the rule. This is a property of BALLS, not of a mode: it " +
+        [Tooltip("How many balls ONE SCARAB may have LOOSE IN ONE CELL at once, counted by the " +
+                 "ball's domain (a forged ball is locked to its maker's). The arrival of one more " +
+                 "of that domain's balls detonates EVERY loose ball in the cell, ITSELF INCLUDED, " +
+                 "whatever its domain - so the greedy Scarab blows up its rivals' balls along with " +
+                 "its own. 0 disables the rule. This is a property of BALLS, not of a mode: it " +
                  "travels with the prefab into freestyle, the menu and any future mode, so no " +
                  "controller can forget to install it.")]
-        [SerializeField, Min(0)] int cellBallLimit = 4;
+        [SerializeField, Min(0)] int cellBallLimit = 5;
 
         [Tooltip("Explosion radius of a cell overload, as a multiple of each ball's own radius. " +
-                 "Kept EQUAL to ScarabNucleusFieldConfig.detonationRadiusScale (both 2) so the two " +
+                 "Kept EQUAL to ScarabNucleusFieldConfig.detonationRadiusScale (both 6) so the two " +
                  "'too many balls' events read as the same event - they are deliberately separate " +
                  "fields because one belongs to the ball and the other to a vessel ability, and a " +
                  "platform ball must not depend on a Scarab config to know how loudly to die.")]
-        [SerializeField, Min(0.1f)] float cellOverloadRadiusScale = 2f;
+        [SerializeField, Min(0.1f)] float cellOverloadRadiusScale = 6f;
 
         [Tooltip("Seconds between cell-membership checks. Cell.FindCellContaining is O(active " +
                  "cells) and its own docs say to call it at lifecycle points rather than per " +
@@ -148,7 +157,30 @@ namespace CosmicShore.Gameplay
             LastTouchDomainServer = domain;
             LastToucherNameServer = toucherName ?? string.Empty;
             WallBouncesSinceTouchServer = 0;
+            // A vessel touch hands the ball's SCORING to that pilot; a blast (no name) leaves it
+            // with whoever had it, so a rival's plate that shoves your ball does not launder the
+            // credit for the mass it goes on to eat.
+            if (!string.IsNullOrEmpty(toucherName)) RecordPilotServer(toucherName);
         }
+
+        /// <summary>
+        /// Server: name the pilot this ball scores for from here on - the forge stamps its maker,
+        /// every vessel strike re-stamps the striker. Read by the prism scan on every peer as the
+        /// attacker name of the mass the ball eats; empty means the ball scores for nobody (the
+        /// Astro League kickoff ball, until somebody hits it).
+        /// </summary>
+        public void RecordPilotServer(string pilotName)
+        {
+            if (IsSpawned && !IsServer) return;
+            var value = new FixedString64Bytes(pilotName ?? string.Empty);
+            if (n_PilotName.Value.Equals(value)) return;
+            n_PilotName.Value = value;
+            _pilotNameCache = pilotName ?? string.Empty;
+        }
+
+        /// <summary>The attacker name stamped on the mass this ball eats: its current pilot, or the
+        /// unrostered "Astro League" for a ball nobody has claimed.</summary>
+        public string PilotName => _pilotNameCache.Length > 0 ? _pilotNameCache : BallAttackerName;
 
         void ResetTouchLedgerServer()
         {
@@ -170,11 +202,25 @@ namespace CosmicShore.Gameplay
         [SerializeField] float colorCycleSpeed = 1.2f;
         [SerializeField] float baseLightIntensity = 3f;
 
+        // The payload colours as the worn colour set paints them (alpha kept). Read these, never the fields, where a
+        // colour is painted: the authored fields are never written.
+        Color PrimaryColor => ColorTrace.Retrace(ColorTrace.World, primaryColor);
+        Color SecondaryColor => ColorTrace.Retrace(ColorTrace.World, secondaryColor);
+        Color TertiaryColor => ColorTrace.Retrace(ColorTrace.World, tertiaryColor);
+
         // Prism fresnel-shader (BlockGraph) properties: bright rim + dark base.
         static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
         static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        static readonly int TrailColorId = Shader.PropertyToID("_Color");
+        static readonly int TrailIntensityId = Shader.PropertyToID("_Intensity");
+        static readonly int TrailSpeedId = Shader.PropertyToID("_Speed01");
+
+        // Resources/ materials (so their shaders ship). Absent -> the legacy unlit ribbon / square
+        // particles, never an error: a missing look must not cost the ball its gameplay.
+        const string TrailMaterialResourcePath = "BallTrail";
+        const string SparkMaterialResourcePath = "SoftSpark";
 
         bool _usesFresnel; // true when the ball material is the prism BlockGraph shader
 
@@ -203,6 +249,18 @@ namespace CosmicShore.Gameplay
         // and the attacker domain for Prism.Damage. Blue = neutral (no strike yet) → smashes any team's mass.
         readonly NetworkVariable<Domains> n_LastHitDomain =
             new(Domains.Blue, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        // The PILOT this ball scores for: the last vessel to touch it, seeded with its forger at the
+        // forge. Replicated because the prism scan below runs on EVERY peer (one gate, one answer)
+        // and StatsManager credits a prism kill by the ATTACKER NAME the machine that destroyed it
+        // saw - so a name that lived only on the server would score a client pilot's ball on the
+        // server's copy of the trail and never on the client's copy of the forest (environment
+        // mass is credited by the machine that simulates the attacker, StatsManager.OwnsAttacker).
+        // Before this the ball named itself "Astro League", which is on no roster, so every prism
+        // a ball ate scored for nobody - fine in a hoop game, fatal in a demolition race.
+        readonly NetworkVariable<FixedString64Bytes> n_PilotName =
+            new(default, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        // Managed mirror of n_PilotName so the per-prism scan never allocates a string per hit.
+        string _pilotNameCache = string.Empty;
         // STUDDING THE NUCLEUS (the Scarab's seeding ability, SCARAB.md §4.6): the ball was seeded
         // part-sunk in the nucleus surface and nothing has dislodged it yet.
         //
@@ -222,6 +280,24 @@ namespace CosmicShore.Gameplay
         // ball is sized after its spawn payload is built — see SetSizeScale's doc note.
         readonly NetworkVariable<float> n_SizeScale =
             new(1f, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        // WHICH crystal this ball was forged out of, and the pose that crystal was standing in
+        // when it was spent. Replicated for the same reason n_SizeScale is — the stamp happens
+        // AFTER NetworkObject.Spawn, so the spawn payload cannot carry it — and because the
+        // retirement animation must play on EVERY peer, not just the server that minted the ball.
+        //
+        // The POSE has to travel rather than being read back off the crystal, and across the wire
+        // that is not a subtlety: collection and respawn are independent RPC chains, so by the time
+        // a remote peer instantiates the ball its copy of the crystal has usually already moved to
+        // its next home wearing the respawn's identity rotation. See Crystal.CollectPose.
+        readonly NetworkVariable<CrystalForgeOrigin> n_ForgedFrom =
+            new(default, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        // SPACE 5 on the Scarab that minted this ball ("Core Breaker", SCARAB.md section 7): the
+        // ball DESTROYS super-shielded prisms instead of being spent on them. Stamped once at
+        // birth, after Spawn, and replicated because every peer resolves its own prism copies.
+        readonly NetworkVariable<bool> n_BreaksSuperShielded =
+            new(false, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         float _lastSnapshotTime;
 
@@ -295,6 +371,10 @@ namespace CosmicShore.Gameplay
         // Visuals
         Light ballLight;
         TrailRenderer trail;
+        MaterialPropertyBlock trailMpb;
+        bool _cometTrail;            // true when the BallTrail shader is driving the wake
+        ParticleSystem wakeDust;     // motes shed into the world along the ball's path
+        Vector3 _lastDustPos;        // teleport guard for distance-driven dust
         Renderer ballRenderer;
         MeshFilter meshFilter;
         Mesh _ballMesh; // generated icosphere, owned (destroyed in OnDestroy)
@@ -366,13 +446,13 @@ namespace CosmicShore.Gameplay
 
             rb = GetComponent<Rigidbody>();
             rb.useGravity = false;
-            rb.mass = settings != null ? settings.ballMass : 3f;
+            rb.mass = settings != null ? settings.BallMass : 3f;
             rb.linearDamping = 0f; // ZERO passive drag - the ball coasts at constant speed (see ServerFixedUpdate)
             // Keep angular damping low so spin imparted by off-center strikes persists (momentum
             // conserved), and lift the default 7 rad/s angular-velocity clamp so a hard off-center
             // smack reads as a real tumble on the faceted icosphere.
-            rb.angularDamping = settings != null ? settings.ballAngularDamping : 0.05f;
-            rb.maxAngularVelocity = settings != null ? settings.maxAngularSpeed : 40f;
+            rb.angularDamping = settings != null ? settings.BallAngularDamping : 0.05f;
+            rb.maxAngularVelocity = settings != null ? settings.MaxAngularSpeed : 40f;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             // NEVER SLEEP. The ball is DESIGNED to come to rest — `ballDrag` exists so an untouched
@@ -389,7 +469,7 @@ namespace CosmicShore.Gameplay
             sphereCol = GetComponent<SphereCollider>();
             sphereCol.material = new PhysicsMaterial("AstroLeagueBall")
             {
-                bounciness = settings != null ? settings.ballBounciness : 0.98f,
+                bounciness = settings != null ? settings.BallBounciness : 0.98f,
                 bounceCombine = PhysicsMaterialCombine.Maximum,
                 frictionCombine = PhysicsMaterialCombine.Minimum,
                 dynamicFriction = 0f,
@@ -406,6 +486,15 @@ namespace CosmicShore.Gameplay
             if (trailBlocksLayer >= 0)
                 sphereCol.excludeLayers = 1 << trailBlocksLayer;
 
+            // NO HIGH-POLY PRISM MORPH IS GRANTED HERE, and that is the design rather than an
+            // omission. A ball carried a travelling ripple for exactly one branch
+            // (.claude/skills/prism-morph) and it was pulled for the reason the same effect came
+            // off the fleet one step earlier: a ball is in play for a WHOLE MATCH, so a ripple
+            // following it is continuous, and an effect strong enough to be an EVENT stops being
+            // one the moment it never stops. The family's residency budget is also shared and
+            // split evenly, so a ball holding slots takes them from whatever is actually saying
+            // something. Do not add an ensure here.
+
             spawnPosition = transform.position;
             _baseScale = transform.localScale;
             SetupVisuals();
@@ -414,8 +503,26 @@ namespace CosmicShore.Gameplay
             // Every peer Awakes its own copy — server, client replica, and no-network local
             // mints alike — so no RPC is needed; the scene showpiece blooms once at load,
             // behind the connecting veil, which is harmless and equally lawful.
-            _bloomTimer = settings != null ? settings.spawnBloomSeconds : 0.55f;
+            //
+            // A ball forged out of a CRYSTAL cancels it (ScarabCrystalMorph.Begin): there the
+            // crystal's own body closes onto this ball's hull and the ball takes over at full
+            // size, so the bloom would be a SECOND birth animation playing underneath the first —
+            // the ball growing out of nothing while the crystal is already landing on where it
+            // will end up. Continuity of existence is satisfied either way; what it forbids is
+            // popping into existence, not blooming twice.
+            _bloomTimer = settings != null ? settings.SpawnBloomSeconds : 0.55f;
         }
+
+        /// <summary>Server: stamp whether this ball destroys super-shielded prisms (its maker's
+        /// Space 5). A ball keeps it for life, like its size.</summary>
+        public void SetBreaksSuperShieldedServer(bool on)
+        {
+            if (!IsSpawned || IsServer) _breaksSuperShieldedLocal = on;
+            if (IsSpawned && IsServer) n_BreaksSuperShielded.Value = on;
+        }
+
+        bool _breaksSuperShieldedLocal;
+        bool BreaksSuperShielded => IsSpawned ? n_BreaksSuperShielded.Value : _breaksSuperShieldedLocal;
 
         /// <summary>
         /// Scale the ball (visual + collider) by the intensity factor on top of its authored
@@ -464,11 +571,20 @@ namespace CosmicShore.Gameplay
                 ghostTrail.time = 0.35f;
                 ghostTrail.startWidth = trail.startWidth;
                 ghostTrail.endWidth = trail.endWidth;
-                ghostTrail.numCapVertices = trail.numCapVertices;
                 ghostTrail.sharedMaterial = trail.sharedMaterial;
-                ghostTrail.startColor = trail.startColor;
-                ghostTrail.endColor = trail.endColor;
-                ghostTrail.minVertexDistance = trail.minVertexDistance;
+                if (_cometTrail)
+                {
+                    // Same comet shape + the CURRENT tint (the scorer's domain at the goal moment).
+                    ConfigureCometTrail(ghostTrail);
+                    if (trailMpb != null) ghostTrail.SetPropertyBlock(trailMpb);
+                }
+                else
+                {
+                    ghostTrail.numCapVertices = trail.numCapVertices;
+                    ghostTrail.startColor = trail.startColor;
+                    ghostTrail.endColor = trail.endColor;
+                    ghostTrail.minVertexDistance = trail.minVertexDistance;
+                }
                 ghostTrail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 ghostTrail.receiveShadows = false;
                 ghostTrail.generateLightingData = false;
@@ -503,6 +619,109 @@ namespace CosmicShore.Gameplay
 
             n_Hidden.OnValueChanged += (_, hidden) => ApplyHiddenVisuals(hidden);
             ApplyHiddenVisuals(n_Hidden.Value);
+
+            // The scoring pilot travels as a FixedString; mirror it into a managed string once per
+            // change (not once per prism) - a late joiner reads the current value, a replica that
+            // spawned before the forge stamped it catches the stamp.
+            n_PilotName.OnValueChanged += (_, name) => _pilotNameCache = name.ToString();
+            _pilotNameCache = n_PilotName.Value.ToString();
+
+            // The retirement animation runs on EVERY peer, and the value it needs can arrive
+            // either before this replica spawned (a late joiner) or a frame after it (the server
+            // stamps just past Spawn). Both are covered by reading it now AND subscribing — the
+            // same shape n_SizeScale uses two blocks up, for the same reason.
+            n_ForgedFrom.OnValueChanged += (_, origin) => TryBeginCrystalMorph(origin);
+            TryBeginCrystalMorph(n_ForgedFrom.Value);
+        }
+
+        /// <summary>
+        /// Stamps this ball as forged out of <paramref name="crystal"/>, so every peer plays the
+        /// crystal→ball morph instead of the shared husk spray. Server-side and idempotent; a
+        /// no-network local mint (the freestyle toys) applies it directly, since there the ball is
+        /// never spawned and the NetworkVariable would never deliver.
+        ///
+        /// Call it AFTER the spawn, beside <see cref="SetSizeScale"/> — the two share the
+        /// after-the-payload problem and the same solution.
+        /// </summary>
+        public void MarkForgedFromCrystal(Crystal crystal)
+        {
+            if (crystal == null) return;
+
+            var pose = crystal.CollectPose;
+            var origin = new CrystalForgeOrigin
+            {
+                CrystalId = crystal.Id,
+                Position = pose.position,
+                Rotation = pose.rotation,
+                Scale = crystal.CollectScale,
+                Valid = true,
+            };
+
+            if (IsSpawned && IsServer) n_ForgedFrom.Value = origin;
+            TryBeginCrystalMorph(origin);
+        }
+
+        void TryBeginCrystalMorph(in CrystalForgeOrigin origin)
+        {
+            if (!origin.Valid || _crystalMorph != null) return;
+            _crystalMorph = ScarabCrystalMorph.Begin(this, origin);
+        }
+
+        ScarabCrystalMorph _crystalMorph;
+
+        /// <summary>
+        /// Holds this ball's PHOTONS while the crystal's body is drawing it, and nothing else: the
+        /// collider stays live, the rigidbody keeps simulating, the strike path is unchanged. The
+        /// ball is fully live and strikeable from the frame it is forged — a pilot arriving one
+        /// frame later hits a finished ball — and only its rendering waits.
+        ///
+        /// It is deliberately NOT <see cref="SetHidden"/>, which is replicated GAMEPLAY state (a
+        /// ball parked out of play) and also freezes the body. Here nothing about the ball's
+        /// situation has changed; a different object is drawing it for a third of a second.
+        ///
+        /// ALWAYS paired: the stand-in must clear the hold when it finishes or dies, or the ball is
+        /// invisible for the rest of its life. <see cref="ScarabCrystalMorph"/> clears it from
+        /// OnDestroy as well as on the hand-off, so an interrupted morph cannot strand it.
+        /// </summary>
+        public void SetMorphStandIn(bool active)
+        {
+            if (_morphStandIn == active) return;
+            _morphStandIn = active;
+            if (active) _bloomTimer = 0f;   // the morph IS this ball's birth animation
+            ApplyHiddenVisuals(n_Hidden.Value);
+        }
+
+        bool _morphStandIn;
+
+        /// <summary>The ball's own faceted hull mesh, and the radius it was generated at — the two
+        /// halves a morph needs to land exactly on this ball's surface rather than on an
+        /// approximation of it. Null before <see cref="SetupVisuals"/> has run.</summary>
+        public Mesh HullMesh => _ballMesh;
+
+        /// <summary>Radius the <see cref="HullMesh"/> was generated at, in the ball's own local
+        /// units (the SphereCollider's authored radius). Scale is the transform's business.</summary>
+        public float HullMeshRadius => sphereCol != null ? sphereCol.radius : 0.5f;
+
+        /// <summary>The transform the hull mesh is drawn by — a child of the ball, so a morph
+        /// parented here inherits the ball's motion and spin for free.</summary>
+        public Transform VisualRoot => _visual != null ? _visual : transform;
+
+        /// <summary>
+        /// The prism-fresnel pair this ball is currently drawing with — its base face and its
+        /// fresnel rim (Docs/PALETTE.md). Read off the live MaterialPropertyBlock rather than a
+        /// theme lookup, because the ball animates this pair every frame through its own domain
+        /// phase; a morph that converged on a re-derived colour would land next to the ball's
+        /// colour rather than on it.
+        /// </summary>
+        public bool TryGetShellColours(out Color dark, out Color bright)
+        {
+            dark = default;
+            bright = default;
+            if (mpb == null || ballRenderer == null || !_usesFresnel) return false;
+            ballRenderer.GetPropertyBlock(mpb);
+            dark = mpb.GetColor(DarkColorId);
+            bright = mpb.GetColor(BrightColorId);
+            return true;
         }
 
         void Start()
@@ -525,8 +744,7 @@ namespace CosmicShore.Gameplay
             // The mesh lives on a VISUAL CHILD so the impact pop has something to deform that is
             // not the physics body. The authored root renderer (if any) is stood down rather than
             // removed, so a scene that still carries one can't double-draw the ball.
-            var rootRenderer = GetComponent<MeshRenderer>();
-            if (rootRenderer != null) rootRenderer.enabled = false;
+            if (TryGetComponent(out MeshRenderer rootRenderer)) rootRenderer.enabled = false;
 
             var visualGo = new GameObject("BallVisual");
             _visual = visualGo.transform;
@@ -537,7 +755,7 @@ namespace CosmicShore.Gameplay
             visualRenderer.receiveShadows = false;
 
             {
-                int subdiv = settings != null ? settings.ballMeshSubdivisions : IcosphereMeshGenerator.DefaultSubdivisions;
+                int subdiv = settings != null ? settings.BallMeshSubdivisions : IcosphereMeshGenerator.DefaultSubdivisions;
                 float meshRadius = sphereCol != null ? sphereCol.radius : 0.5f;
                 _ballMesh = IcosphereMeshGenerator.Generate(subdiv, meshRadius, flatShaded: true);
                 meshFilter.sharedMesh = _ballMesh;
@@ -570,7 +788,7 @@ namespace CosmicShore.Gameplay
                         mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
                         mat.SetFloat("_Metallic", 0.9f);
                         mat.SetFloat("_Smoothness", 0.95f);
-                        mat.SetColor(BaseColorId, primaryColor);
+                        mat.SetColor(BaseColorId, PrimaryColor);
                         mat.EnableKeyword("_EMISSION");
                         _usesFresnel = false;
                     }
@@ -580,29 +798,180 @@ namespace CosmicShore.Gameplay
 
             ballLight = gameObject.AddComponent<Light>();
             ballLight.type = LightType.Point;
-            ballLight.color = primaryColor;
-            ballLight.range = settings != null ? settings.minLightRange : 25f;
+            ballLight.color = PrimaryColor;
+            ballLight.range = settings != null ? settings.MinLightRange : 25f;
             ballLight.intensity = baseLightIntensity;
             ballLight.shadows = LightShadows.None;
 
             trail = gameObject.AddComponent<TrailRenderer>();
-            trail.time = 0.3f;
-            trail.startWidth = settings != null ? settings.minTrailWidth : 0.6f;
-            trail.endWidth = 0.1f;
-            trail.numCapVertices = 4;
-            var trailMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-            trailMat.color = primaryColor;
-            MakeTransparent(trailMat);
-            trail.sharedMaterial = trailMat;
-            trail.startColor = primaryColor;
-            trail.endColor = new Color(secondaryColor.r, secondaryColor.g, secondaryColor.b, 0f);
-            trail.minVertexDistance = 0.5f;
+            trail.time = settings != null ? settings.TrailTimeAtRest : 0.3f;
+            trail.startWidth = TrailHeadWidth(0f);
+            trail.endWidth = 0f;
+            trailMpb = new MaterialPropertyBlock();
+            var cometMat = Resources.Load<Material>(TrailMaterialResourcePath);
+            WorldColorTrace.Paint(cometMat);   // loaded after the scene's repaint: born in the worn colour set
+            _cometTrail = cometMat != null;
+            if (_cometTrail)
+            {
+                trail.sharedMaterial = cometMat;
+                ConfigureCometTrail(trail);
+            }
+            else
+            {
+                // Legacy ribbon — the BallTrail material is missing from Resources.
+                trail.numCapVertices = 4;
+                var trailMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                var primary = PrimaryColor;
+                var secondary = SecondaryColor;
+                trailMat.color = primary;
+                MakeTransparent(trailMat);
+                trail.sharedMaterial = trailMat;
+                trail.startColor = primary;
+                trail.endColor = new Color(secondary.r, secondary.g, secondary.b, 0f);
+                trail.minVertexDistance = 0.5f;
+            }
             trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             trail.receiveShadows = false;
             trail.generateLightingData = false;
 
             auraParticles = CreateParticles("PayloadAura", burstOnly: false);
             impactParticles = CreateParticles("ImpactBurst", burstOnly: true);
+            wakeDust = CreateWakeDust();
+        }
+
+        /// <summary>
+        /// The comet wake's SHAPE, shared by the live ball and its goal-replay ghost so the two can
+        /// never drift: a white gradient whose ALPHA runs 1 (head) → 0 (tail) — the BallTrail shader
+        /// reads it as the position along the trail, not as opacity — and a width curve that swells
+        /// just behind the ball before tapering to a point, so the wake reads as a comet's coma
+        /// growing out of the ball rather than a ribbon starting behind it. Colour is NOT here: it
+        /// rides a property block every frame (<see cref="DriveCometTrail"/>), so a strike re-tints
+        /// the whole wake the instant the ball changes hands.
+        /// </summary>
+        static void ConfigureCometTrail(TrailRenderer target)
+        {
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
+            target.colorGradient = gradient;
+            target.widthCurve = new AnimationCurve(
+                new Keyframe(0f, 0.85f),
+                new Keyframe(0.08f, 1f),
+                new Keyframe(0.35f, 0.72f),
+                new Keyframe(1f, 0f));
+            target.textureMode = LineTextureMode.Stretch;
+            target.alignment = LineAlignment.View;
+            target.numCapVertices = 6;
+            target.numCornerVertices = 3;
+            target.minVertexDistance = 1f;
+        }
+
+        /// <summary>Head width of the wake in WORLD units: a fraction of the ball's diameter.</summary>
+        float TrailHeadWidth(float speedRatio)
+        {
+            float diameter = sphereCol != null ? 2f * BallWorldRadius() : 14f;
+            float rest = settings != null ? settings.TrailWidthAtRest : 0.7f;
+            float fast = settings != null ? settings.TrailWidthAtSpeed : 1.25f;
+            return diameter * Mathf.Lerp(rest, fast, speedRatio);
+        }
+
+        /// <summary>
+        /// Every frame on every peer: the wake's colour is the ball's LIVE colour (last-hit domain,
+        /// or the neutral rainbow), normalised to full value so the hue stays saturated under ACES
+        /// (Docs/PALETTE.md §4.3 — brightness is spent on the white core, never on the hue).
+        /// </summary>
+        void DriveCometTrail(Color hue, float speedRatio)
+        {
+            float peak = Mathf.Max(hue.r, Mathf.Max(hue.g, hue.b));
+            Color signal = peak > 1e-4f ? hue / peak : Color.white;
+            signal.a = 1f;
+            float flash = currentEmissionBoost > 1f ? Mathf.Min(Mathf.Sqrt(currentEmissionBoost), 2.2f) : 1f;
+            trailMpb.SetColor(TrailColorId, signal);
+            trailMpb.SetFloat(TrailIntensityId, Mathf.Lerp(0.55f, 1.25f, speedRatio) * flash);
+            trailMpb.SetFloat(TrailSpeedId, speedRatio);
+            trail.SetPropertyBlock(trailMpb);
+        }
+
+        /// <summary>
+        /// Wake DUST: soft glowing motes shed into the WORLD by distance travelled, drifting slightly
+        /// and fading out — so a screamer leaves a lingering glitter of its path after the ribbon has
+        /// gone, and a rolling ball leaves nothing. Emits only while the ball draws, and never
+        /// clears: motes already shed always fade out (continuity of existence).
+        /// </summary>
+        ParticleSystem CreateWakeDust()
+        {
+            if (settings == null || settings.WakeDustPerUnit <= 0f) return null;
+
+            var go = new GameObject("WakeDust");
+            go.transform.SetParent(transform, false);
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var main = ps.main;
+            main.playOnAwake = true;
+            main.loop = true;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.scalingMode = ParticleSystemScalingMode.Local; // sizes set in world units below
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.7f, 1.6f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f, 4f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.8f, 2.4f);
+            main.maxParticles = 220;
+            main.gravityModifier = 0f;
+
+            var emission = ps.emission;
+            emission.rateOverTime = 0f;
+            emission.rateOverDistance = 0f; // driven by speed in UpdateVisuals
+
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = 5f;
+            shape.radiusThickness = 0.35f; // shed from the ball's skin, not its centre
+
+            var noise = ps.noise;
+            noise.enabled = true;
+            noise.strength = 2.5f;
+            noise.frequency = 0.35f;
+            noise.scrollSpeed = 0.4f;
+
+            var sizeOverLifetime = ps.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f,
+                new AnimationCurve(new Keyframe(0f, 0.4f), new Keyframe(0.15f, 1f), new Keyframe(1f, 0f)));
+
+            var colorOverLifetime = ps.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.08f),
+                        new GradientAlphaKey(0.6f, 0.5f), new GradientAlphaKey(0f, 1f) });
+            colorOverLifetime.color = gradient;
+
+            var psRenderer = go.GetComponent<ParticleSystemRenderer>();
+            psRenderer.sharedMaterial = SparkMaterialOrFallback();
+            psRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            psRenderer.receiveShadows = false;
+
+            _lastDustPos = transform.position;
+            ps.Play();
+            return ps;
+        }
+
+        Material _sparkFallback;
+
+        /// <summary>The shared SoftSpark material, or a per-ball additive URP particle material.</summary>
+        Material SparkMaterialOrFallback()
+        {
+            var spark = Resources.Load<Material>(SparkMaterialResourcePath);
+            if (spark != null) return spark;
+            if (_sparkFallback != null) return _sparkFallback;
+            _sparkFallback = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+            _sparkFallback.SetFloat("_Surface", 1);
+            _sparkFallback.SetInt("_Blend", 1); // Additive
+            _sparkFallback.SetColor(BaseColorId, Color.white);
+            _sparkFallback.renderQueue = 3100;
+            return _sparkFallback;
         }
 
         static void MakeTransparent(Material mat)
@@ -625,7 +994,7 @@ namespace CosmicShore.Gameplay
             main.playOnAwake = !burstOnly;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.gravityModifier = 0f;
-            main.startColor = new ParticleSystem.MinMaxGradient(primaryColor, secondaryColor);
+            main.startColor = new ParticleSystem.MinMaxGradient(PrimaryColor, SecondaryColor);
 
             var emission = ps.emission;
             var shape = ps.shape;
@@ -637,7 +1006,7 @@ namespace CosmicShore.Gameplay
                 main.startSpeed = new ParticleSystem.MinMaxCurve(15f, 45f);
                 main.startSize = new ParticleSystem.MinMaxCurve(0.3f, 0.9f);
                 main.maxParticles = 200;
-                main.startColor = new ParticleSystem.MinMaxGradient(Color.white, primaryColor);
+                main.startColor = new ParticleSystem.MinMaxGradient(Color.white, PrimaryColor);
                 emission.rateOverTime = 0f;
                 shape.radius = 0.5f;
             }
@@ -666,17 +1035,13 @@ namespace CosmicShore.Gameplay
             colorOverLifetime.enabled = true;
             var gradient = new Gradient();
             gradient.SetKeys(
-                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(secondaryColor, 1f) },
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(SecondaryColor, 1f) },
                 new[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0f, 1f) });
             colorOverLifetime.color = gradient;
 
             var psRenderer = go.GetComponent<ParticleSystemRenderer>();
-            var psMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-            psMat.SetFloat("_Surface", 1);
-            psMat.SetInt("_Blend", 1); // Additive
-            psMat.SetColor(BaseColorId, Color.white);
-            psMat.renderQueue = 3100;
-            psRenderer.sharedMaterial = psMat;
+            // Soft round sparks, not the untextured SQUARE quads URP Particles/Unlit draws.
+            psRenderer.sharedMaterial = SparkMaterialOrFallback();
             psRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
             return ps;
@@ -712,8 +1077,8 @@ namespace CosmicShore.Gameplay
             if (!n_Frozen.Value)
             {
                 // Cap the top speed so strikes can't make the ball run away.
-                if (rb.linearVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
-                    rb.linearVelocity = rb.linearVelocity.normalized * settings.maxSpeed;
+                if (rb.linearVelocity.sqrMagnitude > settings.MaxSpeed * settings.MaxSpeed)
+                    rb.linearVelocity = rb.linearVelocity.normalized * settings.MaxSpeed;
 
                 // The ball SETTLES. It used to be perfectly frictionless with perfectly elastic
                 // walls, so an untouched ball ricocheted around the court forever - the game read as
@@ -723,9 +1088,9 @@ namespace CosmicShore.Gameplay
                 // dodge. Frame-rate independent, and it composes with the prism-mass drag rather than
                 // replacing it. Below restSpeed the remainder is snapped out, or the asymptote leaves
                 // the ball creeping forever at an invisible speed.
-                if (settings.ballDrag > 0f)
+                if (settings.BallDrag > 0f)
                     rb.linearVelocity *= Mathf.Exp(-EffectiveDrag() * Time.fixedDeltaTime);
-                if (rb.linearVelocity.sqrMagnitude < settings.ballRestSpeed * settings.ballRestSpeed)
+                if (rb.linearVelocity.sqrMagnitude < settings.BallRestSpeed * settings.BallRestSpeed)
                     rb.linearVelocity = Vector3.zero;
 
                 // First-class per-tick prism resolution - shield own / eat+slow opposing / unshield
@@ -792,7 +1157,7 @@ namespace CosmicShore.Gameplay
             // Let whatever freed it carry the ball out of the shell before the walls start
             // correcting it, so leaving reads as a hit in either direction.
             _containmentGraceUntil = Time.time
-                + (settings != null ? Mathf.Max(0f, settings.nucleusReleaseGraceSeconds) : 1f);
+                + (settings != null ? Mathf.Max(0f, settings.NucleusReleaseGraceSeconds) : 1f);
             _lastPrismScanPos = transform.position;
 
             // Which side of its own embed normal it left on — read off the velocity it actually
@@ -820,8 +1185,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         float EffectiveDrag()
         {
-            float baseDrag = settings.ballDrag;
-            if (settings.outsideNucleusDragMultiplier <= 1f) return baseDrag;
+            float baseDrag = settings.BallDrag;
+            if (settings.OutsideNucleusDragMultiplier <= 1f) return baseDrag;
 
             var cell = ResolveCell();
             if (cell == null) return baseDrag;
@@ -831,9 +1196,9 @@ namespace CosmicShore.Gameplay
 
             float distance = Vector3.Distance(transform.position, cell.transform.position);
             float outside01 = Mathf.Clamp01(
-                (distance - nucleus) / Mathf.Max(1f, settings.outsideNucleusDragFalloff));
+                (distance - nucleus) / Mathf.Max(1f, settings.OutsideNucleusDragFalloff));
 
-            return baseDrag * Mathf.Lerp(1f, settings.outsideNucleusDragMultiplier, outside01);
+            return baseDrag * Mathf.Lerp(1f, settings.OutsideNucleusDragMultiplier, outside01);
         }
 
         // Cached because Cell's finders are O(cells-in-scene) and documented as lifecycle-time
@@ -856,14 +1221,14 @@ namespace CosmicShore.Gameplay
             float age = Mathf.Clamp(Time.time - _lastSnapshotTime, 0f, 0.25f);
             Vector3 predicted = n_Position.Value + n_Velocity.Value * age;
 
-            if ((predicted - transform.position).sqrMagnitude > settings.clientSnapDistance * settings.clientSnapDistance)
+            if ((predicted - transform.position).sqrMagnitude > settings.ClientSnapDistance * settings.ClientSnapDistance)
             {
                 transform.position = predicted;
                 if (trail != null) trail.Clear();
             }
             else
             {
-                float t = 1f - Mathf.Exp(-settings.clientSmoothingRate * Time.fixedDeltaTime);
+                float t = 1f - Mathf.Exp(-settings.ClientSmoothingRate * Time.fixedDeltaTime);
                 transform.position = Vector3.Lerp(transform.position, predicted, t);
             }
 
@@ -1005,7 +1370,7 @@ namespace CosmicShore.Gameplay
             bool ballNeutral = ballDomain == Domains.Blue;
             Vector3 ballVel = isServer ? rb.linearVelocity : n_Velocity.Value;
 
-            float radius = BallWorldRadius() * Mathf.Max(1f, settings.prismScanRadiusFactor);
+            float radius = BallWorldRadius() * Mathf.Max(1f, settings.PrismScanRadiusFactor);
             Vector3 to = transform.position;
             Vector3 from = _lastPrismScanPos;
             _lastPrismScanPos = to;
@@ -1016,6 +1381,7 @@ namespace CosmicShore.Gameplay
 
             _scanInRange.Clear();
             float eatenMass = 0f;
+            bool acknowledgedOwn = false;
 
             for (int s = 0; s < samples; s++)
             {
@@ -1026,6 +1392,10 @@ namespace CosmicShore.Gameplay
                     var prism = _prismQueryBuffer[i];
                     if (prism == null || prism.destroyed) continue;
 
+                    // A ball flown by a SILENCED pilot passes through mass it does not own without
+                    // popping, eating or scoring anything (VesselSilence); its own domain still shields.
+                    if (prism.DeflectsSilenced(PilotName, 0f)) continue;
+
                     // SUPER-shielded prisms are fully invulnerable structure (Prism.Damage/Consume
                     // no-op on them - e.g. the arena's edge lining): the ball passes through
                     // untouched regardless of domain - never unshielded, never eaten, no speed cost.
@@ -1034,7 +1404,22 @@ namespace CosmicShore.Gameplay
                     // is downgraded, and the ball paid for it.
                     if (prism.prismProperties.IsSuperShielded)
                     {
-                        if (!destroyedBySuperShielded) continue;
+                        // SPACE 5, "Core Breaker": the ball destroys it outright and flies on.
+                        if (BreaksSuperShielded)
+                        {
+                            // The sanctioned breaking sequence (Prism.Damage's note): shields off,
+                            // then a devastating hit, so the gate never sees a super-shield.
+                            prism.DeactivateShields();
+                            prism.Damage(ballVel, ballDomain, PilotName, devastate: true);
+                            continue;
+                        }
+                        // Passing through untouched still answers: the deflection jiggle, the
+                        // same as every other hit on super-shielded mass (Docs/LIT.md).
+                        if (!destroyedBySuperShielded)
+                        {
+                            prism.AbsorbSuperShieldHit(ballVel.magnitude);
+                            continue;
+                        }
                         prism.DeactivateShields();
                         _dieAfterScan = true;   // never despawn mid-scan; drained below
                         continue;
@@ -1047,7 +1432,10 @@ namespace CosmicShore.Gameplay
 
                     if (same)
                     {
+                        // Own mass is shielded; mass that already is gets LIT instead, so the ball
+                        // never reads as clipping through armour it had nothing left to do to.
                         if (!shielded) prism.ActivateShield();
+                        else acknowledgedOwn = true;
                     }
                     else if (shielded)
                     {
@@ -1077,10 +1465,15 @@ namespace CosmicShore.Gameplay
                         // per-tier multiplier to the drag.
                         if (_shieldPoppedThisVisit.Contains(prism)) continue;
                         eatenMass += Mathf.Max(0f, prism.CurrentVolume);
-                        prism.Damage(ballVel, ballDomain, BallAttackerName);
+                        prism.Damage(ballVel, ballDomain, PilotName);
                     }
                 }
             }
+
+            // DYNAMIC CONTACT NEVER DOES NOTHING (Docs/LIT.md): own armoured mass the ball is passing
+            // through is lit in the ball's colour for as long as it is inside, then fades.
+            if (acknowledgedOwn)
+                PrismLit.PublishLight(GetInstanceID(), LitVolume.Sphere(to, radius), 1f, ballDomain, ownDomainOnly: true);
 
             // Drop "just-popped" protection for prisms that left range, so a later visit can eat them.
             for (int i = _shieldPoppedThisVisit.Count - 1; i >= 0; i--)
@@ -1106,9 +1499,10 @@ namespace CosmicShore.Gameplay
             if (eatenMass <= 0f) return;
 
             // Server slows the ball by the eaten mass (direction preserved); clients mirror via velocity.
-            if (isServer)
+            // A Scarab ball (slowedByEatenMass OFF) loses nothing to what it destroys.
+            if (isServer && slowedByEatenMass)
             {
-                float prismMass = settings.prismDragMassScale * eatenMass;
+                float prismMass = settings.PrismDragMassScale * eatenMass;
                 rb.linearVelocity *= rb.mass / Mathf.Max(0.0001f, rb.mass + prismMass);
             }
             TriggerFlash(0.6f); // local "chomp" feedback on every peer that ate mass
@@ -1139,7 +1533,7 @@ namespace CosmicShore.Gameplay
             float into = Vector3.Dot(v, n);
             if (into >= 0f) return;   // already leaving — never "bounce" a ball outward twice
 
-            float e = settings != null ? settings.prismCaromRestitution : 1f;
+            float e = settings != null ? settings.PrismCaromRestitution : 1f;
             rb.linearVelocity = v - (1f + e) * into * n;
 
             // Nudge clear so the next tick's scan doesn't re-reflect on the same prism.
@@ -1176,10 +1570,10 @@ namespace CosmicShore.Gameplay
         void HandleWallBounce(Vector3 contactPoint, Vector3 contactNormal)
         {
             float perpSpeed = Mathf.Abs(Vector3.Dot(_velocityBeforePhysics, contactNormal));
-            float intensity = Mathf.Clamp01(perpSpeed / settings.maxSpeed);
+            float intensity = Mathf.Clamp01(perpSpeed / settings.MaxSpeed);
 
-            if (intensity < settings.wallJuiceMinIntensity) return; // glancing skim - no juice
-            if (Time.time - _lastWallJuiceTime < settings.wallJuiceCooldown) return;
+            if (intensity < settings.WallJuiceMinIntensity) return; // glancing skim - no juice
+            if (Time.time - _lastWallJuiceTime < settings.WallJuiceCooldown) return;
             _lastWallJuiceTime = Time.time;
 
             WallBounce_ClientRpc(contactPoint, contactNormal, intensity);
@@ -1297,14 +1691,14 @@ namespace CosmicShore.Gameplay
                 return _outsideNucleus;
             }
 
-            float band = BallWorldRadius() + settings.maxSpeed * Time.fixedDeltaTime;
+            float band = BallWorldRadius() + settings.MaxSpeed * Time.fixedDeltaTime;
             if (_outsideNucleus && distance < nucleus - band) _outsideNucleus = false;
             else if (!_outsideNucleus && distance > nucleus + band) _outsideNucleus = true;
             return _outsideNucleus;
         }
 
         float CytoplasmOuterFraction() =>
-            settings != null ? Mathf.Clamp(settings.cytoplasmOuterFraction, 0.1f, 1f) : 0.95f;
+            settings != null ? Mathf.Clamp(settings.CytoplasmOuterFraction, 0.1f, 1f) : 0.95f;
 
         /// <summary>
         /// Server: keep the ball inside its containment by reflecting its velocity off the walls and
@@ -1323,7 +1717,7 @@ namespace CosmicShore.Gameplay
             Vector3 vel = rb.linearVelocity;
             // wallRestitution, not ballBounciness: a carom LOSES energy (that is what stops the ball
             // pinballing forever), while a vessel strike stays fully elastic so the sword still fires it.
-            if (!boundary.Contain(ref pos, ref vel, BallWorldRadius(), settings.wallRestitution,
+            if (!boundary.Contain(ref pos, ref vel, BallWorldRadius(), settings.WallRestitution,
                     out Vector3 contactPoint, out Vector3 contactNormal))
                 return;
 
@@ -1390,7 +1784,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         SkimmerSwingKinematics ResolveBlade(Collider hitCollider)
         {
-            if (hitCollider == null || settings == null || !settings.bladeAwareStrikes) return null;
+            if (hitCollider == null || settings == null || !settings.BladeAwareStrikes) return null;
             var skimmer = hitCollider.GetComponentInParent<Skimmer>();
             var swing = skimmer != null ? skimmer.SwingKinematics : null;
             return swing != null && swing.IsReady ? swing : null;
@@ -1469,18 +1863,18 @@ namespace CosmicShore.Gameplay
                 // ball - otherwise the Rhino bats the payload from meters away with an invisible
                 // aura, which is worse than the vessel-root behaviour it replaced. Reach is measured
                 // off the blade's CENTRELINE, so it is the same test at the hilt and at the tip.
-                float reach = BallWorldRadius() + settings.bladeClearRadius;
+                float reach = BallWorldRadius() + settings.BladeClearRadius;
                 if ((ballCenter - contactPoint).sqrMagnitude > reach * reach) return;
 
                 bladeT = blade.NormalizedAlongBlade(ballCenter);
-                strikerVelocity = Vector3.ClampMagnitude(blade.VelocityAt(contactPoint), settings.maxSpeed);
+                strikerVelocity = Vector3.ClampMagnitude(blade.VelocityAt(contactPoint), settings.MaxSpeed);
                 ejectOrigin = contactPoint;
-                ejectClear = settings.bladeClearRadius;
+                ejectClear = settings.BladeClearRadius;
             }
             else
             {
                 ejectOrigin = root.position;
-                ejectClear = settings.vesselClearRadius;
+                ejectClear = settings.VesselClearRadius;
                 strikerVelocity = ResolveStrikerVelocity(vessel);
             }
 
@@ -1493,8 +1887,8 @@ namespace CosmicShore.Gameplay
 
             float now = Time.time;
             float strikerSpeed = strikerVelocity.magnitude; // computed once, reused inside VesselStrike
-            bool deliberate = strikerSpeed >= settings.minimumHitSpeed
-                && (!_lastStrikeTime.TryGetValue(root, out var last) || now - last >= settings.vesselStrikeCooldown);
+            bool deliberate = strikerSpeed >= settings.MinimumHitSpeed
+                && (!_lastStrikeTime.TryGetValue(root, out var last) || now - last >= settings.VesselStrikeCooldown);
             if (deliberate) _lastStrikeTime[root] = now;
 
             VesselStrike(vessel, contactPoint, strikerVelocity, strikerSpeed, n, deliberate,
@@ -1509,7 +1903,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Configured top speed (used by AstroLeagueGoal's teleport guard).</summary>
-        public float MaxSpeed => settings != null ? settings.maxSpeed : 220f;
+        public float MaxSpeed => settings != null ? settings.MaxSpeed : 220f;
 
         /// <summary>
         /// Guarantees the ball never overlaps what struck it: if the ball centre is closer than
@@ -1589,7 +1983,7 @@ namespace CosmicShore.Gameplay
             // hull): reflect the APPROACHING component of the relative velocity, then add V back.
             Vector3 rel = ballVel - strikerVelocity;
             float approach = Vector3.Dot(rel, n);                       // < 0: ball moving into the hull
-            float e = Mathf.Clamp01(settings.ballBounciness);
+            float e = Mathf.Clamp01(settings.BallBounciness);
             Vector3 reflectedRel = rel - (1f + e) * Mathf.Min(0f, approach) * n;
             Vector3 desiredVelocity = reflectedRel + strikerVelocity;
 
@@ -1598,18 +1992,18 @@ namespace CosmicShore.Gameplay
                 // Arcade pop: extra launch biased from the contact normal toward the pilot's heading
                 // (aim), scaled by strike strength. directionalBias 0 = pure normal, 1 = pure heading.
                 Vector3 aimDir = strikerSpeed > 0.0001f
-                    ? Vector3.Slerp(n, strikerVelocity / strikerSpeed, settings.directionalBias).normalized
+                    ? Vector3.Slerp(n, strikerVelocity / strikerSpeed, settings.DirectionalBias).normalized
                     : n;
                 // Sweet spot: a TIP strike pops harder than a hilt one. The swing model already
                 // makes the tip physically faster; this is the arcade reward on top for timing it.
-                float pop = Mathf.Max(0f, settings.hitBoostMultiplier - 1f);
+                float pop = Mathf.Max(0f, settings.HitBoostMultiplier - 1f);
                 if (bladeHit)
-                    pop *= Mathf.Lerp(1f, Mathf.Max(1f, settings.bladeTipStrikeBonus), Mathf.Clamp01(bladeT));
+                    pop *= Mathf.Lerp(1f, Mathf.Max(1f, settings.BladeTipStrikeBonus), Mathf.Clamp01(bladeT));
                 desiredVelocity += aimDir * (strikerSpeed * pop);
             }
 
-            if (desiredVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
-                desiredVelocity = desiredVelocity.normalized * settings.maxSpeed;
+            if (desiredVelocity.sqrMagnitude > settings.MaxSpeed * settings.MaxSpeed)
+                desiredVelocity = desiredVelocity.normalized * settings.MaxSpeed;
 
             // Apply as set-linear + matching off-center torque (the split form of
             // AddForceAtPosition(impulse, contactPoint)): spin emerges from real angular dynamics while
@@ -1620,13 +2014,13 @@ namespace CosmicShore.Gameplay
             rb.AddTorque(Vector3.Cross(lever, impulse), ForceMode.Impulse); // clamped by rb.maxAngularVelocity
 
             float finalSpeed = desiredVelocity.magnitude;
-            float intensity = Mathf.Clamp01(finalSpeed / settings.maxSpeed);
+            float intensity = Mathf.Clamp01(finalSpeed / settings.MaxSpeed);
             // Prisms near the strike are handled by the per-tick ProcessPrismInteractions scan, which
             // already sees the freshly-set domain - no separate strike-time prism pass needed.
 
             if (deliberate)
             {
-                if (finalSpeed > settings.hitstopSpeedThreshold && IsSoloSession())
+                if (finalSpeed > settings.HitstopSpeedThreshold && IsSoloSession())
                     RunHitstopAsync().Forget();
 
                 // THE feedback beat. Before this existed a vessel connecting with the ball produced
@@ -1634,7 +2028,7 @@ namespace CosmicShore.Gameplay
                 // reason the mode read as unresponsive: the only evidence you had hit the payload was
                 // that it changed direction. Broadcast so every peer sees the hit, and carry the
                 // striking vessel so the pilot who actually connected gets the emphasised shake.
-                if (settings.strikeFeedbackEnabled)
+                if (settings.StrikeFeedbackEnabled)
                 {
                     var strikerNo = vessel.Transform != null
                         ? vessel.Transform.GetComponentInParent<NetworkObject>()
@@ -1647,27 +2041,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>
-        /// SERVER: an AOE blast reached the ball. The payload is shoved the way prism mass is
-        /// shoved — with the blast's OWN impact vector (<see cref="AOEExplosion.CalculateImpactVector"/>,
-        /// i.e. <c>ExplosionImpulse.Along(radialDirection)</c>), so a weapon tuned to throw mass
-        /// hard throws the ball hard and no second tuning surface exists to drift from the first.
-        /// There is no distance falloff because prisms do not get one either: the blast either
-        /// reached you or it did not.
-        ///
-        /// Before this, an explosion passed straight through the ball. Nothing in the mode could
-        /// move the payload except a hull or a blade, which quietly made every AOE weapon useless
-        /// on the one object the match is about.
-        ///
-        /// A blast also CLAIMS the ball (<see cref="AstroLeagueSettingsSO.explosionClaimsBall"/>),
-        /// on the same rule as a strike: whoever touched it last owns it. And unlike a prism, the
-        /// ball has no friendly-fire exemption — blowing your OWN ball toward the goal is a play,
-        /// not an accident, so the blast's domain is never a reason to skip.
-        /// </summary>
-        /// <param name="blastOrigin">Centre the impact vector radiates from.</param>
-        /// <param name="impactVector">The blast's impact vector at the ball's position — already
-        /// direction × magnitude, exactly as a prism receives it.</param>
-        /// <param name="blastDomain">Domain that fired the blast; claims the ball.</param>
         /// <summary>
         /// Route a blast to the ball from whichever peer owns the explosion. Blasts are LOCAL —
         /// a projectile or a juke-fired cavitation punch exists only on the machine that fired
@@ -1694,13 +2067,34 @@ namespace CosmicShore.Gameplay
             player.RequestBlastBall_ServerRpc(ball.NetworkObjectId, blastOrigin, impactVector);
         }
 
+        /// <summary>
+        /// SERVER: an AOE blast reached the ball. The payload is shoved the way prism mass is
+        /// shoved — with the blast's OWN impact vector (<see cref="AOEExplosion.CalculateImpactVector"/>,
+        /// i.e. <c>ExplosionImpulse.Along(radialDirection)</c>), so a weapon tuned to throw mass
+        /// hard throws the ball hard and no second tuning surface exists to drift from the first.
+        /// There is no distance falloff because prisms do not get one either: the blast either
+        /// reached you or it did not.
+        ///
+        /// Before this, an explosion passed straight through the ball. Nothing in the mode could
+        /// move the payload except a hull or a blade, which quietly made every AOE weapon useless
+        /// on the one object the match is about.
+        ///
+        /// A blast also CLAIMS the ball (<see cref="AstroLeagueSettingsSO.explosionClaimsBall"/>),
+        /// on the same rule as a strike: whoever touched it last owns it. And unlike a prism, the
+        /// ball has no friendly-fire exemption — blowing your OWN ball toward the goal is a play,
+        /// not an accident, so the blast's domain is never a reason to skip.
+        /// </summary>
+        /// <param name="blastOrigin">Centre the impact vector radiates from.</param>
+        /// <param name="impactVector">The blast's impact vector at the ball's position — already
+        /// direction × magnitude, exactly as a prism receives it.</param>
+        /// <param name="blastDomain">Domain that fired the blast; claims the ball.</param>
         public void ApplyBlastServer(Vector3 blastOrigin, Vector3 impactVector, Domains blastDomain)
         {
-            if (settings == null || !settings.explosionsAffectBall) return;
+            if (settings == null || !settings.ExplosionsAffectBall) return;
             if (IsSpawned && !IsServer) return;
             if (n_Frozen.Value || n_Hidden.Value) return;
 
-            Vector3 kick = impactVector * settings.explosionKickMultiplier;
+            Vector3 kick = impactVector * settings.ExplosionKickMultiplier;
             if (kick.sqrMagnitude < 1e-6f) return;
 
             // NOTHING HERE KNOWS ABOUT THE NUCLEUS EITHER. A studding ball is a dynamic body, so
@@ -1711,8 +2105,8 @@ namespace CosmicShore.Gameplay
             // KINEMATIC, every line below wrote into a body that does not integrate, so the punch
             // — and every other blast in the game — passed straight through it.
             Vector3 desired = rb.linearVelocity + kick;
-            if (desired.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
-                desired = desired.normalized * settings.maxSpeed;
+            if (desired.sqrMagnitude > settings.MaxSpeed * settings.MaxSpeed)
+                desired = desired.normalized * settings.MaxSpeed;
 
             Vector3 before = rb.linearVelocity;
             rb.linearVelocity = desired;
@@ -1720,16 +2114,16 @@ namespace CosmicShore.Gameplay
             // Spin comes from applying the impulse off-centre, at the point on the ball's surface
             // facing the blast — the split form of AddForceAtPosition, same as VesselStrike uses,
             // so a blast tumbles the ball instead of sliding it flat.
-            if (settings.explosionSpinFraction > 0f)
+            if (settings.ExplosionSpinFraction > 0f)
             {
                 Vector3 toBall = transform.position - blastOrigin;
                 Vector3 facing = toBall.sqrMagnitude > 1e-6f ? -toBall.normalized : Vector3.up;
                 Vector3 contact = transform.position + facing * BallWorldRadius();
-                Vector3 impulse = rb.mass * (desired - before) * settings.explosionSpinFraction;
+                Vector3 impulse = rb.mass * (desired - before) * settings.ExplosionSpinFraction;
                 rb.AddTorque(Vector3.Cross(contact - rb.worldCenterOfMass, impulse), ForceMode.Impulse);
             }
 
-            if (settings.explosionClaimsBall && !_ownershipLocked && blastDomain != Domains.Blue
+            if (settings.ExplosionClaimsBall && !_ownershipLocked && blastDomain != Domains.Blue
                 && n_LastHitDomain.Value != blastDomain)
                 n_LastHitDomain.Value = blastDomain;
 
@@ -1747,11 +2141,11 @@ namespace CosmicShore.Gameplay
                 n_AngularVelocity.Value = rb.angularVelocity;
             }
 
-            if (settings.strikeFeedbackEnabled && IsSpawned)
+            if (settings.StrikeFeedbackEnabled && IsSpawned)
             {
                 Vector3 toBall = transform.position - blastOrigin;
                 Vector3 normal = toBall.sqrMagnitude > 1e-6f ? toBall.normalized : Vector3.up;
-                float intensity = Mathf.Clamp01(rb.linearVelocity.magnitude / settings.maxSpeed);
+                float intensity = Mathf.Clamp01(rb.linearVelocity.magnitude / settings.MaxSpeed);
                 // No striker vessel: a blast is credited to the blast, so the emphasised
                 // striker shake has nobody to land on and every peer gets the shared one.
                 Strike_ClientRpc(transform.position - normal * BallWorldRadius(), normal,
@@ -1787,149 +2181,25 @@ namespace CosmicShore.Gameplay
 
         #endregion
 
-        #region Per-frame visuals (every peer)
-
-        void Update()
-        {
-            if (settings == null || ballRenderer == null) return;
-
-            // Non-server peers free-spin the kinematic replica from the replicated angular velocity
-            // (the server rigidbody owns the real rotation, interpolated natively). Purely cosmetic -
-            // no gameplay reads client rotation, so any dead-reckoned drift is invisible.
-            if (IsSpawned && !IsServer && !n_Frozen.Value && !n_Hidden.Value)
-            {
-                Vector3 w = n_AngularVelocity.Value;
-                float wMag = w.magnitude;
-                if (wMag > 1e-4f)
-                    transform.rotation = Quaternion.AngleAxis(wMag * Mathf.Rad2Deg * Time.deltaTime, w / wMag) * transform.rotation;
-            }
-
-            // Impact pop: a fast swell that eases back over strikePopSeconds. Visual child only -
-            // the root's scale is the ball's physical size and must not move (see _visual).
-            if (_visual != null)
-            {
-                float pop = 1f;
-                if (_popTimer > 0f)
-                {
-                    _popTimer -= Time.deltaTime;
-                    float t = Mathf.Clamp01(_popTimer / Mathf.Max(0.0001f, settings.strikePopSeconds));
-                    pop = 1f + settings.strikePopAmount * t * t;
-                }
-
-                // Birth bloom (continuity of existence): every peer's fresh instance GROWS in
-                // over spawnBloomSeconds instead of popping into the court at full size. Runs
-                // once per instance from Awake; composes with the pop as a multiplier.
-                float bloom = 1f;
-                if (_bloomTimer > 0f)
-                {
-                    _bloomTimer -= Time.deltaTime;
-                    float u = 1f - Mathf.Clamp01(_bloomTimer / Mathf.Max(0.0001f, settings.spawnBloomSeconds));
-                    bloom = u * u * (3f - 2f * u); // smoothstep 0→1, settles without a snap
-                }
-
-                Vector3 targetScale = Vector3.one * (pop * bloom);
-                if (_visual.localScale != targetScale)
-                    _visual.localScale = targetScale;
-            }
-
-            float speedRatio = Mathf.Clamp01(Velocity.magnitude / settings.speedForMaxVisuals);
-
-            // Impact flash decay
-            if (flashTimer > 0f)
-            {
-                flashTimer -= Time.deltaTime;
-                float flashRatio = Mathf.Clamp01(flashTimer / settings.impactFlashDuration);
-                currentEmissionBoost = Mathf.Lerp(1f, settings.impactFlashIntensity, flashRatio);
-            }
-            else
-            {
-                currentEmissionBoost = 1f;
-            }
-
-            // Color keys to the LAST-HIT domain (requirement 1): a Jade striker tints the ball Jade,
-            // a Ruby striker Ruby. Before any strike the payload is neutral (Blue) and runs the
-            // original three-way rainbow cycle so it reads as "unclaimed".
-            Color emissionColor;
-            Domains dom = n_LastHitDomain.Value;
-            if (dom == Domains.Blue)
-            {
-                float phase = (Time.time * colorCycleSpeed) % 3f;
-                emissionColor = phase < 1f
-                    ? Color.Lerp(primaryColor, secondaryColor, phase)
-                    : phase < 2f
-                        ? Color.Lerp(secondaryColor, tertiaryColor, phase - 1f)
-                        : Color.Lerp(tertiaryColor, primaryColor, phase - 2f);
-            }
-            else
-            {
-                emissionColor = DomainTint(dom);
-            }
-
-            float breath = 0.8f + 0.2f * Mathf.Sin(Time.time * 4f);
-            float emissionIntensity = Mathf.Lerp(settings.minEmissionIntensity, settings.maxEmissionIntensity, speedRatio);
-            float glow = emissionIntensity * breath * currentEmissionBoost;
-
-            if (_usesFresnel)
-            {
-                // Drive the prism fresnel rim: bright HDR rim cycles + reacts to speed/flash,
-                // dark base is a dim version of the same hue so the sphere reads as 3D. Cap the
-                // flash boost so a thin rim doesn't blow out to pure white (full-surface emission
-                // tolerates much higher HDR than a grazing-angle rim).
-                float rim = emissionIntensity * breath * Mathf.Min(currentEmissionBoost, 4f);
-                mpb.SetColor(BrightColorId, emissionColor * rim);
-                mpb.SetColor(DarkColorId, emissionColor * 0.06f);
-            }
-            else
-            {
-                mpb.SetColor(EmissionColorId, emissionColor * glow);
-            }
-            ballRenderer.SetPropertyBlock(mpb);
-
-            if (ballLight != null)
-            {
-                ballLight.color = emissionColor;
-                float boost = currentEmissionBoost > 1f ? Mathf.Sqrt(currentEmissionBoost) : 1f;
-                ballLight.intensity = baseLightIntensity * (1f + speedRatio * 2f) * breath * boost;
-                ballLight.range = Mathf.Lerp(settings.minLightRange, settings.maxLightRange, speedRatio);
-            }
-
-            if (trail != null)
-            {
-                trail.startWidth = Mathf.Lerp(settings.minTrailWidth, settings.maxTrailWidth, speedRatio);
-                trail.time = Mathf.Lerp(0.15f, 0.8f, speedRatio);
-            }
-
-            if (auraParticles != null)
-            {
-                var emission = auraParticles.emission;
-                emission.rateOverTime = n_Hidden.Value ? 0f : Mathf.Lerp(8f, 45f, speedRatio);
-            }
-        }
-
-        /// <summary>Base hue for a claimed (non-neutral) ball - matches the arena's per-domain palette
-        /// (all three domains config-driven from <see cref="AstroLeagueSettingsSO"/>).</summary>
-        Color DomainTint(Domains d)
-        {
-            switch (d)
-            {
-                case Domains.Jade: return settings.jadeGoalColor;
-                case Domains.Ruby: return settings.rubyGoalColor;
-                case Domains.Gold: return settings.goldGoalColor;
-                default: return primaryColor;
-            }
-        }
-
-        #endregion
-
         #region Juice (replicated to every peer)
 
+        /// <summary>
+        /// Every peer: the detonation beat. A positive <paramref name="blastDiameter"/> also spawns
+        /// the ball's DOMAIN BLAST here, on every peer, rather than on the server alone: prisms are
+        /// simulated per peer (nothing replicates a prism's destruction), which is why every
+        /// vessel blast already runs on every peer. A server-only blast destroyed and popped
+        /// opposing prisms on the host and left every client's copy of that mass standing. Its
+        /// ball kicks stay server-authoritative on their own — <see cref="RequestBlast"/> from a
+        /// vessel-less blast on a client does nothing.
+        /// </summary>
         [ClientRpc]
-        void Detonate_ClientRpc(Vector3 position, float radiusScale)
+        void Detonate_ClientRpc(Vector3 position, float radiusScale, float blastDiameter, Domains blastDomain)
         {
             float s = Mathf.Max(0.1f, radiusScale);
-            EmitBurst(position, Vector3.up, Mathf.RoundToInt(settings.goalParticleBurst * s));
-            ShakeCamera(settings.goalShakeIntensity * s, settings.goalShakeDuration, position);
+            EmitBurst(position, Vector3.up, Mathf.RoundToInt(settings.GoalParticleBurst * s));
+            ShakeCamera(settings.GoalShakeIntensity * s, settings.GoalShakeDuration, position);
             HapticController.PlayHaptic(HapticType.MineCollision);
+            if (blastDiameter > 0f) SpawnDomainBlast(position, blastDiameter, blastDomain);
         }
 
         /// <summary>
@@ -1951,14 +2221,14 @@ namespace CosmicShore.Gameplay
         {
             if (settings == null) return;
 
-            bool bigHit = intensity >= settings.bigHitSpeedFraction;
+            bool bigHit = intensity >= settings.BigHitSpeedFraction;
             float weight = Mathf.Lerp(0.55f, 1f, Mathf.Clamp01(intensity));
 
             TriggerFlash(bigHit ? 1f : weight);
-            EmitBurst(position, normal, Mathf.RoundToInt(settings.impactParticleBurst * weight));
+            EmitBurst(position, normal, Mathf.RoundToInt(settings.ImpactParticleBurst * weight));
 
-            if (settings.strikePopSeconds > 0f)
-                _popTimer = settings.strikePopSeconds;
+            if (settings.StrikePopSeconds > 0f)
+                _popTimer = settings.StrikePopSeconds;
 
             // The striking pilot gets the emphasised shake. Resolved by NetworkObjectId against the
             // LOCAL player's vessel rather than by ownership, because AI vessels are server-owned -
@@ -1967,9 +2237,9 @@ namespace CosmicShore.Gameplay
             if (strikerVesselNetId != 0 && gameData != null && gameData.LocalPlayer?.Vessel != null
                 && gameData.TryGetVesselByNetworkObjectId(strikerVesselNetId, out var struck)
                 && ReferenceEquals(struck, gameData.LocalPlayer.Vessel))
-                emphasis = Mathf.Max(1f, settings.strikerShakeEmphasis);
+                emphasis = Mathf.Max(1f, settings.StrikerShakeEmphasis);
 
-            ShakeCamera(settings.strikeShakeIntensity * weight * emphasis, settings.strikeShakeDuration, position);
+            ShakeCamera(settings.StrikeShakeIntensity * weight * emphasis, settings.StrikeShakeDuration, position);
 
             audioSystem?.PlayGameplaySFX(bigHit || tipHit
                 ? GameplaySFXCategory.Explosion
@@ -1984,13 +2254,13 @@ namespace CosmicShore.Gameplay
         void WallBounce_ClientRpc(Vector3 position, Vector3 normal, float intensity)
         {
             TriggerFlash(intensity * 0.6f);
-            EmitBurst(position, normal, (int)(settings.impactParticleBurst * 0.5f * Mathf.Max(0.4f, intensity)));
-            ShakeCamera(settings.strikeShakeIntensity * intensity * 0.35f, settings.strikeShakeDuration, position);
+            EmitBurst(position, normal, (int)(settings.ImpactParticleBurst * 0.5f * Mathf.Max(0.4f, intensity)));
+            ShakeCamera(settings.StrikeShakeIntensity * intensity * 0.35f, settings.StrikeShakeDuration, position);
             HapticController.PlayHaptic(HapticType.ShipCollision);
         }
 
         void TriggerFlash(float intensity) =>
-            flashTimer = settings.impactFlashDuration * Mathf.Max(0.3f, intensity);
+            flashTimer = settings.ImpactFlashDuration * Mathf.Max(0.3f, intensity);
 
         void EmitBurst(Vector3 position, Vector3 normal, int count)
         {
@@ -2008,10 +2278,10 @@ namespace CosmicShore.Gameplay
             if (cameraController == null) return;
 
             float falloff = 1f;
-            if (settings.shakeFalloffRadius > 0f)
+            if (settings.ShakeFalloffRadius > 0f)
             {
                 float distance = Vector3.Distance(cameraController.transform.position, impactPosition);
-                falloff = Mathf.Clamp01(1f - distance / settings.shakeFalloffRadius);
+                falloff = Mathf.Clamp01(1f - distance / settings.ShakeFalloffRadius);
             }
             if (falloff <= 0f) return;
 
@@ -2024,13 +2294,13 @@ namespace CosmicShore.Gameplay
             hitstopActive = true;
 
             float baseFixedDelta = Time.fixedDeltaTime / Mathf.Max(Time.timeScale, 0.0001f);
-            Time.timeScale = settings.hitstopTimeScale;
-            Time.fixedDeltaTime = baseFixedDelta * settings.hitstopTimeScale;
+            Time.timeScale = settings.HitstopTimeScale;
+            Time.fixedDeltaTime = baseFixedDelta * settings.HitstopTimeScale;
 
             try
             {
                 await UniTask.Delay(
-                    TimeSpan.FromSeconds(settings.hitstopDuration),
+                    TimeSpan.FromSeconds(settings.HitstopDuration),
                     ignoreTimeScale: true,
                     cancellationToken: destroyToken);
             }
@@ -2038,7 +2308,9 @@ namespace CosmicShore.Gameplay
             {
                 // Restore to known constants, not captured values - a concurrent
                 // celebration slow-mo must not be clobbered by a stale capture.
-                Time.timeScale = 1f;
+                // A pause opened during the window owns timeScale (0): restoring 1 here un-froze the
+                // whole match behind the open pause menu - AI, ball, clock - in a solo game.
+                Time.timeScale = CosmicShore.Core.PauseSystem.Paused ? 0f : 1f;
                 Time.fixedDeltaTime = baseFixedDelta;
                 hitstopActive = false;
             }
@@ -2072,6 +2344,21 @@ namespace CosmicShore.Gameplay
             return n;
         }
 
+        /// <summary>How many of <paramref name="domain"/>'s balls are loose in
+        /// <paramref name="cell"/> right now — one Scarab's share, the count
+        /// <see cref="cellBallLimit"/> is measured against.</summary>
+        public static int CountLooseInCell(Cell cell, Domains domain)
+        {
+            if (cell == null) return 0;
+            int n = 0;
+            for (int i = 0; i < Live.Count; i++)
+            {
+                var ball = Live[i];
+                if (ball != null && ball.LastHitDomain == domain && ball.IsLooseIn(cell)) n++;
+            }
+            return n;
+        }
+
         /// <summary>
         /// Server: detonate every ball loose in <paramref name="cell"/> - the ball that triggered
         /// the overload included, because by the time this runs it is loose like any other and
@@ -2093,7 +2380,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Server: detect the moment this ball ENTERS a cell, and overload that cell if its arrival
-        /// is the one that crosses <see cref="cellBallLimit"/>.
+        /// puts its domain over <see cref="cellBallLimit"/> (5 per Scarab: the sixth detonates).
         ///
         /// Entry is a TRANSITION, not a position test, which is why the cell is cached: a ball
         /// already sitting in a crowded cell must not re-trigger every poll. All four ways in are
@@ -2123,8 +2410,10 @@ namespace CosmicShore.Gameplay
             _looseInCell = now;
             if (now == null) return false;
 
+            // PER SCARAB: only this ball's own domain is measured against the limit, but the
+            // overload below still takes every loose ball in the cell, whatever its domain.
+            if (CountLooseInCell(now, n_LastHitDomain.Value) <= cellBallLimit) return false;
             int loose = CountLooseInCell(now);
-            if (loose < cellBallLimit) return false;
 
             // ANNOUNCE FIRST, THEN DETONATE — the order is load-bearing, not style. A forged ball
             // is DESPAWNED by its own detonation (DetonateWithRadiusServer → DespawnIfForged), and
@@ -2139,7 +2428,7 @@ namespace CosmicShore.Gameplay
             CellOverload_ClientRpc(now.transform.position, loose);
             CSDebug.LogVerbose(CSLogChannel.ScarabNucleus,
                 $"[AstroLeagueBall] Cell overload — {loose} loose ball(s) detonating in {now.name} " +
-                $"(limit {cellBallLimit}, any domain).");
+                $"({n_LastHitDomain.Value} over its {cellBallLimit}-per-Scarab limit).");
 
             DetonateAllLooseInCellServer(now, cellOverloadRadiusScale);
             return true;
@@ -2152,7 +2441,7 @@ namespace CosmicShore.Gameplay
         public void DetonateServer()
         {
             if (!IsServer) return;
-            Detonate_ClientRpc(transform.position, 1f);
+            Detonate_ClientRpc(transform.position, 1f, 0f, n_LastHitDomain.Value);   // a goal is burst only, no blast
             SetHiddenServer(true);
         }
 
@@ -2204,7 +2493,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Server: blow the ball up where it stands with an explosion <paramref name="radiusScale"/>×
         /// its own radius, then spend it. This is the nucleus overload detonation (SCARAB.md §4.6) —
-        /// the burst and shake scale with the blast so a 2× explosion reads as one, and the ball leaves
+        /// the burst and shake scale with the blast so a 6× explosion reads as one, and the ball leaves
         /// through the same detonate-then-despawn beat as a scored ball (continuity of existence: it
         /// bursts and fades, it never blinks out).
         /// </summary>
@@ -2212,37 +2501,38 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer) return;
             float scale = Mathf.Max(0.1f, radiusScale);
-            Detonate_ClientRpc(transform.position, scale);
-            SpawnDomainBlast(scale);
+            // MaxScale is a DIAMETER (the explosion mesh is a unit sphere grown by localScale),
+            // hence the ×2. Resolved here, where the ball's size is authoritative.
+            Detonate_ClientRpc(transform.position, scale, 2f * scale * BallWorldRadius(),
+                               n_LastHitDomain.Value);
             SetHiddenServer(true);
             DespawnIfForged();   // NOT ExpireServer: that would fire a second, unscaled burst
         }
 
         /// <summary>
         /// A DOMAIN explosion where the ball died: coloured by the ball's own domain, and carrying
-        /// that domain into the standard blast rules — so own-domain prisms take a temporary shield
+        /// that domain into the standard blast rules — so own-domain prisms are drawn LIT in the blast's domain colour (Docs/LIT.md; a temporary shield until 2026-09)
         /// (the no-perceived-clipping rule) while other domains are destroyed. None of that is new
         /// behaviour; it is what <c>ExplosionImpactor</c> already does with
         /// <c>affectSelf = false, destructive = true</c>, which every shipped blast prefab authors.
         ///
-        /// The blast radius is <paramref name="radiusScale"/>× the ball's own radius. MaxScale is a
-        /// DIAMETER (the explosion mesh is a unit sphere grown by localScale), hence the ×2.
+        /// Runs on EVERY peer (from <see cref="Detonate_ClientRpc"/>) — see that RPC for why.
         /// </summary>
-        void SpawnDomainBlast(float radiusScale)
+        void SpawnDomainBlast(Vector3 position, float diameter, Domains domain)
         {
             if (settings == null) return;
-            var prefabs = settings.detonationExplosionPrefabs;
+            var prefabs = settings.DetonationExplosionPrefabs;
             if (prefabs == null || prefabs.Length == 0) return;   // unwired = burst only, by design
 
             var init = new AOEExplosion.InitializeStruct
             {
-                OwnDomain = n_LastHitDomain.Value,
+                OwnDomain = domain,
                 Vessel = null,
                 // No vessel made this blast, so nothing may be credited to a pilot for it.
                 AnnonymousExplosion = true,
-                MaxScale = 2f * radiusScale * BallWorldRadius(),
-                OverrideMaterial = ResolveDomainBlastMaterial(n_LastHitDomain.Value),
-                SpawnPosition = transform.position,
+                MaxScale = diameter,
+                OverrideMaterial = ResolveDomainBlastMaterial(domain),
+                SpawnPosition = position,
                 SpawnRotation = Quaternion.identity,
             };
 
@@ -2332,12 +2622,24 @@ namespace CosmicShore.Gameplay
 
         void ApplyHiddenVisuals(bool hidden)
         {
-            if (ballRenderer != null) ballRenderer.enabled = !hidden;
-            if (ballLight != null) ballLight.enabled = !hidden;
+            // A morph stand-in is the OTHER reason this ball may not be drawing itself, and the two
+            // compose: hidden gameplay state OR a crystal currently drawing the body. Folding it in
+            // here rather than at the call sites is what stops a replicated n_Hidden echo — which
+            // arrives on its own schedule — from switching the renderer back on underneath a live
+            // morph.
+            bool draw = !hidden && !_morphStandIn;
+            if (ballRenderer != null) ballRenderer.enabled = draw;
+            if (ballLight != null) ballLight.enabled = draw;
             if (trail != null)
             {
-                trail.emitting = !hidden;
-                if (hidden) trail.Clear();
+                trail.emitting = draw;
+                if (!draw) trail.Clear();
+            }
+            if (wakeDust != null)
+            {
+                // Stop shedding; motes already in the world fade out on their own.
+                var emission = wakeDust.emission;
+                if (!draw) emission.rateOverDistanceMultiplier = 0f;
             }
         }
 
@@ -2365,6 +2667,7 @@ namespace CosmicShore.Gameplay
             // Fresh ball at kickoff: unclaimed until the first strike.
             n_LastHitDomain.Value = Domains.Blue;
             ResetTouchLedgerServer();
+            RecordPilotServer(string.Empty);
             _shieldPoppedThisVisit.Clear();
             _nucleusSideResolved = false;   // teleported: re-read which side of the nucleus it is on
             _lastPrismScanPos = spawnPosition;
@@ -2450,6 +2753,7 @@ namespace CosmicShore.Gameplay
         {
             base.OnDestroy();
             if (_ballMesh != null) Destroy(_ballMesh);
+            if (_sparkFallback != null) Destroy(_sparkFallback);
         }
     }
 }

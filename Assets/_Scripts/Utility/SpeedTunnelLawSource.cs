@@ -1,4 +1,6 @@
 #if UNITY_EDITOR
+using System.Text.RegularExpressions;
+
 namespace CosmicShore.Utility
 {
     /// <summary>
@@ -96,14 +98,46 @@ namespace CosmicShore.Utility
             return true;
         }
 
+        /// <summary>The drive call with raw measured speed and nothing else.</summary>
+        public const string RawDrive = "config.Effect01(_target.Speed)";
+
         /// <summary>
-        /// The single drive site passes RAW measured speed.
+        /// The drive call inside a warp field (Docs/WARP_FIELD.md): measured speed with the field's
+        /// scale at the hull divided back out. A field multiplies a vessel's WORLD speed by
+        /// <c>s</c> while shrinking its hull, camera and trail by the same <c>s</c>, so this is
+        /// the speed in the pilot's own frame, and exactly the raw speed with no field
+        /// (<c>ScaleAt</c> returns 1). It is the one divisor the law admits: <c>s</c> is a function
+        /// of POSITION, the same for every vessel at that point, so "the same speed on any vessel
+        /// looks the same" still holds.
+        /// </summary>
+        public const string FeltDrive = "config.Effect01(_target.Speed / warp)";
+
+        // The only sanctioned definition of `warp`: a read of the field at a position, optionally
+        // null-guarded on the hull (`hull ? WarpFieldRuntime.ScaleAt(hull.position) : 1f`). Tight
+        // on purpose, so a vessel term cannot ride in on the divisor instead of the call
+        // (`... ScaleAt(hull.position) * topSpeed`, `... : vesselTopSpeed`).
+        static readonly Regex WarpDeclaration = new(
+            @"\bfloat\s+warp\s*=\s*(?:\w+\s*\?\s*)?WarpFieldRuntime\.ScaleAt\(\s*[\w.]+\s*\)\s*(?::\s*1f\s*)?;");
+
+        // Any write to `warp` — its declaration included, so exactly one is allowed.
+        static readonly Regex WarpWrite = new(@"\bwarp\s*[-+*/]?=(?!=)");
+
+        static readonly Regex Effect01Call = new(@"\bEffect01\s*\(");
+
+        /// <summary>
+        /// EVERY <c>Effect01</c> drive call passes measured speed: raw (<see cref="RawDrive"/>), or
+        /// with the warp field's scale divided back out (<see cref="FeltDrive"/>) where
+        /// <c>warp</c> is defined once, as a read of the field and nothing else.
         ///
         /// This is what actually keeps the mapping absolute. Asserting the shape of
         /// <c>SpeedTunnelConfigSO.Effect01</c> is not enough: a normalization can be introduced
         /// at the CALL SITE (<c>Effect01(_target.Speed / vesselTopSpeed * …)</c>) with every
         /// signature test still green, and that would make the same speed look different on
         /// different vessels — the one property the law exists to guarantee.
+        ///
+        /// Comments are stripped first, so a commented-out raw call cannot stand in for a live
+        /// one, and every call is checked rather than "the file contains one good call", so a
+        /// second, normalized drive cannot sit beside a sanctioned one.
         /// </summary>
         public static bool DriveSiteUsesRawSpeed(string driverSource, out string reason)
         {
@@ -113,17 +147,50 @@ namespace CosmicShore.Utility
                 return false;
             }
 
-            if (!driverSource.Contains("config.Effect01(_target.Speed)"))
+            string code = StripComments(driverSource);
+
+            int calls = Effect01Call.Matches(code).Count;
+            int raw = CountOrdinal(code, RawDrive);
+            int felt = CountOrdinal(code, FeltDrive);
+
+            if (calls == 0 || raw + felt != calls)
             {
-                reason = "the drive site is not the literal config.Effect01(_target.Speed). The " +
-                         "mapping must be a pure function of raw measured speed — anything " +
-                         "per-vessel folded in here breaks 'the same speed on any vessel looks " +
-                         "the same'.";
+                reason = $"a drive site is neither {RawDrive} nor {FeltDrive} ({calls} Effect01 " +
+                         $"call(s), {raw + felt} sanctioned). The mapping must be a pure function " +
+                         "of measured speed — anything per-vessel folded in here breaks 'the same " +
+                         "speed on any vessel looks the same'.";
+                return false;
+            }
+
+            if (felt > 0 &&
+                (WarpDeclaration.Matches(code).Count != 1 || WarpWrite.Matches(code).Count != 1))
+            {
+                reason = $"{FeltDrive} divides by a `warp` that is not defined exactly once as " +
+                         "`float warp = WarpFieldRuntime.ScaleAt(<position>);` (optionally " +
+                         "`hull ? ... : 1f`) and never re-assigned. The warp field's scale is the " +
+                         "only divisor the law admits — it is a function of position, the same " +
+                         "for every vessel; any other term there is a per-vessel normalization.";
                 return false;
             }
 
             reason = null;
             return true;
+        }
+
+        static string StripComments(string source)
+        {
+            string text = Regex.Replace(source, @"/\*.*?\*/", string.Empty, RegexOptions.Singleline);
+            return Regex.Replace(text, @"//.*?$", string.Empty, RegexOptions.Multiline);
+        }
+
+        static int CountOrdinal(string text, string needle)
+        {
+            int count = 0;
+            for (int i = text.IndexOf(needle, System.StringComparison.Ordinal);
+                 i >= 0;
+                 i = text.IndexOf(needle, i + needle.Length, System.StringComparison.Ordinal))
+                count++;
+            return count;
         }
     }
 }

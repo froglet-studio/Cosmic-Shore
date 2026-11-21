@@ -15,8 +15,14 @@ MonoBehaviour:
   GameMode: 0
   DisplayName: VESSEL HANGAR
   Description: Complete all game mode quests to unlock the Vessel Hangar
-  Icon: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
+  Icon: {fileID: 21300000, guid: 99bcc774a1bc5ad42bff1539ddc45a7f, type: 3}
   TargetType: 99
   TargetValue: 0
   Order: 6
   IsPlaceholder: 0
+  RewardColorSet: {fileID: 11400000, guid: 5c23989fe41646f5998662aa44c15ffa, type: 2}
+  FeatureKind: 3
+  FeatureRef: Hangar
+  CallToActionTargetID: 300
+  CompletionUserAction: 300
+  DependencyTargetIDs: []

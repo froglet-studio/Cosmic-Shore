@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ModePreview_SkimRace
   m_EditorClassIdentifier: 
   Mode: 33
-  Notes: 'Skim Race = HexRace(33). Its TRACK is controller-built (SegmentSpawner
+  Notes: 'Skim Race = SkimRace(33). Its TRACK is controller-built (SegmentSpawner
     from a replicated seed), so the preview shows the Skim Race cell - nucleus, spawn
     profile wildlife - and the Squirrel to fly in it. OPEN-ENDED: the satellite has
     no crystals to race for.'

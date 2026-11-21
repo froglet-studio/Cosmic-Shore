@@ -57,7 +57,7 @@ VOLLEYS_PER_SECOND = 90.0
 ROUNDS_IN_FLIGHT = int(round(FLIGHT_SECONDS * VOLLEYS_PER_SECOND))   # 27 distinct radii
 GROWTH_AT_REST = 3.0             # FullAutoAction.asset, Mass level 0
 MUZZLE_HALF_SPACING = 3.2        # Sparrow.prefab: LeftGun/RightGun local x = -/+3.2
-MUZZLE_SPEED = 375.0             # SPACE 0 muzzle speed
+MUZZLE_SPEED = 1350.0            # fixed muzzle speed (FullAutoAction.asset speedValue; no element scales it)
 SHIP_POS = (312.0, -140.0, 455.0)   # somewhere in a 1200-radius arena, off every axis
 SHIP_FORWARD = (0.31, 0.12, 0.94)
 

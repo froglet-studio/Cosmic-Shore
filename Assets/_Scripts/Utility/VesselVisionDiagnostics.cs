@@ -42,7 +42,7 @@ namespace CosmicShore.Utility
                 $"painted with a material outside {VesselVisionShading.WiredShaderName} " +
                 $"(check VesselCustomization's domain material roles), or that graph has lost " +
                 $"its splice — re-run 'python3 Tools/Shaders/wire_vessel_vision_shading.py' and " +
-                $"audit with FrogletTools > Vessels > Validate Vessel Vision Band.",
+                $"audit with FrogletTools > Vessels > Audits > Validate Vessel Vision Band.",
                 vessel);
         }
 

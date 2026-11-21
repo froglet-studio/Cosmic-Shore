@@ -55,9 +55,9 @@ change the option assessments, so they lead the report:
 
 1. **The game is not shipping on Steam today.** There is no Steamworks SDK (no
    Steamworks.NET, no Facepunch.Steamworks, no Unity Steam package — the only "Steam" hits in
-   `Assets/` are inside the inert PlayFab SDK). There is no Steam build target configuration;
+   `Assets/` were inside the inert PlayFab SDK, since removed). There is no Steam build target configuration;
    the only build profile on disk is a Linux one, and `ProjectSettings.asset` carries mobile
-   bundle IDs (`com.FrogletGames.TailGlider` for Android/iPhone/Standalone). Current public
+   bundle IDs (`com.FrogletGames.TailGlider` for Android/iPhone/Standalone — *the Standalone id became `com.FrogletGames.CosmicShore` on 2026-09-11; on 2026-10-02 Android followed and iPhone moved to the test id `com.FrogletGames.CosmicShore.dev` — `Docs/IOS_BUILD.md` §1*). Current public
    distribution per `README.md` is **itch.io + TestFlight**. Steam/PC is aspirational — it
    appears in `Docs/Legal/PRIVACY_POLICY_TEMPLATE.md` and `Docs/MENU_PROGRESSION_AND_IAP.md`
    as a planned platform. Consequence: there is no Steam acquisition data to bridge *yet*;
@@ -103,14 +103,14 @@ singleton (`AppManager.cs:384`) and wires ~25 event subscriptions in its constru
 | `com.unity.services.analytics` | 6.2.1 | **Yes** | `AnalyticsServiceFacade` (single writer) |
 | `com.unity.services.core` | 1.16.0 | **Yes** | `UnityServices.InitializeAsync()`; Authentication (anonymous) |
 | `com.unity.services.cloudsave` | 3.4.0 | **Yes** | `UGSCloudSaveProvider`, 12 keyed repositories (`DATA_INVENTORY.md` §1) |
-| `com.unity.services.leaderboards` | 2.3.3 | **Yes** | `UGSStatsManager.cs:230` (`AddPlayerScoreAsync`; per-mode × intensity board IDs from `LeaderboardConfigSO`) |
+| `com.unity.services.leaderboards` | 2.3.3 | **Yes** | `WeeklyChallengeLeaderboardService` (`AddPlayerScoreAsync` / `GetScoresAsync` against ONE board, id on `WeeklyChallengeCatalogSO.leaderboardId`). The per-mode path in `UGSStatsManager` was retired. |
 | `com.unity.services.friends` | 1.1.1 | **Yes** | `FriendsServiceFacade` (relationships + presence) |
 | `com.unity.services.multiplayer` | 1.1.8 | **Yes** | Sessions + Relay: `PartySessionService.cs:184/239`, `PresenceLobbyService` (lobby-only presence session), `MultiplayerSetup` |
-| `com.unity.purchasing` | 4.12.2 | **Installed, unused** | `IAPManager` is a web-checkout flow via `Application.OpenURL` — no store SDK calls (`Docs/MENU_PROGRESSION_AND_IAP.md` §5) |
+| `com.unity.purchasing` | 4.12.2 | **Installed, unused** (uninstalled 2026-10-08, `Docs/PLATFORM_UNIFICATION.md` §3.9) | `IAPManager` is a web-checkout flow via `Application.OpenURL` — no store SDK calls (`Docs/MENU_PROGRESSION_AND_IAP.md` §5) |
 | `com.unity.ads` | 4.12.0 | **Yes (mobile only)** | `AdsSystem.cs` — init compiled only for `UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID` |
 
-**Not installed:** Remote Config, Matchmaker, Vivox, Cloud Code. Legacy PlayFab SDK is
-present under `Assets/PlayFabSDK/` but inert (auth deprecated, economy stubbed). Firebase
+**Not installed:** Remote Config, Matchmaker, Vivox, Cloud Code. The legacy PlayFab SDK
+was inert at the time of this report and was removed on 12 Sep 2026 (`Docs/PLAYFAB_RETIREMENT.md`). Firebase
 was fully removed (2026-06-11 decision, `DATA_INVENTORY.md` §2).
 
 Engine: Unity **6000.3.17f1**, mobile-first (Adaptive Performance + Samsung provider, Unity
@@ -142,7 +142,7 @@ All 28 events flow through `AnalyticsServiceFacade.RecordEvent` (F = facade,
 | `crystals_spent` | `PlayerDataService.cs:339` (`TrySpendCrystals` success) | `amount` (int), `source` (string), `balance` (int) |
 | `crystal_spend_blocked` | `PlayerDataService.cs:331` (spend refused) | `amount` (int), `item` (string), `balance` (int) |
 | `vessel_unlocked` | Hangar purchase — `HangarVesselDetailView.cs:243` | `vessel` (string), `cost` (int), `balance` (int) |
-| `quest_completed` | `QuestSystem.cs:41` | `quest` (string, display title), `shard_value` (int) |
+| `quest_completed` | `GameModeProgressionService.RecordQuestCompletedAnalytics` (was `QuestSystem.cs:41`, deleted with the XP/shard economy) | `quest` (string, display title), `shard_value` (int — always 0 now; shards are gone, the schema row is kept because a UGS parameter row is permanent) |
 | `share_triggered` | `SnsShare.cs:26` | `game_mode` (string) |
 | `friend_request_sent` | `FriendsDataSO.OnFriendRequestSent` — F:595 | `target_id` (string) |
 | `friend_request_received` | `FriendsDataSO.OnFriendRequestReceived` — F:601 | `from_id` (string) |
@@ -328,8 +328,8 @@ Verified current state ([ISteamApps docs](https://partner.steamgames.com/doc/api
 
 - **Backend reality: there is none.** No server component exists anywhere. The web-checkout
   IAP flow explicitly defers entitlement verification "once a backend exists"
-  (`Docs/MENU_PROGRESSION_AND_IAP.md` §5). PlayFab (which has native coupon primitives) is
-  legacy and being retired — reviving it for this would cut against the UGS-only decision.
+  (`Docs/MENU_PROGRESSION_AND_IAP.md` §5). PlayFab (which has native coupon primitives) was
+  retired on 12 Sep 2026 — reviving it for this would cut against the UGS-only decision.
   This is greenfield: the least-infrastructure implementation is UGS Cloud Code (serverless,
   not currently installed) + Cloud Save for the code table, plus issuance tooling on
   froglet.games.

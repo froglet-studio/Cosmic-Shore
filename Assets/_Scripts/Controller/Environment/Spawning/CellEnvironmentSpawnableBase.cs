@@ -49,6 +49,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Clearance points in the structure's local space.")]
         [SerializeField] protected Vector3[] spawnClearPoints = System.Array.Empty<Vector3>();
 
+        /// <summary>The base fields that feed generation, in the order the layout-bake fingerprint
+        /// mixes them (<see cref="PrismLayoutBakeFormat.Fingerprint"/>). Named with <c>nameof</c> so a
+        /// rename moves the fingerprint - and with it the bake file the game asks for - instead of
+        /// silently dropping that field from the key and serving a stale bake.</summary>
+        internal static readonly string[] FingerprintBaseFields =
+            { nameof(seed), nameof(density), nameof(spawnClearRadius), nameof(spawnClearPoints) };
+
         /// <summary>Golden angle in radians - the phyllotaxis constant (same value as
         /// PrismGeometry.AddShellPatch) behind canopies, whorls, and placement spirals.</summary>
         protected const float GoldenAngle = 2.39996323f;
@@ -68,6 +75,30 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Emit the whole environment via <see cref="Emit"/>.</summary>
         protected abstract void BuildEnvironment();
+
+        /// <summary>
+        /// True if this environment's authored prism sizes must survive
+        /// <c>PrismScaleAnimator</c>'s per-axis clamp. Default FALSE — every environment that
+        /// fits inside the shared prism prefab's serialized window wants the clamp as the
+        /// backstop it is.
+        ///
+        /// <para>Turn it on only when the generator STATES a size outside that window on purpose.
+        /// The clamp lives INSIDE the setter with no log and no return value, so an over-range
+        /// axis is not an error, it is a different arena that looks authored (see
+        /// <c>Docs/PRISM_ANIMATION.md</c> — the fitted-flora passes that measured and shipped
+        /// sizes the engine never used). Cleave's four arenas set it as a standing GUARD rather
+        /// than as a fix: every size they state today is well inside the window (longest 44), but
+        /// the window is a property of a prefab ~30 spawnables share, and an arena whose sizes are
+        /// computed from a dial is one edit away from stating one outside it. At the 6x envelope
+        /// pass, before prism size became its own dial, three of the Panes' lengths (102 / 108 /
+        /// 132) cleared even <c>SpawnablePrism.prefab</c>'s widened max of 100 and nothing said
+        /// so.</para>
+        ///
+        /// <para>It is a per-ENVIRONMENT opt-in rather than a widened prefab because
+        /// <c>SpawnablePrism.prefab</c> is shared by ~30 spawnables, and admitting a size one of
+        /// them is relying on the clamp to cut is a behaviour change for that one.</para>
+        /// </summary>
+        protected virtual bool AdmitsAuthoredPrismScale => false;
 
         /// <summary>Hash of every SUBCLASS parameter that affects generation (the base already
         /// covers seed, density, and clearance). Bump a constant here to invalidate caches
@@ -102,6 +133,15 @@ namespace CosmicShore.Gameplay
         protected List<FloraPlantingSite> _plantingSites;
 
         /// <summary>
+        /// True when this environment WILL sow planting sites, answerable off the prefab asset before any
+        /// generation has run (<see cref="PlantingSites"/> is null until then). A flora spawner waits on the
+        /// cell's deferred environment build only for such an environment, so a cell whose world prepares
+        /// no ground keeps its planting timing exactly as it was. False by default; an environment that
+        /// sows overrides it (<see cref="SpawnableRegattaRails"/>, when its course authors sites).
+        /// </summary>
+        public virtual bool PreparesPlantingSites => false;
+
+        /// <summary>
         /// Drop the generated point data (both the <see cref="SpawnableBase"/> trail cache and
         /// <see cref="CachedLays"/>). For a PREVIEW consumer that generated an environment only to
         /// sample it: a freestyle cell's lay list is tens of thousands of structs, and holding
@@ -116,14 +156,29 @@ namespace CosmicShore.Gameplay
             _plantingSites = null;
         }
 
+        /// <summary>
+        /// True when this world's layout may be served from its BAKE (<see cref="PrismLayoutBake"/>)
+        /// instead of running <see cref="BuildEnvironment"/> while the game loads. Its whole
+        /// output must be the lay list and the planting sites. A world whose
+        /// <see cref="SpawnLeafObjects"/> reads other build state (a rail world that indexes its
+        /// lays by range) overrides this false and always generates live.
+        /// </summary>
+        protected virtual bool BakesLayout => true;
+
         protected override SpawnTrailData[] GenerateTrailData()
         {
-            _noiseSeed = seed != 0 ? seed : DefaultSeed;
-            _r = new System.Random(_noiseSeed);
-            _cachedLays = new List<PrismLay>(LayCapacity);
-            _plantingSites = new List<FloraPlantingSite>();
+            // The layout is fitted flush at authoring time (Docs/ECOSYSTEM.md §62), and that fit
+            // is the expensive part of a build, so the bake made by Tools/Build/bake_prism_layouts.py
+            // is read instead whenever one exists for these exact parameters.
+            if (!BakesLayout || !PrismLayoutBake.TryLoad(this, out _cachedLays, out _plantingSites))
+            {
+                _noiseSeed = seed != 0 ? seed : DefaultSeed;
+                _r = new System.Random(_noiseSeed);
+                _cachedLays = new List<PrismLay>(LayCapacity);
+                _plantingSites = new List<FloraPlantingSite>();
 
-            BuildEnvironment();
+                BuildEnvironment();
+            }
 
             var points = new SpawnPoint[_cachedLays.Count];
             for (int i = 0; i < _cachedLays.Count; i++)
@@ -143,7 +198,15 @@ namespace CosmicShore.Gameplay
             // cached list whole for the miniature builder and the planting model.
             var lays = PrismLayDecimation.Apply(_cachedLays);
 
-            var trail = new Trail();
+            // DECLARED VOLUME, not the container's 1D default. Every authored world that keeps
+            // this base lay puts its whole structure (shells, plates, ribs, burrs - tens of
+            // thousands of prisms) into ONE container, and PrismscapeTopology.DimensionOf reads
+            // a container's declared dimension before any census - so the default Trail made a
+            // rider try to rail-grind a 3D world in index order (URCHIN_BACKLOG U5). Volume
+            // routes to the boundary (face) ride, which is also what Surface would do. A world
+            // that genuinely lays ribbons (Skein, Regatta rails, Switchyard, Breakwater)
+            // overrides this method and declares its own per-trail dimension.
+            var trail = new Trail { Dimension = PrismscapeDimension.Volume };
 
             // Streamed + batched at play time (tens of thousands of prisms; laying the 25k
             // geodesic shells in one frame measured ~95s). Behind a game load the arena-ready
@@ -152,9 +215,11 @@ namespace CosmicShore.Gameplay
             // synchronous.
             if (Application.isPlaying)
                 PrismTrailBuilder.LayBudgetedAsync(prism, lays, container.transform, trail,
-                    $"{container.name}::BLOCK", LayBudgetMsPerFrame).Forget();
+                    $"{container.name}::BLOCK", LayBudgetMsPerFrame,
+                    admitAuthoredScale: AdmitsAuthoredPrismScale).Forget();
             else
-                PrismTrailBuilder.LaySync(prism, lays, container.transform, trail, $"{container.name}::BLOCK");
+                PrismTrailBuilder.LaySync(prism, lays, container.transform, trail,
+                    $"{container.name}::BLOCK", AdmitsAuthoredPrismScale);
 
             trails.Add(trail);
         }
@@ -179,6 +244,18 @@ namespace CosmicShore.Gameplay
         protected Vector3 Jit(Vector3 s, float amt = 0.2f)
         {
             float k = 1f + RangeF(-amt, amt);
+            return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
+        }
+
+        /// <summary>
+        /// <see cref="Jit"/> for a prism authored FLUSH with its neighbours: the same one draw from
+        /// the shared stream (so swapping it in moves no other prism), but the factor only ever
+        /// SHRINKS, into [1 - 2*amt, 1]. A size fitted to touch its neighbours that a jitter can
+        /// grow is a size that clips (NO PRISM MAY INTERPENETRATE ANOTHER, Docs/ECOSYSTEM.md §62).
+        /// </summary>
+        protected Vector3 JitDown(Vector3 s, float amt = 0.2f)
+        {
+            float k = 1f - RangeF(0f, 2f * amt);   // one draw, like Jit: swapping it in moves no other prism
             return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
         }
 

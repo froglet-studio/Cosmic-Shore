@@ -8,7 +8,8 @@ namespace CosmicShore.UI
     public class ResourceButton : MonoBehaviour
     {
         [SerializeField] Image middleImageContainer;
-        public Sprite middleSprite;
+        [SerializeField] Sprite middleSprite;
+        public Sprite MiddleSprite => middleSprite;
         
         [SerializeField] Image gaugeLevelImageContainer;
         [SerializeField] List<Sprite> gaugeLevelImages;

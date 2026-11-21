@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
                 _netKillTarget.Value = target;
                 gameData.LifeformTargetCount = target;
 
-                CSDebug.Log($"[WildlifeKillMonitor] Server set kill target: {target}");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[WildlifeKillMonitor] Server set kill target: {target}");
             }
             else if (_netKillTarget.Value > 0)
             {

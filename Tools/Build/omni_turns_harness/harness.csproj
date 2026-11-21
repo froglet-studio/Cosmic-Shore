@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Compiles the SHIPPED omni turns (CrystalSpaceSquares + its baker, RhombusSkinBaker's plate split, the cadence)
+       against UnityStub.cs and checks them on the real body mesh (dump.py). Nothing under Assets/ is copied or edited. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>10.0</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>CS8981;CS0162;CS1591;CS0660;CS0661;CS0414;CS0649</NoWarn>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnityStub.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/OmniCadence.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/SquareTurnFit.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/RhombusSkinBaker.cs" />
+    <Compile Include="../../../Assets/_Scripts/Controller/Environment/Crystals/OmniCrystalCadenceSO.cs" />
+    <Compile Include="../../../Assets/_Scripts/Controller/Environment/Crystals/OmniCrystalCadence.cs" />
+    <Compile Include="../../../Assets/_Scripts/Controller/Environment/Crystals/CrystalSpaceSquaresSO.cs" />
+    <Compile Include="../../../Assets/_Scripts/Controller/Environment/Crystals/CrystalSpaceSquares.cs" />
+  </ItemGroup>
+</Project>

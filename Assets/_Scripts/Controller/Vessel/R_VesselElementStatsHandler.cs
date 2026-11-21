@@ -5,7 +5,7 @@ using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
 {
-    public class R_ShipElementStatsHandler : MonoBehaviour
+    public class R_VesselElementStatsHandler : MonoBehaviour
     {
         [Serializable]
         public struct ElementStat

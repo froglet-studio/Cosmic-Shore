@@ -8,10 +8,33 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField] float phoneFlipThreshold = .1f;
         public bool PhoneFlipState;
-        public ScreenOrientation currentOrientation;
+        [SerializeField] ScreenOrientation currentOrientation;
+        public ScreenOrientation CurrentOrientation => currentOrientation;
 
         public delegate void OnPhoneFlipEvent(bool state);
         public static event OnPhoneFlipEvent onPhoneFlip;
+
+        /// <summary>The last flip state raised, for a listener that was inactive when it changed
+        /// (<see cref="FlipUI"/> re-applies it on enable). Meaningful once <see cref="HasFlipState"/>.</summary>
+        public static bool LastFlipState { get; private set; }
+
+        /// <summary>True once any flip has been raised this session.</summary>
+        public static bool HasFlipState { get; private set; }
+
+        // Enter Play Mode runs without a domain reload: a flip from the last session must not answer.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            LastFlipState = false;
+            HasFlipState = false;
+        }
+
+        static void Raise(bool state)
+        {
+            LastFlipState = state;
+            HasFlipState = true;
+            onPhoneFlip?.Invoke(state);
+        }
 
         void Update()
         {
@@ -27,17 +50,17 @@ namespace CosmicShore.Gameplay
                 {
                     PhoneFlipState = false;
                     currentOrientation = ScreenOrientation.LandscapeLeft;
-                    onPhoneFlip(PhoneFlipState);
+                    Raise(PhoneFlipState);
 
-                    CSDebug.Log($"PhoneFlipDetector Phone flip state change detected - new flip state: {PhoneFlipState}");
+                    CSDebug.LogVerbose(CSLogChannel.Input, $"[PhoneFlipDetector] Phone flip state change - flipState={PhoneFlipState}");
                 }
                 else if (UnityEngine.Input.acceleration.y > 0 && !PhoneFlipState)
                 {
                     PhoneFlipState = true;
                     currentOrientation = ScreenOrientation.LandscapeRight;
-                    onPhoneFlip(PhoneFlipState);
+                    Raise(PhoneFlipState);
 
-                    CSDebug.Log($"PhoneFlipDetectorPhone flip state change detected - new flip state: {PhoneFlipState}");
+                    CSDebug.LogVerbose(CSLogChannel.Input, $"[PhoneFlipDetector] Phone flip state change - flipState={PhoneFlipState}");
                 }
             }
         }

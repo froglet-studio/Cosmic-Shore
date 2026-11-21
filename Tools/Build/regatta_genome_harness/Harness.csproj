@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Regatta genome harness: the game's own code, compiled by Amoebius (Port/), driven with no editor.
+       Not part of Port/ and never read by Unity. Built by run.sh against an Amoebius build ($AMOEBIUS_OUT). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>RegattaGenomeHarness</AssemblyName>
+    <AmoebiusOut Condition="'$(AmoebiusOut)' == ''">$(TMPDIR)/amoebius_regatta</AmoebiusOut>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(AmoebiusOut)/CosmicShore.Live.dll" />
+    <Reference Include="$(AmoebiusOut)/CosmicShore.Engine.dll" />
+    <Reference Include="$(AmoebiusOut)/CosmicShore.Compat.dll" />
+  </ItemGroup>
+</Project>

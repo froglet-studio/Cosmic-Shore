@@ -84,7 +84,6 @@ namespace CosmicShore.Core
             {
                 Song song = new Song(so);
                 Playlist.Add(song.Title, song);
-                CSDebug.Log("Song " + song.Title + " added to Playlist");
             }
         }
 

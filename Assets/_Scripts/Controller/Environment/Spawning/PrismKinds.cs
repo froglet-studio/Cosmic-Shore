@@ -19,8 +19,14 @@ namespace CosmicShore.Gameplay
     /// it too. (<c>SegmentSpawner.SuperShieldSpawnedPrisms</c> predates this and still pokes the
     /// component directly.)
     ///
-    /// Collider budget: Plain/Danger ride the LOD-cullable BoxCollider; Shielded/SuperShielded swap
-    /// to an always-on convex MeshCollider - keep them rare per scene (enforced by the palette caps).
+    /// Collider budget: ALL FOUR kinds ride the same LOD-cullable BoxCollider - a kind is free in
+    /// colliders. A shield swaps the MESH and the mass, never the collider: the shield components'
+    /// <c>shieldMeshCollider</c> is only ever set <c>= false</c> (four sites, no <c>= true</c>
+    /// anywhere), and their <c>sharedMesh</c> writes land on the MeshFilter, so there is no convex
+    /// cook either. The palette caps on the shielded tiers are still right, for two reasons that are
+    /// NOT the collider: a shield reaches 1.5x leafSize so it can fuse into its neighbours
+    /// (Docs/ECOSYSTEM.md §35), and armoured mass is never food and leaves the cell's fauna
+    /// targeting grids, so it persists. See <see cref="PrismKind"/>.
     /// </summary>
     public static class PrismKinds
     {
@@ -43,7 +49,9 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Clear any kind state back to a plain, damageable prism. Reverses Danger (flag +
         /// speed-debuff) and, via <see cref="Prism.DeactivateShields"/>, both Shielded and
-        /// SuperShielded (repaints plain, disengages the shield collider, syncs the AOE registry).
+        /// SuperShielded (repaints plain, sheds the shield MESH as ordinary prism-explosion debris,
+        /// syncs the AOE registry). It does NOT touch a collider: a shield swaps the mesh and the
+        /// mass, never the collider (see <see cref="PrismKind"/>).
         /// </summary>
         public static void Clear(Prism prism)
         {

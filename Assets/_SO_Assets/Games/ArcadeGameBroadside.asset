@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameBroadside
+  m_EditorClassIdentifier:
+  Mode: 57
+  IsMultiplayer: 1
+  DisplayName: Broadside
+  Description: 'Every hull that can fight, loose in the Boneyard, each with the weapon it actually has
+    - a Scarab''s plate, a Stoat''s joust, a Brittle Star''s cord, a Meerkat''s zap, an
+    Angler''s bite, the Jacks'' herd. A hit is worth what it cost you to land, not what you
+    flew: a round is 1, a contact strike 8, a debuff 12, a rocket up to 30. First team to
+    the target wins. Pick the hull you fight best.'
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
+  CardBackground: {fileID: 21300000, guid: cc3a5100dbcb4b11adebaf1bc3563dad, type: 3}
+  GolfScoring: 1
+  SceneName: MinigameBroadside
+  Vessels:
+  - {fileID: 11400000, guid: b136d82d275e0f8ea1feef29f0d416a4, type: 2}
+  - {fileID: 11400000, guid: cc163188820f4e7a985561bc609da2e0, type: 2}
+  - {fileID: 11400000, guid: d8ebb29f2d63ad7eb488fdcb97145cfe, type: 2}
+  - {fileID: 11400000, guid: 8d3f1a2b4c5e4d6f9a7b8c9d0e1f2a3b, type: 2}
+  - {fileID: 11400000, guid: ea422bbe0d1aef61993692999cee50ea, type: 2}
+  - {fileID: 11400000, guid: 8a41c6e2f0d94b7c9e35a1d7c4b8e2f6, type: 2}
+  MinPlayersAllowed: 2
+  MaxPlayersAllowed: 9
+  MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
+  MinIntensity: 2
+  MaxIntensity: 2
+  ArenaRules: 1
+  Tips:
+  - Your hull already has a weapon. The card does not hand you one - it pays for the one you brought.
+  - A contact strike is worth eight rounds. Closing is the expensive part, so it pays like it.
+  - You cannot hit a teammate with anything here. The domains are the sides.
+  ViewUserAction: 0
+  PlayUserAction: 0
+  StartingElements:
+  ComebackRatePerScoreDeficit: 0.12

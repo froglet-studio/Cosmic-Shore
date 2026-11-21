@@ -125,9 +125,10 @@ SPREAD = 40
 # passes PrismSpatialIndex.TryReserve.
 #
 # The inner edge still matters for the reason it always did: the shipped per-element assets
-# author PlantRadiusCellFraction 0.2 (240u), which is INSIDE the ~392u nucleus, so
-# ResolvePlantRadius collapses to a single degenerate shell there - every founder on one sphere,
-# inside the territorial claim.
+# author PlantRadiusCellFraction 0.2 (240u), which is INSIDE the ~392u nucleus. ResolvePlantRadius
+# used to collapse that to a single degenerate shell inside the territorial claim; it now lifts such
+# a band to a thin shell just outside the nucleus (Flora.LiftBandOutOfNucleus), which is still one
+# sphere of founders - hence a real band here.
 BAND_OUTER = 0.70
 BAND_INNER = 0.45
 
@@ -391,13 +392,17 @@ def fauna_asset():
     Enabled: 1
 """
     body += f"    HeartWorldScale: {heart}\n"
-    body += """    BaseBodyScale: 0.4
+    # Body and body-relative lengths x 3.55/1.737: the body matches the one heart size
+    # (Docs/ECOSYSTEM.md section 64.4); speeds stay in world units.
+    body += """    BaseBodyScale: 0.8175
     BodyPrismScale: {x: 0.8, y: 0.8, z: 7}
     StarvationSeconds: 90
     Forager: 1
-    CohesionRadius: 50
+    CohesionRadius: 102.2
     BehaviorUpdateRate: 1.5
-    TrailBlockInteractionRadius: 20
+    TrailBlockInteractionRadius: 40.88
+    SeparationRadius: 30.66
+    FeedingClusterRadius: 20.44
     GoalWeight: 3
     MinSpeed: 10
     MaxSpeed: 15

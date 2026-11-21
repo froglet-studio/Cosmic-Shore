@@ -19,7 +19,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public bool higherIsWorse;
         public Verdict verdict;
 
-        public enum Verdict { Improved, Neutral, Regressed }
+        public enum Verdict { Improved = 0, Neutral = 1, Regressed = 2 }
 
         public MetricDelta(string name, float baseline, float current, bool higherIsWorse, float neutralThresholdPercent = 2f)
         {

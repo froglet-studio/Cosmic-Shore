@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -33,10 +34,12 @@ namespace CosmicShore.Gameplay
                  "and this species fills the whole shell of space between the two, which is what a " +
                  "cell needs when its plants are meant to read as a forest with depth rather than " +
                  "a soap bubble at one radius.\n\n" +
-                 "The inner edge is always clamped OUTSIDE the cell's nucleus: nucleus-interior " +
-                 "mass is the territorial claim, is excluded from the fauna targeting grids, and " +
-                 "is where a standard crystal respawns - so a plant rooted in there is mass the " +
-                 "food web can never reach and clutter in the one volume that has to stay legible.")]
+                 "The inner edge is clamped OUTSIDE the cell's nucleus WHILE THAT NUCLEUS IS A " +
+                 "CONTROL ZONE: nucleus-interior mass is then the territorial claim and is " +
+                 "excluded from the fauna targeting grids, so a plant rooted in there is mass the " +
+                 "food web can never reach. A cell that has declared its nucleus play geometry " +
+                 "rather than a claim (Cell.NucleusIsControlZone = false) has no such interior, " +
+                 "and the clamp lifts - see ResolvePlantRadius.")]
         [Range(0f, 1f)] [SerializeField] protected float plantRadiusCellFractionMin = 0f;
 
         protected bool isGrowing = true;
@@ -47,8 +50,26 @@ namespace CosmicShore.Gameplay
         /// <c>FloraVariantTuning.LeafSize</c>, scaled by level). Exposed so a flora that shapes
         /// its prisms per ROLE - a stem segment is not a leaf - can derive those shapes from the
         /// element's identity instead of re-authoring it. See <see cref="PhyllotacticFlora"/>.
+        ///
+        /// <para><b>The setter is for a species whose leaf is a MEASUREMENT rather than a
+        /// preference</b> - one whose <see cref="PrismSizeFixedByGrowthRule"/> is true because
+        /// its geometry is an offline table in absolute units. There the size that fits is a
+        /// function of the table and no config field can know it, so an authored leaf that
+        /// disagrees is not a preference but a defect: <see cref="BorromeanFlora"/>'s plates are
+        /// fitted offline to the largest that do not interpenetrate, which is a guarantee, and a
+        /// guarantee any asset edit can break is not one. Same argument as
+        /// <see cref="ResolveShieldPeriod"/>, one field over. Every other species authors its
+        /// leaf and leaves this alone.</para>
         /// </summary>
-        protected Vector3 LeafSize => leafSize;
+        protected Vector3 LeafSize
+        {
+            get => leafSize;
+            set => leafSize = value;
+        }
+
+        /// <summary>One leaf prism's volume - what a grazer's single bite of this plant is worth. A forager weighing
+        /// plants of different species reads this (Tandava's director: TandavaController.SurveyFood).</summary>
+        public float LeafVolume => Mathf.Abs(leafSize.x * leafSize.y * leafSize.z);
 
         public abstract void Grow();
         public abstract void Plant();
@@ -74,7 +95,7 @@ namespace CosmicShore.Gameplay
         public virtual bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into) => false;
 
         // Optional pinned planting spot. Plant() implementations normally disperse the flora
-        // across the cell; a caller that needs it to root at a KNOWN spot (the Lifeform Matrix
+        // across the cell; a caller that needs it to root at a KNOWN spot (the Spawn Matrix
         // toy's spawn-here stations) sets this before Initialize and Plant() honors it.
         Vector3? _plantPositionOverride;
 
@@ -159,18 +180,153 @@ namespace CosmicShore.Gameplay
             float membrane = cell.MembraneRadius;
             float outer = membrane * plantRadiusCellFraction;
 
-            // Never inside the nucleus: that mass is the territorial claim, is kept out of the
-            // fauna targeting grids, and shares its volume with the standard crystal respawn.
-            // ExpectedNucleusWorldRadius (not NucleusWorldRadius) so the clamp is correct even if
-            // a caller plants before the cell has instantiated its nucleus.
-            float inner = Mathf.Max(membrane * plantRadiusCellFractionMin,
-                                    cell.ExpectedNucleusWorldRadius);
+            // Not inside a nucleus that is a CONTROL ZONE: that mass is the territorial claim and
+            // is kept out of the fauna targeting grids, so a plant rooted in there is mass the food
+            // web can never reach. ExpectedNucleusWorldRadius (not NucleusWorldRadius) so the clamp
+            // is correct even if a caller plants before the cell has instantiated its nucleus.
+            //
+            // The clamp reads NucleusIsControlZone rather than the nucleus's mere existence,
+            // because both reasons for it ARE the control zone, and a cell that sets that flag
+            // false has declared it has none (Cell.NucleusIsControlZone: "this nucleus is a wall,
+            // not a claim" - herbivores eat opposing mass anywhere, DominantDomain reads the whole
+            // cell). Testing the geometry instead is the §25.1 trap from the other side: Astro
+            // League's food web silently did nothing because a mode borrowed the nucleus as play
+            // geometry and inherited its SEMANTICS; here a mode that borrowed it as its court could
+            // not seed a plant inside its own arena. The one reason that does survive - a standard
+            // crystal respawns in the nucleus volume - is real and accepted: it is a matter of
+            // clutter in a volume a court-mode has already filled with play, not of mass the
+            // ecology cannot reach.
+            float nucleusFloor = cell.NucleusIsControlZone ? cell.ExpectedNucleusWorldRadius : 0f;
+            outer = LiftBandOutOfNucleus(outer, nucleusFloor, membrane);
+            float inner = Mathf.Max(membrane * plantRadiusCellFractionMin, nucleusFloor);
             if (inner >= outer) return outer;
 
             float t = Random.value;
             float innerCubed = inner * inner * inner;
             float outerCubed = outer * outer * outer;
             return Mathf.Pow(Mathf.Lerp(innerCubed, outerCubed, t), 1f / 3f);
+        }
+
+        /// <summary>How far past a control-zone nucleus a band that fits wholly inside it is lifted.</summary>
+        const float NucleusClearance = 1.1f;
+
+        /// <summary>
+        /// The band's outer edge, lifted just clear of a control-zone nucleus when the authored
+        /// band lies wholly inside it.
+        ///
+        /// <para>The lattice prefabs (Gyroid, SchwarzP, Quasicrystal) author an outer fraction of
+        /// 0.2 - 240u in a 1200u cell, inside the 392u nucleus. Clamping only the INNER edge left
+        /// <c>inner &gt;= outer</c>, and the old answer to that was "root at the outer edge", which
+        /// put every such plant inside the nucleus cage: the exact unreachable mass the clamp
+        /// exists to prevent. Lifting the outer edge instead keeps the band's intent (as close in
+        /// as the cell allows) and both <see cref="ResolvePlantRadius"/> and
+        /// <see cref="ClampToPlantingBand"/> read it, so an offspring is not dragged back in.</para>
+        /// </summary>
+        static float LiftBandOutOfNucleus(float outer, float nucleusFloor, float membrane) =>
+            nucleusFloor <= 0f || outer > nucleusFloor
+                ? outer
+                : Mathf.Min(nucleusFloor * NucleusClearance, membrane * 0.95f);
+
+        /// <summary>Candidates a SPREAD planting draws (<see cref="FloraConfigurationSO.SpreadPlanting"/>).</summary>
+        const int SpreadCandidates = 8;
+
+        /// <summary>
+        /// Where a dispersed plant roots: <see cref="ResolvePlantCenter"/> plus a radius from
+        /// <see cref="ResolvePlantRadius"/> in a random direction - or, when the config lists
+        /// <see cref="FloraConfigurationSO.PlantingPens"/>, a point inside the pen that holds the fewest living plants of
+        /// this species - and, for a species whose config spreads its planting, the best of <see cref="SpreadCandidates"/>
+        /// such points: the one farthest from every living plant of the same species in direction (Mitchell's best
+        /// candidate, a blue-noise draw over the band's directions).
+        /// </summary>
+        protected Vector3 ResolveDispersalPoint(float legacyRadius)
+        {
+            var centre = ResolvePlantCenter();
+            int pen = EmptiestPen(centre);
+            var best = pen >= 0 ? PenPoint(centre, pen) : centre + ResolvePlantRadius(legacyRadius) * Random.onUnitSphere;
+            if (!sourceConfig || !sourceConfig.SpreadPlanting) return best;
+            float bestGap = NearestKinSqr(best);
+            for (int k = 1; k < SpreadCandidates; k++)
+            {
+                var p = pen >= 0 ? PenPoint(centre, pen) : centre + ResolvePlantRadius(legacyRadius) * Random.onUnitSphere;
+                float gap = NearestKinSqr(p);
+                if (gap > bestGap) { bestGap = gap; best = p; }
+            }
+            return best;
+        }
+
+        /// <summary>The config's planting pen holding the fewest living plants of this species (ties broken at random), or
+        /// -1 when the config lists none or there is no cell to measure the pens against.</summary>
+        int EmptiestPen(Vector3 centre)
+        {
+            var pens = sourceConfig ? sourceConfig.PlantingPens : null;
+            if (pens is not { Count: > 0 } || !cell || cell.MembraneRadius <= 0f) return -1;
+            int start = Random.Range(0, pens.Count), best = -1, bestCount = int.MaxValue;
+            var live = FloraHeartRegistry.Live;
+            for (int k = 0; k < pens.Count; k++)
+            {
+                int j = (start + k) % pens.Count, count = 0;
+                for (int i = 0; i < live.Count; i++)
+                {
+                    var f = live[i];
+                    if (!f || f == this || f.IsDying || f.sourceConfig != sourceConfig || !f.HeartTransform) continue;
+                    if (InPen(pens[j], f.HeartTransform.position - centre)) count++;
+                }
+                if (count < bestCount) { bestCount = count; best = j; }
+            }
+            return best;
+        }
+
+        bool InPen(FloraPlantingPen pen, Vector3 offset)
+        {
+            float m = cell.MembraneRadius, r = offset.magnitude;
+            if (r < pen.InnerFraction * m || r > pen.OuterFraction * m) return false;
+            if (pen.Axis.sqrMagnitude <= 0f || r <= 0f) return true;
+            return Vector3.Dot(offset / r, pen.Axis.normalized) >= Mathf.Cos(pen.HalfAngle * Mathf.Deg2Rad);
+        }
+
+        /// <summary>A random point of pen <paramref name="index"/>: uniform by volume between its two radii (as
+        /// <see cref="ResolvePlantRadius"/> draws, inner edge clamped outside a control-zone nucleus) and uniform over its
+        /// cone of directions.</summary>
+        Vector3 PenPoint(Vector3 centre, int index)
+        {
+            var pen = sourceConfig.PlantingPens[index];
+            float m = cell.MembraneRadius;
+            float outer = pen.OuterFraction * m;
+            float inner = Mathf.Min(outer, Mathf.Max(pen.InnerFraction * m,
+                cell.NucleusIsControlZone ? cell.ExpectedNucleusWorldRadius : 0f));
+            float r = Mathf.Pow(Mathf.Lerp(inner * inner * inner, outer * outer * outer, Random.value), 1f / 3f);
+            Vector3 dir;
+            if (pen.Axis.sqrMagnitude <= 0f) dir = Random.onUnitSphere;
+            else
+            {
+                var axis = pen.Axis.normalized;
+                float cosT = Mathf.Lerp(1f, Mathf.Cos(pen.HalfAngle * Mathf.Deg2Rad), Random.value);
+                float sinT = Mathf.Sqrt(Mathf.Max(0f, 1f - cosT * cosT));
+                float phi = Random.value * 2f * Mathf.PI;
+                var u = Vector3.Cross(axis, Mathf.Abs(axis.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
+                var v = Vector3.Cross(axis, u);
+                dir = cosT * axis + sinT * (Mathf.Cos(phi) * u + Mathf.Sin(phi) * v);
+            }
+            return centre + r * dir;
+        }
+
+        /// <summary>How far <paramref name="p"/> is, in DIRECTION from the planting centre, from the nearest living heart of
+        /// this plant's species (squared chord between unit directions): a band's pens and a pilot's view are angular, so
+        /// two plants on one radial a shell apart are as clumped as two side by side.</summary>
+        float NearestKinSqr(Vector3 p)
+        {
+            var centre = ResolvePlantCenter();
+            var u = (p - centre).normalized;
+            float best = float.MaxValue;
+            var live = FloraHeartRegistry.Live;
+            for (int i = 0; i < live.Count; i++)
+            {
+                var f = live[i];
+                if (!f || f == this || f.IsDying || f.sourceConfig != sourceConfig || !f.HeartTransform) continue;
+                float d = ((f.HeartTransform.position - centre).normalized - u).sqrMagnitude;
+                if (d < best) best = d;
+            }
+            return best;
         }
 
         /// <summary>
@@ -217,38 +373,24 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Seconds between shield refreshes on a CHARGE plant's leaves - the cadence the nine
-        /// already-authored Charge flora assets carry, hoisted here so the law and the data
-        /// state the same number.
-        /// </summary>
-        public const float ChargeShieldPeriod = 1f;
-
-        /// <summary>
-        /// THE CHARGE LAW: a Charge plant armours its leaves. Charge is the element whose
-        /// identity is that its mass is SHIELDED - a shielded prism sheds its shield instead
-        /// of being eaten (<c>Prism.Consume</c>), so a herbivore must strip a Charge plant
-        /// before it can graze it, and the plant re-armours one leaf every
-        /// <see cref="ChargeShieldPeriod"/> seconds. Nothing is culled and nothing is immune:
-        /// grazing simply takes two passes, which is the cost the element buys.
+        /// THE ARMOUR LAW (<see cref="ElementalArmour"/>, Docs/ECOSYSTEM.md §65): a MASS plant armours its leaves, a
+        /// CHARGE plant never does. A shielded prism sheds its shield instead of being eaten (<c>Prism.Consume</c>), so a
+        /// herbivore must strip a Mass plant before it can graze it, and the plant re-armours one leaf every
+        /// <see cref="ElementalArmour.ShieldPeriod"/> seconds. Charge's identity is that every prism is DANGEROUS
+        /// (<see cref="AddHealthBlock"/>), and a shield clears danger, so a Charge plant runs no shield at all.
         ///
-        /// <para>It is a rule here rather than a number on every asset because the cadence is
-        /// authored per CONFIG while the element is ROLLED per plant
-        /// (<c>FloraConfigurationSO.SpreadElements</c>). A config with no element palette rolls
-        /// an element and then applies its OWN variant block to it, so the two Hesperides
-        /// topiary configs would hand a Charge plant a cadence of 0 and no amount of asset
-        /// authoring could reach them without re-shaping the other three elements too. The
-        /// canonical per-element assets still author 1 - this only floors what they say.</para>
+        /// <para>Until 2026-10-28 this was Charge's law (§35). It moved to Mass with the "chunky" Mass plate (Garrett:
+        /// "we are going to lose the chunky prisms now that we have these scaled up versions of mass. lets also shift
+        /// the shielding affect from charge to mass"): Mass now has SIZE, and its plants are fitted for their octahedra.</para>
         ///
-        /// <para>An authored cadence still wins: a Charge species may be armoured FASTER or
-        /// SLOWER than the fleet, it just may not be unarmoured. Fauna are deliberately
-        /// untouched (this override is on <see cref="Flora"/>, not <c>LifeForm</c>): a
-        /// creature's body prisms are not the food web's mass, and shielding them would
-        /// change what it takes to kill a creature.</para>
+        /// <para>It is a rule here rather than a number on every asset because the cadence is authored per CONFIG while
+        /// the element is ROLLED per plant (<c>FloraConfigurationSO.SpreadElements</c>) - a config with no element palette
+        /// rolls an element and applies its OWN variant block to it, so no asset value reaches every Mass plant. The
+        /// canonical per-element assets still author the number. An authored cadence still wins on Mass (faster or slower,
+        /// never off). Fauna run the same law through their own body prisms (<c>Fauna</c>).</para>
         /// </summary>
-        protected override float ResolveShieldPeriod(float authored)
-            => Element == CosmicShore.Data.Element.Charge && authored <= 0f
-                ? ChargeShieldPeriod
-                : authored;
+        protected override float ResolveShieldPeriod(float authored) =>
+            ElementalArmour.ResolveShieldPeriod(Element, authored);
 
         /// <summary>
         /// THE TIME LAW: a Time plant breeds faster, every other element a little slower
@@ -273,6 +415,69 @@ namespace CosmicShore.Gameplay
                 authored, FloraReproductionRules.ReproductionRateFor(Element));
 
         /// <summary>
+        /// THE MASS AND SPACE LAWS: the element redistributes this species' authored leaf -
+        /// MASS into the most cumulative prism volume in the most CUBIC leaf, SPACE into the
+        /// highest ASPECT RATIO, trading that volume for the bounding volume of the assembly.
+        /// Charge and Time take the species' own form, because their identities are armour
+        /// (<see cref="ResolveShieldPeriod"/>) and tempo (<see cref="ResolveGrowPeriod"/>).
+        /// Full statement and the measurements behind the constants:
+        /// <see cref="FloraElementalForm"/>, Docs/ECOSYSTEM.md §45.
+        ///
+        /// <para>It runs HERE - at <c>LifeForm.Initialize</c>'s element hook - for the reason
+        /// every elemental law does: the leaf is authored per CONFIG while the element is
+        /// ROLLED per plant, so no asset field could express it, and this is the one point
+        /// where the prefab, the variant block, the cell's overrides and the crystal carrying
+        /// the element have all landed. It runs BEFORE <c>BindEmbeddedParts</c>, so the seed
+        /// prism wears the element's leaf like everything grown after it.</para>
+        ///
+        /// <para><b>A species whose prism size is dictated by its growth rule is exempt</b>
+        /// (<see cref="PrismSizeFixedByGrowthRule"/>) and states the law in its own fitted
+        /// data instead - a lattice bonds at offsets measured in absolute units, so a
+        /// transformed leaf lays prisms the bond table no longer describes. Those species are
+        /// checked against the law offline by
+        /// <c>Tools/Build/measure_flora_elemental_form.py</c>, never transformed here.</para>
+        /// </summary>
+        protected override void OnElementResolved()
+        {
+            base.OnElementResolved();
+
+            // THE CLOCK IS NOT EXEMPT. PrismSizeFixedByGrowthRule is a statement about
+            // GEOMETRY - a lattice bonds at offsets in absolute units - and it says nothing
+            // about tempo, so a Time lattice still grows fastest. Gating the whole method on
+            // it would have made the exemption mean more than it says.
+            growPeriod = ResolveGrowPeriod(growPeriod);
+
+            if (PrismSizeFixedByGrowthRule) return;
+            leafSize = FloraElementalForm.ShapeLeaf(leafSize, Element);
+        }
+
+        /// <summary>
+        /// THE TIME LAW, applied to the clock a plant runs its own body on: seconds between
+        /// growth steps. Time lays prisms faster, the other three a little slower, on the SAME
+        /// constant that scales the growth quota and the lattice colony cycle
+        /// (<see cref="FloraElementalForm.ScaleGrowPeriod"/>) - "Time grows and regenerates the
+        /// fastest" is one number, not three that can drift apart.
+        ///
+        /// <para>It scales whatever the species authored rather than replacing it, so the
+        /// eight Hesperides phyllotactics keep their own per-element tempo ladder and the
+        /// element scales it - exactly how <see cref="ResolveGrowthPerOffspring"/> treats the
+        /// number the authoring script wrote.</para>
+        /// </summary>
+        protected float ResolveGrowPeriod(float authored)
+            => FloraElementalForm.ScaleGrowPeriod(authored, Element);
+
+        /// <summary>
+        /// How far this plant REACHES relative to its species' authored extent - the assembly
+        /// half of the Mass/Space law (<see cref="FloraElementalForm.ReachScale"/>): a Space
+        /// plant spends its material as a wider skeleton, a Mass plant draws in to a compact
+        /// block. A family honours it on whatever field carries its extent; a family whose
+        /// leaf IS its strut needs nothing, because the anisotropy already lengthened it.
+        /// Returns 1 for a species exempt from the leaf law, so the exemption is total.
+        /// </summary>
+        protected float ElementalReachScale
+            => PrismSizeFixedByGrowthRule ? 1f : FloraElementalForm.ReachScale(Element);
+
+        /// <summary>
         /// True when this species' prism SIZE is dictated by its growth rule rather than being
         /// free, so <b>no per-individual scale curve may ever touch it</b>. A LATTICE species is
         /// the case (<see cref="AssembledFlora"/>): its neighbour offsets are a measured bond
@@ -282,12 +487,14 @@ namespace CosmicShore.Gameplay
         /// describes. It cannot be fixed by making the offsets scale-aware either: a plant's
         /// EARLIER prisms were laid at the old size, and two prism sizes cannot tile one lattice.
         ///
-        /// <para><b>Nothing reads this today, deliberately.</b> Its one reader was the LEVEL
-        /// curve, which is retired (Docs/ECOSYSTEM.md §40) — a plant's leaf is now stated once
-        /// by its element and never changes in life, so there is no curve left to exempt.
-        /// It is kept because the RULE outlived the mechanism: <b>before adding any
-        /// per-individual scale curve, ask which species' geometry is authored in absolute
-        /// units</b>, and gate it on this. Deleting it deletes the guard, not the hazard.</para>
+        /// <para><b>Its reader is <see cref="ApplyCellPrismScale"/>.</b> For a while it had none:
+        /// the original reader was the per-individual LEVEL curve, retired in
+        /// Docs/ECOSYSTEM.md §40, and this was kept with no caller precisely because <b>the RULE
+        /// outlived the mechanism</b>. The per-CELL prism scale is the next thing that wanted to
+        /// resize a leaf, and it was gated on this on arrival rather than rediscovering the
+        /// hazard — which is what keeping a reader-less guard is for. Deleting it deletes the
+        /// guard, not the hazard: <b>before adding anything that resizes a leaf, ask which
+        /// species' geometry is authored in absolute units.</b></para>
         /// </summary>
         protected virtual bool PrismSizeFixedByGrowthRule => false;
 
@@ -299,13 +506,142 @@ namespace CosmicShore.Gameplay
             // Without this a config asking for 60 x 1 x 1 silently becomes 10 x 1 x 1.
             healthPrism.AdmitTargetScale(leafSize);
             healthPrism.TargetScale = leafSize;
+            ArmLeaf(healthPrism);
+        }
+
+        /// <summary>
+        /// THE CHARGE LAW (<see cref="ElementalArmour.ArmsEveryPrism"/>, Docs/ECOSYSTEM.md §65): every prism a CHARGE
+        /// plant lays is a danger prism - not only the few its species authors (a gyroid's octagon ring). Every family
+        /// lays its prisms through <see cref="AddHealthBlock"/>, so this is the one place it is said. The flag is stated
+        /// before the call so a prism that has not been initialised yet comes up dangerous on its own
+        /// (<c>Prism.Initialize</c> re-applies a requested danger), and one that has is turned now.
+        /// </summary>
+        protected void ArmLeaf(HealthPrism healthPrism)
+        {
+            if (!healthPrism || !ElementalArmour.ArmsEveryPrism(Element)) return;
+            if (healthPrism.prismProperties is null || healthPrism.prismProperties.IsDangerous) return;
+            healthPrism.prismProperties.IsDangerous = true;
+            healthPrism.MakeDangerous();
+        }
+
+        /// <summary>
+        /// THE HEART'S CLEARANCE (Docs/ECOSYSTEM.md §65): true when a prism of this plant's element, at
+        /// <paramref name="position"/> / <paramref name="rotation"/> with full size <paramref name="size"/> (all in the
+        /// same space as <paramref name="heart"/>), would come nearer its heart than <see cref="ElementalArmour.HeartClearance"/>
+        /// - the Mass crystal's full swing to an armoured plant's octahedra, the crystal's seat to anyone else's box.
+        /// Measured to the box of <see cref="ElementalArmour.PrismReach"/> half-extents, which CONTAINS the shield, so a
+        /// prism this passes is clear. A growth-rule family asks it where it decides a prism (a heart seat is a
+        /// property of where the body starts, not of a prism the body happens to lay - but a frontier that curls back
+        /// can still reach it).
+        /// </summary>
+        protected bool IntrudesOnHeart(Vector3 heart, Vector3 position, Quaternion rotation, Vector3 size)
+        {
+            Vector3 local = Quaternion.Inverse(rotation) * (heart - position);
+            float reach = ElementalArmour.PrismReach(Element);
+            var outside = new Vector3(
+                Mathf.Max(0f, Mathf.Abs(local.x) - Mathf.Abs(size.x) * reach),
+                Mathf.Max(0f, Mathf.Abs(local.y) - Mathf.Abs(size.y) * reach),
+                Mathf.Max(0f, Mathf.Abs(local.z) - Mathf.Abs(size.z) * reach));
+            return outside.sqrMagnitude < ElementalArmour.HeartClearance(Element) * ElementalArmour.HeartClearance(Element);
+        }
+
+        /// <summary>
+        /// How far along its own long axis a BASE prism of full size <paramref name="size"/> (long axis local +z) must be
+        /// centred from the heart so the heart's clearance holds: the clearance plus the prism's reach along that axis.
+        /// Everything of the prism - box or shield - then lies beyond the plane at the clearance, whatever its offset
+        /// across the axis, which is what lets a clump of several roots share one seat.
+        /// </summary>
+        protected float HeartSeatDistance(Vector3 size) =>
+            ElementalArmour.HeartClearance(Element) + Mathf.Abs(size.z) * ElementalArmour.PrismReach(Element);
+
+        /// <summary>
+        /// Stretches a FRESHLY instantiated limb's branch geometry along its local +z to span <paramref name="bond"/>
+        /// (the `/flora` limb contract, rule 3): the spindle's CHILDREN are scaled and never its root, so anything the
+        /// limb later carries keeps its own size. Measured off the instance's mesh bounds, so no reach is authored. A
+        /// limb whose branch does not run along +z is left unstretched - visible, never inverted.
+        /// </summary>
+        protected static void StretchFreshLimb(Spindle limb, float bond)
+        {
+            if (!limb || bond <= 0f) return;
+            Transform root = limb.transform;
+            float reach = 0f;
+            foreach (var filter in limb.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (!filter || !filter.sharedMesh || filter.transform == root) continue;
+                Bounds b = filter.sharedMesh.bounds;
+                Matrix4x4 m = root.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+                for (int c = 0; c < 8; c++)
+                {
+                    Vector3 corner = m.MultiplyPoint3x4(new Vector3(
+                        (c & 1) == 0 ? b.min.x : b.max.x,
+                        (c & 2) == 0 ? b.min.y : b.max.y,
+                        (c & 4) == 0 ? b.min.z : b.max.z));
+                    if (corner.z > reach) reach = corner.z;
+                }
+            }
+            if (reach <= 0f) return;
+            float f = bond / reach;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i);
+                if (child.GetComponent<Prism>() || child.GetComponent<Spindle>()) continue;
+                Vector3 s = child.localScale;
+                s.z *= f;
+                child.localScale = s;
+            }
         }
 
         public override void Initialize(Cell cell)
         {
+            ApplyCellPrismScale(cell);
             base.Initialize(cell);
             Plant();
+            // A living plant's heart is a point of interest anything may build on
+            // (FloraHeartRegistry). Registered AFTER Plant() so the entry's first read already
+            // reports the planted position rather than the spawn origin, and after
+            // base.Initialize() so the crystal has been seated.
+            FloraHeartRegistry.Register(this);
             StartCoroutine(GrowCoroutine());
+        }
+
+        bool cellPrismScaleApplied;
+
+        /// <summary>
+        /// THE BIOME'S TAKE ON LEAF SIZE: <c>Cell.ResolveFloraPrismScale</c>, applied once, here.
+        /// A cell that wants chunkier flora - bigger targets to shoot, bigger surfaces to skim -
+        /// says so on its SpawnProfile rather than by forking every species asset it references
+        /// (Rampage's five are shared across its four intensities; the two fauna it uses are
+        /// shared with Menu_Main).
+        ///
+        /// <para><b>It runs BEFORE <c>base.Initialize</c>, and that ordering is load-bearing.</b>
+        /// <c>LifeForm.Initialize</c> binds the prefab's own authored prisms through
+        /// <c>BindEmbeddedParts</c> -> <c>AddHealthBlock</c>, which stamps <c>leafSize</c> onto
+        /// each one. Apply the scale after it and a plant's SEED prism keeps the authored size
+        /// while everything it grows afterwards is scaled - a discrepancy visible only on the one
+        /// prism nobody looks at. It runs AFTER <c>ApplyVariantTuning</c> for free, because the
+        /// spawner applies that before Initialize, so it composes on top of the element's own leaf
+        /// identity instead of replacing it.</para>
+        ///
+        /// <para><b>Not a lifeform LEVEL.</b> The scale is a property of the CELL, so every plant
+        /// of a species in it is the same size; nothing here is per-individual acquired growth and
+        /// nothing reads a plant's history (Docs/ECOSYSTEM.md 40). It is applied exactly once - the
+        /// guard flag matters because <c>Initialize</c> is not itself idempotent past
+        /// <c>LifeForm</c>'s own early-out.</para>
+        ///
+        /// <para><b>A LATTICE species is exempt</b>, which is what
+        /// <see cref="PrismSizeFixedByGrowthRule"/> was kept for. Its bond offsets are a measured
+        /// table in absolute local units, so a scaled leaf lays prisms the table no longer
+        /// describes - and scaling the lattice too drags a whole family of absolute-distance
+        /// coherence tolerances with it (Docs/ECOSYSTEM.md 34.8). Rampage has no lattice species;
+        /// the guard is for the cell that tries this next.</para>
+        /// </summary>
+        void ApplyCellPrismScale(Cell cell)
+        {
+            if (cellPrismScaleApplied || !cell || PrismSizeFixedByGrowthRule) return;
+            cellPrismScaleApplied = true;
+
+            Vector3 scaled = cell.ResolveFloraPrismScale(1f) * leafSize;
+            if (scaled != leafSize) leafSize = scaled;
         }
 
         // -------------------------------------------------------------------
@@ -338,13 +674,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual int PrismBudget => 0;
 
-        /// <summary>
-        /// Binds this plant to its species lineage: the cell whose population it belongs to and
-        /// the config that defines the species. Registers it in the cell's per-species live
-        /// count (unregistered in OnDestroy). Called by <c>CellLifeSpawnerBase.SpawnFlora</c> -
-        /// the one canonical spawn path every producer already routes through - and by a parent
-        /// for its offspring, since heredity is what lets reproduction recurse.
-        /// </summary>
         /// <summary>This plant's variant tuning block, or null if it rolled none. Read by
         /// <see cref="FloraNetworkSync"/> to record WHICH palette sibling supplied it - the half
         /// of the identity that the element alone does not name.</summary>
@@ -357,7 +686,7 @@ namespace CosmicShore.Gameplay
         /// local death. Attribution is deliberately empty: the kill was scored on the server,
         /// and a mirrored death must not score again.
         /// </summary>
-        public void KillReplicated() => Die();
+        public void KillReplicated() => DieOnce();
 
         /// <summary>
         /// Publishes this plant's death to the replicated slot list before running it, so every
@@ -367,9 +696,21 @@ namespace CosmicShore.Gameplay
         protected override void Die(string killerName = "")
         {
             if (hostCell) FloraNetworkSync.ServerOnDied(hostCell, this);
+            // Death RELEASES the heart (base.Die -> ActivateCrystal), so it stops being a heart
+            // and becomes an ordinary collectable. Leave the registry before that happens rather
+            // than waiting for OnDestroy: the husk stands through the wither, and an anchor on a
+            // crystal anyone can now collect would be a lie about a fixture.
+            FloraHeartRegistry.Unregister(this);
             base.Die(killerName);
         }
 
+        /// <summary>
+        /// Binds this plant to its species lineage: the cell whose population it belongs to and
+        /// the config that defines the species. Registers it in the cell's per-species live
+        /// count (unregistered in OnDestroy). Called by <c>CellLifeSpawnerBase.SpawnFlora</c> -
+        /// the one canonical spawn path every producer already routes through - and by a parent
+        /// for its offspring, since heredity is what lets reproduction recurse.
+        /// </summary>
         public void AssignLineage(Cell host, FloraConfigurationSO config,
             LifeformVariantPick<FloraVariantTuning>? inherit = null)
         {
@@ -579,7 +920,12 @@ namespace CosmicShore.Gameplay
             float outer = plantRadiusCellFraction > 0f
                 ? cell.MembraneRadius * plantRadiusCellFraction
                 : cell.MembraneRadius;
-            float inner = Mathf.Min(cell.ExpectedNucleusWorldRadius, outer);
+            // Same rule as ResolvePlantRadius: a nucleus is a floor only while it is a CONTROL
+            // ZONE. Without this an offspring seeded inside a court-as-nucleus is ejected to the
+            // court wall, so a colony would drain out of the arena one birth at a time.
+            float nucleusFloor = cell.NucleusIsControlZone ? cell.ExpectedNucleusWorldRadius : 0f;
+            outer = LiftBandOutOfNucleus(outer, nucleusFloor, cell.MembraneRadius);
+            float inner = Mathf.Min(nucleusFloor, outer);
 
             Vector3 offset = point - centre;
             float d = offset.magnitude;
@@ -594,16 +940,89 @@ namespace CosmicShore.Gameplay
             if (lineageRegistered && hostCell)
                 hostCell.UnregisterLiveFlora(this);
             lineageRegistered = false;
+            // Unconditional: a plant torn down with the scene never ran Die().
+            FloraHeartRegistry.Unregister(this);
         }
 
         public override void RemoveHealthBlock(HealthPrism healthPrism, string killername = "")
         {
-            base.RemoveHealthBlock(healthPrism);
+            // Forward the killer: dropping it here made every gun/blast/ram flora kill a
+            // killerless death, which LifeForm.Die never raises OnLifeFormDeath for - so
+            // no mode ever credited one (only jousts, which take a different path).
+            base.RemoveHealthBlock(healthPrism, killername);
             isGrowing = false;
+        }
+
+        // Cached yield instructions for GrowCoroutine. This coroutine is `while (true)` and
+        // there is ONE PER PLANT - 1,080 of them in the Lattice boot world - so a
+        // `new WaitForSeconds(...)` per tick is 1,080 allocations per grow cycle for two values
+        // that almost never change. Measured: the coroutine group allocates 18.2 KB/frame in a
+        // boot-world spike frame (Docs/archive/PERFORMANCE_LOG_2026.md §0.8).
+        //
+        // Re-minted when the authored period changes rather than cached once. Today a lazy
+        // first-use cache would also be correct - `ApplyVariantTuning` writes `growPeriod`
+        // BEFORE `Initialize`, and the coroutine starts on Initialize's last line - but
+        // `growPeriod` is `protected` and `stunDuration` has no writer at all, so the guard
+        // is what keeps this honest if either ever becomes writable mid-life. It costs two
+        // float compares per tick. What it must NOT become is a field initializer: that
+        // would pin the prefab's value and silently ignore the species' own tuning.
+        //
+        // Reusing one instance across sequential yields is safe by construction - Unity reads
+        // the duration when the instruction is yielded and tracks elapsed time in the
+        // coroutine's own state, so the object is immutable data, not a running timer. The
+        // CADENCE is therefore byte-for-byte what it was.
+        WaitForSeconds _growWait;
+        float _growWaitFor = float.NaN;
+        WaitForSeconds _stunWait;
+        float _stunWaitFor = float.NaN;
+
+        WaitForSeconds GrowWait()
+        {
+            float period = EffectiveGrowPeriod;
+            if (_growWait == null || period != _growWaitFor)
+            {
+                _growWaitFor = period;
+                _growWait = new WaitForSeconds(period);
+            }
+            return _growWait;
+        }
+
+        // HASTE: an Angler's lure light makes the plants in it grow faster for a moment (the designer, 2026-10-17;
+        // R_VesselActions/ANGLER.md §1d, Docs/ECOSYSTEM.md §61.6). It shortens the wait between grow ticks and nothing
+        // else - each tick grows exactly what it always did, under the plant's own budgets - and it lapses on its own
+        // unless the light keeps refreshing it. Its one caller is AnglerCommandExecutor.
+        float _hasteFactor = 1f;
+        float _hasteUntil;
+
+        float EffectiveGrowPeriod => Time.time < _hasteUntil ? growPeriod / _hasteFactor : growPeriod;
+
+        /// <summary>Grow <paramref name="factor"/> times as often for the next <paramref name="seconds"/> (an Angler's lure:
+        /// the plant is in its light). A refresh extends the window; a stronger factor wins while both are live.</summary>
+        public void Hasten(float factor, float seconds)
+        {
+            if (factor <= 1f || seconds <= 0f) return;
+            float now = Time.time;
+            _hasteFactor = now < _hasteUntil ? Mathf.Max(_hasteFactor, factor) : factor;
+            _hasteUntil = Mathf.Max(_hasteUntil, now + seconds);
+        }
+
+        WaitForSeconds StunWait()
+        {
+            if (_stunWait == null || stunDuration != _stunWaitFor)
+            {
+                _stunWaitFor = stunDuration;
+                _stunWait = new WaitForSeconds(stunDuration);
+            }
+            return _stunWait;
         }
 
         IEnumerator GrowCoroutine()
         {
+            // A seeder plants a whole forest in one frame, and plants that start their clocks together tick together
+            // for the rest of the match: every plant's growth decisions and births land in ONE frame per period (the
+            // 0.3-0.8 s Bloomrush spikes, Profiler capture 2026-11-21). Starting each clock at a random point in its
+            // own period spreads that work over the period; the cadence and what each tick grows are unchanged.
+            yield return new WaitForSeconds(Random.Range(0f, EffectiveGrowPeriod));
             while (true)
             {
                 if (isGrowing)
@@ -619,12 +1038,12 @@ namespace CosmicShore.Gameplay
                     // two int reads per tick and nothing else.
                     TryReproduce();
 
-                    yield return new WaitForSeconds(growPeriod);
+                    yield return GrowWait();
                 }
                 else
                 {
                     isGrowing = true;
-                    yield return new WaitForSeconds(stunDuration);
+                    yield return StunWait();
                 }
             }
         }

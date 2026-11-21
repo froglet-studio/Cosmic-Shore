@@ -41,3 +41,4 @@ MonoBehaviour:
   allowedNames: []
   enableUniquenessCheck: 1
   blockWhenUniquenessUnknown: 0
+  hiddenNameReplacement: Pilot {tag}

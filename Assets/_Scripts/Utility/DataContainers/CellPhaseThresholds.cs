@@ -97,6 +97,28 @@ namespace CosmicShore.Utility
             if (t.FrenzyExitVolume <= 0f) t.FrenzyExitVolume = t.FrenzyExit * NominalPrismVolume;
             return t;
         }
+
+        /// <summary>
+        /// Returns this table with every boundary raised by <paramref name="volume"/> (the volume fields) and
+        /// <paramref name="prisms"/> (the count backstop): the ladder of a cell whose environment laid that much more
+        /// than its config was measured on (<c>ICellPhaseBaseline</c>). Volume fields are derived first, so a legacy
+        /// count-only table is raised on its derived scale.
+        /// </summary>
+        public CellPhaseThresholds Raised(float volume, int prisms)
+        {
+            var t = WithDerivedVolumeScale();
+            volume = Mathf.Max(0f, volume);
+            prisms = Mathf.Max(0, prisms);
+            t.RestlessEnterVolume += volume;
+            t.RestlessExitVolume += volume;
+            t.FrenzyEnterVolume += volume;
+            t.FrenzyExitVolume += volume;
+            t.RestlessEnter += prisms;
+            t.RestlessExit += prisms;
+            t.FrenzyEnter += prisms;
+            t.FrenzyExit += prisms;
+            return t;
+        }
     }
 
     public static class CellPhaseRules

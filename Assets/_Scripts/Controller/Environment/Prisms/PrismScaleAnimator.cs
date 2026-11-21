@@ -89,6 +89,24 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public float AnalyticSettleTime => _clockActive ? _clockSettleTime : 0f;
 
+        /// <summary>
+        /// Re-arm after <c>Prism.Restore</c> (Docs/PRISM_ANIMATION.md §3.3): <c>SetupDestruction</c> turns this animator off
+        /// (dead mass must stop scaling and weighing), and nothing turned it back on for a RESTORED prism, so every later
+        /// <see cref="SetTargetScale"/>, <see cref="Grow"/> and <c>Prism.GrowAlong</c> on it was a silent no-op - the Urchin's
+        /// ride payoff restores a prism and then grows it, and the growth (and the Mass-5 shield after it) never happened.
+        /// Now the restored prism keeps the size it died at (<see cref="TargetScale"/> is untouched), grows again like any
+        /// live prism, and blooms back in from zero on the clock instead of popping in - the bloom §3.3 planned for Restore,
+        /// one stamp, gameplay final at once. A prism killed inside its spawn window never completed creation and gets no
+        /// stamp (CreateBlockCoroutine owns that state), as with any pre-creation grow. No-op while already enabled.
+        /// </summary>
+        internal void RearmAfterRestore()
+        {
+            if (enabled) return;
+            enabled = true;
+            ResetClockState();
+            if (prism != null && prism.IsCreationComplete) BeginGrowthAnimation(resetToZero: true);
+        }
+
         /// <summary>Pool-reuse reset — called from Prism.ResetState so a recycled
         /// prism can't inherit the previous life's clock state.</summary>
         internal void ResetClockState()
@@ -171,6 +189,11 @@ namespace CosmicShore.Gameplay
             // already exists, so this costs nothing on the happy path.
             if (!stamped && prism != null && prism.TryEnsureRenderEntityForStamp())
                 stamped = PrismRenderService.StampGrow(in prism.RenderHandle, now, k, in startFrac);
+
+            // No Entities Graphics on this device (a WebGL2 browser): the same stamp rides the
+            // MeshRenderer's property block (Docs/PRISM_ANIMATION.md §4.11). False everywhere else.
+            if (!stamped)
+                stamped = PrismMeshRendererStamps.StampGrow(meshRenderer, now, k, in startFrac);
 
             if (!stamped)
                 PrismClockDiagnostics.WarnNoRenderEntity($"grow:{name}", this,
@@ -342,6 +365,9 @@ namespace CosmicShore.Gameplay
                 {
                     PrismRenderService.StampGrow(in prism.RenderHandle,
                         PrismClock.SettledPast, _clockK, in _clockStartFrac);
+                    // The MeshRenderer twin of "rewrite into the past" is removal: the settled
+                    // material is the end state (no-op off the §4.11 path).
+                    PrismMeshRendererStamps.ClearGrowStamp(meshRenderer);
                     _clockSettleTime = PrismClock.Now;
                 }
                 return;
@@ -368,6 +394,9 @@ namespace CosmicShore.Gameplay
 
             if (!prism) return;
 
+            // A shielded prism that grew carries a bigger shell: the books follow (VolumeLedger).
+            prism.BookShieldVolume();
+
             if (CheckIfIsLargest())
             {
                 prism.ActivateShield();
@@ -378,6 +407,21 @@ namespace CosmicShore.Gameplay
             {
                 prism.IsSmallest = true;
             }
+        }
+
+        /// <summary>
+        /// Reports a change in this prism's SHIELD volume (Prism.BookShieldVolume) on the volume-modified channel.
+        /// <see cref="PrismStats.Volume"/> stays 0 so every legacy VolumeCreated reader is unmoved; only the volume
+        /// books read <see cref="PrismStats.ShieldVolume"/>.
+        /// </summary>
+        internal void RaiseShieldVolumeDelta(float delta)
+        {
+            onPrismVolumeModified.Raise(new PrismStats
+            {
+                Volume = 0f,
+                ShieldVolume = delta,
+                OwnName = prism ? prism.PlayerName : null,
+            });
         }
 
         private bool CheckIfIsLargest() =>

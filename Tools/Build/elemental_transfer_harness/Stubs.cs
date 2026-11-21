@@ -1,0 +1,168 @@
+// Stub surface for the elemental-transfer harness. Every signature here is COPIED VERBATIM from
+// the shipped file named above it, so a wrong member name or arity in the code under test is a
+// compile error rather than something a human discovers in the editor. It is deliberately the
+// MINIMUM surface the files under test touch - a bigger stub is a bigger chance of the stub and
+// the project disagreeing without anyone noticing.
+using System;
+using System.Collections.Generic;
+
+namespace UnityEngine
+{
+    public struct Vector2
+    {
+        public float x, y;
+        public Vector2(float x, float y) { this.x = x; this.y = y; }
+    }
+    public struct Vector3
+    {
+        public float x, y, z;
+        public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
+        public static Vector3 zero => new Vector3(0, 0, 0);
+        public static Vector3 one => new Vector3(1, 1, 1);
+        public static Vector3 up => new Vector3(0, 1, 0);
+        public static Vector3 right => new Vector3(1, 0, 0);
+        public float magnitude => Mathf.Sqrt(x * x + y * y + z * z);
+        public float sqrMagnitude => x * x + y * y + z * z;
+        public Vector3 normalized => this;
+        public static Vector3 operator *(Vector3 a, float d) => new Vector3(a.x * d, a.y * d, a.z * d);
+        public static Vector3 operator *(float d, Vector3 a) => a * d;
+        public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
+        public static Vector3 operator -(Vector3 a, Vector3 b) => new Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
+        public static Vector3 Cross(Vector3 a, Vector3 b) =>
+            new Vector3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+        public static Vector3 ClampMagnitude(Vector3 v, float max) => v;
+    }
+    // VesselSilenceConfigSO's fallback danger colour (type-checked only).
+    public struct Color
+    {
+        public float r, g, b, a;
+        public Color(float r, float g, float b, float a) { this.r = r; this.g = g; this.b = b; this.a = a; }
+    }
+    public struct Quaternion
+    {
+        public static Quaternion identity => default;
+        // ElementalCrystalEjector.ShedOntoSphere (the wormhole toll). Type-checks only: the
+        // harness never mints a crystal, so the rotation's value is never read.
+        public static Quaternion AngleAxis(float angle, Vector3 axis) => identity;
+        public static Vector3 operator *(Quaternion q, Vector3 v) => v;
+    }
+    public static class Mathf
+    {
+        public const float Epsilon = 1e-5f;
+        public static float Sqrt(float f) => (float)Math.Sqrt(f);
+        public static float Exp(float f) => (float)Math.Exp(f);
+        public static float Max(float a, float b) => a > b ? a : b;
+        public static float Min(float a, float b) => a < b ? a : b;
+        public static float Abs(float f) => Math.Abs(f);
+        public static float Clamp(float v, float a, float b) => v < a ? a : v > b ? b : v;
+        public static float Clamp01(float v) => Clamp(v, 0f, 1f);
+        public static int FloorToInt(float f) => (int)Math.Floor(f);
+        public static bool Approximately(float a, float b) => Math.Abs(a - b) < 1e-6f;
+        public static float MoveTowards(float a, float b, float d) => a;
+        // SilenceVignetteMask (compiled with VesselSilenceConfigSO, which hands out its Shape).
+        public const float PI = (float)Math.PI;
+        public static float Lerp(float a, float b, float t) => a + (b - a) * Clamp01(t);
+        public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
+        public static float Cos(float f) => (float)Math.Cos(f);
+        public static float Floor(float f) => (float)Math.Floor(f);
+        // SilencePerimeter (compiled with VesselSilenceConfigSO, which hands out its Settings).
+        public static float Sin(float f) => (float)Math.Sin(f);
+        public static float Tan(float f) => (float)Math.Tan(f);
+        public static int Max(int a, int b) => a > b ? a : b;
+        public static int Clamp(int v, int a, int b) => v < a ? a : v > b ? b : v;
+    }
+    public static class Time
+    {
+        public static float deltaTime => 0.016f;
+        public static float time => 0f;
+        public static double timeAsDouble => 0d;   // VesselSilence's default clock; the driver swaps the clock
+    }
+    // VesselSilence's config lookup. Load answers null, so the harness runs on the config SO's own
+    // field initializers - the defaults the shipped asset also authors.
+    public static class Resources { public static T Load<T>(string path) where T : Object => null; }
+    public enum RuntimeInitializeLoadType { SubsystemRegistration = 4 }
+    public class RuntimeInitializeOnLoadMethodAttribute : AttrBase
+    {
+        public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType t) { }
+    }
+    public static class Random
+    {
+        public static Vector3 onUnitSphere => new Vector3(0, 1, 0);
+        public static Quaternion rotation => Quaternion.identity;
+        public static int Range(int a, int b) => a;
+        public static float Range(float a, float b) => a;
+    }
+    public class Object
+    {
+        public string name;
+        public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation) where T : Object => original;
+        public static implicit operator bool(Object o) => !ReferenceEquals(o, null);
+    }
+    public class Component : Object
+    {
+        public Transform transform => null;
+        public GameObject gameObject => null;
+        public T GetComponentInChildren<T>(bool includeInactive) => default;
+        public T[] GetComponentsInChildren<T>(bool includeInactive) => new T[0];
+        // The harness attaches a fake IElementalLossRelay here, so ElementalTransfer.RelayOf
+        // resolves a hull's relay exactly as it does on a vessel prefab.
+        public object Attached;
+        public bool TryGetComponent<T>(out T component)
+        {
+            if (Attached is T t) { component = t; return true; }
+            component = default; return false;
+        }
+    }
+    public class Behaviour : Component { public bool enabled { get; set; } }
+    public class MonoBehaviour : Behaviour { }
+    // VesselSilenceConfigSO's perimeter shader reference (type-checked only).
+    public class Shader : Object { public bool isSupported => true; }
+    public class ScriptableObject : Object
+    {
+        public static T CreateInstance<T>() where T : ScriptableObject => Activator.CreateInstance<T>();
+    }
+    public class Transform : Component { public Vector3 position { get; set; } public Vector3 localScale { get; set; } }
+    public class GameObject : Object
+    {
+        public T AddComponent<T>() where T : Component, new() => new T();
+        public void SetActive(bool v) { }
+    }
+    public class Renderer : Component { }
+    public class AttrBase : Attribute { }
+    public class SerializeField : AttrBase { }
+    public class TooltipAttribute : AttrBase { public TooltipAttribute(string s) { } }
+    public class HeaderAttribute : AttrBase { public HeaderAttribute(string s) { } }
+    public class DisallowMultipleComponent : AttrBase { }
+    public class MinAttribute : AttrBase { public MinAttribute(float f) { } }
+    public class RangeAttribute : AttrBase { public RangeAttribute(float a, float b) { } }
+    public class CreateAssetMenuAttribute : AttrBase { public string fileName; public string menuName; }
+}
+
+namespace CosmicShore.Utility
+{
+    // Assets/_Scripts/Utility/Foundation/CSDebug.cs
+    public static class CSDebug
+    {
+        public static void LogError(string m) { }
+        public static void LogWarning(string m) { }
+    }
+    // Assets/_Scripts/Utility/PrismOcclusionCorridor.cs:152
+    public static class PrismOcclusionCorridor
+    {
+        public static float MeasureCircumscribedRadius(UnityEngine.Transform vessel) => 1f;
+    }
+    // Assets/_Scripts/Utility/FadeIn.cs
+    public class FadeIn : UnityEngine.MonoBehaviour { public void StartFadeIn() { } }
+}
+
+namespace CosmicShore.ScriptableObjects
+{
+    // Assets/_Scripts/ScriptableObjects/ElementalCrystalSetSO.cs
+    public class ElementalCrystalSetSO : UnityEngine.ScriptableObject
+    {
+        public const string ResourcePath = "ElementalCrystalSet";
+        public CosmicShore.Gameplay.SkimmerCrystalEffectSO[] CollectionEffects => null;
+        public CosmicShore.Gameplay.Crystal GetPrefab(CosmicShore.Data.Element element) => null;
+        public static ElementalCrystalSetSO Load() => null;
+    }
+}

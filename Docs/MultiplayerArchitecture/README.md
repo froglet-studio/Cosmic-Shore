@@ -1,5 +1,7 @@
 # Multiplayer / Netcode / UGS Architecture — PDF dossier
 
+> The PDFs are a snapshot. Current netcode settings and status (RTT, transform tuning, time resync, score guard, rejoin) are in [`../Multiplayer/MULTIPLAYER_ARCHITECTURE.md`](../Multiplayer/MULTIPLAYER_ARCHITECTURE.md), and the index of every multiplayer doc is [`../Multiplayer/README.md`](../Multiplayer/README.md).
+
 A branded technical PDF documenting Cosmic Shore's entire online stack: Unity Netcode for
 GameObjects, Unity Gaming Services (Auth · Sessions · Lobby · Relay · Friends), the two-level
 Presence Lobby + Party Session model, server-authoritative vessel spawning, the `.AsMainThread()`
@@ -14,6 +16,11 @@ source under `Assets/_Scripts/`.
 - `CosmicShore-Multiplayer-Netcode-Architecture.pdf` — the full dossier (~71 pages, Part I + Part II).
 - `CosmicShore-Multiplayer-LinkedIn-Slides.pdf` — a LinkedIn-ready **slide deck / carousel** (4:5,
   16 slides) built from the Part I narrative: one idea per slide, with diagrams and the bug stories.
+
+
+**Launch programme:** `HARDENING_PLAN_STEAM_LAUNCH.md` (what to do, in order, with gates)
+and `../prompts/MULTIPLAYER_HARDENING_PROMPT.md` (the same thing, executable).
+**Root-cause analysis:** `REVIEW_INVITE_AND_RESILIENCE.md`. **Live queue:** `ROADMAP.md`.
 
 ## Regenerate
 

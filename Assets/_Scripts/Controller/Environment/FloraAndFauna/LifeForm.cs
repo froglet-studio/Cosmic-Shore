@@ -5,7 +5,7 @@ using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -57,32 +57,25 @@ namespace CosmicShore.Gameplay
         public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
 
         /// <summary>
-        /// Elemental contract: the WORLD scale this lifeform's heart renders at — authored per
-        /// element in the species' variant tuning and sized to suit this body
-        /// (Docs/ECOSYSTEM.md §40.2). Non-positive means 'not authored': the set's default is
-        /// used instead, so a config nobody has sized yet still grows a heart.
-        ///
-        /// <para>There is no level. A lifeform is its species and its element; its heart is one
-        /// of the things that element states about it, exactly once.</para>
+        /// This lifeform's HEART, as a transform: the crystal while it lives, and the lifeform's
+        /// own root when it carries none (a colony root, a plant whose crystal has not resolved
+        /// yet). Read LIVE and never cached by callers - a lattice plant moves its crystal onto its
+        /// lattice site after seating it, and a creature carries its heart with it.
         /// </summary>
-        public float HeartWorldScale => heartWorldScale;
-
-        // Authored by the config's per-element variant tuning (ApplyVariantTuning). 0 = the
-        // sentinel every un-sized config carries, resolved against the set's default.
-        float heartWorldScale;
+        public Transform HeartTransform => crystal ? crystal.transform : transform;
 
         /// <summary>
-        /// Elemental contract: sizes this lifeform's heart to the value its element authored.
+        /// Elemental contract: sizes this lifeform's heart to the one elemental crystal size
+        /// (<see cref="CosmicShore.ScriptableObjects.ElementalCrystalSetSO.CrystalWorldScale"/>).
         /// Called from the spawn path BEFORE Initialize — it spawns AT size, nothing pops.
         /// Idempotent, and safe before the crystal field is resolved.
         /// </summary>
-        public void ApplyHeartSize(float authoredWorldScale)
+        public void ApplyHeartSize()
         {
-            heartWorldScale = Mathf.Max(0f, authoredWorldScale);
             // Resolve early: the spawner calls this BEFORE Initialize, so the field it assigns
             // is not populated yet unless ApplyElement provisioned one.
             if (!crystal) crystal = GetComponentInChildren<Crystal>(true);
-            LifeFormCrystal.ApplyHeartSize(crystal, heartWorldScale);
+            LifeFormCrystal.ApplyHeartSize(crystal);
         }
 
         /// <summary>Rooted flora never travel - which makes them trivially joustable.</summary>
@@ -97,9 +90,16 @@ namespace CosmicShore.Gameplay
         /// FROM THE HEART OUTWARD and its prisms stay standing as a skeleton
         /// (Docs/ECOSYSTEM.md §26).
         /// </summary>
+        /// <inheritdoc/>
+        /// <remarks>The exact pair <see cref="Jousted"/> has always gated on - published so a
+        /// caller holding only the heart can ask the same question before acting on it.</remarks>
+        public bool IsDying => dying || isCleaningUp;
+
         public bool Jousted(string killerName)
         {
             if (dying || isCleaningUp) return false;
+            // A silenced pilot harms no lifeform (VesselSilence, Docs/ElementalAbilitySystem/SILENCE.md).
+            if (VesselSilence.IsSilenced(killerName)) return false;
             dying = true;
             deathStyle = LifeformDeathStyle.Jousted;
             Die(killerName);
@@ -141,10 +141,9 @@ namespace CosmicShore.Gameplay
             if (tuning == null) return;
             if (tuning.ShieldPeriod >= 0f) shieldPeriod = tuning.ShieldPeriod;
             if (tuning.WitherRingInterval > 0f) witherRingInterval = tuning.WitherRingInterval;
-            // The element states the size of this lifeform's heart, like everything else it
-            // states (Docs/ECOSYSTEM.md §40.2). 0 is the sentinel every un-sized config carries,
-            // which resolves to the set's default rather than to a zero-sized crystal.
-            if (tuning.HeartWorldScale > 0f) ApplyHeartSize(tuning.HeartWorldScale);
+            // Every heart is the one elemental crystal size; the tuning's HeartWorldScale is no
+            // longer read (Docs/ECOSYSTEM.md §40.2).
+            ApplyHeartSize();
         }
 
         public static event Action<string, int> OnLifeFormDeath;
@@ -157,6 +156,9 @@ namespace CosmicShore.Gameplay
 
         // --- Composition: extracted trackers (SRP) ---
         protected HealthBlockTracker healthTracker;
+        /// <summary>The live health prisms (body mass) this lifeform holds right now - for a plant, what is left to eat.
+        /// Read-only; Tandava's director ranks plants by it.</summary>
+        public int HealthBlockCount => healthTracker?.Count ?? 0;
         protected SpindleTracker spindleTracker;
 
         // --- Internal state ---
@@ -212,14 +214,22 @@ namespace CosmicShore.Gameplay
             // skim-collectable until death drops it. Cleared by ActivateCrystal in Die.
             if (crystal) crystal.SetEmbeddedIn(this);
 
+            // The ELEMENT gets the last word on this lifeform's FORM, and it has to get it
+            // here: the crystal that carries the element was resolved two lines up, and
+            // BindEmbeddedParts on the next line stamps the prefab's own prisms. A form
+            // applied after that leaves the SEED prism at the pre-element size while
+            // everything grown afterwards expresses the element - the same ordering argument
+            // Flora.ApplyCellPrismScale records. See Flora.OnElementResolved.
+            OnElementResolved();
+
             BindEmbeddedParts();
 
             // The ELEMENT gets the last word on the cadence - after the prefab, after the
             // config's variant block, and after the cell's overrides, because it is the only
             // point where every one of them has already been applied AND the crystal that
             // carries the element has been resolved (two lines up). See
-            // Flora.ResolveShieldPeriod: Charge armours its mass, and a config must not be
-            // able to author that away by leaving the field at 0.
+            // Flora.ResolveShieldPeriod: Mass armours its mass, and a config must not be
+            // able to author that away by leaving the field at 0 (nor armour a Charge plant, whose prisms are danger).
             shieldPeriod = ResolveShieldPeriod(shieldPeriod);
 
             if (shieldPeriod > 0)
@@ -252,8 +262,12 @@ namespace CosmicShore.Gameplay
         public virtual void AddHealthBlock(HealthPrism healthPrism)
         {
             if (!healthPrism) return;
-            healthTracker.Add(healthPrism, this, domain);
+            healthTracker.Add(healthPrism, this, NewBlockDomain);
         }
+
+        /// <summary>The domain a prism this lifeform takes on is filed in (before the cell files it in its per-domain grids).
+        /// Its own domain, except a lifeform built from several domains' mass (the bee hive's comb, Docs/ECOSYSTEM.md §66).</summary>
+        protected virtual Domains NewBlockDomain => domain;
 
         public virtual void RemoveHealthBlock(HealthPrism healthPrism, string killerName = "")
         {
@@ -261,6 +275,28 @@ namespace CosmicShore.Gameplay
             healthTracker.Remove(healthPrism, killerName);
             spindleTracker.CleanupDeadRefs();
             CheckIfDead(killerName);
+        }
+
+        /// <summary>Drops a prism from this lifeform's tracker with NO death check - the prism
+        /// is leaving for the pool (<see cref="HealthPrism.DetachForPool"/>), not dying. A
+        /// retired world's lifeforms must not later act on mass that already belongs to
+        /// somebody else.</summary>
+        public void ForgetHealthBlock(HealthPrism healthPrism)
+        {
+            if (healthPrism) healthTracker?.Remove(healthPrism);
+        }
+
+        /// <summary>
+        /// The world this lifeform lives in is being retired as a whole (an Arkway cell strike):
+        /// no death, no crystal drop, no death sound - the world goes, and the lifeform with it.
+        /// Without this every plant in a struck cell ran the full <c>Die</c> path as its root
+        /// was destroyed, one creature-death SFX each.
+        /// </summary>
+        public void RetireWithWorld()
+        {
+            isCleaningUp = true;
+            dying = true;
+            StopAllCoroutines();
         }
 
         // --- Spindle Management (delegates to SpindleTracker) ---
@@ -306,6 +342,22 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Die exactly once, from a path that did not come through <see cref="CheckIfDead"/> or <see cref="Jousted"/>
+        /// (a replicated mirror, a plant that never grew a leaf). Those two latch <c>dying</c> before they call
+        /// <see cref="Die"/>; a bare <c>Die()</c> does not, and <see cref="Die"/> itself re-enters: its destruction
+        /// damages every remaining prism and withers every spindle, each of which reports back through
+        /// <see cref="RemoveHealthBlock"/> / <see cref="RemoveSpindle"/> to <see cref="CheckIfDead"/>, which, finding
+        /// <c>dying</c> still false, ran the whole death a SECOND time: the death event again (attributed to the
+        /// destruction's "Guy Fawkes"), the heart again, the cell's unregister and destroyed-lifeform event again.
+        /// </summary>
+        protected void DieOnce(string killerName = "")
+        {
+            if (dying || isCleaningUp) return;
+            dying = true;
+            Die(killerName);
+        }
+
         protected virtual void Die(string killerName = "")
         {
             if (isCleaningUp) return;
@@ -348,9 +400,12 @@ namespace CosmicShore.Gameplay
         /// The JOUSTED death (Docs/ECOSYSTEM.md §26): a vessel took this lifeform's heart, so
         /// the plant does not detonate. Its prisms are left standing as a skeleton - the frame
         /// of the thing that grew here, now ordinary cell mass the food web can graze - while
-        /// the soft tissue withers spindle by spindle FROM THE HEART OUTWARD, unravelling
-        /// around the hole the joust left. Exactly the mirror of the outside-in starvation
-        /// wither a creature does (see <see cref="LightFauna"/>).
+        /// the soft tissue withers spindle by spindle FROM THE MISSING CRYSTAL TO THE LEAVES
+        /// along the spindle tree (<see cref="Spindle.OrderHeartOutward"/>), unravelling around
+        /// the hole the joust left. This is the ONE sanctioned exception to "every standing limb
+        /// has a path to its crystal" (Docs/ECOSYSTEM.md §26.10): every other death and every
+        /// graze spends a lifeform outside-in. The mirror of the starvation wither a creature
+        /// does (see <see cref="LightFauna"/>).
         ///
         /// <see cref="DieCoroutine"/> is what waits for it: the husk is destroyed only once
         /// every spindle has finished evaporating, so this needs no completion callback.
@@ -361,9 +416,12 @@ namespace CosmicShore.Gameplay
             // already on its way to whoever took it.
             Vector3 heart = crystal ? crystal.transform.position : transform.position;
 
-            // Isolate first: ForceWither recurses into child spindles and destroying a spindle
+            // Ordered BEFORE isolation, because the order is read off the spindle tree and
+            // isolation is what severs it. The joust exception: crystal-adjacent limbs first.
+            var spindles = Spindle.OrderHeartOutward(GetComponentsInChildren<Spindle>(true), heart);
+
+            // Isolate: ForceWither recurses into child spindles and destroying a spindle
             // destroys its children, either of which would collapse the plant in one step.
-            var spindles = GetComponentsInChildren<Spindle>(true).Where(s => s).ToList();
             foreach (var sp in spindles)
                 sp.IsolateForOrderedWither(transform);
 
@@ -371,11 +429,7 @@ namespace CosmicShore.Gameplay
             // spindle, so evaporating spindles first would destroy the mass this conserves.
             Transform skeletonParent = cell ? cell.transform : null;
             foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
-                if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent);
-
-            spindles.Sort((a, b) =>
-                (a.transform.position - heart).sqrMagnitude.CompareTo(
-                (b.transform.position - heart).sqrMagnitude));
+                if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent, recycleWhenDestroyed: true);
 
             // Can't animate while inactive (scene teardown) - the skeleton above already
             // conserved the mass, so collapse what's left in one step rather than throwing.
@@ -427,7 +481,7 @@ namespace CosmicShore.Gameplay
         /// <see cref="Initialize"/> with whatever the prefab + config + cell overrides
         /// resolved to. The base keeps it exactly as authored; a subclass overrides only to
         /// express an ELEMENTAL law that must hold on every spawn path
-        /// (<c>Flora.ResolveShieldPeriod</c> - Charge armours its leaves).
+        /// (<c>Flora.ResolveShieldPeriod</c> - Mass armours its leaves, Charge never does; <c>ElementalArmour</c>).
         ///
         /// <para>It is a hook rather than a line in <see cref="ApplyVariantTuning"/> because
         /// the element is not known there: the crystal is resolved in Initialize, and the
@@ -436,22 +490,69 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual float ResolveShieldPeriod(float authored) => authored;
 
+        // Scratch + cached yield for ShieldRegenCoroutine. This runs forever on every SHIELDED
+        // lifeform, and Mass floors every Mass plant at a 1 s period (ElementalArmour.ShieldPeriod),
+        // so the old body allocated a fresh List per cycle AND a WaitForSeconds PER PRISM - on a
+        // plant with dozens of prisms, dozens of allocations a second, times the population.
+        // Measured contribution in a boot-world spike frame: Docs/archive/PERFORMANCE_LOG_2026.md §0.8.
+        //
+        // The snapshot itself is load-bearing and is KEPT: the tracker mutates while this
+        // coroutine yields between prisms (grazing, growth), so iterating it directly would
+        // throw. Reusing one list preserves the snapshot and drops the garbage. It is a
+        // `List` rather than the tracker's own `HashSet` on purpose - AddRange over an
+        // ICollection is a straight array copy, so the refill allocates nothing once the
+        // capacity has settled.
+        //
+        // Hoisting the wait OUT of the per-prism loop is unobservable: `shieldPeriod` is
+        // written only by `ApplyVariantTuning` and by `ResolveShieldPeriod` on the line above
+        // the StartCoroutine, and has no runtime writer at all - so it cannot change between
+        // two prisms of one cycle. The per-cycle re-mint covers it if one is ever added.
+        readonly List<HealthPrism> _shieldRegenScratch = new();
+        WaitForSeconds _shieldWait;
+        float _shieldWaitFor = float.NaN;
+
+        /// <summary>
+        /// Called once during <see cref="Initialize"/>, after the crystal carrying this
+        /// lifeform's ELEMENT has been resolved and BEFORE the prefab's own prisms are bound
+        /// and stamped. The hook for anything whose value is a function of the element and has
+        /// to be in place before the first prism exists - today, the flora leaf form
+        /// (<c>Flora.OnElementResolved</c> -> <c>FloraElementalForm</c>).
+        ///
+        /// <para>Base does nothing, deliberately: <b>fauna are not plants.</b> The elemental
+        /// FORM laws are written about the food web's mass, and a creature's body prisms are
+        /// not that - the same reason <see cref="ResolveShieldPeriod"/> is overridden on
+        /// <c>Flora</c> rather than here.</para>
+        /// </summary>
+        protected virtual void OnElementResolved() { }
+
         IEnumerator ShieldRegenCoroutine()
         {
             while (shieldPeriod > 0)
             {
-                var blocks = healthTracker.All.ToList();
-                if (blocks.Count > 0)
+                if (_shieldWait == null || shieldPeriod != _shieldWaitFor)
                 {
-                    foreach (var block in blocks)
+                    _shieldWaitFor = shieldPeriod;
+                    _shieldWait = new WaitForSeconds(shieldPeriod);
+                }
+
+                _shieldRegenScratch.Clear();
+                _shieldRegenScratch.AddRange(healthTracker.All);
+
+                if (_shieldRegenScratch.Count > 0)
+                {
+                    for (int i = 0; i < _shieldRegenScratch.Count; i++)
                     {
-                        if (block) block.ActivateShield();
-                        yield return new WaitForSeconds(shieldPeriod);
+                        var block = _shieldRegenScratch[i];
+                        // A danger prism is never armoured over: a shield CLEARS danger (PrismStateManager.ApplyShieldState),
+                        // so the regen used to strip every authored danger prism of an armoured plant within a cycle -
+                        // a Charge gyroid's octagon ring was danger for its first few seconds only (Docs/ECOSYSTEM.md §65).
+                        if (block && block.prismProperties is not { IsDangerous: true }) block.ActivateShield();
+                        yield return _shieldWait;
                     }
                 }
                 else
                 {
-                    yield return new WaitForSeconds(shieldPeriod);
+                    yield return _shieldWait;
                 }
             }
         }

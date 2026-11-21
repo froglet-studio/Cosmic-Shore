@@ -32,7 +32,7 @@ namespace CosmicShore.Editor.Froglet
         readonly HashSet<FrogletToolCategory> _collapsed = new();
 
         [MenuItem("FrogletTools/Froglet Master Tool", false, -100)]
-        [FrogletTool(FrogletToolCategory.Misc, Importance = 5,
+        [FrogletTool(FrogletToolCategory.Utilities, Importance = 5,
             Description = "This board. Every Froglet editor tool in one place.",
             DocPath = "Docs/TOOLING.md")]
         public static void Open()

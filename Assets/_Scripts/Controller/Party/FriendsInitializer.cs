@@ -33,6 +33,9 @@ namespace CosmicShore.Gameplay
         [Header("SOAP Data")]
         [SerializeField] private FriendsDataSO friendsData;
 
+        /// <summary>The friends list this initializer fills (read by the multiplayer debug overlay).</summary>
+        public FriendsDataSO FriendsData => friendsData;
+
         [Tooltip("Party/lobby data container. If assigned, presence is updated to 'In Party' " +
                  "when members join and back to 'In Menu' when the party empties.")]
         [SerializeField] private HostConnectionDataSO hostConnectionData;
@@ -49,6 +52,34 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
         // ─────────────────────────────────────────────────────────────────────
+
+        void Awake()
+        {
+            // Offline must go out while the app is still alive to send it: OnDestroy alone runs during
+            // teardown, where the await rarely completes, so a friend who quit kept reading "online".
+            ApplicationLifecycleManager.OnAppQuitRequested += HandleAppQuitRequested;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+#endif
+        }
+
+#if UNITY_EDITOR
+        // Stopping Play never raises Application.wantsToQuit, so the quit hook above never runs there.
+        void HandlePlayModeStateChanged(UnityEditor.PlayModeStateChange state)
+        {
+            if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode) SetPresenceOffline();
+        }
+#endif
+
+        UniTask HandleAppQuitRequested()
+        {
+            if (friendsService == null || !friendsService.IsInitialized || _offlineSent) return UniTask.CompletedTask;
+            _offlineSent = true;
+            CSDebug.LogVerbose(CSLogChannel.Party, "[FriendsInitializer] Quit: setting UGS Friends availability Offline.");
+            return friendsService.SetAvailabilityAsync(Availability.Offline);
+        }
+
+        private bool _offlineSent;
 
         void Start()
         {
@@ -78,6 +109,10 @@ namespace CosmicShore.Gameplay
                 authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
             UnwirePartySubscriptions();
+            ApplicationLifecycleManager.OnAppQuitRequested -= HandleAppQuitRequested;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+#endif
             SetPresenceOffline();
         }
 
@@ -177,8 +212,8 @@ namespace CosmicShore.Gameplay
             var partySessionId = _partyQuery?.ActivePartySessionId ?? "";
             int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? hostConnectionData.PartyMembers.Count : 0;
-            // The party size players SEE (4), never the transport capacity (6).
-            int maxSlots = hostConnectionData != null ? hostConnectionData.PartyDisplaySlots : 0;
+            // The party size (4) - the one size since B25, so what players see is what the session holds.
+            int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
 
             await friendsService.SetPresenceAsync(
                 Availability.Online,
@@ -198,8 +233,8 @@ namespace CosmicShore.Gameplay
             var partySessionId = _partyQuery?.ActivePartySessionId ?? "";
             int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? hostConnectionData.PartyMembers.Count : 0;
-            // The party size players SEE (4), never the transport capacity (6).
-            int maxSlots = hostConnectionData != null ? hostConnectionData.PartyDisplaySlots : 0;
+            // The party size (4) - the one size since B25, so what players see is what the session holds.
+            int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
 
             await friendsService.SetPresenceAsync(
                 Availability.Busy,
@@ -215,7 +250,8 @@ namespace CosmicShore.Gameplay
 
         public async void SetPresenceOffline()
         {
-            if (friendsService == null || !friendsService.IsInitialized) return;
+            if (friendsService == null || !friendsService.IsInitialized || _offlineSent) return;
+            _offlineSent = true;
 
             try
             {
@@ -238,18 +274,28 @@ namespace CosmicShore.Gameplay
             try
             {
                 await friendsService.InitializeAsync();
-                _initialized = true;
+
+                // FriendsServiceFacade.InitializeAsync swallows its own failures (it logs and
+                // returns), so reaching here is not proof the service is up. Latching
+                // _initialized anyway made the guard at the top of this method and in
+                // HandleSignedInEvent refuse every retry for the rest of the session (BH-1.5).
+                _initialized = friendsService.IsInitialized;
+                if (!_initialized)
+                {
+                    CSDebug.LogWarning("[FriendsInitializer] Friends service did not come up; will retry on the next sign-in event.");
+                    return;
+                }
 
                 // Set initial presence to "In Menu"
                 await friendsService.SetPresenceAsync(
                     Availability.Online,
                     new FriendPresenceActivity("In Menu", "Menu_Main"));
 
-                Debug.Log("[FriendsInitializer] Friends service initialized and presence set.");
+                CSDebug.LogVerbose(CSLogChannel.Party, "[FriendsInitializer] Friends service initialized and presence set.");
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[FriendsInitializer] Init failed: {e.Message}");
+                CSDebug.LogWarning($"[FriendsInitializer] Init failed: {e.Message}");
             }
         }
 

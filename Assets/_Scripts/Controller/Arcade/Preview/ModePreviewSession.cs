@@ -10,6 +10,7 @@ using Reflex.Attributes;
 using Reflex.Core;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Unity.Netcode;
 
 namespace CosmicShore.Gameplay
 {
@@ -64,10 +65,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Menu vessel spawner, used to fly the mode's own hull. Leave empty " +
                                  "to keep whatever the player is already flying.")]
         MenuServerPlayerVesselInitializer vesselInitializer;
-
-        [SerializeField, Tooltip("HUD shown beside the window once the player takes control " +
-                                 "(objective, progress, timer). Optional.")]
-        ModePreviewHUD hud;
 
         [Header("Placement")]
         [SerializeField, Tooltip("How far from the menu world the satellite arena is parked. Must " +
@@ -129,6 +126,20 @@ namespace CosmicShore.Gameplay
         /// <summary>True once the player has tapped in and is flying the arena themselves.</summary>
         public bool IsFlying => _state == State.Live;
 
+        /// <summary>True while the scene's preview session is anywhere but Idle. Read by the
+        /// device-tier trail policy (MenuCrystalClickHandler): a preview shows a mode as it plays,
+        /// trail included, so the menu's trail hold stands down for it.</summary>
+        public static bool AnyActive => s_session && s_session.IsActive;
+
+        /// <summary>The scene's preview session (null before its Start). Lets a per-frame reader - the first-login
+        /// guide's step finder - skip a scene-wide FindObjectsByType.</summary>
+        public static ModePreviewSession Current => s_session;
+        static ModePreviewSession s_session;
+
+        // Enter Play Mode runs without a domain reload: last session's object must not answer.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => s_session = null;
+
         [Header("Arena view")]
         [SerializeField, Tooltip("Radius the scale model is fitted to. Arbitrary units - the camera " +
                                  "frames this same number, so it only decides the model's own " +
@@ -149,19 +160,34 @@ namespace CosmicShore.Gameplay
         // the first is still landing must not run the whole entry twice.
         bool _enteringFlight;
 
+        /// <summary>The window this session draws into (null while detached) - what a guided path
+        /// spotlights for the player to tap. Nothing outside the window may tap it for them.</summary>
+        public ModePreviewWindow Window => _window;
+
         /// <summary>The mode being previewed, or <see cref="GameModes.Random"/> when idle.</summary>
         public GameModes ActiveMode { get; private set; } = GameModes.Random;
 
         // ── Lifecycle ────────────────────────────────────────────────────────
 
         // Start, not OnEnable: [Inject] fields land after Awake and before Start.
-        void Start() => Subscribe();
+        void Start()
+        {
+            s_session = this;
+            Subscribe();
+        }
 
         void OnDestroy()
         {
+            if (s_session == this) s_session = null;
             Unsubscribe();
             Detach();
-            AbortHard(strikeWorld: false);   // never create GameObjects while the scene closes
+            // Before AbortHard, which early-returns when already Idle. Forfeited, not restored:
+            // the scene is going away and the next loader owns the pause state.
+            ForfeitMenuPauseRestore();
+            RestoreNavigation();
+            // Never create GameObjects while the scene closes, and never raise into subscribers
+            // that are being destroyed alongside us.
+            AbortHard(strikeWorld: false, notify: false);
         }
 
         void Subscribe()
@@ -238,6 +264,7 @@ namespace CosmicShore.Gameplay
 
             _window.OnFocusRequested -= HandleFocusRequested;
             _window.OnFocusReleased -= HandleFocusReleased;
+            _window.HoldRelease = false;   // a hold never outlives the window it was placed on
             _window = null;
         }
 
@@ -264,9 +291,33 @@ namespace CosmicShore.Gameplay
             bool sameCard = _definition == definition &&
                             _state is State.Standing or State.Showing or State.Live;
             bool sameArena = !definition || !definition.ArenaDiffers(intensity, _intensity);
-            if (sameCard && sameArena)
+
+            // ...but a gate race's MODEL is its course, and every course setting is per-intensity
+            // even where the cell is shared (all the vessel Time games run one cell at every
+            // rung). The model costs a mesh, not a cell build, so while the card is only being
+            // looked at a new rung re-stands it; in flight the rings alone follow, below.
+            bool modelCourseChanges = sameCard && intensity != _intensity &&
+                                      (_state is State.Standing or State.Showing) &&
+                                      definition && RaceCourseSource.For(definition.Mode) != null;
+            if (sameCard && sameArena && !modelCourseChanges)
             {
+                bool courseChanges = intensity != _intensity && _gateCourse && _gateCourse.IsRaised;
                 _intensity = intensity;
+
+                // The ARENA is the same but a gate course is not: every course setting is
+                // per-intensity (mouths, corners, laps) even where the cell is shared. Rings are
+                // markers - re-standing them costs nothing like a cell build - so the course
+                // follows the row while the world stays up.
+                if (courseChanges)
+                {
+                    // The structure hangs on THIS course, so it goes with it. An immediate destroy
+                    // rather than the retiring-root drain: no shipped card reaches here with one -
+                    // Breakwater's arena differs per intensity, so its nudge rebuilds the world.
+                    _arena.StrikeCourseStructure();
+                    StrikeGateCourse();
+                    RaiseGateCourse(definition, definition.ResolveCell(intensity));
+                    if (_state == State.Live) _gateCourse.Track(gameData?.LocalPlayer?.Vessel);
+                }
                 return;
             }
 
@@ -435,6 +486,12 @@ namespace CosmicShore.Gameplay
                 // Rampage, and RequestSwap already preserves pose, speed and domain.
                 await SwapVessel(ResolveVessel(definition), remember: true, ct);
 
+                // A racing card's race: the mode's own rings, from the same course source the
+                // match builds from, plus any structure the match hangs on them (Breakwater's
+                // stations). Stood once per arena - a tap back into a standing world resumes the
+                // same course. BEFORE the park, because a race starts the pilot on its own line.
+                RaiseGateCourse(definition, config);
+
                 // Relocate the vessel and point its autopilot at the ARENA's runtime data -
                 // without this the AI keeps hunting the menu cell's crystals 120k units away and
                 // flies straight back out of the arena.
@@ -453,9 +510,14 @@ namespace CosmicShore.Gameplay
                 _state = State.Live;
                 _window?.GoLive();
                 GrantStick();
+                if (_gateCourse && _gateCourse.IsRaised) _gateCourse.Track(gameData?.LocalPlayer?.Vessel);
 
                 // The objective counts from the take-over, which is now also the arrival.
                 if (!_runnerStarted) StartRunner(definition);
+
+                // The coach: the Lesson, then the Mentor (TRAINING_PLAN §4). After the stick is
+                // granted, so the first step's condition reads a vessel the player is flying.
+                StartDrill(definition);
 
                 // A duel needs somebody to duel: modes that seat two or more get a sparring
                 // partner - a dummy in the mode's own hull, nothing clever.
@@ -488,17 +550,112 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(false);
             player.InputController?.SetPause(false);
 
+            // ...AND the menu's GLOBAL pause, which is the other half of "who holds the stick"
+            // and was missing. ScreenSwitcher pauses the game on every non-HOME screen to free
+            // CPU for the UI, and the arcade card lives on one - so by the time a card is open
+            // PauseSystem.Paused is true and Time.timeScale is 0. Both halves of flight die on
+            // that: InputController.Update returns BEFORE any strategy runs (so no strategy ever
+            // writes a stick, a trigger or a throttle), and VesselTransformer integrates on
+            // Time.deltaTime, so even a vessel handed perfect input moves by zero. Clearing
+            // InputStatus.Paused alone - which is all this did - grants a stick that cannot
+            // reach the ship. MenuCrystalClickHandler.TransitionToFreestyle has always lifted
+            // this for the lava lamp; the preview is the same handover and needs the same lift.
+            //
+            // Reported as "the Wrecking Ball microgame loaded but the Scarab would not move when
+            // I pulled the trigger" - the Scarab because it is the hull with no cruise floor and
+            // a throttle that is one analog channel, so a frozen world reads as a broken ship
+            // rather than as a slow one.
+            TakeMenuOffPause();
+
             // The pad flies the ship, so it must stop driving the UI at the same time. The
             // EventSystem half; direct device polls (the modal's B-to-close) check
             // ModePreviewWindow.AnyHasFocus instead.
-            if (EventSystem.current)
-            {
-                _navigationWasEnabled = EventSystem.current.sendNavigationEvents;
-                EventSystem.current.sendNavigationEvents = false;
-            }
+            TakeNavigation();
 
-            _window?.GrantFocus();
+            _window?.GrantFocus(player.Vessel.VesselStatus != null &&
+                                player.Vessel.VesselStatus.IsSingleStickControls);
         }
+
+        // ── EventSystem navigation (the pad flies the ship, so it stops driving the UI) ──────
+
+        // Recorded once, on the FIRST hand-over, and given back exactly once. It used to be re-read on
+        // every grant and given back only on a focus release: a second grant saved the already-off
+        // value, so the release turned navigation OFF for good, and a preview ended by Stop, a launch
+        // or teardown without a release never gave it back at all. Either way every modal after it
+        // refused to open (ModalWindowManager: "sendNavigationEvents has been leaked"), and with the
+        // Arcade and Toy Box windows refusing, no vessel could be launched (2026-10-19 play test).
+        bool _navigationTaken;
+
+        void TakeNavigation()
+        {
+            var events = EventSystem.current;
+            if (!events) return;
+            if (!_navigationTaken)
+            {
+                _navigationWasEnabled = events.sendNavigationEvents;
+                _navigationTaken = true;
+            }
+            events.sendNavigationEvents = false;
+        }
+
+        void RestoreNavigation()
+        {
+            if (!_navigationTaken) return;
+            _navigationTaken = false;
+            if (EventSystem.current) EventSystem.current.sendNavigationEvents = _navigationWasEnabled;
+        }
+
+        // The menu behind this window runs PAUSED (ScreenSwitcher pauses on every non-HOME
+        // screen; PauseSystem.TogglePauseGame also sets Time.timeScale = 0). Flight needs it
+        // lifted, and the card needs it back. Tracked as "did WE lift it?" rather than read back
+        // off PauseSystem, so this can only ever restore a pause it removed - a preview that runs
+        // while the menu happens to be unpaused (the card opened from the HOME hub rather than
+        // the arcade screen) must not hand the menu a pause it never had.
+        bool _liftedMenuPause;
+
+        void TakeMenuOffPause()
+        {
+            if (_liftedMenuPause || !CosmicShore.Core.PauseSystem.Paused) return;
+            _liftedMenuPause = true;
+            CosmicShore.Core.PauseSystem.TogglePauseGame(false);
+        }
+
+        /// <summary>
+        /// Put the menu's pause back. The ONE route that may do this is the focus release - the
+        /// player handing the stick back while the card, its screen and the whole menu stay
+        /// exactly where they were. Leaving it unpaused there would run the lava lamp behind a
+        /// modal built on the assumption that it does not.
+        /// </summary>
+        void RestoreMenuPause()
+        {
+            if (!_liftedMenuPause) return;
+            _liftedMenuPause = false;
+            CosmicShore.Core.PauseSystem.TogglePauseGame(true);
+        }
+
+        /// <summary>
+        /// Drop the lift WITHOUT re-pausing: the menu is being LEFT, so its pause state stops
+        /// being this window's business and belongs to whoever loads next.
+        ///
+        /// <para><b>This is not a tidy-up, it is a correctness requirement.</b>
+        /// <c>SceneLoader.LaunchGame</c> and this session are BOTH subscribers to
+        /// <c>GameDataSO.OnLaunchGame</c>, and SceneLoader wins the order (it is a Bootstrap
+        /// object subscribed at app start; this one subscribes when Menu_Main loads). SceneLoader
+        /// unpauses as its very first statement, so a restore here fires immediately AFTER it and
+        /// hands the loading match <c>Time.timeScale = 0</c> - launching a game out of a flying
+        /// preview would start it frozen. The old comment here claimed the game scene's own
+        /// <c>MiniGame</c> unpauses on entry and made the restore safe; it does not.
+        /// <c>MiniGame</c> is the legacy single-player base (two subclasses), not the
+        /// <c>MiniGameControllerBase</c> hierarchy every shipped mode uses, and nothing in that
+        /// hierarchy touches <c>PauseSystem</c> at all - <c>SceneLoader.LaunchGame</c> is the
+        /// only producer.</para>
+        ///
+        /// <para>The failure directions are not symmetric, which is why teardown forfeits rather
+        /// than restoring: forfeiting wrongly leaves the MENU running unpaused (some CPU, behind
+        /// a modal, until the next screen change re-pauses it), while restoring wrongly freezes a
+        /// MATCH.</para>
+        /// </summary>
+        void ForfeitMenuPauseRestore() => _liftedMenuPause = false;
 
         /// <summary>
         /// Tapping out puts the vessel BACK, rather than leaving it flying under AI. The whole
@@ -509,8 +666,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void HandleFocusReleased()
         {
-            if (EventSystem.current)
-                EventSystem.current.sendNavigationEvents = _navigationWasEnabled;
+            RestoreNavigation();
+
+            RestoreMenuPause();
 
             if (_state != State.Live) return;
 
@@ -524,12 +682,14 @@ namespace CosmicShore.Gameplay
                 var player = gameData?.LocalPlayer;
                 if (player != null && Alive(player.Vessel))
                 {
+                    CrewSeat.ReturnHumansToHull(player.Vessel);   // a crew seat must not keep reading input after the exit
                     player.InputController?.SetPause(true);
                     player.Vessel.ToggleAIPilot(true);
                 }
 
                 StopRunner();
-                if (hud) hud.Hide();
+                StopDrill();
+                if (_gateCourse) _gateCourse.Track(null);   // the rings stay; nothing is counting
 
                 // Pen the local trail up across the teleport home: a spawner left live for even
                 // one frame after SetPose lays a prism bridging 120k units of empty space.
@@ -597,9 +757,11 @@ namespace CosmicShore.Gameplay
             _cts = null;
 
             StopRunner();
-            if (hud) hud.Hide();
+            StopDrill();
+            StrikeGateCourse();
 
             _window?.ReleaseFocus();          // routes through HandleFocusReleased → AI back on
+            RestoreNavigation();              // and when no window held focus (detached first), still give the pad back
 
             StopAsync(mode, outcome).Forget();
         }
@@ -673,7 +835,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void SetLocalTrailPaused(bool paused)
         {
-            var controller = gameData?.LocalPlayer?.Vessel?.VesselStatus?.VesselPrismController;
+            // Alive() first: a launch mid-preview destroys the menu vessel while LocalPlayer still
+            // names it, and `?.` on the interface-typed chain cannot see that (bug ledger
+            // E-1f2ed4d48a / E-43417aef52, "Unwinding the ... preview hit: VesselStatus destroyed").
+            var vessel = gameData?.LocalPlayer?.Vessel;
+            if (!Alive(vessel)) return;
+            var controller = vessel.VesselStatus?.VesselPrismController;
             if (controller) controller.SetSpawnerPaused(paused);
         }
 
@@ -701,15 +868,24 @@ namespace CosmicShore.Gameplay
         /// dies with the scene; only the camera loan, the AI retarget and the runtime SO instance
         /// need explicit hands.</para>
         /// </summary>
-        void AbortHard(bool strikeWorld = true)
+        void AbortHard(bool strikeWorld = true, bool notify = true)
         {
             if (_state == State.Idle) return;
+
+            var mode = ActiveMode;
 
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
 
             StopRunner();
+            StopDrill();
+            StrikeGateCourse();
+
+            // Both callers of AbortHard - the launch and OnDestroy - are LEAVING the menu, so
+            // the lift is forfeited here, never restored.
+            ForfeitMenuPauseRestore();
+            RestoreNavigation();
 
             CameraManager.Instance?.EndWindowedPlayerCamera();
             RestoreAITarget();
@@ -726,9 +902,24 @@ namespace CosmicShore.Gameplay
             SetLocalTrailPaused(false);
             _state = State.Idle;
             ActiveMode = GameModes.Random;
+
+            // (4) A hard abort ENDS THE PREVIEW, so it has to say so. Stop() raises this and
+            // AbortHard did not, which meant the one route that reaches here on its own - a
+            // LAUNCH - never told the window it had nothing left to draw. The frame then sat on
+            // screen holding the last picture its RenderTexture ever received, over the top of
+            // whatever the player did next. Suppressed on the OnDestroy path for the same reason
+            // the strike is: subscribers are being torn down alongside us.
+            if (notify) OnPreviewEnded?.Invoke(mode, ModePreviewOutcome.Abandoned);
         }
 
-        void HandleLaunchRequested() => AbortHard();
+        // The menu is being LEFT, so the pause lift is forfeited rather than restored - see
+        // ForfeitMenuPauseRestore: SceneLoader.LaunchGame has already unpaused for the match by
+        // the time this runs, and re-pausing here would load it frozen.
+        void HandleLaunchRequested()
+        {
+            ForfeitMenuPauseRestore();
+            AbortHard();
+        }
 
         // ── Vessel + AI bookkeeping ──────────────────────────────────────────
 
@@ -744,7 +935,15 @@ namespace CosmicShore.Gameplay
                 _hasVesselHome = true;
             }
 
-            var pose = _arena.SpawnPose(definition);
+            // A race starts on its own line - behind its first ring (Skein: its collar), pointed
+            // through it - rather than on the cell ring the definition mirrors for every mode.
+            // Read the out-var inside the `if` it was assigned in: routed through a bool and a
+            // `?:`, the compiler cannot prove it assigned (CS0165).
+            Pose pose;
+            if (_gateCourse != null && _gateCourse.TryGetStartPose(out var startPose))
+                pose = startPose;
+            else
+                pose = _arena.SpawnPose(definition);
             vessel.SetPose(pose);
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
@@ -752,7 +951,8 @@ namespace CosmicShore.Gameplay
                 $"(cell-relative), ring={definition.SpawnFromCellRing}, " +
                 $"nucleus={( _arena.Cell ? _arena.Cell.ExpectedNucleusWorldRadius : -1f):0.#}, " +
                 $"dist={definition.SpawnDistanceOutsideNucleus:0.#}, " +
-                $"floor={definition.SpawnRingRadiusFloor:0.#}, formation={definition.SpawnFormation}.");
+                $"floor={definition.ResolveSpawnRingRadiusFloor(_arena.Intensity):0.#} " +
+                $"(intensity {_arena.Intensity}), formation={definition.SpawnFormation}.");
         }
 
         void ReturnVesselHome()
@@ -813,7 +1013,7 @@ namespace CosmicShore.Gameplay
         /// A DUMMY OPPONENT for a mode that needs one - Joust previews as a joust, not a solo lap.
         ///
         /// <para>Reuses <see cref="MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion"/> -
-        /// the Lifeform Matrix's release chain, an ordinary networked AI player - rather than any
+        /// the Spawn Matrix's release chain, an ordinary networked AI player - rather than any
         /// parallel bot. Server-only: the companion replicates to the party and only the host may
         /// spawn. The request is fire-and-forget with no handle back, so the new player is FOUND:
         /// the AI set is snapshotted first and the arrival is whoever appears that was not there
@@ -975,6 +1175,104 @@ namespace CosmicShore.Gameplay
             return manager.BeginWindowedPlayerCamera(vessel.VesselStatus.CameraFollowTarget, texture) != null;
         }
 
+        // ── The drill (Lesson + Mentor) ─────────────────────────────────────
+
+        DrillRunner _drill;
+        DrillCoachView _coach;
+        string _drillModeName;
+        string _drillVesselName;
+
+        /// <summary>
+        /// The drill's hold on the card's Play button moved: true while a forced Lesson runs
+        /// (D2), false once the Mentor starts or the run ends. The modal re-decides Start's
+        /// availability on it.
+        /// </summary>
+        public event Action OnDrillGateChanged;
+
+        /// <summary>True while a forced Lesson holds the card's Play button shut.</summary>
+        public bool DrillHoldsPlay => _drill && _drill.HoldsExit;
+
+        /// <summary>The caption shown beside a held Play button, authored in the drill library.</summary>
+        public string DrillHoldCaption => _drill && _drill.Library ? _drill.Library.Strings.PlayLockedCaption : null;
+
+        /// <summary>
+        /// The words the coach uses for {mode} and {vessel} - the card's display name and the
+        /// hull's. Passed by the modal, which owns the card; null names simply drop any line
+        /// that quotes them (a missing fact, never a placeholder).
+        /// </summary>
+        public void SetDrillNames(string modeName, string vesselName)
+        {
+            _drillModeName = modeName;
+            _drillVesselName = vesselName;
+        }
+
+        void StartDrill(ModePreviewDefinitionSO definition)
+        {
+            var vessel = gameData?.LocalPlayer?.Vessel;
+            if (!definition || !Alive(vessel)) return;
+
+            if (!_drill)
+            {
+                _drill = gameObject.AddComponent<DrillRunner>();
+                _drill.OnChanged += HandleDrillChanged;
+                _drill.OnGhostDemoChanged += HandleGhostDemoChanged;
+            }
+
+            var nm = NetworkManager.Singleton;
+            bool started = _drill.Begin(new DrillContext
+            {
+                Vessel = vessel,
+                Mode = definition.Mode,
+                Metric = definition.ObjectiveMetric,
+                ModeName = _drillModeName,
+                VesselName = _drillVesselName,
+                GateCourse = GateCourse,
+                PartyGuest = nm && nm.IsListening && !nm.IsServer,
+            });
+            if (!started) return;
+
+            var host = _window ? _window.SurfaceRect : null;
+            _coach = host ? DrillCoachView.Ensure(host) : null;
+            if (_coach) _coach.Bind(_drill);
+            HandleDrillChanged();
+        }
+
+        void StopDrill()
+        {
+            if (_drill) _drill.Stop();
+            if (_coach) _coach.Bind(null);
+            ApplyDrillHold(false);
+        }
+
+        bool _drillHoldApplied;
+
+        void HandleDrillChanged() => ApplyDrillHold(DrillHoldsPlay);
+
+        /// <summary>
+        /// A Ghost Demo step (TRAINING_PLAN §10.7): the autopilot takes the stick to show the step
+        /// (true), then gives it back (false) - the same two halves GrantStick and ExitFlightAsync
+        /// use, input pause and autopilot, and only while the player is IN the window. Every exit
+        /// route takes the stick itself, which is why the runner's Stop never raises this.
+        /// </summary>
+        void HandleGhostDemoChanged(bool demo)
+        {
+            if (_state != State.Live) return;
+            var player = gameData?.LocalPlayer;
+            if (player == null || !Alive(player.Vessel)) return;
+
+            if (demo) CrewSeat.ReturnHumansToHull(player.Vessel);   // the ghost flies the hull, not a crew seat's human
+            player.InputController?.SetPause(demo);
+            player.Vessel.ToggleAIPilot(demo);
+        }
+
+        void ApplyDrillHold(bool hold)
+        {
+            if (_window) _window.HoldRelease = hold;
+            if (hold == _drillHoldApplied) return;
+            _drillHoldApplied = hold;
+            OnDrillGateChanged?.Invoke();
+        }
+
         // ── Objective ────────────────────────────────────────────────────────
 
         void StartRunner(ModePreviewDefinitionSO definition)
@@ -983,13 +1281,21 @@ namespace CosmicShore.Gameplay
             if (!_runner) _runner = gameObject.AddComponent<ModePreviewRunner>();
 
             _runnerStarted = true;
-            _runner.Begin(gameData?.LocalPlayer?.RoundStats, definition, HandleRunnerFinished);
+
+            // A gate race counts its OWN crossings: SwitchesThreaded is the match's replicated
+            // scoring token and a preview never writes it.
+            System.Func<int> localCount = null;
+            if (_gateCourse && _gateCourse.IsRaised)
+            {
+                var course = _gateCourse;
+                localCount = () => course ? course.Threaded : 0;
+            }
+            _runner.Begin(gameData?.LocalPlayer?.RoundStats, definition, HandleRunnerFinished, localCount);
 
             // The beside-the-window HUD (mode title, objective sentence, "0 / 200" progress, the
-            // countdown) is RETIRED: the launch panel's OBJECTIVE BOX is the one readout now, and
-            // it deliberately shows no target and no clock. The runner still runs - it feeds the
-            // box through OnObjectiveProgress.
-            if (hud) hud.Hide();
+            // countdown) is RETIRED and now DELETED: the launch panel's OBJECTIVE BOX is the one
+            // readout, and it deliberately shows no target and no clock. The runner still runs -
+            // it feeds the box through OnObjectiveProgress.
 
             _lastRunnerProgress = _runner.Progress;
             _runner.OnProgressChanged -= HandleRunnerProgress;   // never double-subscribe
@@ -1022,6 +1328,39 @@ namespace CosmicShore.Gameplay
         /// keep flying in. It just stops counting.
         /// </summary>
         void HandleRunnerFinished(ModePreviewOutcome outcome) { }
+
+        /// <summary>
+        /// The racing card's course, or null when the card is not a gate race or nothing is
+        /// standing. What the drill's Mentor listens to for gate and lap moments.
+        /// </summary>
+        public ModePreviewGateCourse GateCourse =>
+            _gateCourse && _gateCourse.IsRaised ? _gateCourse : null;
+
+        ModePreviewGateCourse _gateCourse;
+
+        void RaiseGateCourse(ModePreviewDefinitionSO definition, CellConfigDataSO config)
+        {
+            if (RaceCourseSource.For(definition.Mode) == null) return;   // not a gate race
+            if (_gateCourse && _gateCourse.IsRaised) return;               // resumed
+
+            if (!_gateCourse) _gateCourse = gameObject.AddComponent<ModePreviewGateCourse>();
+            float nucleus = _arena.Cell ? _arena.Cell.ExpectedNucleusWorldRadius : 0f;
+            if (!_gateCourse.Raise(definition.Mode, _intensity, config, nucleus, _arena.Origin,
+                                   gameData ? gameData.ThemeManagerData : null))
+                return;
+
+            // The structure the match hangs on these rings (Breakwater's stations), from the
+            // prefab the mode's scene controller spawns, posed by the same source. Mass in the
+            // satellite world: it retires with the arena's own world on strike.
+            if (definition.CourseStructurePrefab)
+                _arena.BuildCourseStructure(definition.CourseStructurePrefab, _gateCourse.Source,
+                                            _gateCourse.CellLocalCourse, _intensity);
+        }
+
+        void StrikeGateCourse()
+        {
+            if (_gateCourse) _gateCourse.Strike();
+        }
 
         /// <summary>Kept for the HUD's API surface; nothing binds it to a button any more.</summary>
         public void RequestExit() => Stop();

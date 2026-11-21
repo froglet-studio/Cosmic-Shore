@@ -8,13 +8,18 @@ independent guess at where the mode puts you - and the two disagreed by a lot
 from a core facing nothing).  The scene is the authority, so this reads it:
 
   * ServerPlayerVesselInitializer.arrangeSpawnPointsAroundCell / -Distance-
-    OutsideNucleus / spawnRingRadiusFloor / spawnFormation, for the modes that
-    COMPUTE their ring, and
+    OutsideNucleus / spawnRingRadiusFloor / spawnRingRadiusFloorByIntensity /
+    spawnFormation, for the modes that COMPUTE their ring, and
   * the hand-placed playerSpawnPoints transforms, resolved to world poses and
     then expressed RELATIVE TO THE SCENE'S CELL, for the modes that do not.
 
 Relative to the cell because a preview arena is parked 120k units away: an
 absolute scene coordinate would put the vessel back at the menu's origin.
+
+The per-intensity floor list is copied only when the scene authors one (today
+only Cleave, whose four intensities are four arenas of two sizes). A scene with
+an empty list emits no list at all, so every other preview stays byte-identical
+and the definition falls back to the scalar floor, exactly as the server does.
 
 Usage:
     python3 Tools/Build/author_preview_spawns.py            # write
@@ -29,24 +34,95 @@ ASSETS = os.path.join(ROOT, 'Assets')
 # a preview for a mode with no scene keeps whatever it has.
 SCENE_FOR_MODE = {
     2:  'MinigameRampage',
-    28: 'MinigameFreestyleMultiplayer_Gameplay',
-    29: 'MinigameDuelForCellMultiplayer_Gameplay',
     30: 'ArcadeGameMultiplayer2v2CoOpVsAI',
-    32: 'MinigameWildlifeBlitzMultuplayerCoOp',
-    33: 'MinigameHexRace',
+    32: 'MinigameWildlifeBlitzMultuplayerCoOp',  # retired; scene + controller deleted BH-5.7 (no preview exists for 32)
+    33: 'MinigameSkimRace',
     34: 'MinigameJoust_Gameplay',
-    35: 'MinigameCrystalCaptureMultiplayer_Gameplay',
+    35: 'MinigameScurryMultiplayer_Gameplay',
     36: 'MinigameAstroLeague',
     37: 'MinigameAstroLeague',
-    38: 'MinigameNucleusRush',
-    39: 'MinigameRibcage',
+    38: 'MinigameBroodRush',
+    39: 'MinigameCleave',
     40: 'MinigameWildlifeLiberation',
     41: 'MinigameDogFight',
     42: 'MinigameBends',
     43: 'MinigameScarabScramble',
     44: 'MinigameSalvo',
-    8:  'MinigameCellularDuel',
-    26: 'MinigameWildlifeBlitz',
+    48: 'MinigameTollway',
+    45: 'MinigameSwitchback',
+    46: 'MinigameHijack',
+    49: 'MinigameHeadlong',
+    50: 'MinigameBreakwater',
+    51: 'MinigameSkein',
+    52: 'MinigameBloomrush',
+    53: 'MinigameRedline',
+    54: 'MinigameWreckingBall',
+    55: 'MinigameUndertow',
+    56: 'MinigameRegatta',
+    57: 'MinigameBroadside',
+    58: 'MinigameWaystation',
+    59: 'MinigameDustup',
+    60: 'MinigameTapestry',
+    61: 'MinigameSirocco',
+    62: 'MinigameGrizzlyCharge',
+    63: 'MinigameGrizzlyTime',
+    64: 'MinigameSlingshot',
+    65: 'MinigameWarpline',
+    66: 'MinigameThresherTime',
+    68: 'MinigameWrasseRun',
+    69: 'MinigameTandava',
+    70: 'MinigameTandavaSevering',
+    72: 'MinigameScarabRally',
+    73: 'MinigameSerpentTime',
+    74: 'MinigameBrittleStarTime',
+    75: 'MinigameLanternRun',
+    77: 'MinigameSerpentHood',
+    79: 'MinigameThornline',
+    80: 'MinigameDecoyRun',
+    83: 'MinigameBreach',
+    82: 'MinigameSlipLine',
+    81: 'MinigamePerchRun',
+    84: 'MinigameFlatline',
+    85: 'MinigameJackstraw',
+    86: 'MinigameKelpwood',
+    87: 'MinigameCorona',
+    88: 'MinigameHarvest',
+    89: 'MinigameGlasshouse',
+    90: 'MinigameShatterplane',
+    91: 'MinigameChum',
+    92: 'MinigameStarweave',
+    93: 'MinigameHaul',
+    94: 'MinigameHedgerow',
+    95: 'MinigameLongshot',
+    99: 'MinigamePodHunt',
+    100: 'MinigameIceShelf',
+    101: 'MinigameDepthCharge',
+    96: 'MinigameSpearline',
+    97: 'MinigameRiposte',
+    98: 'MinigamePalisade',
+    102: 'MinigameLarder',
+    103: 'MinigameThornbush',
+    104: 'MinigameLancefall',
+    119: 'MinigameShockfront',
+    120: 'MinigameFulmen',
+    108: 'MinigameFlitstrike',
+    109: 'MinigameHoneycomb',
+    110: 'MinigameWoodpecker',
+    117: 'MinigameStingherd',
+    118: 'MinigameTrawl',
+    124: 'MinigameRailrush',
+    121: 'MinigameBullrush',
+    122: 'MinigameWindrow',
+    123: 'MinigameLandslide',
+    125: 'MinigameStandoff',
+    111: 'MinigameCleanerRam',
+    112: 'MinigameReefbuild',
+    113: 'MinigameBlastline',
+    114: 'MinigameSnap',
+    115: 'MinigameDenBuilder',
+    116: 'MinigameRiptide',
+    126: 'MinigameMarionette',
+    127: 'MinigameGorge',
 }
 
 
@@ -168,6 +244,7 @@ def read_scene_spawn(scene_path, cell_guids):
         'ring': ring,
         'distance': num('spawnDistanceOutsideNucleus', 40.0),
         'floor': num('spawnRingRadiusFloor', 0.0),
+        'floors': floor_list(init),
         'formation': int(num('spawnFormation', 0)),
         'points': [],
     }
@@ -191,19 +268,45 @@ def read_scene_spawn(scene_path, cell_guids):
     return result
 
 
+def floor_list(init):
+    """The initializer's spawnRingRadiusFloorByIntensity, element 0 = intensity 1.
+
+    Missing or `[]` reads as an empty list. Entries are copied verbatim, a 0 included
+    ("this rung defers to the scalar"), so the preview resolves the floor by the same
+    rule ServerPlayerVesselInitializer.ResolveSpawnRingRadiusFloor does."""
+    m = re.search(r'^  spawnRingRadiusFloorByIntensity:[ \t]*(\[\])?[ \t]*\n((?:  - [-\d.eE]+[ \t]*\n)*)',
+                  init, re.M)
+    if not m or m.group(1):
+        return []
+    return [float(x) for x in re.findall(r'^  - ([-\d.eE]+)', m.group(2), re.M)]
+
+
 # ── Writing the asset ────────────────────────────────────────────────────────
 
 def fmt(x):
     return f'{x:.4f}'.rstrip('0').rstrip('.') or '0'
 
 
-def spawn_block(data):
+def spawn_block(data, keep_empty_floor_list=False):
+    """The asset's spawn fields.
+
+    `keep_empty_floor_list` re-emits an empty `SpawnRingRadiusFloorByIntensity: []` that
+    is already on disk (the Editor writes one on any re-save), so --check does not fight
+    the Editor over an empty list. With no list on disk and none in the scene the field is
+    omitted, and the asset is byte-identical to what this script wrote before the field
+    existed."""
+    floors = data.get('floors') or []
     lines = [
         f"  SpawnFromCellRing: {1 if data['ring'] else 0}",
         f"  SpawnDistanceOutsideNucleus: {fmt(data['distance'])}",
         f"  SpawnRingRadiusFloor: {fmt(data['floor'])}",
-        f"  SpawnFormation: {data['formation']}",
     ]
+    if floors:
+        lines.append('  SpawnRingRadiusFloorByIntensity:')
+        lines.extend(f'  - {fmt(f)}' for f in floors)
+    elif keep_empty_floor_list:
+        lines.append('  SpawnRingRadiusFloorByIntensity: []')
+    lines.append(f"  SpawnFormation: {data['formation']}")
     if not data['points']:
         lines.append('  SpawnPoints: []')
     else:
@@ -215,7 +318,7 @@ def spawn_block(data):
 
 
 FIELDS = ('SpawnFromCellRing', 'SpawnDistanceOutsideNucleus', 'SpawnRingRadiusFloor',
-          'SpawnFormation', 'SpawnPoints')
+          'SpawnRingRadiusFloorByIntensity', 'SpawnFormation', 'SpawnPoints')
 
 
 def strip_fields(text):
@@ -264,7 +367,8 @@ def main():
             problems.append(f'{name}: {scene_name} has no spawn initializer - left alone')
             continue
 
-        block = spawn_block(data)
+        had_empty_list = re.search(r'^  SpawnRingRadiusFloorByIntensity:[ \t]*\[\][ \t]*$', text, re.M) is not None
+        block = spawn_block(data, keep_empty_floor_list=had_empty_list)
         stripped = strip_fields(text)
         # Insert after SpawnDistanceOutsideNucleus' old home: end of file is fine for a
         # MonoBehaviour asset, but keep it tidy by appending before any trailing blank line.
@@ -277,8 +381,11 @@ def main():
                 open(asset, 'w', encoding='utf-8').write(updated)
 
         where = ('ring' if data['ring'] else f"{len(data['points'])} authored")
+        by_rung = (' by-intensity=[' + ', '.join(fmt(f) for f in data['floors']) + ']'
+                   if data['floors'] else '')
         print(f"  {name:<34} {scene_name:<44} {where:<12} "
-              f"dist={fmt(data['distance'])} floor={fmt(data['floor'])} form={data['formation']}")
+              f"dist={fmt(data['distance'])} floor={fmt(data['floor'])}{by_rung} "
+              f"form={data['formation']}")
 
     for p in problems:
         print(f'  ! {p}')

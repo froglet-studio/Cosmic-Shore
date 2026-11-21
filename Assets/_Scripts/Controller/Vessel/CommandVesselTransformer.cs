@@ -22,7 +22,8 @@ namespace CosmicShore.Gameplay
         protected override void RotateShip()
         {
             if (SafeLookRotation.TryGet(VesselStatus.Course, Vector3.back, out var newRotation, this))
-                transform.rotation = Quaternion.Lerp(transform.rotation, newRotation, LERP_AMOUNT * Time.deltaTime);
+                transform.rotation = Quaternion.Slerp(transform.rotation, newRotation,
+                                                      NoseFollowFraction(newRotation, Time.deltaTime));
         }
 
     }

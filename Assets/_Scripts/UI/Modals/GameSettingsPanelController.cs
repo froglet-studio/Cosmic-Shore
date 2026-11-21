@@ -41,9 +41,20 @@ namespace CosmicShore.UI
         [Inject] AnalyticsServiceFacade analytics;
         [Inject] ApplicationStateDataVariable appState;
 
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The version line, filled from the build stamp: {version} version, {build} build number, " +
+                 "{commit} short commit, {ref} branch or tag, {channel} release channel, {env} UGS environment. " +
+                 "Empty shows nothing.")]
+        [SerializeField] string versionLine = "Version {version} ({build}) {commit} {env}";
+        [Tooltip("The credits row's label when the row is built in code.")]
+        [SerializeField] string creditsLabel = "Credits";
+
         [Header("Panel")]
         [SerializeField, Tooltip("OptionsMenuContent root - enabled by Open(), disabled by Close(). Wire the settings modal's open event to Open() and its close event to Close().")]
         GameObject optionsMenuContent;
+        [SerializeField, Tooltip("The ACCOUNT tab (Docs/MENU_REDESIGN_B.md §54). Its link / sign-out / delete actions follow the same main-menu-only lock as the GENERAL tab's exit actions.")]
+        AccountSettingsView accountView;
+
         [SerializeField, Tooltip("Shown while the panel is open IN-GAME: Performance settings + Auto-Detect + Benchmark, plus the GENERAL tab's Bug Report / Privacy Policy / Delete Data / Quit Game buttons, are locked outside the main menu (big graphics changes and anything that leaves the game happen in the menu only).")]
         GameObject menuOnlyHint;
         [SerializeField, Tooltip("Shown when a renderer-level change (Quality / AA / Texture / Upscaling) is made - 'some changes apply after a restart'. Hidden on open.")]
@@ -56,7 +67,10 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Scale of the unselected ON/OFF button.")] float unselectedScale = 0.95f;
 
         [Header("General")]
-        [SerializeField] TMP_Dropdown colorblindDropdown;
+        [SerializeField, Tooltip("Accessibility's breadcrumb to the colour sets: opens the Profile on its Colour sets " +
+                                 "tab, where the sets made for colour blindness, low vision and contrast live beside " +
+                                 "the others. Main menu only - see ApplyContextLock.")]
+        Button colourSetsButton;
         [SerializeField] OnOffControl subtitles;
         [SerializeField] TMP_Dropdown subtitleScaleDropdown;
         [SerializeField] OnOffControl analyticsConsent;
@@ -66,6 +80,15 @@ namespace CosmicShore.UI
         Button privacyPolicyButton;
         [SerializeField, Tooltip("Opens the delete-my-data form in a browser. Main menu only - see ApplyContextLock.")]
         Button deleteDataButton;
+        [SerializeField, Tooltip("Opens the in-game CREDITS screen. Unlike the three buttons above " +
+                                 "this does not leave the game - it is main-menu only because the modal " +
+                                 "stack it opens into (ScreenSwitcher) exists only in Menu_Main.")]
+        Button creditsButton;
+        [SerializeField, Tooltip("Opens the WHAT'S NEW window (every update and what it brought; Docs/MENU_REDESIGN_B.md " +
+                                 "section 216). Main menu only, and hidden in a match: the window lives in Menu_Main.")]
+        Button whatsNewButton;
+        [SerializeField, Tooltip("Leave empty to find the one in the scene. Only used by creditsButton.")]
+        ScreenSwitcher screenSwitcher;
         [SerializeField, Tooltip("PC/Steam only: closes the game. Hidden automatically on mobile, where " +
              "the OS owns app exit and a quit button is a store-review flag. Main menu only - see ApplyContextLock.")]
         Button quitGameButton;
@@ -76,6 +99,8 @@ namespace CosmicShore.UI
         [SerializeField] TMP_Dropdown resolutionDropdown;
         [SerializeField] TMP_Dropdown frameCapDropdown;
         [SerializeField] OnOffControl vsync;
+        [SerializeField, Tooltip("Shows the FPS counter (FpsCounter) in every build, release included.")]
+        OnOffControl showFps;
         [SerializeField] Slider fovSlider;
         [SerializeField] float fovMin = 60f, fovMax = 90f;
 
@@ -100,24 +125,32 @@ namespace CosmicShore.UI
         [SerializeField] OnOffControl haptics;
         [SerializeField] Slider hapticsSlider;
 
+        [Header("Slider readouts (optional)")]
+        [SerializeField, Tooltip("The field of view beside its slider, in degrees.")] TMP_Text fovValueText;
+        [SerializeField, Tooltip("The music level beside its slider, 0 - 100.")] TMP_Text musicValueText;
+        [SerializeField, Tooltip("The effects level beside its slider, 0 - 100.")] TMP_Text sfxValueText;
+
         [Header("Links")]
-        [SerializeField] string privacyPolicyUrl = "https://cosmicshore.com/privacy";
-        [SerializeField] string deleteDataUrl = "https://cosmicshore.com/delete-my-data";
-        [SerializeField] string bugReportUrl = "https://cosmicshore.com/support";
+        [SerializeField] string privacyPolicyUrl = "https://www.froglet.games/privacy";
+        [SerializeField] string deleteDataUrl = "https://www.froglet.games/delete-my-data";
+        [SerializeField] string bugReportUrl = "https://www.froglet.games/support";
 
         // Option labels (index == enum value - the controller fills these, never author them in the dropdown)
-        static readonly string[] ColorblindOpts = { "Off", "Protanopia", "Deuteranopia", "Tritanopia" };
         static readonly string[] SubtitleScaleOpts = { "Small", "Medium", "Large" };
         static readonly string[] DisplayModeOpts = { "Fullscreen", "Borderless", "Windowed" };
-        static readonly string[] FrameCapOpts = { "30", "60", "120", "144", "Uncapped" };
-        static readonly string[] QualityOpts = { "Very Low", "Low", "Medium", "High", "Very High", "Ultra" };
+        static readonly string[] FrameCapOpts = { "30", "60", "120", "144", "240", "Uncapped" };
+        // "Custom" is the last row and display-only: DisplayGraphicsSettings marks the preset Custom
+        // (-1) when anti-aliasing, texture or upscaling is changed by hand, and the dropdown used to
+        // keep showing the preset that no longer applied.
+        static readonly string[] QualityOpts = { "Very Low", "Low", "Medium", "High", "Very High", "Ultra", "Custom" };
+        const int CustomQualityIndex = 6;
         static readonly string[] AntiAliasingOpts = { "Off", "FXAA", "SMAA", "MSAA 2x", "MSAA 4x", "MSAA 8x", "TAA" };
         static readonly string[] TextureOpts = { "Full", "Half", "Quarter", "Eighth" };
         static readonly string[] UpscalingOpts = { "Auto", "Linear", "FSR", "STP" };
         static readonly string[] AdaptiveOpts = { "Off", "Balanced", "Aggressive" };
         static readonly string[] PhysicsOpts = { "Low", "High" };
 
-        static readonly int[] FrameCaps = { 30, 60, 120, 144, -1 };
+        static readonly int[] FrameCaps = { 30, 60, 120, 144, 240, -1 };
         static readonly float[] SubtitleScales = { 0.85f, 1.0f, 1.25f };
         readonly List<Resolution> _resolutions = new();
 
@@ -157,8 +190,24 @@ namespace CosmicShore.UI
 
         // ───────────────────────── context lock (menu vs in-game) ─────────────────────────
 
-        /// <summary>True only in the main menu - see <see cref="ApplyContextLock"/> for what is locked elsewhere.</summary>
-        bool InMainMenu => appState == null || appState.Value == null || appState.Value.State == ApplicationState.MainMenu;
+        /// <summary>
+        /// False only while a match is loading, running or ending, or paused / disconnected out of one - the
+        /// only time <see cref="ApplyContextLock"/> locks anything. Every other state is the menu. The app state
+        /// in the menu is not always exactly MainMenu: it is Paused while the app is unfocused, Disconnected
+        /// during a network blip, and None / Authenticating when play starts without the boot chain. The old
+        /// "MainMenu, else locked" test therefore showed the in-match lock in the main menu, with its banner
+        /// and dead Performance dropdowns.
+        /// </summary>
+        bool InMainMenu => appState == null || appState.Value == null
+                           || IsMenuState(appState.Value.State, appState.Value.PreviousState);
+
+        /// <summary>The rule behind <see cref="InMainMenu"/>: everything but a match (GameSettingsContextLockTests).</summary>
+        public static bool IsMenuState(ApplicationState state, ApplicationState previous)
+        {
+            if (state is ApplicationState.Paused or ApplicationState.Disconnected)
+                state = previous;   // the state the interruption is around
+            return state is not (ApplicationState.LoadingGame or ApplicationState.InGame or ApplicationState.GameOver);
+        }
 
         /// <summary>
         /// Locks to the main menu everything that shouldn't be reachable mid-session:
@@ -183,7 +232,10 @@ namespace CosmicShore.UI
             SetInteractable(adaptivePerformanceDropdown, menu);
             SetInteractable(physicsDetailDropdown, menu);
             SetInteractable(autoDetectButton, menu);
+#if UNITY_EDITOR
+            // BenchmarkStressTest is not in Build Settings; Run Benchmark is Editor-only (BH-5.3).
             SetInteractable(benchmarkButton, menu);
+#endif
 
             // GENERAL tab exit actions - main menu only. quitGameButton may be hidden entirely here
             // (mobile, see BindQuitButton); SetInteractable is safe either way.
@@ -191,11 +243,68 @@ namespace CosmicShore.UI
             SetInteractable(privacyPolicyButton, menu);
             SetInteractable(deleteDataButton, menu);
             SetInteractable(quitGameButton, menu);
+            if (accountView) accountView.SetMenuContext(menu);
+
+            // Credits is NOT an exit action - it neither leaves the game nor touches the account -
+            // but it opens a ScreenSwitcher modal, and the switcher only exists in Menu_Main. So it
+            // is locked for a different reason from the four above: there is nothing to open here.
+            SetInteractable(creditsButton, menu);
+            // What's new is only ever reached from the menu, so in a match it is not shown at all.
+            if (whatsNewButton) whatsNewButton.gameObject.SetActive(menu);
+            // The colour sets live on the Profile, a Menu_Main screen: the same reason as Credits.
+            SetInteractable(colourSetsButton, menu);
+
+            UnlockLiveSafeControls();
 
             if (menuOnlyHint != null) menuOnlyHint.SetActive(!menu);
         }
 
+        /// <summary>
+        /// Asserts the OTHER side of <see cref="ApplyContextLock"/>: every control that is editable
+        /// everywhere is positively re-enabled each time the panel refreshes.
+        ///
+        /// Without this the lock is one-directional - it only ever writes <c>false</c>, to the
+        /// menu-only controls - so a live-safe control that arrives disabled for ANY other reason
+        /// (authored that way, a prefab-instance override, a future caller) stays disabled for the
+        /// life of the session, and the panel has no way back. That reads to a player as "this
+        /// setting is locked in-game", which is exactly what the context lock is NOT supposed to say
+        /// about the frame cap, VSync, FOV, audio or controls.
+        /// </summary>
+        void UnlockLiveSafeControls()
+        {
+            // DISPLAY - live everywhere (the frame cap in particular: a player capping FPS mid-match
+            // is a normal thing to want, and it costs nothing to apply).
+            SetInteractable(displayModeDropdown, true);
+            SetInteractable(resolutionDropdown, true);
+            SetInteractable(frameCapDropdown, true);
+            SetOnOffInteractable(vsync, true);
+            SetOnOffInteractable(showFps, true);
+            SetInteractable(fovSlider, true);
+
+            // GENERAL - accessibility + consent.
+            SetInteractable(subtitleScaleDropdown, true);
+            SetOnOffInteractable(subtitles, true);
+            SetOnOffInteractable(analyticsConsent, true);
+
+            // OTHER - controls + audio.
+            SetOnOffInteractable(invertY, true);
+            SetOnOffInteractable(invertThrottle, true);
+            SetOnOffInteractable(music, true);
+            SetInteractable(musicSlider, true);
+            SetOnOffInteractable(sfx, true);
+            SetInteractable(sfxSlider, true);
+            SetOnOffInteractable(haptics, true);
+            SetInteractable(hapticsSlider, true);
+        }
+
         static void SetInteractable(Selectable s, bool on) { if (s != null) s.interactable = on; }
+
+        static void SetOnOffInteractable(OnOffControl c, bool on)
+        {
+            if (c == null) return;
+            SetInteractable(c.onButton, on);
+            SetInteractable(c.offButton, on);
+        }
 
         /// <summary>Shows the "some changes apply after a restart" notice for renderer-level changes.</summary>
         void FlagRestartNeeded()
@@ -207,16 +316,19 @@ namespace CosmicShore.UI
 
         void BindAll()
         {
-            if (versionText) versionText.text = $"Version {Application.version}";
+            if (versionText) versionText.text = BuildStamp.Fill(versionLine, BuildStamp.Current);
 
             // GENERAL
-            BindDropdown(colorblindDropdown, ColorblindOpts, SetColorblindModeIndex);
+            BindButton(colourSetsButton, OpenColourSets);
             BindDropdown(subtitleScaleDropdown, SubtitleScaleOpts, SetSubtitleScaleIndex);
             BindOnOff(subtitles, SetSubtitles, () => SubtitlesOn);
             BindOnOff(analyticsConsent, SetAnalyticsConsent, () => ConsentOn);
             BindButton(bugReportButton, OpenBugReport);
             BindButton(privacyPolicyButton, OpenPrivacyPolicy);
             BindButton(deleteDataButton, OpenDeleteDataForm);
+            EnsureCreditsRow();
+            BindButton(creditsButton, OpenCredits);
+            BindButton(whatsNewButton, OpenWhatsNew);
             BindQuitButton();
 
             // DISPLAY
@@ -224,7 +336,9 @@ namespace CosmicShore.UI
             PopulateResolutionDropdown();
             BindDropdown(frameCapDropdown, FrameCapOpts, SetFrameCapIndex);
             BindOnOff(vsync, SetVSync, () => VSyncOn);
-            BindSlider(fovSlider, fovMin, fovMax, true, SetFieldOfView);
+            BindOnOff(showFps, SetShowFps, () => FpsCounter.Shown);
+            BindSlider(fovSlider, fovMin, fovMax, true, SetFieldOfView, FieldOfView);
+            BindReadout(fovSlider, fovValueText, DegreesReadout);
 
             // PERFORMANCE
             BindDropdown(qualityDropdown, QualityOpts, SetQualityPresetIndex);
@@ -234,17 +348,19 @@ namespace CosmicShore.UI
             BindDropdown(adaptivePerformanceDropdown, AdaptiveOpts, SetAdaptivePerformanceIndex);
             BindDropdown(physicsDetailDropdown, PhysicsOpts, SetPhysicsDetailIndex);
             BindButton(autoDetectButton, AutoDetect);
-            BindButton(benchmarkButton, RunBenchmark);
+            BindBenchmarkButton();
 
             // OTHER
             BindOnOff(invertY, SetInvertY, () => InvertYOn);
             BindOnOff(invertThrottle, SetInvertThrottle, () => InvertThrottleOn);
             BindOnOff(music, SetMusic, () => MusicOn);
-            BindSlider(musicSlider, 0f, 1f, false, SetMusicLevel);
+            BindSlider(musicSlider, 0f, 1f, false, SetMusicLevel, MusicLevel);
+            BindReadout(musicSlider, musicValueText, PercentReadout);
             BindOnOff(sfx, SetSFX, () => SFXOn);
-            BindSlider(sfxSlider, 0f, 1f, false, SetSFXLevel);
+            BindSlider(sfxSlider, 0f, 1f, false, SetSFXLevel, SFXLevel);
+            BindReadout(sfxSlider, sfxValueText, PercentReadout);
             BindOnOff(haptics, SetHaptics, () => HapticsOn);
-            BindSlider(hapticsSlider, 0f, 1f, false, SetHapticsLevel);
+            BindSlider(hapticsSlider, 0f, 1f, false, SetHapticsLevel, HapticsLevel);
 
             RefreshValues();
         }
@@ -252,7 +368,6 @@ namespace CosmicShore.UI
         /// <summary>Pushes current saved values into every assigned control (no listener changes).</summary>
         void RefreshValues()
         {
-            SetDropdown(colorblindDropdown, ColorblindIndex);
             SetDropdown(subtitleScaleDropdown, SubtitleScaleIndex);
             UpdateOnOff(subtitles, SubtitlesOn);
             UpdateOnOff(analyticsConsent, ConsentOn);
@@ -261,6 +376,7 @@ namespace CosmicShore.UI
             SetDropdown(resolutionDropdown, ResolutionIndex);
             SetDropdown(frameCapDropdown, FrameCapIndex);
             UpdateOnOff(vsync, VSyncOn);
+            UpdateOnOff(showFps, FpsCounter.Shown);
             SetSliderValue(fovSlider, FieldOfView);
 
             SetDropdown(qualityDropdown, QualityIndex);
@@ -278,6 +394,10 @@ namespace CosmicShore.UI
             SetSliderValue(sfxSlider, SFXLevel);
             UpdateOnOff(haptics, HapticsOn);
             SetSliderValue(hapticsSlider, HapticsLevel);
+
+            DrawReadout(fovSlider, fovValueText, DegreesReadout);
+            DrawReadout(musicSlider, musicValueText, PercentReadout);
+            DrawReadout(sfxSlider, sfxValueText, PercentReadout);
 
             ApplyContextLock();
         }
@@ -302,7 +422,15 @@ namespace CosmicShore.UI
         /// <summary>Tints the label, toggles the underline, and scales the button for the selected/unselected state.</summary>
         void SetButtonVisual(Button b, GameObject underline, bool selected)
         {
-            SetLabelColor(b, selected ? selectedColor : unselectedColor);
+            // The style-B pair is two KitTextTabs: the tab draws its own word and underline from the
+            // theme, so the legacy tint, scale and underline object are left alone.
+            if (b is KitTextTab tab)
+            {
+                tab.IsSelected = selected;
+                return;
+            }
+
+            SetLabelColor(b, ColorTrace.Retrace(ColorTrace.Ui, selected ? selectedColor : unselectedColor));
             if (underline != null) underline.SetActive(selected);
             if (b != null) b.transform.localScale = Vector3.one * (selected ? selectedScale : unselectedScale);
         }
@@ -323,14 +451,21 @@ namespace CosmicShore.UI
             dd.AddOptions(new List<string>(options));
             dd.onValueChanged.RemoveListener(onChange);
             dd.onValueChanged.AddListener(onChange);
+            SettingsRowDropdownHitArea.Attach(dd);
         }
 
-        static void BindSlider(Slider s, float min, float max, bool wholeNumbers, UnityAction<float> onChange)
+        /// <summary>
+        /// Binds a slider to its setter, seating it on <paramref name="value"/> (the saved setting).
+        /// The range goes on through <see cref="SliderRange"/> rather than by direct assignment,
+        /// because assigning a narrower window CLAMPS whatever the prefab authored and broadcasts
+        /// the clamped result to the slider's PERSISTENT inspector listeners - which, on the audio
+        /// rows, are the listeners that persist the setting. Binding the panel therefore used to
+        /// overwrite the player's saved level before it was ever displayed.
+        /// </summary>
+        static void BindSlider(Slider s, float min, float max, bool wholeNumbers, UnityAction<float> onChange, float value)
         {
             if (s == null) return;
-            s.minValue = min;
-            s.maxValue = max;
-            s.wholeNumbers = wholeNumbers;
+            SliderRange.ApplyWithoutNotify(s, min, max, wholeNumbers, value);
             s.onValueChanged.RemoveListener(onChange);
             s.onValueChanged.AddListener(onChange);
         }
@@ -349,9 +484,23 @@ namespace CosmicShore.UI
 
         static void SetSliderValue(Slider s, float v) { if (s != null) s.SetValueWithoutNotify(v); }
 
+        static string DegreesReadout(float v) => Mathf.RoundToInt(v).ToString();
+        static string PercentReadout(float v) => Mathf.RoundToInt(v * 100f).ToString();
+
+        static void BindReadout(Slider s, TMP_Text text, Func<float, string> format)
+        {
+            if (s == null || text == null) return;
+            s.onValueChanged.AddListener(v => text.text = format(v));
+            text.text = format(s.value);
+        }
+
+        static void DrawReadout(Slider s, TMP_Text text, Func<float, string> format)
+        {
+            if (s != null && text != null) text.text = format(s.value);
+        }
+
         // ───────────────────────── setters (listeners call these) ─────────────────────────
 
-        public void SetColorblindModeIndex(int index) => AccessibilitySettings.ColorblindMode = (ColorblindModeSetting)index;
         public void SetSubtitles(bool on) => AccessibilitySettings.Subtitles = on;
         public void SetSubtitleScaleIndex(int index) => AccessibilitySettings.SubtitleScale = SubtitleScales[Mathf.Clamp(index, 0, SubtitleScales.Length - 1)];
         public void SetAnalyticsConsent(bool granted) => analytics?.SetConsent(granted);
@@ -390,26 +539,67 @@ namespace CosmicShore.UI
         }
         public void SetVSync(bool on) => S?.SetVSync(on ? VSyncSetting.On : VSyncSetting.Off);
         public void SetFieldOfView(float fov) => S?.SetFieldOfView(fov);
+        public void SetShowFps(bool on) => FpsCounter.Shown = on;
 
         public void AutoDetect()
         {
-            if (!InMainMenu) { CSDebug.Log("[Settings] Auto-Detect is available only in the main menu."); return; }
+            if (!InMainMenu) { CSDebug.LogVerbose(CSLogChannel.MenuUI, "[Settings] Auto-Detect is available only in the main menu"); return; }
             S?.ApplyAutoDetect();
             RefreshValues();
             FlagRestartNeeded();
-            CSDebug.Log($"[Settings] Auto-Detect applied - Quality preset index {QualityIndex}, AA index {AntiAliasingIndex}.");
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[Settings] Auto-Detect applied - quality preset index={QualityIndex}, AA index={AntiAliasingIndex}");
         }
 
         public void RunBenchmark()
         {
-            if (!InMainMenu) { CSDebug.Log("[Settings] Benchmark is available only in the main menu."); return; }
+#if !UNITY_EDITOR
+            return;
+#else
+            if (!InMainMenu) { CSDebug.LogVerbose(CSLogChannel.MenuUI, "[Settings] Benchmark is available only in the main menu"); return; }
             benchmarkLauncher?.LaunchBenchmark();
+#endif
         }
 
-        public void SetQualityPresetIndex(int index) { S?.SetQualityPreset((QualityPresetSetting)index); FlagRestartNeeded(); }
-        public void SetAntiAliasingIndex(int index) { S?.SetAntiAliasing((AntiAliasingSetting)index); FlagRestartNeeded(); }
-        public void SetTextureQualityIndex(int index) { S?.SetTextureQuality(index); FlagRestartNeeded(); }
-        public void SetUpscalingIndex(int index) { S?.SetUpscaling((UpscalingSetting)index); FlagRestartNeeded(); }
+        /// <summary>
+        /// Shows and wires Run Benchmark in the Editor only. <c>BenchmarkStressTest</c> is not in
+        /// Build Settings (handoff §5), so a player build cannot load it — hide the button rather
+        /// than add the scene (BH-5.3).
+        /// </summary>
+        void BindBenchmarkButton()
+        {
+            if (benchmarkButton == null) return;
+#if UNITY_EDITOR
+            BindButton(benchmarkButton, RunBenchmark);
+#else
+            benchmarkButton.gameObject.SetActive(false);
+#endif
+        }
+
+        public void SetQualityPresetIndex(int index)
+        {
+            // Custom is not a preset to apply - it names what hand changes left. Picking it changes
+            // nothing, and the row snaps back to what is really set.
+            if (index >= CustomQualityIndex)
+            {
+                SetDropdown(qualityDropdown, QualityIndex);
+                return;
+            }
+            S?.SetQualityPreset((QualityPresetSetting)index);
+            // A preset may write its members (Low turns AA off, QualityPresetCutsSO): show them.
+            SetDropdown(antiAliasingDropdown, AntiAliasingIndex);
+            SetDropdown(upscalingDropdown, UpscalingIndex);
+            FlagRestartNeeded();
+        }
+        public void SetAntiAliasingIndex(int index) { S?.SetAntiAliasing((AntiAliasingSetting)index); OnPresetMemberChanged(); }
+        public void SetTextureQualityIndex(int index) { S?.SetTextureQuality(index); OnPresetMemberChanged(); }
+        public void SetUpscalingIndex(int index) { S?.SetUpscaling((UpscalingSetting)index); OnPresetMemberChanged(); }
+
+        // A hand change to a preset member marks the preset Custom; the preset row says so at once.
+        void OnPresetMemberChanged()
+        {
+            FlagRestartNeeded();
+            SetDropdown(qualityDropdown, QualityIndex);
+        }
         public void SetAdaptivePerformanceIndex(int index) => S?.SetAdaptivePerformance((AdaptivePerformanceSetting)index);
         public void SetPhysicsDetailIndex(int index) => S?.SetPhysicsDetail((PhysicsDetailSetting)index);
 
@@ -424,7 +614,6 @@ namespace CosmicShore.UI
 
         // ───────────────────────── getters ─────────────────────────
 
-        public int ColorblindIndex => (int)AccessibilitySettings.ColorblindMode;
         public bool SubtitlesOn => AccessibilitySettings.Subtitles;
         public int SubtitleScaleIndex => NearestScaleIndex(AccessibilitySettings.SubtitleScale);
         public bool ConsentOn => analytics != null && analytics.ConsentGranted;
@@ -433,7 +622,9 @@ namespace CosmicShore.UI
         public int FrameCapIndex => FrameCapToIndex(S != null ? S.Current.TargetFrameRate : 60);
         public bool VSyncOn => S != null && S.Current.VSync != VSyncSetting.Off;
         public float FieldOfView => S != null ? S.Current.FieldOfView : GraphicsSettingsData.DefaultFieldOfView;
-        public int QualityIndex => S != null ? (int)S.Current.QualityPreset : 0;
+        public int QualityIndex => S == null ? 0
+            : S.Current.QualityPreset == QualityPresetSetting.Custom ? CustomQualityIndex
+            : (int)S.Current.QualityPreset;
         public int AntiAliasingIndex => S != null ? (int)S.Current.AntiAliasing : 0;
         public int TextureQualityIndex => S != null ? S.Current.TextureQuality : 0;
         public int UpscalingIndex => S != null ? (int)S.Current.Upscaling : 0;
@@ -465,10 +656,11 @@ namespace CosmicShore.UI
             resolutionDropdown.ClearOptions();
             var labels = new List<string> { "Native" };
             for (int i = 1; i < _resolutions.Count; i++)
-                labels.Add($"{_resolutions[i].width} × {_resolutions[i].height}");
+                labels.Add($"{_resolutions[i].width} x {_resolutions[i].height}");
             resolutionDropdown.AddOptions(labels);
             resolutionDropdown.onValueChanged.RemoveListener(SetResolutionIndex);
             resolutionDropdown.onValueChanged.AddListener(SetResolutionIndex);
+            SettingsRowDropdownHitArea.Attach(resolutionDropdown);
         }
 
         int CurrentResolutionIndex()
@@ -502,6 +694,128 @@ namespace CosmicShore.UI
         static void OpenUrl(string url)
         {
             if (!string.IsNullOrEmpty(url)) Application.OpenURL(url);
+        }
+
+        /// <summary>
+        /// Guarantees there is a CREDITS row to press, by cloning the Privacy Policy row when no
+        /// <c>creditsButton</c> is wired.
+        ///
+        /// <para><b>Why a fallback exists at all.</b> FMOD's EULA clause 3 requires an in-game
+        /// credit, so the credits screen is a licence obligation rather than a feature — and a
+        /// screen with no way in discharges nothing. <c>ScreenSwitcher</c> ensures the WINDOW for
+        /// the same reason; this ensures the DOOR. Both stand down the moment the real thing is
+        /// authored: wire <c>creditsButton</c> in the settings prefab and nothing here runs.</para>
+        ///
+        /// <para><b>The placement is MEASURED, not guessed.</b> The three link rows in this tab are
+        /// absolutely positioned siblings with no layout group, so a clone dropped in unpositioned
+        /// lands exactly on top of its source. It is offset by the source row's OWN height plus a
+        /// gap, read off the live rect — so it stays correct if the row is ever resized, and it goes
+        /// BELOW rather than beside because a fourth row in the strip would overhang the panel.</para>
+        /// </summary>
+        void EnsureCreditsRow()
+        {
+            if (creditsButton) return;                 // authored - leave it alone
+            if (!privacyPolicyButton) return;          // nothing to measure against
+
+            var source = privacyPolicyButton.GetComponent<RectTransform>();
+            if (!source || !source.parent) return;
+
+            // No Reflex injection here, and that is a MEASURED claim rather than an omission: the
+            // Privacy Policy row is RectTransform + CanvasRenderer + Image + Button, carries no
+            // [Inject] field and no persistent onClick call. If that row ever gains a component
+            // with an [Inject] field (MenuAudio is the obvious one), this clone must be passed
+            // through GameObjectInjector.InjectRecursive - an un-injected persistent listener
+            // throws and eats every runtime listener behind it, which reads on screen as a dead
+            // button. CLAUDE.md records that failure three times over.
+            var clone = Instantiate(privacyPolicyButton.gameObject, source.parent);
+            clone.name = "Credits";
+
+            var rect = clone.GetComponent<RectTransform>();
+            if (rect)
+            {
+                const float RowGap = 16f;
+                rect.anchoredPosition = source.anchoredPosition -
+                                        new Vector2(0f, source.rect.height + RowGap);
+            }
+
+            creditsButton = clone.GetComponent<Button>();
+            if (creditsButton)
+            {
+                // Runtime listeners are not serialized, so Instantiate does not copy the binding
+                // BindAll gave the source - but clearing is free and makes that independent of
+                // when this runs relative to the rest of BindAll.
+                creditsButton.onClick.RemoveAllListeners();
+            }
+
+            var label = clone.GetComponentInChildren<TMPro.TMP_Text>(true);
+            if (label) label.text = creditsLabel;
+
+            CSDebug.LogVerbose(CSLogChannel.MenuUI,
+                $"{nameof(GameSettingsPanelController)} - no credits row was wired, so one was " +
+                "cloned from the Privacy Policy row. Wire 'creditsButton' in SettingsModal.prefab " +
+                "to replace it with an authored row.");
+        }
+
+        /// <summary>
+        /// Opens the in-game CREDITS screen. Names the modal TYPE and lets <see cref="ScreenSwitcher"/>
+        /// find the window, rather than holding a reference to it and calling
+        /// <c>ModalWindowIn</c> - the switcher already owns the modal stack, the return-to-modal
+        /// preference and the close sweeps, and a second authority over a modal's lifecycle is the
+        /// shape <c>Docs/HomeHub/ARCHITECTURE.md</c> §1 rules out.
+        ///
+        /// <para>The screen is not optional chrome: FMOD's EULA clause 3 requires an in-game credit,
+        /// so this row is what makes the obligation dischargeable at all. See
+        /// <c>Docs/THIRD_PARTY_REGISTER.md</c> §7.</para>
+        /// </summary>
+        void OpenCredits()
+        {
+            if (!screenSwitcher)
+                screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+
+            if (!screenSwitcher)
+            {
+                CSDebug.LogWarningFormat(
+                    "{0} - no ScreenSwitcher in the scene, so the credits screen cannot be opened.",
+                    nameof(GameSettingsPanelController));
+                return;
+            }
+
+            screenSwitcher.OpenModal(ScreenSwitcher.ModalWindows.CREDITS);
+        }
+
+        /// <summary>Opens the WHAT'S NEW window over Settings, through the switcher, as <see cref="OpenCredits"/> does.</summary>
+        void OpenWhatsNew()
+        {
+            if (!screenSwitcher)
+                screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+            if (!screenSwitcher)
+            {
+                CSDebug.LogWarningFormat(
+                    "{0} - no ScreenSwitcher in the scene, so the What's new window cannot be opened.",
+                    nameof(GameSettingsPanelController));
+                return;
+            }
+            screenSwitcher.OpenModal(ScreenSwitcher.ModalWindows.WHATS_NEW);
+        }
+
+        // The breadcrumb: close Settings and open the Profile on Colour sets, the one place a colour set is picked.
+        void OpenColourSets()
+        {
+            if (!screenSwitcher)
+                screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+            var colourSets = FindFirstObjectByType<ProfileColorSetsPanel>(FindObjectsInactive.Include);
+            if (!screenSwitcher || !colourSets)
+            {
+                CSDebug.LogWarningFormat(
+                    "{0} - no ScreenSwitcher or ProfileColorSetsPanel in the scene, so the colour sets cannot be opened.",
+                    nameof(GameSettingsPanelController));
+                return;
+            }
+
+            var modal = GetComponentInParent<ModalWindowManager>();
+            if (modal && modal.IsOpen) modal.ModalWindowOut();
+            colourSets.ShowColourSetsWhenOpen();
+            screenSwitcher.OnClickProfileNav();
         }
     }
 }

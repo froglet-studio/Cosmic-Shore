@@ -16,6 +16,46 @@ namespace CosmicShore.Gameplay
     {
         protected const float PI_OVER_TWO = Mathf.PI / 2;
 
+        /// <summary>
+        /// Does this blast CREATE conserved mass, as opposed to destroying (or merely reaching)
+        /// it? False on every blast whose payload is damage, an impulse or a debuff; true on the
+        /// ones that lay prisms — <see cref="AOEBlockCreation"/> and its subclasses,
+        /// <see cref="AOERadialBlocks"/>, <see cref="AOEDangerHemisphereBlocks"/>.
+        ///
+        /// <para>Asked by <c>ProjectileDetonatorSO</c>, so a round can decline the mass-creating
+        /// half of its own detonation while keeping the destructive half. It is a property of
+        /// the CLASS rather than an authored bool because "does this lay prisms" is decided by
+        /// the code that runs, not by a field somebody can set to the wrong answer — and a
+        /// filter that named a list INDEX instead would silently re-point itself the day an
+        /// effect asset reorders its <c>aoePrefabs</c>.</para>
+        /// </summary>
+        public virtual bool CreatesMass => false;
+
+        /// <summary>
+        /// May <see cref="AOEExplosionPool"/> reuse instances of this class? Say yes only when every
+        /// field one detonation writes on the instance is rewritten by the next
+        /// <see cref="Initialize"/> (the pool's own doc says which blasts are not there yet). A
+        /// pooled instance ends its life through <see cref="Retire"/>, never <c>Destroy</c>.
+        /// </summary>
+        public virtual bool Poolable => false;
+
+        /// <summary>The prefab this instance belongs to in <see cref="AOEExplosionPool"/>; null when
+        /// it was Instantiated outside the pool.</summary>
+        public AOEExplosion PoolPrefab { get; internal set; }
+
+        /// <summary>
+        /// Ends this blast: parked for reuse when it came from <see cref="AOEExplosionPool"/>,
+        /// destroyed otherwise. Every self-retire site calls this rather than
+        /// <c>Destroy(gameObject)</c>, so a class that turns <see cref="Poolable"/> on needs no
+        /// other change at those sites.
+        /// </summary>
+        protected void Retire()
+        {
+            if (!this) return;
+            if (PoolPrefab) AOEExplosionPool.Release(this);
+            else Destroy(gameObject);
+        }
+
         [Header("Dependencies")]
         [Inject] protected GameDataSO gameData;
 
@@ -23,6 +63,37 @@ namespace CosmicShore.Gameplay
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = 0.2f;
         [FormerlySerializedAs("renderer")] [SerializeField] protected MeshRenderer meshRenderer;
+
+        [Tooltip("OFF: this blast never touches prism MASS - it neither destroys nor shields a " +
+                 "single prism, and its trigger should additionally author the TrailBlocks layer " +
+                 "into Exclude Layers so the Physics fallback cannot reach one either. For a " +
+                 "blast whose whole payload is aimed at LIVING things (the Sparrow's missile " +
+                 "warhead: debuff the pilots, kill the creatures, leave the arena to the other " +
+                 "explosion in the same detonation).\n\n" +
+                 "Note it is NOT the same as clearing Destructive: a non-destructive blast still " +
+                 "reaches every prism it engulfs and ARMOURS it (ExecuteCommonPrismCommands' " +
+                 "accept branch calls ActivateShield), which on a 95-unit sphere would " +
+                 "temporarily shield half an arena.")]
+        [SerializeField] protected bool affectsPrisms = true;
+
+        [Tooltip("On (default): this blast plays the shared GameplaySFXCategory.Explosion " +
+                 "one-shot when it detonates. Off: it is SILENT.\n\n" +
+                 "Turn it off for a blast that goes off at the same point and instant as another " +
+                 "one. A single skyburst already spawns two authored blasts (the cone and the " +
+                 "sphere), so its warhead would be a THIRD identical one-shot on the same frame " +
+                 "at the same position - which sums to roughly +5 dB over one and phases against " +
+                 "itself, rather than reading as a bigger explosion. If a blast should have a " +
+                 "voice of its OWN, the house rule is its own inspector-exposed EventReference " +
+                 "on the thing that makes the noise, shipped EMPTY - never a second consumer of " +
+                 "a shared category because it is close enough (CLAUDE.md, Audio).")]
+        [SerializeField] protected bool playsDetonationSfx = true;
+
+        /// <summary>
+        /// Whether this blast's prism pass runs at all. Read by
+        /// <see cref="ExplosionImpactor.BeginBatchProcessing"/> — ONE gate, so every explosion
+        /// SHAPE honours it even though each owns its own ExplodeAsync.
+        /// </summary>
+        public bool AffectsPrisms => affectsPrisms;
 
         [Header("Impact")]
         [Tooltip("Gain on the blast-wave speed handed to the mass this blast destroys. 1 = debris leaves at the wavefront's own speed. NOTE: this dial only reaches the screen with Proportional Debris ON - see below.")]
@@ -56,6 +127,97 @@ namespace CosmicShore.Gameplay
         /// <summary>The visual wavefront's full-expansion time (authored on the prefab,
         /// or the per-instance <see cref="InitializeStruct.DurationOverride"/>).</summary>
         public float Duration => ExplosionDuration;
+
+        // ── Omni-crystal morph seam (SPHERE_BLAST_CRYSTAL_MORPH.md) ─────────────────────────────
+
+        /// <summary>
+        /// Raised at the end of the BASE <see cref="Initialize"/> — after the blast is posed and
+        /// sized, before it detonates — for every blast that runs it (the plain sphere, and the
+        /// subclasses that call <c>base.Initialize</c>). The spherical-blast omni-crystal morph
+        /// (<see cref="SphereBlastCrystalMorph"/>) listens for the blast its own pickup fires and
+        /// lands the spent crystal on it; it filters on <see cref="IsPlainSphere"/>.
+        ///
+        /// Named apart from <c>AOEConicExplosion.Initialized</c> on purpose: the two seams were
+        /// built for different shapes, and one name on base and subclass would hide the other.
+        /// Listeners are visuals: they may hold the blast's PHOTONS
+        /// (<see cref="HoldPhotonsForMorph"/>), never its sweep. Invoked isolated.
+        /// </summary>
+        public static event Action<AOEExplosion> BlastInitialized;
+
+        // Fast enter-play-mode keeps statics: a listener stranded by a stopped session must not be
+        // called into the next one.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetBlastStatics() => BlastInitialized = null;
+
+        /// <summary>True for the plain spherical blast — this exact class, drawing a mesh — and
+        /// false for every subclass, whose shape or payload is its own (cones, prism layers,
+        /// flowers).</summary>
+        public bool IsPlainSphere => GetType() == typeof(AOEExplosion) && BlastMesh != null;
+
+        /// <summary>The mesh the blast draws (Unity's built-in sphere on every shipped prefab:
+        /// radius 0.5 at unit scale), or null when the prefab authors none.</summary>
+        public Mesh BlastMesh => TryGetComponent<MeshFilter>(out var filter) ? filter.sharedMesh : null;
+
+        /// <summary>
+        /// The blast mesh's object-to-world matrix as <see cref="ExplodeAsync"/> will draw it
+        /// <paramref name="secondsSinceInitialize"/> after <see cref="Initialize"/>: the spawn pose,
+        /// scaled by the same delay-then-<c>sin(t·π/2)</c> curve
+        /// (<see cref="SphereBlastMorphGeometry.EaseAt"/>). The plain sphere never moves, so the
+        /// pose is exact and only the scale grows.
+        /// </summary>
+        public Matrix4x4 BlastLocalToWorldAt(float secondsSinceInitialize)
+        {
+            float ease = SphereBlastMorphGeometry.EaseAt(secondsSinceInitialize, ExplosionDelay, ExplosionDuration);
+            return Matrix4x4.TRS(transform.position, transform.rotation, MaxScaleVector * ease);
+        }
+
+        static readonly int TextureColorId = Shader.PropertyToID("_TextureColor");
+        static readonly int FresnelColorId = Shader.PropertyToID("_FresnelColor");
+        static readonly int BlastColorId = Shader.PropertyToID("_Color");
+        static readonly int BlastEdgeColorId = Shader.PropertyToID("_EdgeColor");
+        static readonly int BlastDarkColorId = Shader.PropertyToID("_DarkColor");
+        static readonly int BlastBrightColorId = Shader.PropertyToID("_BrightColor");
+
+        /// <summary>
+        /// The colour pair this blast draws, as (dark = body, bright = rim): the AOE material's
+        /// <c>_TextureColor</c>/<c>_FresnelColor</c> (what <c>ThemeManager</c> tints per domain),
+        /// else <c>_Color</c>/<c>_EdgeColor</c>, else <c>_DarkColor</c>/<c>_BrightColor</c>. Read off
+        /// the material the blast was initialised with, because the renderer only receives it once
+        /// the delay has run. Alpha forced to 1: the blast's opacity is its own <c>_Opacity</c>.
+        /// </summary>
+        public bool TryGetBlastColours(out Color dark, out Color bright)
+        {
+            dark = bright = default;
+            var mat = Material ? Material : (meshRenderer ? meshRenderer.sharedMaterial : null);
+            if (!mat) return false;
+            if (!TryPair(mat, TextureColorId, FresnelColorId, out dark, out bright) &&
+                !TryPair(mat, BlastColorId, BlastEdgeColorId, out dark, out bright) &&
+                !TryPair(mat, BlastDarkColorId, BlastBrightColorId, out dark, out bright))
+                return false;
+            dark.a = bright.a = 1f;
+            return true;
+        }
+
+        static bool TryPair(Material mat, int a, int b, out Color dark, out Color bright)
+        {
+            dark = bright = default;
+            if (!mat.HasProperty(a) || !mat.HasProperty(b)) return false;
+            dark = mat.GetColor(a);
+            bright = mat.GetColor(b);
+            return true;
+        }
+
+        /// <summary>
+        /// Holds the blast's PHOTONS while a morph draws in its place — nothing else. The sweep, the
+        /// trigger and the prism damage run from the frame it detonates, exactly as without a
+        /// morph. <see cref="Renderer.forceRenderingOff"/> composes with the renderer's own enabled
+        /// state (which the delay and the end of the sweep drive). Cleared by every
+        /// <see cref="Initialize"/>, so a pooled life never inherits a hold.
+        /// </summary>
+        public void HoldPhotonsForMorph(bool hold)
+        {
+            if (meshRenderer) meshRenderer.forceRenderingOff = hold;
+        }
 
         /// <summary>
         /// What this blast hands the mass it destroys. On the proportional contract the
@@ -97,6 +259,8 @@ namespace CosmicShore.Gameplay
         /// rather than leave the frozen-at-scale husk the mid-animation case wants.
         /// </summary>
         protected bool _visualComplete;
+        float _authoredDuration;
+        bool _authoredDurationCaptured;
         private static int s_trailBlocksMask = -1;
         private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
         private static readonly ProfilerMarker s_explodeFrame = new("AOE.ExplodeAsync.Frame");
@@ -118,8 +282,9 @@ namespace CosmicShore.Gameplay
         /// trigger collider so PhysX never generates the thousands of trigger pairs
         /// that OnTriggerEnter would discard (they're handled by ProcessBatchFrame).
         /// Only TrailBlocks is excluded - vessel pairs must stay live because
-        /// explosion→vessel effects (e.g. VesselChangeSpeedByExplosionEffect) are
-        /// resolved through this collider's OnTriggerEnter, not the batch path.
+        /// explosion→vessel effects (e.g. the Dolphin cone's and the Scarab plate's
+        /// combat-hit report + elemental drain) are resolved through this collider's
+        /// OnTriggerEnter, not the batch path.
         /// </summary>
         protected void ApplyPrismExclusion()
         {
@@ -161,7 +326,7 @@ namespace CosmicShore.Gameplay
         protected virtual void PerformResetCleanup()
         {
             CancelExplosion();
-            Destroy(gameObject);
+            Retire();
         }
 
         public virtual void Initialize(InitializeStruct initStruct)
@@ -176,8 +341,14 @@ namespace CosmicShore.Gameplay
             // that want a fixed physical EXPANSION SPEED rather than a fixed sweep
             // time pass radius/speed here — everything downstream (wavefront ease,
             // batch damage radius, impact speed) already derives from this one field.
-            if (initStruct.DurationOverride > 0f)
-                ExplosionDuration = initStruct.DurationOverride;
+            // Restored to the authored value when there is no override, so a pooled instance does
+            // not keep the previous detonation's duration (AOEExplosionPool).
+            if (!_authoredDurationCaptured)
+            {
+                _authoredDuration = ExplosionDuration;
+                _authoredDurationCaptured = true;
+            }
+            ExplosionDuration = initStruct.DurationOverride > 0f ? initStruct.DurationOverride : _authoredDuration;
 
             ApplyAffectSelfOverride(initStruct);
             ApplyDevastatingOverride(initStruct);
@@ -201,6 +372,19 @@ namespace CosmicShore.Gameplay
             // Subscribe to game events - OnEnable fires before DI injection
             // for runtime-spawned objects, so retry here after injection.
             SubscribeToGameEvents();
+
+            // A hold left by a morph on a previous life of this object never carries over.
+            HoldPhotonsForMorph(false);
+
+            // ISOLATED: a listener is a VISUAL and must never be able to stop the blast it watches.
+            try
+            {
+                BlastInitialized?.Invoke(this);
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogError($"[AOEExplosion] a BlastInitialized listener threw; the blast is unaffected. {e}");
+            }
         }
 
         /// <summary>
@@ -243,7 +427,8 @@ namespace CosmicShore.Gameplay
         {
             CancelExplosion();
             explosionCts = new CancellationTokenSource();
-            AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.Explosion, transform.position);
+            if (playsDetonationSfx)
+                AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.Explosion, transform.position);
             ExplodeAsync(explosionCts.Token).Forget();
         }
 
@@ -343,7 +528,7 @@ namespace CosmicShore.Gameplay
                             // ExecuteCommonPrismCommands. Stop explosion immediately.
                             impactor?.EndBatchProcessing();
                             if (colliderDisabledForBatch) RestorePrismExclusion();
-                            if (this) Destroy(gameObject);
+                            Retire();
                             return;
                         }
 
@@ -381,7 +566,7 @@ namespace CosmicShore.Gameplay
 
                 impactor?.EndBatchProcessing();
                 if (colliderDisabledForBatch) RestorePrismExclusion();
-                if (this) Destroy(gameObject);
+                Retire();
             }
             catch (OperationCanceledException)
             {
@@ -397,7 +582,7 @@ namespace CosmicShore.Gameplay
                 // Exception: once the visual is done we are only draining bookkeeping -
                 // the mesh is hidden and the trigger is off, so there is no frozen cone
                 // to preserve and leaving it would strand the GameObject.
-                if (_visualComplete && this) Destroy(gameObject);
+                if (_visualComplete) Retire();
             }
             catch (System.Exception e)
             {
@@ -407,7 +592,7 @@ namespace CosmicShore.Gameplay
                 Debug.LogException(e);
                 impactor?.EndBatchProcessing();
                 if (colliderDisabledForBatch) RestorePrismExclusion();
-                if (this) Destroy(gameObject);
+                Retire();
             }
         }
 

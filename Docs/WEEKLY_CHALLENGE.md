@@ -24,7 +24,7 @@ budget attached.
 | **Objective** | `{metric, target}` read off the **local player's own** round stats. |
 | **Time budget** | Seconds from the turn starting. Reaching the target **or** running out ends the turn. |
 | **Size** | **The mode's own end conditions, untouched.** The run races to that mode's authored target. |
-| **Attempts** | **One per week**, spent at *launch*. |
+| **Attempts** | **One per UTC DAY** at the week's challenge, spent at *launch*. The challenge is weekly; the run is daily. |
 | **Seats** | Pinned to the card's `MinPlayersAllowed`; **Add AI is unavailable**. |
 | **Intensity** | Pinned to the challenge's, and **not** clamped to the player's unlocks. |
 | **Domain** | Pinned to the challenge's (default **Jade**). |
@@ -60,7 +60,46 @@ The trap the implementation guards, and the reason it is tested: **`DayOfWeek` n
 so the naive `date.AddDays(-(int)date.DayOfWeek)` puts Sunday at the *start* of the following week.
 `((int)DayOfWeek + 6) % 7` shifts Sunday to the end where ISO wants it.
 
+**There is a SECOND trap of the same class, and it lives in the FORMATTER rather than the boundary
+— it shipped, and it was found from outside this system** (the analytics wave cohort, which reuses
+this week key, `Docs/Analytics/DATA_ARCHITECTURE.md §7.3.3`). `WeekStartUtc` fixes *which instant* a
+week begins at; `ToString("yyyy-MM-dd")` then threw that away again, because a bare format string
+renders through **`CurrentCulture`, whose CALENDAR is not always Gregorian** — and Unity takes
+`CurrentCulture` from the device locale. Measured on the shipped expression, one instant:
+
+| Device locale | Calendar | Key produced |
+|---|---|---|
+| en-US / he-IL / ja-JP | Gregorian | `2026-09-07` ✅ |
+| ar-SA | UmAlQura | `1448-03-25` |
+| th-TH | ThaiBuddhist | `2569-09-07` |
+| fa-IR | Persian | `1405-06-16` |
+
+Those players drew a **different challenge** from everyone around them, wrote progress and attempts
+under a key nothing else reads, and never rolled over in step — precisely the failure the UTC-Monday
+rule exists to prevent, arriving through the formatter instead of through the boundary. All three
+period formatters (`WeekKeyFor`, `DayKeyFor`, and the service's fallback) now pass
+`CultureInfo.InvariantCulture`, and `WeeklyChallengeTests.PeriodKeysAreTheSameInEveryLocale` pins it
+across locales, failing if no alternate locale was available to test rather than passing vacuously.
+
+The general rule worth carrying past this system: **a date rendered without an explicit culture is a
+date in whatever calendar the device chose.** Any key, id or filename built from a `DateTime` — not
+just a displayed one — needs `InvariantCulture`, and the defect is invisible on every development
+machine in a Gregorian locale.
+
 ### The run uses the MODE'S OWN end conditions
+
+> **A per-entry TIME LIMIT survived that retirement and was the same mistake in a smaller costume.**
+> Every shipped entry carried one (60–90 s), `TickAttempt` ended the TURN when it expired, and the
+> attempt had already been spent at launch — so a player who ran out of that clock lost their one
+> weekly attempt and submitted **nothing**. That is exactly what it looked like from outside: *"they
+> can't play again, and no entry went in."* The field is deleted from the entry, the challenge
+> struct, the objective copy, the editor tool, the test-mode scale and the shipped asset.
+>
+> What remains is the rule this section always stated: **the challenge OBSERVES the match, it never
+> ends it.** Reaching the target stamps the completion and its time — the leaderboard score — and
+> the match carries on to the mode's own end condition exactly as it would have without the
+> challenge. There is now no code path by which a weekly run differs from an ordinary one.
+
 
 **A weekly run is an ordinary match of its mode.** Nothing in the challenge shortens, lengthens or
 otherwise touches that mode's end condition — Crystal Capture races a domain to its authored 20, and
@@ -83,18 +122,101 @@ over the shipped catalog. The objective should also sit meaningfully *below* tha
 the objective is *personal* while an end condition is a *domain sum* — set them equal and a teammate
 can end the run on somebody else's score.
 
-### Played once a week, and the attempt is spent at LAUNCH
+### A target can be the MODE'S OWN — read off the live match (2026-09-03)
 
-`attemptsPerPeriod` (catalog, default **1**). The attempt is consumed in `BeginAttempt` and flushed
+> **The Skim Race entry shipped asking for 39 crystals, and a Skim Race at intensity 1 ends at 24.**
+> The tool did not flag it because `EndConditionOverrides` authors Skim Race as `0` = *auto*, and the
+> auto value is computed IN THE SCENE by the crystal turn monitor (`NetworkCrystalCollisionTurnMonitor`) — the scene's track has 8
+> waypoints at intensity 1 and the monitor runs 3 laps there — so `TryGetAuthoredTurnTarget` had
+> nothing to compare against and the check was silently skipped. 39 is only the monitor's fallback
+> for a scene with no track at all. Every player who "completed" the race had 24, never reached 39,
+> and submitted nothing — the same unreachable-objective trap this section already records, reached
+> through the one mode whose target is not a number in an asset.
+
+**So the ask for a race is no longer an authored number.** `Entry.UseModeTarget` makes the
+objective *whatever the live match races to*: the service resolves it every tick through the mode's
+own `ScoringRuleSO.TargetFor` (for Skim Race, the crystal count the turn monitor publishes), so it
+is exactly how it is in the game itself and cannot sit above it. Three consequences:
+
+- **Completion is also the match's own verdict.** `IsAttemptComplete` accepts the personal count at
+  the target *or* the player's domain having reached the mode's objective. A solo run completes as
+  the race ends; a party completes when its domain wins — the race target is a domain sum, so no
+  teammate reaches it alone, and without this clause a party could never finish.
+- **The objective line carries no number**, because there is none to print before the scene exists:
+  `Verb` + `Noun` verbatim (*"Finish the race"*). The card shows `BEST n` without a denominator.
+- **`WeeklyChallenge.TargetValue` is 0** for such an entry, and `IsValid` accepts it via
+  `UsesModeTarget`. The cloud record's staleness check compares `TargetValue`, so switching the
+  Skim Race entry over reset every record written against 39 — which hands this week's attempt
+  back to everyone the bug spent it on, without touching `attemptResetToken`.
+
+The target is re-read every tick rather than cached at launch: the monitor publishes it after the
+scene loads and a client receives it as a NetworkVariable, and before it lands the rule's fallback
+is never *smaller* than the real number, so nothing can complete early.
+
+### The challenge is WEEKLY, the attempt is DAILY — and it is spent at LAUNCH
+
+**One run per UTC day at the week's challenge (2026-09-03).** The mode, the objective and the
+leaderboard roll over on the UTC Monday; every UTC day inside that week hands each player one fresh
+run at it. The week is therefore a series of chances to beat your own time, and the board ranks
+the best of them. It used to be one run per WEEK, which made the leaderboard a single-shot lottery
+— your Monday time stood for seven days with no way to improve it.
+
+How it is kept honest, in the same shape as the week:
+
+- **The day boundary is a KEY comparison, never a timer.** `WeeklyChallengeCloudData.Attempts` is
+  filed under `AttemptDay` (the UTC date), and `AttemptsOn(dayKey)` reads as zero on any other day —
+  so the attempt refreshes at UTC midnight for everyone at once, and a device asleep across it lands
+  on the right answer on the next read. `SpendAttempt(dayKey)` rolls the counter over rather than
+  adding to it: attempts do not bank. The service announces the day flip through
+  `OnChallengeChanged` (once a second, one string compare) purely so the card redraws.
+- **A completed challenge is still PLAYABLE tomorrow.** `CanAttempt` asks only about today. The
+  card reads `COMPLETE 0:47.30` — the completion now carries its TIME (`BestTimeMs`), which is the
+  thing tomorrow's run is for — and the launch panel's dead Start says *BEAT YOUR TIME TOMORROW*.
+- **Only a FASTER completion submits.** `RecordCompletionTime` keeps the week's best and answers
+  whether this run beat it; `FinishAttempt` submits only then. A slower Tuesday has nothing to add
+  to a faster Monday, and the guard makes the dashboard's *keep best* setting one the code no
+  longer depends on. (A submit that fails after a personal best is recorded is not retried — the
+  same fire-and-forget rule mode scores follow.)
+- **The countdown follows the state.** With a run available the card counts the WEEK down (*ENDS
+  IN*); with today's spent it counts to the next run (*NEXT RUN IN*) — UTC midnight, or the week's
+  end if that comes first (`TimeUntilNextAttempt`).
+- **Test mode shrinks the day with the week**: a shrunken test period is divided into seven test
+  days (`DayKeyFor` → `T42/3`), so the daily rhythm is testable at the same speed as the weekly one.
+
+`attemptsPerPeriod` was renamed `attemptsPerDay` (`[FormerlySerializedAs]`, so the shipped asset's
+value carries over). `SchemaVersion` 3 → 4; an existing cloud record round-trips, and its old
+week-scoped `Attempts` count reads as zero because `AttemptDay` is empty — which hands everyone a
+run on the day this lands.
+
+**Giving an attempt BACK: `attemptResetToken` on the catalog.** Spending at launch is the right
+ordering and it has one cost — a bug between launch and submit takes the attempt with it, and there
+is no per-player remedy that scales. Bumping the token makes every record written before the bump
+read as belonging to an earlier period, so the staleness path that already handles a week rollover
+resets it: attempt back, best value and completion cleared with it (they are one record).
+
+Two things make it safe. It reuses the EXISTING staleness reset rather than adding a second way to
+clear a record — a remedy with its own code path is a remedy nobody has tested. And the token is
+kept OUT of the draw key: the mode is chosen by hashing the period, so folding the token in would
+silently re-roll the week into a different game, and a player mid-week would find the challenge had
+changed. `PeriodKeyFor` drives the draw; `RecordKeyFor` (period + token) is what progress is filed
+under.
+
+It is a NUMBER, not a button, because a button would have to reach every player's cloud record one
+at a time — a server job nobody has. A number travels with the build and each client applies it to
+itself on next launch, offline included. It cannot be undone: lowering it re-issues the challenge a
+second time rather than restoring anything.
+
+
+`attemptsPerDay` (catalog, default **1**). The attempt is consumed in `BeginAttempt` and flushed
 straight to Cloud Save rather than credited at the end — the one ordering that cannot be
-save-scummed, because "played only once" has to survive an alt-F4 halfway through a bad run.
+save-scummed, because "one run a day" has to survive an alt-F4 halfway through a bad run.
 `WeeklyChallengeCloudData.RecordResult` therefore folds in the *result* only and never touches the
 counter.
 
-Running out does **not** lock the mode out: the card stops offering it as the day's objective and
-counts down to the next one, while the mode stays on the arcade grid like any other. The card shows
-three distinct states — `BEST n / target` (attempt available), `PLAYED — BEST n / target` (spent,
-not met), `COMPLETE` — because a player who ran out without meeting the objective has **not**
+Running out does **not** lock the mode out: the card stops offering it as today's run and counts
+down to the next one, while the mode stays on the arcade grid like any other. The card shows three
+distinct states — `BEST n / target` (run available), `PLAYED TODAY — BEST n / target` (spent, not
+met), `COMPLETE m:ss.cc` — because a player who ran out without meeting the objective has **not**
 completed it, and a card that said COMPLETE either way would be lying about their day.
 
 ### The launch panel states the CHALLENGE, not the mode
@@ -226,11 +348,11 @@ remembers.
 | `Enabled` | Park an entry without deleting it. **Re-rolls the rotation** — the draw indexes the *enabled* entries. |
 | `Mode` | The arcade mode. Must have a card in `SO_GameList` and a scene. |
 | `Metric` | The per-player stat counted. Normally the mode's own scoring metric. |
-| `Target` | What the **local player** must reach. |
-| `TimeLimitSeconds` | Budget from the turn starting. `0` = no limit. |
+| `Target` | What the **local player** must reach. Ignored while `UseModeTarget` is on. |
+| `UseModeTarget` | The target is the **mode's own end condition**, read off the live match; completion is also granted when the player's domain wins. Use it for a race, whose number lives in a scene rather than an asset. |
 | `Intensity` | Played at this intensity, for everyone. Pinned in the launch panel. |
 | `Domain` | The colour the player flies. Pinned. Jade is the default and the only one needing no server request. |
-| `Verb` / `Noun` | Objective copy: `"Collect" 8 "crystals"` → *Collect 8 crystals in 1:00*. |
+| `Verb` / `Noun` | Objective copy: `"Collect" 8 "crystals"` → *Collect 8 crystals*; with `UseModeTarget`, verbatim → *Finish the race*. |
 
 ### What the tool checks, and why each check exists
 
@@ -297,7 +419,7 @@ cloud copy returns on the next sign-in.
 
 ### What ships
 
-10 entries, all at intensity 1, 60–90 s, `attemptsPerPeriod = 1`, test mode off:
+10 entries, all at intensity 1, 60–90 s, `attemptsPerDay = 1`, test mode off:
 
 | Mode | Objective | The mode races to | Clock |
 |---|---|---|---|
@@ -305,7 +427,7 @@ cloud copy returns on the next sign-in.
 | Skim Race | 10 crystals | auto (~39) | 1:30 |
 | Joust | 1 joust | 3 | 1:00 |
 | Rampage | 300 prisms | 2000 | 1:30 |
-| Peel the Cage | 300 prisms | 2000 | 1:30 |
+| Cleave | 300 prisms | 2000 | 1:30 |
 | Salvo | 150 prisms | 700 | 1:30 |
 | Dog Fight | 20 points | 90 | 1:30 |
 | The Bends | 1 bend | 3 | 1:30 |
@@ -349,19 +471,29 @@ and you are not.
 ### ONE leaderboard, reset weekly by UGS — not one per week
 
 The SDK cannot create leaderboards, so a per-week id would need a server job minting them forever.
-The dashboard's own **reset schedule** does it, and its **archive on reset** is what a reward pass
-reads once the week has closed.
+A **recurring reset schedule** does it, and its **archive on reset** is what a reward pass reads
+once the week has closed.
 
-**Three settings live in the UGS dashboard and nothing in this code can enforce them:**
+**Three settings live on the SERVICE and nothing in this code can enforce them:**
 
 | Setting | Value | Why |
 |---|---|---|
 | **Sort order** | **Ascending** | The score is a TIME, so the fastest run is the smallest number. |
 | **Update strategy** | **Keep best** | "Best" is relative to sort order, so ascending keeps the fastest. Almost moot at one attempt a week; under test mode's unlimited attempts it stops a practice run overwriting a good one. |
-| **Reset** | **Weekly, on the same UTC Monday boundary, ARCHIVING ON** | The archive is the only record of who won a week once the board has rolled over. |
+| **Reset** | **RECURRING WEEKLY, ARCHIVING ON, aligned to UTC Monday 00:00** | Without it the board never empties. The archive is the only record of who won a week once the board has rolled over. |
 
-**The sort order is the one that fails silently**, so it is checked at runtime instead: UGS returns
-rows in rank order, so a correct board hands back non-decreasing times.
+**Settable three ways, none of them from the game:** the UGS dashboard (Leaderboards ▸ the board ▸
+Resets), the UGS CLI, or the [Leaderboards Admin API][admin-api]. The **client SDK has no reset or
+delete call at all** — `ILeaderboardsService` is 12 read/write-a-score methods and none of them
+clears a board — so a missing reset can only be fixed on the service side. (An earlier version of
+this section said "the dashboard" and implied that was the only route; it is not, and the CLI/Admin
+route is what a scheduled job would use.)
+
+[admin-api]: https://services.docs.unity.com/leaderboards-admin/v1/
+
+**TWO of the three fail silently, and both are checked at runtime.**
+
+**Sort order.** UGS returns rows in rank order, so a correct board hands back non-decreasing times.
 `WeeklyChallengeLeaderboardService.WarnIfSortedWrong` screams **once per session** if it doesn't —
 because a wrongly-sorted board looks completely normal. The rows are real, the names are real, the
 times are real; they are simply upside down, with the slowest run in the world at rank 1.
@@ -369,6 +501,84 @@ times are real; they are simply upside down, with the slowest run in the world a
 > A code-side workaround — submitting `BIG - time` so a descending board ranks correctly — was
 > **considered and rejected**. It makes every raw score in the dashboard, in every export, and in
 > the archive the reward pass reads a number nobody can interpret, to save one dashboard setting.
+
+**Reset.** A board that never resets looks like a working leaderboard too, and it is the worse of
+the two: the score is a time and the sort is ascending, so **an old fast run outranks every new one
+forever** and the board freezes on the week the reset stopped happening. Reported by
+`WarnIfBoardNotResetting`, once per session, naming the check and all three places it can be set.
+
+### The PERIOD stamp — the safety net under the reset
+
+Every submitted score carries the **period it was run for** in its metadata (`"w"`), and every read
+keeps only the current one. That is what makes last week's entries *go away* on the client the
+moment the week rolls, whether or not the service-side reset fired.
+
+| Piece | Where |
+|---|---|
+| The field, and what an absent one means | `WeeklyChallengeRanking.PeriodKey` / `ReadPeriodKeyFromMetadata` |
+| "Does this row belong to the week being ranked?" | `WeeklyChallengeRanking.IsForPeriod` |
+| Drop other weeks, renumber what's left | `WeeklyChallengeRanking.RetainPeriod` |
+| The key that gets stamped | `WeeklyChallengeService.ResolveLeaderboardPeriodKey` |
+
+Five things about it are decisions rather than details:
+
+- **It is the DRAW key, not `WeeklyChallenge.PeriodKey`.** That field is the *record* key and carries
+  `attemptResetToken` — and bumping the token re-issues the **same** challenge to hand an attempt
+  back (see "Giving an attempt BACK" above). Stamping the record key would make that bump orphan
+  every score already submitted this week: the board would read as empty and the not-resetting error
+  would fire on a board that is perfectly healthy.
+- **A row that does not say which week it is from is treated as NOT this week.** Unknown has to fall
+  on the stale side, because an unstamped entry is exactly what a board that failed to reset is full
+  of — the lenient reading would leave the bug in place. The cost is stated plainly: every entry
+  submitted before the stamp shipped disappears from the panel, which on a board that already needed
+  resetting is the intended outcome.
+- **An unknown CURRENT period keeps everything.** The opposite call, for the opposite reason: with
+  nothing to judge against, emptying the board would be a worse answer than showing it.
+- **Ranks are renumbered only when something was dropped.** A board that reset correctly has nothing
+  to drop and its rows keep the true world ranks UGS gave them. When rows *are* dropped, renumbering
+  is the argument the Friends scope already makes: 1st, 4th, 812th reads as a board with most of its
+  rows missing rather than a ranking of what is left.
+- **The submit's metadata is no longer optional.** It used to be `null` when the player had no
+  avatar; the period made it mandatory, because an unstamped row is one this game then hides from
+  itself. The avatar is still omitted when there is none.
+
+**It is a net, not a fix, and the difference matters.** A read can hide the stale rows; it cannot
+remove them, and the accumulation grows every week. `FetchPageAsync` will page past other periods
+for up to `MaxPagesPerFetch` (5) requests so a board mid-transition still fills — **a healthy board
+pages once, asking for exactly the rows the caller wanted, which is the behaviour it had before the
+filter existed** — and past the budget the panel simply reads short. There is no client-side budget
+that outruns an ever-growing board.
+
+**The KEEP BEST trap, once the reset is missing:** "best" is across the whole board's life, so a
+player whose stale time beats their new one keeps the stale row and gets **no entry for this week at
+all**. That is not a bug in the update strategy — it is the reset's absence surfacing somewhere else,
+and no client-side rule can undo it. It is the second reason the reset is mandatory rather than nice
+to have.
+
+### The id, and the per-mode boards it replaced
+
+The shipped id is **`weekly_challenge`** (`WeeklyChallengeCatalogSO.leaderboardId`, authored in
+**FrogletTools > Game Modes > Weekly Challenge** on the Testing tab). One board, because the score
+is a completion TIME for every entry in the pool — same unit and same direction whichever mode the
+week draws, which is exactly what lets a single board span all ten.
+
+**This replaced a second, older leaderboard system, now deleted.** `LeaderboardConfigSO` mapped
+every mode × intensity to its own board (`mp_joust_intensity_1`, `sp_wildlifeblitz_intensity_3`, …) and
+`UGSStatsManager.SubmitScoreInternal` submitted to it at *every* arcade game end. It is gone —
+config SO, its inspector, `ActiveGameModesWindow`, the asset and the submit path — because
+leaderboards are a weekly-challenge feature and two systems answering "what is a leaderboard here"
+is how one of them ends up wrong. Three things it was carrying are worth recording:
+
+- **Four of its twenty mappings could never fire.** `sp_hexrace_intensity_1‑4` were keyed to
+  `GameMode: 31`, a permanently reserved never-assigned enum ID, and the `ProtectMission` rows
+  point at a mode with no scene and no reporter.
+- **Crystal Capture had no mapping at all**, so every score it reported hit *"No leaderboard
+  mapping"* and was dropped.
+- **Per-mode bests are unaffected.** They live in Cloud Save `MODE_STATS` and still do; what
+  disappeared is the global ranking of them, not the record.
+
+The read path was never wired either way: `LeaderboardsMenu` (the Port screen) has had no
+backend since PlayFab's `LeaderboardManager` was removed, and is unrelated to both systems.
 
 ### The time format
 
@@ -394,25 +604,237 @@ and the reward tooltip in the mock-up is that system's surface, not this one's.
 |---|---|
 | Submit + fetch (all UGS contact) | `_Scripts/System/WeeklyChallenge/WeeklyChallengeLeaderboardService.cs` |
 | One row, resolved for a UI | `_Scripts/Data/Structs/WeeklyChallengeRanking.cs` |
-| The panel | `_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs` |
-| The id | `WeeklyChallengeCatalogSO.leaderboardId` (authored in the tool) |
+| Which population a tab ranks | `_Scripts/Data/Enums/LeaderboardScope.cs` |
+| Which regional board this player is on | `_Scripts/System/WeeklyChallenge/WeeklyChallengeRegion.cs` |
+| The ROW LIST | `_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs` |
+| The WINDOW (tabs, countdown, reward tooltip, close) | `_Scripts/UI/Modals/WeeklyChallengeLeaderboardModal.cs` |
+| Wiring it up | `Tools/Build/author_menu_configure.py` (the style-B board, `LeaderboardView.prefab`; the old FrogletTools wirer is retired) |
+| The ids | `WeeklyChallengeCatalogSO.leaderboardId` + `.regionalLeaderboards` (authored in the tool) |
 
 **`WeeklyChallengeRanking` is a project type, not the UGS entry it is built from.** A view taking a
 `Unity.Services.Leaderboards.Models.LeaderboardEntry` would drag the SDK into the UI layer and break
 the day the package renames a field — and this project already has *two* types called
-`LeaderboardEntry` (the PlayFab one and `CosmicShore.Data.LeaderboardEntry`), so a third would be
+`LeaderboardEntry` (the one nested in `LeaderboardsMenu` and `CosmicShore.Data.LeaderboardEntry`), so a third would be
 three names for one idea.
+
+**That warning fires on the SERVICE too, and heeding half of it is not enough.** Keeping the SDK
+type out of the *view* does nothing about the file that must name it: the service sits in
+`CosmicShore.Core` and imports `CosmicShore.Data`, so a plain
+`using Unity.Services.Leaderboards.Models;` made the bare name `LeaderboardEntry` ambiguous the
+moment the file used it (`CS0104`). The fix is an **alias**, not an import —
+`using UgsLeaderboardEntry = Unity.Services.Leaderboards.Models.LeaderboardEntry;` — which names the
+one type this file means and leaves every other name in that namespace alone. The options types
+(`AddPlayerScoreOptions`, `GetScoresOptions`, …) live in `Unity.Services.Leaderboards` itself and
+collide with nothing, so that import stays. *General rule: when a type name is known to be
+duplicated, import nothing from its namespace — alias the one member you need.*
 
 **The panel adopts its row template by name**, the same way the connecting panel's pilot roster
 does and for the same reason: the row count is not known until the fetch answers, so a serialized
 reference per row is impossible. Wire `rowContainer` and a template; the rank / avatar / name /
 score inside it are found by name unless wired explicitly.
 
-**No avatar travels with a leaderboard entry.** UGS holds a player id, a name, a rank and a score —
-not a profile — so there is nothing to look up in `SO_ProfileIconList`, and the panel deliberately
-does not reference it. Rows keep whatever avatar the template authored. Real per-player faces need
-a second lookup (Friends presence, or an avatar id mirrored into the score's metadata at submit
-time) and are a **follow-up**, not a silent blank.
+**No avatar travels with a leaderboard entry *on its own*, so the submit puts one there.** UGS holds
+a player id, a name, a rank and a score — not a profile. The one field a score can carry with it is
+its **metadata**, so `SubmitCompletionAsync` stamps the local profile's icon id into it
+(`{"a":<id>}`, `WeeklyChallengeRanking.AvatarMetadataKey`) and the fetch reads it back with
+`ReadAvatarIdFromMetadata`. That closes the follow-up this section used to record, with one honest
+limit: **an entry submitted before this shipped has no metadata**, so it resolves to
+`WeeklyChallengeRanking.NoAvatar` and keeps the template's art. That is the normal case for old
+rows, not a failure.
+
+Three details are each a test (`WeeklyChallengeLeaderboardTests`):
+
+- **`NoAvatar` is `-1`, never `0`.** Icon 0 is a real icon, so a zero sentinel silently shows *that
+  face* on every row that carries no avatar.
+- **The scan looks for the QUOTED key**, so a payload with an unrelated `"area"` field does not
+  match on the letter `a`.
+- **A row with no avatar keeps the template's sprite rather than clearing it.** An `Image` with no
+  sprite draws a solid white rectangle, so "no avatar" would read as a rendering bug.
+
+The parser is a hand-rolled scan rather than a JSON parse — the payload is one integer under a
+one-character key, and it runs once per row per fetch — and it lives on the *struct*, because the
+struct owns the field, and because a hand-rolled parser is exactly the kind of thing that fails
+silently and therefore has to be testable.
+
+### THREE SCOPES, and only one of them is a filter over anything
+
+The window has World / Regional / Friends tabs. **They are three different questions asked of UGS,
+not three filters over one answer** — which is the whole reason `LeaderboardScope` exists:
+
+| Scope | What it actually is | Needs |
+|---|---|---|
+| **World** | A page of the board | the `leaderboardId` |
+| **Regional** | A page of a **different board** | a row in `regionalLeaderboards` matching the player's region |
+| **Friends** | A lookup of specific player ids **on the world board** | the Friends service initialised |
+
+**Regional has to be its own board.** Unity Gaming Services has no notion of a player's region — a
+board is a board and every score on it is global. So "regional" can only mean *a second board that
+only that region submits to*, and a completion is submitted to the world board **and** the player's
+regional board. The tempting alternative — fetch the world page and filter it client-side — looks
+equivalent and silently produces an empty board: the page is the *global* top N, so a region with
+nobody in it sees nothing and reads it as broken.
+
+`WeeklyChallengeRegion` resolves the key, first answer wins: a region **published** by the
+networking layer (`WeeklyChallengeRegion.Publish` — nothing calls it today; the hook exists because
+the Relay session picks its region by measured latency, which is the *right* answer), else the
+device's two-letter ISO country, else nothing. Nothing means the tab reports no board rather than
+guessing — putting a player on the wrong region's board is worse than showing none. The country is
+deliberately **not** mapped to a coarse continent in code: which countries share a board is a
+business decision, so the table is authored (one row per country, several rows may share an id).
+
+**Friends re-numbers its ranks 1..n.** A friends list showing 1st, 4th, 812th is a world board with
+most of its rows missing, not a friends board. The world rank is not lost — it is simply not what
+that tab is answering. The local player is always included, because a friends board you are not on
+cannot tell you whether you are beating your friends.
+
+**A tab whose scope has nothing configured is DIMMED, never hidden.** A tab that vanishes changes
+the row's layout whenever the answer changes, and a player who saw three tabs yesterday reads two as
+a broken build. The state is resolved *before* the fetch (`IsScopeAvailable`), because an
+unconfigured board and a board nobody has finished both come back empty and the player deserves to
+know which one they are looking at.
+
+The Friends tab additionally has its own switch (`friendsTabEnabled`, **off**): "we cannot ask" and
+"we are not shipping this yet" are different facts and only one of them changes at runtime. The code
+path is complete — turning the switch on is all it takes.
+
+### The countdown is a CLOCK and stays a clock
+
+`WeeklyChallengeLeaderboardModal.FormatHoursMinutesSeconds` → `HH:MM:SS`, with hours running past 24
+rather than rolling over, so the top of a week reads `167:59:59`. Deliberately *not*
+`WeeklyChallengeCard.FormatCountdown`, which switches units as the week runs down (`6d 3h` →
+`7:12:33` → `1:04`) because it is glanced at on a card. Hours are padded to two so the string never
+changes width within an hour — that is what stops the label jittering under a proportional font.
+
+### The animation is on channels a layout group does not own
+
+Rows fade and **swell**; they deliberately do not rise. The rows live under a `VerticalLayoutGroup`,
+which owns `anchoredPosition` and rewrites it on every layout rebuild — so a position tween is a
+second writer to a value the layout considers its own, and the rows snap the first time anything
+dirties the layout. Alpha and `localScale` are untouched by a layout group, which makes them the two
+channels a row can safely animate wherever it is parented. *General rule: before animating a UI
+transform, ask what else writes to that field.*
+
+The stagger is **divided down** rather than truncated when a list is long enough to exceed
+`maxStaggerTotal` — truncating leaves the tail of a long board arriving all at once, which reads as
+the animation giving up. Every tween is `SetLink`ed and killed-and-snapped on disable, or a panel
+closed 40 ms into its cascade re-opens with half its rows transparent and undersized.
+
+---
+
+### Reaching the board: a spent challenge still OPENS
+
+**The card no longer goes dead when the attempt is spent.** It used to — `CanAttempt` gated the
+card's own `interactable` — and that also made the week's LEADERBOARD unreachable, because the board
+lives behind that card. A player who finishes the challenge on Monday could not see where their run
+placed for the other six days. So the card (and the `WeeklyChallengePlayButton` shortcut, which must
+not disagree with the card it is a shortcut to) is gated only on the challenge EXISTING, and the
+launch panel greys its own Start button instead.
+
+`CanAttempt` is still the single authority for whether the challenge can be **played**. It is simply
+no longer the authority for whether it can be **looked at**.
+
+**Start is greyed, never hidden.** A missing Start button reads as a broken modal; a dead one with
+`ALREADY PLAYED THIS WEEK` beside it explains itself — and that matters precisely because the point
+of still opening a spent challenge is to reach the leaderboard, and a window that looks broken is
+one nobody explores. `ArcadeLaunchPanel.SetStartAvailable` drives `interactable` rather than active
+state, because the modal's ready-up path owns the button's ACTIVE state and toggles it freely, so a
+hide would be undone on the next redraw. Nothing else in the project writes Start's `interactable`,
+which is what makes it a channel the panel can own outright. The availability is held as panel STATE
+and re-asserted from `SetReadyUpState`, for the same reason `_addAIAvailable` is.
+
+**A disabled button is not the whole gate.** `OnStartGameClicked` is public, a prefab may carry its
+own onClick to it, and the modal's gamepad path drives focus ROWS rather than the button — so the
+refusal lives in the handler (`CanStartWeeklyChallenge`), not on the control. The reason text
+deliberately carries **no countdown**: it is written once when the card opens, a modal can sit open
+for minutes, and a ticking value that does not tick is worse than none. The card in the grid behind
+it already counts the week down.
+
+**The leaderboard button lives on the launch panel and the modal opens the window.** The panel
+raises `OnLeaderboardRequested` and does not know a leaderboard window exists; the modal resolves
+and opens it. Like `SetAddAIAvailable`, `SetLeaderboardAvailable` is passed **either way** rather
+than only switched on — the panel is a shared scene object, so a button shown for a challenge has to
+be taken back when the next ordinary card opens. The arcade modal is **not** closed underneath the
+board: the player is mid-decision about a card, so the board is a detour, not a destination.
+
+---
+
+### Scene wiring — run the tool
+
+**FrogletTools ▸ UI ▸ Wire Weekly Challenge Leaderboard** resolves every reference below
+from the window's own hierarchy and reports what it could not find. **Report only** shows what it
+would do without writing. It is a repair tool as well as a bring-up tool, because it never
+overwrites a reference set by hand unless you tick the box — so re-running after re-laying the art
+is always safe.
+
+It exists because the window is ~16 references and every one of them fails *silently*: a tab
+pointed at the wrong button switches the wrong scope, an unwired backdrop leaves a tooltip that
+opens and never closes, and a missed `rowContainer` spawns every row on the modal root behind the
+artwork. None of those throw.
+
+Two lookups in it are worth knowing about. **Three objects in this window are called `RankBG`** —
+the tooltip's backdrop, the tier table's own background inside it, and the leaderboard row's rank
+badge — so the backdrop is resolved by path from a known parent, never by a name search over the
+window. And **a `rowTemplate` that is already a PREFAB ASSET is kept**, not re-pointed at the
+leftover scene copy: extracting the row is the direction this is going, and re-resolving it every
+run would quietly undo that.
+
+The tool's `Validate & Push` gate fails on only the things without which the window is *broken*
+rather than merely plainer: no row panel, no close button, a reward panel wired without its
+backdrop, or a `RankRewardPanel` left ACTIVE in the scene (it would be on screen the moment the
+window opens). Everything else is legitimately optional and must not fail a push.
+
+Everything below is OPTIONAL — a modal with only a close button opens and closes, one with only the
+panel lists the week. Nothing logs about a field left empty, because "this window does not have that
+piece" is a layout, not a misconfiguration.
+
+| Component | Field | Wire to |
+|---|---|---|
+| `WeeklyChallengeLeaderboardModal` (on `LeaderboardConfigureModal`) | `panel` | the `WeeklyChallengeLeaderboardPanel` (found in children if empty) |
+| | `timeLeftText` | `Content/Time` |
+| | `challengeTitleText` | `Content/LeaderboardHeader` (optional) |
+| | `worldTab` / `regionalTab` / `friendsTab` | the three `ButtonTabs` children |
+| | `rankRewardButton` | `Content/RankRewardButton` |
+| | `rankRewardPanel` | `Content/RankRewardPanel` |
+| | `rankRewardBackdrop` | `RankRewardPanel/RankBG` |
+| | `closeButton` | `Content/CloseButton` |
+| | `contentRoot` | `Content` (found by name if empty) |
+| | `ModalType` | `WEEKLY_CHALLENGE_LEADERBOARD` |
+| `ArcadeGameConfigureModal` | `leaderboardModal` | this window (found in the scene if empty) |
+| `ArcadeLaunchPanel` (each one) | `leaderboardButton` | the panel's own leaderboard button |
+| | `startUnavailableLabel` | optional line beside Start; without it the button just greys |
+| | `screenSwitcher` | the scene's `ScreenSwitcher` |
+| `WeeklyChallengeLeaderboardPanel` (on `LeaderboardScrollView/Viewport/Content`) | `rowContainer` | that same `Content` (its own transform if empty) |
+| | `rowTemplate` | the `LeaderboardContent` **prefab** (or the container's first child) |
+| | `templateBackground` | `LeaderboardContent`'s own `Image` — the one the podium tints |
+| | `profileIcons` | the project's `SO_ProfileIconList` |
+
+The row's rank / avatar / username / score are found **by name** inside the template, so they need
+wiring only if the names change. `RankRewardPanel` must start **inactive**; the backdrop gets its
+`Button` and `raycastTarget` added at runtime rather than asked of the layout, because "the tooltip
+would not close" is a bug nobody can see in the hierarchy.
+
+**Two components, and where each one sits.** The split is real — the modal owns the window's
+decisions, the panel owns the rows — but *where* the panel sits is free: it draws into
+`rowContainer`, which is an explicit field. Both on the modal root works; the tool offers to put
+the panel on the scroll `Content` instead, so the component sits on the object it draws into. It
+will not MOVE an existing one, because moving a MonoBehaviour drops its serialized values.
+
+**`LeaderboardContent` is a prefab asset, and `rowTemplate` on the PANEL is where it goes.** The
+modal has no prefab field at all — it owns the window's decisions (tabs, countdown, tooltip, close)
+and never touches a row, so a row prefab on it would be a reference nothing reads.
+
+The tool finds it on its own: when the scene has no template left to clone, it searches the project
+and accepts a prefab only if it is **unambiguous AND has the shape of a row** (a `RankText`, a
+`Username`, a `ScoreText`). Name alone would happily wire someone else's `LeaderboardContent`, and
+that failure — rows that draw but stay blank — reads as the fetch being broken rather than as the
+wrong prefab. An already-assigned prefab is always kept over anything the search would find.
+
+`rowTemplate` takes either a prefab asset or an in-scene object, and the panel only
+hides an **in-scene** template: `SetActive(false)` on a prefab asset writes to the asset on disk —
+a permanent edit to a shared file, made by opening a menu. `gameObject.scene.IsValid()` is the test
+that tells the two apart, and it is used rather than `PrefabUtility` because this runs at `Awake`
+in a build. A prefab template is also instantiated ACTIVE regardless of how the asset is authored,
+since the asset's own active state is about the asset, not about a row.
 
 ---
 
@@ -431,20 +853,41 @@ time) and are a **follow-up**, not a silent blank.
   it an entry in `EndConditionOverridesSO` would let it back in, but that changes a shipped mode's
   authoring surface, so it is left for a decision rather than done in passing.
 - **No reward.** Completing the challenge records a completion and nothing else. The PlayFab-era
-  three-tier ladder (§7) is the obvious thing to revive.
+  three-tier ladder (§7) is the obvious thing to revive. The window's reward tooltip is authored
+  ART today — it lists tiers, and nothing reads or pays them.
+- **Nothing publishes the connection region.** `WeeklyChallengeRegion.Publish` exists and no caller
+  does. Until one does, Regional is resolved from the device's country, which is wrong for anyone on
+  a VPN or an imported console. The fix is one call from the party/Relay layer once a session's
+  region is known.
+- **The Friends tab ships OFF** (`friendsTabEnabled`). The code path is complete and tested against
+  the SDK surface; the switch exists so the board can ship before the friends flow is finished.
+- **Nothing opens the window yet.** `WeeklyChallengeLeaderboardModal.Open()` is the entry point;
+  the weekly card is the natural caller.
 
 ## 8. Superseded — and why it keeps its old NAME
 
 `_Scripts/System/DailyChallengeSystem.cs`, `UI/Modals/DailyChallengeModal.cs`,
 `UI/Views/DailyChallengeGameView.cs`, `UI/Views/DailyChallengeLeaderboardView.cs`,
 `Data/Structs/DailyChallengeRewardState.cs` and the ticket/reward economy around them
-(`CatalogManager.GetDailyChallengeTicket`, `DailyRewardHandler`, `LeaderboardManager`'s
-`DAILY_CHALLENGE` PlayFab statistic) are the **PlayFab-era implementation**: PlayerPrefs storage, a
+(`CatalogManager.GetDailyChallengeTicket` and `DailyRewardHandler`, both of which survive minus
+their PlayFab backends; `LeaderboardManager` and its `DAILY_CHALLENGE` PlayFab statistic are
+deleted) are the **PlayFab-era implementation**: PlayerPrefs storage, a
 `SO_TrainingGame` pool, a three-tier reward ladder, and an `Arcade` singleton that is in no scene.
 
-They are inert — nothing here reads them, and `DailyChallengeSystem` is in no scene either — and are
-left in the tree because the reward ladder and the leaderboard view are the ideas in them worth
-reviving. **They deliberately keep the `Daily` name.** Renaming a dead feature to match a live one
+They are inert as far as *this* system is concerned — nothing here reads them — and are left in the
+tree because the reward ladder and the leaderboard view are the ideas in them worth reviving.
+
+> **Correction (measured, PlayFab retirement).** This paragraph used to say `DailyChallengeSystem`
+> "is in no scene either". **It is in one.** `_Prefabs/CORE/DailyChallengeSystem.prefab` is a real
+> `PrefabInstance` in **`Bootstrap.unity`**, so it is a `SingletonPersistent` whose `Start()` runs
+> every session: it issues daily tickets and selects a daily game into `PlayerPrefs`, and
+> `GameplayRewardButton` in Menu_Main can still reach `ClaimReward`. What was dead was its **PlayFab
+> coupling** — a `SaveToPref(GetUserDataResult)` mirror hung off `PlayerDataController`, whose own
+> prefab really is in no scene — and that is now removed. *"Inert" is a claim about a runtime, and
+> the cheapest way to be wrong about one is to infer it from the system you are documenting rather
+> than measure it.* See `Docs/PLAYFAB_RETIREMENT.md` §0.
+
+**They deliberately keep the `Daily` name.** Renaming a dead feature to match a live one
 is how two systems come to look like one, and the next person to grep `WeeklyChallenge` should find
 exactly the code that runs. Do not wire both.
 
@@ -488,10 +931,11 @@ Fixed three ways, deliberately overlapping:
    relying on an attribute a later cleanup might remove.
 3. The card made **genuinely optional** in `PopulateGameSelectionList`. It already was eight lines
    later (`if (WeeklyChallengeCard) …Bind(this)`), so optional was the intent all along and the
-   unguarded line was simply the bug. It now takes the grid's first dpad row when it is present and
-   **no row at all** when it is not — an empty row is not equivalent, because `ArcadeDPadNav` clamps
-   a column into `row.Count - 1`, which is `-1` on an empty row and throws the moment the dpad walks
-   into it. The game rows are consequently **counted**, not `i + 1`.
+   unguarded line was simply the bug. It took the grid's first dpad row when it was present and
+   **no row at all** when it was not — an empty row is not equivalent, because `ArcadeDPadNav` clamped
+   a column into `row.Count - 1`, which is `-1` on an empty row and threw the moment the dpad walked
+   into it. (`ArcadeDPadNav` was retired on 2026-10-14, `Docs/MENU_REDESIGN_B.md` §12; the EventSystem
+   navigates the grid now, so the row bookkeeping went with it.)
 
 **General:** *renaming a serialized field is a data migration, not a refactor* — `FormerlySerializedAs`
 is the migration, and a `git mv` of the `.cs` + `.meta` protects only the guid, never the field

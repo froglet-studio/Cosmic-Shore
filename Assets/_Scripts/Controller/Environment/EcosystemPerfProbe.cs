@@ -87,8 +87,13 @@ namespace CosmicShore.Gameplay
             // is carrying the population; ents=0 ⇒ legacy MeshRenderer path.
             int renderEntities = CosmicShore.ECS.PrismRenderService.LiveEntityCount;
 
+            // Spindle LOD telemetry: limbs per tier (near / mid / far own renderer / far instanced
+            // / culled) - the far-instanced and culled ones have no enabled renderer.
+            string spindles = $"{SpindleLodSystem.NearCount}/{SpindleLodSystem.MidCount}/" +
+                              $"{SpindleLodSystem.FarRendererCount}/{SpindleLodSystem.FarBatchedCount}/{SpindleLodSystem.CulledCount}";
+
             _lastLine = $"[ECOSIM] prisms={prisms} volume={volume:F0} colliders={near}/{live} " +
-                        $"ents={renderEntities} fauna={fauna} phase={phases} fps={fps:F1}" +
+                        $"ents={renderEntities} fauna={fauna} spindles={spindles} phase={phases} fps={fps:F1}" +
                         (cells > 1 ? $"  (cells={cells})" : "");
             Debug.Log(_lastLine);
         }

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SpawnSegmentCount: 8
   SegmentSpacing: 8.4
-  KaijuScale: 3
+  KaijuScale: 4.97
   TaperPerSegment: 0.9
   HeadGapMultiplier: 2.56
   TailGapMultiplier: 1.79
@@ -34,11 +34,11 @@ MonoBehaviour:
   - 1
   - 0.7
   - 0.45
-  ColonySeparationRadius: 160
+  ColonySeparationRadius: 265
   ColonySeparationWeight: 2.5
   BehaviorTickSeconds: 1.5
-  MouthRadius: 28
-  FaunaBiteRange: 34
+  MouthRadius: 46.38
+  FaunaBiteRange: 56.32
   MaxBitesPerTick: 6
   SegmentBloomSeconds: 2
   FallbackProductionPeriodSeconds: 30
@@ -52,11 +52,11 @@ MonoBehaviour:
   TelegraphSeconds: 1.2
   TelegraphAmplitudeMultiplier: 2.5
   LungeSpeed: 70
-  LungeArriveRadius: 10
+  LungeArriveRadius: 16.57
   LungeMaxSeconds: 2.5
   RecoverSeconds: 2.5
   RecoverSpeedFraction: 0.35
-  TailWhipRadius: 45
+  TailWhipRadius: 74.55
   TailWhipSeconds: 1.5
   TailWhipCooldownSeconds: 8
   WhipLateralAmplitude: 5

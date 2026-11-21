@@ -22,20 +22,29 @@ namespace CosmicShore.UI
 
         enum PlayerPrefKeys
         {
-            FirstAppLaunch
+            FirstAppLaunch = 0
+        }
+
+        bool _subscribed;
+
+        // Subscribed on enable and dropped on disable, so a Home disabled and re-enabled (the
+        // freestyle round trip, a scene reload) keeps following the profile. It used to subscribe
+        // once in Start and unsubscribe in OnDisable, which left it deaf after the first disable.
+        void OnEnable() => Subscribe();
+
+        void Subscribe()
+        {
+            if (_subscribed || playerDataService == null) return;
+            playerDataService.OnProfileChanged += OnProfileChanged;
+            _subscribed = true;
+            if (playerDataService.CurrentProfile != null)
+                OnProfileChanged(playerDataService.CurrentProfile);
         }
 
         public void Start()
         {
-            CSDebug.Log("MainMenu.cs start");
-
-            if (playerDataService != null)
-            {
-                playerDataService.OnProfileChanged += OnProfileChanged;
-
-                if (playerDataService.CurrentProfile != null)
-                    OnProfileChanged(playerDataService.CurrentProfile);
-            }
+            // Injection can land after OnEnable on the first frame.
+            Subscribe();
 
             if (FirstAppLaunchExperience())
             {
@@ -56,22 +65,15 @@ namespace CosmicShore.UI
             if (DebugFirstAppLaunch)
             {
                 PlayerPrefs.DeleteKey(PlayerPrefKeys.FirstAppLaunch.ToString());
-                CSDebug.Log("MainMenu.cs DebugFirstAppLaunch - delete first app launch key");
             }
 
             // Implementation commented out until an updated design is available
             /*
-            CSDebug.Log("MainMenu.cs first app launch");
             if (!PlayerPrefs.HasKey(PlayerPrefKeys.FirstAppLaunch.ToString()))
             //if (PlayerPrefs.GetInt(PlayerPrefKeys.FirstAppLaunch.ToString(), -1234) == -1234)
             {
-                CSDebug.Log("MainMenu.cs first app launch - did not have key");
-                CSDebug.Log("MainMenu.cs - " + PlayerPrefs.GetInt(PlayerPrefKeys.FirstAppLaunch.ToString()));
                 PlayerPrefs.SetInt(PlayerPrefKeys.FirstAppLaunch.ToString(), 1);
                 PlayerPrefs.Save();
-                CSDebug.Log("MainMenu.cs - " + PlayerPrefs.GetInt(PlayerPrefKeys.FirstAppLaunch.ToString()));
-                if (!PlayerPrefs.HasKey(PlayerPrefKeys.FirstAppLaunch.ToString()))
-                    CSDebug.Log("MainMenu.cs first app launch - still did not have fucking key");
 
                 return true;
             }
@@ -101,8 +103,9 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
-            if (playerDataService != null)
+            if (_subscribed && playerDataService != null)
                 playerDataService.OnProfileChanged -= OnProfileChanged;
+            _subscribed = false;
         }
     }
 }

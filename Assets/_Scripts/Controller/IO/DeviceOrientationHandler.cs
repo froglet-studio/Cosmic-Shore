@@ -8,9 +8,7 @@ namespace CosmicShore.Gameplay
 {
     public class DeviceOrientationHandler
     {
-        private const float PHONE_FLIP_THRESHOLD = 0.1f;
         private const float GYRO_INITIALIZATION_RANGE = 0.05f;
-        private bool phoneFlipState;
         // private IVessel vessel;
         IInputStatus inputStatus;
         private bool attitudeInitialized = false;
@@ -33,48 +31,19 @@ namespace CosmicShore.Gameplay
             Screen.autorotateToPortraitUpsideDown = false;
             Screen.autorotateToLandscapeLeft = false;
             Screen.autorotateToLandscapeRight = false;
-            
+            // a crew seat played upright (the Goby's Pistol) or the menu may still allow portrait
+            ScreenOrientationPolicy.Reassert();
         }
 
-        public void Update()
-        {
-            HandlePhoneOrientation();
-        }
-
-        private void HandlePhoneOrientation()
-        {
-            if (Accelerometer.current != null)
-            {
-                var acceleration = Accelerometer.current.acceleration.ReadValue().x;
-                if (Mathf.Abs(acceleration) >= PHONE_FLIP_THRESHOLD)
-                {
-                    UpdatePhoneFlipState(acceleration);
-                }
-            }
-        }
-
-        private void UpdatePhoneFlipState(float accelerationX)
-        {
-            // if (vessel == null) return;
-            bool newFlipState = accelerationX > 0;
-            if (newFlipState != phoneFlipState)
-            {
-                phoneFlipState = newFlipState;
-                if (phoneFlipState)
-                {
-                    // vessel.PerformShipControllerActions(InputEvents.FlipAction);
-                    inputStatus.OnButtonPressed.Raise(InputEvents.FlipAction);
-                    IInputStatus.CurrentOrientation = ScreenOrientation.LandscapeRight;
-                }
-                else
-                {
-                    // vessel.StopShipControllerActions(InputEvents.FlipAction);
-                    inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
-                    IInputStatus.CurrentOrientation = ScreenOrientation.LandscapeLeft;
-                }
-                CSDebug.Log($"Phone flip state change detected - new flip state: {phoneFlipState}, acceleration.x: {accelerationX}");
-            }
-        }
+        /// <summary>
+        /// Turning the phone over no longer presses <see cref="InputEvents.FlipAction"/> (2026-10-21,
+        /// Docs/Reports/MOBILE_VESSELS.md D12). It never could: the accelerometer it reads starts
+        /// disabled and nothing enabled it, and the screen is locked to LandscapeLeft above, so the
+        /// "flip" meant playing upside down. Tilt flight (<see cref="TouchTilt"/>) now enables the
+        /// accelerometer, which would have woken this: a 0.1 g threshold with no hold time toggles a
+        /// mode from an ordinary wobble. On a phone, FlipAction (RB) is its card.
+        /// </summary>
+        public void Update() { }
 
         private void StartAttitudeSensor()
         {
@@ -87,7 +56,7 @@ namespace CosmicShore.Gameplay
                 }
                 coroutineRunner.StartCoroutine(AttitudeInitializationCoroutine());
             }
-            else CSDebug.Log("Attitude Sensor not available on this device");
+            else CSDebug.LogVerbose(CSLogChannel.Input, "[DeviceOrientationHandler] Attitude sensor not available on this device");
         }
 
         private IEnumerator AttitudeInitializationCoroutine()
@@ -98,7 +67,6 @@ namespace CosmicShore.Gameplay
             while (AttitudeSensor.current == null || !AttitudeSensor.current.enabled)
             {
                 yield return new WaitForSeconds(0.1f);
-                CSDebug.Log("Waiting for attitude sensor to be ready...");
             }
 
             // Wait for the sensor to start providing real values
@@ -111,7 +79,6 @@ namespace CosmicShore.Gameplay
             {
                 lastAttitude = GetAttitude();
                 yield return new WaitForSeconds(0.1f);
-                CSDebug.Log($"Waiting for attitude sensor to stabilize...{lastAttitude}");
             }
 
             inverseInitialRotation = Quaternion.Inverse(GyroToUnity(GetAttitude()) * derivedCorrection);

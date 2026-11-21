@@ -13,6 +13,9 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class BoidManager : Fauna
     {
+        /// <summary>A rider cannot steer this body (the Jewel Wasp, <see cref="IFaunaPossession"/>): no possession yet.</summary>
+        protected override bool CanBePossessed => false;
+
         [Header("Boid Settings")]
         public Boid boidPrefab;
         public int numberOfBoids = 100;
@@ -42,6 +45,15 @@ namespace CosmicShore.Gameplay
                 newBoid.domain = domain;
                 newBoid.normalizedIndex = (float)i / numberOfBoids;
                 newBoid.Initialize(cell);
+
+                // The replication seam. A boid has no config of its own, so this resolves to
+                // NeutralizeStray - and here that is NOT bookkeeping: both shipped population
+                // prefabs wire `boidPrefab` to TadPoleFauna.prefab, which CARRIES a
+                // NetworkObject, and they spawn 100 and 150 of them. Un-spawned, that is 100
+                // identical GlobalObjectIdHash entries in one scene, which is exactly the
+                // scene-object index collision that breaks synchronization for every later
+                // joiner (Docs/PartySystem/BUGS.md B16, B5).
+                FaunaNetworkSync.ServerSpawn(newBoid);
 
                 Boids.Add(newBoid);
 

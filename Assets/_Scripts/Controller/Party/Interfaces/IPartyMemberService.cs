@@ -60,7 +60,17 @@ namespace CosmicShore.Gameplay
         /// <param name="localPlayerId">
         /// The local player's UGS ID.  Excluded from the diff - always retained.
         /// </param>
-        IReadOnlyList<string> SyncFromSession(ISession session, string localPlayerId);
+        /// <param name="departed">
+        /// Players the session's push said left (<see cref="IPartySessionService.TakeDepartures"/>):
+        /// removed at once when absent. Null for none.
+        /// </param>
+        /// <param name="serverRead">
+        /// True when <paramref name="session"/>'s Players came from a GET this tick. Any other absence
+        /// needs <see cref="AbsenceStrikes.ReadsBeforeRemoval"/> consecutive server reads before the
+        /// member is removed (Block 5 step 7); a re-read of the SDK's copy adds no strike.
+        /// </param>
+        IReadOnlyList<string> SyncFromSession(ISession session, string localPlayerId,
+            ISet<string> departed = null, bool serverRead = true);
 
         /// <summary>
         /// Silently clears <see cref="HostConnectionDataSO.PartyMembers"/> with no

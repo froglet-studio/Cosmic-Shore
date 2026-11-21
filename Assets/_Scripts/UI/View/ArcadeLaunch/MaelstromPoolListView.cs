@@ -10,9 +10,9 @@ namespace CosmicShore.UI
     /// "Which games can this run draw?" — the Maelstrom launch panel's answer, redrawn every time
     /// the intensity changes.
     ///
-    /// <para>The ladder lives in the data (<see cref="TournamentDataSO.IntensityTiers"/>), not
-    /// here: this view asks the asset what intensity N unlocks and draws the whole roster with the
-    /// rest greyed, so raising the intensity visibly fills the list in.</para>
+    /// <para>The tiers live in the data (<see cref="MaelstromDataSO.IntensityTiers"/>), not
+    /// here: this view asks the asset which games intensity N deals and draws the whole roster with
+    /// the rest greyed, each greyed row naming the intensity that does deal it.</para>
     /// </summary>
     public class MaelstromPoolListView : MonoBehaviour
     {
@@ -27,7 +27,7 @@ namespace CosmicShore.UI
         [Header("Source")]
         [SerializeField, Tooltip("The tournament asset holding the roster and the intensity " +
                                  "ladder. Required - the list has nothing to draw without it.")]
-        TournamentDataSO tournamentData;
+        MaelstromDataSO tournamentData;
 
         [Header("Header")]
         [SerializeField, Tooltip("Optional count line. {0} = games in the pool, {1} = roster size.")]
@@ -46,7 +46,7 @@ namespace CosmicShore.UI
         {
             if (!tournamentData || tournamentData.GameQueue == null)
             {
-                CSDebug.LogWarning("[ArcadeLaunch] MaelstromPoolListView has no TournamentDataSO - " +
+                CSDebug.LogWarning("[ArcadeLaunch] MaelstromPoolListView has no MaelstromDataSO - " +
                                    "the pool list cannot be drawn.", this);
                 Clear();
                 return;

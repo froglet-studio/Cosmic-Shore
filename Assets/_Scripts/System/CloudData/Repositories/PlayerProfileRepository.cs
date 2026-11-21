@@ -20,6 +20,7 @@ namespace CosmicShore.Core
             data.Lifecycle ??= new ProfileLifecycle();
 
             data.Economy.UnlockedRewardIds ??= new List<string>();
+            data.Economy.HangarUpgrades ??= new List<HangarUpgradeLevel>();
         }
     }
 }

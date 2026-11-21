@@ -1,5 +1,7 @@
 # Party System — Manual Test Procedures
 
+> Also run [../Multiplayer/TEST_CHECKLIST.md](../Multiplayer/TEST_CHECKLIST.md). Its §5 covers RTT and the poor-connection badge, ship transform tuning, the `HitReportGuard` limits, and mid-match rejoin (AI takeover → `seatReclaimed`).
+
 MPPM (Multiplayer Play Mode) scenarios used as the regression gate for
 every party-side commit. All tests run in Unity Editor with 3-4 virtual
 players.
@@ -111,7 +113,7 @@ disconnect/`OnSessionEnded` path (which despawns the clients' persistent
 Menu_Main, both in autopilot).
 
 **Steps.**
-1. VP1 launches a multiplayer game (e.g. HexRace) from the Arcade menu;
+1. VP1 launches a multiplayer game (e.g. SkimRace) from the Arcade menu;
    confirm VP2 follows into the game scene (launch regression).
 2. Play to the end so the scoreboard appears.
 3. On VP1 (host), tap **Main Menu** on the scoreboard.

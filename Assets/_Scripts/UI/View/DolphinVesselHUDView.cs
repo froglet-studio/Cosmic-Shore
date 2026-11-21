@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -17,8 +16,9 @@ namespace CosmicShore.UI
     ///
     ///   Charge → Echo Sight       (profile + living tally) → "Pilot Echo"
     ///   Mass   → crystal seeding  (the recharge fill)      → "Claimed Seed"
-    ///   Space  → cone blast       (jaws + tally)           → "Clean Blast"
-    ///   Time   → charge fill rate (the boost ring)         → "Drift Ward"
+    ///   Space  → cone blast       (jaws)                   → "Clean Blast"
+    ///   Omni   → the blast itself (prisms it destroyed)   — the non-elemental card
+    ///   Time   → charge fill rate (the hull turned by its drift over the plate gauge) → "Drift Ward"
     ///
     /// <para><b>Every slot draws one dimension of the same weapon.</b> The Dolphin has essentially
     /// one offensive act — bank energy by skimming, fly into a crystal, release a cone — and the
@@ -28,17 +28,22 @@ namespace CosmicShore.UI
     /// left to right it is the whole weapon.</para>
     ///
     /// <para>Every one of those icons is a live gameplay gauge — a generated profile mesh, a
-    /// recharge fill, a jaw gape, a boost ring — repainted per frame. So the upgrade signal is
+    /// recharge fill, a jaw gape, a drifting hull over the bank — repainted per frame. So the upgrade signal is
     /// carried by the element badge and a persistent scale bump rather than by icon colour (turn
     /// tintIconOnUpgrade OFF on this prefab), and the local rest scales below are re-anchored on
     /// every upgrade flip so this view's own tweens can never wipe the bump.</para>
     ///
-    /// <para>The SPACE slot shows exactly two things: the jaws open to the gape half-angle the next
-    /// blast will carry (the same angle the hull's own jaws open to), and the tally beneath them
-    /// reports what the last cone actually claimed — ANGLE and AMOUNT. A third readout for Space's
-    /// REACH was tried here as a thin bar under the jaws and dropped: reach only moves when the
-    /// element moves, so it was a near-static line competing with two live gauges, and the icon
-    /// says more by saying less.</para>
+    /// <para>The SPACE slot shows exactly one thing: the jaws open to the gape half-angle the next
+    /// blast will carry (the same angle the hull's own jaws open to). A readout for Space's REACH
+    /// was tried here as a thin bar under the jaws and dropped: reach only moves when the element
+    /// moves, so it was a near-static line competing with a live gauge.</para>
+    ///
+    /// <para>The DESTRUCTION TALLY — what the last cone destroyed — lives on the OMNI CRYSTAL card,
+    /// centred, and stays up until the next blast replaces it. That card is by definition "what
+    /// this hull does when it flies through a crystal", and for the Dolphin that is the blast, so
+    /// the number the blast produced belongs there rather than under the jaws. It is re-homed at
+    /// runtime by <see cref="EnsureGeneratedAbilityIcons"/>, so the prefab's authored text keeps
+    /// its font and material wherever it was authored.</para>
     ///
     /// Every reference is optional; an unwired slot is simply not drawn (opt-in rollout).
     /// </summary>
@@ -60,8 +65,8 @@ namespace CosmicShore.UI
         [SerializeField, Min(0.01f)] private float profileEngageDuration = 0.15f;
 
         [Header("Charge — the living tally")]
-        [Tooltip("PILOTS the last blast debuffed. A bare number, exactly like the Space slot's prism " +
-                 "tally - the Charge slot reports what the blast did to the LIVING, Space what it did " +
+        [Tooltip("PILOTS the last blast debuffed. A bare number, exactly like the omni card's prism " +
+                 "tally - the Charge slot reports what the blast did to the LIVING, the omni card what it did " +
                  "to MASS.")]
         [SerializeField] private TMP_Text pilotCountText;
         [Tooltip("CREATURES the last blast killed. Bare number, sitting under the pilot count.")]
@@ -113,25 +118,46 @@ namespace CosmicShore.UI
                  "top of the gape, which only moves ~1/150th of its range per skim.")]
         [SerializeField, Min(1f)] private float skimPunchScale = 1.3f;
 
-        [Header("Space — blast tally")]
-        [Tooltip("What the last cone destroyed. Sits on its OWN row beneath the jaws so a four- or " +
-                 "five-figure claim has room to render at full size rather than auto-shrinking into " +
-                 "the gape.")]
+        [Header("Omni crystal card — blast tally")]
+        [Tooltip("What the last cone destroyed. Wherever it is authored, it is RE-HOMED at runtime " +
+                 "onto the omni crystal card and centred there (see EnsureGeneratedAbilityIcons), " +
+                 "and it stays up until the next blast replaces it - no hold timer.")]
         [SerializeField] private TMP_Text blastCountText;
         [SerializeField] private Color blastFlashColor = new(1f, 0.85f, 0.4f, 1f);
         [SerializeField] private Color blastRestColor = Color.white;
-        [Tooltip("Seconds the blast tally stays up after a cone fires.")]
-        [SerializeField, Min(0.1f)] private float blastCountHoldSeconds = 2.5f;
+        [Tooltip("Largest the centred tally may draw, in the card icon's own 80-unit box. Aldrich's " +
+                 "widest digit advances ~0.73 per point, so 32 fits three digits with room and " +
+                 "auto-sizing takes a four- or five-figure claim down toward the minimum.")]
+        [SerializeField, Min(1f)] private float blastCountFontSizeMax = 32f;
+        [Tooltip("Smallest the centred tally may shrink to. Five digits fit the 80-unit box at 20.")]
+        [SerializeField, Min(1f)] private float blastCountFontSizeMin = 16f;
 
         // ---- Time: boost charged while drifting ---------------------------------------
         [Header("Time — boost charged while drifting")]
-        [Tooltip("The boost gauge itself — the Dolphin's authored 11-step ring (Boost Display). " +
-                 "Bound as the Time ability icon, because Time is what sets how fast it fills. The " +
-                 "ring encodes its own level by stepping through chargeSteps below — this view " +
-                 "writes NOTHING else on it (see SetDriftBoost).")]
+        [Tooltip("The boost BANK: the Image the Time card binds as its gauge (AbilityIconBinding.gauge). " +
+                 "The lockup re-homes it onto the card's plate and re-forms it to Filled / Vertical / " +
+                 "Bottom - the fleet's one linear gauge - and this view writes only its fillAmount " +
+                 "(SetDriftBoost). It wore an authored eleven-step ring until 2026-10-25; Garrett: " +
+                 "\"the ring now reads as a skimmer. lets just have the whole lower totem fill with " +
+                 "the consistency of other resources.\"")]
         [SerializeField] private Image driftBoostIcon;
-        [Tooltip("The 11 authored ring steps, ordered EMPTY → FULL. Driven by the boost meter.")]
-        [SerializeField] private List<Sprite> chargeSteps = new();
+        [Tooltip("The Dolphin itself, seen from above (its real mesh, Dolphin_ChargeFill): the part that " +
+                 "TEACHES the card. Painted in the pilot's domain colour and turned every frame by the " +
+                 "signed angle between the hull's forward and its course - a drift IS that divergence, " +
+                 "and the drift is what fills the bank behind it. Its sprite is the hull centred in its " +
+                 "own canvas, so the rotation is about the hull.")]
+        [SerializeField] private Image driftHullIcon;
+        [Tooltip("Degrees the hull may turn off the course line on the card. 180 = never clamped: the " +
+                 "card shows the REAL angle, a reverse drift included (Garrett 2026-10-25: good \"as long " +
+                 "as the dolphin icon's angle matches the drift angle\"). A plan view of a symmetric hull " +
+                 "has no upside down, so nothing here needs the cap the Squirrel's 3/4 view keeps.")]
+        [SerializeField, Range(1f, 180f)] private float driftMaxAngle = 180f;
+        [Tooltip("Degrees per second the drawn angle may move toward the live one, so a course that " +
+                 "flips as the vessel passes through zero speed eases rather than snaps. The same " +
+                 "speed brings the hull back onto the line when the drift ends.")]
+        [SerializeField, Min(1f)] private float driftAngleSpeed = 360f;
+        [Tooltip("Fallback colour of the hull part until the controller pushes the pilot's domain colour.")]
+        [SerializeField] private Color driftHullFallbackColor = Color.white;
 
         [Header("Space — the full-energy CTA")]
         [Tooltip("Colour the jaws rest at. Matches the authored art (white); the CTA lime is " +
@@ -152,7 +178,8 @@ namespace CosmicShore.UI
         [SerializeField] private float iconPunchDuration = 0.25f;
         [SerializeField] private float colorTweenDuration = 0.3f;
 
-        int _stepsMinusOne;
+        float _driftAngleShown;
+        Color _driftHullColor = Color.white;
 
         Vector3 _profileRestScale = Vector3.one;
         Vector3 _crystalIconRestScale = Vector3.one;
@@ -175,17 +202,77 @@ namespace CosmicShore.UI
         Color _pilotRest;
         Color _faunaRest;
 
-        float _blastCountTimer;
         float _echoCountTimer;
         float _currentJawAngle;
         bool _sightEngaged;
         bool _lastSeedsTeam;
         Color _teamColor;
 
+        // The omni crystal card's anchor icon - built once, never drawn. See EnsureGeneratedAbilityIcons.
+        Image _omniTallyIcon;
+        const string OmniTallyHostName = "BlastTallyButton";
+        const float OmniTallyIconSize = 80f;
+
+        /// <summary>
+        /// Builds the OMNI CRYSTAL card's readout: the blast tally, centred. Called by the lockup
+        /// before the row is laid out, the same seam the Squirrel's generated Space card uses.
+        ///
+        /// <para>The bound icon is deliberately INVISIBLE (alpha 0 AND the Graphic switched off —
+        /// an Image with no sprite would otherwise draw a solid quad). It exists so the card is not
+        /// LOCKED and so the lockup has an 80-unit rect to kern; the tally is its child, so it is
+        /// kerned with it and sits in exactly the box an authored icon would.</para>
+        ///
+        /// <para>The tally itself is the prefab's AUTHORED text, re-parented rather than generated,
+        /// so its font asset and material survive. Idempotent: a rebuild finds the host by name and
+        /// re-parenting to the same parent is a no-op.</para>
+        /// </summary>
+        public override void EnsureGeneratedAbilityIcons()
+        {
+            if (_omniTallyIcon) return;
+
+            var host = transform.Find(OmniTallyHostName) as RectTransform;
+            if (!host)
+            {
+                host = new GameObject(OmniTallyHostName, typeof(RectTransform))
+                    .GetComponent<RectTransform>();
+                host.SetParent(transform, false);
+            }
+
+            _omniTallyIcon = ResolveGeneratedChild<Image>(host, "BlastTallyIcon");
+            var iconRt = _omniTallyIcon.rectTransform;
+            iconRt.anchorMin = iconRt.anchorMax = iconRt.pivot = new Vector2(0.5f, 0.5f);
+            iconRt.sizeDelta = new Vector2(OmniTallyIconSize, OmniTallyIconSize);
+            _omniTallyIcon.color = new Color(1f, 1f, 1f, 0f);
+            _omniTallyIcon.enabled = false;
+            _omniTallyIcon.raycastTarget = false;
+
+            if (blastCountText)
+            {
+                var rt = blastCountText.rectTransform;
+                rt.SetParent(iconRt, false);
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero;
+                rt.sizeDelta = iconRt.sizeDelta;
+                rt.localScale = Vector3.one;
+                rt.localRotation = Quaternion.identity;
+
+                blastCountText.alignment = TextAlignmentOptions.Center;
+                // Never wrap: a wrapped number is a wrong reading that looks deliberate. Auto-size
+                // is safe here (unlike a ticking counter) because the value changes once per blast.
+                blastCountText.enableWordWrapping = false;
+                blastCountText.overflowMode = TextOverflowModes.Overflow;
+                blastCountText.enableAutoSizing = true;
+                blastCountText.fontSizeMin = blastCountFontSizeMin;
+                blastCountText.fontSizeMax = Mathf.Max(blastCountFontSizeMin, blastCountFontSizeMax);
+                blastCountText.margin = Vector4.zero;
+                blastCountText.raycastTarget = false;
+            }
+
+            BindCoreAbilityIcon(CoreAbility.OmniCrystal, _omniTallyIcon);
+        }
+
         public override void Initialize()
         {
-            _stepsMinusOne = Mathf.Max(0, (chargeSteps?.Count ?? 0) - 1);
-
             ResolveBarsConfig();
 
             ResolveProfileColors();
@@ -220,21 +307,31 @@ namespace CosmicShore.UI
             _jawArm01 = -1f;             // a re-init must repaint, not early-out on a stale value
             ApplyJawArming(0f, immediate: true);
 
+            // Blank until the first blast: a "0" here would claim a blast that never happened.
             if (blastCountText)
             {
                 blastCountText.color = blastRestColor;
                 blastCountText.text = string.Empty;
             }
-            _blastCountTimer = 0f;
 
             ResolveTallyColors();
             if (pilotCountText) { pilotCountText.color = _pilotRest; pilotCountText.text = string.Empty; }
             if (faunaCountText) { faunaCountText.color = _faunaRest; faunaCountText.text = string.Empty; }
             _echoCountTimer = 0f;
 
-            // The ring's colour is authored art - never repainted from here.
+            // The bank starts empty; the lockup owns the gauge's sprite, shape and colour (AdoptGauge).
             if (driftBoostIcon && driftBoostIcon.type == Image.Type.Filled)
                 driftBoostIcon.fillAmount = 0f;
+
+            // The hull part sits on the course line until a drift turns it, in the fallback colour
+            // until the controller's first push names the pilot's domain.
+            _driftAngleShown = 0f;
+            _driftHullColor = driftHullFallbackColor;
+            if (driftHullIcon)
+            {
+                driftHullIcon.rectTransform.localRotation = Quaternion.identity;
+                driftHullIcon.color = _driftHullColor;
+            }
         }
 
         /// <summary>
@@ -392,7 +489,7 @@ namespace CosmicShore.UI
 
             // The free-for-all seed wears the same lime a full element flower does, read from the
             // one shared config rather than authored a second time here.
-            return barsConfig ? barsConfig.limeColor : crystalOmniColor;
+            return barsConfig ? barsConfig.LimeColor : ColorTrace.Retrace(ColorTrace.Ui, crystalOmniColor);
         }
 
         /// <summary>
@@ -404,25 +501,28 @@ namespace CosmicShore.UI
         void ResolveProfileColors()
         {
             ResolveBarsConfig();
-            _profileRest = barsConfig ? barsConfig.greyColor : profileRestColor;
-            _profileEngaged = barsConfig ? barsConfig.whiteColor : profileEngagedColor;
+            _profileRest = barsConfig ? barsConfig.GreyColor : ColorTrace.Retrace(ColorTrace.Ui, profileRestColor);
+            _profileEngaged = barsConfig ? barsConfig.WhiteColor : ColorTrace.Retrace(ColorTrace.Ui, profileEngagedColor);
         }
 
         // ---------------------------------------------------------------
-        // Space: the cone fired - flash the tally and show what it took.
+        // Omni crystal card: the cone fired - flash the tally and show what it
+        // took. It STAYS until the next blast replaces it; nothing clears it on
+        // a timer. A blast that destroyed nothing shows "0", because it did
+        // replace the last one - blank is reserved for "no blast yet".
         // ---------------------------------------------------------------
         public void ReportBlast(int destroyedCount)
         {
             if (blastCountText)
             {
-                blastCountText.text = destroyedCount > 0 ? destroyedCount.ToString() : string.Empty;
-                _blastCountTimer = blastCountHoldSeconds;
+                blastCountText.text = Mathf.Max(0, destroyedCount).ToString();
 
                 // DOVirtual rather than a DOColor extension: this project ships no DOTween TMP
                 // module, so TMP_Text has no tween shortcut of its own.
                 _blastColorTween?.Kill();
-                blastCountText.color = blastFlashColor;
-                _blastColorTween = DOVirtual.Color(blastFlashColor, blastRestColor, colorTweenDuration,
+                var flash = ColorTrace.Retrace(ColorTrace.Ui, blastFlashColor);
+                blastCountText.color = flash;
+                _blastColorTween = DOVirtual.Color(flash, blastRestColor, colorTweenDuration,
                         c => { if (blastCountText) blastCountText.color = c; })
                     .SetEase(Ease.OutQuad)
                     .SetLink(blastCountText.gameObject);
@@ -435,12 +535,6 @@ namespace CosmicShore.UI
 
         void Update()
         {
-            if (_blastCountTimer > 0f && blastCountText)
-            {
-                _blastCountTimer -= Time.deltaTime;
-                if (_blastCountTimer <= 0f) blastCountText.text = string.Empty;
-            }
-
             if (_echoCountTimer > 0f)
             {
                 _echoCountTimer -= Time.deltaTime;
@@ -454,7 +548,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// What the last blast did to LIVING things: pilots caught and debuffed, creatures killed.
-        /// The Charge slot's counterpart to the Space slot's prism tally, and deliberately the same
+        /// The Charge slot's counterpart to the omni card's prism tally, and deliberately the same
         /// grammar — bare numbers that flash and fade — so the row reads as one language.
         ///
         /// The two are told apart by COLOUR rather than by a label or a glyph: pilots wear the
@@ -490,8 +584,9 @@ namespace CosmicShore.UI
         void FlashTally(TMP_Text text, Color rest, ref Tween tween)
         {
             tween?.Kill();
-            text.color = blastFlashColor;
-            tween = DOVirtual.Color(blastFlashColor, rest, colorTweenDuration,
+            var flash = ColorTrace.Retrace(ColorTrace.Ui, blastFlashColor);
+            text.color = flash;
+            tween = DOVirtual.Color(flash, rest, colorTweenDuration,
                     c => { if (text) text.color = c; })
                 .SetEase(Ease.OutQuad)
                 .SetLink(text.gameObject);
@@ -504,8 +599,26 @@ namespace CosmicShore.UI
         void ResolveTallyColors()
         {
             ResolveBarsConfig();
-            _pilotRest = barsConfig ? barsConfig.whiteColor : pilotCountColor;
-            _faunaRest = barsConfig ? barsConfig.blueColor : faunaCountColor;
+            _pilotRest = barsConfig ? barsConfig.WhiteColor : ColorTrace.Retrace(ColorTrace.Ui, pilotCountColor);
+            _faunaRest = barsConfig ? barsConfig.BlueColor : ColorTrace.Retrace(ColorTrace.Ui, faunaCountColor);
+        }
+
+        void OnEnable() => ColorTrace.Changed += OnColorSetWorn;
+        void OnDisable() => ColorTrace.Changed -= OnColorSetWorn;
+
+        /// <summary>
+        /// Another colour set was worn: the rest, engaged and armed colours this view caches are resolved from it again,
+        /// so the next tween lands in the new set. What is already on screen in a traced colour is repainted by
+        /// UIThemeLive; the jaws' blend toward the armed lime is no traced colour, so it is drawn again here.
+        /// </summary>
+        void OnColorSetWorn()
+        {
+            ResolveProfileColors();
+            ResolveTallyColors();
+            _jawArmedColor = barsConfig ? barsConfig.LimeColor : jawRestColor;
+            if (_jawArm01 < 0f || (!_jawUpperGraphic && !_jawLowerGraphic)) return;
+            _jawColorTween?.Kill();
+            WriteJawColor(Color.Lerp(jawRestColor, _jawArmedColor, _jawArm01));
         }
 
         // ---------------------------------------------------------------
@@ -542,7 +655,7 @@ namespace CosmicShore.UI
             _jawLowerGraphic = jawLower ? jawLower.GetComponent<Graphic>() : null;
 
             ResolveBarsConfig();
-            _jawArmedColor = barsConfig ? barsConfig.limeColor : jawRestColor;
+            _jawArmedColor = barsConfig ? barsConfig.LimeColor : jawRestColor;
 
             if (_warnedArmingUnavailable) return;
 
@@ -688,52 +801,53 @@ namespace CosmicShore.UI
         }
 
         // ---------------------------------------------------------------
-        // Time: how fast the drift banks boost. The ring is an ELEVEN-SPRITE
-        // authored gauge, so stepping the sprite is the whole readout. This
-        // deliberately writes nothing else: a swell keyed to charge01 and a colour
-        // ramp both landed on EVERY resource tick - the 1 Hz passive regen, each charge tick, each
-        // discharge tick - so the icon jittered between discrete scales and killed its own tween
-        // doing it. Leaving the transform alone also means the level-5 scale bump the base class
-        // applies survives, which matters more here than juice: this HUD has upgrade tint and the
-        // element badge both turned off, so the bump is the only upgrade signal the slot has left.
+        // Time: how fast the drift banks boost. The bank is the card's PLATE GAUGE - the Image the
+        // lockup adopted and re-formed to a vertical fill (Docs/ABILITY_LOCKUP.md "The gauge") - so
+        // writing fillAmount is the whole readout. This deliberately writes nothing else: a swell
+        // keyed to charge01 and a colour ramp both landed on EVERY resource tick - the 1 Hz passive
+        // regen, each charge tick, each discharge tick - so the icon jittered between discrete
+        // scales and killed its own tween doing it. Leaving the transform alone also means the
+        // level-5 scale bump the base class applies survives, which matters more here than juice:
+        // this HUD has upgrade tint and the element badge both turned off, so the bump is the only
+        // upgrade signal the slot has left. (Until 2026-10-25 the bank stepped an eleven-sprite
+        // authored ring; a ring around a hull reads as a skimmer, so the bank moved to the plate.)
         // ---------------------------------------------------------------
         public void SetDriftBoost(float charge01)
         {
             if (!driftBoostIcon) return;
 
-            charge01 = Mathf.Clamp01(charge01);
             if (driftBoostIcon.type == Image.Type.Filled)
-                driftBoostIcon.fillAmount = charge01;
-
-            // The authored ring encodes the level in its lit segments - step it.
-            SetBoostStepNormalized(charge01);
+                driftBoostIcon.fillAmount = Mathf.Clamp01(charge01);
         }
 
-        /// <summary>0–1 normalized boost → the matching ring step.</summary>
-        public void SetBoostStepNormalized(float norm01)
+        /// <summary>
+        /// The pilot's domain colour for the hull part. A colour, not a state: the hull wears its
+        /// team at rest, mid-drift and at full bank alike - what changes on this card is the ANGLE
+        /// and the FILL (the Squirrel's drift card keeps the same rule).
+        /// </summary>
+        public void SetDriftHullColor(Color color)
         {
-            if (!driftBoostIcon || chargeSteps == null || chargeSteps.Count == 0)
-                return;
-
-            norm01 = Mathf.Clamp01(norm01);
-
-            int idx = (_stepsMinusOne <= 0)
-                ? 0
-                : Mathf.Clamp(Mathf.RoundToInt(norm01 * _stepsMinusOne), 0, _stepsMinusOne);
-
-            SetBoostStepIndex(idx);
+            if (_driftHullColor == color) return;
+            _driftHullColor = color;
+            if (driftHullIcon) driftHullIcon.color = color;
         }
 
-        public void SetBoostStepIndex(int idx)
+        /// <summary>
+        /// The signed angle between the hull's forward and its course, in degrees (positive = the
+        /// nose has swung LEFT of the course), pushed every frame by the controller. While
+        /// <paramref name="drifting"/> the hull part turns toward it (clamped, eased at
+        /// driftAngleSpeed); when the drift ends it eases back onto the course line at the same
+        /// speed. Nothing else on the card moves: the fill behind it says how much the drift banked.
+        /// </summary>
+        public void SetDriftAngle(float angleDegrees, bool drifting)
         {
-            if (!driftBoostIcon || chargeSteps == null || chargeSteps.Count == 0)
-                return;
-            if (idx < 0 || idx >= chargeSteps.Count) return;
+            if (!driftHullIcon) return;
 
-            var sprite = chargeSteps[idx];
-            if (!sprite || driftBoostIcon.sprite == sprite) return;
+            float target = drifting ? Mathf.Clamp(angleDegrees, -driftMaxAngle, driftMaxAngle) : 0f;
+            if (Mathf.Approximately(_driftAngleShown, target)) return;
 
-            driftBoostIcon.sprite = sprite;
+            _driftAngleShown = Mathf.MoveTowards(_driftAngleShown, target, driftAngleSpeed * Time.deltaTime);
+            driftHullIcon.rectTransform.localRotation = Quaternion.Euler(0f, 0f, _driftAngleShown);
         }
 
         protected override void OnDestroy()

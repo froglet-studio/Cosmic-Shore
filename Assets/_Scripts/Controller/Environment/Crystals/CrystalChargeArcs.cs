@@ -1,0 +1,401 @@
+using System.Collections.Generic;
+using CosmicShore.Utility;
+using Unity.Profiling;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// The Charge element's light (Omni Motion Lab round 5, <c>Docs/Studios/OMNI_MOTION_LAB.md</c>): bolts and lit plates
+    /// drawn into one additive mesh in the crystal's own space, on <c>CrystalChargeArcsShader</c>.
+    ///
+    ///   SEAM WALK (the Charge crystal) - one bolt walks the seams between the twelve blooms forever (the dodecahedral net:
+    ///   it never runs to a bloom's centre, never circles a petal, never stops), flickering like chain lightning and
+    ///   fading behind itself; each petal lights by how near the bolt runs to its short sides. It REPLACES the edge crawl:
+    ///   <see cref="silenceCrawlOn"/>'s discharge is held at zero while this runs (a property block, so the material - and
+    ///   the hull fusion that copies it - keeps its crawl).
+    ///   FLUX (the omni) - a pentagon charges, an arc leaps to a pentagon 55-125 degrees away and lands, both fade, and the
+    ///   next discharge leaps on from the one it landed on. Only those two pentagons light. At each end the arc forks
+    ///   smoothly onto the pentagon's five corners, and the five run on as one coaxial bundle (a braided cable) between - each
+    ///   strand one ribbon the whole way, so there is no seam. Where the arc's path runs
+    ///   through a raised Mass prism (the sibling <see cref="CrystalDepthPrisms"/>), that prism lights up while the arc
+    ///   holds (<see cref="ChargeArcs.FluxStrikes"/>), so the bolt reads as conducting through it, not clipping.
+    ///
+    /// Every bolt is ONE continuous plasma ribbon (<see cref="ChargeArcMeshWriter.Plasma"/>), modelled on the Squirrel's
+    /// skim crackle: a smooth curve bent by flowing noise, a Gaussian glow with a hot core, a sub-filament beside it.
+    ///
+    /// The sites are read once from <see cref="sourceMesh"/> (the crystal model this object overlays, in the same space)
+    /// and shared by every crystal on that mesh (<see cref="ChargeSites"/>); the omni's pentagons are read at the
+    /// thickness <see cref="OmniCrystalCadenceSO.PlateThickness"/> draws them. Lives on a child of the crystal root, so
+    /// <see cref="CrystalDepthPrisms"/>' random pose turns it with the body. A crystal nobody can see only keeps its clock,
+    /// and so does one too small on screen for a bolt to show
+    /// (<see cref="CrystalChargeArcsProfileSO.SleepBelowScreenRadiusPixels"/>): it sleeps on its unlit faces.
+    /// </summary>
+    [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+    [DisallowMultipleComponent]
+    public class CrystalChargeArcs : MonoBehaviour
+    {
+        public enum Effect
+        {
+            SeamWalk = 1,
+            Flux = 2,
+        }
+
+        static readonly ProfilerMarker UpdateMarker = new("CrystalChargeArcs.LateUpdate");
+        static readonly ProfilerMarker ScheduleMarker = new("CrystalChargeArcs.Schedule");
+        static readonly ProfilerMarker RebuildMarker = new("CrystalChargeArcs.Rebuild");
+        static readonly ProfilerMarker SleepMarker = new("CrystalChargeArcs.Sleep");
+        static readonly ProfilerMarker DrawMarker = new("CrystalChargeArcs.Rebuild.Arcs");
+        static readonly ProfilerMarker StrikesMarker = new("CrystalChargeArcs.Rebuild.Strikes");
+        static readonly ProfilerMarker UploadMarker = new("CrystalChargeArcs.Rebuild.Upload");
+
+        // The shared scheduler (Switchback perf pass 2026-11-02): every enabled light registers; the first LateUpdate of a
+        // frame decides for all of them which rebuild this frame - largest on screen first, waiting ones climbing the
+        // queue - under the profile's per-frame cap, time budget and wake cap. The rest keep last frame's mesh.
+        static readonly List<CrystalChargeArcs> s_all = new();
+        static readonly List<CrystalChargeArcs> s_due = new();
+        static readonly System.Comparison<CrystalChargeArcs> s_byPriority = (a, b) => b.priority.CompareTo(a.priority);
+        static int s_scheduledFrame = -1;
+        static readonly int ArcIntensityId = Shader.PropertyToID("_ArcIntensity");
+        static readonly int NodeIntensityId = Shader.PropertyToID("_NodeIntensity");
+        static readonly Dictionary<(Mesh, float), ChargeSites> s_sites = new();
+        static MaterialPropertyBlock s_block;
+
+        [Header("Effect")]
+        [Tooltip("Seam walk: the Charge crystal's (one bolt walking the seams between the blooms forever). Flux: the omni's (chained discharges between pentagons).")]
+        [SerializeField] Effect effect = Effect.Flux;
+
+        [Tooltip("Timing and brightness, shared by both crystals. CrystalChargeArcsProfile.asset is generated (Tools/Build/author_omni_crystal_triangles.py).")]
+        [SerializeField] CrystalChargeArcsProfileSO profile;
+
+        [Header("Geometry")]
+        [Tooltip("The crystal model this light overlays (the FBX mesh its body draws), in this object's space: the Charge crystal's 60 petals or the omni's 12 pentagonal prisms are read from it.")]
+        [SerializeField] Mesh sourceMesh;
+
+        [Header("Replaces")]
+        [Tooltip("A renderer whose edge crawl (_ArcIntensity, _NodeIntensity) this light replaces: held at zero through a property block while this runs, restored when it stops. The Charge crystal's shell. Empty on the omni, whose crawl overlay is gone.")]
+        [SerializeField] Renderer silenceCrawlOn;
+
+        MeshRenderer arcsRenderer;
+        Mesh mesh;
+        Bounds bounds;
+        ChargeSites sites;
+        ChargeArcSettings settings;
+        ChargeSeamWalker walker;
+        ChargeFluxChain chain;
+        readonly ChargeArcMeshWriter writer = new();
+        float[] faceLight;
+        float clockStart;
+        Crystal crystal;
+        CrystalDepthPrisms depthPrisms;   // the omni's Mass columns a flux arc can pass through
+        Vector3[] prismCentres;
+        Vector3[] prismSeats;
+        float[] prismRadii, prismStrike, prismPlaces, prismSeatRadii;
+        const int FirstStrikeSlice = 8;   // columns a light's first strike slice tests, before it knows what one costs
+        int strikeCursor;          // the next Mass column this light's strikes resume from (they spread over rebuilds)
+        float strikeMsPerPrism;    // what one column's strikes cost last time, to size the next slice
+        bool asleep;   // too small on screen: the unlit faces are uploaded and nothing is rebuilt until it wakes
+        float pixels;      // this frame's radius on screen (the scheduler's)
+        float priority;    // this frame's place in the queue: pixels, raised by every frame it has waited
+        int waited;        // frames since this light last rebuilt while it wanted to
+
+        void Awake()
+        {
+            arcsRenderer = GetComponent<MeshRenderer>();
+            if (!profile || !sourceMesh)
+            {
+                CSDebug.LogError($"CrystalChargeArcs on '{name}': {(profile ? "no source mesh" : "no profile")} assigned. The Charge light is off.", this);
+                enabled = false;
+                return;
+            }
+            var cadence = GetComponentInParent<OmniCrystalCadence>();
+            float thickness = cadence && cadence.Settings ? cadence.Settings.PlateThickness : 1f;
+            if (!TryGetSites(sourceMesh, thickness, out sites, out var problem))
+            {
+                CSDebug.LogError($"CrystalChargeArcs on '{name}': mesh '{sourceMesh.name}': {problem}. The Charge light is off.", this);
+                enabled = false;
+                return;
+            }
+            settings = profile.Settings;
+            faceLight = new float[sites.Faces.Length];
+            // An arc bows out at most ~1.5 radii; the bounds are fixed so the renderer's visibility never depends on
+            // what the light happens to be drawing.
+            bounds = new Bounds(Vector3.zero, Vector3.one * (sites.Radius * 3.2f));
+            mesh = new Mesh { name = sourceMesh.name + " (charge arcs)", hideFlags = HideFlags.DontSave };
+            mesh.MarkDynamic();
+            GetComponent<MeshFilter>().sharedMesh = mesh;
+            crystal = GetComponentInParent<Crystal>();
+            if (effect == Effect.Flux && transform.parent)
+                depthPrisms = transform.parent.GetComponentInChildren<CrystalDepthPrisms>(true);
+        }
+
+        void OnEnable()
+        {
+            if (mesh == null) return;
+            clockStart = Time.time;
+            asleep = false;
+            int seed = GetInstanceID();
+            walker = new ChargeSeamWalker(sites, seed, 0f);
+            chain = new ChargeFluxChain(sites, seed ^ 0x5bd1e995);
+            waited = 0;
+            SilenceCrawl();
+            if (crystal) crystal.ModelMaterialSettled += SilenceCrawl;
+            s_all.Add(this);
+            // The faces, unlit: the mesh is never empty, so the renderer can be seen (and start drawing) at once.
+            System.Array.Clear(faceLight, 0, faceLight.Length);
+            Upload();
+        }
+
+        void OnDisable()
+        {
+            if (crystal) crystal.ModelMaterialSettled -= SilenceCrawl;
+            s_all.Remove(this);
+            RestoreCrawl();
+            if (depthPrisms && depthPrisms.Strike != null) System.Array.Clear(depthPrisms.Strike, 0, depthPrisms.Strike.Length);
+        }
+
+        void OnDestroy()
+        {
+            if (mesh) Destroy(mesh);
+        }
+
+        void LateUpdate()
+        {
+            if (s_scheduledFrame == Time.frameCount) return;
+            s_scheduledFrame = Time.frameCount;
+            using var _ = UpdateMarker.Auto();
+            Schedule(profile);
+        }
+
+        /// <summary>Once a frame, for every light: keep the clocks, sleep the ones too small to see, then rebuild the due
+        /// ones in priority order within the profile's cap and budget.</summary>
+        static void Schedule(CrystalChargeArcsProfileSO costs)
+        {
+            var view = CameraManager.ViewCamera;
+            int frame = Time.frameCount;
+            s_due.Clear();
+            using (ScheduleMarker.Auto())
+            {
+                for (int i = s_all.Count - 1; i >= 0; i--)
+                {
+                    var a = s_all[i];
+                    if (!a) { s_all.RemoveAt(i); continue; }
+                    a.ConsiderThisFrame(view, frame);
+                }
+            }
+            if (s_due.Count == 0) return;
+            s_due.Sort(s_byPriority);
+
+            int cap = costs.MaxRebuildsPerFrame, wakeCap = costs.MaxWakesPerFrame, rebuilt = 0, woken = 0;
+            float budgetMs = costs.RebuildBudgetMs;
+            long startTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+            double ticksPerMs = System.Diagnostics.Stopwatch.Frequency / 1000.0;
+            for (int i = 0; i < s_due.Count; i++)
+            {
+                var a = s_due[i];
+                bool overCap = cap > 0 && rebuilt >= cap;
+                bool overBudget = budgetMs > 0f && rebuilt > 0
+                                  && (System.Diagnostics.Stopwatch.GetTimestamp() - startTicks) / ticksPerMs > budgetMs;
+                bool overWakes = a.asleep && woken >= wakeCap;
+                if (overCap || overBudget || overWakes) { a.waited++; continue; }
+                if (a.asleep) woken++;
+                a.Rebuild(view);
+                rebuilt++;
+            }
+            s_due.Clear();
+        }
+
+        /// <summary>This light's part of the schedule: its clock always; then asleep, skipped (rate), or queued.</summary>
+        void ConsiderThisFrame(Camera view, int frame)
+        {
+            if (!isActiveAndEnabled || mesh == null) return;
+            // The walk steers toward this view's side of the crystal (seamFaceViewer): the bolt stays on screen.
+            if (effect == Effect.SeamWalk)
+                walker.Advance(Time.time - clockStart, settings,
+                               view ? transform.InverseTransformPoint(view.transform.position) : (Vector3?)null);
+            if (!arcsRenderer.enabled || !arcsRenderer.isVisible || !view) return;
+            pixels = ScreenRadiusPixels(view);
+            if (TooSmallToSee(pixels))
+            {
+                if (!asleep) { using (SleepMarker.Auto()) Sleep(); }
+                waited = 0;
+                return;
+            }
+            // Mid-distance: every other frame; far-mid: every fourth - staggered by instance so the crystals split the
+            // work. One that waited for the budget, or is waking, is due at once.
+            if (!asleep && waited == 0)
+            {
+                float half = profile.HalfRateBelowScreenRadiusPixels, quarter = profile.QuarterRateBelowScreenRadiusPixels;
+                int phase = frame + GetInstanceID();
+                if (quarter > 0f && pixels < quarter) { if ((phase & 3) != 0) return; }
+                else if (half > 0f && pixels < half && (phase & 1) == 1) return;
+            }
+            priority = pixels * (1f + waited);
+            s_due.Add(this);
+        }
+
+        void Rebuild(Camera view)
+        {
+            using var _ = RebuildMarker.Auto();
+            asleep = false;
+            waited = 0;
+            float seconds = Time.time - clockStart;
+            var eye = transform.InverseTransformPoint(view.transform.position);
+            writer.Clear();
+            using (DrawMarker.Auto())
+            {
+                if (effect == Effect.SeamWalk) ChargeArcs.SeamWalk(sites, walker, seconds, settings, writer, eye, faceLight);
+                else ChargeArcs.Flux(sites, chain, seconds, settings, writer, eye, faceLight);
+            }
+            if (effect == Effect.Flux)
+                using (StrikesMarker.Auto()) StrikePrisms(seconds);
+            using (UploadMarker.Auto()) Upload();
+        }
+
+        /// <summary>True when this crystal's radius on the view camera is under the profile's sleep size (1.25x that to
+        /// wake, so one at the edge does not flicker between the two).</summary>
+        bool TooSmallToSee(float pixels)
+        {
+            float limit = profile.SleepBelowScreenRadiusPixels;
+            if (limit <= 0f) return false;
+            if (asleep) limit *= 1.25f;
+            return pixels < limit;
+        }
+
+        /// <summary>This crystal's radius on the view camera, in pixels.</summary>
+        float ScreenRadiusPixels(Camera view)
+        {
+            float radius = sites.Radius * transform.lossyScale.x;
+            float halfHeight = view.orthographic
+                ? view.orthographicSize
+                : Mathf.Max(1e-3f, Vector3.Distance(view.transform.position, transform.position))
+                  * Mathf.Tan(view.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            return radius / halfHeight * view.pixelHeight * 0.5f;
+        }
+
+        /// <summary>Goes dark the way <see cref="OnEnable"/> starts: the faces unlit, no bolt, no Mass column struck.</summary>
+        void Sleep()
+        {
+            asleep = true;
+            writer.Clear();
+            System.Array.Clear(faceLight, 0, faceLight.Length);
+            Upload();
+            if (depthPrisms && depthPrisms.Strike != null) System.Array.Clear(depthPrisms.Strike, 0, depthPrisms.Strike.Length);
+            if (prismStrike != null) System.Array.Clear(prismStrike, 0, prismStrike.Length);
+        }
+
+        /// <summary>Lights every protracted Mass prism a flux arc is passing through: each prism's body is carried from the
+        /// prisms' space into this one and tested against the arcs' paths. The columns are tested in a slice sized to the
+        /// profile's rebuild budget from what one column cost last time, resuming where the last slice stopped, so a crystal
+        /// with many raised columns spreads them over rebuilds instead of taking a whole frame (a column not in this slice
+        /// keeps its last strike, a frame or two old, while the arcs hold for a whole discharge).</summary>
+        void StrikePrisms(float seconds)
+        {
+            if (!depthPrisms || !depthPrisms.isActiveAndEnabled || depthPrisms.Strike == null) return;
+            int count = depthPrisms.PrismCount;
+            if (prismCentres == null || prismCentres.Length != count)
+            {
+                prismCentres = new Vector3[count];
+                prismRadii = new float[count];
+                prismStrike = new float[count];
+                prismPlaces = new float[count];
+                prismSeats = new Vector3[count];
+                prismSeatRadii = new float[count];
+            }
+            var from = depthPrisms.transform;
+            float scale = from.lossyScale.x / Mathf.Max(1e-6f, transform.lossyScale.x);
+            for (int j = 0; j < count; j++)
+            {
+                depthPrisms.TryGetPrism(j, out var centre, out float radius);
+                prismCentres[j] = transform.InverseTransformPoint(from.TransformPoint(centre));
+                prismRadii[j] = radius * scale;
+                prismPlaces[j] = depthPrisms.PlaceOf(j);
+                depthPrisms.SeatOf(j, out var seat, out float seatRadius);
+                prismSeats[j] = transform.InverseTransformPoint(from.TransformPoint(seat));
+                prismSeatRadii[j] = seatRadius * scale;
+            }
+            // How many columns fit the budget at what one cost so far (all of them when there is no budget; a first slice of
+            // FirstStrikeSlice before there is a cost to go on).
+            float budgetMs = profile.RebuildBudgetMs;
+            int slice = budgetMs <= 0f ? count
+                : strikeMsPerPrism > 0f ? Mathf.Clamp(Mathf.FloorToInt(budgetMs / strikeMsPerPrism), 1, count)
+                : Mathf.Min(count, FirstStrikeSlice);
+            if (strikeCursor >= count) strikeCursor = 0;
+            int first = strikeCursor, firstEnd = Mathf.Min(count, first + slice), wrapped = slice - (firstEnd - first);
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            // Only a prism standing out of the omni lights, when an arc crosses its column; a retracted one stays dark.
+            ChargeArcs.FluxStrikes(sites, chain, seconds, settings, prismCentres, prismRadii, prismPlaces, prismSeats, prismSeatRadii,
+                                   first, firstEnd, prismStrike);
+            if (wrapped > 0)
+                ChargeArcs.FluxStrikes(sites, chain, seconds, settings, prismCentres, prismRadii, prismPlaces, prismSeats,
+                                       prismSeatRadii, 0, wrapped, prismStrike);
+            double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            // Smoothed, so one slow frame (a GC, a hitch) does not shrink the next slices to a single column.
+            float cost = (float)(ms / slice);
+            strikeMsPerPrism = strikeMsPerPrism > 0f ? Mathf.Lerp(strikeMsPerPrism, cost, 0.25f) : cost;
+            strikeCursor = wrapped > 0 ? wrapped : firstEnd;
+            System.Array.Copy(prismStrike, depthPrisms.Strike, count);
+        }
+
+        /// <summary>The lit faces (after the bolts already in the writer), then the whole mesh to the GPU.</summary>
+        void Upload()
+        {
+            // A petal beside the seam walk lights from its own centre; a discharging pentagon from its site's.
+            bool own = effect == Effect.SeamWalk;
+            for (int f = 0; f < sites.Faces.Length; f++) writer.Face(sites.Faces[f], faceLight[f], own);
+            mesh.Clear();
+            mesh.SetVertices(writer.Positions);
+            mesh.SetUVs(0, writer.Data);
+            mesh.SetTriangles(writer.Indices, 0, false);
+            mesh.bounds = bounds;
+            writer.Clear();
+        }
+
+        static bool TryGetSites(Mesh source, float thickness, out ChargeSites built, out string problem)
+        {
+            problem = null;
+            if (s_sites.TryGetValue((source, thickness), out built)) return true;
+            if (!source.isReadable)
+            {
+                problem = "not readable (enable Read/Write in its import settings)";
+                return false;
+            }
+            if (!ChargeSites.TryBuild(source.vertices, source.triangles, thickness, out built, out problem)) return false;
+            s_sites[(source, thickness)] = built;
+            return true;
+        }
+
+        /// <summary>The renderer whose edge crawl this light replaces (the Charge crystal's shell), or null.</summary>
+        public Renderer SilencedRenderer => silenceCrawlOn;
+
+        /// <summary>Holds the edge crawl at zero in <paramref name="block"/> - what this light does to its shell while it
+        /// runs, and what <see cref="CrystalHeartDraw"/> does to a population's Charge hearts, which have no light of their
+        /// own and so show the shell exactly as a sleeping one does.</summary>
+        public static void SilenceCrawl(MaterialPropertyBlock block)
+        {
+            block.SetFloat(ArcIntensityId, 0f);
+            block.SetFloat(NodeIntensityId, 0f);
+        }
+
+        void SilenceCrawl()
+        {
+            if (!silenceCrawlOn) return;
+            s_block ??= new MaterialPropertyBlock();
+            silenceCrawlOn.GetPropertyBlock(s_block);
+            SilenceCrawl(s_block);
+            silenceCrawlOn.SetPropertyBlock(s_block);
+        }
+
+        void RestoreCrawl()
+        {
+            if (!silenceCrawlOn) return;
+            var material = silenceCrawlOn.sharedMaterial;
+            if (!material) return;
+            s_block ??= new MaterialPropertyBlock();
+            silenceCrawlOn.GetPropertyBlock(s_block);
+            if (material.HasProperty(ArcIntensityId)) s_block.SetFloat(ArcIntensityId, material.GetFloat(ArcIntensityId));
+            if (material.HasProperty(NodeIntensityId)) s_block.SetFloat(NodeIntensityId, material.GetFloat(NodeIntensityId));
+            silenceCrawlOn.SetPropertyBlock(s_block);
+        }
+    }
+}

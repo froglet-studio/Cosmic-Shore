@@ -12,8 +12,8 @@ namespace CosmicShore.Editor
     /// deterministic for the whole team (e.g. how many clean sessions close an issue) is stamped
     /// INTO the issue file at creation, so a later local change never rewrites history.
     ///
-    /// The window is the only writer; it applies values through the properties and then calls
-    /// <see cref="SaveNow"/> once per change.
+    /// There is no settings UI any more (the Bug Ledger window was removed 2026-10-15 — "no complex
+    /// UI toolboxes"); the defaults below are the policy. Edit the asset only to tune a machine.
     /// </summary>
     [FilePath("UserSettings/BugLedgerSettings.asset", FilePathAttribute.Location.ProjectFolder)]
     public sealed class BugLedgerSettings : ScriptableSingleton<BugLedgerSettings>
@@ -38,8 +38,11 @@ namespace CosmicShore.Editor
 
         [SerializeField, Range(10, 1000), Tooltip("Hard cap on auto-filed issues. A runaway error generator " +
                                                   "must not mint files; past the cap new signatures are " +
-                                                  "dropped with one console warning.")]
+                                                  "dropped with one console warning. Counts open issues " +
+                                                  "seen in the last 30 days.")]
         int maxAutoIssues = 150;
+
+        [SerializeField, HideInInspector] string sentFingerprints = "";
 
         // Note: closing an issue ALWAYS stamps it into BugLedger/local/resolved/ — the archive
         // doubles as the tombstone that keeps a published-then-resolved issue from re-importing
@@ -50,6 +53,10 @@ namespace CosmicShore.Editor
         public int MinValidationPlaySeconds { get => minValidationPlaySeconds; set => minValidationPlaySeconds = Mathf.Clamp(value, 0, 300); }
         public int MinEditorSessionMinutes { get => minEditorSessionMinutes; set => minEditorSessionMinutes = Mathf.Clamp(value, 0, 120); }
         public int MaxAutoIssues { get => maxAutoIssues; set => maxAutoIssues = Mathf.Clamp(value, 10, 1000); }
+        /// <summary>"id:regressions" of every open error this machine already sent or chose not to
+        /// send, newline-separated — so the after-play question is asked once per new error,
+        /// never again for the same one (<see cref="BugHuntAutoSend"/>).</summary>
+        public string SentFingerprints { get => sentFingerprints; set => sentFingerprints = value ?? ""; }
 
         public void SaveNow() => Save(true);
     }

@@ -49,7 +49,7 @@ namespace CosmicShore.Gameplay
                     if (!Mathf.Approximately(prev, r.CurrentAmount))
                         EmitResourceChanged(i);
                 }
-                yield return new WaitForSeconds(1);
+                yield return CosmicShore.Utility.WaitCache.Seconds(1);
             }
         }
 
@@ -72,6 +72,13 @@ namespace CosmicShore.Gameplay
                 TimeLevel   = GetEffectiveLevel(Element.Time);
             }
         }
+
+        /// <summary>When this vessel last spawned (<see cref="Time.time"/>): ResetForPlay and StartVessel stamp it.
+        /// The danger-prism burn reads it for its spawn grace (VesselElementalDebuffByDangerPrismEffectSO).
+        /// Never spawned = negative infinity, so no grace.</summary>
+        public float SpawnedAt { get; private set; } = float.NegativeInfinity;
+
+        public void MarkSpawned() => SpawnedAt = Time.time;
 
         public void Reset()
         {
@@ -127,9 +134,12 @@ namespace CosmicShore.Gameplay
         [Header("Elemental Recovery")]
         [Tooltip("Elements passively return to the [0,10] resting band: an overcharge above level 10 " +
                  "drains back down to 10, and a deficit below level 0 fills back up to 0 - symmetric ends. " +
-                 "Rate is in normalized units per second (0.1 = one integer level per second). " +
-                 "Set 0 to disable the drift.")]
-        [SerializeField, Min(0f)] float elementalRecoveryRate = 0.05f;
+                 "Rate is in normalized units per second (0.1 = one integer level per second), so the " +
+                 "shipped 0.02 is ONE LEVEL PER FIVE SECONDS: slow enough that a pilot gets to enjoy an " +
+                 "overcharge and to feel a punishment, rather than watching either evaporate. " +
+                 "Set 0 to disable the drift. NOTE four prefabs (Sparrow, Squirrel, Rhino, Dolphin) " +
+                 "SERIALIZE this field, so changing the initializer alone splits the fleet - move them too.")]
+        [SerializeField, Min(0f)] float elementalRecoveryRate = 0.02f;
 
         public delegate void ElementLevelChange(Element element, int level);
         public event ElementLevelChange OnElementLevelChange;
@@ -137,6 +147,16 @@ namespace CosmicShore.Gameplay
         const float MinElementalLevel = -0.5f;
         const float MaxElementalLevel = 1.5f;
         const int   LevelScale = 10;
+
+        /// <summary>
+        /// ONE PETAL: one integer element level, in the normalized units this class works in.
+        /// It is the quantum of the elemental economy - one step of the HUD flower, one
+        /// <see cref="IncrementLevel"/>, and exactly one elemental crystal of any kind
+        /// (<see cref="SkimmerAdjustElementLevelByCrystalEffectSO.LevelGainPerCrystal"/>). Named
+        /// here so the transfer path, the crystal pickup and the drain table all quote the same
+        /// constant instead of three loose 0.1s.
+        /// </summary>
+        public const float PetalNormalized = 1f / LevelScale;
 
         // Passive recovery pulls each element's BASE level back into the [0,10] resting band.
         // Above the upper bound it drains down to it; below the lower bound it fills up to it;
@@ -158,17 +178,17 @@ namespace CosmicShore.Gameplay
         // SetElementLevel every tick, erasing crystal progression within a second.)
         // Single-writer: ElementalComebackSystem.
         readonly Dictionary<Element, float> _comebackModifiers = new();
-        // Domain fauna buff layer — the summed elemental value of this vessel's domain's LIVING
-        // fauna hearts (each contributes exactly what its dropped crystal would grant on
-        // collection). Held while the fauna live, revoked the moment they die — composited like
-        // the comeback layer so it never touches crystal-earned base progress.
-        // Single-writer: DomainFaunaBuffSystem.
-        readonly Dictionary<Element, float> _faunaBuffModifiers = new();
         // Last integer level emitted per element, so OnElementLevelChange only fires on real changes.
         readonly Dictionary<Element, int> _emittedLevels = new();
 
         public void InitializeElementLevels(ResourceCollection resourceGroup)
         {
+            // A re-seed is a new life for this vessel's elements, so any fraction of a petal that
+            // was knocked loose but had not yet settled dies with the old ones. Without this a
+            // vessel could carry 0.09 of a petal of accrued damage across a turn boundary and lose
+            // a whole level to the first grazing hit of the next one.
+            ClearPendingElementalLoss();
+
             ElementalLevels[Element.Charge] = resourceGroup.Charge;
             ElementalLevels[Element.Mass]   = resourceGroup.Mass;
             ElementalLevels[Element.Space]  = resourceGroup.Space;
@@ -189,69 +209,64 @@ namespace CosmicShore.Gameplay
         // transients, and everything in it drains back to (at most) 10:
         // - temporary effects (ApplyElementalEffect) decay to zero on their own;
         // - crystal-earned base overcharge bleeds down via RecoverBaseLevels;
-        // - the domain fauna buff's held layer only FILLS toward the ceiling, and the part of
-        //   an increase above it converts to a temporary spike (SetFaunaBuffModifier);
         // - the comeback bonus fills toward the ceiling and never past it.
         // The player always gets to FEEL a reward above 10, and the drain always restores the
         // headroom to feel the next one.
+        //
+        // The law governs whatever sustained mechanisms EXIST. A fourth one, the domain fauna
+        // buff (living fauna hearts empowering their whole domain's vessels), was removed in
+        // Sep 2026 - it granted standing power for nothing but having fauna alive - and the law
+        // simply lost that clause. Do not rebuild it: Docs/ECOSYSTEM.md §15.
         const float SustainedCeiling = 1.0f;
 
-        /// <summary>Effective level = base + temporary modifiers + capped domain fauna buff +
-        /// capped comeback bonus, clamped to range. Maintained layers only fill toward
+        /// <summary>Effective level = base + temporary modifiers + capped comeback bonus,
+        /// clamped to range. The maintained comeback layer only fills toward
         /// <see cref="SustainedCeiling"/> (level 10); only transients reach the 10..15 band.</summary>
         float GetEffectiveLevel(Element element)
         {
             float baseLevel = ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
             float modifier  = _elementModifiers.TryGetValue(element, out var m) ? m : 0f;
-            float faunaBuff = _faunaBuffModifiers.TryGetValue(element, out var f) ? f : 0f;
             float comeback  = _comebackModifiers.TryGetValue(element, out var c) ? c : 0f;
 
-            return CompositeEffectiveLevel(baseLevel, modifier, faunaBuff, comeback);
+            return CompositeEffectiveLevel(baseLevel, modifier, comeback);
         }
 
         /// <summary>
-        /// Pure layer compositing (edit-mode tested): the held fauna buff fills the room
-        /// between the persistent base and the sustained ceiling; temporary effects ride on
-        /// top (the only path into the overcharge band, together with base overcharge); the
-        /// comeback bonus fills toward the same ceiling above everything else; the result
-        /// clamps to the element range.
+        /// Pure layer compositing (edit-mode tested by <c>ElementalLayerCompositingTests</c>):
+        /// temporary effects ride on top of the
+        /// persistent base (the only path into the overcharge band, together with base
+        /// overcharge); the comeback bonus fills the room below the sustained ceiling above
+        /// everything else; the result clamps to the element range.
         /// </summary>
         public static float CompositeEffectiveLevel(
-            float baseLevel, float tempModifier, float faunaBuff, float comebackBonus)
+            float baseLevel, float tempModifier, float comebackBonus)
         {
-            float faunaHeld = HeldFaunaContribution(baseLevel, faunaBuff);
-            float earned = baseLevel + tempModifier + faunaHeld;
+            float earned = baseLevel + tempModifier;
             float comeback = Mathf.Min(comebackBonus, Mathf.Max(0f, SustainedCeiling - earned));
             return Mathf.Clamp(earned + comeback, MinElementalLevel, MaxElementalLevel);
         }
 
-        /// <summary>
-        /// How much of the domain fauna pool the HELD layer expresses: it fills the room
-        /// between the persistent base and the sustained ceiling (level 10), never further.
-        /// The over-ceiling remainder is only ever felt as temporary spikes. Pure for tests.
-        /// </summary>
-        public static float HeldFaunaContribution(float baseLevel, float faunaBuff)
-            => Mathf.Min(faunaBuff, Mathf.Max(0f, SustainedCeiling - baseLevel));
-
-        /// <summary>
-        /// The part of a fauna-pool INCREASE the capped held layer cannot express right now.
-        /// SetFaunaBuffModifier grants it as a temporary decaying boost instead, so the
-        /// reward is felt (up to 15) and drains back to the sustained ceiling. Pure for tests.
-        /// </summary>
-        public static float ComputeUnfeltIncrease(float baseLevel, float previousPool, float newPool)
-        {
-            float increase = newPool - previousPool;
-            if (increase <= 0f) return 0f;
-            float feltDelta = HeldFaunaContribution(baseLevel, newPool)
-                              - HeldFaunaContribution(baseLevel, previousPool);
-            return increase - feltDelta;
-        }
-
         public int GetLevel(Element element)
-            => Mathf.FloorToInt(GetEffectiveLevel(element) * LevelScale);
+            => ToLevel(GetEffectiveLevel(element));
+
+        /// <summary>
+        /// Normalized level to integer petals. The epsilon is far below a petal (0.1) and above
+        /// float32 drift: crystal gains (<c>+= 0.1f</c>) drift UP and were always safe, but petal
+        /// LOSS subtracts from an exact value (1.0f after an overcharge drains, an authored 0.7f)
+        /// and drifts DOWN - 1.0f minus 0.1f twice is 0.79999995f, which floored to 7 not 8. That
+        /// showed one petal fewer on the HUD, published the wrong level to peers, and relocked the
+        /// level-5 upgrade (RelockBelowLevel 4) one petal early.
+        /// </summary>
+        public static int ToLevel(float normalized)
+            => Mathf.FloorToInt(normalized * LevelScale + 1e-4f);
 
         public float GetNormalizedLevel(Element element)
             => GetEffectiveLevel(element);
+
+        /// <summary>The BASE (persistent) level, normalized: the petals this vessel holds, without the temporary
+        /// effects or the comeback bonus. It is what travels with a hull that changes machines (<see cref="ElementHandover"/>).</summary>
+        public float BaseLevel(Element element)
+            => ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
 
         public void IncrementLevel(Element element) => AdjustLevel(element, .1f);
 
@@ -271,6 +286,132 @@ namespace CosmicShore.Gameplay
             ElementalLevels[element] = Mathf.Clamp(normalizedLevel, MinElementalLevel, MaxElementalLevel);
             EmitElementLevel(element);
         }
+
+        /********************************************************/
+        /*  THE ELEMENTAL ECONOMY: a debuff MOVES, it does not decay */
+        /********************************************************/
+
+        // A vessel-on-vessel debuff used to be a temporary modifier that decayed back to zero, so
+        // nothing was ever really lost and nothing was ever really gained. It is now a TRANSFER out
+        // of this vessel's persistent base level - stolen by the attacker, or knocked loose into the
+        // world as collectable crystals. Two rules are what make that CONSERVING rather than merely
+        // permanent, and both live here because both are facts about the victim:
+        //
+        //   1. NOTHING PARTIAL EVER LEAVES. A hit accrues against a pending pool; a petal only comes
+        //      off the base level when that pool reaches a WHOLE one. A petal is one integer level,
+        //      which is one step of the HUD flower and exactly one crystal at world scale 1 - so the
+        //      flower's step, the crystal and the loss are all the same event, and the player reads
+        //      the transfer without being told about it. The remainder stays pending and is spent by
+        //      the next hit, so ten cheap hits take exactly what one dear hit worth the same total
+        //      takes. Without this a 0.1-petal bullet would have to mint a 0.1-scale speck of a
+        //      crystal ninety times a second.
+        //
+        //   2. YOU CANNOT TAKE WHAT IS NOT THERE. The take is clamped to what the victim holds ABOVE
+        //      resting level 0, so a stripped pilot has nothing left to give and an attacker can
+        //      never be handed a petal that did not exist. This is the whole of why the economy
+        //      balances: the base band [0, 10] IS the pot, and every transfer is a move inside it.
+        //
+        // Consequence worth stating: the deficit band [-5, 0) is now reachable by TRANSIENTS ONLY -
+        // the exact mirror of the overcharge rule above, and for the same reason. A permanent loss
+        // bottoms out at empty; only a decaying effect can push a pilot below it.
+        //
+        // The immunity gate is honoured here exactly as it is in ApplyElementalEffect, so a warded
+        // pilot loses nothing AND yields nothing - which is what keeps every scoring effect, which
+        // admits through CombatHitDrain.TryAdmit on the same ward, agreeing with what happened.
+        readonly Dictionary<Element, float> _pendingLoss = new();
+
+        /// <summary>
+        /// How much of <paramref name="element"/> this vessel could actually lose right now: what
+        /// its base level holds above resting level 0, in normalized units. The ceiling on any
+        /// single transfer out of it.
+        /// </summary>
+        public float TakeableLevel(Element element)
+        {
+            float held = ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
+            return Mathf.Max(0f, held - RestingBandLower);
+        }
+
+        /// <summary>
+        /// Accrue <paramref name="normalizedAmount"/> of pending loss against <paramref name="element"/>
+        /// and settle it in WHOLE petals. Returns how many petals actually came loose - already
+        /// removed from this vessel's base level - so the caller can hand exactly that many to an
+        /// attacker or eject exactly that many crystals. Returns 0 when the vessel is warded against
+        /// <paramref name="source"/>, when it holds nothing left to lose, or when the accrual has not
+        /// yet reached a whole petal.
+        /// </summary>
+        public int AccrueElementalLoss(Element element, float normalizedAmount, ElementalDebuffSources source)
+        {
+            if (normalizedAmount <= 0f) return 0;
+
+            // The same gate ApplyElementalEffect's negative branch runs. A ward stops the transfer
+            // outright rather than merely softening it: no loss, no crystal, no theft.
+            if (IsImmuneTo(source)) return 0;
+
+            // Epsilon because these amounts are sums of authored floats (0.01 x 10 is not 0.1), and
+            // a petal that lands a ULP short would otherwise never settle. It guards the empty test
+            // too: ten single-petal burns step 1.0 down to 0.0999999, and a bare `< PetalNormalized`
+            // there made a pilot's LAST petal unburnable (found by the petal-burn switch's T8).
+            const float Epsilon = 1e-4f;
+
+            float takeable = TakeableLevel(element);
+            if (takeable + Epsilon < PetalNormalized)
+            {
+                // Nothing left to give - drop any stale remainder so it cannot be spent later
+                // against petals this vessel has since re-earned.
+                _pendingLoss.Remove(element);
+                return 0;
+            }
+
+            _pendingLoss.TryGetValue(element, out float pending);
+            pending += Mathf.Min(normalizedAmount, takeable);
+
+            int petals = Mathf.FloorToInt((pending + Epsilon) / PetalNormalized);
+            petals = Mathf.Min(petals, Mathf.FloorToInt((takeable + Epsilon) / PetalNormalized));
+
+            if (petals <= 0)
+            {
+                _pendingLoss[element] = pending;
+                return 0;
+            }
+
+            _pendingLoss[element] = Mathf.Max(0f, pending - petals * PetalNormalized);
+            AdjustLevel(element, -petals * PetalNormalized);
+            return petals;
+        }
+
+        /// <summary>
+        /// Hands this vessel <paramref name="petals"/> whole petals of <paramref name="element"/> -
+        /// the receiving half of a steal. Deliberately NOT gated by debuff immunity: a ward stops
+        /// what is done TO a pilot, never what they take from someone else.
+        /// </summary>
+        public void GrantPetals(Element element, int petals)
+        {
+            if (petals <= 0) return;
+            AdjustLevel(element, petals * PetalNormalized);
+        }
+
+        /// <summary>
+        /// The cleanse (the Tiger Moth's dust on an ally, <see cref="ElementalCleanse"/>): every
+        /// TEMPORARY negative elemental effect ends now. Buffs and the base levels are left alone: a
+        /// petal a rival TOOK is a transfer, not a debuff, and handing it back would mint it out of
+        /// nothing (lifeforms are the only source). Returns true when anything changed.
+        /// </summary>
+        public bool ClearElementalDebuffs()
+        {
+            bool changed = false;
+            for (int i = _activeEffects.Count - 1; i >= 0; i--)
+            {
+                if (_activeEffects[i].Magnitude >= 0f) continue;
+                _activeEffects.RemoveAt(i);
+                changed = true;
+            }
+            if (changed) RecomputeModifiers();
+            return changed;
+        }
+
+        /// <summary>Drops every un-settled fractional loss (turn reset / scene change), so a new
+        /// match cannot settle a petal accrued in the previous one.</summary>
+        public void ClearPendingElementalLoss() => _pendingLoss.Clear();
 
         /// <summary>
         /// Sets the comeback bonus for an element (normalized units, ≥ 0). Composites into the
@@ -294,48 +435,6 @@ namespace CosmicShore.Gameplay
         {
             if (_comebackModifiers.Count == 0) return;
             _comebackModifiers.Clear();
-            foreach (var element in AllElements)
-                EmitElementLevel(element);
-        }
-
-        /// <summary>
-        /// Sets the domain fauna buff for an element (normalized units, ≥ 0): the value this
-        /// vessel's domain draws from its LIVING fauna hearts. The held layer sustains at most
-        /// <see cref="SustainedCeiling"/> (level 10); the part of an INCREASE above it is
-        /// granted as a standard temporary boost instead — a felt spike (up to 15) that drains
-        /// back at the elemental recovery rate, restoring headroom for the next reward.
-        /// Composites without touching the crystal-earned base, so the buff vanishes cleanly
-        /// when the fauna die — and their dropped crystals grant the very same value back
-        /// through <see cref="AdjustLevel"/> on collection. Pass 0 to remove the buff.
-        /// Single-writer: DomainFaunaBuffSystem.
-        /// </summary>
-        public void SetFaunaBuffModifier(Element element, float normalizedBonus)
-        {
-            normalizedBonus = Mathf.Max(0f, normalizedBonus);
-            _faunaBuffModifiers.TryGetValue(element, out var current);
-            if (Mathf.Approximately(current, normalizedBonus)) return;
-
-            if (normalizedBonus == 0f) _faunaBuffModifiers.Remove(element);
-            else _faunaBuffModifiers[element] = normalizedBonus;
-
-            float baseLevel = ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
-            float unfelt = ComputeUnfeltIncrease(baseLevel, current, normalizedBonus);
-            if (unfelt > 0.0001f)
-            {
-                // Rate-matched to the base overcharge drain so "above 10" always comes back
-                // down at one uniform speed, whichever channel put it there.
-                float drainRate = elementalRecoveryRate > 0f ? elementalRecoveryRate : 0.05f;
-                ApplyElementalEffect(element, unfelt, unfelt / drainRate);
-                return; // ApplyElementalEffect recomputes modifiers and emits
-            }
-            EmitElementLevel(element);
-        }
-
-        /// <summary>Clears all domain fauna buffs (system teardown).</summary>
-        public void ClearFaunaBuffModifiers()
-        {
-            if (_faunaBuffModifiers.Count == 0) return;
-            _faunaBuffModifiers.Clear();
             foreach (var element in AllElements)
                 EmitElementLevel(element);
         }

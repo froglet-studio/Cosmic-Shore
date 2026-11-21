@@ -17,12 +17,13 @@
 //   session object returned by MultiplayerService.Instance.
 //
 // RETRY POLICY:
-//   CreateAsync retries on host-conflict (happens when the local NM is still
-//   shutting down) and rate-limit (HTTP 429) errors with exponential back-off.
-//   JoinByIdAsync retries transient errors (rate-limit / SDK SessionException NRE /
-//   lobby-events 23006) - two clients accepting the same host invite can collide on
-//   the host's session state. Non-transient join errors propagate to the caller
-//   (AcceptInviteAsync), which logs and rethrows them for fail-fast recovery.
+//   Every UGS call runs through UgsRequestPolicy.ExecuteAsync (Assets/_Scripts/Utility/UgsRequestPolicy.cs):
+//   one classifier, exponential back-off with jitter per failure class, single-flight by operation
+//   key ("party:create", "party:join:{id}") and a per-client retry budget. This file used to carry
+//   three retry loops of its own with three private classifiers; since 2026-10-07 it carries none
+//   (Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md §5.4). Non-retryable errors
+//   (Gone / Full / Fatal) propagate to the caller (AcceptInviteAsync), which logs and rethrows them
+//   for fail-fast recovery.
 //
 // LIFETIME:
 //   Pure C# - no MonoBehaviour.  Instantiated as a field on
@@ -63,11 +64,6 @@ namespace CosmicShore.Gameplay
         // Constants
         // ─────────────────────────────────────────────────────────────────────
 
-        private const int RATE_LIMIT_MAX_RETRIES  = 3;
-        private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
-        private const int HOST_CONFLICT_MAX_RETRIES = 2;
-        private const int TRANSIENT_MAX_RETRIES   = 5;
-        private const int TRANSIENT_BASE_DELAY_MS = 1000;
 
         // Lobby player-property keys - written during session create/join so
         // other lobby members can see our display name, party info, etc.
@@ -78,7 +74,21 @@ namespace CosmicShore.Gameplay
         private const string MATCH_NAME_KEY      = "matchName";
         private const string JOINED_PARTY_KEY    = "joined_party";
         private const string INVITE_PAYLOADS_KEY = "invite_payloads";
-        private const string ACCEPTED_INVITE_KEY = "accepted_invite";
+
+        /// <summary>
+        /// Session player-property key a SPECTATOR sets to "1" on join. Read by
+        /// <see cref="IsSpectator"/> on every peer so the party roster, the host's admit
+        /// scan and the party-size publish all leave spectators out. Absent or empty on
+        /// every ordinary member.
+        /// </summary>
+        public const string SPECTATOR_KEY = "spectator";
+
+        /// <summary>True when the session player joined as a spectator (see <see cref="SPECTATOR_KEY"/>).</summary>
+        public static bool IsSpectator(IReadOnlyPlayer p) =>
+            p != null &&
+            p.Properties != null &&
+            p.Properties.TryGetValue(SPECTATOR_KEY, out var prop) &&
+            prop.Value == "1";
 
         // ─────────────────────────────────────────────────────────────────────
         // Dependencies + state
@@ -86,6 +96,7 @@ namespace CosmicShore.Gameplay
 
         private readonly HostConnectionDataSO _connectionData;
         private readonly GameDataSO _gameData;
+        private readonly UgsRequestPolicy _policy;
 
         /// <summary>
         /// UGS multiplayer service, resolved fresh at use time. Never cache
@@ -126,7 +137,51 @@ namespace CosmicShore.Gameplay
         /// in <see cref="ClearSession"/> - the single point that nulls the reference -
         /// so no handler outlives the session object it was attached to.
         /// </summary>
-        private void OnSessionPlayerLeaving(string playerId) => PlayerLeaving?.Invoke(playerId);
+        private void OnSessionPlayerLeaving(string playerId)
+        {
+            _departures.Report(playerId);   // Block 5 step 7: a stated departure skips the second read
+            PlayerLeaving?.Invoke(playerId);
+        }
+
+        // Block 5 (push instead of poll): the session's roster events. The SDK applies a change to the
+        // local session BEFORE it raises these, so ISession.Players is already current and the drain
+        // needs no GET. Each handler only sets a flag, since the SDK may raise from a continuation that
+        // is not Unity's frame: HostConnectionService.Update drains it on the main thread (rule from
+        // the August presence work, B16 there).
+        private int _rosterChanged;
+        private readonly DepartureReports _departures = new();
+
+        /// <inheritdoc/>
+        public void TakeDepartures(System.Collections.Generic.ISet<string> into) => _departures.TakeInto(into);
+
+        /// <inheritdoc/>
+        public bool ConsumeRosterChanged() => System.Threading.Interlocked.Exchange(ref _rosterChanged, 0) == 1;
+
+        private void MarkRosterChanged() => System.Threading.Interlocked.Exchange(ref _rosterChanged, 1);
+        private void OnSessionPlayerJoined(string playerId) => MarkRosterChanged();
+        private void OnSessionPlayerHasLeft(string playerId)
+        {
+            _departures.Report(playerId);
+            MarkRosterChanged();
+        }
+        private void OnSessionPlayerPropertiesChanged() => MarkRosterChanged();
+
+        /// <summary>Wires every session event this service listens to; called right after each assignment.</summary>
+        internal void Attach(ISession session)
+        {
+            session.PlayerLeaving           += OnSessionPlayerLeaving;
+            session.PlayerJoined            += OnSessionPlayerJoined;
+            session.PlayerHasLeft           += OnSessionPlayerHasLeft;
+            session.PlayerPropertiesChanged += OnSessionPlayerPropertiesChanged;
+        }
+
+        internal void Detach(ISession session)
+        {
+            session.PlayerLeaving           -= OnSessionPlayerLeaving;
+            session.PlayerJoined            -= OnSessionPlayerJoined;
+            session.PlayerHasLeft           -= OnSessionPlayerHasLeft;
+            session.PlayerPropertiesChanged -= OnSessionPlayerPropertiesChanged;
+        }
 
         // ─────────────────────────────────────────────────────────────────────
         // Construction
@@ -144,10 +199,11 @@ namespace CosmicShore.Gameplay
         /// of the active session reference (this service, HCS, game controllers,
         /// MultiplayerSetup) goes through the same field.
         /// </param>
-        public PartySessionService(HostConnectionDataSO connectionData, GameDataSO gameData)
+        public PartySessionService(HostConnectionDataSO connectionData, GameDataSO gameData, UgsRequestPolicy policy)
         {
             _connectionData = connectionData;
             _gameData = gameData;
+            _policy   = policy ?? UgsRequestPolicy.CreateDefault();
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -159,9 +215,10 @@ namespace CosmicShore.Gameplay
         /// <see cref="ActiveSession"/>.  No-op if a session is already active.
         ///
         /// <para>
-        /// Retries on host-conflict (NM still shutting down) and rate-limit (HTTP 429)
-        /// errors with exponential back-off.  Caller is responsible for shutting
-        /// down the local NetworkManager BEFORE calling this method.
+        /// Runs under <see cref="UgsRequestPolicy.ExecuteAsync{T}"/> (key <c>party:create</c>):
+        /// jittered back-off on rate-limit / transient failures, one retry on a host conflict (NM
+        /// still shutting down). Caller is responsible for shutting down the local NetworkManager
+        /// BEFORE calling this method.
         /// </para>
         /// </summary>
         /// <param name="maxPlayers">Maximum simultaneous players.</param>
@@ -169,92 +226,116 @@ namespace CosmicShore.Gameplay
         {
             if (ActiveSession != null) return;
 
-            var opts = new SessionOptions
+            // The Relay region is the player's choice in Settings > REGION (RelayRegionPreference; null = Auto, the
+            // region closest to this host). Every guest connects to it, so it is the one number that decides a
+            // cross-continent party's ping. A region Relay refuses falls back to Auto once.
+            // Single-flight under "party:create": two callers racing to create collapse into one
+            // request and both observe the same session. The policy retries RateLimited / Transient
+            // / Benign failures with jittered back-off and a Conflict (NetworkManager still shutting
+            // down) exactly once; everything else propagates.
+            float createStart = Time.unscaledTime;
+            var (session, region) = await RelayRegionPreference.CreateWithFallbackAsync(r =>
             {
-                MaxPlayers       = maxPlayers,
-                IsLocked         = false,
-                IsPrivate        = true,
-                PlayerProperties = BuildLocalPlayerProperties(),
-            }.WithRelayNetwork();
-
-            for (int attempt = 0; ; attempt++)
-            {
-                try
+                var opts = new SessionOptions
                 {
-                    ActiveSession          = await _multiplayerService.CreateSessionAsync(opts).AsMainThread();
-                    CreatedAtUnscaledTime  = Time.unscaledTime;
-                    ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
-                    Debug.Log($"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
-                    return;
-                }
-                catch (Exception e) when (attempt < HOST_CONFLICT_MAX_RETRIES && IsHostConflictException(e))
-                {
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Host conflict - retry {attempt + 1}/{HOST_CONFLICT_MAX_RETRIES}");
-                }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Rate limited - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-                catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
-                {
-                    int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Transient session error - retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e}");
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
-                    await UniTask.Delay(delay);
-                }
-            }
+                    MaxPlayers       = maxPlayers,
+                    IsLocked         = false,
+                    IsPrivate        = true,
+                    PlayerProperties = BuildLocalPlayerProperties(),
+                    // The session carries this build's Netcode protocol too (NetProtocol): the party session is the match
+                    // session, so every session this game makes says which builds can play in it.
+                    SessionProperties = new Dictionary<string, SessionProperty>
+                    {
+                        { NetProtocol.PropertyKey, NetProtocol.SessionProperty(NetProtocol.LocalTag) },
+                    },
+                }.WithRelayNetwork(r);
+                return _policy.ExecuteAsync("party:create",
+                    async () => await _multiplayerService.CreateSessionAsync(opts).AsMainThread());
+            }, "party:create");
+            if (ReferenceEquals(ActiveSession, session)) return; // the coalesced second caller
+            RelayRegionPreference.MarkHostedSession(region);
+            ActiveSession          = session;
+            CreatedAtUnscaledTime  = Time.unscaledTime;
+            Attach(ActiveSession);
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}, region={region ?? "auto"}) in {Time.unscaledTime - createStart:0.0}s.");
         }
 
         /// <summary>
         /// Joins an existing party session by its UGS session ID and sets
         /// <see cref="ActiveSession"/>.
         ///
-        /// <para>
-        /// The caller must ensure <paramref name="sessionId"/> is the real (non-PENDING)
-        /// Relay session id before calling - use
-        /// <see cref="AcceptanceSignalService.WaitForRealSessionIdAsync"/> to obtain it.
-        /// </para>
         /// </summary>
         /// <param name="sessionId">
         /// The UGS Relay session id published by the host after they call
         /// <see cref="CreateAsync"/>.
         /// </param>
-        public async UniTask JoinByIdAsync(string sessionId)
-        {
-            var opts = new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() };
+        public UniTask JoinByIdAsync(string sessionId) => JoinByIdAsync(sessionId, asSpectator: false);
 
-            // Retry transient join failures (HTTP 429 / SDK SessionException NRE /
-            // lobby-events 23006). Two clients accepting the same host's invite near-
-            // simultaneously can collide on the host's session state, so one join throws
-            // a transient error before the NM client even starts. Mirrors CreateAsync's
-            // retry loop + classifiers. Non-transient errors propagate to the caller
+        /// <inheritdoc/>
+        public async UniTask JoinByIdAsync(string sessionId, bool asSpectator)
+        {
+            var opts = new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties(asSpectator) };
+
+            // Two clients accepting the same host's invite near-simultaneously can collide on the
+            // host's session state, so one join throws a transient error before the NM client even
+            // starts; the policy retries it. Non-retryable errors propagate to the caller
             // (HostConnectionService.AcceptInviteAsync), which logs and rethrows so
             // PartyInviteController fails fast. See Docs/PartySystem/ARCHITECTURE.md (Q5).
-            for (int attempt = 0; ; attempt++)
+            // Through StaleLobbyMembership: a failed join (most often a Relay allocation that died with a frozen
+            // host, "join code not found") left us listed in the lobby, and every later join into it was refused
+            // "already a member" (the four-player test of 2026-10-30). Now a failure removes us, and a stale
+            // membership is cleared and the join made once more.
+            var session = await StaleLobbyMembership.JoinAsync(_policy, sessionId,
+                () => _policy.ExecuteAsync($"party:join:{sessionId}",
+                    async () => await _multiplayerService.JoinSessionByIdAsync(sessionId, opts).AsMainThread()),
+                leaveOnFailure: true, tag: "PartySessionService");
+            if (ReferenceEquals(ActiveSession, session)) return; // the coalesced second caller
+            // Launch blocker 6: a party session made by a build that speaks another Netcode protocol (or by an old build
+            // that publishes none) is left at once, before the Netcode connection is awaited - the host would refuse us
+            // with "NetworkConfig mismatch" and the player would see only a generic bounce (B35). The caller turns the
+            // exception into the authored "update your game" toast (PartyInviteController).
+            await LeaveIfProtocolMismatchAsync(session);
+            ActiveSession = session;
+            Attach(ActiveSession);
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Joined party session {ActiveSession.Id}.");
+        }
+
+        /// <summary>
+        /// Reads the protocol every other member of a just-joined session publishes (<see cref="NetProtocol.PropertyKey"/>)
+        /// and, when any differs or is missing, leaves the session and throws <see cref="ProtocolMismatchException"/>.
+        /// A session with nobody else in it passes: there is nothing to compare, and the join's own outcome decides.
+        /// </summary>
+        private static async UniTask LeaveIfProtocolMismatchAsync(ISession session)
+        {
+            if (session?.Players == null) return;
+            string localId = session.CurrentPlayer?.Id;
+            var protocols = new List<string>();
+            var names     = new List<string>();
+            foreach (var p in session.Players)
             {
-                try
-                {
-                    ActiveSession = await _multiplayerService.JoinSessionByIdAsync(sessionId, opts).AsMainThread();
-                    ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
-                    Debug.Log($"[PartySessionService] Joined party session {ActiveSession.Id}.");
-                    return;
-                }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Join rate limited - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-                catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
-                {
-                    int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Join transient error - retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e.Message}");
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
-                    await UniTask.Delay(delay);
-                }
+                if (p == null || p.Id == localId) continue;
+                protocols.Add(p.Properties != null && p.Properties.TryGetValue(NetProtocol.PropertyKey, out var pv) ? pv?.Value : null);
+                names.Add(p.Properties != null && p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) ? dn?.Value : null);
             }
+
+            string local   = NetProtocol.LocalTag;
+            var    verdict = NetProtocol.DecideAgainstMembers(local, protocols, out int at);
+            if (verdict is ProtocolCompatibility.Same or ProtocolCompatibility.NoPeers) return;
+
+            string remote = at >= 0 ? protocols[at] : null;
+            string name   = at >= 0 ? names[at] : null;
+            CSDebug.LogWarning($"[PartySessionService] Leaving party session {session.Id}: {verdict} - this build's protocol is " +
+                               $"{local}, member '{name}' publishes {(string.IsNullOrEmpty(remote) ? "none" : remote)}.");
+            NetSessionRecorder.Mark("protocolMismatch", $"{verdict} local={local} remote={(string.IsNullOrEmpty(remote) ? "none" : remote)}");
+            try
+            {
+                await session.LeaveAsync().AsMainThread();
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Leave after protocol mismatch failed ({e.GetType().Name}): {e.Message}");
+            }
+            throw new ProtocolMismatchException(verdict, local, remote, name);
         }
 
         /// <summary>
@@ -272,12 +353,12 @@ namespace CosmicShore.Gameplay
                     await session.AsHost().DeleteAsync().AsMainThread();
                 else
                     await session.LeaveAsync().AsMainThread();
-                Debug.Log($"[PartySessionService] Left party session {session.Id}.");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Left party session {session.Id}.");
             }
             catch (Exception e)
             {
-                CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Leave error (session already gone?): {e.Message}");
-                CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Leave error (session already gone?): {e.Message}");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
             }
         }
 
@@ -289,7 +370,7 @@ namespace CosmicShore.Gameplay
         public async UniTask RefreshAsync()
         {
             if (ActiveSession == null) return;
-            await ActiveSession.RefreshAsync().AsMainThread();
+            await LobbyReadPacer.RefreshAsync(ActiveSession);
         }
 
         /// <inheritdoc/>
@@ -300,19 +381,33 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                session.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
-                    new PlayerProperty(string.IsNullOrEmpty(displayName) ? "Pilot" : displayName,
-                        VisibilityPropertyOptions.Public));
-                session.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
-                    new PlayerProperty(avatarId.ToString(), VisibilityPropertyOptions.Public));
-                await session.SaveCurrentPlayerDataAsync().AsMainThread();
-                Debug.Log($"[PartySessionService] Local player properties updated (displayName='{displayName}').");
+                // Through the policy like every other UGS write (LobbyPropertyWriter.SaveAsync is the
+                // model): no single-flight key - two saves may carry different names - and on a retry
+                // the session is re-read first (a stale player index is the usual reason a save
+                // fails, Docs/PresenceSystem/BUGS.md B1). The properties are set INSIDE the attempt so
+                // a re-read can never leave the retry saving without them.
+                bool firstAttempt = true;
+                await _policy.ExecuteAsync(null, async () =>
+                {
+                    if (!firstAttempt)
+                    {
+                        try { await LobbyReadPacer.RefreshAsync(session); } catch { /* best-effort resync before the retry */ }
+                    }
+                    firstAttempt = false;
+                    session.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
+                        new PlayerProperty(string.IsNullOrEmpty(displayName) ? "Pilot" : displayName,
+                            VisibilityPropertyOptions.Public));
+                    session.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
+                        new PlayerProperty(avatarId.ToString(), VisibilityPropertyOptions.Public));
+                    await session.SaveCurrentPlayerDataAsync().AsMainThread();
+                });
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Local player properties updated (displayName='{displayName}').");
             }
             catch (Exception e)
             {
                 // Non-fatal: peers keep the stale name until the next session
                 // (re)join. Never throw into the profile-change event chain.
-                Debug.LogWarning(
+                CSDebug.LogWarning(
                     $"[PartySessionService] UpdateLocalPlayerProperties failed ({e.GetType().Name}): {e.Message}");
             }
         }
@@ -331,9 +426,11 @@ namespace CosmicShore.Gameplay
         public void ClearSession()
         {
             if (ActiveSession == null) return;
-            Debug.Log($"[PartySessionService] Clearing session reference {ActiveSession.Id}.");
-            ActiveSession.PlayerLeaving -= OnSessionPlayerLeaving;
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Clearing session reference {ActiveSession.Id}.");
+            Detach(ActiveSession);
             ActiveSession         = null;
+            System.Threading.Interlocked.Exchange(ref _rosterChanged, 0);
+            _departures.Clear();
             CreatedAtUnscaledTime = 0f;
         }
 
@@ -346,14 +443,17 @@ namespace CosmicShore.Gameplay
         /// create/join.  Reflects the current player identity snapshot from
         /// <c>_connectionData</c>.
         /// </summary>
-        private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
+        private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties(bool asSpectator = false)
         {
             int partyCount = _connectionData.PartyMembers != null ? _connectionData.PartyMembers.Count : 0;
-            // Displayed party size, not transport capacity - see PresenceLobbyService.
-            int partyMax   = _connectionData.PartyDisplaySlots;
+            // The party size, which is also the session's seat count (B25) - see PresenceLobbyService.
+            int partyMax   = _connectionData.MaxPartySlots;
 
-            return new Dictionary<string, PlayerProperty>
+            var props = new Dictionary<string, PlayerProperty>
             {
+                // Written on EVERY join (empty for a member) so a stale "1" can never survive a
+                // re-join of the same identity as a member.
+                { SPECTATOR_KEY,       new PlayerProperty(asSpectator ? "1" : string.Empty, VisibilityPropertyOptions.Public) },
                 { DISPLAY_NAME_KEY,    new PlayerProperty(string.IsNullOrEmpty(_connectionData.LocalDisplayName) ? "Pilot" : _connectionData.LocalDisplayName, VisibilityPropertyOptions.Public) },
                 { AVATAR_ID_KEY,       new PlayerProperty(_connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) },
                 { PARTY_COUNT_KEY,     new PlayerProperty(partyCount.ToString(), VisibilityPropertyOptions.Public) },
@@ -361,35 +461,18 @@ namespace CosmicShore.Gameplay
                 { MATCH_NAME_KEY,      new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+                // This build's Netcode protocol, read by a joiner before it waits on the connection
+                // (LeaveIfProtocolMismatchAsync). UGS allows 10 player properties: with the fair-play pass below this
+                // makes 10, so a new party-session player key needs one retired first.
+                { NetProtocol.PropertyKey, NetProtocol.PlayerProperty(NetProtocol.LocalTag) },
             };
-        }
 
-        private static bool IsRateLimitException(Exception e) =>
-            e is Unity.Services.Core.RequestFailedException rfe && rfe.ErrorCode == 429;
-
-        private static bool IsHostConflictException(Exception e) =>
-            e.Message?.Contains("NetworkManager", StringComparison.OrdinalIgnoreCase) == true ||
-            e.Message?.Contains("host", StringComparison.OrdinalIgnoreCase) == true;
-
-        private static bool IsTransientSessionException(Exception e)
-        {
-            if (e is not SessionException) return false;
-
-            // NRE-flavored transient (null ref inside UGS SDK on lobby events subscription)
-            if (e.InnerException is NullReferenceException) return true;
-
-            var msg = e.Message ?? string.Empty;
-            if (msg.IndexOf("Object reference",        StringComparison.OrdinalIgnoreCase) >= 0) return true;
-
-            // Lobby-events / Wire-subscription transients (error code 23006).
-            // These originate in LobbyHandler.SubscribeToLobbyEventsAsync after the
-            // lobby is created server-side, so retrying CreateSessionAsync is safe.
-            if (msg.IndexOf("lobby service for events", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (msg.IndexOf("Error Code[23006]",        StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (msg.IndexOf("valid Lobby ID",           StringComparison.OrdinalIgnoreCase) >= 0) return true;
-
-            return false;
+            // Fair play (phase B): this account's pool pass, shown only to this party, so its host can check the
+            // account belongs in its pool (HostConnectionService.CheckJoinedMemberPoolAsync). Absent while the gate is off.
+            if (CosmicShore.Core.FairPlayTrustGate.IsActive && !string.IsNullOrEmpty(CosmicShore.Core.FairPlayTrust.Pass))
+                props[CosmicShore.Core.FairPlayTrust.PassPropertyKey] =
+                    new PlayerProperty(CosmicShore.Core.FairPlayTrust.Pass, VisibilityPropertyOptions.Member);
+            return props;
         }
     }
 }

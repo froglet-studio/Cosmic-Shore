@@ -7,7 +7,8 @@ namespace CosmicShore.Gameplay
     public class HilbertCurveLSystemPositioning : MonoBehaviour
     {
         [SerializeField] private int iterations = 2;
-        public float segmentLength = 1f;
+        [SerializeField] float segmentLength = 1f;
+        public float SegmentLength => segmentLength;
         //[SerializeField] private float wallHeight = 1f;
         //[SerializeField] private float wallThickness = 0.1f;
 
@@ -96,7 +97,6 @@ namespace CosmicShore.Gameplay
                         break;
                 }
             }
-            CSDebug.Log("Positions: " + positions.Count);
         }
 
         private void RotateAroundAxis(ref Vector3 v1, ref Vector3 v2, Vector3 axis, float angle)

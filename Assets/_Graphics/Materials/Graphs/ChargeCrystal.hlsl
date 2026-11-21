@@ -192,6 +192,44 @@ void ChargeCrystalArcs(
     node *= arc;
 }
 
+// ─── Discharge colour ───────────────────────────────────────────────────────
+//
+// The edge effect on its own: cool halo in the crystal's own bright colour, hot near-white
+// core, and the terminal flash. Zero wherever no bolt is — including every fragment of an
+// unbaked mesh — so an ADDITIVE pass drawing only this term adds the charge crystal's signature and
+// nothing else (the omni's pentagons drew it that way until 2026-10-13, when the flux arcs replaced it).
+
+float3 ChargeCrystalDischarge(
+    float3 bary,
+    float3 edgeH,
+    float3 edgeSeed,
+    float  time,
+    float3 brightColor,
+    float3 arcCoreColor,
+    float  arcIntensity,
+    float  arcWidth,
+    float  arcLength,
+    float  arcSpeed,
+    float  arcDuty,
+    float  arcJitter,
+    float  arcShimmer,
+    float  nodeRadius,
+    float  nodeIntensity)
+{
+    // Exact early-out: with both intensities at zero the result below is 0 * (finite) everywhere. That is the state
+    // every live Charge crystal body is drawn in: CrystalChargeArcs' seam walk replaces this crawl and holds both at
+    // zero through a property block (SilenceCrawl), as do the hearts CrystalHeartDraw poses. Uniform branch.
+    if (arcIntensity <= 0.0 && nodeIntensity <= 0.0) return float3(0.0, 0.0, 0.0);
+
+    float arc, heat, node;
+    ChargeCrystalArcs(bary, edgeH, edgeSeed, time,
+                      arcWidth, arcLength, arcSpeed, arcDuty, arcJitter, arcShimmer, nodeRadius,
+                      arc, heat, node);
+
+    float3 arcColor = lerp(brightColor, arcCoreColor, saturate(heat * heat));
+    return arcColor * (arc * arcIntensity) + arcCoreColor * (node * nodeIntensity);
+}
+
 // ─── Full surface ───────────────────────────────────────────────────────────
 //
 // Unlit by design (matching the rest of the crystal family) but self-shaded off the flat
@@ -238,14 +276,10 @@ void ChargeCrystalSurface(
     float3 body = lerp(dullColor.rgb, brightColor.rgb, saturate(fresnel * rimStrength)) * facet;
     float3 emissive = brightColor.rgb * (emissionStrength * fresnel);
 
-    float arc, heat, node;
-    ChargeCrystalArcs(bary, edgeH, edgeSeed, time,
-                      arcWidth, arcLength, arcSpeed, arcDuty, arcJitter, arcShimmer, nodeRadius,
-                      arc, heat, node);
-
-    // Cool halo in the crystal's own bright colour, hot near-white core.
-    float3 arcColor = lerp(brightColor.rgb, arcCoreColor, saturate(heat * heat));
-    float3 discharge = arcColor * (arc * arcIntensity) + arcCoreColor * (node * nodeIntensity);
+    float3 discharge = ChargeCrystalDischarge(bary, edgeH, edgeSeed, time,
+                                              brightColor.rgb, arcCoreColor, arcIntensity,
+                                              arcWidth, arcLength, arcSpeed, arcDuty, arcJitter,
+                                              arcShimmer, nodeRadius, nodeIntensity);
 
     color = body + emissive + discharge;
 }

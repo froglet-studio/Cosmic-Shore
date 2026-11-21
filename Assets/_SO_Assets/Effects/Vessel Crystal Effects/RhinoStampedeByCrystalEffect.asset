@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cfd0b5e41574b0db85e9983b33f2e02, type: 3}
+  m_Name: RhinoStampedeByCrystalEffect
+  m_EditorClassIdentifier:
+  secondsPerPrism: 0.1
+  maxStampedeSeconds: 12
+  throttleBuffScale: 1

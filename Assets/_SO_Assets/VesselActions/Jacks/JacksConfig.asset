@@ -1,0 +1,142 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef0cbedf970646ff9af5837edb46243f, type: 3}
+  m_Name: JacksConfig
+  m_EditorClassIdentifier: 
+  labScale: 0.4
+  thumbMm: 22
+  thumbMargin: 1.25
+  viewSpan: 1800
+  phoneShortMm: 71
+  thumbCover: 0.9
+  camSlack: 0.45
+  planePull: 1.6
+  separation: 58
+  neighbourRadius: 160
+  grazeSense: 130
+  minHerd: 30
+  herdCap: 150
+  floorBirthSeconds: 0.12
+  companionFauna: {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
+  herdHueLean: 0.35
+  herdGlow: 1.5
+  dogSpeed: 520
+  padDogSpeed: 1
+  aiNoise: 0.15
+  flightGap: 14
+  flightReach: 10
+  flightFormationEase: 8
+  aiHerdSeconds: 14
+  aiFlightSeconds: 6
+  netSpread: 30
+  netMinHeight: 6
+  netMaxHeight: 36
+  netDepth: 26
+  netTrailEase: 5
+  netSwingSeconds: 0.6
+  netSwingMax: 1.2
+  netSettle: 0.75
+  netSettleEase: 3
+  netPrismCap: 48
+  netPrismSettle: 1
+  netPrismTurnEase: 6
+  netLitLift: 0.6
+  netLitSeconds: 0.6
+  netLitFadeSeconds: 0.25
+  netRivalTake: 0.1
+  netRivalCooldown: 2
+  jackCrystalReach: 32
+  jackNetCrystalReach: 10
+  jackCrystalHeight: 200
+  netCameraFill: 0.8
+  netCameraEase: 3
+  callTime: 2.5
+  callCooldown: 20
+  decoyCooldown: 4
+  teleportGuard: 0.6
+  travelSpeed: 900
+  travelMinSeconds: 0.35
+  travelMaxSeconds: 1.2
+  dangerShare:
+    Enabled: 1
+    Value: 0.06
+    Min: 0.06
+    Max: 0.75
+    element: 1
+    UseFloor: 1
+    Floor: 0
+  herdBirthRate:
+    Enabled: 1
+    Value: 1.5
+    Min: 1.5
+    Max: 2.5
+    element: 2
+    UseFloor: 1
+    Floor: 0.75
+  ringScale:
+    Enabled: 1
+    Value: 1.3
+    Min: 1.3
+    Max: 1.9
+    element: 3
+    UseFloor: 1
+    Floor: 0.65
+  herdSpeed:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.6
+    element: 4
+    UseFloor: 1
+    Floor: 0.5
+  pooEvery: 6
+  pooCount: 7
+  pooSpread: 22
+  pooPrismScale: {x: 2, y: 2, z: 5}
+  attackRange: 200
+  contactReach: 8
+  strikeCooldown: 1.2
+  pipSize: 0.32
+  viewMargin: 0.02
+  viewDepth: 600
+  herdPlaneEase: 0.25
+  flightPlaneEase: 3
+  herdHullWeight: 0
+  flightHullWeight: 0.45
+  viewPanEase: 1.2
+  herdViewZoom: 0.75
+  herdFollowJacks: 1
+  cellViewMargin: 1.1
+  herdJacksFill: 0.8
+  herdJacksMargin: 40
+  viewZoomEase: 3
+  callSfx:
+    Guid:
+      Data1: -2144686006
+      Data2: 1203677490
+      Data3: 1188687745
+      Data4: -1802949205
+    Path: event:/SFX/Oneshots/Gameplay sfx/Massshark spawn
+  decoySfx:
+    Guid:
+      Data1: 310883003
+      Data2: 1266496358
+      Data3: -193662310
+      Data4: -709421328
+    Path: event:/SFX/Oneshots/Gameplay sfx/Track collide
+  teleportSfx:
+    Guid:
+      Data1: -1163572034
+      Data2: 1312051193
+      Data3: -1732454749
+      Data4: 1656763241
+    Path: event:/SFX/Oneshots/Gameplay sfx/Space Joust

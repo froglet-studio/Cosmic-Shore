@@ -3,6 +3,7 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using FMOD.Studio;
 using FMODUnity;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay.Audio
@@ -10,10 +11,15 @@ namespace CosmicShore.Gameplay.Audio
     /// <summary>
     /// Drives an FMOD drift SFX event for a single vessel (Squirrel by
     /// default - racing/drift class). The event exposes one parameter
-    /// ("Drift Amount" by default):
+    /// ("Drift Amount" by default), and what it means depends on how the
+    /// vessel drifts:
     ///
-    ///   0 = single drift trigger held
-    ///   1 = both drift triggers held
+    ///   Two-trigger drift (default): 0 = single trigger held, 1 = both.
+    ///   Single-trigger drift (<see cref="singleTriggerDepth"/>, the
+    ///   Squirrel): the parameter IS the drift depth - 0 at a feathered
+    ///   left trigger, 1 when it is buried - the same 0..1 pull
+    ///   VesselTransformer scales the drift itself by, so the sound gets
+    ///   harder exactly as the drift does.
     ///
     /// Lifecycle:
     ///   - Drift START (IsDrifting goes true): create + start the FMOD
@@ -22,6 +28,11 @@ namespace CosmicShore.Gameplay.Audio
     ///     double). The two trigger sources come from
     ///     IInputStatus.LeftTriggerAnalog / RightTriggerAnalog above
     ///     <see cref="triggerDeadzone"/>.
+    ///   - Drift VOLUME (<see cref="scaleVolumeBySlipAngle"/>): the loop's
+    ///     volume follows the SLIP ANGLE, the angle between Course (where
+    ///     the drift is carrying the vessel) and the nose (where it returns
+    ///     to when the drift lets go). A shallow slide is quiet; at
+    ///     <see cref="fullSlipDegrees"/> and beyond it plays at full volume.
     ///   - Drift END (IsDrifting goes false): fire the optional one-shot
     ///     <see cref="releaseEvent"/> ("trigger off" SFX) and, if
     ///     <see cref="driveParamToOneOnRelease"/> is true, also drive the
@@ -38,16 +49,16 @@ namespace CosmicShore.Gameplay.Audio
     [DisallowMultipleComponent]
     public class DriftAudioController : MonoBehaviour
     {
-        enum AttachMode { None, Ship, Listener }
+        enum AttachMode { None = 0, Ship = 1, Listener = 2 }
 
         enum DriftPhase
         {
             /// <summary>No event playing, waiting for IsDrifting to go true.</summary>
-            Idle,
+            Idle = 0,
             /// <summary>Event playing, drift_amount tracks live trigger state.</summary>
-            Active,
+            Active = 1,
             /// <summary>Drift just ended - ramping drift_amount to 1 ("let go"), event still playing.</summary>
-            Releasing
+            Releasing = 2
         }
 
         [Header("FMOD Event")]
@@ -84,6 +95,14 @@ namespace CosmicShore.Gameplay.Audio
             "releaseEvent is assigned.")]
         bool attachReleaseEventToShip = true;
 
+        [SerializeField, Min(0f), Tooltip(
+            "Minimum time (seconds) the drift must be held to count as a " +
+            "real drift. Shorter taps cut the whole drift event on let-go " +
+            "(stopped immediately, no release one-shot, no tail), so " +
+            "spamming the trigger stays quiet. 0 = always play the full " +
+            "release.")]
+        float minHoldForReleaseSound = 1f;
+
         [SerializeField, Tooltip(
             "When true, the main drift event's drift_amount parameter is " +
             "ramped to 1 during the release phase, in addition to firing " +
@@ -101,6 +120,15 @@ namespace CosmicShore.Gameplay.Audio
             "drift detection. Matches GamepadInputStrategy's trigger " +
             "deadzone.")]
         float triggerDeadzone = 0.05f;
+
+        [SerializeField, Tooltip(
+            "Single-trigger drift (VesselTransformer.singleTriggerDrift): the " +
+            "drift_amount parameter follows how far the LEFT trigger is " +
+            "pulled, 0 (just past the deadzone) to 1 (fully pulled), so the " +
+            "sound intensifies as the drift gets harder. Non-analog devices " +
+            "(keyboard, touch) drift at full depth, so they read 1. Takes " +
+            "precedence over the two-trigger modes below.")]
+        bool singleTriggerDepth = false;
 
         [SerializeField, Tooltip(
             "When true, the drift_amount parameter scales smoothly with " +
@@ -131,6 +159,45 @@ namespace CosmicShore.Gameplay.Audio
             "the instance is stopped + released. After this, internal " +
             "state resets so the next drift starts the event fresh.")]
         float releaseHoldSeconds = 0.4f;
+
+        [Header("Slip Angle Volume")]
+        [SerializeField, Tooltip(
+            "When true, the drift loop's volume follows the slip angle: the " +
+            "angle between Course (the direction the drift carries the vessel) " +
+            "and the nose (the direction it returns to). Small slip = quiet, " +
+            "large slip = full volume. The release one-shot has its own switch " +
+            "below. " +
+            "Off by default so other vessels' drift loops are unchanged; the " +
+            "Squirrel turns it on.")]
+        bool scaleVolumeBySlipAngle = false;
+
+        [SerializeField, Tooltip(
+            "When true, the release one-shot's volume follows the slip angle " +
+            "the drift ENDED at, on the same curve as the loop (the band and " +
+            "quiet volume below). The angle is the last one measured while " +
+            "drifting, so Grip snapping the momentum back onto the nose on " +
+            "the release frame cannot read as 0. Off by default; the Squirrel " +
+            "turns it on.")]
+        bool scaleReleaseBySlipAngle = false;
+
+        [SerializeField, Range(0f, 90f), Tooltip(
+            "Slip angle (degrees) at or below which the loop plays at " +
+            "quietVolume01. A drift starts at 0, so this is how it opens.")]
+        float quietSlipDegrees = 0f;
+
+        [SerializeField, Range(1f, 180f), Tooltip(
+            "Slip angle (degrees) at or above which the loop plays at full " +
+            "volume (1 = the volume it had before slip scaling existed).")]
+        float fullSlipDegrees = 180f;
+
+        [SerializeField, Range(0f, 1f), Tooltip(
+            "Volume multiplier at a small slip angle. 0 = silent.")]
+        float quietVolume01 = 0.15f;
+
+        [SerializeField, Range(0f, 30f), Tooltip(
+            "Exponential smoothing rate for the slip volume, per second. " +
+            "0 = snap. Keeps a twitchy nose from making the loop flutter.")]
+        float slipVolumeSmoothing = 10f;
 
         [Header("Spatialisation")]
         [SerializeField, Tooltip(
@@ -172,6 +239,33 @@ namespace CosmicShore.Gameplay.Audio
             "when restrictToVesselClass is true. Defaults to Squirrel.")]
         VesselClassType targetVesselClass = VesselClassType.Squirrel;
 
+        [Header("Haptics")]
+        [SerializeField, Tooltip(
+            "Play the drift rumble (HapticController.PlayDrift) while drifting. " +
+            "Local human pilot only.")]
+        bool driftHaptics = true;
+
+        [SerializeField, Tooltip(
+            "One vibration when the drift trigger is pressed and one when it " +
+            "is let go (HapticController.PlayDriftEngage / PlayDriftRelease).")]
+        bool driftKickHaptics = true;
+
+        [SerializeField, Range(0.06f, 0.5f), Tooltip(
+            "Seconds between drift rumble pulses. Keep at or above the ~90 ms " +
+            "clip length (Docs/HAPTICS.md - cadence floor).")]
+        float driftHapticInterval = 0.1f;
+
+        [SerializeField, Range(0f, 1f), Tooltip(
+            "Rumble strength at zero slip angle. The rumble follows the slip " +
+            "angle exactly like the loop's volume (quietSlipDegrees to " +
+            "fullSlipDegrees, linear), from this floor up to driftHapticMax01.")]
+        float driftHapticFloor01 = 0f;
+
+        [SerializeField, Range(0f, 1f), Tooltip(
+            "Rumble strength at full slip (fullSlipDegrees). Kept low: the " +
+            "drift rumble is a subtle texture under the Squirrel's flow.")]
+        float driftHapticMax01 = 0.3f;
+
         [Header("Debug")]
         [SerializeField] bool debugLog = false;
 
@@ -186,7 +280,13 @@ namespace CosmicShore.Gameplay.Audio
         AttachMode _attachMode;
         DriftPhase _phase = DriftPhase.Idle;
         float _smoothedAmount;
+        float _slipVolume = 1f;
+        float _lastDriftSlipDegrees;
+        float _appliedVolume = -1f;
         float _releaseTimer;
+        float _driftStartTime;
+        float _hapticTimer;
+        bool _hapticWasDrifting;
         bool _classGateChecked;
         bool _classGatePass;
 
@@ -234,9 +334,9 @@ namespace CosmicShore.Gameplay.Audio
             {
                 _classGateChecked = true;
                 _classGatePass = !restrictToVesselClass || _status.VesselType == targetVesselClass;
-                if (!_classGatePass && debugLog)
+                if (!_classGatePass && debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
                 {
-                    Debug.Log(
+                    CSDebug.LogVerbose(CSLogChannel.Audio,
                         $"[DriftAudioController] '{name}' vessel class is " +
                         $"{_status.VesselType}, not {targetVesselClass} - disabling.",
                         this);
@@ -244,24 +344,30 @@ namespace CosmicShore.Gameplay.Audio
             }
             if (!_classGatePass) return;
 
-            // Local-user gating: skip remote/AI vessels in default mode. We
-            // can't decide until Player is set, so retry each frame until
-            // either we know it's remote (and skip forever) or we know it's
-            // local and proceed.
+            // Local-user gating: skip remote/AI vessels in default mode. Re-checked every frame
+            // rather than settled once by disabling the component: a LIVE hull can change pilot
+            // (Cellular Duel's round swap, the arena PilotSwap), and a hull that read as remote
+            // once used to lose drift audio and drift haptics for the rest of the session.
             if (onlyAudibleToController && !forceAttachToListener)
             {
                 if (_status.Player == null) return;
                 if (!_status.IsLocalUser)
                 {
-                    enabled = false;
-                    if (debugLog)
-                        Debug.Log($"[DriftAudioController] '{name}' is remote/AI; disabling.", this);
+                    // The local pilot just left this hull mid-drift: let its sound go.
+                    if (_phase != DriftPhase.Idle)
+                    {
+                        StopAndRelease(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+                        _phase = DriftPhase.Idle;
+                    }
+                    _hapticWasDrifting = false;
                     return;
                 }
             }
 
             float dt = Time.deltaTime;
             bool drifting = _status.IsDrifting;
+
+            TickHaptics(drifting, dt);
 
             switch (_phase)
             {
@@ -290,24 +396,75 @@ namespace CosmicShore.Gameplay.Audio
             }
         }
 
+        /// <summary>
+        /// Drift haptics: a kick on trigger press, a kick on let-go, and (optionally) the drift
+        /// rumble while held, strength following the slip angle like the loop's volume. Independent of the FMOD phase so
+        /// it still works if the drift event is missing or fails to start.
+        /// </summary>
+        void TickHaptics(bool drifting, float dt)
+        {
+            if (_status.Player == null || !_status.IsLocalUser)
+            {
+                _hapticWasDrifting = false;
+                return;
+            }
+
+            bool pressed = drifting && !_hapticWasDrifting;
+            bool released = !drifting && _hapticWasDrifting;
+            _hapticWasDrifting = drifting;
+
+            if (driftKickHaptics)
+            {
+                if (pressed) HapticController.PlayDriftEngage();
+                else if (released) HapticController.PlayDriftRelease();
+            }
+
+            if (!driftHaptics || !drifting)
+            {
+                _hapticTimer = 0f;
+                return;
+            }
+
+            // Let the press kick land before the rumble starts.
+            if (pressed && driftKickHaptics)
+            {
+                _hapticTimer = driftHapticInterval;
+                return;
+            }
+
+            _hapticTimer -= dt;
+            if (_hapticTimer > 0f) return;
+            _hapticTimer = driftHapticInterval;
+
+            float slip01 = Mathf.InverseLerp(quietSlipDegrees, fullSlipDegrees, SlipDegrees());
+            HapticController.PlayDrift(Mathf.Lerp(driftHapticFloor01, driftHapticMax01, slip01));
+        }
+
+        bool _warnedEmptyDriftEvent;
+
         void BeginActive()
         {
             if (driftEvent.IsNull)
             {
-                Debug.LogError($"[DriftAudioController] '{name}' has no Drift Event assigned.", this);
+                // An empty slot is the FMOD convention for an unauthored sound, not a fault, and
+                // the phase stays Idle - so Update calls this again EVERY frame of the drift. Say
+                // it once per component, as a warning (the engine slot's convention).
+                if (!_warnedEmptyDriftEvent)
+                {
+                    _warnedEmptyDriftEvent = true;
+                    CSDebug.LogWarning($"[DriftAudioController] '{name}' has no Drift Event assigned; drift is silent until one is authored.", this);
+                }
                 return;
             }
 
-            _instance = RuntimeManager.CreateInstance(driftEvent);
-            if (!_instance.isValid())
+            // FmodSafe: a missing event is reported once; a failed create leaves us Idle and the
+            // next drift retries silently rather than throwing in Update().
+            if (!FmodSafe.TryCreateInstance(driftEvent, out _instance, this))
             {
-                Debug.LogError(
-                    $"[DriftAudioController] Failed to create FMOD instance for '{driftEvent}'. " +
-                    $"Is its bank auto-loaded (FMOD -> Edit Settings -> Load Banks)?",
-                    this);
                 _phase = DriftPhase.Idle;
                 return;
             }
+            _appliedVolume = -1f; // a fresh instance has never been given a volume
 
             // Resolve the drift_amount parameter.
             _hasAmountParam = false;
@@ -321,7 +478,7 @@ namespace CosmicShore.Gameplay.Audio
             }
             else
             {
-                Debug.LogWarning(
+                CSDebug.LogWarning(
                     $"[DriftAudioController] Event '{driftEvent}' has no parameter " +
                     $"named '{driftAmountParameterName}'. Drift will play but " +
                     $"single/double/let-go states won't drive it.",
@@ -337,13 +494,17 @@ namespace CosmicShore.Gameplay.Audio
             // Spatialisation.
             AttachToTarget();
 
+            // Snap the slip volume like the amount: the loop starts at the
+            // slip it actually has (0 on a fresh drift, so it opens quiet).
+            _lastDriftSlipDegrees = SlipDegrees();
+            _slipVolume = TargetSlipVolume();
             ApplySFXVolume();
 
             var startResult = _instance.start();
             _instanceStarted = startResult == FMOD.RESULT.OK;
             if (!_instanceStarted)
             {
-                Debug.LogError(
+                CSDebug.LogError(
                     $"[DriftAudioController] '{name}' start() returned {startResult} on '{driftEvent}'. " +
                     $"Drift SFX won't play.",
                     this);
@@ -355,9 +516,10 @@ namespace CosmicShore.Gameplay.Audio
 
             _phase = DriftPhase.Active;
             _releaseTimer = 0f;
+            _driftStartTime = Time.time;
 
-            if (debugLog)
-                Debug.Log($"[DriftAudioController] '{name}' drift START (amount={_smoothedAmount:F2}).", this);
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                CSDebug.LogVerbose(CSLogChannel.Audio, $"[DriftAudioController] '{name}' drift START (amount={_smoothedAmount:F2}).", this);
         }
 
         void TickActive(float dt)
@@ -368,6 +530,41 @@ namespace CosmicShore.Gameplay.Audio
             float alpha = amountSmoothing > 0f ? 1f - Mathf.Exp(-dt * amountSmoothing) : 1f;
             _smoothedAmount = Mathf.Lerp(_smoothedAmount, target, alpha);
             PushAmount(_smoothedAmount);
+
+            _lastDriftSlipDegrees = SlipDegrees();
+            if (scaleVolumeBySlipAngle)
+            {
+                float slipAlpha = slipVolumeSmoothing > 0f ? 1f - Mathf.Exp(-dt * slipVolumeSmoothing) : 1f;
+                _slipVolume = Mathf.Lerp(_slipVolume, TargetSlipVolume(), slipAlpha);
+                ApplySFXVolume();
+            }
+        }
+
+        /// <summary>
+        /// The slip angle in degrees: between Course and the nose. 0 when
+        /// Course is unset.
+        /// </summary>
+        float SlipDegrees()
+        {
+            Vector3 course = _status.Course;
+            return course.sqrMagnitude > 1e-6f ? Vector3.Angle(course, transform.forward) : 0f;
+        }
+
+        float TargetSlipVolume() => scaleVolumeBySlipAngle
+            ? SlipVolume(_lastDriftSlipDegrees, quietSlipDegrees, fullSlipDegrees, quietVolume01)
+            : 1f;
+
+        /// <summary>
+        /// Volume multiplier for a slip angle: <paramref name="quietVolume"/>
+        /// at or below <paramref name="quietDegrees"/>, 1 at or above
+        /// <paramref name="fullDegrees"/>, linear in between.
+        /// </summary>
+        public static float SlipVolume(float slipDegrees, float quietDegrees, float fullDegrees, float quietVolume)
+        {
+            float t = fullDegrees > quietDegrees
+                ? Mathf.Clamp01((slipDegrees - quietDegrees) / (fullDegrees - quietDegrees))
+                : (slipDegrees >= fullDegrees ? 1f : 0f);
+            return Mathf.Lerp(Mathf.Clamp01(quietVolume), 1f, t);
         }
 
         void BeginRelease()
@@ -377,13 +574,29 @@ namespace CosmicShore.Gameplay.Audio
 
             // Fire the one-shot 'trigger off' event independently. Done
             // here (not in TickRelease) so it triggers exactly once per
-            // drift cycle on the rising edge of release.
+            // drift cycle on the rising edge of release. Skipped for short
+            // taps so trigger spam doesn't stack release SFX.
+            float heldFor = Time.time - _driftStartTime;
+            if (heldFor < minHoldForReleaseSound)
+            {
+                // Short tap: cut the whole drift event (no release one-shot,
+                // no tail) so trigger spam stays quiet.
+                StopAndRelease(stopMode: FMOD.Studio.STOP_MODE.IMMEDIATE);
+                ResetAfterRelease();
+
+                if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                    CSDebug.LogVerbose(CSLogChannel.Audio,
+                        $"[DriftAudioController] '{name}' drift tap ({heldFor:F2}s) - drift event cut, no release SFX.",
+                        this);
+                return;
+            }
+
             FireReleaseOneShot();
 
-            if (debugLog)
-                Debug.Log(
-                    $"[DriftAudioController] '{name}' drift END - fired " +
-                    $"trigger-off one-shot" +
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                CSDebug.LogVerbose(CSLogChannel.Audio,
+                    $"[DriftAudioController] '{name}' drift END after {heldFor:F2}s - " +
+                    "fired trigger-off one-shot" +
                     (driveParamToOneOnRelease
                         ? $" + ramping drift_amount to 1 over {releaseHoldSeconds:F2}s"
                         : "") + ".",
@@ -406,6 +619,8 @@ namespace CosmicShore.Gameplay.Audio
         void FireReleaseOneShot()
         {
             float volume = ResolveSFXVolume();
+            if (scaleReleaseBySlipAngle)
+                volume *= SlipVolume(_lastDriftSlipDegrees, quietSlipDegrees, fullSlipDegrees, quietVolume01);
 
             if (attachReleaseEventToShip)
                 FMODOneShotVolumeHelper.PlaySFXOneShotAttached(releaseEvent, gameObject, volume);
@@ -452,8 +667,8 @@ namespace CosmicShore.Gameplay.Audio
             _smoothedAmount = 0f;
             _releaseTimer = 0f;
 
-            if (debugLog)
-                Debug.Log($"[DriftAudioController] '{name}' drift RESET - ready for next drift.", this);
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                CSDebug.LogVerbose(CSLogChannel.Audio, $"[DriftAudioController] '{name}' drift RESET - ready for next drift.", this);
         }
 
         /// <summary>
@@ -470,6 +685,15 @@ namespace CosmicShore.Gameplay.Audio
 
             float left = input.LeftTriggerAnalog;
             float right = input.RightTriggerAnalog;
+
+            if (singleTriggerDepth)
+            {
+                // Mirrors VesselTransformer.GetTriggerSum: only a gamepad
+                // measures the pull; every other device drifts at full depth.
+                if (input.ActiveInputDevice != InputDeviceType.Gamepad)
+                    return 1f;
+                return Mathf.Clamp01((left - triggerDeadzone) / Mathf.Max(1f - triggerDeadzone, 0.0001f));
+            }
 
             bool leftActive = left > triggerDeadzone;
             bool rightActive = right > triggerDeadzone;
@@ -515,7 +739,7 @@ namespace CosmicShore.Gameplay.Audio
                 }
             }
 
-            RuntimeManager.AttachInstanceToGameObject(_instance, target.gameObject);
+            FmodSafe.Attach(_instance, target.gameObject);
             _attachMode = mode;
         }
 
@@ -528,13 +752,8 @@ namespace CosmicShore.Gameplay.Audio
 
         void StopAndRelease(FMOD.Studio.STOP_MODE stopMode)
         {
-            if (_instance.isValid())
-            {
-                if (_instanceStarted)
-                    _instance.stop(stopMode);
-                _instance.release();
-                _instance.clearHandle();
-            }
+            _appliedVolume = -1f;
+            FmodSafe.StopAndRelease(ref _instance, _instanceStarted, stopMode);
             _instanceStarted = false;
             _hasAmountParam = false;
             _attachMode = AttachMode.None;
@@ -543,23 +762,18 @@ namespace CosmicShore.Gameplay.Audio
         void ApplySFXVolume()
         {
             if (!_instance.isValid()) return;
-            _instance.setVolume(ResolveSFXVolume());
+            // Written only on a change: TickActive calls this every frame.
+            float volume = ResolveSFXVolume() * _slipVolume;
+            if (Mathf.Abs(volume - _appliedVolume) < 0.001f) return;
+            _appliedVolume = volume;
+            _instance.setVolume(volume);
         }
 
         float ResolveSFXVolume()
         {
             if (!tieVolumeToSFXSlider)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            var gs = GameSetting.Instance;
-            if (gs == null)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            if (!gs.SFXEnabled)
-                return 0f;
-
-            float slider = Mathf.Clamp01(gs.SFXLevel);
-            return Mathf.Clamp(slider * baseVolumeMultiplier, 0f, 2f);
+                return Mathf.Clamp(baseVolumeMultiplier, 0f, AudioVolumeMath.MaxBaseMultiplier);
+            return AudioSystem.ResolveSfxInstanceVolume(baseVolumeMultiplier);
         }
 
         void OnSFXLevelChanged(float level) => ApplySFXVolume();

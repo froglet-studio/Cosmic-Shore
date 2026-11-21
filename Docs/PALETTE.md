@@ -1,5 +1,8 @@
 # PALETTE.md — the domain colour set (and how to change a prism tier safely)
 
+> Which of the six families a colour belongs to, and the forbidden band between them, is decided by
+> `Docs/VesselModels/colour_domains.json` (`COLOR_DOMAINS.md`, `Tools/Build/colour_domains.py --check`).
+
 Scope: `SO_ColorSet` — the per-domain colours that drive vessels, prisms, crystals,
 AOE and UI. This doc exists because prism colours are **measurable**, not a matter of
 taste alone: the shielded tier was hand-tuned twice by eye and both passes missed the
@@ -9,9 +12,57 @@ actual defect. Read §3 before touching any `*BlockColor` field.
 
 | | |
 |---|---|
-| Active asset | `Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset` (guid `8d1c1bdcb636a424d9c54fbd1afc952f`) |
-| Wired at | `ThemeManagerDataContainer.asset` → `ColorSet` |
+| Active asset | `Assets/_SO_Assets/Color Palettes/NocturneColorSetSO.asset` (guid `116ff08ebc0c4e6db955bab003a86ce4`), the default since 2026-11-03 |
+| Wired at | `ThemeManagerDataContainer.asset` → `ColorSet`, and directly in `ThemeManager`, `ArkView`, `CodexView`, `ConfigureDomainColumn` and `ConfigureSeatPedestal` |
+| Written by | `Tools/Build/author_colour_set_assets.py`, from `Docs/VesselModels/colour_sets.json` and the tuning in Photic. Never hand-edit it; `--check` is the drift gate. |
 | Consumer | `ThemeManager.GenerateDomainMaterialSet` (per-domain material set) + `GameToastAPI.ColorSet` (domain name tinting) |
+
+**`PhoticColorSetSO`** (guid `8d1c1bdcb636a424d9c54fbd1afc952f`; named `OriginalColorSetSO` until 2026-11-03) was the
+default until then. It is no longer wired to the game, but it is still load-bearing: every number this doc quotes as
+"shipped" or "authored" is Photic's, Nocturne's fields take their brightness, alpha and tier whiteness from it, and
+`colour_domains.py`, `kite_mote_colors.py`, `vessel_colors.py`, the vessel studio's `domain_colors.py` and
+`render_card_backgrounds.py` still read it. So a tuning edit goes into Photic, then re-run the writer to carry it into
+the sets. A hue belongs in `colour_sets.json`.
+
+Known effects of the switch to Nocturne, measured 2026-11-03 and still open:
+
+- **HUD shielded signal.** `GetShieldedSignalColor` reads the shielded FACE, so it now paints Jade `#552345`, Ruby
+  `#385060` and Gold `#53416C` (HSV value 0.33-0.42, against Photic's 0.60-0.73). The Squirrel, Angler and Butterfly HUDs
+  use it. Check that those icons stay legible.
+- **Not moved by the switch, because they read Photic:** the vessel hull materials (`vessel_colors.py`), the rendered card
+  art (`render_card_backgrounds.py`), the vessel studio's colours (`domain_colors.py`) and the Amoebius launcher's three
+  accent colours (`Port/src/CosmicShore.Launcher/Neon.cs`, kept matched to Photic by `domain_colors.py --check`).
+  Amoebius itself follows the live palette since 2026-11-05: its player loads whatever `ThemeManagerDataContainer.ColorSet`
+  names, and its client windows read that asset by guid (`SkimRaceTheme.CreateColorSet`, `LivePaletteTests`).
+- **The icon kit's shielded colours are a hand table** (`Tools/Build/icon_kit/states.py` `SHIELDED`, light blues and
+  golds that predate the switch), so its states sheets and the Fleet Codex's L5 art (`fleet_codex.py` `L5_SHIELDED`)
+  no longer match what the HUD paints. The Fleet Codex's domain picker reads the live palette (whatever
+  `ThemeManagerDataContainer.ColorSet` names) since 2026-11-05.
+
+- **Nocturne's Gold domain was in the forbidden band; fixed 2026-11-10.** The HUD reads `TrailHighlightColor` as sRGB,
+  so Nocturne's honey showed there as `#FF8F11`, between Gold and Fire. Its Gold rim moved 4 degrees toward yellow (hue
+  83 to 87, `colour_sets.json` rule 4) and the HUD gold is now `#FF9B11`, inside Gold; the style guide's tokens
+  (`Tools/Build/froglet_style.py`) followed.
+
+**`NacreColorSetSO`** (2026-11-08, re-derived 2026-11-10) is the light set, Nocturne's complement: soft bodies in each
+family's own colour under clearer rims of the same family, written like the others from `colour_sets.json` (`nacre`)
+and offered in the Profile's colour-set rail. It is the one set with `rim_brightness` (0.7): its rim fields are Photic's
+brightness times 0.7. Its first cut painted pale faces of other hues at L 0.70-0.79; under the gameplay bloom (threshold
+0.2, clamp 0.5, intensity 2.5) they washed out to white and named the wrong domains. Its faces now sit at mid L
+0.56-0.66, so the bloom lifts them to pastel (`colour_set_maker.py preview` models it); how light it reads on screen is
+still an editor call. It does not replace `PastelColorSetSO`, which is older and still unwired.
+
+**`DartFrogColorSetSO`** was re-derived on 2026-11-10 too: each frog's warning colour stays the rim and its ground goes
+into the night (L 0.40 or below), so a Jade prism no longer reads as bronze; Blue is the Azureus, azure over cobalt. Every
+set obeys the seven rules of `colour_sets.json` (`colour_sets.py --check`, `/colour-set`).
+
+**`BlueRingedOctopusColorSetSO`, `NeonNoirColorSetSO`, `UkiyoEColorSetSO` and `DuskColorSetSO`** (2026-11-11) were the
+`/colour-set` skill's worked examples (an animal, a film genre's palette, a painting style, a mood) and are now game sets
+in the Profile's colour-set rail, beside the other looks (free track, unlocked like every set; Garrett: "the artifact
+lab had some great new color sets"), written like the others from `colour_sets.json`. Taking Dusk in moved its Lime
+face (Heather) 1 degree and 0.005 saturation: the palette writer's whitened Ruby fields walk toward grey along the
+plum's hue and one of them (`AOEConicEdgeColor`) landed in that quiet purple face. `author_colour_set_assets.py --check`
+now holds the examples to the same field rule, so the next example taken into the game is a move, not a re-derivation.
 
 `CosmicWaveColorSetSO`, `PastelColorSetSO` and `Default Color Palette` exist but are
 **not wired to anything** — editing them changes nothing at runtime. The per-domain
@@ -85,14 +136,42 @@ blast impulse"). Set it to 1 for palette-only behaviour.
 
 ### 2.2 The CTA lime — the crystal tier, and why bloom is bought with AREA (2026-08-15)
 
-Crystal COLOUR signals **who may collect it**, never which element it is (element is shape):
-domain crystals wear that domain's crystal pair, a living lifeform's heart wears the blue-white
+Crystal COLOUR signals **who may collect it** (element is shape; since 2026-10-27 the free
+elementals also wear one SHADE of the lime each, §2.11, so the colour FAMILY says who collects and
+the shade says which element): domain crystals wear that domain's crystal pair, a living lifeform's heart wears the blue-white
 neutral, and a **free pickup wears the lime CTA** (`EnvironmentColorSet.BrightCTA` / `DarkCTA`).
 `Crystal.ApplyColorSetTint` drives it per-renderer through a `MaterialPropertyBlock`, and
 `Crystal.FindColorPropertyNames` accepts either naming pair, so it reaches all five crystals
 across six different shaders (audited 2026-08-15: `ShepardGraph` — omni **and** Mass —,
 `ChargeCrystal.shader`, `CrystalGraph` — Space —, `InverseDynamicFresnelGraph` — Time, the one
 that actually ships, via `_BrightColor`/`_DullColor`).
+
+> **Superseded for the elementals (2026-10-08).** That audit is no longer what ships. Space and
+> Time moved onto `SpreadFresnelShader` (`BlueCrystalFresnelMateriall` / `LimeCrystalFresnelMaterial`,
+> 2026-10-07), whose pair is `_BrightColor`/`_DarkColor` — a name `FindColorPropertyNames` does not
+> accept — so the tint stopped reaching them and they wear their materials' own pairs. **Mass now
+> does the same**: its eight shell materials are on `OmniShepardFresnelShader` (ShepardGraph's band
+> motion and alpha, transcribed, with `SpreadFresnelShader`'s colour formula
+> `lerp(bright, dark, (1 + N·V) / 2)`) and carry the Space/Time pairs — blue-white over deep navy
+> while embedded, lime over near-black once free. The reason is contrast: ShepardGraph's
+> `lerp(dull, bright, (1 − N·V)⁴)` is a hairline rim over a flat body, so the Mass crystal could not
+> read like its neighbours whatever pair it was painted. Authored by
+> `Tools/Build/author_mass_crystal_look.py` (`--check`). Two consequences, stated rather than fixed:
+> the three elementals' heart → pickup change is now a **material swap** (it snaps; §2.3's
+> travelling crossing still runs, but writes nothing these shaders read), and the elementals are no
+> longer dimmed below the omni by `ElementalCrystalDimming`. Bringing them back under the live
+> ColorSet means teaching the tint the `_BrightColor`/`_DarkColor` pair — one change for all three.
+>
+> **Second pass, same day — see-through shells need their own fresnel.** Played, the Mass read
+> "too white, not enough blue" embedded and "too lime, not enough dark" free. Cause: the shells are
+> transparent and `Cull Off`, so their BACK faces show, and on the SpreadFresnel ramp a back face is
+> always at the bright end — compiling the fragment with clang over a sphere, 76% of a back face
+> read bright (26% of a front face). Space and Time are opaque and never show theirs.
+> `OmniShepardFresnelShader` gained two opt-ins, inert at their defaults (proved: max 6e-8 from the
+> old formula, so the omni triangles are unchanged): `_FaceForward` (N·V on the camera side, so every
+> face is dark at its centre, front or back) and `_RimPower` (bright weight = rim^p). Mass ships
+> 1 / 3 — about a quarter bright on either side — with the free pair still Space/Time's lime and the
+> embedded pair moved to a saturated blue `(0.2, 0.4, 1)` over a deeper navy `(0, 0.005, 0.18)`.
 
 **Dull is the body; bright is only the rim.** Every crystal shader composes its colour as
 `Blend(Base = Dull, Blend = Bright, Opacity = fresnel)` in **Overwrite** mode — i.e. a straight
@@ -115,7 +194,7 @@ bloom contribution rises with the max channel only up to 0.5 and is **flat above
 Two consequences, both load-bearing:
 
 1. **§3's "channels above 1.0 bloom" is FALSE in gameplay.** 56 of the 86 colours authored in
-   `OriginalColorSetSO` exceed 0.5 (danger rim 1.498, AOE 4.0, supershielded 1.498) and are all
+   `PhoticColorSetSO` exceed 0.5 (danger rim 1.498, AOE 4.0, supershielded 1.498) and are all
    flattened to the same bloom. Raising the clamp is therefore not a crystal change — it re-lights
    the entire palette — and is deliberately **not** done here. See §7.
 2. **Within the clamp, extra bloom is bought with bright AREA, not intensity.** `DarkCTA` was
@@ -127,10 +206,13 @@ Two consequences, both load-bearing:
    unchanged at `(0.59, 0.92, 0.16)`: at max 0.92 it was already saturating the clamp, so raising
    it would have bought exactly nothing.
 
-**The omni is the hero; the four elementals are the same lime, dimmed.**
+**The omni is the hero; the four elementals are the lime, dimmed** (each in its own shade since
+2026-10-27, §2.11: the tint moves the CTA pair to the element's hue at the same brightest channel,
+then applies this scalar, so the table below still holds for the shades whose brightest channel is 1).
 `EnvironmentColorSet.ElementalCrystalDimming` (**0.45**) scales the CTA pair for anything
-`CrystalProperties.IsElemental`, leaving the omni at full strength. Note the omni and the Mass
-crystal wear the *same four materials*, so this scalar is the only thing that distinguishes them.
+`CrystalProperties.IsElemental`, leaving the omni at full strength. That note once said the omni and the Mass
+crystal wear the same materials so this scalar was all that told them apart; by 2026-10 neither was
+reached by the tint at all and they wore one identical lime, which §2.11 resolves.
 
 The scalar is far more sensitive than it looks, because the bloom **threshold (0.2) sits inside
 the elemental body's range** — so tune it against the measured curve, not by eye:
@@ -211,7 +293,7 @@ actually *transitioning*, and cheaper than the cloned-material lerp it runs alon
 ### 2.4 A crystal colour is NOT a domain's UI colour — `GetDomainSignalColor` (2026-08-17)
 
 **`DullCrystalColor` is authored `(0, 0, 0)` on Jade, Ruby AND Gold in the live
-`OriginalColorSetSO`.** Only Blue has a non-black dull. That is deliberate and correct *on a
+`PhoticColorSetSO`.** Only Blue has a non-black dull. That is deliberate and correct *on a
 crystal*: §2.2 established that at the crystal shaders' fresnel power the dull colour paints ~93% of
 the surface, so a near-black body with a bright fresnel rim is what makes a faceted domain crystal
 read as a dark gem with a lit edge.
@@ -239,6 +321,622 @@ than as "mis-tinted".
 Two consumers today, and they are the intended shape for future ones: the Dolphin's Mass slot, and
 the Charge-5 pilot highlight (which needs it *saturated* for the same reason — a marked vessel has to
 separate by HUE from the lit prisms around it, and brightness alone cannot do that).
+
+### 2.5 The same trap on the CTA pair — `GetCtaSignalColor` (2026-09-05)
+
+§2.2's "dull is the body, bright is only the rim" is a statement about a **crystal**, and it is
+what makes `DarkCTA` the right read *on a crystal*. It is the wrong read on anything that does not
+compose the pair. A **prism** does not: it takes one colour. So a prism painted from `DarkCTA`
+alone renders the shipped `PhoticColorSetSO` value (0.28125, 0.5, 0.078125) as a **dark olive**,
+not as the free-pickup lime a player has learned — the same shape of mistake as §2.4's, reached
+from the other pair.
+
+`SO_ColorSet.GetCtaSignalColor()` is the sibling of `GetDomainSignalColor` and is normalised
+identically (brightest channel driven to 1):
+
+| source | value | summed distance to the fixed no-theme fallback (0.55, 0.95, 0.15) |
+|---|---|---|
+| `DarkCTA` raw | (0.28125, 0.5, 0.078125) | **0.79** |
+| `GetCtaSignalColor()` | (0.5625, 1.0, 0.1562) | **0.069** |
+
+The second row is the argument: a hardcoded fallback that is 0.79 from the themed value it stands
+in for is not a fallback, it is a second colour. It also clears the switch reservation's 0.5 gate
+against every domain UI colour in the live palette (nearest is Gold at 0.94).
+
+**It returns alpha 0 rather than black when the palette authors no CTA.** `CosmicWaveColorSetSO`
+and `PastelColorSetSO` both author the pair (0,0,0,0), so a raw read paints the surface black on
+either — and per §2.4's rule, an accessor that can return black can make an element vanish, which
+reads as *not implemented* rather than as mis-tinted. The caller falls back instead
+(`ToyFactory.CtaLime`). One consumer today: the Switchback gate ring's `Next` switch signal
+(`Docs/ToySystem/ARCHITECTURE.md` § "The switch").
+
+### 2.6 And the same trap on DANGER — `GetDangerSignalColor` (2026-09-26)
+
+The third sibling, needed the first time a UI surface had to say *this is danger mass*: the
+Squirrel's Boost Ring icon, whose ring is made of danger prisms (`SQUIRREL_ELEMENT_RECUT.md`
+§ "Fourth pass"; its team-coloured companion was cut in the fifth, the danger tint was not).
+
+The danger tier has **no colour fields of its own** (§ "The danger tier borrows the shielded base")
+— it is the domain's SHIELDED base face under the shared, domain-independent
+`EnvironmentColors.Danger` rim, and the RIM is the half that says dangerous. So that is what the
+accessor returns, normalised the way the other two are:
+
+| source | shipped `PhoticColorSetSO` value |
+|---|---|
+| `EnvironmentColors.Danger` raw | (1.4979, 0.00585, 0.00685, **a: 0**) |
+| `GetDangerSignalColor()` | (1.0, 0.0039, 0.0046, a: 1) |
+
+**Two traps in one field, and the second is the one to carry.** It is HDR (peak 1.498), so a raw
+read clips in UI; and its **alpha is authored 0**, exactly like the CTA pair — so a raw read is
+also fully transparent, which is worse than wrong, because a transparent tint is indistinguishable
+from a tint that never ran. `GetDangerSignalColor` therefore forces alpha 1 and gates on the PEAK
+rather than on the alpha (which is what `GetCtaSignalColor` gates on), and returns alpha 0 when the
+palette authors no danger colour at all — `CosmicWaveColorSetSO` and `PastelColorSetSO` both author
+(0,0,0,0) — so a caller keeps what it had rather than painting something black, per §2.4's rule.
+`ThemeManagerDataContainerSO.GetDangerSignalColor()` is the null-safe wrapper with the same
+contract.
+
+### 2.7 And on SHIELDED — `GetShieldedSignalColor` (2026-09-26)
+
+The fourth sibling, and the first where the trap is neither HDR nor alpha but **darkness**. The
+Squirrel's OMNI CRYSTAL card draws a ring of shielded prisms and wants to be the colour those prisms
+will actually be, so it reads the shielded tier's **base face** — the half that carries the tier's
+domain hue (§ "The danger tier borrows the shielded base" explains why it is the base and not the
+rim).
+
+| domain | `ShieldedOutsideBlockColor` raw | normalised to peak 1 | reads as |
+|---|---|---|---|
+| Jade | (0.0868, 0.2367, 0.4843) | (0.179, 0.489, 1.000) | blue |
+| Ruby | (0.3346, 0.1639, 0.4751) | (0.704, 0.345, 1.000) | violet |
+| Gold | (0.3134, 0.2099, 0.0821) | (1.000, 0.670, 0.262) | amber |
+
+> ⚠ **That middle column is no longer what `GetShieldedSignalColor()` returns** — §2.9 corrects it,
+> because normalising the authored base face is still not the colour shielded mass renders as. The
+> shipped answers are the authored colours converted linear->gamma: Jade (0.326, 0.524, 0.725),
+> Ruby (0.614, 0.442, 0.719), Gold (0.596, 0.495, 0.317).
+
+Every one of those is SDR with alpha 1 — so neither of §2.5's and §2.6's traps fires — and every one
+peaks **under 0.49**, which on a near-black plate is a smudge. It is authored that way *correctly*:
+on a prism a bright `ShieldedInsideBlockColor` rim (peak 1.5) sits over it, and the pair is what the
+player sees. A UI slot composes nothing, so it gets the base alone and the tier goes dark. Alpha 0
+back when the domain authors no shielded base, per §2.4.
+
+**General shape, now FOUR for four: a colour authored FOR A SHADER is not a colour a UI slot may
+read.** The shader composes it (a crystal lerps dull→bright by fresnel; a prism takes the rim over
+the base), tolerates HDR, and never looks at alpha. Each of these four fields has caught somebody out,
+and — worth noting — in three *different* ways: black (§2.4), a dark hue read as the wrong colour
+(§2.5), HDR **and** transparent (§2.6), and simply too dark to see (§2.7). So the rule is not "watch
+for HDR" or "watch for alpha": it is that when a HUD wants to speak the palette's language, add a
+`*SignalColor` accessor rather than reading the field, whatever the field looks like.
+
+**And having the accessor is still not enough** — §2.8 is the same family's fifth trap, where the
+field and the accessor are both correct and the *argument* is a sentinel.
+
+### 2.8 The fifth trap is the ARGUMENT, not the field — `Domains.Blue` has a real row (2026-09-26)
+
+§§2.4–2.7 are all about a colour being unreadable once a UI slot composes nothing. This one is the
+opposite shape and it shipped: the field was fine, the accessor was fine, and the **domain handed in**
+was the no-team sentinel.
+
+`SO_ColorSet` authors **four** `DomainColorSet` blocks — Jade, Ruby, Gold and **Blue** — and
+`TryGetColorSetByDomain` maps `Domains.Blue` to the fourth and returns `true`. But `Domains.Blue` is
+simultaneously the platform's *"no team / not yet picked / neutral entity"* sentinel, never present in
+`GameDataSO.ActiveDomains`, and **no code path can put a human on it**. So a domain-keyed accessor
+asked about an unresolved pilot answers with a real, saturated colour:
+
+| accessor | Blue's answer | how it reads next to the three playable domains |
+|---|---|---|
+| `GetDomainUIColor` / `GetDomainSignalColor` | (0.400, 0.500, 1.000) | a soft blue — plausible next to Jade's teal |
+| `GetShieldedSignalColor` | **(0.000, 0.000, 1.000)** | hue **exactly 240°**, saturation **1.000**, zero green |
+
+The Squirrel's omni crystal card shipped painted that second one. It was reported as *"blue regardless
+of which domain I picked"* and the correction that identified it is the useful part: **it was reported
+as NOT being Jade's** — Jade's shielded signal is hue 217°, saturation 0.82, green 0.489, i.e. *more
+green and less saturated*. A pure hue-240 fully-saturated blue is not a colour anything in the
+playable palette produces, which is what makes it identifiable.
+
+**The general rule: a sentinel that has a row in a lookup table gets a plausible answer, so a lookup
+that failed to resolve does not render as a failure — it renders as a different team.** That is worse
+than the other four traps in this section, because a black or transparent slot reads as *not
+implemented* and gets reported, while a saturated wrong hue reads as *implemented and mis-tinted* and
+gets rationalised.
+
+**And the sentinel is unusually hard to spot on JADE specifically, which is why the white-when-unresolved
+contract is load-bearing rather than tidy.** Jade's shielded tier is blue on *both* halves and sits only
+**22.6°** of hue from the sentinel, while Jade's *identity* colour — the teal players actually recognise
+as Jade — is 41° away in the other direction:
+
+| | normalised | hue | sat |
+|---|---|---|---|
+| Jade shielded **base** (what `GetShieldedSignalColor` reads) | (0.179, 0.489, 1.000) | 217.4° | 0.821 |
+| Jade shielded **rim** (`ShieldedInsideBlockColor`, over it on a prism) | (0.336, 0.528, 1.000) | 222.7° | 0.664 |
+| Jade **identity** (`TrailHighlightColor`) | (0.067, 1.000, 0.947) | 176.6° | 0.933 |
+| Blue / the sentinel | (0.000, 0.000, 1.000) | 240.0° | 1.000 |
+
+So a *correct* Jade card and the sentinel bug are indistinguishable at 60 px, and the only thing that
+separates "this is Jade" from "this never resolved" is that an unresolved read renders **white**. The
+icon is honest — Jade's shielded mass really is blue, on every palette that authors it (`CosmicWave`
+and `Pastel` author alpha 0 and are correctly refused, so `PhoticColorSetSO` is the only live answer
+and `ThemeManager` never swaps it). If a card should say WHICH DOMAIN rather than WHAT THE MASS IS,
+that is `GetDomainSignalColor` and a different promise.
+
+The refusal belongs to the **CALLER**, not to the accessor: "no pilot can fly Blue" is a fact about
+pilots, and a neutral mine or an uncommitted crystal legitimately wants to know what colour no-team
+is, so the palette stays a pure palette read. A HUD that means *this pilot's domain* tests for the
+sentinel itself and treats it as "not resolved yet" — alpha 0, keep your white, and keep looking
+(`SquirrelHUDController.ResolveShieldedColor`). Two executors already used exactly that idiom
+from the other direction before this — `EchoSightActionExecutor` and `SniperShotActionExecutor` both
+write `status?.Player != null ? status.Domain : Domains.Blue`, i.e. **Blue already MEANS unresolved in
+this codebase** — which is the whole reason it must never be looked up as a colour.
+
+### 2.9 The sixth trap is COLOUR SPACE — and it is §3, met by a UI slot (2026-09-26)
+
+§2.7 added `GetShieldedSignalColor` so a HUD could say *"this is shielded mass, in this domain"*
+without reading a shader field raw. It shipped, then shipped twice more, and the icon still did not
+match the prisms beside it. **All three rounds were one mistake: a palette float is a LINEAR
+intensity and a UI `Image.color` is GAMMA.**
+
+The project is Linear (`m_ActiveColorSpace: 1`), so §3 above already said the stored floats are
+linear intensities. What §3 did not say is what happens when one is handed to a `Graphic`. Measured
+off a screenshot, two independent confirmations that a UI colour maps **1:1 to display bytes**:
+
+| authored | renders as |
+|---|---|
+| `ElementalBarsConfigSO.blueColor` (0.220, 0.510, 1.000) | (56, 130, 255) |
+| the shielded icon's old answer (0.179, 0.489, 1.000) | (46, 125, 255) |
+
+So the conversion was simply missing. `Color.gamma` is the fix — Unity's own transfer, so it cannot
+drift from the engine — and **the proof it is the right one is the HUE**:
+
+| Jade shielded base face | hue | sat | val |
+|---|---|---|---|
+| the raw field, read as bytes | (22, 60, 123) | 210.3 | 0.550 | 0.482 |
+| **converted, what ships** | **(83, 134, 185)** | **210.3** | 0.550 | 0.725 |
+| the previous answer (peak-normalised) | (46, 125, 255) | 217.3 | 0.821 | 1.000 |
+| **the prisms, measured on screen** | (95, 176, 254) | **209.4** | 0.626 | 0.996 |
+
+**Under one degree.** The 8° the old answer sat away had been written down in this very document as
+an ACES hue shift; it was the missing conversion. A wrong hypothesis does not land within a degree.
+
+**Two things the accessor used to do are gone, and both were compensating rather than doing a job.**
+It normalised the brightest channel to 1 on the stated grounds that the field is *"too dark for a UI
+slot"* — **it is not dark, it is linear** — and that normalisation is what pushed the result to hue
+217.3°, which is `blueColor` to within **0.3°**: on the same HUD row, the colour that means *two
+upgrades in*. A 0.25 lerp toward white then modelled bloom + ACES on top of that. Converted honestly
+the value is legible (brightness 0.725), sits 0.230 of saturation clear of that ladder rung, and
+needs neither.
+
+Shipped: **Jade (83, 134, 185) · Ruby (156, 113, 183) · Gold (152, 126, 81)**.
+
+Three things generalise:
+
+> **1. A colour that looks too dark for UI may just be in the wrong space.** Reach for the conversion
+> before reaching for a brightness correction — a correction tuned on an unconverted value is tuned
+> on a different colour, and it moves hue as well as brightness.
+
+> **2. `ElementalBarsConfigSO`'s five ladder colours are the HUD's VOCABULARY** (fire = deficit,
+> grey = 0, white = +1, blue = +2, lime = +3), and any new HUD tint has to be checked against them.
+> Here the collision was *manufactured by the bug* — but it is invisible in every source file, since
+> it exists only on screen, in one row, at one size.
+
+> **3. When a report is about a COLOUR, sample the frame.** Two colours 0.3° apart are identical in
+> a diff and different on a screen, and three passes of correct reasoning about the asset could not
+> see what one screenshot measured. `Docs/DIAGNOSTICS.md`'s *Report On-Screen UI* rule, one step out.
+
+⚠ **The three sibling accessors still normalise a linear value the same way and are deliberately
+left alone.** Their job is an unmistakable SIGNAL rather than a match to something in the world, and
+their shipped appearance was judged by eye; changing them would move the Echo Sight, the vessel
+vision band and every domain-tinted HUD slot at once. The exposure is real but the blast radius is
+a separate decision — note that the error's SIZE grows with how far apart a colour's channels are
+(Jade's shielded base shifts 7°, Jade's trail highlight only 0.2°), so a bright saturated signal
+colour is barely affected.
+
+`ShieldedSignalColorTests` reads the shipped assets and gates the hue match, the conversion contract
+(convert, do not normalise, do not lift), the ladder clearance, the sentinel refusal and per-domain
+hue separation.
+
+### 2.10 The omni crystal is a BODY plus its triangle prisms — an element's effect belongs on that element's SHAPES (2026-10-07; prisms sealed by depth since 2026-10-12)
+
+The omni crystal is an **exploded polyhedron**: 122 disjoint plates, one component per face of the
+solid it was blown apart from — **20 triangular prisms, 90 boxes, 12 pentagonal prisms**
+(`OmniCrystalExport1_8-21-25.fbx`, measured). Each family of plates is the shape that stands for
+one element, so an element's effect belongs on **its own shapes and nothing else**. Mass owns the
+**Shepard tone**, so the tone belongs on the 20 triangles.
+
+It did not. `Crystal.prefab` ran `ShepardGraph` over **four copies of the whole omni model**, which
+had two consequences and neither was authored:
+
+1. The tone dragged the ENTIRE crystal — squares and pentagons included — through every pulse, so
+   the omni crystal read as "the Mass crystal, bigger", and there was nowhere left to put the other
+   three elements' effects.
+2. **The crystal had no body.** `ShepardGraph` resolves `Alpha = (1.05 − s) × _Opacity` where `s`
+   sweeps `_Stop`→`_Start` over `_Period`, and the one non-scaling shell
+   (`ActiveMassCrystalMaterial 3`, `_ScaleDistance 0`, band 0.98→1.03) therefore sits at alpha
+   **0.02–0.07** — a ghost, one hundredth above the graph's own 0.01 clip. Everything you could see
+   of an omni crystal was the pulse.
+
+What ships (since 2026-10-12) is a body plus ONE renderer of opaque triangle prisms SEALED BY DEPTH,
+authored by `Tools/Build/author_omni_crystal_triangles.py` (`--check`):
+
+| slot | geometry | default / inactive material | motion |
+|---|---|---|---|
+| 0 | **the whole omni model** (`OmniCrystalBody.prefab`) minus its 20 triangle plates at runtime (the holes); its 30 rhombi flip and its 60 squares weave (Space squares), the rest is still | `OmniCrystalBody` / `OmniCrystalBodyInactive` (`OmniCrystalFresnelShader`) | still |
+| 1 | the 20 triangular prisms (`OmniCrystalTriangles.asset`, SEATED at the prefab's scale) | `OmniDepthPrisms` / `…Inactive` (`OmniDepthPrismShader`, opaque) | each rides its column by depth (`CrystalDepthPrisms`) |
+| child, not a slot | the Charge light (`CrystalChargeArcs`, Flux): the five-strand arcs between pentagons and the lit pentagons, one CPU-written mesh a frame in the crystal's space | `OmniChargeArcs` (`CrystalChargeArcsShader`, additive) | chained discharges (§2.10) |
+
+**The triangles are SEALED BY DEPTH (2026-10-12, the Omni Shepard Lab's pick, round 8).** Each prism
+sits in a column over its own hole, and WHERE in the column is set by its depth from the camera, not
+by a clock: `d = plate direction · camera direction` in the crystal's own space, `seat =
+smoothstep(-0.88, 1, d)`. So the far side of the crystal stands open at the tops of its columns
+(twice the crystal's radius, half size, faces parted by half a plate radius) and the near side is
+sealed, whichever way the crystal faces - the separation reads as depth. The shipped mode is the
+RATCHET: in view a prism only ever moves DOWN; going away it holds; once it is behind `d = -0.8`
+(hidden by the body - the lab measured the cliff at about -0.75) it fades out in its hole while a new
+one fades in at the top of its column, on complementary dither pixels so the swap never shows a gap.
+That is the Shepard tone on a crystal you can turn any way - and the pilot turns it, by flying round it:
+the crystal itself holds still (round 8 shipped a 15°/s free turn; it was dropped on 2026-10-12, round
+9). Thickness grows INWARD (8 on the omni), so a sealed prism's top face is flush with the
+body at any thickness. The Mass crystal wears the same look on its 60 prisms (one renderer,
+`MassDepthPrisms`, thickness 6.25; it has no body, so no holes). The pieces: `OmniDepthPrismShader`
+(the body's colour formula, `_Spread` and `_Opacity` dissolve, plus the column vertex stage and two
+passes - arriving and leaving prism), `CrystalDepthPrisms` (steps the ratchet per visible crystal
+against the GAMEPLAY camera - `CameraManager`'s active controller's camera, NOT `Camera.main`, which in
+Bootstrap is the menu's Cinemachine-brain camera under `CameraManager`, which never follows the vessel: round 8 read it, and
+in game every prism held still and sealed while the lab, which has one camera, looked right - and writes `_DepthState[plate]` through a property block; undriven, the
+shader draws every prism sealed and solid), `CrystalDepthPrismProfile.asset` (depths, ratchet;
+shared), `DepthRatchet` (the pure math; JS twin in the lab), and `RhombusSkinBaker.TryCutPlates` (the
+body's holes, a cut twin of the skinned body that keeps every vertex and bone, resolving back to the
+FBX through `SourceOf`). Proved offline: `Tools/Build/omni_depth_prism_shader_parity.py` (the
+shader's vertex function vs the lab, both meshes, 2e-5) and `omni_shepard_lab_parity.cjs` (the lab's
+Shipped draws the recorded pick exactly).
+
+**The body plays the Space SQUARES (2026-10-12, round 9).** The art file's animation
+(`CrystalsRaw_V2.blend`, `OmniCrystal.001`, Action.008): the 60 square plates turn about the
+pentagons, then weave over the triangles - three shape keys (`SquareRotateAroundPentagon`,
+`SquareOverTri_Step1/2`, and `Step2/2` stacked on Step1) on a 4.8 s loop at 25 fps. The FBX carries no
+shape keys, so `CrystalSpaceSquares` (on `OmniCrystalBody.prefab`) puts the body on a copy of the twin
+it draws with the keys added as blend shapes - one copy per twin, shared by every omni; positions are
+Blender's exactly, and each key carries frames at 25/50/75/100 whose normals are the authored normal
+turned with its face (a turning square's normal is not linear in its weight) - and plays the baked
+frame weights, each crystal at its own phase, holding a frame's values across a snap. Blend shapes
+apply before skinning, so the Time flip wave's bones still turn the rhombi. The data,
+`OmniSpaceSquares.asset`, is generated by `author_omni_crystal_triangles.py` from
+`Docs/Studios/data/omni_space_squares.json` (anchors = the moving control points in Unity's space,
+x negated). Proved headlessly: the shipped baker on the shipped body welds to exactly the 480 square
+corners, every normal matches its face's turn to 2e-5, and the weights match the lab's
+`squaresWeights()` to 6e-7.
+
+**Every crystal its own pose, and reseats hidden from range (2026-10-13, round 10).** A crystal's columns
+are a pure function of the camera direction in its own space, so a field of crystals sharing an orientation
+showed the same columns. `CrystalDepthPrisms` now turns each crystal's models (never its root) to a random
+pose seeded from its spawn position (`CrystalPoseJitter`; same on every client, nothing networked;
+`CrystalDepthPrismProfile.orientationJitter` 1). The depth rule holds exactly. Neighbours' rendered images
+correlate 0.12 at 250 u, against 0.60 with every crystal alike. The reseat moved from −0.8 to −0.87: a column
+top stands 2× its plate radius out, so from far away it clears the silhouette above that depth. −0.8 was
+seen on 56–73% of reseats at 250 u once the camera moves round a still crystal; −0.87 is seen on 0–1.8%.
+**The prism meshes carry their thickness** (omni 8, Mass 6.25, baked by the generators; the materials
+ship `_Thickness 1`), and undriven, `OmniDepthPrismShader` draws the mesh exactly as authored. Hull
+fusion depends on both.
+
+The Breathe look below shipped from 2026-10-10 to 2026-10-12. Its materials, the rim's and the Mass crystal's old
+shells were retired on 2026-10-13 (`OriginalMaterialSet` slots 2-4 are empty); the Omni Shepard Lab pins their
+values in its `RETIRED` constant.
+
+**The tone BREATHES (2026-10-10, the Omni Shepard Lab's pick).** Until then the three shells were
+contiguous falling bands (1.000 → 0.833 → 0.667 → 0.500, 3 s each) that landed on the body and
+jumped back out, with a stationary rim (slot 4) at the outer radius to hide each new shell's
+birth. The team found that look flat and picked "Breathe" in
+`Docs/Studios/OmniShepardLab.html` (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 4): each shell
+drifts in from s = 1 (twice the crystal) to the surface and back OUT over one 10.5 s round trip,
+the three shells a third of a trip apart. Every triangle is half its landed size at the far end
+and full size on the surface; the plates are 1.25× thick; the shading is face-forward (dark face
+centres front and back, bright edges only). That is four opt-in dials on `OmniShepardFresnelShader`:
+`_Breathe` (the band ping-pongs), `_PhaseOffset` (this layer's share of the clock),
+`_PlateScaleStart` and `_Thickness` (each plate sized and stretched about its OWN centre). The
+plate centre is baked per vertex into `OmniCrystalTriangles.asset`'s TEXCOORD2 by the generator.
+All four are inert at their defaults, so the Mass crystal's shells, which author none of them,
+draw exactly as before. Proved offline: `Tools/Build/omni_shepard_shader_parity.py` compiles the
+shipped shader's `vert()` with clang and shows (a) the defaults are `v · s` to 1e-7, with and
+without plate centres, and (b) the three shipped materials match the lab's model of the picked
+look to 3e-6 on the real mesh. `Tools/Build/omni_shepard_lab_parity.cjs` shows the lab's shipped
+page draws exactly what the designer exported.
+
+**Since 2026-10-13 (Omni Motion Lab round 5) Charge's light is the FLUX ARC, not the edge crawl.**
+`OmniCrystalChargeArcs` (a plain child of `Crystal.prefab`, `CrystalChargeArcs` in Flux mode on
+`CrystalChargeArcsShader`) replaces `OmniCrystalChargeEdges`: a pentagon charges, an arc leaps to one 55-125 degrees
+away, runs as five strands from corner to corner (fanned onto the five corners at both ends, one coaxial braided bundle
+between: no beam, no seam), and the next leaps on from the sink. Only
+those two pentagons light, in the body's bright colour mixed toward the arc core colour (`CrystalAccentTint` repaints
+it per domain). Every bolt is one continuous
+plasma ribbon after the Squirrel's skim crackle (`ForcefieldCrackle.hlsl`): a Gaussian glow running to a hot core in the
+arc core colour. Where a flux arc's path runs through a raised Mass prism, the prism glows in `_StrikeColor` (the arc
+core colour, `OmniDepthPrismShader`'s `_DepthState.w`), so the bolt reads as conducting through it. The Charge crystal wears the same component in SeamWalk mode, so the element keeps ONE look on both
+crystals. The paragraph below describes the crawl as it shipped from 2026-10-08 to 2026-10-13. Its material and shader
+(`OmniChargeEdges.mat`, `OmniChargeEdgesShader`) were deleted the same day, once the Elemental Converter moved to the
+flux arcs too.
+
+**Charge's pentagons carry the charge crystal's EDGE DISCHARGE (2026-10-08).** The charge crystal's
+signature is its plasma crackling vertex to vertex along crease edges (`ChargeCrystal.hlsl`), so the
+omni's 12 pentagonal prisms now wear exactly that. `OmniCrystalChargeEdges.prefab` is the body's own
+mesh at the body's own pose; `CrystalEdgeArcs` (`plateCorners: 10` — a pentagonal prism has 10
+corners) swaps it for a twin that `CrystalEdgeArcMeshBaker` filters to the 10-corner plates and
+edge-bakes, and `OmniChargeEdgesShader` ADDS `ChargeCrystalDischarge` — the very term the charge
+crystal adds to its own body, factored out of `ChargeCrystalSurface` (bitwise-identical, 200k
+samples) — over the body. Measured on the shipped model through the real C# baker: **192 triangles =
+12 prisms × 16, 180 crease edges = 12 × 15** (rims and side edges; every fan diagonal suppressed),
+and the boxes and triangles contribute nothing. Its arc dials are cloned from `ChargeCrystalMaterial`
+by the generator (one element, one look — retune the charge crystal and `--check` names
+`OmniChargeEdges.mat` as drifted); the dials are model-radius fractions of the SOURCE mesh, and the
+omni's pentagon edge is 0.285 of its radius against the charge crystal's 0.277, so the same numbers
+give the same bolt-to-edge proportion. Three decisions worth keeping:
+
+1. **It is a plain child, not a sixth `crystalModels` slot.** A slot would burst into a husk of its
+   own on every collect, need a `CrystalMaterial5` in every material set, and make
+   `GetTeamCrystalMaterial` warn — for an overlay that has no body to burst.
+2. **Its bolt halo still follows the domain.** The charge crystal's halo is the crystal's own bright
+   colour, so a team omni's bolts should be in its domain colour, not lime. `CrystalAccentTint` copies
+   the body's `_BrightColor` into the overlay's property block on enable and on
+   `Crystal.ModelMaterialSettled` (raised when a model's material swap lands) — nothing per frame, and
+   it lands on the same frame the Fresnel body snaps (`LerpCrystalMaterialCoroutine` only lerps a `_BrightColor`/`_DullColor` pair, and the Fresnel family names its pair `_BrightColor`/`_DarkColor` — see "Not reached by §2.2's tint" below).
+3. **It reproduces the body's vertex push.** The body moves every vertex `_Spread` (0.01) world units
+   along its normal; an overlay that did not would sit behind the face it decorates and fail the depth
+   test. `OmniChargeEdgesShader` transcribes the push (its `_Spread` is copied from `OmniCrystalBody`)
+   and takes the remaining tie with `Offset -1, -1`. Fail-safe: an unbaked mesh contributes exactly
+   zero, so a failed bake leaves the omni as it was.
+
+Not done, deliberately: the Scarab forge folds only the body (the overlay leaves with the crystal,
+like the triangle shells), and the toy builders show `crystalModels[0]` alone, so a toy omni has no
+discharge — same as it has no Shepard tone.
+
+**Time's rhombi carry the Time crystal's FLIP WAVE (2026-10-08).** The Time crystal's signature is 30
+golden rhombi turning 180° about a diagonal, ring by ring, from one vertex to the opposite one
+(`Docs/TIME_CRYSTAL.md`), so the omni's 30 rhombi — on the same two-fold axes, in the same 5 / 5 / 10
+/ 5 / 5 rings — now run exactly that wave, on the Time crystal's own generated profile. A plate can only
+turn on a bone, so slot 0 is `OmniCrystalBody.prefab`: a flat copy of the shared
+`TrucatedOctahedron.prefab` with the same ids and its MeshRenderer re-classed in place as a
+SkinnedMeshRenderer (the generator authors it). At runtime `CrystalFlipWave` (`skinRhombi` on, on the
+Crystal root) has `RhombusSkinBaker` clone the body mesh with skin data — the 30 rhombi on their own
+bones, everything else on the still root bone — and flips them. Same body, same materials, same
+renderer slot, so tint, team swap, fade and husk are untouched; the readers that care WHICH mesh is
+drawn (the Scarab/Squirrel forge, the hull fusion) resolve the twin back to the FBX mesh through
+`RhombusSkinBaker.SourceOf`, and a plate caught mid-flip settles onto the rest cage as a forge begins.
+Measured through the real C# on the shipped mesh, under all 48 axis conversions: exactly 30 plates
+skinned (720 of 2,880 split vertices), the still body never moves, the rest pose is the FBX body to
+1e-15. The omni's rhombi are 0.597 short:long, not golden; nothing in the wave reads the ratio.
+
+**Body and triangles are ONE colour system.** The triangles are on `OmniShepardFresnelShader`, the
+body's own family: the body's colour formula verbatim — `lerp(_BrightColor, _DarkColor, (1 + N·V)/2)`,
+dark where a face looks at you, bright toward the silhouette — on the body's own colour pair (each
+tone material is the body material moved onto the tone shader, nothing else changed), with
+ShepardGraph's motion and alpha transcribed. A triangle in flight is therefore the body's triangle made
+see-through; it cannot drift to a different lime than the plate it lands on. This retired the
+mismatch the first pass had: the triangles were on `ShepardGraph`, whose colour is
+`lerp(dull, bright, (1−N·V)⁴)` and which `Crystal.ApplyColorSetTint` repaints with the CTA pair at
+runtime, while the body showed its authored Fresnel lime — two formulas, two limes. Neither Fresnel
+shader is reached by the CTA tint (they name the pair `_BrightColor`/`_DarkColor`), so the omni shows
+exactly its authored lime, like the Space and Time crystals. (Since 2026-10-28 that authored lime is
+four: each element's shapes in its own shade, §2.12.)
+
+**Team crystals are the same crystal in domain colours.** A domain-owned crystal (Skim Race track
+crystals through `CrystalManager.ChangeDomain`, the Dolphin's `TeamCrystal`) swaps every model to
+`GetTeamCrystalMaterial(domain, slot)`, which `ThemeManager` builds by cloning the BASE set
+(`OriginalMaterialSet`) slot by slot. That set still pointed at the four Mass-era Shepard materials,
+so a team omni ran a Shepard band on its BODY (shrinking it toward the centre) and the old inward
+bands on its triangles — the "scaling issues". The base set now points at exactly the omni's
+per-slot materials, and `ThemeManager` paints each clone's `_BrightColor`/`_DarkColor` from the
+domain pair (`BrightCrystalColor`/`DullCrystalColor`). That mapping is one-to-one: Dull is authored
+black on Jade, Ruby and Gold, which is precisely the lime body's near-black face. Side effect, by
+design: `MazeCrystal` (one model, the omni mesh) also reads slot 0 when domain-owned, so it now wears
+the omni body in its domain colour instead of a Shepard band.
+
+**Slots; the rim was retired with the falling look, the tone shells with the Breathe look.** Since
+2026-10-12 the omni has two slots (body, depth prisms); before that, four. Slot 4 was a stationary rim (the Mass
+crystal's fourth shell, `_ScaleDistance 0`, alpha 0.02–0.07 at the full radius) that hid each
+falling shell's birth. A breathing shell has no birth: it turns round at the far end at alpha 0.05,
+so the rim went (2026-10-10). `SO_MaterialSet.CrystalMaterial2..4` stay as optional slots, EMPTY in
+`OriginalMaterialSet` since 2026-10-13 (the rim and tone materials are retired; the lab pins them). A team crystal's
+material is looked up by the model's OWN default material (`ThemeManagerDataContainerSO.GetTeamCrystalMaterial(domain,
+material)`), not its slot index. Every slot explodes on `CrystalMaterial`, because the spent husk animates
+`CrystalGraph`'s `_velocity` and a tone material on a husk would play its band instead of bursting.
+
+**The body is slot 0, and that is load-bearing.** Everything that wants "the crystal's shape" reads
+`crystalModels[0]` (`ElementCrystalModelBuilder`, `SpawnMatrixToy`'s element visual), and the
+vessel retirements (`CrystalMorphRunner.Adopt` — the Scarab's crystal→ball forge and the Squirrel's
+crystal→ring morph) build their morph mesh from slot 0 and fold every model drawing that same mesh.
+The triangle shells are a different mesh, so they are OVERLAYS: they fade over
+`CrystalMorphConfig.overlayFadeFraction` of the geometry window while the cage opens (a verbose
+`CrystalMorph`-channel line names each one, not a warning: it is the design).
+
+**The body wears the elemental crystals' Fresnel look on the omni's own shader.**
+`OmniCrystalFresnelShader` is `SpreadFresnelShader`'s displacement and colour transcribed verbatim,
+**plus** the two things only the omni needs: the `CrystalMorph` vertex/normal path the Scarab forge
+stamps (`_CrystalMorph`, TEXCOORD2/3, the `_PrismClock` global — a pass-through until stamped), and a
+screen-door dissolve on `_Opacity` for the forge's tail. **Neither omni shader reads `FadeIn`'s
+lowercase `_opacity`, on purpose.** `FadeIn`'s curve is slow and back-loaded (rate 0.001 per frame,
+growing ×(1+dt): under 10% for the first second, half at 2.25 s, full at 2.9 s at 60 fps), and the
+omni has always appeared at once on respawn because its ShepardGraph shells only had `_Opacity`.
+Wiring `_opacity` in made a collected crystal's replacement visibly lag in Skim Race (playtest,
+2026-10-08), so it was taken back out; the omni also does not take the capture dissolve, exactly as
+before this branch. It is self-contained on purpose: the elemental shader is not touched. Unity shaders have
+no inheritance (`UsePass` reuses a whole pass but cannot add to one), so the "base class" for a shader
+family is a shared `.hlsl` include — folding both shaders onto one is the follow-up once this one is
+verified in the editor. The body's materials are clones of `LimeCrystalFresnelMaterial` /
+`BlueCrystalFresnelMateriall` moved onto the omni shader; its exploding material stays
+`CrystalMaterial`, because the spent husk animates `CrystalGraph`'s `_velocity`.
+
+**The tone falls INTO the crystal.** ShepardGraph's band comparison is `Start < Stop` (`Comparison`,
+type 2), so a band with `_Start > _Stop` — every Mass material — sweeps `s` DOWNWARD (the tone shader
+transcribes that rule). It scales the
+mesh by `s` about the origin and draws `Alpha = (1.05 − s) × _Opacity`. The first omni pass reused
+the Mass bands (`0.33→0`, `0.66→0.33`, `1→0.66`) on shells scaled so `s = 1` was the surface, which
+made the triangles leave the surface and shrink to the centre — backwards. Now the shells are scaled
+`OUTER_REACH / 2.241676` = **0.892189773** (`OUTER_REACH = 2`), so `s = 1` is twice the crystal's
+own triangles and `s = 0.5` lands exactly ON them, and three contiguous falling bands tile that range:
+the triangles fall in from outside and land on the surface, brightening as they arrive (alpha 0.05
+at the outer edge, 0.55 at the surface). The Mass crystal's own materials are untouched — the omni
+has clones. *`OUTER_REACH` is the one dial for how far out the tone starts.*
+
+**The shell scale is MEASURED, not chosen.** `MassCrystalExport3ExpandedTri_10-23-25.fbx` is
+exactly the omni model's 20 triangular prisms scaled about the origin by **2.241676** — proven on
+all 120 vertices (worst direction mismatch 1.2e-13, max residual 8.3e-07 against a 1.6172 mesh
+radius). Re-export either model at a different scale and `--check` fails at the script rather than
+in play.
+
+**Not reached by §2.2's tint, deliberately.** `Crystal.FindColorPropertyNames` accepts
+`_BrightCrystalColor`/`_DullCrystalColor` or `_BrightColor`/`_DullColor`; the Fresnel family names
+its pair `_BrightColor`/`_DarkColor`, so the runtime tint reaches neither the elemental Space/Time
+crystals nor any part of the omni — free crystals show their authored lime, team crystals the domain
+pair `ThemeManager` paints into their team materials. Whether the Fresnel family should join the
+collectability tint is one decision for all three crystals, not this one's.
+
+**The triangle shells draw a BAKED native mesh, not the FBX's own.** A hand-written prefab cannot
+reference an FBX sub-asset: Unity mints that fileID inside the editor, and it is not reproducible
+offline. The first pass tried to *borrow* one — rename the triangle export's node to `mass` so its
+generated id would match `masscrystal.fbx`'s recorded `-6009661875889629336` — and **Unity did not
+honour it: the shells rendered nothing**, so the omni showed its body and no tone at all. The script
+now bakes the FBX into `Assets/_Models/OmniCrystalTriangles.asset` (a native `Mesh`, referenced as
+`{fileID: 4300000, guid: <its own .meta>}`, deterministic by construction) using the conversion Unity
+applies to this export: `bakeAxisConversion: 0` keeps the mesh in node space, right→left handedness
+negates x and reverses winding, and `UnitScaleFactor 100 × useFileScale` is 1:1. The 20 triangles are
+invariant under that x-mirror, so the shells line up with the body however the importer resolves the
+handedness axis. The FBX stays the source: re-export it and re-run the script (`--check` fails until
+you do). **Never hand-reference an FBX sub-asset by a computed or borrowed fileID** — bake, or resolve
+by name at runtime.
+
+**A node offset that looks stray may be the pose the takes were authored around.** That FBX alone
+among the crystal exports carries `Lcl Translation (1.9394, -7e-08, 5.4726)` while its 120 vertices
+are symmetric about the origin — which reads as an object left off-origin in Blender, and was very
+nearly "cleaned up". Zeroing it takes assimp from **3 animations to 9**, because six of the nine takes
+hold translation curves that ARE that offset and were being dropped as no-ops against it. It stays.
+It never reaches the shells anyway — they reference the MESH, whose vertices Unity keeps in node
+space. *Before removing a transform that looks like an export artifact, check what reads it.*
+
+### 2.11 Each free elemental crystal wears its own shade of lime (Garrett, 2026-10-27; shades replaced 2026-10-31, §2.13)
+
+"Right now mass crystals and omnicrystals are the hardest to distinguish. Shift the colors on each
+element to match the color shifts we used for the wrasse's 2d elements." Measured before the change:
+the omni body (`OmniCrystalBody`), its triangles (`OmniDepthPrisms`) and the free Mass crystal
+(`MassDepthPrisms`) all wore `_BrightColor` `#7cfc00` over the same near-black, on shaders the
+runtime tint does not reach, and Space and Time shared `LimeCrystalFresnelMaterial` with that same
+lime. So only shape told the omni from the Mass crystal.
+
+**The shades** are the Wrasse's four lasso colours (`Tools/Build/kite_mote_colors.py`: the corners
+of the largest tetrahedron inside lime's boundary against Jade, Ruby, Gold, Blue and Fire, every
+pair apart in hue, saturation and value). The script now also writes them into the palette,
+`EnvironmentColors.ElementalCrystalColors` (index = `Element` − 1), and `--check` holds all three
+copies (Kite config, Wrasse Lasso Lab, palette) to the one derivation.
+
+| element | shade | vs the omni's `#7cfc00` (OKLab) |
+|---|---|---|
+| Charge | `#a0ff00` | 0.034, warmer and brighter |
+| Mass | `#5ec600` | **0.153**, the darkest corner |
+| Space | `#40ff00` | 0.034, cooler (toward Jade) |
+| Time | `#9bcf00` | 0.119, the warmest |
+
+**How each crystal takes it** (one rule: the element's shade at the donor colour's brightest
+channel, `Color.WithHueOf`):
+- **Charge** (and `ActiveCrystalSpace`'s `CrystalGraph` material): the runtime tint,
+  `Crystal.TryResolveTintColors`: CTA pair → the shade → `ElementalCrystalDimming`. An unauthored
+  shade (alpha 0) falls back to the plain CTA.
+- **Mass**: `MassDepthPrisms.mat`'s bright colour, authored by `author_mass_crystal_look.py`.
+- **Space / Time**: their own clones of `LimeCrystalFresnelMaterial`, `SpaceCrystalFresnelMaterial`
+  and `TimeCrystalFresnelMaterial`, as each prefab's free (default) material. Authored by
+  `Tools/Build/author_elemental_crystal_colors.py` (`--check`, `--self-test`), which reads the
+  shades from the palette and also fails if the Mass crystal wears the omni's colour again.
+- The Fresnel materials move only their bright colour: their dark end is near-black.
+
+**Unchanged:** embedded hearts keep the blue-white neutral, and team crystals keep their domain pair.
+Lime still means anyone collects. **Superseded for the omni on 2026-10-28 (§2.12):** it no longer wears
+one lime but all four shades, each on its element's shapes, and **the omni converter**
+(`OmniCombinePlayer`, the Elemental Converter's conversion animation) no longer eases each crystal to the
+omni's lime: each keeps its own shade all the way in and lands as the omni's plates in that same shade. The
+Omni Combine Lab does not model the colours; its parity harness holds the motion only. **To retune a shade**,
+rerun `kite_mote_colors.py`, then `author_elemental_crystal_colors.py`, `author_mass_crystal_look.py` and
+`author_omni_crystal_triangles.py` (the omni's four shades). The Fresnel family still sits
+outside the live tint (§2.10, "Not reached by §2.2's tint"), so those materials are generated from the
+palette rather than painted by it.
+
+**Through the bloom (measured 2026-10-27, `Tools/Build/crystal_bloom_preview.py`).** Garrett's bar: each crystal
+distinct AND reading as lime (not green, not yellow, not white) *after* the gameplay bloom. The tool renders each free
+crystal from its real mesh and shader formula, then runs URP 17's own bloom chain with the gameplay profile. In that
+chain the threshold is `Mathf.GammaToLinearSpace(0.2)`, about 0.033 in linear. The clamp of 0.5 applies per
+channel before the threshold, and the knee is hard-coded to half the threshold. It measures the light each crystal
+adds over the sky, at a near and a far size. What it found for the shipped shades:
+
+| crystal | after bloom | the problem |
+|---|---|---|
+| Space `#40ff00` | 10% green near, 27% far | its shade sits ON the 105° green edge, and the shading carries it over |
+| Time `#9bcf00` | 89% yellow near, 74% far | its shade sits ON the 75° yellow edge; the per-channel clamp cuts green more than red |
+| Omni / Space | 0.023 apart (far) | the closest pair, about one just-noticeable difference |
+| Charge | lime, but OKLab L 0.28-0.34 | `ElementalCrystalDimming` 0.45 leaves it dark green-black, outside lime's lightness |
+
+Nothing clips, whitens or turns yellow from bloom alone: the 0.5 clamp keeps every glow below saturation. Bloom
+raises lightness and chroma but barely moves hue. A candidate set that passes (`--propose`, all four inside the lime
+boundary, at most 5% off-lime after bloom at both sizes, Mass darkest, Space coolest, Time warmest) is Charge
+`#5fd200`, Mass `#89bf00`, Space `#52df00`, Time `#a4df00`: closest pair 0.050 after bloom. It is NOT applied; the
+shades are the Wrasse's too. Charge's lightness is a separate decision: undimmed it collides with Mass (0.030),
+because its shader paints mostly the dull end of its pair.
+
+### 2.12 The omni crystal wears all four shades, each on its element's shapes (Garrett, 2026-10-28)
+
+"When the elemental crystals combine have them retain their separate colors. Change the omnicrystal to retain
+all four elemental colors of lime in all instances." Until then (§2.11) the free omni wore ONE lime, and the
+converter eased each crystal from its shade to that lime as it landed.
+
+**The rule.** An element's shapes wear that element's shade wherever they are: on the free elemental crystal
+(§2.11), in flight in the converter, and on the omni. The omni is an exploded polyhedron whose plate
+families ARE the elements (§2.10), so it reads as the four crystals combined:
+
+| plates | element | shade (at the body's brightness) | drawn by |
+|---|---|---|---|
+| 12 pentagonal prisms (10 corners) | Charge | `_ChargeColor` | the body, and the flux arcs' lit pentagons (`OmniChargeArcs`, `CrystalAccentTint`) |
+| 20 triangular prisms (6 corners) | Mass | `_MassColor` = `OmniDepthPrisms._BrightColor` | the depth prisms (the body's own triangles are cut) |
+| 60 square slabs (8 corners, one distance) | Space | `_SpaceColor` | the body |
+| 30 rhombic slabs (8 corners, two distances) | Time | `_TimeColor` | the body |
+
+**How the body knows which plate is which.** It is one mesh, so the element rides per vertex:
+`CrystalElementPlates` splits the mesh into plates exactly as `RhombusSkinBaker` does (weld, connected
+components, corner count, the rhombus distance test) and writes `(int)Element` into **TEXCOORD4.x**
+(channels 2 and 3 are the crystal morph's). `OmniCrystalFresnelShader` reads it: with `_ElementShades` on, a
+plate's bright colour is its element's, else `_BrightColor`. Every mesh the body draws carries the channel:
+the skin twin (`RhombusSkinBaker.Bake`) writes it and the cut and Space-squares twins are copies of it;
+`CrystalSpaceSquaresBaker` writes it for a body that never went through the skin bake; the vessel morphs
+(the Scarab forge, the Squirrel ring) build from `CrystalElementPlates.WithElements` and
+`CrystalMorphMeshBuilder` carries it per corner, and the shades fade into the target's colour on the morph
+weight; the converter's pieces write it from the combine data (a crystal's every plate is its own element,
+an omni plate its `plateOwner`'s). Measured on the shipped FBX: 12 / 20 / 60 / 30 plates, none left over
+(`CrystalElementPlatesTests`).
+
+**Where each colour is authored.** `author_omni_crystal_triangles.py` (`--check`) writes the four shades into
+`OmniCrystalBody.mat` from the palette's `ElementalCrystalColors` by §2.11's rule (`ELEMENT_COLORS.recolor`:
+the element's shade at the body's bright colour's brightest channel), the Mass shade onto `OmniDepthPrisms`
+and the Charge shade onto `OmniChargeArcs`. `_BrightColor` stays the omni's lime: the fallback for a plate
+or mesh that names no element.
+
+**What stays one colour.** The embedded omni (`OmniCrystalBodyInactive`, `_ElementShades` 0) stays the
+blue-white neutral, and a TEAM omni stays its domain pair: `ThemeManager` paints every team crystal clone and
+turns its `_ElementShades` off. Colour FAMILY still says who collects; the shade says which element.
+
+**Not modelled:** the Omni Shepard Lab and the Omni Combine Lab draw the omni body in one lime (their parity
+harnesses hold shape and motion, not colour), and `crystal_bloom_preview.py`'s "Omni" row measures the body's
+`_BrightColor` alone.
+
+### 2.13 The four shades became one lime at four lightnesses (Garrett, 2026-10-31)
+
+The shades §2.11 and §2.12 measured were replaced. §2.11's tables describe the 2026-10-27 shades and stay as that
+round's record; the rules they explain (each crystal takes its shade at the donor's brightness, the omni wears all four
+on its element's shapes) are unchanged. The four are now `Docs/VesselModels/COLOR.md` §5d:
+
+| Element | Colour | sRGB | OKLab L | in Lime (source of truth) |
+|---|---|---|---|---|
+| Charge | `#2E5300` | (0.1821, 0.327, 0) | 0.400 | 0.2 JND inside its border |
+| Mass | `#508900` | (0.312, 0.5361, 0) | 0.567 | 1.1 JND |
+| Space | `#73C200` | (0.4519, 0.7614, 0) | 0.734 | 2.0 JND |
+| Time | `#99FF00` | (0.6, 1, 0) | 0.902 | 2.9 JND |
+
+Charge is the darkest (its plasma lights it up), so its crystal and its arcs (`OmniChargeArcs`) are much darker than
+before; the arcs' white core still carries their light. The omni's own lime (`#7cfc00` body, at full CTA strength) is
+untouched.
 
 ## 3. The colour-space rule (this is the trap)
 
@@ -527,21 +1225,21 @@ other tiers first, then solve the channels.
 
 Machine validation covers structure and colorimetry; only a playtest covers *looks right*:
 
-1. Pull, let Unity reimport `OriginalColorSetSO.asset` (if nothing changes visually,
+1. Pull, let Unity reimport `PhoticColorSetSO.asset` (if nothing changes visually,
    suspect a stale Library and Reimport the asset before suspecting the values).
 2. Get shielded prisms on screen. Verified producers, easiest first:
    - **Any cell with lifeforms** (Menu_Main freestyle) — every flora/fauna **health
      prism** is shielded (`LifeForm.ActivateShield`, `HealthBlockTracker`), so the
      ecosystem is the densest sample of this tier in the game.
-   - **The `SegmentSpawner` track** (HexRace / Skim Race) ships prisms with
+   - **The `SegmentSpawner` track** (SkimRace / Skim Race) ships prisms with
      `IsShielded`, so the whole course is this tier.
    - **Astro League** (`AstroLeagueBall` shields prisms it touches), AOE block
      creation, and the skimmer overcharge effect.
 2b. Get **danger** prisms on screen (§4 "The danger tier borrows the shielded base").
    Verified producers, easiest first:
-   - **Ribcage** ("Peel the Cage") — its sparse cage traps are `PrismKind.Danger`,
-     and the mode ships the same prism in all three domains.
-   - **The worm colony** (Lifeform Matrix toy, Menu_Main freestyle) — its head/tail
+   - **Cleave** — every one of its four arenas salts `PrismKind.Danger` traps through its
+     own structure (pane rims, wave crests, cage ribs, ribbon cornices), in all three domains.
+   - **The worm colony** (Spawn Matrix toy, Menu_Main freestyle) — its head/tail
      capital segments carry danger prisms (`WormSegmentFauna`).
    - **Dangerous flora** (`AssembledFlora`, `growthInfo.IsDangerous`) and the AOE danger
      hemisphere (`AOEDangerHemisphereBlocks`).
@@ -620,6 +1318,124 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
    danger should be unmistakably its own thing rather than a dim variant of any of them.
 
 ## 7. Follow-ups
+
+- **Mass column and converter socketing (§2.10) — rows from the `cece/beautiful-goodall-8cenn3` ship pass, 2026-10-14
+  (`OMNI_COMBINE_LAB.md` revision 8).**
+  - **The converter harness transcribes `OmniCombinePlayer.WriteMass`'s column math.** Section 9's `MassColumns`
+    (`Tools/Build/converter_round5_harness/Program.cs`) re-derives each Mass prism the way `WriteMass` and
+    `OmniDepthPrismShader.DepthPrismPosition` draw it: the own → site column slide, the reach and size at the
+    column place, the thickness blending 6.25 → 8 with the mean morph. The clearance checks it gates (0.59 R above
+    the shell, 0.17 R off the Time crystal) are only as true as that copy. Nothing fails if `WriteMass` changes.
+    Fix: move the per-plate column centre and the column place into `OmniCombineCore` (pure, as
+    `MassColumnPlace` already is), and have both the player and the harness call it. Debt this branch created.
+  - **`massRaise` 0.6 is bounded by the Time crystal's start, and nothing re-measures it if the layout moves.**
+    The table in revision 8 holds only for `spread` 2.7–3.3 and the tetrahedron layout. The harness reads
+    `massRaise` from the shipped config but draws its own spread and arc ranges (`Program.cs` section 9), so a
+    retune of `spread` / `arc` on `OmniCombineConfig` is not seen. Read those ranges from the config asset too.
+    Debt this branch created.
+  - **The Mass prisms' framing reach is approximate.** `WriteMass` returns the farthest column TOP, not the farthest
+    vertex. The prism body and its face split stand a few hundredths of R beyond. The camera's `framing` margin covers
+    it today. A report, not a fix.
+- **Charge light and the converter (§2.10) — rows from the `cece/sharp-fermi-yw38ky` ship pass, 2026-10-14.**
+  - **`ChargeArcs.FluxStrikes` hands the column seats to `StrikeAlong` through static scratch.** `s_seats` /
+    `s_seatRadii` are set before `FluxStrikesUngated` and cleared in a `finally` (8 references in
+    `ChargeArcs.cs`), the same main-thread-only pattern as `s_points`, so a re-entrant or job-thread caller would
+    test the wrong columns. Three callers today (`CrystalChargeArcs.StrikePrisms`,
+    `OmniCombinePlayer.StrikeTriangles`, the harness), all on the main thread. Thread the two arrays through
+    `FluxStrikesUngated` → `StrikeAlong` as parameters. Debt this branch created.
+  - **The converter harness still carries the occlusion PROXY as a check.** `converter_round5_harness`'s
+    "rhombi under camera-facing holes are almost never inside the omni" (`Program.cs`, check 8) counts a rhombus
+    as visible when its hole faces the camera. L-STU-61 measured that this does not predict occlusion: ray-cast
+    against the drawn triangles, visible plate-through-plate intersections stay at about 15% on every approach.
+    The ray-cast rig that measured it was session scratch and is not in the repo. Port it into the harness
+    (visible intersections a second and on the silhouette, per crystal) so the next approach change is measured,
+    not guessed. Debt this branch made visible.
+  - **The Omni Motion Lab's baseline is the pre-graduation game.** Its "Shipped today" style (id `shipped`, the
+    `as shipped` diff) is the game before round 5 graduated; the card now says so. If the lab runs a round 6,
+    re-baseline `shipped` to round 5's knobs first, or every column scores against a game that no longer exists.
+    Incompleteness (a report), not a fix.
+- **Squirrel crystal morph — rows from its ship pass, 2026-10-08 (`SQUIRREL_CRYSTAL_MORPH.md`).**
+  - **`OmniCrystalFresnelShader.PrismFresnelColor` is a second transcription of BlockGraph's
+    colour** (FresnelColors → FresnelPower4, back-face branch `(d+1)·0.2`). If either subgraph
+    changes, the morph's last frame stops matching the prism and nothing fails. Fix: move the
+    formula into an HLSL include both a Custom Function in FresnelColors and the omni shader call,
+    or gate it (a check that re-reads the two subgraphs' node values — power 4, the 0.2, the
+    Greater-than-0 branch — and fails when they move). Debt this branch created.
+  - **`CrystalMorphRunner.ResolveCrystal` falls back to `Crystal.Active` by `Id`.** For a
+    manager-less local mint (the conveyor toy) ids may not be unique, so the morph could adopt a
+    DIFFERENT omni's renderers — the same look today, a wrong one if those crystals ever differ.
+    Measure first: what `Id` do manager-less mints carry, and are two ever live at once?
+  - **The pentagons' charge discharge leaves on the pickup frame** under any vessel retirement.
+    The Charge light (`CrystalChargeArcs`, which replaced `OmniCrystalChargeEdges` on 2026-10-13) is a
+    plain child, not a `crystalModels` slot, so `CrystalMorphRunner.Adopt` never sees it, and
+    `CrystalChargeArcsShader` has no `_Opacity` to fade it by. If the playtest reads it as a pop: give the shader an `_Opacity` multiplier on its additive
+    output and have `Adopt` also take `Crystal`'s accent children as overlays. A report until seen.
+  - **The ring's prisms are unhidden by reference at teardown** with no life check; harmless while
+    nothing else that draws from the boost pool hides a prism (`SetOwnerHidden` callers today:
+    the swarm and substrate fauna, neither uses the boost pool). A report, not a fix — revisit if
+    a boost-pool consumer ever calls `SetOwnerHidden`.
+
+- **Omni crystal (§2.10) — rows from its ship pass, 2026-10-08.**
+  - **A TEAM omni's husks fade in place instead of drifting.** After a domain change
+    `Crystal.LerpCrystalMaterialCoroutine` overwrites each model's `explodingMaterial` with the team
+    material (`crystalModels[i].explodingMaterial = targetMaterial`, `Crystal.cs` ~:841), and
+    `Impact.HandleImpact` animates the husk on `_velocity` + `_Opacity`. Both omni shaders honour
+    `_Opacity` but neither declares `_velocity` (`grep -c _velocity` = 0 in each), so a free omni's
+    husks (on `CrystalMaterial`) drift and a team omni's fade without moving. Fix is one of: keep
+    `explodingMaterial` when the target material cannot drive a husk, or add CrystalGraph's
+    `n · dot(_velocity, n)` push to `OmniCrystalFresnelShader`. A fix, not a report.
+  - **Four husks per omni collect** (one per `crystalModels` entry, `Crystal.Explode`), back down
+    from five since the rim was retired (2026-10-10) — all on `CrystalMaterial`, so they overlap as
+    one. Measure the pooled-husk cost before deciding whether `Explode` should spawn one husk per crystal.
+  - **The omni shader transcribes `SpreadFresnelShader`** (displacement + colour, verbatim) rather
+    than including it — deliberate on the test branch, so the elemental crystals were untouched.
+    Once verified in the editor, fold both onto one `SpreadFresnelCore.hlsl` (the refactor was
+    built and proved equivalent once: fragment SPIR-V identical after inlining) so a look change
+    lands in one place. Debt this branch created.
+  - **The Fresnel family is outside §2.2's collectability tint** (`FindColorPropertyNames` wants
+    `_Dull*`; the family names `_DarkColor`) — Space, Time and now the omni show authored colours.
+    One decision for all three crystals. A report: the current look is the approved one.
+  - ~~**`CrystalMorph.hlsl`'s header claims every crystal material carries the node**~~ — corrected
+    2026-10-08 (Squirrel crystal morph): the header now names the two shaders that carry it.
+  - **A domain change on the omni now SNAPS colour instead of lerping it** — the lerp only runs
+    when source and target share a `FindColorPropertyNames` pair (`canLerp`), and the Fresnel pair
+    is not one. The old ShepardGraph team crystals cross-faded over 1-2 s. Report; decide with the
+    tint row above, since the same name change fixes both.
+- **Mass crystal (§2.2 note) — rows from its ship pass, 2026-10-08 (`author_mass_crystal_look.py`).**
+  - **Charge is now the only crystal the collectability tint reaches.** Mass joined the
+    `_DarkColor` family above (`grep -l _DullCrystalColor` over the five crystals' default/inactive
+    materials hits Charge's alone), so Charge alone still crosses blue → lime on `PrismClock` and is
+    dimmed by `ElementalCrystalDimming`; Mass, Space, Time and the omni snap on a material swap. An
+    inconsistency, so a fix — but it is the omni row's decision above, now covering four crystals.
+  - **`ShepardGraph` (259 nodes) survives only for the four `ExplodingMassCrystalMaterial`s**, because
+    `Impact`'s `_velocity` shatter exists nowhere else on this family (`grep -l 71fa8220…` over
+    `*.mat` = those four). Adding the push to `OmniShepardFresnelShader` — the same option the
+    team-omni husk row above names — would let the Mass husks move onto it and retire the graph.
+    Debt this branch created.
+  - **`TadPoleFauna`'s nested `CrystalMass` carries six modifications aimed at fileIDs the prefab
+    no longer has** (`3149521958298771703` ×3 scale, `4323021697783372696` ×3 renderer flags;
+    neither id appears in `CrystalMass.prefab`). Unity never prunes an unresolvable modification
+    (CLAUDE.md, Audit Cell-Owned Visuals). Inert; walked past, not removed, so this branch's diff
+    stayed the swap revert alone.
+  - **`ActiveCrystalMass` and the Hilbert-maze `SpawnedSegments` reuse the Mass shell materials**,
+    so they took the new look too (and the exploding-material repoint). Intended — one Mass look —
+    but nobody has looked at the maze with it. A report.
+- **Omni pentagon charge edges (§2.10) — rows from its ship pass, 2026-10-08.**
+  - ~~**A THIRD transcription of `SpreadFresnelDisplace`.**~~ Closed 2026-10-13: `OmniChargeEdgesShader`
+    was deleted with the edge overlay, and its successor `CrystalChargeArcsShader` copies no push (it draws its
+    own CPU-written geometry). The row as it stood: `OmniChargeEdgesShader` copies the body's
+    `_Spread` vertex push (it has to match it vertex for vertex or the overlay fails the depth test),
+    so the push now lives in `SpreadFresnelShader`, `OmniCrystalFresnelShader` and here. Fold it into
+    the `SpreadFresnelCore.hlsl` row above when that lands — the overlay is the consumer that BREAKS
+    (sinks behind the face) if the body's push changes without it. Debt this branch created.
+  - **`CrystalEdgeArcMeshBaker.GetOrBake` re-bakes and RE-LOGS on every call after a failure.** It
+    caches `null` for an unreadable mesh or a plate filter that matches nothing, then skips the cache
+    hit because of its `cached != null` guard (there for destroyed meshes), so every pooled crystal's
+    `Awake` repeats the bake attempt and the `LogError`. Pre-existing for the unreadable case; the new
+    no-plate case inherits it. A fix: cache a failure sentinel separately from fake-null.
+  - **`CrystalAccentTint` follows the body at SETTLE only.** Correct today, because the Fresnel pair
+    snaps (row above). If that row is fixed and the body starts cross-fading, the bolt halo will hold
+    its old colour for the whole fade and snap at the end — fix both together.
 
 - The inactive palettes (`CosmicWaveColorSetSO`, `PastelColorSetSO`) still carry the old
   flat shielded values **and the old inverted danger rim**. They are dead assets today; if

@@ -3,15 +3,22 @@
 The in-game encyclopedia's data layer and the tool that authors it.
 
 - **Ethirion** is the player-facing name for a **crystal**. Charge / Mass / Space / Time / Omni.
+  *(2026-10-27: the player reads it spelled **Etherion**, at Shombith's request: "Fix the spelling everywhere". The
+  serialized names here (`ethirions`, `CodexKingdom.Ethirion`, the `ethirion.*` ids and `collect.ethirion.*` discovery
+  keys) keep their spelling, because a rename would orphan saved data. The menu's CODEX screen folds the Etherions into
+  its ELEMENTS chapter and lists Flora and Fauna from the Toy Box's Spawn Matrix (`Docs/MENU_REDESIGN_B.md` section 97).)*
 - **Ecology** is every **lifeform** — flora and fauna.
 - **Tool** is the player-facing name for a **Toy** — the freestyle stations you fly into.
+  *(2026-10-26: the menu's CODEX screen calls them **Toys**, at Shombith's request: "Name tools to toys".
+  `Codex.asset` still files them under the `Tool` kingdom; only the screen's words changed,
+  `Docs/MENU_REDESIGN_B.md` section 89.)*
 
 One asset, `Assets/Resources/Codex.asset` (`CodexSO`), holds all three. The runtime UI reads it with
 `CodexSO.Load()`; there is no second data path and nothing to wire per scene, which matters because
 the codex is opened from more than one place and a per-scene reference is a per-scene thing to
 forget.
 
-**Tool:** FrogletTools ▸ Interface ▸ **Codex**.
+**Tool:** FrogletTools ▸ UI ▸ **Codex**.
 
 > **Naming hazard.** A **Tool** in this document is a thing in the GAME — the Vessel Changer, the
 > Cell Selector. It has nothing to do with **FrogletTools**, which are editor tools. The codebase
@@ -31,7 +38,7 @@ it.
 | `Ethirion` | 5 — Charge, Mass, Space, Time, Omni | none — a heart is sized by the **lifeform** carrying it |
 | `Flora` | 16 species — Arbor, Branching, Cacti, Coral, Frond, Gyroid, Lantern, Nerve, Pine, Quasicrystal, Reed, Rosette, SchwarzP, Spire, Tendril, Wall | the 4 **elements** |
 | `Fauna` | 6 species — Brittlestar, Clawfish, QuadFish, Shark, Tadpole, Worm Colony | the 4 **elements** |
-| `Tool` | 6 toys — Vessel Changer, Domain Changer, Cell Selector, Wanderway, Connect the Dots, Lifeform Matrix | the **choices it offers** (hulls, worlds, paintings, kingdoms, domains) |
+| `Tool` | 8 toys — Vessel Changer, Domain Changer, Element Charger, Cell Selector, Wanderway, Arkway, Connect the Dots, Spawn Matrix | the **choices it offers** (hulls, worlds, paintings, kingdoms, domains, elements) |
 
 That is 33 pages over 88 lifeform config assets, the crystal set and 6 toy definitions. One entry per config would
 have been exhaustive and 1:1 with the project, and would also have rendered as a wall of 88
@@ -92,9 +99,9 @@ toybox by *what a toy changes*:
 
 | Category | What it changes | Composes with | Today |
 |---|---|---|---|
-| **Pilot** | YOU — the hull you fly or the colours you wear. The world is exactly where you left it. | Vessel, Domain | Vessel Changer, Domain Changer |
+| **Pilot** | YOU — the hull you fly, the colours you wear or the elements your hull carries. The world is exactly where you left it. | Vessel, Domain, Elementals | Vessel Changer, Domain Changer, Element Charger |
 | **World** | WHERE YOU ARE — a world arrives or leaves. The heaviest thing any tool does. | Cells | Cell Selector, Wanderway |
-| **Creation** | LEAVES SOMETHING BEHIND that lives on without you. | Prisms/Mass, Flora & Fauna | Connect the Dots, Lifeform Matrix |
+| **Creation** | LEAVES SOMETHING BEHIND that lives on without you. | Prisms/Mass, Flora & Fauna | Connect the Dots, Spawn Matrix |
 
 These are the **fundamentals a toy composes with**, not a taxonomy invented for a menu. A toy earns
 its place by working *through* Vessel / Domain / Cell / Prisms rather than around them, so "which
@@ -151,24 +158,34 @@ Three subjects are *photographed*, picked in order:
    nothing, the baker lays a short chain of its `headPrefab` / `bodyPrefab` / `tailPrefab` at the
    colony's own authored spacing and taper.
 
-And a fourth is **drawn**, because it cannot be photographed:
+And a fourth is **drawn**, and not by this baker:
 
-4. **A tool is drawn from the vocabulary it is built from.** A toy has no prefab (§3.5), so
-   `ToolPortraitBuilder` renders its `ToyEmblem`: a **core** (what you are now) ringed by
-   **satellites** (what a pass would offer you), inside the **switch ring** — the platform's one
-   word for "fly through this and something happens". Every proportion is read from `ToyEmblem`'s
-   own published constants, so retuning the emblem retunes the portraits with it and the two can
-   never drift into disagreeing about what a toy looks like; the ring radius is *derived* from the
-   emblem's outer extent rather than copied from Menu_Main's 42u-over-22u, which lands on the same
-   proportion and stays right if either is retuned. The satellite count is the entry's harvested
-   variant count, capped at 12 — sixteen paintings read as a smear, and **a picture is a bad place
-   to state a number**; the stat row says how many.
+4. **A tool's portrait is a 2D glyph that teaches what the toy does** (2026-10-26, Garrett: "update
+   the images on the toybox so they are production ready. they should communicate their utility").
+   `Tools/Build/icon_kit/toy_portraits.py` draws one per toy in the ability-icon language (angular,
+   pure white with the shape in alpha, a 0.6 ghost for "the other one", a hull is its real mesh, an
+   element is its petal SHAPE and never a colour) and writes it into the file the page already
+   points at, keeping its guid; `--check` is the drift gate and `Docs/Icons/sheets/toybox.png` shows
+   each one on the Toy Box card, before and after. What each one says:
 
-   The obvious shortcut — call `ToyFactory`'s own builders — is wrong twice over in an editor pass:
-   `AddSphereBody` discards its collider with `Object.Destroy`, which is illegal in edit mode and
-   logs once per bake, and `AddRingBody` attaches a live `ToyIdleSpin` and hands out a static mesh
-   nobody owns. The rule that nothing wakes up is what makes the geometry here built and owned
-   outright.
+   | Toy | The glyph |
+   |---|---|
+   | Vessel Changer | a Squirrel (solid) and a Dolphin (ghost), the swap between them |
+   | Domain Changer | a fan of three swatch chips, the front one solid with your hull cut out of it |
+   | Element Charger | the HUD's element flower, four petal shapes, each grown most of the way out of its ghost |
+   | Cell Selector | the chosen cell (membrane + nucleus crystal) between two ghost cells |
+   | Wander | your hull leaving through a gap in the cell's membrane onto prisms running into the distance |
+   | Connect the Dots | a star traced dot to dot, the last strokes still a ghost |
+   | Spawn Matrix | a creature, a plant and a hull on one release bench |
+
+   They replaced `ToolPortraitBuilder`'s baked `ToyEmblem` (core + satellites inside the switch
+   ring, in the toy's accent): seven near-identical discs that said "a station" and nothing about
+   what flying through it does. **The baker stands down on Tool pages** (`CodexImageBaker.CanBake`
+   is false for them, `Bake` names the script instead, the Re-bake button says so), because a re-bake
+   would otherwise put the spheres back over the drawn art (CLAUDE.md, the spent one-shot rule). A
+   tool's VARIANT icons (a painting's strokes, a hull) still bake here (§4.5). The in-world emblem
+   on the toy root (`ToyEmblem`, Docs/ToySystem/ARCHITECTURE.md) is unchanged: it is built from real
+   content, and the flat card no longer pretends to be a photo of it.
 
 Two more things worth knowing:
 
@@ -220,6 +237,16 @@ Two things the hull path had to get right, both easy to miss:
   which would have produced five blank icons and no error worth reading. `CodexImageBaker.HarvestModel`
   covers both vessel families, so a variant icon goes through it rather than through
   `ToyModelBuilder` (mesh filters only).
+- **One hull is PROCEDURAL, and on the asset it looks like a different ship.** The Scarab builds
+  its hull in `ScarabHullBuilder.Awake` and hides its wrapped Sparrow model in the same `Awake`,
+  so the prefab ASSET carries an empty `MeshFilter` beside a still-enabled Sparrow — and the
+  harvester baked the Scarab AS the Sparrow, byte for byte (`tool_vessel-changer__scarab.png`
+  and `__sparrow.png` had one MD5). `HarvestModel` now skips everything under
+  `IProceduralElementMorphSource.HiddenLegacyModelRoot` and asks `IProceduralHullSource` for the
+  hull the asset cannot show (bare arrays, minted into meshes it then owns as temporaries). Same
+  fix, same seam, in `ToyModelBuilder` for the toybox's mini hulls. The shipped `__scarab.png` is
+  the stale bake until the codex is re-run in the editor; the Scarab's CARD icon does not wait
+  for it (`Tools/Build/vessel_model/render_cards.py Scarab`, from the model since 2026-10-18).
 - **Hulls bake FLAT, always.** A vessel draws with the shared vessel graph — domain-tinted, and
   reading per-frame globals that do not exist outside a running frame — so the authored pass would
   render black, fall back to flat anyway, and cost a second render for the same picture.
@@ -242,6 +269,11 @@ added later without a schema change or a UI rewrite — the same way `ToyboxSO` 
 state. **Nothing reads them yet**; do not write code that assumes otherwise.
 
 ## 6. Reading it from the UI
+
+**The menu's CODEX screen is the UI that reads it** (`CodexScreen` and `CodexCatalog`, `Assets/_Scripts/UI/Elements/Codex/`;
+`Docs/MENU_REDESIGN_B.md` section 88). It lists every entry of `Ethirions`, the Flora and Fauna of `Ecology` and
+`Tools`, with their stats, element variants (their ethirion through `VariantImage`), elemental laws and tool
+choices, alongside pilots, vessels and elements from their own assets. A field this page adds shows up there.
 
 ```csharp
 var codex = CodexSO.Load();

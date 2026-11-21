@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 72 - notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.ph{position:absolute;left:0;top:0;width:974px;height:450px;overflow:hidden;background:#00041F;color:#E6E9FF;font-family:'Aldrich',sans-serif;transform-origin:0 0}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:24px;margin:0;font-weight:400}
+.h2{font-family:'Aldrich',sans-serif;font-size:20px;margin:0;font-weight:400}
+.h3{font-family:'Aldrich',sans-serif;font-size:16px;margin:0;font-weight:400}
+.body{font-family:'Aldrich',sans-serif;font-size:16px;line-height:1.35;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:13px;line-height:1.35;color:#747BAD;margin:0}
+.sls{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.slx{clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.btn{appearance:none;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px;letter-spacing:.08em;text-transform:uppercase;height:52px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.btn.s{font-size:12px;height:52px;padding:0 14px}
+.ico{appearance:none;border:0;cursor:pointer;width:52px;height:52px;display:inline-flex;align-items:center;justify-content:center;background:rgba(0,212,255,.12);box-shadow:inset 0 0 0 1px #00D4FF;color:#E6E9FF;padding:0}
+.pick{appearance:none;border:0;cursor:pointer;font:inherit;color:inherit;padding:0;text-align:left;background:none}
+.num{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div style="position:absolute;left:56px;top:40px;font-family:Aldrich;font-size:32px;color:#E6E9FF">Rev 72 - notes</div>
+<div style="position:absolute;left:56px;top:120px;width:560px"><div style="font-family:Chakra Petch;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#00D4FF">Asked</div><p style="margin:12px 0 0;font-family:Aldrich;font-size:18px;line-height:1.45;color:#E6E9FF">Shombith, 2026-11-08: a smooth transition in the app shell when the phone turns, with almost no breaking; in a game or the Toybox the Goby and Pistol turn into the Pistol's view; every other vessel: nothing happens, no transition of the gameplay UI.</p><p style="margin:12px 0 0;font-family:Aldrich;font-size:18px;line-height:1.45;color:#747BAD">Then: "show me a clip of the Goby turning to Pistol, also the phone transition of the UI" - no session can record the real turn yet, so this round draws it (option 3).</p></div>
+<div style="position:absolute;left:666px;top:120px;width:560px"><div style="font-family:Chakra Petch;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#00D4FF">The timings</div><p style="margin:12px 0 0;font-family:Aldrich;font-size:18px;line-height:1.45;color:#E6E9FF">The OS turns the last frame (~0.4 s on iOS). Frame 0: the layout switches and the UI goes out. Frames 1-2: held (the fitted PC blocks re-fit a frame late). Then 0.28 s OutCubic back to full. Taps are held off for those ~0.3 s.</p><p style="margin:12px 0 0;font-family:Aldrich;font-size:18px;line-height:1.45;color:#747BAD">The world behind (the menu cell, a vessel in flight) never stops drawing.</p></div>
+<div style="position:absolute;left:1276px;top:120px;width:560px"><div style="font-family:Chakra Petch;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#00D4FF">Built (claude/ui-portrait, #1764)</div><p style="margin:12px 0 0;font-family:Aldrich;font-size:18px;line-height:1.45;color:#E6E9FF">OrientationFade, ScreenOrientationPolicy, IUprightSeat + CrewOrientation, GameCanvas upright. Compiled against the Unity reference assemblies; not yet run in the editor.</p><p style="margin:12px 0 0;font-family:Aldrich;font-size:18px;line-height:1.45;color:#747BAD">Only a phone or the Device Simulator shows the real turn: the checklist's Portrait menus steps 8-10.</p></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

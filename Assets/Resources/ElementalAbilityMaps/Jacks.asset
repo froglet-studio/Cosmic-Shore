@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Jacks
+  m_EditorClassIdentifier:
+  vesselClass: 22
+  entries:
+  - Element: 1
+    AbilityLabel: 'Danger Share'
+    AbilityDescription: 'Charge sets the share of the herd that is DANGER: none at -5, all of it at 15. A danger creature that touches a rival hull stings it (a Strike) and is spent.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Attack'
+    UpgradeDescription: 'The herd goes for rivals near it and bites any it touches.'
+  - Element: 2
+    AbilityLabel: 'The Call'
+    AbilityDescription: 'Herding, call the herd to the point between the jacks. Netting, toggle whether your creatures are drawn to the plane. Mass sets how fast the herd breeds: a birth takes the species'' own feeds at -5 and a third of them at 15, and the herd never starves below its minimum size.'
+    Input: 7
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Mass Clusters'
+    UpgradeDescription: 'Every few seconds a creature of the herd lays a cluster of your mass.'
+  - Element: 3
+    AbilityLabel: 'Wide'
+    AbilityDescription: 'Herding, Wide opens every ring to more than twice its size: the herd fans out across a wide field to graze and the view pulls out to the whole cell; press again and the rings close and the herd bunches. Space sets how big the ring is, never smaller than a big thumb.'
+    Input: 14
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Eat Shields'
+    UpgradeDescription: 'The herd eats shielded prisms.'
+  - Element: 4
+    AbilityLabel: 'Decoys'
+    AbilityDescription: 'Herding, pull a trigger to lay the decoy at the jack on that side (on a phone, lift a thumb). Netting, pull a trigger to rush to the decoy at speed. There is always one decoy. Time makes the herd faster.'
+    Input: 13
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Second Decoy'
+    UpgradeDescription: 'A second decoy: each trigger has its own, laid by it while herding and rushed to by it while netting.'

@@ -1,0 +1,284 @@
+---
+name: vessel-ai
+description: The rules and the test kit for ANY vessel AI in Cosmic Shore - making a new AI for a vessel, changing how an existing one flies, adding or tuning difficulty levels (Easy / Medium / Hard), setting or checking finish / place times, wiring an AI into a mode (backfill seats, GateRaceController steering, a replacement pilot), and testing an AI by WATCHING it from a third eye - the in-game AI Diagnose panel (F2 opens/closes it; buttons take the main camera, editor and development builds: Chase / Follow / Free cameras on any pilot while you play, with each AI's aim and mode gizmos drawn in the Game view) and the Vessel Studio artifact (the same cameras and AI-thinking colours in a browser). Loads the non-negotiables (input-only, difficulty edits belief never the stick, the AIPilot getter trap), the common requirements every new AI owes, the testing ladder from unit test to user playtest, and the shared colour vocabulary. Trigger on Assets/_Scripts/Controller/AI/**, AIPilot, SkimRacePilot / SkimRaceDriver, an IsAutopilotDriven / AutoPilotEnabled branch in an executor, AIDifficulty / AIDifficultyRules, a *DifficultySO or *Handicap, ServerPlayerVesselInitializerWithAI, a mode's SetExternalTargetProvider, Assets/_Scripts/Controller/Camera/ThirdEye/**, Docs/AI_SYSTEM/**, or "the AI flies wrong / is too easy / too hard / test the AI / watch the AI".
+---
+
+# Vessel AI: the rules every AI follows, and how to test one
+
+Every vessel can be flown by an AI, and every AI here is built and judged the same way. This skill is
+the checklist and the test kit. The deep references stay where they are, and this file points at them
+instead of copying them:
+
+| Read | For |
+|---|---|
+| `Docs/AI_SYSTEM/AI_PLAN.md` | **First, before any AI training or tuning: the ONE plan (LOCKED, Garrett 2026-11-02).** One universal AI per vessel per element, trained on the element's arcade game and scored on I1-I4 together; the arena balanced against those fixed AIs; the squad's element and pilot choose and bias the AI in voyages. Name the step your work serves (`Plan step: <id>` in the commit); work that serves none goes to Garrett first |
+| `Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md` | **The current plan**: the Regatta six, the hull-drive pattern every new racing AI follows (§2), measuring in Amoebius (§4), the order |
+| `Docs/AI_SYSTEM/README.md` | Start here: the branch AI work lives on (`Ys-bleeding-edge`), the first command of every AI session (`python3 Tools/Build/ai_branch_sync.py`) |
+| `Docs/AI_SYSTEM/ARCHITECTURE.md` | The six layers (§1) and **the roster of every AI** (§2, the source of truth). A new AI gets a row there first |
+| `Docs/AI_SYSTEM/DIAGNOSIS_PLAYBOOK.md` | The five tiers of evidence, the intake checklist, the user's test-script template, the status board |
+| `Docs/AI_SYSTEM/VESSEL_MODE_CHART.md` | Which hulls have an AI, which modes offer each hull, and what has flown where (`vessel_mode_chart.py --write`; re-run after flights or card changes) |
+| `Arcade/REGATTA.md` §6.3 | How the AI rivals really raced, read from people's editor flights (`regatta_rival_report.py`: rings a minute, circling, stalls, per hull), and the offline race-line model WITH `AIPilot`'s break-off and stick law (`regatta_line_sim.py`). Measure a Regatta AI there before modelling it: the 2026-10-25 failure (break-offs on the line, cut mouths) was invisible to the drive sims |
+| `Docs/AI_SYSTEM/RACING_LINE.md` | Learning from people's editor flights: the racing line averaged from clean legs (`racing_line.py`), each leg's style read from the recording, the capture plan. Readers: `situation_features.py`, `learn_from_flights.py` |
+| `Docs/SKIM_RACE_AI.md` | The most developed AI (the Squirrel's). Its benchmark (§1), difficulty (§10) and simulator are the model for the rest |
+| `Docs/Studios/VESSEL_STUDIO_ROLLOUT.md` | Which vessels have AI, and the order their studios are built in |
+| `/vessel-studio` | The browser studio: AI race panel, levels (§1.5.7), cameras (§1.5.9) |
+| `/vessel`, `/arcadegame`, `/arenagame` | The hull's kit, the mode recipe, and the fleet facts (which hulls an autopilot can drive) |
+
+## 1. The non-negotiables
+
+1. **Input-only.** An AI reads what a pilot could see and writes only what a pilot could press: the
+   stick, the throttle and the vessel's buttons through `R_VesselActionHandler`. It never moves the
+   hull, never edits a crystal, never touches a score. Gate: `python3 Tools/Build/check_ai_no_state_writes.py
+   --check`. Its scope covers only the Skim Race and training folders, so **add the new AI's files to
+   its `SCOPES`** and review every finding (`DIAGNOSIS_PLAYBOOK.md` §3).
+2. **Difficulty changes what the AI BELIEVES, never its stick or its hull.** Easy and Medium are Hard plus
+   human-shaped mistakes in decisions (late notice, a misjudged target), so a mistake costs what it
+   costs a human. Never jitter the stick, slow the throttle or cap the speed to make an AI easier (§3).
+3. **No per-frame allocation**: no 3-argument `Mathf.Min/Max` (`check_mathf_params_alloc.py`), no LINQ or
+   closures in a tick, `NonAlloc` physics queries. **No `MathF` in code a Burst job reaches.**
+4. **Logs on a `CSLogChannel`**, never raw `Debug.Log`, nothing per frame (CLAUDE.md).
+5. **Randomness is the AI's own**: `System.Random` seeded per bind, never `UnityEngine.Random`, whose global
+   state the track generators seed.
+6. **Every AI exposes a read-only diagnostics struct**: at least the point it is steering for, its state,
+   and the reason for its last recovery (`SkimRaceDriver.Diagnostics` is the model). That is what lets
+   the Third Eye and the studio draw it (§4.2). An AI that cannot say where it is going cannot be watched.
+7. **Never read `VesselStatus.AIPilot` from a tool or a reader.** Its getter is `GetOrAdd<AIPilot>()`: reading
+   it ADDS an autopilot to a human's ship. Use `status.TryGetComponent(out AIPilot pilot)`.
+8. **In a Time game mode, speed comes before breaking** (Yash, 2026-11-17; `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`
+   §6.2). An AI breaks only what it cannot pass, and passes as soon as it can: once the hull can fly through its ring
+   (a gap wide enough exists, however it got there) it commits to the ring and never leaves for a pickup to break more.
+   When it must break, it takes the pickup on its way, not one beside or behind it. "Passable" is measured from the
+   game's data (the prisms' real boxes against the hull's size), at the replan rate, never per frame. The decision is a
+   pure function with an edit-mode test: blocked ring and a crystal ahead takes the crystal; a ring partly opened and
+   passable is flown even with another crystal nearby; an open ring is never left
+   (`SwitchbackBlastPlanner.Passable` / `KeyOnTheWay`, `SwitchbackSpeedOverBreakingTests`). The rule is about the AI's
+   choice: it never changes or rations what a vessel's ability does.
+
+## 2. Where a new AI goes (the lowest layer that works)
+
+The six layers are in `ARCHITECTURE.md` §1. Pick the lowest one that answers the need:
+
+| Need | Layer | Example |
+|---|---|---|
+| The mode only needs to say WHERE to fly | 2: `AIPilot.SetExternalTargetProvider` / `SetDriftLookTargetProvider` | 22 modes; every `GateRaceController` race (commit / lead / through distances per mode) |
+| The hull's speed or main mechanic is an ABILITY the autopilot never presses | 4: an autopilot drive inside the executor, through the REPLICATED press / release | Manta Soar (`MantaAnalogTurnBoostExecutor`), Grizzly bomb-jump (`GrizzlyTriggerBombExecutor`), Stoat sling (`StoatSlingExecutor.AutopilotSling`) |
+| A pure decision about the hull's kit in a mode | 3: a pure class in `Controller/AI/<Hull>/` plus an adapter in the mode controller | `UrchinAutopilotDriver` + `UrchinRailAssessment` (the model: pure, tested) |
+| The whole race needs its own planner | 5: a replacement pilot that stands `AIPilot` down for one mode × hull | `SkimRacePilot` (installed by `SkimRaceAIDeployment`) |
+
+**A hull whose speed is an ability races at cruise without a layer-4 drive** (the autopilot writes stick and
+throttle only). A card that lists such a hull has said an all-AI domain cannot win there. Check
+`/arenagame` §1's fleet table before seating an AI hull anywhere.
+
+## 3. What every new AI owes (the common requirements)
+
+Copy this list into the AI's doc and tick it.
+
+- [ ] **Roster row** in `ARCHITECTURE.md` §2 and a **status-board row** in `DIAGNOSIS_PLAYBOOK.md` §5.
+- [ ] **Input-only gate** widened to its files, findings reviewed (§1.1).
+- [ ] **Profiler markers** `AI.<Name>.*` around its per-frame decision and any search inside it, in a
+      commit of their own (provably no behaviour change).
+- [ ] **A diagnostics struct** (§1.6), and a branch in `ThirdEyePilots.Read` that draws it (§4.2).
+- [ ] **Tests for the decision a playtest would argue about** (which rail, when to fire, when to dash).
+      A simulator only when a race-level question (finish times, the difficulty ladder) cannot be answered
+      by a test. The Skim Race one took days, and earned them.
+- [ ] **It can win.** An all-AI domain must be able to finish and win the mode it is seated in, at every
+      intensity. If it cannot, the card says so.
+- [ ] **Difficulty**, decided explicitly (below).
+- [ ] **Finish / place times**, measured and written down (below).
+- [ ] **A user test script** (tier 4 + 5) in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, using the Third Eye
+      (`DIAGNOSIS_PLAYBOOK.md` §4 is the template).
+- [ ] **A studio**, when the vessel has one or is next in `VESSEL_STUDIO_ROLLOUT.md` (`/vessel-studio`).
+
+### 3.1 Difficulty levels
+
+- **Where a difficulty is offered** (`AIDifficultyRules.IsOfferedFor`): Skim Race (its own pilot), the gate
+  races Slingshot / Warpline (`GateRaceHandicap`), Regatta (Squirrels on the Skim Race pilot, every other hull
+  `GateRaceHandicap`), and the Arena's Astro League / Brood Rush /
+  Broadside (`AIDifficultyRules.UsesPilotBelief` -> `AIPilotBelief` on the platform `AIPilot`: the same two
+  mistakes on whatever point the autopilot wants; never on a mode with its own handicap). In every other
+  mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
+  0.7 → 1.0). Say which one your AI uses.
+- **To add a difficulty to a mode**, follow Skim Race's pattern (`SKIM_RACE_AI.md` §10) and do not invent a
+  second one:
+  - **Hard is the shipped pilot, unchanged**, and must be the fastest on every course (prove it, or the
+    levels decide nothing).
+  - **Medium and Easy are Hard plus the same kinds of mistake, more of them**: late notice of a new target
+    (Skim Race: 0.25 s / 0.5 s mean, × 0.5–1.5 per target) and a misjudged target flown to where it was
+    believed (4.5% / 9.9%). A vessel-specific mistake (the Stoat's pair judgement) is allowed; say so.
+  - **One setting per level for every intensity** (a `*DifficultySO` in `Resources/`, authored by a
+    generator), so a new track inherits it untouched.
+  - **Tune by measurement against a target time**, bisecting the mistake chance (`run.sh handicap` in the
+    Skim Race harness), on fresh seeds after the search.
+  - Register the mode in `AIDifficultyRules.IsOfferedFor` + `AIDifficultyRulesTests`. The lobby row
+    (`AIDifficultyPicker`) then appears on its card (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3).
+- **The one exception: Switchback's nose lag by difficulty** (Yash, 2026-11-02, `SWITCHBACK.md` "Lag by difficulty").
+  There the AI's nose lag (the fleet's 1.5/s, which every AI hull keeps) cost more than every other skill difference,
+  so the four levels finished together. Switchback writes each AI pilot's nose follow rate
+  (`VesselTransformer.AINoseFollowPerSecond`, from `GateRaceController.OnRacerArmed`) from a row per intensity
+  (`aiNoseFollowByIntensity`), set to Yash's time bands (10 s steps). The I4 gauntlet (2026-11-03) has its own row,
+  `aiNoseFollowGauntlet`, on its own bands (Easy 175-195 s ... Legendary 145-165 s); the per-intensity I4 row stays
+  for a mode that reuses Switchback's course without the gauntlet (Scarab Rally).
+  It breaks two rules above on purpose: Legendary is faster than the shipped pilot, and the setting is per intensity.
+  The hull's kit is unchanged (the nose rate is a per-pilot dial, as people's pad / touch / keyboard rates are), and
+  every other mode leaves it unset. Copying it to another mode goes into the AI owner's `/approve` queue (`Docs/TEAM.md` rule 13);
+  `AI_PLAN.md` §7 holds the question.
+- **Level colours**, the same in the game tools and the studios: Hard red, Medium amber, Easy green
+  (`ai_race_panel.js` `data-lv`).
+
+### 3.2 Finish and place times
+
+- **Define the benchmark first** (`SKIM_RACE_AI.md` §1 is the model): the scene, the seats (host idle on its own
+  domain + one AI, so the domain's result is the AI's own work), the target count, the clock (the game's
+  own race clock, never a stopwatch), the success rule, the time limit per intensity, and what is
+  physically possible (route length ÷ top speed).
+- **Report a distribution, never one race**: seat median, p10–p90, winner median, seats finished, per
+  intensity × difficulty, with the seeds and the frame time. Small samples of a race are noisy (Skim Race:
+  a 6-race sample read 101 s where 40 seeds read 90.5 s).
+- **The Skim Race reference table** (`SKIM_RACE_AI.md` §10, 2 AI seats, 20 seeds per intensity): Hard I1
+  68.2 s, I2 80.2 s, I3 188.2 s, I4 150.5 s; Medium is 14–19% slower than Hard everywhere; Easy 36–54%
+  slower on the short tracks and 23–25% on the long ones. A new AI states its own table in the same shape.
+- **Measure in the editor too**, through the normal launch path (`FrogletTools > AI > Skim Race AI
+  Benchmark` is the model: N races, one JSON record each, a report script). Editor numbers need an
+  uncapped, focused editor; a throttled background editor invalidates every race (`SKIM_RACE_AI.md` §8.0a).
+- **Write every number with its tier and its conditions** (simulator / editor / player; seeds; fps).
+
+## 4. Testing an AI: the ladder
+
+Climb it in order; each rung catches what the one below cannot.
+
+| Rung | What | Answers |
+|---|---|---|
+| 1 | Gates + compile (`unity_refcompile`, `/asset-surgery` §4) | Does it build, is it input-only, does it allocate |
+| 2 | Edit-mode tests of the decision math | Is the decision right on the cases a playtest would argue about |
+| 3 | Offline simulator / harness (only if needed); wrapped as a compute job it SEARCHES too (§7) | Finish-time distributions, difficulty ladder, the best drive the model can find |
+| 4 | **Watch it**: the Vessel Studio (browser) and the **Third Eye** (Unity, §4.1) | Does it LOOK right: aim, line, recoveries, mistakes |
+| 5 | Profile (`diag` / `prof` console, the AI's markers) | What it costs per frame, per seat |
+| 6 | The user's playtest script (`UNITY_VERIFICATION_CHECKLIST.md`) | Does it feel right against a human |
+
+### 4.1 The AI Diagnose panel (code name Third Eye; in the game scene, editor + development builds)
+
+The Third Eye is a camera tool INSIDE the game view (`Assets/_Scripts/Controller/Camera/ThirdEye/`, 2026-11-01;
+the old `FrogletTools > AI > Third Eye` window and its second render are gone). It drives the MAIN camera, so
+nothing is rendered twice. Compiled only into the editor and development builds; a release build has none of it.
+
+| Control | Does |
+|---|---|
+| **F2** | Open / close the **AI Diagnose** panel (the ONLY hotkey; ignored while the menu's god-mode camera is up or a text field has focus) |
+| Panel: Camera | Take / Release camera; Chase, Follow, Free fly, Orbit; Prev / Next / Frame pilot; Fly speed slider |
+| Panel: Pilots / Overlays / Settings | You / AI per pilot; AI thinking, trails, labels, mode gizmos |
+| Panel: Command + Send | Any DiagnosticsHUD console command (Enter also sends; `help` lists them), e.g. `aidiag cam on`, `aidiag fly`, `aidiag next`, `aidiag thinking on`, `aidiag overlay trails off`, `timescale 0.5` |
+| Free fly | Lavalamp's `FreeFlyCamera` (shared with `MenuGodModeCamera`): RMB look, WASD, E/Space up, Q/Ctrl down, Shift fast, Alt slow, wheel speed, gamepad. Your hull's input is paused while it flies. |
+| Orbit | Drag RMB round the watched pilot |
+
+- **AI thinking** (overlay): a line from each AI hull to its aim point, coloured by state, a ring on the crystal
+  it is really after; the bottom strip reads the watched AI's state, heading error, recoveries, difficulty mistakes
+  and (Skim Race pilot) the skim readout (`SKIM_RACE_AI.md` §15.1).
+- **Trails** and **Labels** (overlays): each pilot's last seconds of flight; name, hull, speed, off-screen pilots
+  pinned to the screen edge.
+- **Mode gizmos** (overlays a mode registers through `ThirdEyeOverlays.Register`): Switchback adds *AI plan* and
+  *AI sense*, drawn in the Game view by the same code as its scene gizmos (`IDebugLineSink`).
+- **Pilots**: every pilot with **You / AI** (host / solo only, `PilotControl`). Same rules as before: your hull on AI
+  hands it to the mode's AI; You on an AI's hull takes it over and the AI flies the hull you left.
+- **The default cameras are untouched.** The game starts on its own camera (gameplay chase, Lavalamp follow); the
+  panel never opens or takes the camera by itself. Diagnose cameras and overlays exist ONLY while the panel is open:
+  closing it (F2, `aidiag panel off`, a scene unloading at match end, quit, editor Play stop) releases the camera
+  (its driver and FOV restored) and turns every overlay off. Any `aidiag` camera/overlay command opens the panel.
+- With the panel closed it costs nothing (HUD disabled, no scan). Works while paused (unscaled time).
+- Only slider tuning (FOV, distances, smoothing, look, trail length) is saved (PlayerPrefs `CosmicShore.ThirdEye.Settings`);
+  camera mode, open state and overlay toggles are session-only and reset on every Play / domain reload.
+- F2 is ignored while Lavalamp god mode (`MenuGodModeCamera`) is up or a text field has focus.
+
+**What to look for** (each one has been a real defect somewhere):
+- The aim point **behind** the hull, or jumping between two points every frame: the planner is flip-flopping.
+- A **violet loop** that keeps coming back: a recovery that does not recover.
+- **Amber that never turns green**: a notice delay that never ends (Easy / Medium only).
+- The aim on the crystal while the hull **leaves the racing line**: an AI chasing the crystal loses every
+  skim (`/vessel-studio` §7).
+- An AI hull that **never steers** at all: its `AIPilot` serialized disabled (the Grizzly's was).
+- A hull at **cruise on every straight**: its speed is an ability with no layer-4 drive (§2).
+
+### 4.2 Making a new AI visible in the Third Eye
+
+`ThirdEyePilots.Read` (`Assets/_Scripts/Editor/AI/ThirdEyePilots.cs`) turns a pilot into a `ThirdEyeThinking`
+(aim, state, colour, real target, detail). It knows the Skim Race pilot and the platform autopilot. For a new
+AI, add a branch above the autopilot one that reads the AI's diagnostics struct (§1.6), using the colours
+below. Keep it a reader: no `GetOrAdd`, no writes, nothing per frame beyond reading fields.
+
+### 4.3 The colour vocabulary (Third Eye and every studio)
+
+| Colour | Meaning |
+|---|---|
+| Green (`Lime`) | Flying for its target |
+| Amber (`Gold`) | Has not noticed the new target yet (difficulty) |
+| Red (`Ruby`) | Misjudged the target (difficulty) |
+| Violet | Working its mechanic or recovering: Skim Race recovery, autopilot orbit break, the Stoat's pair |
+| Blue (`Azure`) | Platform autopilot seeking its objective |
+| Cyan ring | The target the AI is really after |
+
+Pilot labels and the info strip's stripe use the **game's** domain colour (`PhoticColorSetSO`'s signal colour,
+the same source as the studios' `studio-domains.js`): game Ruby is magenta, never the editor palette's red.
+
+## 5. Traps
+
+- **The `AIPilot` getter adds a component** (§1.7). A reader that called it put autopilots on human ships.
+- **`AIPilot` serialized disabled**: steering runs in `Update`, so the hull never steered (Grizzly, `GRIZZLYTIME.md` §4).
+- **Two replacement pilots avoid each other through a hard-coded check** (`TrainingDeploymentService` vs
+  `SkimRaceAIDeployment.Claims`), until the registry in `ARCHITECTURE.md` §4.2 lands. A new replacement pilot
+  must add itself there, or both install.
+- **An off-screen camera comes up with URP's defaults** (no post, wrong volume): use `OffscreenCameraSetup`.
+- **Never borrow the gameplay camera to watch** (`CameraManager.BeginWindowedPlayerCamera` lends the rig
+  that IS the screen in a match). The Third Eye has its own.
+- **Editor benchmarks in a background editor are invalid** (throttled to ~8 fps).
+- **An offline model without the AI nose lag flatters every turn.** An AI hull's nose follows its command at 1.5/s,
+  drifting included (only a local human's has no lag), so a model that swings the nose freely makes drift tricks look
+  fast that lose in the game. The Switchback simulator's first drift was lag-free and had to be re-measured
+  (`SWITCHBACK.md` "Step 4"); model the lag (`VesselTransformer.NoseFollowFraction`) before trusting a turn.
+- **A difficulty ladder the lag flattens decides nothing.** Where the nose lag is the slowest thing in the race, levels
+  that differ only in judgement finish together (Switchback: I4 172 / 169 / 169 / 172 s). Measure the ladder before
+  shipping it (§3.1).
+- **A key off the AI's line is missed if the strike aims past it along the FIRE line.** A commit drift locks the course
+  onto `desired` at the moment it commits, so aiming at `key + fire * 40` (right while the key sat on the line) passes an
+  off-line key 13-24 u wide when the fire line turns from the approach (Switchback's I4 gauntlet, 2026-11-03). Aim
+  THROUGH the key along the approach and let the drift look swing the nose onto the fire line
+  (`SwitchbackBlastAI.GateBlastAim`).
+- **A plan costed over one obstacle's box undercounts the plan that ignores the obstacle.** Splitting a gate into several
+  keys made "thread straight to the ring" look cheap at the first key, because only that key's box was counted; the AI
+  skipped every first key. Cost each plan over the whole way to the ring (`SwitchbackBlastPlanner.PathPenalty`).
+- **A point to fly through must be sized from the RING's mouth, not from whatever hangs behind it.** Switchback's
+  pass points were first spread across the door's eye (42 u at I4), wider than the ring (20 u): the AI aimed outside
+  its own mouth and missed 73 rings in 24 races where it had missed 4 (2026-11-17). A missed mouth costs a loop, a
+  plain prism 0.25 s, so a pass point stays well inside the mouth (`SwitchbackBlastPlanner.PassMouthShare`).
+- **Three editor races a side cannot settle a 5% question.** Switchback's speed-over-breaking A/B (I4, three AI
+  Dolphins, the same course): after three races a side the new rule's winners looked 9.5 s slower; after six a side the
+  gap was 4.6 s inside a 12 s spread, with one "before" race at 215 s. An I4 winner's time has a standard deviation of
+  8-12 s. Run the sides in swapped order, at least six races each, and say plainly when the races cannot tell.
+- **"On the way" is a time, not a distance off the line.** Judged as "within 20 u of the line and a turn under
+  15 deg", a key 12 u off the line 40 u ahead was refused (17 deg) though flying through it costs 0.06 s, and the AI
+  gave up blasts that paid (Switchback I2 Legendary 5 s slower offline, 2026-11-17). Cost the extra distance at the
+  hull's speed plus the bend at its turn rate (`SwitchbackBlastPlanner.KeyDetourSeconds`, 0.15 s or less = on the way):
+  the same number refuses a gauntlet key 50 u off the line 150 u ahead (a 37 deg bend, 0.33 s).
+- **Run a mode's EditMode tests headless before Unity does.** When the tested code is pure (layout, planner), compile
+  the SHIPPED test file against the harness's Unity shim with an NUnit shim (`switchback_sim_harness/run.sh tests`:
+  `NUnitShim.cs` expands `[Values]`, `TestRunner.cs` reports PASS/FAIL), then negative-control the new tests by planting
+  the defect each guards.
+
+## 6. Keep it alive
+
+When an AI lands or changes: its roster and status-board rows, its numbers in its own doc, a branch in
+`ThirdEyePilots.Read` if it has a new diagnostics shape, and a costly trap added to §5 here. This is the
+only AI skill: fold new AI guidance in here (studio-page rules stay in `/vessel-studio`).
+
+## 7. Self-play where nobody plays: the compute queue
+
+**Froglet Compute is the default for any AI training** (CLAUDE.md, Shombith 2026-11-02): queue a search with
+`/compute-job`, send a Unity trainer run from the console's New run, and read the steps on its AI plan page. Never
+run a training sweep or a trainer session by hand except to prove an evaluator before queueing it.
+
+People's races teach the AI wherever people play (the hourly AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`).
+An intensity or a minigame nobody plays never gets a race to imitate; there, an offline race model plus a search is
+the only teacher. `/compute` runs those searches on the team's idle machines (`drive_fit`: a drive's asset fields x
+mean ln race seconds over I1-I4), `/compute-scout`'s coverage lens lists every vessel x Time game x intensity and
+which have neither races nor a model, and `/regatta-balance` is the plan they serve. Rules: a searched drive is a
+PROPOSAL for the AI owner (Yash), written into `<policy>_<Mode>` only with his yes and the learner's own writer; when
+imitation and search disagree, show both. A new offline model (`*_drive_sim.py`) becomes searchable by adding it to
+`Tools/Compute/evaluators/race_models.py` (`/compute-job` section 5).

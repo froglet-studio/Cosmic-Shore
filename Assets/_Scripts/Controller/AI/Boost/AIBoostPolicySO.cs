@@ -1,0 +1,247 @@
+using System.Collections.Generic;
+using CosmicShore.Data;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// What an <see cref="AIPilot"/> knows about its line this frame, handed to its boost driver.
+    /// Everything a boost decision needs and nothing it does not: the boost driver never steers,
+    /// it only decides whether this is a straight worth spending on. See <c>AI/AI_BOOST.md</c>.
+    /// </summary>
+    public readonly struct AIBoostContext
+    {
+        /// <summary>World offset from the vessel to the objective the pilot is flying at.</summary>
+        public readonly Vector3 ToTarget;
+
+        /// <summary>Direction of TRAVEL (the course; the nose outside a drift).</summary>
+        public readonly Vector3 Heading;
+
+        /// <summary>The nose.</summary>
+        public readonly Vector3 Forward;
+
+        /// <summary>Current speed, u/s, never negative.</summary>
+        public readonly float Speed;
+
+        /// <summary>The stick deflection the pilot last wrote, 0..1 (the larger axis).</summary>
+        public readonly float Stick;
+
+        /// <summary>The pilot is flying a break-off away from its objective, not at it.</summary>
+        public readonly bool BreakingOrbit;
+
+        /// <summary>The pilot is holding its commit drift (course locked on the objective).</summary>
+        public readonly bool CommitDriftHeld;
+
+        /// <summary>The vessel cannot translate right now (a stance, a stop) - never boost.</summary>
+        public readonly bool Restricted;
+
+        /// <summary>From the objective to where the pilot flies AFTER it (the mode's
+        /// <see cref="AIPilot.SetNextLegProvider"/>; the gate races give the mouth, then the next ring). Zero when the
+        /// mode does not say.</summary>
+        public readonly Vector3 NextLeg;
+
+        /// <summary>From the vessel to where it is actually flying, when that is a lead point on a path rather than the
+        /// objective (a race line's look-ahead, <see cref="AIPilot.MarkAimAsPathLead"/>); zero otherwise. See
+        /// <see cref="PathDirection"/>.</summary>
+        public readonly Vector3 ToPath;
+
+        public AIBoostContext(Vector3 toTarget, Vector3 heading, Vector3 forward, float speed, float stick,
+                              bool breakingOrbit, bool commitDriftHeld, bool restricted, Vector3 nextLeg = default,
+                              Vector3 toPath = default)
+        {
+            ToTarget = toTarget;
+            Heading = heading;
+            Forward = forward;
+            Speed = Mathf.Abs(speed);
+            Stick = Mathf.Clamp01(stick);
+            BreakingOrbit = breakingOrbit;
+            CommitDriftHeld = commitDriftHeld;
+            Restricted = restricted;
+            NextLeg = nextLeg;
+            ToPath = toPath;
+        }
+
+        public float Distance => ToTarget.magnitude;
+
+        /// <summary>
+        /// Where the pilot is going: the path's lead point when it flies one (<see cref="ToPath"/>), else the objective.
+        /// On Regatta's race line the line follows the braid's curve between rings, so the hull is pointed along the
+        /// curve and the ring it is after sits 18-35 deg off the course for most of every leg (median 21 deg in
+        /// <c>Tools/Build/rhino_line_sim.py</c>): judged by the ring, no stretch of the line was ever "straight" and no
+        /// hull spent its speed verb there (the Rhino ramped 5-10% of a race and took 196-216 s for three laps; judged by
+        /// the path, 70-100% and 30-52 s; 2026-10-25). The runway and the corner stay the objective's
+        /// (<see cref="Distance"/>, <see cref="CornerDegrees"/>).
+        /// </summary>
+        public Vector3 PathDirection => ToPath.sqrMagnitude > 1e-4f ? ToPath : ToTarget;
+
+        /// <summary>Degrees between where the vessel is travelling and where it is going (<see cref="PathDirection"/>:
+        /// the objective, or a race line's lead point).</summary>
+        public float AngleToTarget => Vector3.Angle(Heading, PathDirection);
+
+        /// <summary>Seconds to the objective at the current speed - the straight still ahead.</summary>
+        public float RunwaySeconds => Distance / Mathf.Max(Speed, 1f);
+
+        /// <summary>Degrees the pilot turns AT the objective (between the leg into it and <see cref="NextLeg"/>), or -1
+        /// when the mode does not say what comes after it.</summary>
+        public float CornerDegrees => NextLeg.sqrMagnitude > 1e-4f && ToTarget.sqrMagnitude > 1e-4f
+            ? Vector3.Angle(ToTarget, NextLeg)
+            : -1f;
+    }
+
+    /// <summary>
+    /// A hull's AI BOOST POLICY: when an autopilot spends that hull's speed resource. One subclass
+    /// per boost MECHANIC (hold, pellet, drift-charge, skim ring, throttle dash), never per mode -
+    /// each reads the hull's own bound ability and the ability's own numbers, so a retune of the
+    /// ability retunes the bot with it.
+    ///
+    /// <para><b>The shared law</b> is the one a human races by and the one the Manta's
+    /// <see cref="MantaAnalogTurnBoostExecutor"/> drive and the Rhino ramp already encode: spend on
+    /// a STRAIGHT at the objective (course within <see cref="alignDegrees"/>, stick inside
+    /// <see cref="stickBand"/>, at least <see cref="engageRunwaySeconds"/> of it left) and stop
+    /// spending before the TURN (under <see cref="releaseRunwaySeconds"/> from the objective, where
+    /// the next leg starts).</para>
+    ///
+    /// <para><b>Opt-in, per hull, per mode.</b> A prefab with no policy is untouched. A mode in
+    /// <see cref="disabledInModes"/> gets the hull's PRE-POLICY behaviour exactly - the driver never
+    /// starts and the ability cycler keeps the entry it would otherwise hand over - so listing a
+    /// mode is always a pure revert, never a third behaviour.</para>
+    /// </summary>
+    public abstract class AIBoostPolicySO : ScriptableObject
+    {
+        [Header("The straight")]
+        [Tooltip("Engage only while the course is within this many degrees of the objective.")]
+        [SerializeField, Range(0f, 90f)] float alignDegrees = 12f;
+        [Tooltip("A held boost lets go once the course swings past this many degrees (hysteresis " +
+                 "above Align Degrees so a small correction does not flicker the boost).")]
+        [SerializeField, Range(0f, 120f)] float releaseAlignDegrees = 25f;
+        [Tooltip("Engage only while the pilot's stick deflection is under this - the Manta drive's " +
+                 "band (MantaAnalogTurnBoostExecutor.aiBoostStickBand), i.e. 'it is flying straight'.")]
+        [SerializeField, Range(0f, 1f)] float stickBand = 0.35f;
+        [Tooltip("A held boost lets go once the stick goes past this (hysteresis above Stick Band).")]
+        [SerializeField, Range(0f, 1f)] float releaseStickBand = 0.6f;
+
+        [Header("Runway")]
+        [Tooltip("Seconds of straight (distance to the objective at the CURRENT speed) needed to start " +
+                 "spending. Spending into a short leg buys a wide turn, not time.")]
+        [SerializeField, Min(0f)] float engageRunwaySeconds = 1.5f;
+        [Tooltip("Stop spending inside this many seconds of the objective: the next leg begins there " +
+                 "and boosting into an unknown turn is what loses races. Conserve for the next straight.")]
+        [SerializeField, Min(0f)] float releaseRunwaySeconds = 0.5f;
+
+        [Header("Where it applies")]
+        [Tooltip("Modes in which this policy stands down and the hull flies exactly as it did before " +
+                 "the policy existed (e.g. a mode whose score depends on the hull NOT boosting through " +
+                 "its objective).")]
+        [SerializeField] List<GameModes> disabledInModes = new();
+        [Tooltip("Only drive a pilot that is an AI PLAYER - not the menu's lava-lamp autopilot flying " +
+                 "the human's own vessel. For a policy whose ability leaves something in the world.")]
+        [SerializeField] bool requireAIPlayer;
+
+        public float AlignDegrees => alignDegrees;
+        public float EngageRunwaySeconds => engageRunwaySeconds;
+        public float ReleaseRunwaySeconds => releaseRunwaySeconds;
+        public bool RequireAIPlayer => requireAIPlayer;
+
+        public bool AllowsMode(GameModes mode) => disabledInModes == null || !disabledInModes.Contains(mode);
+
+        /// <summary>Resources folder of the per-mode variants <see cref="ForMode"/> looks in.</summary>
+        public const string ModeVariantFolder = "AIBoostPolicies";
+
+        /// <summary>
+        /// The variant of <paramref name="policy"/> tuned for one mode - <c>Resources/AIBoostPolicies/&lt;name&gt;_&lt;mode&gt;</c>,
+        /// e.g. <c>RhinoAIBoostPolicy_Regatta</c>, written by <c>Tools/Build/learn_drives_from_flights.py</c> from people's
+        /// editor flights - else <paramref name="policy"/> itself. The SkimRaceAIConfigSO.LoadForRegatta pattern: a mode's
+        /// learned numbers never retune the hull in every other mode. Same class as the base or it is ignored.
+        /// </summary>
+        public static AIBoostPolicySO ForMode(AIBoostPolicySO policy, GameModes mode)
+        {
+            if (!policy) return policy;
+            var variant = Resources.Load<AIBoostPolicySO>($"{ModeVariantFolder}/{policy.name}_{mode}");
+            return variant && variant.GetType() == policy.GetType() ? variant : policy;
+        }
+
+        /// <summary>
+        /// The variant tuned for one mode at one intensity - <c>&lt;name&gt;_&lt;mode&gt;_I&lt;n&gt;</c>, e.g.
+        /// <c>DolphinAIBoostPolicy_Switchback_I4</c>, learned from that intensity's races alone - else the mode's
+        /// variant (<see cref="ForMode(AIBoostPolicySO, GameModes)"/>). A mode whose intensity is its course (Switchback's
+        /// 72 u mouths at I1, 20 u at I4) needs a drive per course: one set of numbers learned from every intensity
+        /// is the easiest one's, and throws the hardest one's mouths. <paramref name="intensity"/> 0 or less: the mode's.
+        /// </summary>
+        public static AIBoostPolicySO ForMode(AIBoostPolicySO policy, GameModes mode, int intensity)
+        {
+            if (!policy) return policy;
+            if (intensity > 0)
+            {
+                var variant = Resources.Load<AIBoostPolicySO>($"{ModeVariantFolder}/{policy.name}_{mode}_I{intensity}");
+                if (variant && variant.GetType() == policy.GetType()) return variant;
+            }
+            return ForMode(policy, mode);
+        }
+
+        /// <summary>A straight worth starting to spend on (before the runway test).</summary>
+        public bool IsStraight(in AIBoostContext c) =>
+            !c.Restricted && !c.BreakingOrbit && c.AngleToTarget <= alignDegrees && c.Stick <= stickBand;
+
+        /// <summary>Still straight enough to KEEP spending - the wider release band.</summary>
+        public bool StillStraight(in AIBoostContext c) =>
+            !c.Restricted && !c.BreakingOrbit && c.AngleToTarget <= releaseAlignDegrees && c.Stick <= releaseStickBand;
+
+        /// <summary>At least <paramref name="scale"/> × the engage runway is left.</summary>
+        public bool HasRunway(in AIBoostContext c, float scale = 1f) => c.RunwaySeconds >= engageRunwaySeconds * scale;
+
+        /// <summary>The objective, and the turn after it, is close: stop spending.</summary>
+        public bool TurnAhead(in AIBoostContext c) => c.RunwaySeconds < releaseRunwaySeconds;
+
+        /// <summary>
+        /// Build this pilot's driver, or null when the hull binds none of the ability this policy
+        /// drives - a mis-assigned policy is then a quiet no-op, never a broken pilot.
+        /// </summary>
+        public abstract AIBoostDriver CreateDriver(IVesselStatus status, ActionExecutorRegistry executors);
+    }
+
+    /// <summary>
+    /// One pilot's live boost state. A policy asset is shared by every AI flying that hull, so all
+    /// per-pilot state lives here.
+    /// </summary>
+    public abstract class AIBoostDriver
+    {
+        /// <summary>
+        /// True for an ability this driver presses itself. <see cref="AIPilot"/>'s blind ability
+        /// cycler skips it (the commit-control exclusion's twin): the cycler's StopAction lands on
+        /// the same shared state and would cut a boost the driver is holding.
+        /// </summary>
+        public virtual bool Drives(ShipActionSO action) => false;
+
+        /// <summary>Decide this frame. Called from AIPilot.Update while the autopilot flies.</summary>
+        public abstract void Tick(in AIBoostContext context);
+
+        /// <summary>Let go of everything this driver holds. Every path out of autopilot calls it.</summary>
+        public abstract void Release();
+
+        /// <summary>While true the pilot must not START a commit drift (the Dolphin is spending
+        /// the charge that drift would cancel).</summary>
+        public virtual bool HoldsOffCommit => false;
+
+        /// <summary>While true the pilot holds its stick centred (a Squirrel flying the ring it laid).</summary>
+        public virtual bool HoldsLine => false;
+
+        /// <summary>One-shot: the driver wants the pilot to let go of its commit drift now.</summary>
+        public virtual bool TakeCommitReleaseRequest() => false;
+
+        /// <summary>While true the pilot holds its throttle full (the Rhino's ramp: a lifted throttle is a bend in
+        /// the straight-line gesture, and grades the ramp down).</summary>
+        public virtual bool HoldsFullThrottle => false;
+
+        /// <summary>While 0 or more, the pilot writes exactly this throttle (the Rhino's ramp brake: a lifted throttle
+        /// grades the ramp down, so it bleeds at the ramp's own rate). -1 = the pilot's own throttle.</summary>
+        public virtual float Throttle => -1f;
+
+        /// <summary>While 0 or more, the pilot keeps its total steering (|XSum| + |YSum| + |YDiff|) at or under this,
+        /// scaling every axis down together so it still steers toward the objective, only gentler. -1 = no limit.</summary>
+        public virtual float RotationLimit => -1f;
+
+        /// <summary>What the driver is doing, in a few words, for a viewer (the Third Eye); null when it has nothing to
+        /// say. Never read by the pilot.</summary>
+        public virtual string Status => null;
+    }
+}

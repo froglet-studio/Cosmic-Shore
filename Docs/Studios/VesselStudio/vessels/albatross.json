@@ -1,0 +1,146 @@
+{
+  "id": "albatross",
+  "order": 3,
+  "name": "Albatross",
+  "tagline": "the soarer: dive for speed, spread for lift",
+  "round": "concept · round 1",
+  "accent": "#dfe7ff",
+  "kind": "soar",
+  "chip": "concept · round 1",
+  "summary": "The soarer. No engine at all: it carries its own ballast, so it falls, and its wings turn speed into lift. Dive to gain speed, pull up to spend it as height, and ride the updraft that rises over every piece of mass (the course ribbon is a thermal corridor). LT spreads the wings for lift and drag, RT folds them for a clean dive. Energy management, not throttle.",
+  "spec": [
+    {
+      "k": "Mechanic",
+      "v": "LT spread (lift) · RT fold (dive) · updrafts over mass"
+    },
+    {
+      "k": "Ballast",
+      "v": "g 10 u/s² (its own; nothing else falls)"
+    },
+    {
+      "k": "Speed",
+      "v": "glides level at 60, dives to 300 u/s"
+    },
+    {
+      "k": "Why",
+      "v": "dive-to-glide: Tears of the Kingdom, Exo One, Sky, the web wings"
+    }
+  ],
+  "fantasy": "The one hull that is quiet. It reads the world as weather: where there is mass there is lift, and the long way round over the ribbon is faster than the straight line through nothing.",
+  "why": "Trading altitude for speed is intuitive physics players love (Tears of the Kingdom 20.6M, Sky 300M downloads, Exo One's 'knowing when to hold and when to let go'). Nothing in the fleet is an energy vessel; the Albatross is the meditative counterpart to the Flea's twitch, and its skill ceiling is dynamic soaring along mass.",
+  "flight": {
+    "cruise": 60,
+    "pitchYaw": 95,
+    "roll": 140,
+    "grip": 4,
+    "accel": 1.5,
+    "topSpeed": 300,
+    "chase": "course"
+  },
+  "params": {},
+  "elements": {
+    "charge": {
+      "name": "Thermal Sense",
+      "param": "thermal",
+      "range": [
+        1,
+        1.6
+      ],
+      "l5": "Ridge Lift",
+      "tip": "Charge is how much energy an updraft gives it."
+    },
+    "mass": {
+      "name": "Ballast",
+      "param": "g",
+      "range": [
+        1,
+        1.3
+      ],
+      "l5": "Stoop",
+      "tip": "Mass is its ballast: heavier dives faster and glides worse."
+    },
+    "space": {
+      "name": "Wingspan",
+      "param": "liftK",
+      "range": [
+        1,
+        1.4
+      ],
+      "l5": "Great Wings",
+      "tip": "Space is the wingspan: lift per speed."
+    },
+    "time": {
+      "name": "Clean Glide",
+      "param": "dragK",
+      "range": [
+        1,
+        0.6
+      ],
+      "l5": "Laminar",
+      "tip": "Time lowers drag: speed lasts longer."
+    }
+  },
+  "styles": [
+    {
+      "name": "Balanced",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Every element at 0: the recipe's numbers."
+    },
+    {
+      "name": "Glider",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Long wings and little drag: stays up on almost nothing."
+    },
+    {
+      "name": "Stooper",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Heavy and hungry for thermals: dives like a stone, climbs in columns."
+    },
+    {
+      "name": "Maxed",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Every element at 10. A ceiling, not a match state."
+    }
+  ],
+  "players": [
+    {
+      "ai": false,
+      "domain": "jade",
+      "level": "Hard",
+      "style": "Balanced"
+    }
+  ],
+  "controls": {
+    "lt": "spread wings (analog)",
+    "rt": "fold wings (analog)"
+  },
+  "notModelled": [
+    "Gravity is the Albatross's own ballast, a design proposal: the HyperSea has no gravity, and a vessel that falls is a fundamentals question for the designer.",
+    "The updraft is a column of fixed strength above any prism; a real cell's mass is denser and more varied.",
+    "Stall is a loss of nose authority below 30 u/s, not a spin."
+  ],
+  "sources": [
+    "Design: Docs/Studios/CONCEPT_FLEET.md (Albatross). Lift and drag are the standard v-squared glider model with lab-only coefficients."
+  ],
+  "docs": "Docs/Studios/CONCEPT_FLEET.md"
+}

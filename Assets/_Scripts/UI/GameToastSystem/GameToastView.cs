@@ -36,11 +36,11 @@ namespace CosmicShore.UI
 
             // Stick to the newest line only when the player was already reading the bottom.
             bool wasAtBottom = scrollRect == null ||
-                               scrollRect.verticalNormalizedPosition <= settings.stickToBottomThreshold;
+                               scrollRect.verticalNormalizedPosition <= settings.StickToBottomThreshold;
 
             // Retention cap: remove oldest from the top. Detach before Destroy so childCount
             // drops immediately (multiple spawns in one frame must not loop forever).
-            while (contentContainer.childCount >= settings.maxRetainedEntries)
+            while (contentContainer.childCount >= settings.MaxRetainedEntries)
             {
                 var oldest = contentContainer.GetChild(0);
                 oldest.SetParent(null);
@@ -55,8 +55,21 @@ namespace CosmicShore.UI
             LayoutRebuilder.ForceRebuildLayoutImmediate(contentContainer);
             item.AnimateIn(settings);
 
-            if (settings.autoScrollToBottom && wasAtBottom && scrollRect != null)
+            if (settings.AutoScrollToBottom && wasAtBottom && scrollRect != null)
                 scrollRect.verticalNormalizedPosition = 0f;
+        }
+
+        CanvasGroup _group;
+
+        /// <summary>
+        /// Hides the feed without losing its lines (the end screen owns the screen; the next turn shows the feed again).
+        /// </summary>
+        public void SetHidden(bool hidden)
+        {
+            if (!_group && !TryGetComponent(out _group))
+                _group = gameObject.AddComponent<CanvasGroup>();
+            _group.alpha = hidden ? 0f : 1f;
+            _group.blocksRaycasts = !hidden;
         }
 
         public void Clear()

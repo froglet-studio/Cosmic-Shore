@@ -15,6 +15,10 @@ this protocol exists to prevent that. Follow it exactly.
   contract (§4)**, the platform-wiring plan (§5), the phased roadmap (§6), the orchestration (§7).
 - `Docs/ECOSYSTEM.md` — the mechanics log (how the current system actually works).
 
+**If the change is about ONE CREATURE** — adding or reviving a species, how it moves,
+where its heart sits, its body prisms, its config wiring — **load `/fauna` as well**.
+This skill owns the system; that one owns the animal.
+
 ## 2. Restate before you edit (this kills the #1 source of rework)
 In one or two lines, state which invariants the change touches and confirm it violates **none**:
 **continuity of existence** (nothing pops in/out — everything grows/fades/suctions/withers; PLATFORM-WIDE) ·
@@ -63,6 +67,19 @@ what the carve-out silently broke — see the traps below.
 
 ## 2.6 Prism / trail traps (each of these cost real time)
 
+- **A population drawn as DATA misses every law written on GameObjects.** A swarm, a builder colony and a substrate
+  have no body prisms of their own and draw their hearts themselves, so an element law applied in `Fauna.ArmourBody`,
+  or a crystal re-look applied to the crystal prefabs' materials, never reaches them - the Swarm cell kept the old
+  Charge shield and a stale heart look until Garrett flew it (Docs/ECOSYSTEM.md §65.7). Put the law in the FRAME
+  (`SwarmInstance.ElementLaw`) so the look, the index and the proxies agree, and draw a heart with the crystal's OWN
+  materials (`CrystalHeartDraw`), never with a shader's copy of its look. When you change any lifeform law, grep the
+  three producers (`SwarmTickJob`, `BuilderColonyFauna.BuildFrame`, `SubstrateTickJob`) and the NCA creature.
+- **Moving ARMOUR between elements moves the DIET with it.** An armoured plant is no food outside a Frenzy
+  (`Fauna.IsInedibleShield`), so the element that wears the shield is the element no grazer eats. When the law moved
+  the armour from Charge to Mass, the Swarm cell's Inner whale, penned to a band that grew only Mass Borromean, lost
+  all its food, and no gate said so. The swarm generator's check that the band could pay its egg bill was simply never
+  run (Docs/ECOSYSTEM.md §65.7). After any change to which element is armoured, list every PENNED grazer
+  (a swarm band, a substrate pen, a mode's sector) and the element of the only flora it can reach.
 - **A SHIELD's size is not the prism's size, and the two tiers scale DIFFERENTLY.** Both shield
   meshes are built from the box HALF-extents x `CIRCUMSCRIBING_SCALE` (3), so a prism of full
   size `S` gets a semi-axis of `1.5 S` — **3x the box's own extent**. The octahedron's vertices
@@ -76,6 +93,12 @@ what the carve-out silently broke — see the traps below.
   restores the envelope exactly - §35's "fit the PRISM, never the pattern"). Full table + the
   clearance and hinge consequences: the `asset-surgery` skill, "Trap: a SHIELD's size is not the
   prism's size".
+- **A shield CLEARS danger, so anything that re-armours must skip danger prisms - and "dangerous" is no longer
+  "authored teeth".** `PrismStateManager.ApplyShieldState` sets `IsDangerous = false`, so a regen that shields every
+  prism of an armoured lifeform strips its authored danger within one cycle (a Charge gyroid's octagon ring was
+  danger for its first few seconds only, until `LifeForm.ShieldRegenCoroutine` learned to skip it). Since §65 the
+  armoured element is MASS and CHARGE arms EVERY prism, so code that finds a mouth, a jaw or a tooth by
+  `IsDangerous` finds the whole body on a Charge creature: read `Fauna.IsAuthoredDanger`. Docs/ECOSYSTEM.md §65.
 - **A positional Add/Remove pair is asymmetric for anything that MOVES.** `Cell.AddBlock` files
   the fauna density grids at the position read at add time; a `RemoveBlock` that re-reads
   `transform.position` decrements whichever bucket the prism has since wandered into, stranding
@@ -112,7 +135,7 @@ what the carve-out silently broke — see the traps below.
   `OnFaunaWaveSpawned`.** This is the spawner-swap trap wearing a different hat: the wave
   EVENT is raised by `RandomLifeSpawner` alone, so subscribing to it makes a colony's
   production dead code in every `IntensityWise` cell — and it is dead in exactly the modes
-  (Rampage, Ribcage, Scarab Scramble, Wildlife Liberation…) most likely to want it. The
+  (Rampage, Cleave, Scarab Scramble, Wildlife Liberation…) most likely to want it. The
   PERIOD is served by the `Cell` itself off `SpawnProfileSO.BaseFaunaSpawnTime` and is
   therefore correct under both spawners; both `AssembledFlora`'s colony cycle and
   `WormFauna.TickProduction` read it. Two consequences to carry: the period is authored
@@ -254,6 +277,22 @@ what the carve-out silently broke — see the traps below.
   couplings (and suspends `CheckForLife`, so handing a spindle's prisms away doesn't evaporate it
   out of turn). Detach body prisms BEFORE withering spindles — a body prism is parented to a
   spindle, so the wither would destroy the mass you meant to conserve. `Docs/ECOSYSTEM.md §26.3`.
+- **A per-LIMB death hook belongs in `Spindle.StampEvaporate`, and only deaths that FADE reach it.**
+  `CheckForLife` and `ForceWither` (every ordered wither, starvation, the joust, `LightFauna`'s
+  wither) both latch `dying` and then stamp the evaporate, so a hook there fires exactly once per
+  limb, on the limb's own fade start (`i * interval` included) — the dying-limb-to-shard morph
+  (`Docs/ECOSYSTEM.md` §63) rides it. A limb that is simply DESTROYED (scene unload, a husk pulled
+  by a manager) goes through `OnDestroy` instead and never fades, so it gets no hook — which is
+  correct, because nothing visible dies there. Hand the hook the SAME start time the fade got (one
+  local), or the morph and the fade drift apart under an ordered wither.
+- **Order an ordered wither off the spindle TREE, never off distance — and the tree must exist.**
+  Every standing spindle and prism of a lifeform keeps a path of standing spindles to its crystal,
+  with the crystal joust's heart-outward unravel as the ONE sanctioned exception. Use
+  `Spindle.OrderOutsideIn` / `Spindle.OrderHeartOutward` and call them BEFORE isolating (isolation
+  severs the links the depth is read from). A distance sort spends a parent before its child on any
+  surface that folds back past its heart (the Borromean membrane). And a species that poses limbs
+  as flat siblings under its root has NO tree unless it calls `Spindle.AttachToParent` — grazing an
+  inner prism then evaporates the limb everything beyond it hangs off. `Docs/ECOSYSTEM.md §26.10`.
 - **A per-lifeform SCALE curve must exempt any species whose geometry is a LATTICE.**
   The MECHANISM that made this concrete is gone — `Flora.LevelUp` grew `leafSize` and
   `Flora.AddHealthBlock` stamped it onto every prism the plant laid, and lifeform LEVELS are now
@@ -409,7 +448,8 @@ what the carve-out silently broke — see the traps below.
   corrective re-size was done by `Fauna.SetLevel`, as an incidental side-effect of seeding the
   spawn level — so retiring levels silently gave every creature with an authored body scale a
   heart of `authored × BaseBodyScale` (0.4 and 0.7 on the shipped tadpoles: a 2.5× and 1.43× cut
-  to BOTH the collect reward and the live domain fauna buff, with nothing reporting it). There is
+  to the collect reward — and, at the time, to the live domain fauna buff, since removed
+  (`Docs/ECOSYSTEM.md` §15) — with nothing reporting it). There is
   a SECOND inversion one level up — the Boid/LightFauna path runs `Initialize` (heart sized)
   before `SpawnFaunaBanded` calls `AssignLineage` (body scaled) — which is why the fix belongs at
   the END of `AssignLineage` rather than inside `ApplyVariantTuning`. **A CONDITIONAL re-apply is
@@ -429,16 +469,54 @@ what the carve-out silently broke — see the traps below.
   three of their four elements, so this is the common case rather than the edge. Any tool that
   authors into a `Variant` block must flip `Enabled` with it — and a zero-initialised block is
   safe to enable, because every other field's initializer is a keep-the-prefab sentinel.
-- **A SIZE that gameplay reads is a REWARD, and the band needs a ceiling with a margin.** A
-  lifeform heart's world scale is read in five places (collect reward, live domain fauna buff,
-  pickup trigger radius, vacuum speed, capture flourish); the reward is
-  `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)`, so it SATURATES. Past that point two
-  visibly different hearts pay the same — a size the player can see and a reward they cannot.
-  When a band is authored rather than uniform, solve its scale constant so the LARGEST member
-  lands on the ceiling: that makes clipping structurally impossible instead of merely unlikely,
-  and it uses the whole band. Do NOT answer an overshoot by retuning `levelPerUnitScale` — it is
-  shared with every non-lifeform elemental crystal (the Wanderway conveyor, Dog Fight's arena
-  scatter). Compress the mapping instead.
+- **Reading that block back: A SENTINEL IS NOT A MEASUREMENT.** The bullet above is about writing
+  into a `Variant`; this is the mirror, and it is the one that fails silently. `LeafSize {0,0,0}`,
+  `MaxTotalSpawnedObjects -1`, `HeartWorldScale 0`, `LatticeScale -1`, `GrowPeriod -1`,
+  `ShieldPeriod -1` all mean *keep what you have* — so an offline pass that averages or sums the
+  authored numbers must resolve each one the way the RUNTIME does (fall through to the prefab)
+  rather than treating it as a value. Shipped once: one of four Cacti elements authored the zero
+  leaf and three omitted the block, so a species price came out `(0+75+75+75)/4 = 56.25` against
+  its true 75, and every number derived from it — plant volume, forest volume, both phase-ladder
+  bands — was quietly 25% light. Note the budget sentinel is `-1`, so a `(\d+)` regex skips it **by
+  accident rather than by rule**; write `(-?\d+)` and branch on the sign, or the day somebody
+  authors `0` you inherit the same bug with no warning.
+- **The three flora growth FAMILIES do not share a shape of authoring, so state the fallback order
+  explicitly.** `PhyllotacticFlora`, `BranchingFlora` and `AssembledFlora` are three different
+  components, and a `BranchingFlora` species authors **no per-element variant geometry at all** —
+  its leaf is the prefab's for every element, where a lattice species has four different ones. Two
+  consequences for any tool or config that spans families: look each fact up with a written
+  fallback chain (element variant → prefab) and assert rather than defaulting when it is found
+  nowhere; and remember **the component fileID in a `FloraPrefab` reference differs by family**
+  (`PhyllotacticFlora` and `BranchingFlora` share `7514956980722975813`, `AssembledFlora` uses
+  `8186157953239024492`) — copy it from that species' shipped element asset, because a wrong one
+  resolves to no component at all and the config grows nothing, silently. And a LATTICE species
+  must keep its own per-plant budget: that budget is GEOMETRY (a gyroid octagon is 24 prisms around
+  one crystal), so a cell-level `MaxTotalSpawnedObjectsOverride` does not thin the plant, it
+  truncates a shape mid-figure.
+- **Every elemental crystal is ONE size and ONE petal — do not size one per lifeform again.**
+  (Garrett, 2026-10-26, `Docs/ECOSYSTEM.md` §64.) A heart, an ejected petal, an arena scatter and
+  a toy's pickup are all `ElementalCrystalSetSO.CrystalWorldScale` (3.55, the Elemental
+  Converter's elemental-to-omni ratio held against the fixed omni by `ElementalCrystalSizeTests`),
+  and the pickup grants the flat `LevelGainPerCrystal` = one petal. The size is still read in
+  three places that are not the reward — the pickup trigger radius, the vacuum speed, the capture
+  flourish — so a different size on one crystal is a different pickup, not a different reward.
+  The per-species `HeartWorldScale` fields (and the swarm / substrate / builder / NCA heart
+  vectors) are still serialized and generated and are read by NOTHING; wiring one back up revives
+  the retired §40.2 band. A NEW producer of elemental crystals sets the one size at mint
+  (`LifeFormCrystal.SetWorldScale` when parented), and a new heart SEAT has to hold a 3.55 heart
+  (`verify_fauna_heart_seat.py`). **Bodies were scaled to match it** (§64.4: body x k = 3.55 / the
+  retired heart, body lengths x k, speeds kept, volume x k^3): a body-size change is a VOLUME change, so
+  re-derive any ladder or egg/stock price that counts fauna bodies (the Swarm cell's generator does), and
+  grow food by scaling a plant WHOLE (`LatticeScale`), never by adding plants (colliders).
+- **"Spindles and crystals but no prisms" is a prism WAITING to be drawn, not a prism that was
+  never made.** `Prism.CreateBlockCoroutine` keeps every laid prism's renderer and collider off
+  until it wins a per-frame creation completion (6/frame at gameplay tier); spindles and crystals
+  need none. Anything that grows worlds continuously in live play (the Arkway corridor) outruns 6
+  a frame within minutes and the backlog shows up as whole cells of bare limbs. Two sessions of
+  owner-aliasing and pool fixes went in before this was checked. Count `!IsCreationComplete`
+  prisms under the root FIRST (`CellConveyor.CountPendingCreation`); the answer to a real backlog
+  is a creation tier (`Prism.BeginBulkTransport`) or less growth, never a hidden-state hack.
+  Environment-pool mass and trail mass now spend separate budgets (`Docs/ECOSYSTEM.md` §41.3.5).
 
 ## 3. Implement (emergence first, surgically)
 - **Favor emergence:** never hard-code an outcome that should emerge from the fundamentals
@@ -476,6 +554,21 @@ see `Docs/ECOSYSTEM.md` §13 + §18.1). An authored environment sitting in the
 nucleus hands `DominantDomain` to whatever colour it favours before anyone flies.
 That defect shipped undetected in Caldera (89% of its mass) until a one-line
 check over the point cloud found it.
+
+**A cell environment ships as a BAKE** (`Docs/ECOSYSTEM.md` §62.2b): the game reads
+`Assets/Resources/PrismLayouts/<Type>_<fingerprint>.bytes` instead of running the generator.
+After ANY change to a `CellEnvironmentSpawnableBase` generator, its prefab or the base class,
+re-bake in the same change and gate it:
+
+```bash
+python3 Tools/Build/bake_prism_layouts.py           # re-bake (writes the .bytes + prism_layout_bakes.json)
+python3 Tools/Build/bake_prism_layouts.py --check   # fails on a drifted, missing or orphan bake
+```
+
+Skipping it fails `--check`. In Unity, the world is generated live with a `[PrismLayoutBake]`
+warning, which is correct but slow. A generator whose layout reads its intensity, or whose
+`SpawnLeafObjects` needs build state beyond the lays and planting sites, overrides
+`BakesLayout => false`.
 
 ### 4.6 "It stopped growing" — prove WHICH gate binds before you turn a dial
 
@@ -517,7 +610,7 @@ last.
 ## 6. Commit
 One coherent step per commit; conventional-commit message; develop on the feature branch (never
 `bleeding-edge`); open a PR only when asked. After lifeform-prefab changes, note to run
-`FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+`FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals`.
 
 ## 7. Budgeting a new cell WITHOUT Unity (do this before you author thresholds)
 

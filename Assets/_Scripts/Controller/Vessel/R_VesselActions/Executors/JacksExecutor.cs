@@ -1,0 +1,1624 @@
+using System.Collections.Generic;
+using CosmicShore.Core;
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
+using FMODUnity;
+using CosmicShore.Soap;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// The Jacks (vessel class 22; design <c>R_VesselActions/JACKS.md</c>, lab <c>Docs/Studios/SWARM_VESSEL_LAB.md</c>): two
+    /// jacks that HERD real fauna, flown by one player with two thumbs (Garrett, 2026-10-21: "the jacks don't need the
+    /// marlin or a second seat because they can switch to 3d flight mode and use two thumb flight controls"). Every herder -
+    /// both jacks and the one decoy - repels the herd inside a ring at least a big thumb wide; the herd is drawn to the
+    /// hull's x-z plane, the board the jacks herd on.
+    ///
+    /// <list type="bullet">
+    /// <item><b>Herding</b>: the hull holds still and its plane is the board; the herd is always drawn to it. Each touch
+    /// takes the nearest jack and it runs to the point under the thumb; lifting the thumb leaves the ONE decoy where that
+    /// jack stands (a new decoy replaces the old). On a gamepad the left stick runs the left jack and the right stick the
+    /// right one, and the bumper or trigger on that side is the lift. The CALL (B, T, or the view's call button) pulls the
+    /// herd to the point between the jacks, and a jack that touches a crystal collects it - the ones the net carried
+    /// stay where it let go of them.</item>
+    /// <item><b>Netting</b> (flying): the two jacks take off from where they stand and fly the hull with the fleet's
+    /// two-thumb flight, one fish under each thumb: one up and the other down rolls, both together pitch and yaw, apart is
+    /// faster and together slower - and apart opens the NET between them wider (<see cref="JacksNet"/>; Garrett, 2026-10-24).
+    /// Where they fly is where the board goes. The CALL toggles whether the herd is drawn to the plane (Garrett,
+    /// 2026-10-24: "in netting mode it toggles plane attraction for fauna of your domain"), and they jump to the decoy
+    /// (<see cref="JacksActionSO"/>).</item>
+    /// <item><b>The switch</b>: the old seat swap (D-pad left / right, the left / right arrow keys, or a double tap on the small view).
+    /// An AI hull switches on its own (<see cref="JacksConfigSO.AIHerdSeconds"/>, <see cref="JacksConfigSO.AIFlightSeconds"/>):
+    /// the hull's own <c>AIPilot</c> flies, and the jacks' drive-and-collect AI (<see cref="JacksAI"/>) herds through aim
+    /// points only, as thumbs do.</item>
+    /// </list>
+    ///
+    /// <para><b>The herd is a special swarm</b> (<see cref="IFaunaHerd"/>; the designer, 2026-10-21): the wild herbivores a
+    /// herder's ring touches join it, its offspring join it, it starves only down to <see cref="JacksConfigSO.MinHerd"/>
+    /// (and an empty herd has that many born to it), and its holder's level-5 upgrades break rules: Space 5 eats shielded
+    /// prisms, Charge 5 attacks rivals, Mass 5 lays our mass. Otherwise every creature keeps its own diet, mouthful and
+    /// stomach.</para>
+    ///
+    /// <para><b>Elements</b> (Garrett, 2026-10-20): Mass the herd's birth rate, Time its speed, Space every herder's ring,
+    /// Charge the share of DANGER creatures (0% at -5, 100% at 15), whose touch on a rival hull is a scored Strike that
+    /// spends the creature (PvP is petals only).</para>
+    ///
+    /// <para><b>Networked through <see cref="JacksBodies"/>.</b> The jacks, the decoy, the call and the mode are run on the
+    /// machine that owns the hull and published there; every other peer draws them and herds with them
+    /// (<see cref="FollowRemoteCrew"/>), so the herd is steered wherever the creatures are simulated (only that peer can
+    /// leash them) by the owner's real jacks. The views and the marks are the owner's alone.</para>
+    /// </summary>
+    [DisallowMultipleComponent]
+    public sealed class JacksExecutor : ShipActionExecutorBase, IFaunaHerd, IHullParkAware, ICrewStations
+    {
+        [Header("Wiring (serialized on the prefab so a missing wire shows in the inspector)")]
+        [Tooltip("Every number (JacksConfig.asset, the Swarm Vessel Lab's shipped values).")]
+        [SerializeField] JacksConfigSO config;
+        [Tooltip("The fleet's shared turn-end channel: the herd is let go.")]
+        [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
+        [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager listens on. A danger creature's sting and a Charge " +
+                 "level-5 bite are scored Strikes (PvP is petals only).")]
+        [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
+
+        [Header("Presentation (game only; the lab's colours)")]
+        [Tooltip("The jacks (the lab's #f2c84b).")]
+        [SerializeField] Color jackColor = new(0.949f, 0.784f, 0.294f, 1f);
+        [Tooltip("The decoy's ring (the lab's #f0a043); the decoy itself is drawn as a third jack.")]
+        [SerializeField] Color decoyColor = new(0.941f, 0.627f, 0.263f, 1f);
+        [Tooltip("A danger creature's mark (the lab's #ff5a3c).")]
+        [SerializeField] Color dangerColor = new(1f, 0.353f, 0.235f, 1f);
+        [Tooltip("The rings' dots.")]
+        [SerializeField] Color ringColor = new(0.949f, 0.784f, 0.294f, 0.55f);
+        [Tooltip("Herding view only: the small ring halfway between the jacks, where the hull will be when they take off " +
+                 "(Decoy Run, 2026-11-07: the take-off jump is a travel, so its landing point is an instrument).")]
+        [SerializeField] Color takeOffColor = new(1f, 1f, 1f, 0.8f);
+
+        [Header("The rings in the flight view (Garrett, 2026-10-21: \"make the dots that form the radius much more subtle\")")]
+        [Tooltip("The rings' dots in the flight view: their alpha is multiplied by this. The herding view keeps them full.")]
+        [FormerlySerializedAs("pilotRingAlpha")]
+        [SerializeField, Range(0f, 1f)] float flightRingAlpha = 0.2f;
+        [Tooltip("Dots per ring in the flight view (the herding view draws 48).")]
+        [FormerlySerializedAs("pilotRingDots")]
+        [SerializeField, Range(4, 48)] int flightRingDots = 24;
+        [Tooltip("A ring dot's world size in the flight view, as a share of the herding view's.")]
+        [FormerlySerializedAs("pilotRingDotScale")]
+        [SerializeField, Range(0.1f, 1f)] float flightRingDotScale = 0.5f;
+        [Tooltip("The smallest a ring dot draws in the flight view (pixels; the herding view uses 3).")]
+        [FormerlySerializedAs("pilotRingDotPixels")]
+        [SerializeField, Min(0f)] float flightRingDotPixels = 1.5f;
+
+        sealed class Member
+        {
+            public Fauna Creature;
+            public float Roll;        // 0..1 for life: whether it is danger at the current Charge, and its wander
+            public float Phase;       // the wander's phase
+            public Prism Meal;        // the prism it is ordered to graze (null while it panics)
+            public float MealAt;      // when the meal is next re-picked
+            public Vector3 LastPos;
+            public Vector3 Velocity;
+            public Vector3 Desired;   // the velocity it heads for this frame
+        }
+
+        IVesselStatus _status;
+        IVessel _vessel;
+        readonly List<Member> _herd = new();               // join order: the first MinHerd are the floor (Sustains)
+        readonly Dictionary<Fauna, Member> _byCreature = new();
+        readonly List<Member> _scratch = new();
+        readonly List<Prism> _query = new();
+        readonly List<VesselStatus> _vessels = new();
+        float _vesselScanAt, _recruitAt, _floorBirthAt, _pooAt;
+        bool _seeding;
+        uint _pooSerial;
+
+        // the board: the hull's x-z plane, eased toward the hull's (the Wrasse's Eased frame, KiteBoardFrame.Eased). The
+        // hull holds still while the jacks herd, so the board only moves when they fly.
+        Vector3 _r = Vector3.right, _f = Vector3.forward, _u = Vector3.up;
+        bool _snapped;
+
+        // the jacks and the decoy
+        readonly Vector3[] _jack = new Vector3[2];
+        readonly Vector3[] _jackTarget = new Vector3[2];
+        readonly bool[] _jackDown = new bool[2];
+        readonly bool[] _jackWasDown = new bool[2];
+        readonly Vector3[] _flightLocal = new Vector3[2];   // flying: each jack's place in the hull's frame, eased
+        // the decoys (Garrett, 2026-10-25: "lets have the upgrade give the player a second decoy controlled by the second
+        // trigger (in placement and which one you fly to)"): slot 0 always; slot 1 with Time level 5, the right side's
+        readonly bool[] _decoyOn = new bool[2];
+        readonly Vector3[] _decoys = new Vector3[2];
+        int _lastDecoy;   // the decoy placed most recently: the one a phone's both-thumbs lift jumps to
+        // which jack laid each decoy (0, 1; -1 both: the one laid between them on landing), whose orientation it keeps
+        readonly int[] _decoyFrom = { -1, -1 };
+        float _decoyActedAt = -99f;   // the last decoy laid or jumped to (the Time card's flash)
+
+        // WIDE, the Space ability (Garrett, 2026-10-25: "Space be the zoomed out view in herding mode"), herding only since
+        // "remove the space ability in net mode" the same day
+        bool _wide;
+        float _wideToggleReadyAt;
+        float _travelUntil;   // netting: a fast travel to a decoy is under way until then
+        // herding, the flight's buttons are paused, so a press of an ability CARD (AbilityCardPress) is heard here
+        ScriptableEventInputEvents _cardPresses;
+
+        // the call and the decoy
+        float _callUntil, _callReadyAt, _teleReadyAt;
+
+        // the mode: herding (the hull holds, the jacks run on its plane) or flying (the jacks fly the hull)
+        bool _herding, _inputPaused, _holding, _heldWasStationary;
+        bool _remoteHerding;   // another machine owns the hull: its jacks are herding (JacksBodies' flags)
+        bool _remotePlane;     // ... and, netting, whether its herd is drawn to the plane
+        bool _lit;             // the herd is lit (TryGetLeashMark's glow): herding, or drawn to the plane while netting
+        bool _planeAttract = true;   // netting: the call toggles it (herding draws the herd to the plane always)
+        bool _planeNow = true;       // this frame: whether the herd is drawn to the plane
+        float _planeToggleReadyAt;
+
+        // the net between the fish while they net (JacksNet), the hull's impactor it hands its prisms to, and the chase
+        // camera backed off to keep the net in view
+        readonly JacksNet _net = new();
+        VesselImpactor _hullImpactor;
+        CustomCameraController _cam;
+        bool _camEngaged;
+        float _camWritten;
+        float _swapReadyAt, _aiModeAt;
+        JacksAI _ai;
+
+        // a race's AI coach (Decoy Run): when set, an AI Jacks herds and travels cycle by cycle on its plans
+        enum RacePhase { Flying, Herding, Travelling }
+        IJacksRaceCoach _coach;
+        RacePhase _racePhase;
+        JacksRacePlan _plan;
+        readonly int[] _planStep = new int[2];   // per jack: 0 running to its via point, 1 to its end, 2 there
+        int _travelStep;
+        JacksView _view;
+        AnglerWorldMarks _marks;         // the herding view: the jacks' instruments, full strength
+        AnglerWorldMarks _flightMarks;   // the flight view: the same rings, subtle
+        JacksBodies _bodies;   // the drawn bodies, and the owner's jacks on a peer that does not own the hull
+
+        // the human's thumbs, mouse and sticks on the jacks
+        readonly Dictionary<int, int> _pointerJack = new();   // touch id (-1 = the mouse) -> jack
+        readonly int[] _padJack = { 0, 1 };                    // stick -> jack
+        const int MouseId = -1;
+
+        // ------------------------------------------------------------------ read by the HUD, the bodies and the action SOs
+
+        public int HerdCount => _herd.Count;
+        public int MinHerd => config ? config.MinHerd : 0;
+        public bool Calling => Time.time < _callUntil;
+        /// <summary>Netting: whether the herd is drawn to the plane (the call toggles it; herding it always is).</summary>
+        public bool PlaneAttract => _planeAttract;
+        /// <summary>0 when the call is ready, 1 just after it was used.</summary>
+        public float CallCooldown01 => config && config.CallCooldown > 0f ? Mathf.Clamp01((_callReadyAt - Time.time) / config.CallCooldown) : 0f;
+        public bool HasDecoy => _decoyOn[0] || _decoyOn[1];
+        /// <summary>The second decoy (Time level 5) is down.</summary>
+        public bool HasSecondDecoy => _decoyOn[1];
+        /// <summary>Seconds since a decoy was last laid (herding): the Time card's flash.</summary>
+        public float SinceDecoyAction => Time.time - _decoyActedAt;
+        /// <summary>Netting: the hull is flying fast to a decoy (the Time ability).</summary>
+        public bool Travelling => Time.time < _travelUntil;
+        /// <summary>WIDE (the Space ability, herding only): the herding view is out to the whole cell.</summary>
+        public bool Wide => _wide;
+        /// <summary>The jacks are out herding and the hull holds still (false: they are flying it).</summary>
+        public bool Herding => _herding;
+        /// <summary>The share of the herd that is danger at the current Charge.</summary>
+        public float DangerShare => config ? config.DangerShareFor(_status) : JacksMath.DangerShare(0f);
+        /// <summary>Every herder's ring now (u): the Space ring, opened up to <c>wideRingScale</c> times while Wide (eased).</summary>
+        public float Ring => config ? config.RingFor(_status) * Mathf.Lerp(1f, config.WideRingScale, _wideBlend) : 0f;
+        /// <summary>0 tight, 1 Wide: the ring's ease between the two (so the herd scatters and gathers, never jumps).</summary>
+        float _wideBlend;
+        internal JacksConfigSO Config => config;
+        internal IVesselStatus Status => _status;
+        /// <summary>The hull's impactor: the net hands it every prism it touches, and the jacks every crystal they collect.</summary>
+        internal VesselImpactor HullImpactor => _hullImpactor;
+        /// <summary>The hulls in play (re-scanned at most once a second).</summary>
+        internal List<VesselStatus> Vessels { get { ScanVessels(); return _vessels; } }
+        /// <summary>The net between the fish while they net.</summary>
+        internal JacksNet Net => _net;
+        internal Vector3 BoardUp => _u;
+        internal Vector3 BoardForward => _f;
+        internal Vector3 BoardRight => _r;
+        /// <summary>The hull: the board's origin. It holds still while the jacks herd.</summary>
+        internal Vector3 HullPosition => _status != null && _status.Transform ? _status.Transform.position : transform.position;
+        /// <summary>Halfway between the two jacks: where the herd is called to, and where the jacks take off from.</summary>
+        internal Vector3 JacksCentre => 0.5f * (_jack[0] + _jack[1]);
+        internal Vector3 HerdCentre { get; private set; }
+        /// <summary>The cell the jacks are in (the herding view's whole-cell zoom).</summary>
+        internal Cell CellHere => NearestCell(JacksCentre);
+
+        /// <summary>Time 5: each trigger has its own decoy (two decoys to lay and fly to).</summary>
+        public bool HasTwoDecoys => TimeUpgraded;
+
+        /// <summary>The board's normal (the hull's up, eased): what a race coach reads to tell whether a ring lies on it.</summary>
+        public Vector3 RaceBoardUp => _u;
+
+        /// <summary>The hull's position, the board's origin.</summary>
+        public Vector3 RaceHullPosition => HullPosition;
+
+        /// <summary>
+        /// A race's coach for this hull's AI (Decoy Run). Set: the AI herds and travels on the coach's cycles instead of
+        /// its herding rhythm (<c>aiHerdSeconds</c> / <c>aiFlightSeconds</c>), every one through the controls a human uses
+        /// (the jacks to points on the board, a trigger to lay a decoy, the seat swap, a trigger to fly to a decoy), and
+        /// under the same seat-swap cooldown. Null: the shipped AI. A human's hull ignores it.
+        /// </summary>
+        public IJacksRaceCoach RaceCoach
+        {
+            get => _coach;
+            set
+            {
+                if (_coach == value) return;
+                _coach = value;
+                _racePhase = RacePhase.Flying;
+            }
+        }
+
+        /// <summary>The AI is mid-cycle (herding its plan or flying to its decoys): the coach's flight aim should leave the
+        /// hull's board alone.</summary>
+        public bool RaceCycleBusy => _coach != null && _racePhase != RacePhase.Flying;
+
+        // ------------------------------------------------------------------ lifecycle
+
+        public override void Initialize(IVesselStatus shipStatus)
+        {
+            ReleaseAll();
+            StopHerding();
+            _net.Release(this);
+            _status = shipStatus;
+            _hullImpactor = _status != null && _status.Transform ? _status.Transform.GetComponentInChildren<VesselImpactor>(true) : null;
+            _planeAttract = true;
+            _vessel = _status != null && _status.Transform ? _status.Transform.GetComponent<IVessel>() : null;
+            _snapped = false;
+            ClearDecoys();
+            _wide = false;
+            _decoyActedAt = -99f;
+            _travelUntil = 0f;
+            _holding = false;   // a respawn resets the hull's stationary flag itself
+            _callUntil = _callReadyAt = _teleReadyAt = 0f;
+            _recruitAt = _floorBirthAt = 0f;
+            _aiModeAt = Time.time + (config ? config.AIFlightSeconds : 6f);
+            _racePhase = RacePhase.Flying;
+            _pooAt = Time.time + (config ? config.PooEvery : 6f);
+            _seeding = false;
+            _pointerJack.Clear();
+            _ai = new JacksAI(System.Environment.TickCount);
+            for (int k = 0; k < 2; k++) _jackDown[k] = _jackWasDown[k] = false;
+            PlaceJacks();
+            _bodies = _status != null && _status.Transform ? _status.Transform.GetComponent<JacksBodies>() : null;
+            if (!config)
+                CSDebug.LogError($"[Jacks] {name}: no JacksConfig - the jacks cannot run and the herd cannot be " +
+                                 "steered. Wire Assets/_SO_Assets/VesselActions/Jacks/JacksConfig.asset.");
+        }
+
+        void OnEnable()
+        {
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEnd;
+        }
+
+        void OnDisable()
+        {
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEnd;
+            ListenToCards(false);
+            ReleaseAll();
+            StopHerding();
+            _net.Release(this);
+            ReleaseCamera();
+            _view?.Dispose();
+            _view = null;
+        }
+
+        void OnDestroy()
+        {
+            _net.Dispose();
+            _marks?.Dispose();
+            _marks = null;
+            _flightMarks?.Dispose();
+            _flightMarks = null;
+            _view?.Dispose();
+            _view = null;
+        }
+
+        void OnTurnEnd()
+        {
+            ReleaseAll();
+            ClearDecoys();
+        }
+
+        /// <summary>The local human owns this hull (not an AI, not a remote copy).</summary>
+        bool IsLocalHuman => _status != null && _status.Player != null && !_status.IsInitializedAsAI && _status.IsLocalUser;
+
+        // The four level-5 upgrades, each its own gate with its element written out, so /element-ability-table reads the
+        // live gate off the source (an upgrade passed through a variable read as prose there).
+        R_VesselElementalAbilityHandler Abilities => _status?.ElementalAbilityHandler;
+        /// <summary>CHARGE 5, Attack: the herd goes for rivals and bites them.</summary>
+        bool ChargeUpgraded { get { var a = Abilities; return a && a.IsUpgradeActive(Element.Charge); } }
+        /// <summary>MASS 5, Mass Clusters: the herd lays our mass.</summary>
+        bool MassUpgraded { get { var a = Abilities; return a && a.IsUpgradeActive(Element.Mass); } }
+        /// <summary>SPACE 5, Eat Shields: the herd eats shielded prisms.</summary>
+        bool SpaceUpgraded { get { var a = Abilities; return a && a.IsUpgradeActive(Element.Space); } }
+        /// <summary>TIME 5, Second Decoy: each trigger has its own decoy.</summary>
+        bool TimeUpgraded { get { var a = Abilities; return a && a.IsUpgradeActive(Element.Time); } }
+
+        // ------------------------------------------------------------------ the buttons (JacksActionSO)
+
+        /// <summary>
+        /// THE MASS ABILITY, the CALL (Garrett, 2026-10-25: "mass should be the herd calling ability in herding mode and the
+        /// plane attraction toggle in net mode"). Herding: for <c>callTime</c> the herd is pulled to the point between the
+        /// jacks, which stop repelling; then a long cooldown. Netting: it toggles whether the herd is drawn to the plane.
+        /// </summary>
+        public void Call()
+        {
+            if (!config) return;
+            if (!_herding)
+            {
+                if (Time.unscaledTime < _planeToggleReadyAt) return;
+                _planeToggleReadyAt = Time.unscaledTime + ToggleGuard;
+                _planeAttract = !_planeAttract;
+                Play(config.CallSfx, JacksCentre);
+                return;
+            }
+            if (Time.time < _callReadyAt) return;
+            _callUntil = Time.time + config.CallTime;
+            _callReadyAt = Time.time + config.CallCooldown;
+            Play(config.CallSfx, JacksCentre);
+        }
+
+        /// <summary>THE SPACE ABILITY, WIDE (Garrett, 2026-10-25: "Space be the zoomed out view in herding mode"): herding,
+        /// the view eases out to the whole cell and back, AND every ring opens to <c>wideRingScale</c> times its Space size
+        /// (2026-11-16, the weakest-abilities pass: Wide was only a camera), so the herd fans out across a wide field to graze
+        /// and bunches again when Wide closes. Nothing while netting ("remove the space ability in net mode").</summary>
+        public void ToggleWide()
+        {
+            if (!_herding || Time.unscaledTime < _wideToggleReadyAt) return;
+            _wideToggleReadyAt = Time.unscaledTime + ToggleGuard;
+            _wide = !_wide;
+        }
+
+        /// <summary>
+        /// THE TIME ABILITY while netting (Garrett, 2026-10-25: "in netting mode the triggers should fast travel to the
+        /// decoy"; then "don't teleport, move quickly, so the player has a sense of where they travelled to"): the hull FLIES
+        /// to the decoy on trigger <paramref name="side"/> (0 the left), keeping its heading, at <c>travelSpeed</c> on top of
+        /// its own flight, in <c>travelMinSeconds</c>..<c>travelMaxSeconds</c>. One velocity displacement on the hull's
+        /// transformer (the Angler's dash, <see cref="VesselTransformer.ModifyVelocity(Vector3, float, bool, float)"/>: its
+        /// weight averages 1 over its life, so it carries the hull the whole way), less the distance the hull's own flight
+        /// covers meanwhile, so it arrives at the decoy. The decoy stays (there is always one). Without the Time-5 upgrade
+        /// there is one decoy and either trigger goes to it; with it each trigger goes to its own. A phone's both-thumbs
+        /// lift goes to the one placed last (<paramref name="side"/> -1). On the machine that owns the hull (its transform
+        /// replicates). Herding, the triggers LAY the decoys instead (<see cref="ReadTrigger"/>).
+        /// </summary>
+        public void Teleport(int side = -1)
+        {
+            int slot = side < 0 ? (_decoyOn[_lastDecoy] ? _lastDecoy : 0) : TimeUpgraded ? side : 0;
+            if (!config || !_decoyOn[slot] || _herding || Time.time < _teleReadyAt || _status == null) return;
+            if (!ElementalTransfer.IsDecidedHere(_status)) return;   // the hull's transform is its owner's to move
+            var t = _status.Transform;
+            var transformer = _status.VesselTransformer;
+            if (!t || !transformer) return;
+            Vector3 to = _decoys[slot] - t.position;
+            float distance = to.magnitude;
+            if (distance < 1f) return;
+            float time = Mathf.Clamp(distance / config.TravelSpeed, config.TravelMinSeconds, config.TravelMaxSeconds);
+            var own = _status.Course * _status.Speed;   // what the hull's own flight covers meanwhile
+            var velocity = (to - own * time) / time;
+            transformer.ModifyVelocity(velocity, time, true, (velocity + own).magnitude * 1.25f);
+            Play(config.TeleportSfx, t.position);
+            _travelUntil = Time.time + time;
+            _teleReadyAt = _travelUntil + config.TeleportGuard;
+        }
+
+        /// <summary>There is ALWAYS at least one decoy (Garrett, 2026-10-25: "there should always be at least one decoy
+        /// available. the second decoy unlocks with upgrading time"): with none down, the first is laid between the jacks.</summary>
+        void EnsureDecoy()
+        {
+            if (_decoyOn[0] || _status == null || !_status.Transform) return;
+            _decoys[0] = OnPlane(JacksCentre);
+            _decoyOn[0] = true;
+            _decoyFrom[0] = -1;   // between the two: it faces the way they do on average
+            _lastDecoy = 0;
+        }
+
+        void ClearDecoys()
+        {
+            _decoyOn[0] = _decoyOn[1] = false;
+            _lastDecoy = 0;
+        }
+
+        /// <summary>Which decoy a lift by jack <paramref name="k"/> leaves: the one decoy, or with Time 5 its SIDE's - the jack
+        /// further left on the herding view leaves the left trigger's decoy, the other the right trigger's.</summary>
+        int DecoySlotFor(int k)
+        {
+            if (!TimeUpgraded) return 0;
+            return ScreenSideJack(0) == k ? 0 : 1;
+        }
+
+        // a held button or a double press toggles the plane's pull, or Wide, once
+        const float ToggleGuard = 0.25f;
+
+        /// <summary>A creature of ours that went through the net joins the herd (<see cref="JacksNet"/>).</summary>
+        internal void TryHerd(Fauna creature)
+        {
+            if (config && creature && _herd.Count < config.HerdCap && creature.Leashable && !creature.IsLeashed) Join(creature);
+        }
+
+        /// <summary>Lay decoy <paramref name="slot"/> at <paramref name="at"/>, laid by jack <paramref name="from"/> (Garrett,
+        /// 2026-10-25: "when the fish is laid it should match the orientation of the laid fish. as that fish reorients so
+        /// should the decoy"; <see cref="DecoySource"/>).</summary>
+        void DropDecoy(int slot, Vector3 at, int from)
+        {
+            if (!TimeUpgraded) slot = 0;
+            _decoys[slot] = at;
+            _decoyOn[slot] = true;
+            _decoyFrom[slot] = from;
+            _lastDecoy = slot;
+            _decoyActedAt = Time.time;
+            if (config) Play(config.DecoySfx, at);
+        }
+
+        // ------------------------------------------------------------------ the step
+
+        void Update()
+        {
+            if (_status == null || !config || !_status.Transform) return;
+            float dt = Time.deltaTime;
+            if (dt <= 0f) return;
+
+            PruneDead();
+            UpdateBoard(dt);
+            float ring = Ring;
+            bool remote = FollowRemoteCrew();
+            if (remote)
+            {
+                // another machine owns the hull: its jacks, decoy and call (JacksBodies) herd here
+                StopHerding();
+            }
+            else
+            {
+                // the local human's mode, unless something else has parked the hull on its AI (the app shell): the same
+                // wake rule as every crew seat (CrewSeat.ShouldWake), so the pad and the touchscreen are not read under a menu
+                bool human = IsLocalHuman && !_status.AutoPilotEnabled;
+                // (the human's mode changes by the seat swap, TakeSeat, never polled here)
+                if (!human && _status.AutoPilotEnabled)
+                {
+                    if (_coach != null) StepAIRace();
+                    else StepAIMode();
+                }
+                else if (!human) StopHerding();   // nobody runs the jacks here yet: they fly, and nothing jumps
+                SetFlightInputPaused(human && _herding);
+                HoldHull(_herding);
+
+                if (!_herding) StepFlightJacks(dt);
+                else if (human) ReadHumanJacks(dt, ring);
+                else if (_coach != null) StepAIRaceJacks();
+                else StepAIJacks(dt, ring);
+                if (_herding) StepJacks(dt);
+                ListenToCards(human && _herding);
+                EnsureDecoy();
+                for (int s = 0; s < 2; s++)
+                    if (_decoyOn[s]) _decoys[s] = OnPlane(_decoys[s]);
+                if (!TimeUpgraded) _decoyOn[1] = false;   // the second decoy goes with the upgrade
+            }
+
+            bool herdingNow = remote ? _remoteHerding : _herding;
+            _planeNow = herdingNow || (remote ? _remotePlane : _planeAttract);
+            SetLit(_planeNow);
+            if (herdingNow)
+            {
+                if (_net.Open) _net.Release(this);
+                _net.CollectByJacks(this, herding: true);
+            }
+            else
+            {
+                // the fish take what they touch first (an omni crystal a jack hits still bears the worm); the net carries the rest
+                _net.CollectByJacks(this, herding: false);
+                _net.Step(this, _jack[0], _jack[1], dt);
+            }
+            EnsureFloor();
+            Recruit(ring);
+            StepHerd(dt, ring);
+            UpdateContacts();
+            LayMass();
+        }
+
+        void LateUpdate()
+        {
+            if (_status == null || !config || !_status.Transform) return;
+            // WIDE opens every ring (the herd fans out to graze a wide field); off, the rings close and the herd bunches.
+            _wideBlend = Mathf.MoveTowards(_wideBlend, _wide && _herding ? 1f : 0f, Time.deltaTime / Mathf.Max(0.05f, config.WideRingSeconds));
+            if (IsLocalHuman)
+            {
+                _view ??= new JacksView(this);
+                _view.Frame(_herding, _wide, Time.deltaTime);
+            }
+            if (IsLocalHuman && !_status.AutoPilotEnabled) UpdateNetCamera(Time.deltaTime);
+            else ReleaseCamera();
+            DrawMarks();
+        }
+
+        /// <summary>
+        /// On a peer that does not own the hull, take the owner's jacks, decoy and call (published by
+        /// <see cref="JacksBodies"/>), so the herd - steered where the creatures are simulated, usually the host - is
+        /// herded by the jacks the owner's player is really running. False where this machine runs the jacks itself.
+        /// </summary>
+        bool FollowRemoteCrew()
+        {
+            if (!_bodies || !_bodies.TryGetRemoteCrew(out var a, out var b, out bool decoy, out var at, out bool decoyB, out var atB,
+                                                       out bool calling, out bool flying, out bool plane)) return false;
+            _remoteHerding = !flying;
+            _remotePlane = plane;
+            _jack[0] = a;
+            _jack[1] = b;
+            _decoyOn[0] = decoy;
+            if (decoy) _decoys[0] = OnPlane(at);
+            _decoyOn[1] = decoyB;
+            if (decoyB) _decoys[1] = OnPlane(atB);
+            if (calling) _callUntil = Time.time + RemoteCallHold;
+            else if (_callUntil > Time.time) _callUntil = Time.time;
+            return true;
+        }
+
+        // a replicated call stays on this long past the last frame that said so (the flag, not a timer, ends it)
+        const float RemoteCallHold = 0.5f;
+
+        // ---- the board ----
+
+        void UpdateBoard(float dt)
+        {
+            var t = _status.Transform;
+            if (!_snapped)
+            {
+                _f = t.forward; _u = t.up; _r = t.right;
+                _snapped = true;
+                return;
+            }
+            float a = JacksMath.Ease(_herding ? config.HerdPlaneEase : config.FlightPlaneEase, dt);
+            if (a <= 0f) return;
+            _f += (t.forward - _f) * a;
+            _u += (t.up - _u) * a;
+            _f.Normalize();
+            _r = Vector3.Cross(_u, _f).normalized;
+            _u = Vector3.Cross(_f, _r);
+        }
+
+        /// <summary>A point laid onto the hull's plane (the lab's <c>onPlane</c>).</summary>
+        internal Vector3 OnPlane(Vector3 p) => p - _u * Vector3.Dot(p - HullPosition, _u);
+
+        internal Vector2 ToBoard(Vector3 p)
+        {
+            var d = p - HullPosition;
+            return new Vector2(Vector3.Dot(d, _r), Vector3.Dot(d, _f));
+        }
+
+        internal Vector3 FromBoard(Vector2 b) => HullPosition + _r * b.x + _f * b.y;
+
+        // ---- the jacks ----
+
+        void PlaceJacks()
+        {
+            if (_status == null || !_status.Transform || !config) return;
+            var t = _status.Transform;
+            _r = t.right; _f = t.forward; _u = t.up;
+            for (int k = 0; k < 2; k++)
+            {
+                _flightLocal[k] = JacksMath.FlightOffset(k == 0 ? -1f : 1f, Vector2.zero, config.FlightGap, config.FlightReach);
+                _jack[k] = t.position + t.rotation * _flightLocal[k];
+                _jackTarget[k] = _jack[k];
+            }
+        }
+
+        /// <summary>Herding: each jack runs to its target on the board; a lifted THUMB (a phone's, or the AI's) leaves the
+        /// decoy where it stands - the pad and the keys lay it with the triggers, and a mouse let go lays nothing.</summary>
+        void StepJacks(float dt)
+        {
+            for (int k = 0; k < 2; k++)
+            {
+                _jack[k] = OnPlane(_jack[k]);
+                if (_jackDown[k]) _jack[k] = JacksMath.StepToward(_jack[k], OnPlane(_jackTarget[k]), config.DogSpeed, dt);
+                else if (_jackWasDown[k] && _liftLays[k]) DropDecoy(DecoySlotFor(k), _jack[k], k);   // the lift
+                _jackWasDown[k] = _jackDown[k];
+                if (_jackDown[k]) _liftLays[k] = _byThumb[k];
+            }
+        }
+
+        // whether a jack is held by a thumb that lays a decoy when it lifts (this frame, and as it was last held)
+        readonly bool[] _byThumb = new bool[2], _liftLays = new bool[2];
+
+        /// <summary>
+        /// Flying: each jack sits under its thumb (Garrett, 2026-10-21: "move one fish up and the other down to roll, or
+        /// move both together for pitch and yaw, and bring them apart to speed up, bring them together to slow down"). The
+        /// left jack follows the left stick and the right jack the right one, in the hull's frame
+        /// (<see cref="JacksMath.FlightOffset"/>); the sticks are the replicated ones the flight itself reads. The place
+        /// eases, so the jacks swim into formation from wherever they were herding.
+        /// </summary>
+        void StepFlightJacks(float dt)
+        {
+            var t = _status.Transform;
+            var input = _status.InputStatus;
+            Vector2 left = input != null ? input.LeftNormalizedJoystickPosition : Vector2.zero;
+            Vector2 right = input != null ? input.RightNormalizedJoystickPosition : Vector2.zero;
+            float a = JacksMath.Ease(config.FlightFormationEase, dt);
+            // sticks apart open the net: the fish swim further apart (Garrett, 2026-10-24: "a net that opens wider with xdiff")
+            float gap = config.FlightGap + config.NetSpread * JacksMath.NetOpenFromSticks(left, right);
+            for (int k = 0; k < 2; k++)
+            {
+                var want = JacksMath.FlightOffset(k == 0 ? -1f : 1f, k == 0 ? left : right, gap, config.FlightReach);
+                _flightLocal[k] = Vector3.Lerp(_flightLocal[k], want, a);
+                _jack[k] = t.position + t.rotation * _flightLocal[k];
+                _jackTarget[k] = _jack[k];
+                _jackDown[k] = _jackWasDown[k] = false;
+            }
+        }
+
+        void StepAIJacks(float dt, float ring)
+        {
+            var target = HerdTarget();
+            var plan = _ai.Plan(this, dt, ring, target);
+            _jackTarget[0] = FromBoard(plan.A);
+            _jackTarget[1] = FromBoard(plan.B);
+            _jackDown[0] = true;
+            _jackDown[1] = !plan.LiftB;
+            _byThumb[0] = _byThumb[1] = true;   // the AI lays its decoy by lifting
+        }
+
+        /// <summary>Where the AI takes the herd: the densest rival mass in the jacks' cell (the cell's own targeting grid).</summary>
+        Vector3 HerdTarget()
+        {
+            var cell = NearestCell(JacksCentre);
+            return cell ? cell.GetExplosionTarget(_status.Domain) : HerdCentre;
+        }
+
+        /// <summary>
+        /// The AI's mode: it herds for <c>aiHerdSeconds</c>, then nets for <c>aiFlightSeconds</c> (the hull's own AIPilot
+        /// flies, so the board moves with the fleet's targeting and the net sweeps what it flies through), its herd drawn to
+        /// the plane so it follows the new board.
+        /// </summary>
+        void StepAIMode()
+        {
+            if (Time.time < _aiModeAt) return;
+            bool herd = !_herding;
+            _aiModeAt = Time.time + (herd ? config.AIHerdSeconds : config.AIFlightSeconds);
+            SetHerding(herd);
+            _planeAttract = true;
+        }
+
+        // ---- a race's AI cycles (RaceCoach) ----
+
+        /// <summary>
+        /// The AI's mode in a race: fly until the coach answers a cycle, herd it (the jacks run, the triggers lay its
+        /// decoys), take off when both jacks are there, then fly to its decoys in order, and fly on. Every swap waits out
+        /// <see cref="PilotSwap.CooldownSeconds"/>, as a person's does.
+        /// </summary>
+        void StepAIRace()
+        {
+            float now = Time.unscaledTime;
+            switch (_racePhase)
+            {
+                case RacePhase.Flying:
+                    if (_herding) { SetHerding(false); _swapReadyAt = now + PilotSwap.CooldownSeconds; return; }
+                    if (now < _swapReadyAt || !_coach.TryNextCycle(this, out _plan)) return;
+                    SetHerding(true);
+                    _swapReadyAt = now + PilotSwap.CooldownSeconds;
+                    _planStep[0] = _planStep[1] = 0;
+                    _racePhase = RacePhase.Herding;
+                    return;
+                case RacePhase.Herding:
+                    if (!_herding) { _racePhase = RacePhase.Flying; return; }
+                    if (_planStep[0] < 2 || _planStep[1] < 2 || now < _swapReadyAt) return;
+                    SetHerding(false);   // the take-off: the hull jumps to halfway between the jacks
+                    _swapReadyAt = now + PilotSwap.CooldownSeconds;
+                    _travelStep = 0;
+                    _racePhase = RacePhase.Travelling;
+                    return;
+                default:
+                    if (Travelling || Time.time < _teleReadyAt) return;
+                    int slot = _travelStep == 0 ? _plan.FirstTravel : _travelStep == 1 ? _plan.SecondTravel : -1;
+                    if (slot < 0 || !_decoyOn[TimeUpgraded ? slot : 0]) { _racePhase = RacePhase.Flying; return; }
+                    _travelStep++;
+                    Teleport(slot);
+                    return;
+            }
+        }
+
+        /// <summary>The coach's cycle on the board: each jack runs to its via point, lays its decoy there (the trigger on
+        /// that jack's side), then runs to its end and waits.</summary>
+        void StepAIRaceJacks()
+        {
+            for (int k = 0; k < 2; k++)
+            {
+                Vector3 via = k == 0 ? _plan.Jack0Via : _plan.Jack1Via;
+                Vector3 to = k == 0 ? _plan.Jack0To : _plan.Jack1To;
+                int lays = k == 0 ? _plan.Jack0Lays : _plan.Jack1Lays;
+                _byThumb[k] = false;   // a lift lays nothing: the plan's triggers do
+                _jackDown[k] = true;
+                if (_planStep[k] == 0)
+                {
+                    _jackTarget[k] = OnPlane(via);
+                    if ((OnPlane(_jack[k]) - _jackTarget[k]).sqrMagnitude > 0.25f) continue;
+                    if (lays >= 0) DropDecoy(lays, OnPlane(_jack[k]), k);
+                    _planStep[k] = 1;
+                }
+                _jackTarget[k] = OnPlane(to);
+                if (_planStep[k] == 1 && (OnPlane(_jack[k]) - _jackTarget[k]).sqrMagnitude <= 0.25f) _planStep[k] = 2;
+            }
+        }
+
+        // ---- the human on the jacks: thumbs, the mouse, the sticks ----
+
+        void ReadHumanJacks(float dt, float ring)
+        {
+            if (_view == null) return;
+            bool[] held = { false, false };
+            _byThumb[0] = _byThumb[1] = false;
+
+            // a touch or a click that starts on an ability card is the card's (FlightTouchClaims), never a jack's
+            var touchscreen = Touchscreen.current;
+            if (touchscreen != null)
+            {
+                var touches = touchscreen.touches;
+                for (int i = 0; i < touches.Count; i++)
+                {
+                    var t = touches[i];
+                    int id = t.touchId.ReadValue();
+                    var at = t.position.ReadValue();
+                    if (t.press.wasPressedThisFrame && !FlightTouchClaims.Claims(at)) Claim(id, at);
+                    if (t.press.isPressed && _pointerJack.TryGetValue(id, out int k)) { Aim(k, at); held[k] = _byThumb[k] = true; }
+                    if (t.press.wasReleasedThisFrame) _pointerJack.Remove(id);
+                }
+            }
+
+            var mouse = Mouse.current;
+            if (mouse != null)
+            {
+                var at = mouse.position.ReadValue();
+                if (mouse.leftButton.wasPressedThisFrame && !FlightTouchClaims.Claims(at)) Claim(MouseId, at);
+                if (mouse.leftButton.isPressed && _pointerJack.TryGetValue(MouseId, out int k)) { Aim(k, at); held[k] = true; }
+                if (mouse.leftButton.wasReleasedThisFrame) _pointerJack.Remove(MouseId);
+            }
+
+            var pad = Gamepad.current;
+            if (pad != null) ReadPad(pad, dt, held);
+
+            // the flight's buttons are paused while the jacks herd, so the abilities' own controls are read here, the same
+            // controls their cards name (Garrett, 2026-10-25): MASS, the call, on B / T (Button2); SPACE, Wide, on Y / F
+            // (Button4); TIME, the decoys, on the triggers (L / R shift). A card pressed on screen arrives through OnCardPress.
+            var keys = Keyboard.current;
+            if ((pad != null && pad.buttonEast.wasPressedThisFrame) || (keys != null && keys.tKey.wasPressedThisFrame)) Call();
+            if ((pad != null && pad.buttonNorth.wasPressedThisFrame) || (keys != null && keys.fKey.wasPressedThisFrame))
+                ToggleWide();
+            ReadTrigger(0, (pad != null && pad.leftTrigger.ReadValue() > 0.5f) || (keys != null && keys.leftShiftKey.isPressed));
+            ReadTrigger(1, (pad != null && pad.rightTrigger.ReadValue() > 0.5f) || (keys != null && keys.rightShiftKey.isPressed));
+
+            for (int k = 0; k < 2; k++)
+                if (!held[k] && !_padHolds[k]) _jackDown[k] = false;
+        }
+
+        readonly bool[] _padHolds = new bool[2];
+        readonly bool[] _triggerWas = new bool[2];
+
+        /// <summary>THE TIME ABILITY while herding (Garrett, 2026-10-25: "in herding mode the triggers should drop decoys"):
+        /// a pull lays that trigger's decoy at the jack on that side of the screen (with one decoy, either trigger lays it).</summary>
+        void ReadTrigger(int side, bool down)
+        {
+            if (down && !_triggerWas[side])
+            {
+                int k = ScreenSideJack(side);
+                DropDecoy(side, OnPlane(_jack[k]), k);
+            }
+            _triggerWas[side] = down;
+        }
+
+        /// <summary>The jack on <paramref name="side"/> of the herding view (0 the left).</summary>
+        int ScreenSideJack(int side)
+        {
+            if (_view == null) return side;
+            bool zeroLeft = _view.WorldToScreen(_jack[0]).x <= _view.WorldToScreen(_jack[1]).x;
+            return (side == 0) == zeroLeft ? 0 : 1;
+        }
+
+        /// <summary>Herding, the flight's buttons are paused (<see cref="SetFlightInputPaused"/>), so a press of an ability
+        /// card on screen (<c>AbilityCardPress</c> raises the control its chip names) is heard here instead: the Mass card
+        /// calls, the Space card toggles Wide. Only while the local human herds.</summary>
+        void ListenToCards(bool listen)
+        {
+            var channel = listen ? _status?.InputStatus?.OnButtonPressed : null;
+            if (channel == _cardPresses) return;
+            if (_cardPresses) _cardPresses.OnRaised -= OnCardPress;
+            _cardPresses = channel;
+            if (_cardPresses) _cardPresses.OnRaised += OnCardPress;
+        }
+
+        void OnCardPress(InputEvents ie)
+        {
+            if (!_herding) return;
+            if (ie == InputEvents.Button2Action) Call();
+            else if (ie == InputEvents.Button4Action) ToggleWide();
+        }
+
+        void Claim(int pointer, Vector2 at)
+        {
+            int best = -1;
+            float bd = float.PositiveInfinity;
+            for (int k = 0; k < 2; k++)
+            {
+                if (_pointerJack.ContainsValue(k)) continue;
+                float d = (_view.WorldToScreen(_jack[k]) - at).sqrMagnitude;
+                if (d < bd) { bd = d; best = k; }
+            }
+            if (best >= 0) _pointerJack[pointer] = best;
+        }
+
+        void Aim(int k, Vector2 screen)
+        {
+            _jackTarget[k] = _view.ScreenToPlane(screen);
+            _jackDown[k] = true;
+        }
+
+        /// <summary>
+        /// The sticks (the lab's <c>gatherPadDogs</c>): the left stick runs the left jack and the right stick the right one,
+        /// screen-relative (stick up = up the screen), at <c>padDogSpeed</c> x <c>dogSpeed</c>; a jack holds still when its
+        /// stick rests, so resting drops nothing (the trigger on that side lays its decoy, <see cref="ReadTrigger"/>). When
+        /// both sticks rest, the left stick takes whichever jack is further left on screen. A stick never drives its jack off
+        /// the screen.
+        /// </summary>
+        void ReadPad(Gamepad pad, float dt, bool[] heldByPointer)
+        {
+            Vector2 l = pad.leftStick.ReadValue(), r = pad.rightStick.ReadValue();
+            bool restL = JacksMath.DeadZone(l.x) == 0f && JacksMath.DeadZone(l.y) == 0f;
+            bool restR = JacksMath.DeadZone(r.x) == 0f && JacksMath.DeadZone(r.y) == 0f;
+            if (restL && restR)
+            {
+                bool leftFirst = _view.WorldToScreen(_jack[0]).x <= _view.WorldToScreen(_jack[1]).x;
+                _padJack[0] = leftFirst ? 0 : 1;
+                _padJack[1] = leftFirst ? 1 : 0;
+            }
+            for (int s = 0; s < 2; s++)
+            {
+                int k = _padJack[s];
+                _padHolds[k] = false;
+                if (heldByPointer[k]) continue;
+                var run = JacksMath.StickRun(s == 0 ? l : r, config.DogSpeed * config.PadDogSpeed, dt);
+                _jackTarget[k] = _view.RunOnScreen(_jack[k], run);
+                _jackDown[k] = true;
+                _padHolds[k] = true;
+            }
+        }
+
+        // ---- the mode ----
+
+        // the swap gesture (D-pad, the left / right arrow keys, a two-finger swipe) is the person's, and CrewStations steps
+        // them fly -> herd -> the next hull through TakeSeat (the two modes are the hull's two seats; the small view and its
+        // double tap went with the picture-in-picture, round 2)
+
+        /// <inheritdoc cref="ICrewStations.SeatCount"/>: flying (0) and herding (1).
+        public int SeatCount => 2;
+
+        /// <inheritdoc cref="ICrewStations.LocalSeat"/>
+        public int LocalSeat => IsLocalHuman && _status != null && !_status.AutoPilotEnabled ? (_herding ? 1 : 0) : -1;
+
+        /// <inheritdoc cref="ICrewStations.HostsRiders"/>: one person flies or herds the Jacks.
+        public bool HostsRiders => false;
+
+        /// <inheritdoc cref="ICrewStations.TakeSeat"/>
+        public void TakeSeat(int seat)
+        {
+            bool herd = seat == 1;
+            if (LocalSeat < 0 || herd == _herding) return;
+            _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
+            SetHerding(herd);
+        }
+
+        /// <summary>
+        /// Switch between herding and flying. Landing: the jacks start herding where they flew, on the hull's plane, and
+        /// the hull holds still (<see cref="HoldHull"/>). Taking off: the hull jumps to the jacks (halfway between them,
+        /// facing the board's forward; <paramref name="takeOff"/>), so the flight starts where the player was looking, and
+        /// the jacks swim into formation round it.
+        /// </summary>
+        void SetHerding(bool herd, bool takeOff = true)
+        {
+            if (herd == _herding) return;
+            _herding = herd;
+            _pointerJack.Clear();
+            if (!herd && _callUntil > Time.time) _callUntil = Time.time;   // a herding call ends at take-off
+            if (herd)
+            {
+                for (int k = 0; k < 2; k++)
+                {
+                    _jack[k] = OnPlane(_jack[k]);
+                    _jackTarget[k] = _jack[k];
+                    _jackDown[k] = _jackWasDown[k] = false;
+                }
+                EnsureDecoy();
+                return;
+            }
+            var t = _status != null ? _status.Transform : null;
+            if (!t) return;
+            // the hull takes off where the two fish are on average, facing the way they face on average (Garrett, 2026-10-25:
+            // "when switching from herding to netting, the new orientation should be the average orientation of the two fish.
+            // same for location"); two fish facing opposite ways average to nothing, and then the board's forward is kept
+            if (takeOff && _vessel != null && ElementalTransfer.IsDecidedHere(_status))
+            {
+                var heading = _f;
+                if (_bodies)
+                {
+                    var sum = Vector3.ProjectOnPlane(_bodies.JackHeading(0) + _bodies.JackHeading(1), _u);
+                    if (sum.sqrMagnitude > 0.01f) heading = sum.normalized;
+                }
+                _vessel.SetPose(new Pose(OnPlane(JacksCentre), Quaternion.LookRotation(heading, _u)));
+            }
+            var toLocal = Quaternion.Inverse(t.rotation);
+            for (int k = 0; k < 2; k++) _flightLocal[k] = toLocal * (_jack[k] - t.position);
+        }
+
+        /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>
+        public void ReturnHumanToHull() => StopHerding();
+
+        // Out of herding without the jump (a park, a respawn, a disable): the hull stays where it is.
+        void StopHerding()
+        {
+            SetHerding(false, takeOff: false);
+            SetFlightInputPaused(false);
+            HoldHull(false);
+        }
+
+        /// <summary>
+        /// While the jacks herd the hull holds still, so its plane - the board - holds still under the player's thumbs
+        /// (Garrett, 2026-10-21: "make things as stable for the jack player as we can"). The fleet's own stop
+        /// (<see cref="IVesselStatus.IsStationary"/>), asserted every frame; on release it goes back to what it was, or to
+        /// what the round made it while held (a round that starts mid-herd clears it), so the hold never starts or stops a
+        /// round. Only on the machine that decides the hull.
+        /// </summary>
+        void HoldHull(bool hold)
+        {
+            if (_status == null) return;
+            if (hold && !ElementalTransfer.IsDecidedHere(_status)) hold = false;
+            if (hold == _holding)
+            {
+                if (hold && !_status.IsStationary)
+                {
+                    _heldWasStationary = false;
+                    _status.IsStationary = true;
+                }
+                return;
+            }
+            _holding = hold;
+            if (hold)
+            {
+                _heldWasStationary = _status.IsStationary;
+                _status.IsStationary = true;
+            }
+            else _status.IsStationary = _heldWasStationary;
+        }
+
+        // The sticks belong to the jacks while they herd: the hull's flight input is paused (the Wrasse's swap,
+        // KiteNavigator.SetHumanNavigates). Only a pause this component made is lifted.
+        void SetFlightInputPaused(bool paused)
+        {
+            if (paused == _inputPaused) return;
+            _inputPaused = paused;
+            var player = _status?.Player;
+            if (player == null) return;
+            if (UnityLiveness.Alive(player.InputController)) player.InputController.SetPause(paused);
+            else if (player.InputStatus != null) player.InputStatus.Paused = paused;
+        }
+
+        // ------------------------------------------------------------------ the herd
+
+        /// <summary>The herd's spread on the board (the lab's flock radius, RMS).</summary>
+        internal float HerdSpread { get; private set; }
+
+        /// <summary>The herd's furthest creature on the board, from its centre (the lab's straggler, <c>far</c>).</summary>
+        internal Vector2 HerdFar { get; private set; }
+
+        internal Vector2 JackOnBoard(int k) => ToBoard(_jack[k]);
+
+        /// <summary>
+        /// The herd's steer, every member every frame (the lab's <c>stepSheep</c>, ported term for term in
+        /// <see cref="JacksMath"/>): the flock's own separation, alignment and cohesion; each herder's ring; the call;
+        /// the Charge-5 attack; grazing while calm; the wander; and the plane's spring. The creature then swims it by its own
+        /// steering (<see cref="TrySteer"/>) and eats by its own mouthful (<see cref="OrderedMeal"/>).
+        /// </summary>
+        void StepHerd(float dt, float ring)
+        {
+            var herders = Herders(ring);
+            Vector3 hull = HullPosition, jacks = JacksCentre, centre = Vector3.zero;
+            bool calling = Calling;
+            float pace = config.HerdSpeedFor(_status);
+            float sep = config.Separation, nr = config.NeighbourRadius, nr2 = nr * nr;
+            float callDead = 30f * config.LabScale;
+            bool attacks = ChargeUpgraded;
+            if (attacks) ScanVessels();
+
+            for (int i = 0; i < _herd.Count; i++)
+            {
+                var m = _herd[i];
+                Vector3 pos = m.Creature.transform.position;
+                m.Velocity = (pos - m.LastPos) / dt;
+                m.LastPos = pos;
+                centre += pos;
+            }
+            if (_herd.Count > 0) centre /= _herd.Count;
+            HerdCentre = _herd.Count > 0 ? centre : jacks;
+            MeasureSpread();
+
+            for (int i = 0; i < _herd.Count; i++)
+            {
+                var m = _herd[i];
+                var c = m.Creature;
+                Vector3 pos = m.LastPos;
+                float cruise = c.LeashTopSpeed * pace;
+
+                Vector3 sepSum = Vector3.zero, velSum = Vector3.zero, cenSum = Vector3.zero;
+                int n = 0;
+                for (int j = 0; j < _herd.Count; j++)
+                {
+                    if (j == i) continue;
+                    var o = _herd[j];
+                    Vector3 d = pos - o.LastPos;
+                    if (d.sqrMagnitude > nr2) continue;
+                    sepSum += JacksMath.SeparationTerm(d, sep);
+                    velSum += o.Velocity;
+                    cenSum += o.LastPos;
+                    n++;
+                }
+                Vector3 g = JacksMath.Flock(sepSum, velSum, cenSum, n, pos, cruise, nr);
+
+                float panic = 0f;
+                for (int h = 0; h < herders.Count; h++)
+                {
+                    g += JacksMath.Repel(pos, herders[h], ring, _u, out float k);
+                    panic = Mathf.Max(panic, k);
+                }
+                if (calling)
+                {
+                    g += JacksMath.CallPull(pos, jacks, _u, callDead);
+                    panic = Mathf.Max(panic, 0.5f);
+                }
+                if (attacks && TryNearestRival(pos, config.AttackRange, out var rival, out float rd))
+                {
+                    g += (rival - pos) * (2.2f / Mathf.Max(1e-3f, rd));
+                    panic = Mathf.Max(panic, 0.6f);
+                }
+
+                float gz = 0f;
+                if (panic < 0.5f)
+                {
+                    if (!MealStillGood(m) && Time.time >= m.MealAt) PickMeal(m, pos);
+                    if (m.Meal)
+                    {
+                        Vector3 dv = m.Meal.transform.position - pos;
+                        float d = dv.magnitude;
+                        if (d > 1e-4f)
+                        {
+                            g += dv * (0.9f / d);
+                            gz = Vector3.Dot(dv, _u) / d;
+                        }
+                    }
+                }
+                else m.Meal = null;   // a herder scared it off its meal
+
+                m.Phase += dt * JacksMath.WanderRate(m.Roll);
+                g += JacksMath.Wander(m.Phase, m.Roll, _r, _f);
+
+                Vector3 want = JacksMath.Want(g, _u, cruise, panic);
+                float height = Vector3.Dot(pos - hull, _u);
+                float gn = Vector3.Dot(g, _u) + 0.6f * gz;   // the lab's (gn - 0.9 gz) x 40 + 60 gz, over 40
+                // netting with the plane's pull toggled off, the herd keeps its own height
+                float vn = _planeNow ? JacksMath.PlaneSpeed(height, gn, config.PlanePull, Mathf.Max(cruise, 1f) * 1.8f) : 0f;
+                m.Desired = want + _u * vn;
+            }
+        }
+
+        readonly List<Vector3> _herders = new(4);
+
+        /// <summary>Every herder this frame (the lab's <c>repellers</c>): both jacks (not while they call) and the decoy.</summary>
+        List<Vector3> Herders(float ring)
+        {
+            _herders.Clear();
+            if (!Calling)
+            {
+                _herders.Add(_jack[0]);
+                _herders.Add(_jack[1]);
+            }
+            for (int s = 0; s < 2; s++)
+                if (_decoyOn[s]) _herders.Add(_decoys[s]);
+            return _herders;
+        }
+
+        void MeasureSpread()
+        {
+            if (_herd.Count == 0) { HerdSpread = 0f; HerdFar = Vector2.zero; return; }
+            var c = ToBoard(HerdCentre);
+            float r2 = 0f, far = -1f;
+            Vector2 farPt = c;
+            for (int i = 0; i < _herd.Count; i++)
+            {
+                var q = ToBoard(_herd[i].LastPos);
+                float d = (q - c).sqrMagnitude;
+                r2 += d;
+                if (d > far) { far = d; farPt = q; }
+            }
+            HerdSpread = Mathf.Sqrt(r2 / _herd.Count);
+            HerdFar = farPt;
+        }
+
+        bool MealStillGood(Member m) =>
+            m.Meal && !m.Meal.destroyed && m.Meal.Domain != _status.Domain && m.Creature.LeashCanEat(m.Meal);
+
+        /// <summary>A calm creature grazes the nearest prism it can eat within <c>grazeSense</c> - never our own domain's mass
+        /// (the lab's pasture rule) - re-picked twice a second, so a full herd costs a few sphere queries a frame.</summary>
+        void PickMeal(Member m, Vector3 pos)
+        {
+            m.MealAt = Time.time + 0.5f + m.Roll * 0.1f;
+            m.Meal = null;
+            var index = PrismSpatialIndex.EnsureInstance();
+            if (index == null || !index.IsAvailable) return;
+            int found = index.QuerySphere(pos, config.GrazeSense, _query);
+            float best = float.PositiveInfinity;
+            var own = _status.Domain;
+            for (int i = 0; i < found; i++)
+            {
+                var p = _query[i];
+                if (!p || p.destroyed || p.Domain == own) continue;
+                if (p is HealthPrism hp && hp.ResolveOwnerFauna()) continue;   // a creature's body is no meal
+                if (!m.Creature.LeashCanEat(p)) continue;                     // its own diet: domain, nucleus, pens, shields
+                float d = (p.transform.position - pos).sqrMagnitude;
+                if (d < best) { best = d; m.Meal = p; }
+            }
+        }
+
+        // ---- who joins: the wild herbivores a herder's ring touches ----
+
+        void Recruit(float ring)
+        {
+            if (Time.time < _recruitAt || _herd.Count >= config.HerdCap) return;
+            _recruitAt = Time.time + 0.25f;
+            var herders = Herders(ring);
+            float r2 = ring * ring;
+            var cells = Cell.ActiveCellsSnapshot;
+            for (int ci = 0; ci < cells.Count && _herd.Count < config.HerdCap; ci++)
+            {
+                var cell = cells[ci];
+                if (!cell) continue;
+                var live = cell.LiveFauna;
+                for (int i = 0; i < live.Count && _herd.Count < config.HerdCap; i++)
+                {
+                    var f = live[i];
+                    if (!f || f.IsDying || f.IsLeashed || _byCreature.ContainsKey(f) || !f.Leashable) continue;
+                    var p = f.transform.position;
+                    bool touched = false;
+                    for (int h = 0; h < herders.Count && !touched; h++)
+                        touched = JacksMath.InPlane(p - herders[h], _u).sqrMagnitude <= r2
+                                  && Mathf.Abs(Vector3.Dot(p - herders[h], _u)) <= ring;
+                    if (touched) Join(f);
+                }
+            }
+        }
+
+        bool Join(Fauna f)
+        {
+            if (!f || _byCreature.ContainsKey(f) || !f.TryLeash(this)) return false;
+            var m = new Member
+            {
+                Creature = f,
+                Roll = JacksMath.Roll01(f.GetInstanceID()),
+                LastPos = f.transform.position,
+            };
+            m.Phase = m.Roll * 10f;
+            _herd.Add(m);
+            _byCreature[f] = m;
+            return true;
+        }
+
+        /// <summary>
+        /// An EMPTY herd has its floor born to it (the Angler keeper's rule grown to the herd; the designer, 2026-10-21: the
+        /// herd "should only starve down to a minimum size and break other rules if need be"): one creature every
+        /// <c>floorBirthSeconds</c> until the herd holds <c>minHerd</c>, through the platform's one fauna spawn seam in the
+        /// cell's controlling colour, blooming in. A replicated species is born only where the ecology is simulated.
+        /// </summary>
+        void EnsureFloor()
+        {
+            if (_herd.Count == 0 && config.MinHerd > 0) _seeding = true;
+            if (!_seeding) return;
+            if (_herd.Count >= config.MinHerd) { _seeding = false; return; }
+            if (Time.time < _floorBirthAt) return;
+            _floorBirthAt = Time.time + config.FloorBirthSeconds;
+            var cell = NearestCell(JacksCentre);
+            if (!cell) return;
+            var cfg = FloorSpecies(cell);
+            if (!cfg || (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority)) return;
+            int i = _herd.Count;
+            float th = i * 2.39996323f, rad = Ring * 0.6f * Mathf.Sqrt((i + 1f) / Mathf.Max(1f, config.MinHerd));
+            Vector3 at = OnPlane(JacksCentre - _f * Ring + (_r * Mathf.Cos(th) + _f * Mathf.Sin(th)) * rad);
+            if (cell.HasFaunaPen) at = cell.ClampToFaunaContainment(at, at);
+            var f = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab, at, cell.ControllingDomain, at, cfg);
+            if (f) Join(f);   // born wild if it cannot be leashed: an ordinary creature of the cell from here on
+        }
+
+        FaunaConfigurationSO FloorSpecies(Cell cell)
+        {
+            var profile = cell.Config ? cell.Config.SpawnProfile : null;
+            if (profile)
+                for (int i = 0; i < profile.SupportedFaunas.Count; i++)
+                {
+                    var c = profile.SupportedFaunas[i];
+                    if (c && c.FaunaPrefab && c.FaunaPrefab.Leashable) return c;
+                }
+            var companion = config.CompanionFauna;
+            return companion && companion.FaunaPrefab && companion.FaunaPrefab.Leashable ? companion : null;
+        }
+
+        static Cell NearestCell(Vector3 at)
+        {
+            Cell best = null;
+            float bd = float.PositiveInfinity;
+            var cells = Cell.ActiveCellsSnapshot;
+            for (int i = 0; i < cells.Count; i++)
+            {
+                var c = cells[i];
+                if (!c) continue;
+                float d = (c.transform.position - at).sqrMagnitude;
+                if (d < bd) { bd = d; best = c; }
+            }
+            return best;
+        }
+
+        // ---- contacts with rival hulls: danger stings, and Charge 5 bites (PvP is petals only) ----
+
+        void ScanVessels()
+        {
+            if (Time.time < _vesselScanAt) return;
+            _vessels.Clear();
+            _vessels.AddRange(Object.FindObjectsByType<VesselStatus>(FindObjectsSortMode.None));   // once a second, not per frame
+            _vesselScanAt = Time.time + 1f;
+        }
+
+        bool TryNearestRival(Vector3 from, float range, out Vector3 at, out float distance)
+        {
+            at = default;
+            distance = range;
+            bool found = false;
+            var own = _status.Domain;
+            for (int i = 0; i < _vessels.Count; i++)
+            {
+                var v = _vessels[i];
+                if (!v || v.Player == null) continue;
+                IVesselStatus vs = v;
+                if (vs.Domain == own || vs.Transform == _status.Transform) continue;
+                float d = Vector3.Distance(v.transform.position, from);
+                if (d < distance) { distance = d; at = v.transform.position; found = true; }
+            }
+            return found;
+        }
+
+        /// <summary>
+        /// A DANGER creature that touches a rival hull stings it - a scored Strike that takes petals - and is spent (it dies
+        /// the ordinary way, a joust). At Charge 5 every creature that touches one bites it (a Strike, not spent). One gate,
+        /// the same as every contact weapon: decided on the machine that owns the hull, admitted by
+        /// <see cref="CombatHitDrain.TryAdmit"/> (its per-pair latch keeps it to one Strike per <c>strikeCooldown</c> per hull).
+        /// Never on our own team, and never a stun.
+        /// </summary>
+        void UpdateContacts()
+        {
+            if (_herd.Count == 0 || !ElementalTransfer.IsDecidedHere(_status)) return;
+            if (_status.Player is { IsNetworkOwner: false }) return;
+            ScanVessels();
+            float share = DangerShare;
+            bool bites = ChargeUpgraded;
+            var own = _status.Domain;
+            for (int v = 0; v < _vessels.Count; v++)
+            {
+                var hull = _vessels[v];
+                if (!hull || hull.Player == null) continue;
+                IVesselStatus victim = hull;
+                if (victim.Domain == own || victim.Transform == _status.Transform) continue;
+                Vector3 hp = hull.transform.position;
+                for (int i = _herd.Count - 1; i >= 0; i--)
+                {
+                    var m = _herd[i];
+                    if (!m.Creature) continue;
+                    float reach = config.ContactReach + m.Creature.LeashMouthReach * 0.25f;
+                    Vector3 to = hp - m.LastPos;
+                    if (to.sqrMagnitude > reach * reach) continue;
+                    bool danger = m.Roll < share;
+                    if (!danger && !bites) continue;
+                    if (!Strike(victim, to)) break;   // latched: this hull was just scored on
+                    if (danger && m.Creature.IsSimAuthority) m.Creature.Jousted(_status.PlayerName);   // the sting spends it
+                    break;
+                }
+            }
+        }
+
+        bool Strike(IVesselStatus victim, Vector3 approach)
+        {
+            if (!CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Strike, config.StrikeCooldown,
+                                         ElementalDebuffSources.VesselContact, out int supersededRank))
+                return false;
+            CombatHitDrain.ApplyPriced(victim, _status, CombatHitClass.Strike, supersededRank,
+                                       approach.normalized * 10f, ElementalDebuffSources.VesselContact);
+            if (onCombatHitLanded)
+                onCombatHitLanded.Raise(new CombatHitStats
+                {
+                    ShooterName = _status.PlayerName,
+                    VictimName = victim.PlayerName,
+                    HitClass = CombatHitClass.Strike,
+                    SupersededRank = supersededRank,
+                });
+            return true;
+        }
+
+        // ---- Mass 5: the herd lays a cluster of our mass ----
+
+        /// <summary>
+        /// MASS level 5 (Garrett, 2026-10-20: "the swarm periodically poops a cluster of mass"): every <c>pooEvery</c> one
+        /// creature of the herd (a hash of a serial picks it, vessel rule 18) leaves <c>pooCount</c> prisms of our domain
+        /// round itself, through the hull's own prism spawn channel (the Wrasse's Mass cluster).
+        /// </summary>
+        void LayMass()
+        {
+            if (Time.time < _pooAt) return;
+            _pooAt = Time.time + config.PooEvery;
+            if (!MassUpgraded || _herd.Count == 0) return;
+            var spawner = _status.VesselPrismController;
+            var channel = spawner ? spawner.PrismSpawnChannel : null;
+            if (!channel) return;
+            var m = _herd[(int)(JacksMath.Roll01((int)++_pooSerial) * _herd.Count) % _herd.Count];
+            Vector3 at = m.LastPos;
+            var scale = config.PooPrismScale;
+            for (int i = 0; i < config.PooCount; i++)
+            {
+                float a = JacksMath.Roll01((int)(_pooSerial * 31u + (uint)i)) * Mathf.PI * 2f;
+                float r = JacksMath.Roll01((int)(_pooSerial * 131u + (uint)i * 7u)) * config.PooSpread;
+                float y = (JacksMath.Roll01((int)(_pooSerial * 17u + (uint)i * 3u)) - 0.5f) * config.PooSpread * 0.7f;
+                Vector3 pos = at + (_r * Mathf.Cos(a) + _f * Mathf.Sin(a)) * r + _u * y;
+                var ret = channel.RaiseEvent(new PrismEventData
+                {
+                    ownDomain = _status.Domain,
+                    Rotation = Quaternion.LookRotation(_f, _u),
+                    SpawnPosition = pos,
+                    Scale = scale,
+                    PrismType = spawner.SpawnPrismType,
+                });
+                if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism)) continue;
+                prism.TargetScale = scale;
+                prism.ownerID = _status.PlayerName;
+                prism.ChangeTeam(_status.Domain);
+                prism.Initialize(_status.PlayerName);
+                prism.AdmitTargetScale(scale);
+                prism.TargetScale = scale;
+            }
+        }
+
+        // ------------------------------------------------------------------ IFaunaHerd
+
+        public bool TrySteer(Fauna creature, out Vector3 goal, out float speed, out float turnRate)
+        {
+            goal = default;
+            speed = 0f;
+            turnRate = 0f;
+            if (!creature || !_byCreature.TryGetValue(creature, out var m)) return false;
+            float s = m.Desired.magnitude;
+            if (s < 1e-3f) return false;
+            goal = m.LastPos + m.Desired / s * Mathf.Max(10f, s);   // a second ahead on its wanted heading
+            speed = s;
+            turnRate = 4f;
+            return true;
+        }
+
+        public Prism OrderedMeal(Fauna creature) =>
+            creature && _byCreature.TryGetValue(creature, out var m) && m.Meal && !m.Meal.destroyed ? m.Meal : null;
+
+        public void Released(Fauna creature)
+        {
+            if (!creature || !_byCreature.TryGetValue(creature, out var m)) return;
+            _byCreature.Remove(creature);
+            _herd.Remove(m);
+        }
+
+        /// <summary>The herd's FLOOR: its first <c>minHerd</c> creatures (in the order they joined) do not starve.</summary>
+        public bool Sustains(Fauna creature)
+        {
+            if (!config || !creature || !_byCreature.TryGetValue(creature, out var m)) return false;
+            int floor = Mathf.Min(config.MinHerd, _herd.Count);
+            for (int i = 0; i < floor; i++)
+                if (_herd[i] == m) return true;
+            return false;
+        }
+
+        /// <summary>SPACE level 5 (Garrett, 2026-10-20: "the swarm can eat shielded prisms"): a rule the herd breaks.</summary>
+        public bool EatsShields(Fauna creature) => SpaceUpgraded;
+
+        /// <summary>MASS: the herd's birth rate (<see cref="JacksMath.FeedsPerOffspringScale"/>).</summary>
+        public float FeedsPerOffspringScale(Fauna creature) => config ? config.FeedsPerOffspringScaleFor(_status) : 1f;
+
+        /// <summary>The herd's mark: its spindles lean toward our domain's hue (<c>herdHueLean</c>), and light up
+        /// (<c>herdGlow</c>) while the herd is drawn to the plane - always while herding, by the call while netting
+        /// (<see cref="SetLit"/>).</summary>
+        public bool TryGetLeashMark(out Domains domain, out float lean, out float glow)
+        {
+            domain = _status != null ? _status.Domain : default;
+            lean = config ? config.HerdHueLean : 0f;
+            glow = _lit && config ? config.HerdGlow : 0f;
+            return _status != null && (lean > 0f || glow > 0f);
+        }
+
+        /// <summary>
+        /// The herd lights up (Garrett, 2026-10-23: "fauna that get herded should light up when in herding mode. fauna
+        /// that get called should light up when flying"): lit while it is drawn to the plane - always while the jacks herd,
+        /// and while netting when the call has the plane's pull on (2026-10-24: the call in netting mode is that toggle). Every
+        /// creature in the herd re-reads its mark on a change; one joining later reads the mark as it is then. On the peer
+        /// that simulates the creatures (a puppet takes the mark from FaunaNetworkSync).
+        /// </summary>
+        void SetLit(bool lit)
+        {
+            if (lit == _lit) return;
+            _lit = lit;
+            for (int i = 0; i < _herd.Count; i++)
+                if (_herd[i].Creature) _herd[i].Creature.RefreshLeashMark();
+        }
+
+        public void Born(Fauna parent, Fauna child)
+        {
+            if (config && _herd.Count < config.HerdCap) Join(child);
+        }
+
+        // ------------------------------------------------------------------ bookkeeping
+
+        void PruneDead()
+        {
+            _scratch.Clear();
+            for (int i = 0; i < _herd.Count; i++)
+                if (!_herd[i].Creature || _herd[i].Creature.IsDying) _scratch.Add(_herd[i]);
+            for (int i = 0; i < _scratch.Count; i++)
+            {
+                var m = _scratch[i];
+                _herd.Remove(m);
+                if (m.Creature) { m.Creature.Unleash(this); _byCreature.Remove(m.Creature); }
+            }
+            if (_scratch.Count > 0)
+            {
+                // a destroyed creature is a fake-null key: rebuild rather than chase it
+                _byCreature.Clear();
+                for (int i = 0; i < _herd.Count; i++) _byCreature[_herd[i].Creature] = _herd[i];
+            }
+        }
+
+        void ReleaseAll()
+        {
+            for (int i = 0; i < _herd.Count; i++)
+                if (_herd[i].Creature) _herd[i].Creature.Unleash(this);
+            _herd.Clear();
+            _byCreature.Clear();
+        }
+
+        static float Sq(float x) => x * x;
+
+        static void Play(EventReference evt, Vector3 at)
+        {
+            if (evt.IsNull) return;
+            var audio = AudioSystem.Instance;
+            if (audio) audio.PlaySFXEvent(evt, at);
+        }
+
+        // ------------------------------------------------------------------ presentation
+
+        /// <summary>
+        /// Only the local human sees the jacks' rings and marks (they are the herders' instruments). Each view draws its own
+        /// set, for its camera alone: the herding view at full strength, the flight view with the rings' dots much more
+        /// subtle (fewer, smaller, fainter; <c>flightRing*</c>), so they mark the herd's edges without cluttering the flight.
+        /// </summary>
+        void DrawMarks()
+        {
+            if (!IsLocalHuman) return;
+            var board = _view != null ? _view.Camera : null;
+            // the herding view's marks draw after its post-processing, like UI (UnprocessedOverlay)
+            if (board && board.enabled) DrawMarks(_marks ??= new AnglerWorldMarks(), _view.MarksCamera, _view.MarksLayer, false);
+            var flight = ResolveCamera();
+            if (flight && flight != board) DrawMarks(_flightMarks ??= new AnglerWorldMarks(), flight, 0, true);
+        }
+
+        void DrawMarks(AnglerWorldMarks marks, Camera cam, int layer, bool flightView)
+        {
+            if (!marks.Begin(cam, onlyThisCamera: true, layer)) return;
+            float ring = Ring, dot = Mathf.Max(1.5f, ring * 0.02f);
+            float ringDot = flightView ? dot * flightRingDotScale : dot, ringPixels = flightView ? flightRingDotPixels : 3f;
+            int ringDots = flightView ? flightRingDots : 48;
+            var fade = new Color(1f, 1f, 1f, flightView ? flightRingAlpha : 1f);
+            // the marks wear the worn colour set (ColorTrace), asked once per draw rather than once per mark
+            Color jackTint = ColorTrace.Retrace(ColorTrace.World, jackColor);
+            Color ringTint = ColorTrace.Retrace(ColorTrace.World, ringColor);
+            Color decoyTint = ColorTrace.Retrace(ColorTrace.World, decoyColor);
+            Color dangerTint = ColorTrace.Retrace(ColorTrace.World, dangerColor);
+            bool calling = Calling;
+            for (int k = 0; k < 2; k++)
+            {
+                if (!flightView || _herding) marks.Dot(_jack[k], jackTint, dot * 3f, 8f);
+                if (!calling) marks.Ring(_jack[k], _r, _f, ring, ringDots, ringTint * fade, ringDot, ringPixels);
+            }
+            // where the hull will be when the jacks take off: halfway between them (the take-off jump, SetHerding)
+            if (!flightView && _herding)
+                marks.Ring(OnPlane(JacksCentre), _r, _f, Mathf.Max(6f, ring * 0.12f), 16, takeOffColor, ringDot, ringPixels);
+            for (int s = 0; s < 2; s++)
+            {
+                if (!_decoyOn[s]) continue;
+                // the decoy is drawn as a third jack (JacksBodies), so it wears a jack's mark; its ring keeps the decoy's colour
+                if (!flightView || _herding) marks.Dot(_decoys[s], jackTint, dot * 3f, 8f);
+                marks.Ring(_decoys[s], _r, _f, ring, ringDots, decoyTint * new Color(1f, 1f, 1f, 0.6f) * fade, ringDot, ringPixels);
+            }
+            float share = DangerShare;
+            for (int i = 0; i < _herd.Count; i++)
+                if (_herd[i].Roll < share)
+                    marks.Dot(_herd[i].LastPos + _u * 4f, dangerTint, dot * 1.5f, 5f);
+            marks.End();
+        }
+
+        /// <summary>
+        /// Netting, the chase camera backs off until the jacks and everything the net carries are in view (Garrett,
+        /// 2026-10-24: "the jacks and anything in their net should be in the camera view while netting"), never closer than
+        /// its authored distance, and goes home when the jacks land. Written only while this hull is the camera's target, and
+        /// handed back only if nobody else wrote it since (the Shrike's and the Thresher's rule).
+        /// </summary>
+        void UpdateNetCamera(float dt)
+        {
+            var manager = CameraManager.Instance;
+            var cam = manager ? manager.GetActiveController() as CustomCameraController : null;
+            var hull = _status.Transform;
+            if (!cam || !cam.FollowTarget || !(cam.FollowTarget == hull || cam.FollowTarget.IsChildOf(hull)) || !cam.Camera)
+            {
+                ReleaseCamera();
+                return;
+            }
+            _cam = cam;
+            float neutral = cam.NeutralOffsetZ;
+            if (neutral >= 0f) return;   // not a chase camera
+            if (_camEngaged && !Mathf.Approximately(cam.GetCameraDistance(), _camWritten))
+            {
+                _camEngaged = false;     // somebody else moved it: theirs now
+                return;
+            }
+            float need = -neutral;
+            if (!_herding && _net.Open)
+            {
+                var lens = cam.Camera;
+                float tanV = Mathf.Tan(0.5f * lens.fieldOfView * Mathf.Deg2Rad), tanH = tanV * lens.aspect;
+                var toLocal = Quaternion.Inverse(hull.rotation);
+                var at = hull.position;
+                float fill = config.NetCameraFill;
+                for (int k = 0; k < 2; k++)
+                    need = Mathf.Max(need, JacksMath.ChaseDistanceFor(toLocal * (_jack[k] - at), tanV, tanH, fill));
+                need = Mathf.Max(need, JacksMath.ChaseDistanceFor(toLocal * (_net.Frame.Point(0.5f, 0f, 1f) - at), tanV, tanH, fill));
+                for (int i = 0; i < _net.CrystalCount; i++)
+                    need = Mathf.Max(need, JacksMath.ChaseDistanceFor(toLocal * (_net.ItemPosition(i) - at), tanV, tanH, fill));
+            }
+            if (!_camEngaged && need <= -neutral + 0.05f) return;
+            float now = _camEngaged ? _camWritten : cam.GetCameraDistance();
+            float next = Mathf.Lerp(now, -need, JacksMath.Ease(config.NetCameraEase, dt));
+            if (need <= -neutral + 0.05f && Mathf.Abs(next - neutral) < 0.05f) next = neutral;
+            cam.SetCameraDistance(next);
+            _camWritten = next;
+            _camEngaged = !Mathf.Approximately(next, neutral);
+        }
+
+        void ReleaseCamera()
+        {
+            if (_camEngaged && _cam && Mathf.Approximately(_cam.GetCameraDistance(), _camWritten))
+                _cam.SetCameraDistance(_cam.NeutralOffsetZ);
+            _camEngaged = false;
+            _cam = null;
+        }
+
+        static Camera ResolveCamera()
+        {
+            var manager = CameraManager.Instance;
+            if (manager && manager.GetActiveController() is CustomCameraController controller && controller.Camera)
+                return controller.Camera;
+            return Camera.main;
+        }
+
+        /// <summary>A jack in the world (on the board while herding, beside the hull while flying).</summary>
+        internal Vector3 JackWorld(int k) => _jack[k];
+        /// <summary>Flying: a jack's place in the hull's frame (what <see cref="JacksBodies"/> publishes).</summary>
+        internal Vector3 JackLocal(int k) => _flightLocal[k];
+        internal bool TryGetDecoy(int slot, out Vector3 at) { at = _decoys[slot]; return _decoyOn[slot]; }
+        /// <summary>The jack that laid decoy <paramref name="slot"/> (0, 1), or -1 for both (the decoy laid between them on
+        /// landing): the decoy is drawn facing the way that jack faces, for as long as it lies there.</summary>
+        internal int DecoySource(int slot) => _decoyFrom[slot];
+    }
+}

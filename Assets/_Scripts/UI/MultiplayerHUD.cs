@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -49,6 +50,9 @@ namespace CosmicShore.UI
         // Domain attribution is read from Player.Domain (the authoritative NetDomain mirror), never
         // RoundStats.Domain (a derived copy that can lag behind on a client).
         int _builtLayoutSignature;
+
+        // Pilots already reported as unnamed (B47), so the warning is one line per pilot, not one per rebuild.
+        readonly HashSet<ulong> _reportedUnnamedPilots = new();
         bool _domainPanelsBuilt;
 
         protected override void OnEnable()
@@ -117,6 +121,25 @@ namespace CosmicShore.UI
         {
             if (multiplayerView == null) multiplayerView = GetComponent<MultiplayerHUDView>();
             if (view == null) view = multiplayerView;
+        }
+
+        const float LayoutPollSeconds = 0.5f;
+        float _nextLayoutPoll;
+
+        /// <summary>
+        /// Re-check the domain layout twice a second while the bar is up. It was rebuilt only on a stat
+        /// change or a player added, so a pilot whose domain replicated after the turn started had no
+        /// column until somebody scored - in a mode where nobody scores for a while (a sniper duel)
+        /// the opponents' column never appeared. <see cref="ComputeLayoutSignature"/> is
+        /// allocation-free, so the poll costs a loop over the roster.
+        /// </summary>
+        protected override void Update()
+        {
+            base.Update();
+            if (!_useDomainView || !_domainPanelsBuilt || gameData == null) return;
+            if (Time.unscaledTime < _nextLayoutPoll) return;
+            _nextLayoutPoll = Time.unscaledTime + LayoutPollSeconds;
+            if (DomainLayoutChanged()) RebuildDomainPanels();
         }
 
         protected override void OnMiniGameTurnStarted()
@@ -219,18 +242,18 @@ namespace CosmicShore.UI
             _domainPanels.Clear();
 
             var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Blue;
-            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
-
             // Local player's own domain panel goes in the LEFT (ally) container -
             // always rendered when the local player has an active domain, even if
             // they happen to be the only member of it.
             if (localDomain != Domains.Blue)
                 CreateDomainPanel(localDomain, multiplayerView.AllyDomainContainer);
 
-            // Opposing-domain panels (1 or 2 depending on RequestedDomainCount) go
-            // in the RIGHT container. Only domains that actually have players are
-            // rendered, so 1v1 setups don't show empty panels.
-            for (int i = 0; i < dc; i++)
+            // Opposing-domain panels go in the RIGHT container: EVERY active domain that has a
+            // pilot, so 1v1 setups show no empty panels. Not limited to the first
+            // RequestedDomainCount domains - that is the host's preference, and an AI team on a
+            // domain past it scored with no column on the bar ("I dont see the opponent AIs score",
+            // 2026-10-31). HasPlayersInDomain already keeps empty domains off it.
+            for (int i = 0; i < GameDataSO.ActiveDomains.Length; i++)
             {
                 var d = GameDataSO.ActiveDomains[i];
                 if (d == localDomain) continue;
@@ -288,6 +311,22 @@ namespace CosmicShore.UI
             RebuildDomainPanels();
         }
 
+        /// <summary>
+        /// A pilot in the roster with no name at all on this machine (null, not empty: an empty NetName still names it
+        /// ""). Player.Name is set only by pair-init and by a NetName CHANGE, so this is a Player that joined the roster
+        /// (Player.OnNetworkSpawn, ClientPlayerVesselInitializer.ReRegisterPersistentPlayers) without ever being
+        /// paired here. It made B46 throw on every rebuild; which pilot it was, and why, is open (B47 in
+        /// Docs/PartySystem/BUGS.md), so the next one says who it is.
+        /// </summary>
+        void ReportUnnamedPilot(IPlayer p)
+        {
+            if (!_reportedUnnamedPilots.Add(p.PlayerNetId)) return;
+            CSDebug.LogWarning(
+                $"[MultiplayerHUD] Pilot {p.PlayerNetId} is in the roster with no name on this machine " +
+                $"(AI={p.IsInitializedAsAI}, vessel={(p.Vessel != null ? p.Vessel.VesselStatus.VesselType.ToString() : "none")}, " +
+                $"domain={p.Domain}): it was never pair-initialised here. Docs/PartySystem/BUGS.md B47.");
+        }
+
         void CreateDomainPanel(Domains domain, Transform container)
         {
             if (!container || multiplayerView.DomainPanelPrefab == null) return;
@@ -314,6 +353,7 @@ namespace CosmicShore.UI
             {
                 var p = players[i];
                 if (p == null || p.Domain != domain) continue;
+                if (p.Name == null) ReportUnnamedPilot(p);
                 bool isLocal = gameData.LocalPlayer != null && p.Name == gameData.LocalPlayer.Name;
                 Sprite avatar = isLocal ? null : ResolveAIAvatarSprite(p.Name);
                 if (avatar == null) avatar = ResolveAvatarSprite(p.AvatarId);

@@ -1,0 +1,25 @@
+{
+  "id": "2026-11-17-serpentaiboostpolicy-serpenttime-takes-s-4fb8d8",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T02:13:38+00:00",
+  "area": "the Serpent racing AI",
+  "summary": "SerpentAIBoostPolicy_SerpentTime takes Serpent run3b's drive, and SerpentTimeController's Serpent row goes from lead 1.0 at the fleet nose lag to lead 2.1 at a 6.87/s nose.",
+  "why": "Garrett's Regatta flywheel: confirm on 32 fresh flights a side, no DNF, every condition faster (I4 176->94 s, I2 118->92, I1 123->120, sum -28%).",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "f2bce75bd",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/SerpentAIBoostPolicy_SerpentTime.asset",
+    "Assets/_Scripts/Controller/Arcade/SerpentTime/SerpentTimeController.cs",
+    "Tools/Build/promote_trained_drives.py"
+  ],
+  "loop": {
+    "vessels": [
+      "Serpent"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

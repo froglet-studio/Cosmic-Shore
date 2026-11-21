@@ -1,27 +1,54 @@
+using CosmicShore.Core;
+using CosmicShore.UI;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
+    /// The SWORDFISH's config sets <see cref="SwordPoseMapping.Bill"/> (2026-11-08): the blade is the fish's bill,
+    /// resting straight ahead off the snout; the difference lays it out to a side and the shared pull stands it up,
+    /// pivoting at its mount (<see cref="BillChannels"/>), and the local pilot's camera pans to keep it centred
+    /// (<see cref="SwordfishSwordCamera"/>). The paragraph below is the <see cref="SwordPoseMapping.Chop"/> model.
+    ///
     /// Drives the Rhino shield swipe from the analog triggers, reparameterized like the
     /// Manta's turn boost: the DIFFERENCE (right - left) sweeps the sword laterally
     /// through yaw+roll (full pulls are the +/-1 stances) and the SUM pitches it down
     /// (both triggers = centered but fully down; a single full pull chops halfway). The
     /// sword pivots about its parent's origin - rotation and mount position together -
     /// so it carves a real arc through space. The raised rest pose is whatever the
-    /// skimmer transform is authored to in the prefab. For inputs without analog
-    /// triggers (remote peers replaying the owner's events, touch bindings), the
-    /// press/release events drive the same rig at full deflection. Only scale is driven
-    /// on this transform elsewhere (ShieldSkimmerScaleDriver), so rotation/position are
-    /// ours to animate.
+    /// skimmer transform is authored to in the prefab. Only scale is driven on this transform
+    /// elsewhere (ShieldSkimmerScaleDriver), so rotation/position are ours to animate.
+    ///
+    /// EVERY PEER POSES THE BLADE FROM THE SAME TRIGGERS. The owner's analog trigger depth travels
+    /// in InputStatus's owner-write trigger mirrors, and every peer reads them; the local gamepad
+    /// pilot reads the hardware directly (the same value it writes, minus the netvar's latency).
+    /// Until 2026-10-16 a remote peer posed the blade from the replayed press/release EVENTS
+    /// instead - a full ±1 single-trigger swing the moment a trigger crossed its deadzone - and
+    /// each peer cuts prisms against its OWN blade, so a half-pull sweep that missed on the
+    /// pilot's screen cut on everyone else's and the prism fields diverged. The press/release
+    /// path survives only for touch, whose SWINGS are thumb lifts (events). A phone writes the
+    /// mirrors only while both thumbs are off the glass (TouchControlProfile.idlePullsBothTriggers,
+    /// 2026-10-21): both read fully pulled, which is the energize stance - so a phone energizes
+    /// through the mirrors like every other device and the event-driven pose drops into the
+    /// centred chop with it (<see cref="MirrorsInStance"/>). An AI Rhino's
+    /// <see cref="SwordfishSwordAutopilot"/> writes the mirrors on its owning machine, so its sword
+    /// replicates the same way.
+    ///
+    /// COMBOS ride on top: a rapid string of trigger TAPS (RR, RL, RLR, …) calls an authored
+    /// flourish from <see cref="SwordfishSwordComboLibrarySO"/> — a separate, upgraded set while
+    /// the blade is ENERGIZED — which blends in from the current pose, plays its path, and
+    /// blends back to wherever the fingers are. The local pilot sees its name in the game's toast
+    /// container (top right, under Settings). A held trigger is never a tap, so positioning
+    /// the sword is untouched. Detection reads the replicated trigger MIRRORS (the same values
+    /// the energize stance reads), so every peer calls the same combo. See RHINO_SWORD_COMBOS.md.
     /// </summary>
     public sealed class ShieldSwipeActionExecutor : ShipActionExecutorBase
     {
         [Header("Config")]
-        [SerializeField] RhinoShieldSwipeConfigSO config;
+        [SerializeField] SwordfishShieldSwipeConfigSO config;
 
         [Header("References")]
         [Tooltip("The shield/sword transform to sweep (the ForceFieldSkimmer root). Falls back to the near-field skimmer.")]
@@ -29,6 +56,12 @@ namespace CosmicShore.Gameplay
 
         [Header("Events")]
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
+
+        [Header("Autopilot")]
+        [Tooltip("The AI's sword hand (SwordfishSwordAutopilot on the Rhino root). While it drives the " +
+                 "trigger mirrors, an autopiloted vessel's triggers are followed instead of dropped. " +
+                 "Found on the vessel when empty.")]
+        [SerializeField] SwordfishSwordAutopilot autopilot;
 
         [Header("Blade Geometry")]
         [Tooltip("Half the blade mesh's extent along its length axis, in the blade's OWN local units. " +
@@ -46,6 +79,9 @@ namespace CosmicShore.Gameplay
         Vector3 _baseLocalPos;
         Quaternion _baseLocalRot;
         bool _baseCaptured;
+        Matrix4x4 _frameToHull = Matrix4x4.identity; // the pose frame's rest, in the hull's frame (the bill camera)
+
+        readonly SwordfishSwordCamera _billCamera = new();
 
         float _diff;       // smoothed swipe control: -1 (left stance) .. +1 (right stance)
         float _sum;        // smoothed chop control: 0 (raised rest) .. 2 (full chop)
@@ -59,6 +95,29 @@ namespace CosmicShore.Gameplay
         float _activeSign; // event-driven stance (+1/-1/0) for non-analog inputs
         bool _rightHeld;   // event-side per-direction held state (cross-swipe handoff)
         bool _leftHeld;
+
+        // --- Combos -------------------------------------------------------------------------
+        SwordfishSwordComboDetector _comboDetector;
+        SwordfishSwordComboLibrarySO _comboLibraryConfigured; // library the detector was configured from
+        SwordfishSwordComboPath _flourish;         // playing flourish, null when the fingers own the pose
+        float _flourishElapsed;
+        SwordPoseChannels _flourishEntry;      // pose the flourish blends in FROM (wrapped)
+        SwordPoseChannels _lastApplied;        // last pose written to the sword, in channel space
+        SwordfishSwordFXController _fx;            // the blade's own FX (same GameObject as shieldRoot)
+
+        /// <summary>The flourish currently playing, or null. For FX/HUD/diagnostics.</summary>
+        public SwordfishSwordComboPath ActiveFlourish => _flourish;
+
+        /// <summary>The pose last written to the blade (the swipe, the chop and any flourish), in
+        /// channel space; zero at rest. <see cref="RhinoAnimation"/> leans the wings with it.</summary>
+        public SwordPoseChannels CurrentPose => _lastApplied;
+
+        /// <summary>The swipe/chop tuning, so a reader can normalise <see cref="CurrentPose"/> (the HUD's katana).</summary>
+        public SwordfishShieldSwipeConfigSO Config => config;
+
+        /// <summary>The frame <see cref="CurrentPose"/>'s sweep is expressed in: the blade's parent,
+        /// whose origin it pivots about. Null until the blade resolves.</summary>
+        public Transform PoseFrame => shieldRoot ? shieldRoot.parent : null;
 
         void OnEnable()
         {
@@ -77,7 +136,7 @@ namespace CosmicShore.Gameplay
         {
             _status = shipStatus;
             if (!config)
-                CSDebug.LogError($"[{nameof(ShieldSwipeActionExecutor)}] No {nameof(RhinoShieldSwipeConfigSO)} wired on '{name}' - the shield swipe will not run.");
+                CSDebug.LogError($"[{nameof(ShieldSwipeActionExecutor)}] No {nameof(SwordfishShieldSwipeConfigSO)} wired on '{name}' - the shield swipe will not run.");
             EnsureShieldRoot();
         }
 
@@ -87,41 +146,25 @@ namespace CosmicShore.Gameplay
             if (!EnsureShieldRoot()) return;
 
             float diffTarget, sumTarget;
-            bool analog = IsLocalAnalogPilot(out var input);
-            if (analog)
+            bool analog;
+            if (TryReadTriggers(out float lt, out float rt, out analog))
             {
-                // Read the triggers straight off the hardware for the local pose. The
-                // InputStatus trigger properties are NetworkVariable mirrors meant for
-                // replication - going through them puts the whole netvar pipeline
-                // between the finger and the sword. DualMouse has no hardware trigger
-                // axis, so it keeps the mirror (binary 0/1 by design).
-                float lt, rt;
-                var pad = Gamepad.current;
-                if (input.ActiveInputDevice == InputDeviceType.Gamepad && pad != null)
-                {
-                    lt = ApplyDeadzone(pad.leftTrigger.ReadValue());
-                    rt = ApplyDeadzone(pad.rightTrigger.ReadValue());
-                }
-                else
-                {
-                    lt = ApplyDeadzone(input.LeftTriggerAnalog);
-                    rt = ApplyDeadzone(input.RightTriggerAnalog);
-                }
+                // The same reparameterization for every source. A binary device's mirror is 0 or 1,
+                // so a single press is full difference / half chop and both held is the centred chop
+                // (the energize stance) - exactly what the event path below draws, on every peer.
                 diffTarget = rt - lt;
                 sumTarget = rt + lt;
             }
             else
             {
-                // Event-driven stance: remote peers replaying the owner's press/release,
-                // and binary local devices. A press mirrors a full single-trigger pull -
-                // full difference, half chop; BOTH holds down mirror the both-triggers
-                // centered chop (the energize stance), so binary devices can energize and
-                // remote peers replay the owner's stance pose instead of a one-sided swipe.
-                // If autopilot took over mid-hold (menu freestyle exit) the release edge
+                // A device that writes no trigger mirrors (touch): the press/release events drive
+                // the stance at full deflection. If autopilot took over mid-hold the release edge
                 // never arrives, so drop the stance.
-                if (_activeSign != 0f && _status.IsLocalUser && _status.AutoPilotEnabled)
-                    ClearStance();
-                if (_rightHeld && _leftHeld)
+                if (_activeSign != 0f && IgnoresTriggers) ClearStance();
+                // Both swing controls held, or (a phone with both thumbs off) both mirrors pulled:
+                // the centred chop. The second reads the same replicated values the energize stance
+                // reads, so the blade is down on every peer exactly while the stance counts.
+                if ((_rightHeld && _leftHeld) || (_status.Player != null && MirrorsInStance(_status.InputStatus)))
                 {
                     diffTarget = 0f;
                     sumTarget = 2f;
@@ -137,18 +180,191 @@ namespace CosmicShore.Gameplay
             // applied — a sword recovering from a swing must still be able to chop and energize.
             FeedSwordStance();
 
+            // Combos read the same replicated mirrors, so a flourish starts on every peer.
+            TickCombos();
+
             // Lateral recovery gates the SWIPE axis only; the chop (sum) passes through untouched.
             diffTarget = ApplySwipeRecovery(diffTarget);
 
             // A resting pose still has to be re-applied when the blade's LENGTH moved: the hilt
             // anchor is a function of that length, so skipping the write would leave the sword
             // growing out of both ends of its mount again (the staff read this fix removes).
-            bool poseAtRest = _diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f;
-            if (poseAtRest && Mathf.Approximately(AnchorOffsetLocal(), _appliedAnchor)) return;
+            bool poseAtRest = _flourish == null
+                              && _diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f;
+            if (poseAtRest && Mathf.Approximately(AnchorOffsetLocal(), _appliedAnchor))
+            {
+                TickBillCamera();   // the pan eases home after the blade has
+                return;
+            }
 
+            // The fingers keep driving underneath a flourish, so the blend back lands exactly
+            // where the triggers are at that moment rather than where they were when it began.
             _diff = Drive(_diff, diffTarget, analog);
             _sum = Drive(_sum, sumTarget, analog);
-            ApplyShieldPose();
+
+            ApplyShieldPose(_flourish != null ? AdvanceFlourish(Time.deltaTime) : AnalogChannels());
+            TickBillCamera();
+        }
+
+        bool IsBill => config && config.PoseMapping == SwordPoseMapping.Bill;
+
+        /// <summary>The trigger reparameterization, expressed in pose channels.</summary>
+        SwordPoseChannels AnalogChannels() => IsBill
+            ? BillChannels(_diff, _sum, config.BillSideYawDegrees, config.BillSideRollDegrees, config.BillRaiseDegrees)
+            : new(
+                _diff * config.SwipeYawDegrees,
+                _diff * config.SwipeRollDegrees,
+                0.5f * _sum * config.ChopPitchDegrees,
+                0f);
+
+        /// <summary>
+        /// The Swordfish's bill pose (<see cref="SwordPoseMapping.Bill"/>) from the two controls: the DIFFERENCE
+        /// (right - left, -1..1) swings the bill out to that side, and the RAISE - the part of the pull both triggers
+        /// share, min(left, right) = (sum - |difference|) / 2 - stands it up. So a single trigger lays the sword out
+        /// flat to its side, both triggers stand it straight up, and nothing pulled leaves it pointing ahead off the
+        /// nose. Pitch is negative because a positive turn about the frame's right carries forward DOWN. Pure, so it
+        /// is tested directly.
+        /// </summary>
+        public static SwordPoseChannels BillChannels(float diff, float sum, float sideYawDegrees, float sideRollDegrees, float raiseDegrees)
+        {
+            diff = Mathf.Clamp(diff, -1f, 1f);
+            float raise = Mathf.Clamp01(0.5f * (sum - Mathf.Abs(diff)));
+            return new SwordPoseChannels(diff * sideYawDegrees, diff * sideRollDegrees, -raise * raiseDegrees, 0f);
+        }
+
+        void TickBillCamera()
+        {
+            if (!IsBill || !_baseCaptured || !shieldRoot)
+            {
+                _billCamera.Release();
+                return;
+            }
+            // The blade's midpoint is the transform itself (the mesh is centred on it), and at rest it sits a half
+            // blade ahead of the mount. Its offset from there, in the hull's frame at rest, is what the camera centres.
+            Vector3 rest = _baseLocalPos + _baseLocalRot * Vector3.up * AnchorOffsetLocal();
+            Vector3 offset = _frameToHull.MultiplyVector(shieldRoot.localPosition - rest);
+            _billCamera.Tick(_status, offset, config, Time.deltaTime);
+        }
+
+        /// <summary>
+        /// Feed this frame's trigger MIRRORS to the combo detector and start a flourish when a
+        /// string of taps resolves. The mirrors are Owner-write/Everyone-read, so the owner and
+        /// every replica see the same edges and call the same combo (to within a network tick
+        /// of timing). A paused owner's mirrors freeze rather than zero, so the owner's
+        /// autopilot drops the chain the same way it drops the stance.
+        /// </summary>
+        void TickCombos()
+        {
+            var library = config.ComboLibrary;
+            if (!library)
+            {
+                _comboDetector?.Reset();
+                return;
+            }
+
+            if (_comboDetector == null || _comboLibraryConfigured != library)
+            {
+                _comboDetector ??= new SwordfishSwordComboDetector(library.DetectorSettings);
+                _comboDetector.Configure(library.DetectorSettings);
+                _comboDetector.Reset();
+                _comboLibraryConfigured = library;
+            }
+
+            var input = _status.InputStatus;
+            if (input == null || IgnoresTriggers)
+            {
+                _comboDetector.Reset();
+                return;
+            }
+
+            float lt = ApplyDeadzone(input.LeftTriggerAnalog);
+            float rt = ApplyDeadzone(input.RightTriggerAnalog);
+            if (!_comboDetector.Step(Time.time, lt, rt, out var combo)) return;
+
+            bool energized = Sword is { IsEnergized: true };
+            if (!library.TryGet(combo.Sequence, energized, out var path)) return;
+            StartFlourish(library, path, combo.IsFinisher, energized && path.Energized);
+        }
+
+        void StartFlourish(SwordfishSwordComboLibrarySO library, SwordfishSwordComboPath path, bool finisher, bool energized)
+        {
+            _flourishEntry = _lastApplied.Wrapped();
+            _flourish = path;
+            _flourishElapsed = 0f;
+
+            // A finisher plays out: presses during most of it neither chain nor cancel it.
+            if (finisher)
+                _comboDetector.SuppressPressesUntil(Time.time + path.DurationSeconds * library.FinisherLockoutFraction);
+
+            // The flourish is the swing — it never owes the recovery a lone swipe would.
+            ClearSwipeRecovery();
+
+            if (!path.Sound.IsNull && AudioSystem.Instance)
+                AudioSystem.Instance.PlaySFXEventAttached(path.Sound, shieldRoot.gameObject);
+
+            if (!_fx) shieldRoot.TryGetComponent(out _fx);
+            if (_fx) _fx.NotifyCombo(finisher, energized);
+
+            // The combo's name, for the pilot who landed it: through the game's toast container (top
+            // right, under Settings) - the only place incoming text goes - from the library's authored
+            // template. An AI, a remote copy and the lava lamp's autopilot are silent.
+            if (_status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI && !_status.AutoPilotEnabled)
+            {
+                string line = TemplateText.Fill(library.ComboToastTemplate, "name", path.DisplayName);
+                if (!string.IsNullOrEmpty(line)) ToastNotificationAPI.Show(line);
+            }
+        }
+
+        /// <summary>
+        /// Advance the playing flourish and return this frame's pose: blend in from the entry
+        /// pose, follow the authored path, then blend out to the LIVE trigger pose. The end pose
+        /// is wrapped before the blend out (visually identical — see
+        /// <see cref="SwordPoseChannels.Wrapped"/>) so a flourish that spun the blade a full turn
+        /// does not unwind it on the way back to the fingers.
+        /// </summary>
+        SwordPoseChannels AdvanceFlourish(float dt)
+        {
+            var library = config.ComboLibrary;
+            float blendIn = library ? library.BlendInSeconds : 0.06f;
+            float blendOut = library ? library.BlendOutSeconds : 0.18f;
+
+            _flourishElapsed += dt;
+            float duration = _flourish.DurationSeconds;
+
+            if (_flourishElapsed <= duration)
+            {
+                var onPath = _flourish.Sample(_flourishElapsed / duration);
+                float w = Smooth01(_flourishElapsed / blendIn);
+                return SwordPoseChannels.Lerp(_flourishEntry, onPath, w);
+            }
+
+            float outT = (_flourishElapsed - duration) / blendOut;
+            var live = AnalogChannels();
+            if (outT >= 1f)
+            {
+                EndFlourish();
+                return live;
+            }
+            return SwordPoseChannels.Lerp(_flourish.EndPose.Wrapped(), live, Smooth01(outT));
+        }
+
+        void EndFlourish()
+        {
+            _flourish = null;
+            _flourishElapsed = 0f;
+            ClearSwipeRecovery();
+        }
+
+        void ClearSwipeRecovery()
+        {
+            _rightReadyAt = _leftReadyAt = 0f;
+            _rightSwung = _leftSwung = false;
+        }
+
+        static float Smooth01(float x)
+        {
+            x = Mathf.Clamp01(x);
+            return x * x * (3f - 2f * x);
         }
 
         /// <summary>
@@ -158,7 +374,7 @@ namespace CosmicShore.Gameplay
         /// machine (the supershield key) runs off the same reparameterized trigger
         /// signals that pose the blade. See RHINO_ENERGY_SWORD.md.
         /// </summary>
-        IRhinoSwordState Sword
+        ISwordfishSwordState Sword
         {
             get
             {
@@ -188,17 +404,26 @@ namespace CosmicShore.Gameplay
             if (sword == null) return;
 
             var input = _status?.InputStatus;
-            if (input == null || (_status.IsLocalUser && _status.AutoPilotEnabled))
+            if (input == null || IgnoresTriggers)
             {
                 sword.SetInStance(false);
                 return;
             }
 
+            sword.SetInStance(MirrorsInStance(input));
+        }
+
+        /// <summary>The energize stance read off the trigger MIRRORS: both pulled (sum at or over
+        /// <c>StanceSumThreshold</c>) and even (difference within <c>StanceCenterEpsilon</c>),
+        /// deadzone-renormalized. On every device, touch included - a phone's mirrors read 1 while
+        /// both thumbs are off the glass.</summary>
+        bool MirrorsInStance(IInputStatus input)
+        {
+            if (input == null) return false;
             float lt = ApplyDeadzone(input.LeftTriggerAnalog);
             float rt = ApplyDeadzone(input.RightTriggerAnalog);
-            bool inStance = lt + rt >= config.StanceSumThreshold
-                            && Mathf.Abs(rt - lt) <= config.StanceCenterEpsilon;
-            sword.SetInStance(inStance);
+            return lt + rt >= config.StanceSumThreshold
+                   && Mathf.Abs(rt - lt) <= config.StanceCenterEpsilon;
         }
 
         /// <summary>
@@ -215,7 +440,8 @@ namespace CosmicShore.Gameplay
         {
             float now = Time.time;
             float threshold = config.SwipeEngageThreshold;
-            bool energized = Sword is { IsEnergized: true };
+            // Energized, or the Time level-5 Flurry: the frenzy, with no recovery at all.
+            bool energized = Sword is { IsEnergized: true } || config.FlurryActive(_status);
 
             // Track the swing/release edges off the RAW target, so suppressing a direction can
             // never make it look released and re-arm itself mid-hold.
@@ -241,42 +467,109 @@ namespace CosmicShore.Gameplay
             else if (swung)
             {
                 swung = false;
-                readyAt = now + config.SwipeCooldownSeconds;   // recovery starts on release
+                _lastRecoverySeconds = config.SwipeCooldownSecondsFor(_status);
+                readyAt = now + _lastRecoverySeconds;   // recovery starts on release; Time (Quickdraw) shortens it
+            }
+        }
+
+        float _lastRecoverySeconds;
+
+        /// <summary>The swing's recovery still to run, 1 the instant a swing is released and 0 once both sides can
+        /// swing again (0 while energized or under Flurry, which owe none). The Swordfish's Time card plate.</summary>
+        public float SwipeRecoveryRemaining01
+        {
+            get
+            {
+                if (_lastRecoverySeconds <= 0f) return 0f;
+                float left = Mathf.Max(_rightReadyAt, _leftReadyAt) - Time.time;
+                return left <= 0f ? 0f : Mathf.Clamp01(left / _lastRecoverySeconds);
             }
         }
 
         /// <summary>
-        /// Analog control only exists for the local pilot - triggers don't replicate.
-        /// Remote peers and AI fall through to the event-driven stance.
+        /// True while this machine's own human pilot is under autopilot and nothing is driving the
+        /// triggers for them (the menu's lava-lamp autopilot with no sword hand): a paused input
+        /// controller FREEZES the mirrors rather than zeroing them, so the last pull would hold the
+        /// pose and the stance forever. An autopilot that writes the triggers itself is followed.
         /// </summary>
-        bool IsLocalAnalogPilot(out IInputStatus input)
+        bool IgnoresTriggers =>
+            _status != null && _status.IsLocalUser && _status.AutoPilotEnabled && !AutopilotDrivesTriggers;
+
+        bool AutopilotDrivesTriggers
         {
-            input = null;
-            if (_status == null || !_status.IsLocalUser || _status.AutoPilotEnabled) return false;
-            input = _status.InputStatus;
-            if (input == null) return false;
-            return input.ActiveInputDevice is InputDeviceType.Gamepad or InputDeviceType.DualMouse;
+            get
+            {
+                if (!autopilot && _status?.ShipTransform) autopilot = _status.ShipTransform.GetComponentInChildren<SwordfishSwordAutopilot>(true);
+                return autopilot && autopilot.DrivesTriggers;
+            }
         }
 
-        public void BeginSwipe(RhinoShieldSwipeActionSO so, IVesselStatus status)
+        /// <summary>
+        /// This frame's trigger depths (deadzoned), from the source every peer agrees on. False for
+        /// touch, whose thumb-lift press/release events drive the swing instead (its mirrors move only
+        /// for the both-thumbs-off energize stance, read by <see cref="MirrorsInStance"/>).
+        /// <paramref name="analog"/> says whether the values are continuous (track them) or binary
+        /// (rate-limit them into a swing) - decided from the REPLICATED device, so it is the same
+        /// answer on every peer.
+        /// </summary>
+        bool TryReadTriggers(out float lt, out float rt, out bool analog)
+        {
+            lt = rt = 0f;
+            analog = false;
+            var input = _status?.InputStatus;
+            if (input == null || _status.Player == null) return false;
+
+            if (IgnoresTriggers)
+            {
+                analog = true;   // release smoothly back to rest
+                return true;
+            }
+
+            var device = input.ActiveInputDevice;
+            bool driven = _status.IsInitializedAsAI || _status.AutoPilotEnabled;
+            if (device == InputDeviceType.Touch && !driven) return false;
+
+            // DualMouse's mirror is binary by design but was always TRACKED (not rate-limited), and
+            // that feel is kept; keyboard was always the rate-limited swing.
+            analog = device is InputDeviceType.Gamepad or InputDeviceType.DualMouse || driven;
+
+            // The local gamepad pilot reads the hardware: the mirror carries the same value, but
+            // through the whole netvar pipeline between the finger and the sword.
+            var pad = Gamepad.current;
+            if (_status.IsLocalUser && !_status.AutoPilotEnabled && device == InputDeviceType.Gamepad && pad != null)
+            {
+                lt = ApplyDeadzone(pad.leftTrigger.ReadValue());
+                rt = ApplyDeadzone(pad.rightTrigger.ReadValue());
+                return true;
+            }
+
+            lt = ApplyDeadzone(input.LeftTriggerAnalog);
+            rt = ApplyDeadzone(input.RightTriggerAnalog);
+            return true;
+        }
+
+        /// <summary>True while the events should drive the stance (see <see cref="TryReadTriggers"/>).</summary>
+        bool EventsDriveStance => !TryReadTriggers(out _, out _, out _);
+
+        public void BeginSwipe(SwordfishShieldSwipeActionSO so, IVesselStatus status)
         {
             _status ??= status;
             if (!so) return;
 
-            // The analog drive owns the pose on this machine; the event still replicated
-            // to peers before reaching this executor, which is all it needs to do here.
-            if (IsLocalAnalogPilot(out _)) return;
+            // The trigger mirrors own the pose wherever they exist; the event only drives a device
+            // that writes none.
+            if (!EventsDriveStance) return;
 
             if (so.DirectionSign > 0f) _rightHeld = true;
             else _leftHeld = true;
             _activeSign = so.DirectionSign;
         }
 
-        public void EndSwipe(RhinoShieldSwipeActionSO so, IVesselStatus status)
+        public void EndSwipe(SwordfishShieldSwipeActionSO so, IVesselStatus status)
         {
             _status ??= status;
             if (!so) return;
-            if (IsLocalAnalogPilot(out _)) return;
+            if (!EventsDriveStance) return;
 
             bool isRight = so.DirectionSign > 0f;
             if (isRight) _rightHeld = false;
@@ -313,11 +606,11 @@ namespace CosmicShore.Gameplay
         static float ApplyDeadzone(float value) =>
             value < TriggerDeadzone ? 0f : (value - TriggerDeadzone) / (1f - TriggerDeadzone);
 
-        void ApplyShieldPose()
+        void ApplyShieldPose(SwordPoseChannels channels)
         {
-            float yaw = _diff * config.SwipeYawDegrees;
-            float roll = _diff * config.SwipeRollDegrees;
-            float pitch = 0.5f * _sum * config.ChopPitchDegrees;
+            float yaw = channels.yaw;
+            float roll = channels.roll;
+            float pitch = channels.pitch;
 
             // Pitch innermost so the chop lowers the blade in front first and the
             // yaw/roll swipe then carries the lowered blade around the vessel. With
@@ -328,6 +621,10 @@ namespace CosmicShore.Gameplay
             var pose = sweep * _baseLocalRot;
             shieldRoot.localRotation = pose;
 
+            // The BILL pivots at its root on the nose: the mount stays where it is and only the blade turns about
+            // it. (The chop carries the mount round the fuselage's centre, so it carves a wide arc.)
+            Vector3 mount = IsBill ? _baseLocalPos : sweep * _baseLocalPos;
+
             // HILT ANCHOR — what makes it a sword instead of a staff. The blade mesh is
             // centred on its transform, so growing it extends the capsule equally in BOTH
             // directions from the mount: at 30 the sword ran 30 units past the grip in each
@@ -335,9 +632,12 @@ namespace CosmicShore.Gameplay
             // middle. Offsetting the centre by the blade's own half-extent pins the HILT to
             // the authored mount and sends every unit of growth out the tip, so the sword
             // reads as a sword at every length the energy meter produces.
+            // THRUST (combos only) slides the whole blade out along itself — a lunge — as a
+            // fraction of that same anchor length, so it reads the same at every blade size.
             float anchor = AnchorOffsetLocal();
-            shieldRoot.localPosition = sweep * _baseLocalPos + pose * Vector3.up * anchor;
+            shieldRoot.localPosition = mount + pose * Vector3.up * (anchor * (1f + channels.thrust));
             _appliedAnchor = anchor;
+            _lastApplied = channels;
         }
 
         /// <summary>
@@ -369,6 +669,10 @@ namespace CosmicShore.Gameplay
             {
                 _baseLocalPos = shieldRoot.localPosition;
                 _baseLocalRot = shieldRoot.localRotation;
+                var hull = _status?.ShipTransform;
+                _frameToHull = hull && shieldRoot.parent
+                    ? hull.worldToLocalMatrix * shieldRoot.parent.localToWorldMatrix
+                    : Matrix4x4.identity;
                 _baseCaptured = true;
             }
             return true;
@@ -380,10 +684,15 @@ namespace CosmicShore.Gameplay
             _diff = 0f;
             _sum = 0f;
             ClearStance();
+            _flourish = null;
+            _flourishElapsed = 0f;
+            _lastApplied = default;
+            _comboDetector?.Reset();
 
             // Drop the energize gesture too, so a turn-end/despawn mid-hold can't leave
             // the sword charging forever off a stance edge that will never release.
             Sword?.SetInStance(false);
+            _billCamera.Release();
 
             if (_baseCaptured && shieldRoot)
             {

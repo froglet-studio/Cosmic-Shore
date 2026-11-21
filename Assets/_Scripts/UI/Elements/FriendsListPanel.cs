@@ -4,6 +4,7 @@ using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,6 +25,28 @@ namespace CosmicShore.UI
     /// </summary>
     public class FriendsListPanel : MonoBehaviour
     {
+        [Header("Words (toasts; empty shows nothing)")]
+        [Tooltip("The connection service is not up yet.")]
+        [SerializeField] string serviceNotReadyLine = "Connection service not ready. Try again shortly.";
+        [Tooltip("A party that refuses a join.")]
+        [SerializeField] string partyNotJoinableLine = "That party can't be joined right now.";
+        [Tooltip("The party controller is missing (join, spectate, accept).")]
+        [SerializeField] string partyControllerMissingLine = "Party controller not available.";
+        [Tooltip("A join that failed.")]
+        [SerializeField] string joinFailedLine = "Failed to join party.";
+        [Tooltip("A match that refuses a spectator.")]
+        [SerializeField] string matchNotSpectatableLine = "That match can't be spectated right now.";
+        [Tooltip("A spectate that failed.")]
+        [SerializeField] string spectateFailedLine = "Failed to spectate.";
+        [Tooltip("The friends service is not up yet.")]
+        [SerializeField] string friendsNotReadyLine = "Friends service not ready.";
+        [Tooltip("A friend request accepted.")]
+        [SerializeField] string requestAcceptedLine = "Friend request accepted!";
+        [Tooltip("A friend request that failed to accept. {error} is the reason.")]
+        [SerializeField] string acceptFailedLine = "Failed to accept: {error}";
+        [Tooltip("A party invite that failed to accept.")]
+        [SerializeField] string inviteAcceptFailedLine = "Failed to accept party invite.";
+
         [Header("Section Content Parents (ScrollRect > Viewport > Content)")]
         [SerializeField] private Transform onlineContent;
         [SerializeField] private Transform requestsContent;
@@ -39,6 +62,39 @@ namespace CosmicShore.UI
 
         [Header("Actions")]
         [SerializeField] private Button closeButton;
+
+        [Header("Style-B Party Panel")]
+        [Tooltip("The lists sit inside the party panel, always on screen (style-B menu redesign, item 3): " +
+                 "an empty slot's add button moves focus into them instead of opening this panel. " +
+                 "Off for the legacy overlay, which opens and closes.")]
+        [SerializeField] private bool embedded;
+        [Tooltip("List members of YOUR party among the online players (\"IN YOUR PARTY\"). The style-B " +
+                 "panel shows them in its seats directly above, so it turns this off.")]
+        [SerializeField] private bool listPartyMembers = true;
+
+        [Header("Rev 40 E: one verb per row, rows grouped by it (Docs/MENU_REDESIGN_B.md section 107)")]
+        [Tooltip("Each online row offers ONE thing to do, chosen by what the pilot is doing: in the menu, Invite; in " +
+                 "another party, Join (dimmed while it is full); in a match, Spectate; invited by you, Cancel. Off, a " +
+                 "row offers every verb that applies (a solo pilot in the menu showed INVITE and JOIN side by side).")]
+        [SerializeField] private bool oneVerbPerRow;
+        [Tooltip("Where each kind of row goes. A row moves when its state changes (an invite sent or cancelled, a " +
+                 "party filled, a match started). A kind with no group stays in Online Content. Each group's " +
+                 "header hides itself while its list is empty (KitListCounter on the group's content).")]
+        [SerializeField] private OnlineGroup[] onlineGroups = { };
+        [Tooltip("The line shown while nobody else is online (the groups are all empty). Optional.")]
+        [SerializeField] private CanvasGroup onlineEmptyLine;
+
+        /// <summary>What can be done with an online pilot: the group their row sits in.</summary>
+        public enum OnlineGroupKind { JoinTheirParty = 0, InTheMenu = 1, InAMatch = 2, YouInvited = 3 }
+
+        [Serializable]
+        public struct OnlineGroup
+        {
+            [Tooltip("Which rows this group holds.")]
+            public OnlineGroupKind kind;
+            [Tooltip("The group's list: rows are parented here.")]
+            public Transform content;
+        }
 
         [Header("Audio")]
         [Tooltip("Category played when a party invite is received.")]
@@ -92,6 +148,36 @@ namespace CosmicShore.UI
             // that was added between polling ticks. Debounced and mutex-aware
             // inside HostConnectionService, so bursty opens are safe.
             HostConnectionService.Instance?.ForceRefreshNow();
+
+            // While the list is on screen the presence safety poll runs at WATCHED_POLL_SECONDS (a quit that
+            // sent no leave drops off in seconds), and the Friends tab re-reads UGS Friends every
+            // FRIENDS_REFRESH_SECONDS: its push alone left a friend who quit showing online.
+            if (!_holdsWatchDemand)
+            {
+                PresenceWatchDemand.Acquire();
+                _holdsWatchDemand = true;
+            }
+            _friendsRefreshRoutine = StartCoroutine(FriendsRefreshLoop());
+        }
+
+        /// <summary>Seconds between UGS Friends re-reads while the panel is visible.</summary>
+        const float FRIENDS_REFRESH_SECONDS = 15f;
+
+        bool      _holdsWatchDemand;
+        Coroutine _friendsRefreshRoutine;
+
+        System.Collections.IEnumerator FriendsRefreshLoop()
+        {
+            var wait = new WaitForSecondsRealtime(FRIENDS_REFRESH_SECONDS);
+            while (true)
+            {
+                if (friendsService != null && friendsService.IsInitialized)
+                {
+                    CSDebug.LogVerbose(CSLogChannel.Party, "[FriendsListPanel] Friends refresh (panel visible).");
+                    friendsService.RefreshAsync().Forget();
+                }
+                yield return wait;
+            }
         }
 
         /// <summary>
@@ -117,17 +203,17 @@ namespace CosmicShore.UI
         void ValidateSceneWiring()
         {
             if (onlineContent == null)
-                Debug.LogError($"[FriendsListPanel] onlineContent is null on '{name}'. " +
+                CSDebug.LogError($"[FriendsListPanel] onlineContent is null on '{name}'. " +
                                "Online rows will NOT render. Wire the Content RectTransform " +
                                "of the Online ScrollRect in the inspector.", this);
             if (requestsContent == null)
-                Debug.LogError($"[FriendsListPanel] requestsContent is null on '{name}'. " +
+                CSDebug.LogError($"[FriendsListPanel] requestsContent is null on '{name}'. " +
                                "Request rows will NOT render. Wire the Content RectTransform " +
                                "of the Requests ScrollRect in the inspector.", this);
             if (onlineInfoPrefab == null)
-                Debug.LogError($"[FriendsListPanel] onlineInfoPrefab is null on '{name}'.", this);
+                CSDebug.LogError($"[FriendsListPanel] onlineInfoPrefab is null on '{name}'.", this);
             if (requestInfoPrefab == null)
-                Debug.LogError($"[FriendsListPanel] requestInfoPrefab is null on '{name}'.", this);
+                CSDebug.LogError($"[FriendsListPanel] requestInfoPrefab is null on '{name}'.", this);
         }
 
         /// <summary>
@@ -151,6 +237,17 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
+            if (_holdsWatchDemand)
+            {
+                PresenceWatchDemand.Release();
+                _holdsWatchDemand = false;
+            }
+            if (_friendsRefreshRoutine != null)
+            {
+                StopCoroutine(_friendsRefreshRoutine);
+                _friendsRefreshRoutine = null;
+            }
+
             UnsubscribeSoap();
             UnsubscribeServiceEvents();
 
@@ -274,6 +371,31 @@ namespace CosmicShore.UI
         public void ShowOnlineTab() => Show();
         public void ShowRequestsTab() => Show();
 
+        /// <summary>True when the lists live inside the party panel rather than in an overlay.</summary>
+        public bool IsEmbedded => embedded;
+
+        /// <summary>
+        /// Puts gamepad / keyboard focus on the first live row control - an invite to answer first,
+        /// then someone to invite. Nothing to focus (nobody online, nothing pending) leaves focus
+        /// where it is: the empty-state line is already in view.
+        /// </summary>
+        public void FocusList()
+        {
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            if (!events) return;
+
+            foreach (var content in new[] { requestsContent, onlineContent })
+            {
+                if (!content) continue;
+                foreach (var s in content.GetComponentsInChildren<Selectable>(false))
+                {
+                    if (!s.IsInteractable() || s.navigation.mode == Navigation.Mode.None) continue;
+                    events.SetSelectedGameObject(s.gameObject);
+                    return;
+                }
+            }
+        }
+
         #endregion
 
         #region Rendering
@@ -291,6 +413,7 @@ namespace CosmicShore.UI
         void PopulateOnlineSection()
         {
             ClearSpawned(_spawnedOnline);
+            UpdateOnlineEmpty();
             if (!connectionData || !onlineContent || !onlineInfoPrefab) return;
 
             string localId = connectionData.LocalPlayerId;
@@ -298,6 +421,7 @@ namespace CosmicShore.UI
             foreach (var player in connectionData.OnlinePlayers)
             {
                 if (player.PlayerId == localId) continue;
+                if (!listPartyMembers && IsInSameParty(player.PlayerId)) continue;
                 SpawnOnlineEntry(player);
             }
         }
@@ -306,7 +430,60 @@ namespace CosmicShore.UI
         {
             var entry = Instantiate(onlineInfoPrefab, onlineContent);
             _spawnedOnline.Add(entry.gameObject);
+            // Every state change the row draws (populate, invite sent, invite cleared) moves it to its group.
+            entry.ProfileChanged += () => PlaceInGroup(entry);
             PopulateOnlineEntry(entry, player);
+            UpdateOnlineEmpty();
+        }
+
+        /// <summary>The group a row belongs in, from what it draws. Pure, so it is tested without rows.</summary>
+        internal static OnlineGroupKind GroupFor(OnlineInfoEntry.Status status, bool invitePending)
+        {
+            if (invitePending) return OnlineGroupKind.YouInvited;
+            return status switch
+            {
+                OnlineInfoEntry.Status.InMatch => OnlineGroupKind.InAMatch,
+                OnlineInfoEntry.Status.InLobby or OnlineInfoEntry.Status.LobbyFull => OnlineGroupKind.JoinTheirParty,
+                _ => OnlineGroupKind.InTheMenu,
+            };
+        }
+
+        void PlaceInGroup(OnlineInfoEntry entry)
+        {
+            if (!entry || onlineGroups == null || onlineGroups.Length == 0) return;
+            var kind = GroupFor(entry.CurrentStatus, entry.IsInvitePending);
+            foreach (var group in onlineGroups)
+            {
+                if (group.kind != kind || !group.content) continue;
+                if (entry.transform.parent != group.content) entry.transform.SetParent(group.content, false);
+                return;
+            }
+        }
+
+        void UpdateOnlineEmpty()
+        {
+            if (!onlineEmptyLine) return;
+            int live = 0;
+            foreach (var go in _spawnedOnline) if (go) live++;
+            KitVisibility.SetShown(onlineEmptyLine, live == 0);
+        }
+
+        /// <summary>
+        /// The one verb a row offers (<see cref="oneVerbPerRow"/>): whether it may invite and what its join button does,
+        /// by the pilot's status. Pure, so it is tested without a panel.
+        /// </summary>
+        internal static (bool invite, OnlineInfoEntry.JoinMode join) OneVerb(OnlineInfoEntry.Status status, OnlineInfoEntry.JoinMode join)
+        {
+            return status switch
+            {
+                // A pilot alone in the menu hosts their own party: the row's one verb is Invite (KitOnlineRow shows it
+                // over Join for this status), but Join stays on the row's state so their profile card offers it too
+                // (Shombith, 2026-10-31: "there is no join button").
+                OnlineInfoEntry.Status.Online => (true, join),
+                OnlineInfoEntry.Status.InLobby or OnlineInfoEntry.Status.LobbyFull => (false, join),
+                OnlineInfoEntry.Status.InMatch => (false, join),
+                _ => (false, OnlineInfoEntry.JoinMode.Hidden),
+            };
         }
 
         void PopulateOnlineEntry(OnlineInfoEntry entry, PartyPlayerData player)
@@ -322,9 +499,16 @@ namespace CosmicShore.UI
             // row non-invitable instead of letting the send fail at the service.
             // Re-evaluated on every party-member change (HandlePartyMemberChanged
             // repopulates the section), so rows free up when someone leaves.
-            // The GAME'S rule (4), not the transport capacity: gating the invite button on
-            // HasOpenSlots would offer a fifth and sixth seat that only exist as headroom.
-            bool localPartyFull = connectionData != null && !connectionData.HasOpenDisplaySlots;
+            bool localPartyFull = connectionData != null && !connectionData.HasOpenSlots;
+
+            var joinMode = ResolveJoinMode(player, status);
+            bool mayInvite = !localPartyFull;
+            if (oneVerbPerRow)
+            {
+                var (invite, join) = OneVerb(status, joinMode);
+                mayInvite &= invite;
+                joinMode = join;
+            }
 
             entry.Populate(
                 player.PlayerId,
@@ -334,9 +518,12 @@ namespace CosmicShore.UI
                 memberCount,
                 maxSlots,
                 matchName,
-                onInvite: localPartyFull ? null : OnInviteClicked,
+                onInvite: mayInvite ? OnInviteClicked : null,
                 onCancel: OnCancelInviteClicked,
-                onKick: canKick ? OnKickMemberClicked : null);
+                onKick: canKick ? OnKickMemberClicked : null,
+                joinMode: joinMode,
+                onJoin: OnJoinClicked,
+                onSpectate: OnSpectateClicked);
 
             // Preserve pending-invite tint if we have an outgoing invite in flight.
             if (_outgoingInvitePlayerIds.Contains(player.PlayerId))
@@ -356,12 +543,11 @@ namespace CosmicShore.UI
             out string matchName)
         {
             memberCount = Mathf.Max(0, player.PartyMemberCount);
-            // ALWAYS the local display size (4). A remote's published PartyMaxSlots is only a
-            // fallback for a peer that has not published one, and it is CLAMPED to our own
-            // display size: a peer on an older build still publishes the transport capacity, and
-            // "x/6" must never reach the screen. The party size is a game rule, identical for
-            // everyone, so it is not actually a per-peer value at all.
-            int localDisplay = connectionData != null ? connectionData.PartyDisplaySlots : 0;
+            // ALWAYS the local party size (4). A remote's published PartyMaxSlots is only a
+            // fallback for a peer that has not published one: a peer on an older build may still
+            // publish 6, and "x/6" must never reach the screen. The party size is a game rule,
+            // identical for everyone, so it is not actually a per-peer value at all.
+            int localDisplay = connectionData != null ? connectionData.MaxPartySlots : 0;
             maxSlots = localDisplay > 0
                      ? localDisplay
                      : Mathf.Max(0, player.PartyMaxSlots);
@@ -389,6 +575,50 @@ namespace CosmicShore.UI
             return OnlineInfoEntry.Status.Online;
         }
 
+        /// <summary>
+        /// What the row's JOIN / SPECTATE button does for this player. The verb follows the
+        /// status the row already resolved; whether it is LIVE follows whether the player
+        /// advertises a session at all (<see cref="PartyPlayerData.HasJoinableSession"/> - a
+        /// peer on an older build, or one spectating somebody else, publishes none) and, for a
+        /// join, whether their party has a seat left.
+        /// </summary>
+        internal static OnlineInfoEntry.JoinMode ResolveJoinMode(PartyPlayerData player, OnlineInfoEntry.Status status)
+        {
+            switch (status)
+            {
+                // Already with them - there is nothing to join and nothing to watch from outside.
+                case OnlineInfoEntry.Status.InYourParty:
+                    return OnlineInfoEntry.JoinMode.Hidden;
+                // A pilot mid-match can be WATCHED, never joined as a player: the button becomes
+                // the eye, and it is the only live control on the row.
+                case OnlineInfoEntry.Status.InMatch:
+                    return player.HasJoinableSession
+                        ? OnlineInfoEntry.JoinMode.Spectate
+                        : OnlineInfoEntry.JoinMode.SpectateDisabled;
+                case OnlineInfoEntry.Status.LobbyFull:
+                    return player.HasJoinableSession
+                        ? OnlineInfoEntry.JoinMode.JoinDisabled
+                        : OnlineInfoEntry.JoinMode.Hidden;
+                default:
+                    return player.HasJoinableSession
+                        ? OnlineInfoEntry.JoinMode.Join
+                        : OnlineInfoEntry.JoinMode.Hidden;
+            }
+        }
+
+        bool TryGetOnlinePlayer(string playerId, out PartyPlayerData player)
+        {
+            player = default;
+            if (connectionData?.OnlinePlayers == null) return false;
+            foreach (var p in connectionData.OnlinePlayers)
+            {
+                if (p.PlayerId != playerId) continue;
+                player = p;
+                return true;
+            }
+            return false;
+        }
+
         bool IsInSameParty(string remotePlayerId)
         {
             if (connectionData?.PartyMembers == null) return false;
@@ -401,6 +631,13 @@ namespace CosmicShore.UI
         {
             if (connectionData && player.PlayerId == connectionData.LocalPlayerId) return;
 
+            if (!listPartyMembers && IsInSameParty(player.PlayerId))
+            {
+                RemoveEntryByPlayerId(_spawnedOnline, player.PlayerId);
+                UpdateOnlineEmpty();
+                return;
+            }
+
             // Upsert: refresh existing row if present, otherwise spawn.
             var existing = FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, player.PlayerId);
             if (existing)
@@ -412,11 +649,13 @@ namespace CosmicShore.UI
         void HandleOnlinePlayerRemoved(PartyPlayerData player)
         {
             RemoveEntryByPlayerId(_spawnedOnline, player.PlayerId);
+            UpdateOnlineEmpty();
         }
 
         void HandleOnlinePlayersCleared()
         {
             ClearSpawned(_spawnedOnline);
+            UpdateOnlineEmpty();
         }
 
         /// <summary>
@@ -587,8 +826,11 @@ namespace CosmicShore.UI
             if (!gameObject.activeSelf)
                 Show();
 
-            // If a row already exists for this sender, leave it (refresh of existing entry).
-            var existing = FindEntryByPlayerId<RequestInfoEntry>(_spawnedRequests, invite.HostPlayerId);
+            // If an INVITE row already exists for this sender, leave it (refresh of existing entry).
+            // By kind, like the friend-request path: a pending friend-request row from the same
+            // player used to count as "existing", so no invite row was made and - once the popup
+            // auto-hid - the player had no way left to accept the invite.
+            var existing = FindRequestEntryByKind(invite.HostPlayerId, RequestInfoEntry.Kind.PartyInvite);
             if (existing == null)
                 SpawnPartyInviteEntry(invite);
         }
@@ -601,7 +843,7 @@ namespace CosmicShore.UI
         {
             if (HostConnectionService.Instance == null)
             {
-                ToastNotificationAPI.Show("Connection service not ready. Try again shortly.");
+                ShowToast(serviceNotReadyLine, ToastKind.Error);
                 FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId)?.ResetInviteState();
                 return;
             }
@@ -612,12 +854,16 @@ namespace CosmicShore.UI
             try
             {
                 await HostConnectionService.Instance.SendInviteAsync(playerId);
-                CSDebug.Log($"[FriendsListPanel] Invite sent to {playerId}");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[FriendsListPanel] Invite sent to {playerId}");
                 // Row stays pending. Cleared when target accepts/declines/times out.
             }
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to send invite: {e.Message}");
+                // No presence lobby yet (it is being rejoined, B37): the click used to just reset the row,
+                // so the invite seemed to do nothing. Say so.
+                if (HostConnectionService.Instance != null && !HostConnectionService.Instance.HasPresenceLobby)
+                    ShowToast(serviceNotReadyLine, ToastKind.Error);
                 _outgoingInvitePlayerIds.Remove(playerId);
                 FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId)?.ResetInviteState();
             }
@@ -634,7 +880,7 @@ namespace CosmicShore.UI
             try
             {
                 await HostConnectionService.Instance.CancelInviteAsync(playerId);
-                CSDebug.Log($"[FriendsListPanel] Invite to {playerId} cancelled");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[FriendsListPanel] Invite to {playerId} cancelled");
             }
             catch (System.Exception e)
             {
@@ -652,7 +898,7 @@ namespace CosmicShore.UI
             try
             {
                 await HostConnectionService.Instance.KickPartyMemberAsync(playerId);
-                CSDebug.Log($"[FriendsListPanel] Kicked {playerId} from party");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[FriendsListPanel] Kicked {playerId} from party");
             }
             catch (System.Exception e)
             {
@@ -662,23 +908,88 @@ namespace CosmicShore.UI
             }
         }
 
+        // The JOIN button: move this machine into that player's party with no invite. The
+        // controller covers the screen and runs the same shutdown → join → connect → ready →
+        // bounce sequence an accepted invite does; on success this whole panel is gone with
+        // the old solo session, so there is nothing to restore here but the failure case.
+        async void OnJoinClicked(string playerId)
+        {
+            if (!TryGetOnlinePlayer(playerId, out var player) || !player.HasJoinableSession)
+            {
+                ShowToast(partyNotJoinableLine, ToastKind.Refusal);
+                PopulateOnlineSection();
+                return;
+            }
+
+            var controller = PartyInviteController.Instance;
+            if (controller == null)
+            {
+                ShowToast(partyControllerMissingLine, ToastKind.Error);
+                PopulateOnlineSection();
+                return;
+            }
+
+            try
+            {
+                await controller.JoinPartyAsync(player);
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsListPanel] Join party failed: {e.Message}");
+                ShowToast(joinFailedLine, ToastKind.Error);
+                PopulateOnlineSection();
+            }
+        }
+
+        // The SPECTATE (eye) button: watch that player's match. Same transition as a join, but
+        // this machine connects as a viewer (no Player, no vessel) and SpectatorController
+        // takes over from there until the viewer leaves or the match ends.
+        async void OnSpectateClicked(string playerId)
+        {
+            if (!TryGetOnlinePlayer(playerId, out var player) || !player.HasJoinableSession)
+            {
+                ShowToast(matchNotSpectatableLine, ToastKind.Refusal);
+                PopulateOnlineSection();
+                return;
+            }
+
+            var controller = PartyInviteController.Instance;
+            if (controller == null)
+            {
+                ShowToast(partyControllerMissingLine, ToastKind.Error);
+                PopulateOnlineSection();
+                return;
+            }
+
+            try
+            {
+                await controller.SpectateAsync(player);
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsListPanel] Spectate failed: {e.Message}");
+                ShowToast(spectateFailedLine, ToastKind.Error);
+                PopulateOnlineSection();
+            }
+        }
+
         async void OnAcceptFriendRequestClicked(string playerId)
         {
             if (friendsService == null || !friendsService.IsInitialized)
             {
-                ToastNotificationAPI.Show("Friends service not ready.");
+                ShowToast(friendsNotReadyLine, ToastKind.Error);
                 return;
             }
 
             try
             {
                 await friendsService.AcceptFriendRequestAsync(playerId);
-                ToastNotificationAPI.Show("Friend request accepted!");
+                ShowToast(requestAcceptedLine, ToastKind.Success);
             }
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to accept request: {e.Message}");
-                ToastNotificationAPI.Show($"Failed to accept: {e.Message}");
+                ShowToast(TemplateText.Fill(acceptFailedLine, "error", e.Message), ToastKind.Error);
             }
         }
 
@@ -711,7 +1022,7 @@ namespace CosmicShore.UI
             var controller = PartyInviteController.Instance;
             if (controller == null)
             {
-                ToastNotificationAPI.Show("Party controller not available.");
+                ShowToast(partyControllerMissingLine, ToastKind.Error);
                 return;
             }
 
@@ -722,7 +1033,7 @@ namespace CosmicShore.UI
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Accept party invite failed: {e.Message}");
-                ToastNotificationAPI.Show("Failed to accept party invite.");
+                ShowToast(inviteAcceptFailedLine, ToastKind.Error);
             }
         }
 
@@ -752,16 +1063,16 @@ namespace CosmicShore.UI
 
         Sprite ResolveAvatar(int avatarId)
         {
-            if (!profileIcons || profileIcons.profileIcons == null) return null;
+            if (!profileIcons || profileIcons.ProfileIcons == null) return null;
 
-            foreach (var icon in profileIcons.profileIcons)
+            foreach (var icon in profileIcons.ProfileIcons)
             {
                 if (icon.Id == avatarId)
                     return icon.IconSprite;
             }
 
-            return profileIcons.profileIcons.Count > 0
-                ? profileIcons.profileIcons[0].IconSprite
+            return profileIcons.ProfileIcons.Count > 0
+                ? profileIcons.ProfileIcons[0].IconSprite
                 : null;
         }
 
@@ -809,8 +1120,7 @@ namespace CosmicShore.UI
                 var go = _spawnedRequests[i];
                 if (!go) { _spawnedRequests.RemoveAt(i); continue; }
 
-                var entry = go.GetComponent<RequestInfoEntry>();
-                if (entry == null) continue;
+                if (!go.TryGetComponent(out RequestInfoEntry entry)) continue;
                 if (entry.PlayerId != playerId || entry.EntryKind != kind) continue;
 
                 Destroy(go);
@@ -850,5 +1160,10 @@ namespace CosmicShore.UI
         }
 
         #endregion
+
+        static void ShowToast(string line, ToastKind kind)
+        {
+            if (!string.IsNullOrEmpty(line)) ToastNotificationAPI.Show(line, kind);
+        }
     }
 }

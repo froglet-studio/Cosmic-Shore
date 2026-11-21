@@ -1,0 +1,152 @@
+using System.Reflection;
+using CosmicShore.Gameplay;
+using NUnit.Framework;
+
+namespace CosmicShore.Tests
+{
+    /// <summary>
+    /// <see cref="ArcadeConfigSyncManager.LobbySnapshot"/> is the whole open arcade lobby as one
+    /// replicated value, and it is the shape CLAUDE.md warns about under "a DTO is a second place
+    /// every field has to be added": a field added to the struct and forgotten in
+    /// <c>NetworkSerialize</c> never crosses the wire, and one forgotten in <c>Equals</c> never
+    /// triggers a write at all - because <c>NotifyRosterChanged</c> and
+    /// <c>RepublishHumanCount</c> both compare before assigning, and a NetworkVariable itself
+    /// only dirties on a value change. Either omission fails SILENTLY and only on a second
+    /// machine, which is the whole reason this is asserted by reflection over the real fields
+    /// rather than by a list somebody has to remember to extend.
+    ///
+    /// <para><c>HumanCount</c> is the field that prompted it: guests were drawing AI avatars for
+    /// humans they could not count.</para>
+    ///
+    /// <para><b>What this cannot prove:</b> that a field was added to <c>NetworkSerialize</c>.
+    /// Driving that needs a Netcode <c>BufferSerializer</c>, which needs a live network context -
+    /// so the serializer stays a read-it-yourself step when a field is added here. The equality
+    /// half is the one worth automating anyway: a field missing from <c>Equals</c> means the
+    /// write never happens at all, so the serializer never gets the chance to be wrong.</para>
+    /// </summary>
+    public class ArcadeLobbySnapshotTests
+    {
+        static FieldInfo[] SnapshotFields =>
+            typeof(ArcadeConfigSyncManager.LobbySnapshot)
+                .GetFields(BindingFlags.Public | BindingFlags.Instance);
+
+        /// <summary>Bump one field at a time; Equals has to notice every single one.</summary>
+        [Test]
+        public void EveryFieldParticipatesInEquality()
+        {
+            foreach (var field in SnapshotFields)
+            {
+                object mutated = new ArcadeConfigSyncManager.LobbySnapshot();
+                if (field.FieldType == typeof(int)) field.SetValue(mutated, 7);
+                else if (field.FieldType == typeof(bool)) field.SetValue(mutated, true);
+                else if (field.FieldType == typeof(ulong)) field.SetValue(mutated, 7UL);
+                else if (field.FieldType == typeof(double)) field.SetValue(mutated, 7.0);
+                else Assert.Fail($"LobbySnapshot.{field.Name} is a {field.FieldType.Name}; teach " +
+                                 "this test how to mutate it (and check NetworkSerialize handles it).");
+
+                var baseline = new ArcadeConfigSyncManager.LobbySnapshot();
+                Assert.IsFalse(baseline.Equals((ArcadeConfigSyncManager.LobbySnapshot)mutated),
+                    $"LobbySnapshot.Equals ignores '{field.Name}'. A change to it would never dirty " +
+                    "the NetworkVariable, so no guest would ever see it.");
+            }
+        }
+
+        /// <summary>
+        /// A guest reads its human head-count off the lobby (see
+        /// <c>ArcadeGameConfigureModal.CurrentPartyHumanCount</c>), so an open lobby that carries
+        /// zero humans would send it back to the stale presence list this replaces.
+        /// </summary>
+        [Test]
+        public void HumanCountSurvivesARosterEdit()
+        {
+            var lobby = new ArcadeConfigSyncManager.LobbySnapshot
+            {
+                IsOpen = true, PlayerCount = 4, DomainCount = 3, HumanCount = 3,
+            };
+
+            lobby.SetPlacedAiDomains(new[] { 1, 2 });
+
+            Assert.AreEqual(3, lobby.HumanCount,
+                "SetPlacedAiDomains must not disturb the human count - NotifyRosterChanged edits " +
+                "a copy of the live snapshot precisely so the host's count is carried through.");
+            Assert.AreEqual(2, lobby.AiCount);
+            CollectionAssert.AreEqual(new[] { 1, 2 }, lobby.PlacedAiDomains());
+        }
+
+        /// <summary>The ally-hull picks ride beside the placements, entry i for bot i, and a short
+        /// list leaves the rest on auto (0 = VesselClassType.Random).</summary>
+        [Test]
+        public void AllyHullPicksRideBesideThePlacements()
+        {
+            var lobby = new ArcadeConfigSyncManager.LobbySnapshot();
+            lobby.SetPlacedAiDomains(new[] { 1, 2, 1 });
+            lobby.SetPlacedAiVessels(new[] { 6, 3 });
+
+            CollectionAssert.AreEqual(new[] { 6, 3, 0 }, lobby.PlacedAiVessels());
+            CollectionAssert.AreEqual(new[] { 1, 2, 1 }, lobby.PlacedAiDomains(),
+                "writing the hulls must not disturb the domains");
+        }
+
+        /// <summary>Each AI's own difficulty rides beside its placement, entry i for bot i; a short list leaves
+        /// the rest at 0 (the card's difficulty), and a change to one seat's level is a roster change.</summary>
+        [Test]
+        public void PerSeatDifficultiesRideBesideThePlacements()
+        {
+            var lobby = new ArcadeConfigSyncManager.LobbySnapshot();
+            lobby.SetPlacedAiDomains(new[] { 1, 2, 1 });
+            lobby.SetPlacedAiVessels(new[] { 6, 3, 0 });
+            lobby.SetPlacedAiDifficulties(new[] { 1, 3 });
+
+            CollectionAssert.AreEqual(new[] { 1, 3, 0 }, lobby.PlacedAiDifficulties());
+            CollectionAssert.AreEqual(new[] { 6, 3, 0 }, lobby.PlacedAiVessels(), "the levels must not disturb the hulls");
+
+            var other = lobby;
+            other.SetPlacedAiDifficulties(new[] { 1, 4 });
+            Assert.IsFalse(lobby.SameAi(other), "a seat's difficulty must take part in the roster's equality");
+        }
+
+        /// <summary>Placements past the eight replicated slots truncate rather than corrupt.</summary>
+        [Test]
+        public void PlacedAiTruncatesToTheReplicatedSlots()
+        {
+            var lobby = new ArcadeConfigSyncManager.LobbySnapshot();
+            lobby.SetPlacedAiDomains(new[] { 1, 2, 3, 1, 2, 3, 1, 2, 3 });
+            Assert.AreEqual(ArcadeConfigSyncManager.LobbySnapshot.MaxAiSlots, lobby.AiCount);
+            Assert.AreEqual(8, lobby.PlacedAiDomains().Length);
+        }
+
+        /// <summary>A nine-seat match played solo places EIGHT AI (Garrett 2026-11-17: nine vessels, three a
+        /// team), and the last two slots reach every peer in order with their hulls and levels.</summary>
+        [Test]
+        public void NineSeats_EightPlacedAi_RoundTrip()
+        {
+            var lobby = new ArcadeConfigSyncManager.LobbySnapshot();
+            lobby.SetPlacedAiDomains(new[] { 1, 1, 2, 2, 2, 3, 3, 3 });
+            lobby.SetPlacedAiVessels(new[] { 1, 2, 3, 4, 5, 6, 7, 8 });
+            lobby.SetPlacedAiDifficulties(new[] { 1, 2, 3, 4, 1, 2, 3, 4 });
+            CollectionAssert.AreEqual(new[] { 1, 1, 2, 2, 2, 3, 3, 3 }, lobby.PlacedAiDomains());
+            CollectionAssert.AreEqual(new[] { 1, 2, 3, 4, 5, 6, 7, 8 }, lobby.PlacedAiVessels());
+            CollectionAssert.AreEqual(new[] { 1, 2, 3, 4, 1, 2, 3, 4 }, lobby.PlacedAiDifficulties());
+            var other = lobby;
+            other.SetPlacedAiVessels(new[] { 1, 2, 3, 4, 5, 6, 7, 9 });
+            Assert.IsFalse(lobby.SameAi(other), "the eighth slot must take part in the roster's equality");
+        }
+
+        /// <summary>
+        /// A six-seat arena card played solo places FIVE AI, and every one of them must reach a
+        /// guest's roster in order - the slots were four until the arena went to six seats.
+        /// </summary>
+        [Test]
+        public void FiveArenaAiPlacementsRoundTrip()
+        {
+            var lobby = new ArcadeConfigSyncManager.LobbySnapshot();
+            var placed = new[] { 1, 2, 1, 2, 1 };
+            lobby.SetPlacedAiDomains(placed);
+            CollectionAssert.AreEqual(placed, lobby.PlacedAiDomains());
+
+            var other = new ArcadeConfigSyncManager.LobbySnapshot();
+            other.SetPlacedAiDomains(new[] { 1, 2, 1, 2, 2 });
+            Assert.IsFalse(lobby.SameAi(other), "the fifth slot must take part in equality");
+        }
+    }
+}

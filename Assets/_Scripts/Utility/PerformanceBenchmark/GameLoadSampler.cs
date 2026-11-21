@@ -38,9 +38,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 metrics.activePrisms = spatialIndex.LiveCount;
 
             // Death explosions are batched entities only (D4 — explosion pool is
-            // never Get()d). Implosions are batched death suctions PLUS pooled
-            // Grow (Sparrow ReverseSuction still uses PrismImplosion).
-            metrics.activeExplosions = PrismDebris.LiveDebrisCount;
+            // never Get()d). A Rhino blade kill is a SLICE instead of an explosion
+            // (Docs/PRISM_ANIMATION.md §4.10) and counts here as the explosion it
+            // replaced — one per sliced prism, not one per half. Implosions are batched
+            // death suctions PLUS pooled Grow (Sparrow ReverseSuction still uses
+            // PrismImplosion).
+            metrics.activeExplosions = PrismDebris.LiveDebrisCount + PrismSlice.LiveSliceCount;
             metrics.activeImplosions = PrismDebris.LiveImplosionDebrisCount
                 + PrismImplosion.EnabledInstances.Count;
 

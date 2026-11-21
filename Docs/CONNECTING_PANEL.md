@@ -4,6 +4,79 @@ The screen every game scene shows while its arena is built — `ConnectingPanelC
 MiniGameHUD. It holds for a short dwell and then until `PrismTrailBuilder.PollArenaReady()` says the
 arena is complete, so the player never sees the structure lay or bloom in.
 
+## Now (Rev 91 F, 2026-11-12): the tour, on the Rev 33 cover
+
+Shombith picked board F of Rev 91 (Docs/MENU_REDESIGN_B.md section 173). The cover, the covered tempo, the 1 s floor
+and the wait for every human pilot are the Rev 33 ones below, unchanged. What the screen DRAWS changed. Not opened
+in the Unity editor yet.
+
+- **ENTERING and the mode's name**, top left (`ConnectingGateView.Bind`, the controller's `gameModeText`).
+- **The tour** (`ConnectingTourView`): Squad, The Ark, Pilots, Vessels, Toy Box, one at a time. Each chapter is a
+  picture left of centre and a counter, a title and one line on the right; the five names are an index top right
+  with the current one lit.
+  - The chapter follows the load: it is the fifth of the bar's value the load has reached (`ChapterFor`), never a
+    timer. It only moves forward and holds the last chapter until the gate opens. Two chapters cross-fade over
+    `fadeSeconds` (0.4 s, unscaled).
+  - Every word is an authored field on the view: each chapter's `title` and `line`, and `counterTemplate`
+    (`{n} of {total}`).
+  - The pictures are sprites the game already has: three roster portraits (Needle, Galleon, Anvil, read from their
+    `PilotSO`), Galleon alone, `Sparrow_large`, and `Dolphin_large` in a kit hex. The Ark had no picture among the
+    game's sprites, so the board's cut is imported as `Assets/_Graphics/UI/Loading/loading_tour_ark.png`.
+- **One bar** (`KitStepBar`), along the bottom: the running step's name over it, the percentage on the right, an
+  8 px track, and the steps named under it with a marker each (lit when its step starts, filled when it is done).
+  - It is cut into the THREE shares `ArenaLoadProgress` measures (section 1): Building the arena to 0.60, Settling
+    the arena to 0.90, Waiting for pilots to 1. The generator reads the two constants from the C#. The board drew a
+    fourth step first, "Connecting to shore"; nothing measures it, so it would be a segment of no length and a name
+    that never shows. It is not built.
+  - `ConnectingPanelController.TickProgress` feeds it the eased value; `Hide` shows 100 and done, which turns the
+    fill and the word (Ready) Lime. Lime is nowhere else on the screen.
+  - The track and fill are the old Slider's objects (GameCanvas overrides the Fill's anchor). The Slider component
+    is gone: `KitStepBar` anchors the fill.
+- **No pilot rows.** `ConnectingPlayerRoster` and its list stay in the prefab under a zero-alpha CanvasGroup, with
+  the row's words unwired: `AllHumansReady` still holds the screen and the ready count is still the bar's last
+  share. GameCanvas's override into the template row still lands.
+- **The gate** opens from the centre: Ready holds for a beat, the tour and the bar fade, the hex grows to 452 and
+  bursts past the screen (`ConnectingGateView.Open`, 1.7 s).
+- Gone, through the generator: the Omni crystal, the tagline and the objective and intensity chips, the steps panel
+  (and the `{done} / {total} prisms` count), the pilots panel, the tip and the footer.
+- **The sea** (section 186): the cover's black base, then three soft fields drifting slowly (`Gate/Cover/Fields`,
+  `kit_ring_glow` in the theme's `SurfaceLight` and `NeutralLightest`, each a `PosterDrift` with the board's timings,
+  26 / 34 / 42 s one way), then the sea lines (`Sea_Window.mat`, which animates itself). The fields have no hole of
+  their own, so the gate fades their group (`ConnectingGateView.backdrop`) with the content as the hex starts to open.
+- **The motion** (section 186): the Ark drifts (16 s one way, a slight turn) and the Vessels chapter's Sparrow bobs
+  (6 s), each a `PosterDrift`; both sleep while their chapter is hidden.
+- Not built from the board: tabular digits on the percentage. The sea lines are the menu windows' (`Sea_Window.mat`),
+  not the board's own three CSS layers.
+
+`author_ingame_hud.py` section 12c generates all of it; its `--self-test` plants thirteen defects for this screen (nine of them the tour's and the bar's).
+
+## Before (Rev 33, 2026-10-28): the Cell gate COVERS the arena
+
+The panel was rebuilt as the "Cell gate" (Docs/MENU_REDESIGN_B.md section 99, board A; built in 99.4). The live
+preview, the status line and the watched tempo below are **retired from the panel**:
+- `ConnectingArenaPreview` stays in the tree but nothing uses it.
+- Sections 2 and 3 record why they existed and what they cost, which was the measured mode-entry lag (99.1, 99.2).
+
+What the panel is now:
+- **It covers the arena.** The backdrop is two `HexApertureGraphic` layers (a solid base and the sea) with a hex
+  hole at radius 0, and the panel has no camera. The gameplay camera is parked (`PilotCameraPark`) while the panel
+  is up.
+- **It builds at the cell-change screen's tempo** (`coveredLayBudgetMs` 80, `coveredCreationBudgetMs` 0 = the
+  gate's 512 completions a frame). It sets `PrismTrailBuilder.LoadGateCovered`, so the grow-in is skipped.
+- **The floor is 1 s** (`dwellSeconds`). `MultiplayerMiniGameControllerBase` brackets its pre-build wait with
+  `BeginArenaBuild` / `EndArenaBuild`, so the arena-ready poll cannot pass on an empty arena.
+- **Its look is `ConnectingGateView`:**
+  - the Omni crystal in a `LoadCrystalGraphic` hex, filling with the build (`EnvironmentLoadVeil.StepFor` /
+    `CrystalLevel`, the cell-change screen's own math);
+  - the mode's brief under ENTERING;
+  - the four steps, with the veil's words;
+  - the tip and the bar.
+- **The pilots panel is the roster below in row mode** (`ConnectingPlayerRoster`, `showAI`, the row template's
+  name, badge, line, state and pip).
+- **At the end the gate opens.** The crystal's hex becomes a hole that glides to the centre and bursts past the
+  screen. The panel stops blocking input as it starts, and the intro starts underneath.
+- `author_ingame_hud.py` section 12c generates all of it and checks that no camera or preview comes back.
+
 It answers one question — *is this doing anything?* — in three ways, deliberately different in kind:
 
 | Surface | What it is |
@@ -35,31 +108,34 @@ A bar that followed them faithfully would run backwards mid-load, which turns *"
 while"* into *"something is wrong"*. So the model **never lowers its own output**; a phase reporting
 less than what is already shown is simply not shown. `Reset()` is the only way down.
 
-### Bands, and the creep between them
+### Shares, each one measured (2026-11-12)
 
-| Span | Band |
-|---|---|
-| Dwell (nothing announced yet) | 0 → **0.05**, by creep |
-| Laying | **0.05 → 0.60**, from `LayProgress` |
-| Growing | **0.60 → 0.95**, from `1 − remaining / peak` |
-| Arena ready | **1.0** |
+Shombith: "Make the percentage real." Every value the bar shows is a measurement, and the percentage on the panel is
+the same value.
 
-Two spans have no denominator: the opening dwell, and any gap between phases. Sitting still there
-reads as a hang; jumping ahead lies. The model eases toward the current phase's ceiling at a rate
-that never reaches it, so the bar always moves and never overtakes real progress.
+| Span | Share | Measured as |
+|---|---|---|
+| Laying | **0 → 0.60** | `LayProgress`: prisms laid over prisms queued |
+| Growing | **0.60 → 0.90** | `1 − remaining / peak` |
+| Pilots | **0.90 → 1.0** | human pilots who reported their arena built over human pilots in the match (`ConnectingPlayerRoster.ReadyHumanCount` / `HumanCount`), once this machine's arena is ready |
 
-Three details are load-bearing, and each is a test:
+Two spans have no denominator: the opening dwell, and any gap between phases. There the bar **holds**. Until
+2026-11-12 it crept on a timer (toward 5% in the dwell, toward the next band in a gap), which showed a number nothing
+had measured; that is gone, and so is the dwell's 5% band. A solo load has one pilot, so the pilots' share completes
+the moment the arena is ready; with a party the last tenth is the wait for the others, which used to sit at 100%.
 
-- **The creep's ceiling is a function of the furthest phase ENTERED**, not of the current value.
-  Inferring it from the value (*"we are past the lay band, so creep toward the grow ceiling"*) relies
-  on a lerp never quite reaching its target — a float accident standing in for a decision. The day it
-  does reach it, the dwell creeps to 60% before a single prism is laid.
+Three details are load-bearing, and each is a test (`ArenaLoadProgressTests`):
+
+- **Nothing measured, nothing moved.** However long the dwell or a gap lasts, the value does not change.
 - **The grow denominator is the PEAK count seen this load.** Taking the first reading as the total
   shows 0% forever on a build whose prisms are still being queued as others settle.
-- **It finishes at exactly 1**, latched off the hold predicate. A bar that vanishes at 0.9 reads as
-  an abandoned load rather than a completed one.
+- **It finishes at exactly 1**: every pilot ready, or no pilot to wait on. When the peer wait times out the panel
+  opens its gate, which draws 100% itself (`ConnectingPanelController.Hide`).
 
-### The slider is a READOUT, not a control
+Not covered: the scene load before the panel exists (the splash covers it, and nothing reads the scene load's own
+progress), and the boot splash's bar (`KitLoadBar`), which has no percentage and still reads the prism builder alone.
+
+### The slider is a READOUT, not a control (retired with Rev 91 F: the bar is a `KitStepBar`, no Slider)
 
 `StyleProgressBar` forces `interactable = false`, `Transition.None`, `Navigation.Mode.None`, and
 **removes the handle** — a handle is the affordance that says *drag me*, and there is nothing to
@@ -82,7 +158,7 @@ the capsule drawn at half height. The prefab now zeroes the insets and spans bot
 
 ---
 
-## 2. The arena preview
+## 2. The arena preview (retired from the panel, Rev 33)
 
 `ConnectingArenaPreview` (`UI/Elements/`) renders the cell being built into the panel's RawImage —
 the same idea as the arcade card's preview window, pointed at the world *this* scene is standing up.
@@ -225,7 +301,7 @@ is reporting on. So the camera is left **disabled** and stepped by hand at `rend
 
 ---
 
-## 3. A WATCHED hold pays for the view
+## 3. A WATCHED hold pays for the view (retired: the panel is covered again, Rev 33)
 
 The load gate runs the build at a deliberately brutal tempo — **a 250 ms lay slice per frame**
 (`PrismTrailBuilder.LoadGateLayBudgetMs`) and **512 prism creation completions per frame**
@@ -365,16 +441,14 @@ behaves exactly as it did before. To light them up:
 
 | Field | Wire to |
 |---|---|
-| `progressSlider` | the panel's Slider |
-| `arenaPreview` | a `ConnectingArenaPreview` on the panel |
-| …its `surface` | the panel's Level Preview RawImage |
-| …its `settingsTemplate` | the panel's existing `connectingCamera`, for clear flags and culling mask |
-| …its `previewCamera` | **nothing** — the preview creates and owns one per scene |
+| `stepBar` | the `KitStepBar` on the panel's Bar (generated) |
+| `gate` | the `ConnectingGateView` on the panel's root (generated); its `tour` is the `ConnectingTourView` |
+| `introWords` | `Resources/IntroCameraLibrary` — the fallback for the mode's name |
 | `playerRoster` | nothing — ensured at `Awake`; wire one only to author its references |
 | …its `container` | nothing — a descendant named `PlayerIcons` is adopted |
 | …its `entryTemplate` | nothing — the container's first child is adopted (and hidden) |
 
-`ConnectingArenaPreview.previewCamera` is left **empty** unless a scene needs a specific one.
+The preview's own wiring (`arenaPreview`, `connectingCamera`) was removed with it in Rev 33.
 
 ## The preview's far plane is sized against the CELL, not the arena
 

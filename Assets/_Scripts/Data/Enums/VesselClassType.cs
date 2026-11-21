@@ -22,5 +22,20 @@ namespace CosmicShore.Data
         Shrike = 10,
         Sparrow = 11,
         Scarab = 12,
+        Butterfly = 13,   // RETIRED 2026-10-29: the Tiger Moth (29) replaces it; the value stays so old data still reads. Controller/Vessel/R_VesselActions/TIGER_MOTH.md
+        Thresher = 14,
+        Stoat = 15,
+        BrittleStar = 16,
+        Angler = 17,
+        Goby = 18,   // the Goby & Pistol crew vessel (two subvessels, one hull class): .claude/skills/duo-vessel; moved off 16 (BrittleStar)
+        Wrasse = 19,   // a cleaner wrasse and its host: the Sparrow hull with the Kite & Tail navigator seat (two players, one hull): Controller/Vessel/Crew/KITE_NAVIGATOR.md
+        Orca = 20,     // the 4-seat vessel: one helm and three gunner seats on one hull, every empty seat an AI: Controller/Vessel/Crew/ORCA_CREW.md
+        Starling = 21,    // the passive swarm card vessel: the swarm roams on its own, the pilot turns the view and picks cards: Controller/Vessel/R_VesselActions/STARLING.md
+        Jacks = 22,    // the Jacks: two jacks that herd real fauna, one player: thumbs run them on the board, or fly them as the hull (two-thumb flight). Was "Marlin and Jacks"; the name Marlin is kept for a swordsman: Controller/Vessel/R_VesselActions/JACKS.md
+        Honeyguide = 23,   // the Honeyguide and Ratel: two seats on one hull (its own model on the Sparrow's airframe) with the Ratel's Dynamo seat: Controller/Vessel/Crew/HONEYGUIDE.md
+        Meerkat = 28,   // the wormhole vessel: one thumb flies, the right stick bends a tunnel, RT dives through it (24-27 are claimed on in-flight branches: Flea, Warden, Bulwark, Tempest): Controller/Vessel/R_VesselActions/MEERKAT.md
+        TigerMoth = 29,   // the Butterfly's airframe with the Drop (a tiger moth shuts its wings and drops): hold, fall along your own down while the camera rides above, land pitched into the line you fell: Controller/Vessel/R_VesselActions/TIGER_MOTH.md
+        Swordfish = 30,   // all sword: the Rhino's blade, energize, afterimages and surge ring on the Rhino's airframe, split off the Rhino on 2026-11-07 (Garrett); the Rhino keeps the plough: Controller/Vessel/R_VesselActions/SWORDFISH.md
+        JewelWasp = 31,   // the possession vessel: sting a creature and ride it (suction, a petal-stealing attack, a speed burst), or root in a plant and grow it; A leaves: Controller/Vessel/R_VesselActions/JEWEL_WASP.md
     }
 }

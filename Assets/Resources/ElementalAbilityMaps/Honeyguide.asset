@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Honeyguide
+  m_EditorClassIdentifier:
+  vesselClass: 23
+  entries:
+  - Element: 1
+    AbilityLabel: 'Flit'
+    AbilityDescription: 'Hold LT to see the dart, let go to fly it: 18 u ahead, striking every rival vessel and creature within 8 u of its lane, every 2 s. Each Charge card the Ratel makes (Hard Light Lasso, Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) banks three uses on LT; the newest fires first.'
+    Input: 2
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Relentless'
+    UpgradeDescription: 'A Flit that strikes a vessel or creature is ready again at once.'
+  - Element: 2
+    AbilityLabel: 'Hive'
+    AbilityDescription: 'Every 45 s (sooner as Mass rises) a hive appears somewhere in the cell. Fly to it to open hive mode.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Hive Chain'
+    UpgradeDescription: 'Reaching a hive plants the next one at once.'
+  - Element: 3
+    AbilityLabel: 'Peck'
+    AbilityDescription: 'Hold RT to see the aim line, let go for three quick shots, every 1 s. Each Space card the Ratel makes (Genesis Lance, Little Bang Grenade, Particle Harmonizer, Fugacity Discharger, Sepia Drone, Thruster Swarm, Hexapod Eyelet Jet) banks three uses on RT; the newest fires first. Hold both triggers to cancel.'
+    Input: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Piercing Pecks'
+    UpgradeDescription: 'Pecks pierce through prisms instead of stopping at the first.'
+  - Element: 4
+    AbilityLabel: 'Slip'
+    AbilityDescription: 'Touch a trail of a domain the battery holds with your nose along it and ride it to its end, fast: the charge is spent. The Ratel charges the battery by making patterns on the Dynamo.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Slipstream'
+    UpgradeDescription: 'A slip carries twice the boost out.'

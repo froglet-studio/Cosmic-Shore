@@ -1,0 +1,144 @@
+{
+  "id": "octopus",
+  "order": 9,
+  "name": "Octopus",
+  "tagline": "the pulse jet: inhale, release, keep the beat",
+  "round": "concept · round 1",
+  "accent": "#d98bff",
+  "kind": "pulse",
+  "chip": "concept · round 1",
+  "summary": "The pulse jet. Hold LT to inhale: it slows, the mantle swells, the charge fills in 0.7 s. Release and it jets, up to 205 u/s, then fades toward a 20 u/s drift. The beat is yours: release at the same interval as your last two pulses and the chain grows, each pulse ×1.1 more, up to ×1.8. RT spends a pulse of charge on an ink cloud of danger prisms behind you. Charge-and-release movement with a rhythm layer you set yourself.",
+  "spec": [
+    {
+      "k": "Mechanic",
+      "v": "LT inhale, release to jet · your own tempo multiplies · RT ink"
+    },
+    {
+      "k": "Jet",
+      "v": "55 → 205 u/s by charge, × chain to 1.8"
+    },
+    {
+      "k": "Beat",
+      "v": "±15% of your last interval"
+    },
+    {
+      "k": "Why",
+      "v": "charge-release (Kirby Air Riders, Mario Kart World) + rhythm (Hi-Fi Rush)"
+    }
+  ],
+  "fantasy": "It breathes its way round the course. Find your tempo and the whole race turns into a song you are drumming on the trigger.",
+  "why": "One held input with a visible gauge and a release 'moment' is what players praise in Kirby Air Riders and Mario Kart World's charge jump, and rhythm-synced movement has a devoted audience (Hi-Fi Rush 2M+, a sequel at Krafton). The Octopus makes the rhythm optional: a tempo you set, not one imposed, so it rewards without gating.",
+  "flight": {
+    "cruise": 20,
+    "pitchYaw": 120,
+    "roll": 130,
+    "grip": 30,
+    "accel": 1.5,
+    "topSpeed": 260
+  },
+  "params": {},
+  "elements": {
+    "charge": {
+      "name": "Jet",
+      "param": "jetMax",
+      "range": [
+        1,
+        1.3
+      ],
+      "l5": "Siphon Jet",
+      "tip": "Charge is the speed of a full jet."
+    },
+    "mass": {
+      "name": "Ink",
+      "param": "inkCount",
+      "range": [
+        1,
+        2
+      ],
+      "l5": "Black Water",
+      "tip": "Mass is the size of the ink cloud."
+    },
+    "space": {
+      "name": "Wide Beat",
+      "param": "beatWindow",
+      "range": [
+        1,
+        1.8
+      ],
+      "l5": "Metronome",
+      "tip": "Space widens the beat window."
+    },
+    "time": {
+      "name": "Quick Breath",
+      "param": "inhaleTime",
+      "range": [
+        1,
+        0.6
+      ],
+      "l5": "Gasp",
+      "tip": "Time shortens the inhale."
+    }
+  },
+  "styles": [
+    {
+      "name": "Balanced",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Every element at 0: the recipe's numbers."
+    },
+    {
+      "name": "Drummer",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Quick breaths and a wide beat: long chains."
+    },
+    {
+      "name": "Squid",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Big jets and big ink: the ambusher."
+    },
+    {
+      "name": "Maxed",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Every element at 10. A ceiling, not a match state."
+    }
+  ],
+  "players": [
+    {
+      "ai": false,
+      "domain": "jade",
+      "level": "Hard",
+      "style": "Balanced"
+    }
+  ],
+  "controls": {
+    "lt": "inhale (hold), release to jet",
+    "rt": "ink cloud (costs a pulse)"
+  },
+  "notModelled": [
+    "The beat is a timing window on the trigger with a HUD ring, no sound: the game would give it an FMOD tempo cue (the research says a timed window needs an unmistakable audio tell).",
+    "Ink is ordinary danger mass: it hurts the Octopus too after its 1 s grace, as every danger prism hurts every domain."
+  ],
+  "sources": [
+    "Design: Docs/Studios/CONCEPT_FLEET.md (Octopus). Nearest shipped relatives: the Dolphin's drift charge and discharge, the Serpent's fuel pellets."
+  ],
+  "docs": "Docs/Studios/CONCEPT_FLEET.md"
+}

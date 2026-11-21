@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 508ac9d44c4894082b18ca7c945e5ca4, type: 3}
+  m_Name: GorgeSettings
+  m_EditorClassIdentifier:
+  leadAnnounceAfterSeconds: 15
+  leadAnnounceMinGapSeconds: 8
+  leadSampleSeconds: 1
+  aiRetargetSeconds:
+  - 6
+  - 4.5
+  - 3.5
+  - 2.5
+  aiHostChoosiness:
+  - 0.25
+  - 0.5
+  - 0.75
+  - 0.95
+  aiAimError:
+  - 60
+  - 35
+  - 15
+  - 5
+  aiFullShoalWeight:
+  - 0
+  - 0.3
+  - 0.6
+  - 0.9

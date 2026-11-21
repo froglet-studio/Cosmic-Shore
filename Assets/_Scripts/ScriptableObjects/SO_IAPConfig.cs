@@ -25,23 +25,28 @@ namespace CosmicShore.ScriptableObjects
                  "https://www.froglet.games/checkout?product={productId}&amount={price} " +
                  "Point this at a HOSTED CHECKOUT page (Stripe Payment Link, etc.) to show a " +
                  "real payment form - a plain site URL just opens the site, not a payment screen.")]
-        public string checkoutBaseUrl = "https://www.froglet.games";
+        [SerializeField] string checkoutBaseUrl = "https://www.froglet.games";
+        public string CheckoutBaseUrl => checkoutBaseUrl;
 
         [Tooltip("Generic 'Support Us' page opened by the non-episode support button.")]
-        public string supportUrl = "https://www.froglet.games";
+        [SerializeField] string supportUrl = "https://www.froglet.games";
+        public string SupportUrl => supportUrl;
 
         [Header("Display")]
         [Tooltip("Currency symbol prefixed to prices in the UI (e.g. $).")]
-        public string currencySymbol = "$";
+        [SerializeField] string currencySymbol = "$";
+        public string CurrencySymbol => currencySymbol;
 
         [Tooltip("Text shown on an episode buy button when the episode has no explicit price string.")]
-        public string defaultBuyLabel = "Support";
+        [SerializeField] string defaultBuyLabel = "Support";
+        public string DefaultBuyLabel => defaultBuyLabel;
 
         [Header("Behavior")]
         [Tooltip("Open the checkout in the device's external browser. Always true today " +
                  "(no embedded webview plugin is installed); kept as a flag for a future " +
                  "in-app webview option.")]
-        public bool openInExternalBrowser = true;
+        [SerializeField] bool openInExternalBrowser = true;
+        public bool OpenInExternalBrowser => openInExternalBrowser;
 
         /// <summary>
         /// Builds the checkout URL for a product, preferring a per-product override and

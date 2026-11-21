@@ -4,48 +4,30 @@ using UnityEngine;
 using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// Lifts a set of guns' output while held. It states a FLOOR on each gun rather than writing
+    /// the gun's authored fields, which is what lets <see cref="FireGunAction.ProjectileTime"/>
+    /// stay the element's parameter -- see the note on FireGunAction's floors for the three
+    /// defects the write-and-restore shape carried.
+    /// </summary>
     public class EnergizeAction : ShipAction
     {
         [SerializeField] List<FireGunAction> fireActions;
 
         [SerializeField] float Speed = 70;
-        float defaultSpeed;
-
         [SerializeField] float ProjectileTime = 6;
-        float defaultProjectileTime;
-
         [SerializeField] int Energy = 1;
-        int defaultEnergy;
-
-        public override void Initialize(IVessel vessel)
-        {
-            base.Initialize(vessel);
-
-            var firstGun = fireActions[0];
-
-            defaultSpeed = firstGun.Speed;
-            defaultProjectileTime = firstGun.ProjectileTime.Value;
-            defaultEnergy = firstGun.Energy;
-        }
 
         public override void StartAction()
         {
-                foreach (FireGunAction fireaction in fireActions)
-                {
-                    if (fireaction.Energy < Energy) fireaction.Energy = Energy;
-                    if (fireaction.Speed < Speed) fireaction.Speed = Speed;
-                    if (fireaction.ProjectileTime.Value < ProjectileTime) fireaction.ProjectileTime.Value = ProjectileTime;
-                }
+            foreach (FireGunAction fireaction in fireActions)
+                fireaction.RaiseOutputFloors(Speed, ProjectileTime, Energy);
         }
 
         public override void StopAction()
         {
             foreach (FireGunAction fireaction in fireActions)
-            {
-                fireaction.Energy = defaultEnergy;
-                fireaction.Speed = defaultSpeed;
-                fireaction.ProjectileTime.Value = defaultProjectileTime;
-            }
+                fireaction.ClearOutputFloors();
         }
     }
 }

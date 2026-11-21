@@ -132,7 +132,7 @@ namespace CosmicShore.Editor
             Validate = ValidateSource,
         };
 
-        [MenuItem("FrogletTools/Ecology/Prism Animation/Occlusion Dither Lab", false, 34)]
+        [MenuItem("FrogletTools/Ecology/Prism Animation/Occlusion Dither Lab", false, 163)]
         [FrogletTool(FrogletToolCategory.Ecology, Importance = 4,
             Description = "Slide the occlusion corridor's dither shape live (works in play mode), " +
                           "measure its coverage fidelity against the shipped baseline, then bake it into the shader.")]

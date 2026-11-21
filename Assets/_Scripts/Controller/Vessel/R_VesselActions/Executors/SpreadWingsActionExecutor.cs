@@ -1,0 +1,220 @@
+using CosmicShore.Utility;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// Owns the Butterfly's two MODES (tuning: <see cref="SpreadWingsActionSO"/>): <b>Mass mode</b>
+    /// — wings open, the wake several times its narrow width — and <b>Dust mode</b> — wings shut,
+    /// the narrow line, and the dust capsule below the hull switched on. The right trigger
+    /// switches between them. Design record: <c>R_VesselActions/BUTTERFLY.md</c> §3.2.
+    ///
+    /// <para><b>The mode is simulated on EVERY peer.</b> The press round-trips through the server
+    /// like every ability press (<c>R_VesselActionHandler</c>), so this executor runs on every
+    /// machine, and it has to: the wake is conserved mass every peer lays, and the dust capsule is
+    /// a skimmer every peer observes. A mode held on the owner alone would make the same Butterfly
+    /// lay a different wake depending on who was watching.</para>
+    ///
+    /// <para><b>One writer per frame, never an async lerp.</b> The width is pushed onto
+    /// <see cref="VesselPrismController.WidthMultiplier"/> every frame from one eased float. The
+    /// alternative — <c>SetNormalizedXScale</c> — starts an async lerp per call and is capped at
+    /// the controller's authored maximum, so it can neither track a live element level nor reach
+    /// 20x.</para>
+    ///
+    /// <para><b>Every peer lays the same wake.</b> The mode rides the replicated press, the Mass-5
+    /// shield the replicated unlock bit, and the WIDTH the replicated integer Mass level
+    /// (<see cref="SpreadWingsActionSO.MassModeWidth"/> → <c>ReplicatedLevel</c>) — so this is the
+    /// one elemental trail dial in the fleet that does not diverge across peers
+    /// (<c>trailVolume</c> still does).</para>
+    ///
+    /// <para><b>The camera follows the mode.</b> Mass mode drops the follow camera to directly
+    /// behind the hull (<see cref="SpreadWingsActionSO.MassModeCameraHeight"/>, 0 by default);
+    /// Dust mode keeps the authored height. Eased on the same blend as the HUD's Mass card, and
+    /// written only to the player rig while it is framing THIS vessel — the one place this
+    /// executor does something on a single machine, because a camera is presentation.</para>
+    /// </summary>
+    public sealed class SpreadWingsActionExecutor : ShipActionExecutorBase
+    {
+        [Header("Config")]
+        [Tooltip("Wired directly rather than resolved from the binding maps — a missing wire is " +
+                 "then visible in the inspector instead of silently falling back to initializers.")]
+        [SerializeField] SpreadWingsActionSO config;
+
+        [Tooltip("The dust capsule this mode switches on. Resolved from the vessel's children when " +
+                 "unwired, and reported once by name if there is none.")]
+        [SerializeField] ButterflyDustField dustField;
+
+        [Header("Audio")]
+        [Tooltip("FMOD event when the right trigger switches INTO Mass mode — wings open, the wide " +
+                 "wake. Played on every peer, at the hull. Leave empty for silence - never point " +
+                 "it at a borrowed event to hear something.")]
+        [SerializeField] FMODUnity.EventReference massModeEvent;
+
+        [Tooltip("FMOD event when the right trigger switches INTO Dust mode — wings shut, the dust " +
+                 "capsule on. Played on every peer, at the hull. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference dustModeEvent;
+
+        IVesselStatus _status;
+        SpreadWingsActionSO _activeSo;
+        ButterflyAnimation _animation;
+
+        bool _dustMode;
+        float _width = 1f;
+        float _massBlend = 1f;
+        bool _warnedNoDust;
+        CustomCameraController _camera;
+
+        /// <summary>True while the dust capsule is live.</summary>
+        public bool IsDustMode => _dustMode;
+
+        /// <summary>The dust capsule this mode switches on (null when the prefab carries none).</summary>
+        public ButterflyDustField DustField => dustField;
+
+        /// <summary>True while the wake is wide — kept for readers of the pre-mode API.</summary>
+        public bool IsSpread => !_dustMode;
+
+        /// <summary>
+        /// Eased 1 in Mass mode, 0 in Dust mode — the HUD's Mass card. A BINARY state drawn as a
+        /// fill that travels between its two ends, so it reads as a switch that is moving rather
+        /// than as a meter somebody is spending.
+        /// </summary>
+        public float MassMode01 => _massBlend;
+
+        /// <summary>The width multiplier currently being laid, 1 = the narrow line.</summary>
+        public float CurrentWidth => _width;
+
+        SpreadWingsActionSO So => _activeSo ? _activeSo : config;
+
+        public override void Initialize(IVesselStatus shipStatus)
+        {
+            _status = shipStatus;
+            var root = shipStatus?.Vessel != null ? shipStatus.Vessel.Transform : transform.root;
+            _animation = root ? root.GetComponentInChildren<ButterflyAnimation>(true) : null;
+            if (!dustField && root) dustField = root.GetComponentInChildren<ButterflyDustField>(true);
+            if (dustField) dustField.Bind(shipStatus);
+
+            // A re-init hands this component to a different pilot; it starts in Mass mode like a
+            // fresh spawn, on every peer, so the mode cannot start out of step.
+            _dustMode = false;
+            ApplyMode();
+        }
+
+        // Unconditional and idempotent: a despawned or pooled vessel must not keep a wide wake,
+        // an armoured wake, or a live dust capsule it is no longer flying.
+        void OnDisable()
+        {
+            _dustMode = false;
+            _width = 1f;
+            _massBlend = 1f;
+            var prisms = _status?.VesselPrismController;
+            if (prisms)
+            {
+                prisms.WidthMultiplier = 1f;
+                prisms.ForceShielded = false;
+            }
+            if (dustField) dustField.SetActive(false);
+            if (IsFramedBy(_camera)) _camera.FollowHeightScale = 1f;
+        }
+
+        public void Press(SpreadWingsActionSO so, IVesselStatus status)
+        {
+            if (!so) return;
+            _activeSo = so;
+            if (_status == null) _status = status;
+
+            bool was = _dustMode;
+            _dustMode = so.InputStyle == SpreadWingsActionSO.ModeInputStyle.HoldForDust
+                ? true
+                : !_dustMode;
+            ApplyMode();
+            if (_dustMode != was) PlayModeCue();
+        }
+
+        public void Release(SpreadWingsActionSO so, IVesselStatus status)
+        {
+            if (!so) return;
+            if (so.InputStyle != SpreadWingsActionSO.ModeInputStyle.HoldForDust) return;
+            bool was = _dustMode;
+            _dustMode = false;
+            ApplyMode();
+            if (was) PlayModeCue();
+        }
+
+        /// <summary>
+        /// The switch's own voice — only on a press or release that actually CHANGED the mode,
+        /// never from <see cref="Initialize"/> or a teardown, which reset the mode without the
+        /// pilot doing anything. Empty slots are a clean no-op (the FMOD exposed-field law).
+        /// </summary>
+        void PlayModeCue()
+        {
+            var reference = _dustMode ? dustModeEvent : massModeEvent;
+            if (reference.IsNull) return;
+            var audio = CosmicShore.Core.AudioSystem.Instance;
+            if (!audio) return;
+            var root = _status?.Vessel != null ? _status.Vessel.Transform : transform;
+            audio.PlaySFXEvent(reference, root.position);
+        }
+
+        void ApplyMode()
+        {
+            _animation?.SetSpread(!_dustMode);
+
+            if (!dustField && _status != null && !_warnedNoDust)
+            {
+                _warnedNoDust = true;
+                CSDebug.LogWarning($"[SpreadWingsActionExecutor] '{name}' has no ButterflyDustField " +
+                                   "— Dust mode will narrow the wake and do nothing else. Restore the " +
+                                   "ButterflyDustField on the prefab (see BUTTERFLY.md §4).", this);
+            }
+            if (dustField) dustField.SetActive(_dustMode);
+        }
+
+        void Update()
+        {
+            var so = So;
+            var prisms = _status?.VesselPrismController;
+            if (!so || !prisms) return;
+
+            float dt = Time.deltaTime;
+            float target = _dustMode ? 1f : so.MassModeWidth(_status);
+
+            // Timed per FULL swing between the narrow line and the current target, so a wide
+            // Mass-15 wake opens in the same time as a Mass-0 one.
+            float span = Mathf.Max(1f, Mathf.Abs(target - 1f));
+            _width = Mathf.MoveTowards(_width, target, span * dt / so.WidthBlendSeconds);
+            _massBlend = Mathf.MoveTowards(_massBlend, _dustMode ? 0f : 1f, dt / so.WidthBlendSeconds);
+
+            prisms.WidthMultiplier = _width;
+            prisms.ForceShielded = !_dustMode && so.ShieldsInMassMode(_status);
+
+            var cam = PlayerCamera();
+            if (IsFramedBy(cam))
+                cam.FollowHeightScale = Mathf.Lerp(1f, so.MassModeCameraHeight, _massBlend);
+        }
+
+        /// <summary>
+        /// The player's follow rig, resolved once. Null without a <c>CameraManager</c> (tool
+        /// scenes) — a designed state, the camera simply keeps its authored height.
+        /// </summary>
+        CustomCameraController PlayerCamera()
+        {
+            if (_camera) return _camera;
+            var rig = CameraManager.Instance ? CameraManager.Instance.GetCloseCamera() : null;
+            if (rig) rig.TryGetComponent(out _camera);
+            return _camera;
+        }
+
+        /// <summary>
+        /// True while <paramref name="cam"/> is following THIS vessel — the local pilot's own
+        /// Butterfly, or one being spectated or previewed. Any other vessel's Butterfly must not
+        /// move the camera, and a rig that has moved on was already reset by its own
+        /// <c>SetFollowTarget</c>.
+        /// </summary>
+        bool IsFramedBy(CustomCameraController cam)
+        {
+            if (!cam || _status == null) return false;
+            var target = _status.CameraFollowTarget;   // VesselController.Initialize always sets it
+            return target && cam.FollowTarget == target;
+        }
+    }
+}

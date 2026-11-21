@@ -67,9 +67,9 @@ Wired today:
   `VesselOvertakeBySkimmerEffectSO`'s debuff direction → `VesselContact`. An `All` ward covers all
   three plus anything added later; the Dolphin's covers the first alone.
 - It does **not** cover the non-elemental danger-prism punishments — the speed slam
-  (`VesselChangeSpeedByPrismEffectSO`) and the Rhino's input mute
-  (`SparrowDebuffByRhinoDangerPrismEffectSO`) still land. Danger prisms still hurt; they just can't
-  drain your elements.
+  (`VesselChangeSpeedByPrismEffectSO`) still lands. (The Rhino's input mute,
+  `SparrowDebuffByRhinoDangerPrismEffectSO`, also landed until it was deleted 2026-10-17 under the
+  control-theft rule.) Danger prisms still hurt; they just can't drain your elements.
 
 The upgrade gate resolves through `IsUpgradeActive(Element.Time)` — the **replicated**
 `NetElementUnlocks` bits, never a raw local level read, so every peer agrees on who is warded.
@@ -193,7 +193,7 @@ blanket one:
 
 | Piece | Where | What it does |
 |---|---|---|
-| The opt-in | `ShipVelocityModifier.ignoresTranslationRestriction` | Per-modifier flag, default **false**. Only the roll sets it — every other `ModifyVelocity` caller uses the unchanged 2-arg overload and stays fully held while restricted (knockback, bounce, deviation, spin, AstroLeague, NudgeShard, `ModifyVelocityActionSO`). |
+| The opt-in | `ShipVelocityModifier.ignoresTranslationRestriction` | Per-modifier flag, default **false**. Only the roll sets it — every other `ModifyVelocity` caller uses the unchanged 2-arg overload and stays fully held while restricted (bounce, deviation, AstroLeague, NudgeShard, `ModifyVelocityActionSO` — the vessel-on-vessel spin and shove that used to be in this list are removed, `Docs/ELEMENTAL_ECONOMY.md` §9). |
 | The application | `VesselTransformer.MoveRestricted` | Restricted position update: `position += velocityShift * dt`. No throttle, no course term. Deliberately does **not** write `VesselStatus.Speed` or `Course`, so nothing downstream (gun velocity inheritance, telemetry, the speed tunnel) reads differently than it did before. |
 | The projection plane | `BarrelRollController` | Restricted, `Course` is **stale** — `MoveShip` is what refreshes it and it does not run — so it holds the heading from the moment the stance engaged while the turret has gone on rotating. The nudge projects on current **facing** there instead. |
 
@@ -285,7 +285,7 @@ Time icon and blooms its Time petal badge), and rule 9 of the vessel contract do
 | `_Scripts/Tests/EditMode/ShipModifierTests.cs` | **+** two tests pinning the exemption flag's default-false and its 4-arg assignment |
 | `_Scripts/UI/View/SparrowHUDView.cs` | `SetBoostState(heat, overheated)` → `SetRollCharge(armed)`; `boostFill` → `rollChargeIndicator` |
 | `_Scripts/UI/Controller/SparrowHUDController.cs` | overheat executor → barrel-roll controller; `Update` poll removed; symmetric detach-first Subscribe/Unsubscribe |
-| `_Scripts/…/Data Containers/SquirrelVesselHUDController.cs` | **−** its `OverheatingActionExecutor` lookup (see Follow-ups — it was always null) |
+| `_Scripts/…/Data Containers/SquirrelHUDController.cs` | **−** its `OverheatingActionExecutor` lookup (see Follow-ups — it was always null) |
 | `_Scripts/…/Data Containers/OverheatingActionSO.cs` | **DELETED** |
 | `_Scripts/…/Executors/OverheatingActionExecutor.cs` | **DELETED** |
 | `_Scripts/Controller/Vessel/VesselActions/OverheatingAction.cs` | **DELETED** (legacy, unreferenced) |
@@ -299,8 +299,9 @@ Time icon and blooms its Time petal badge), and rule 9 of the vessel contract do
 
 | Knob | Where | Default | Notes |
 |---|---|---|---|
-| Boost speed at Time 10 | `Sparrow.asset` → Time `MultiplierAtFullLevel` | `1.5` | Consumed by `VesselTransformer.CurrentBoostAmount()`. Unchanged from before — the boost is longer now, so this is the first number to revisit if the Sparrow outruns the fleet. |
-| Boost speed at Time −5 | `Sparrow.asset` → Time `MinMultiplier` | `0.5` | |
+| Base boost strength | `Sparrow.prefab` → `VesselStatus.boostMultiplier` | `5` | The whole boost, at EVERY Time level — the throttle target is `throttle × boostMultiplier × BoostSpeedMultiplier.EvaluateLive(status)`, and that multiplier is anchored at 1 at the resting level, so this is the only lever that moves a resting-Time Sparrow. Raised `4` → `5` (+25%) on 2026-09-03; `4` is the fleet default, so the Sparrow now boosts 25% harder than every other hull. `MaxBoostMultiplier` was carried `5` → `6.25` with it to keep the gauge ceiling above the value (inert on this vessel — `decayBoost` is off and `boostChanged` is unwired). |
+| Boost speed at Time 10 | `Sparrow.prefab` → `VesselTransformer.BoostSpeedMultiplier` (`Max`) | `1.5` | Consumed by `VesselTransformer.CurrentBoostAmount()`. The curve is unchanged, but its HOME moved on 2026-09-18: it was `Sparrow.asset`'s Time `MultiplierAtFullLevel`, read through a fleet-wide generic channel that reached all eight hulls; it is now this hull's own `ElementalFloat`, which is why only two prefabs author it. The boost is longer than it was, so this is still the first number to revisit if the Sparrow outruns the fleet. |
+| Boost speed at Time −5 | `Sparrow.prefab` → `VesselTransformer.BoostSpeedMultiplier` (`Floor`) | `0.5` | A FLOOR on the multiplier, not its value at rest — rest is `Min`, which is 1. |
 | Ward unlock level | `Sparrow.asset` → Time `UnlockLevel` / `RelockBelowLevel` | `5` / `4` | |
 | Immunity window | `Sparrow.prefab` → `VesselElementalImmunity.condition` | `WhileBoosting` | `Always` makes the ward passive at Time 5 — one field, no code. |
 | Immunity gate | `Serpent.prefab` → `VesselElementalImmunity.upgradeGate` | `None` | Set an element to make the Serpent's stopped ward an earned upgrade. |
@@ -318,7 +319,7 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
    about the Sparrow's ability row. (The Sparrow's `ElementalBarsController.view` reference is
    dangling **on `bleeding-edge` already** — `fileID 7416581124810081342` resolves to nothing — so a
    missing-bars fallback warning there is pre-existing, not from this branch.)
-2. **Indefinite boost.** `MinigameFreestyleMultiplayer_Gameplay` (or Menu_Main freestyle), Sparrow.
+2. **Indefinite boost.** Menu_Main freestyle, Sparrow.
    Hold boost for 60 s: speed stays elevated, no force-release, trail never turns into danger
    prisms, and flying back through your own trail does not slam you.
 3. **Roll is base kit.** With Time at level 0 (do not collect Time crystals), boost + hold the left
@@ -338,7 +339,8 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
    - Aim somewhere well away from the heading you had when you stopped, then dodge — the strafe
      must go where the stick points relative to your **current** facing, not skew off toward the
      old heading. (This is the stale-`Course` fix; a skew here means the projection plane is wrong.)
-4c. **No banked lurch.** Stopped, take a knockback (fly a Rhino into you, or clip a danger prism)
+4c. **No banked lurch.** Stopped, take a knockback (clip a danger prism, or fly into a prism
+   wall — a Rhino's sword no longer shoves you, `Docs/ELEMENTAL_ECONOMY.md` §9)
    — you must not move. Then release the stance: you must **not** lurch. (Before this branch the
    modifier froze and fired late.)
 4d. **Stopped turn rate (§2.2).** Flying, note how long a full 180° yaw takes. Toggle the stance
@@ -348,12 +350,13 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
    The bank into the turn is unchanged by design, so the stopped turn reads flatter.
 4e. **Serpent inherits it.** Serpent, stopped weave stance: its pitch/yaw are also 3×. Intended
    or not, it is `restrictedTurnMultiplier` on `Serpent.prefab` — set it to `1` to opt out.
-5. **Ward, locked.** Time below 5, boost, fly into a danger prism (a Rhino's, or Ribcage traps):
+5. **Ward, locked.** Time below 5, boost, fly into a danger prism (a Rhino's, or Cleave traps):
    all four element flowers dip and recover over ~4 s.
 6. **Ward, unlocked.** Raise Time to 5 (`ResourceSystem.TimeTestHarness = 0.5` on the vessel, or
    collect Time crystals) — the Time icon tints and grows its white Time petal badge. Now:
    - **while boosting**, hit the same danger prism → flowers do **not** dip. You are still slowed
-     and still take the input mute; only the elemental drain is denied.
+     (the input mute this step once listed was deleted 2026-10-17); only the elemental drain is
+     denied.
    - **not boosting**, hit it → flowers dip normally.
 
    > **"You are still slowed" was aspirational until 2026-08-15.** The immunity gate is, and always
@@ -364,7 +367,7 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
    > `SparrowVesselChangeSpeedByPrism` (the Squirrel's numbers); this step is now actually
    > falsifiable. `SparrowDebuffByRhinoDangerPrismEffectSO` was never the slow despite its
    > `vesselSlowedByRhinoDangerPrismEvent` field and its "Slow Viewer Integration" header — it
-   > mutes an input and raises events, nothing more.
+   > muted an input and raised events, nothing more (deleted 2026-10-17).
 7. **Serpent, ungated.** Serpent in the same scene, Time at any level. Stopped (turret/weave
    stance) + danger prism → no flower dip. Moving → normal dip.
 7b. **Dolphin, SCOPED (§1.1).** Dolphin at Time 5, drifting. (a) danger prism → **no** flower dip;
@@ -377,7 +380,7 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
 9. **MPPM, two clients.** Both on Sparrows, one at Time 5, one below. Confirm on **both** machines
    that only the Time-5 pilot resists the elemental drain while boosting — this is what the
    replicated `NetElementUnlocks` path buys, and a local-level read would pass step 6 and fail here.
-10. **Audit.** `FrogletTools > Vessels > Audit Vessel Ability Rows` — the Sparrow row must still
+10. **Audit.** `FrogletTools > Vessels > Audits > Audit Vessel Ability Rows` — the Sparrow row must still
     report 4/4 icons in charge → mass → space → time order.
 
 ## Follow-ups
@@ -387,7 +390,7 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
   "Venom Wake" L5 as exactly this machinery reused ("boost trail becomes a danger trail"). This is
   a capability waiting for a caller, not dead code to delete.
 - **`SquirrelVesselHUDView.SetOverheatHeat` / `JuiceOverheatEngaged` / `JuiceOverheatRecovered` are
-  now uncalled.** They already never fired: `SquirrelVesselHUDController` looked up
+  now uncalled.** They already never fired: `SquirrelHUDController` looked up
   `OverheatingActionExecutor` via `GetComponentInChildren`, and that component only ever existed on
   `Sparrow.prefab`, so the reference was null on every Squirrel and the gauge never moved. Left in
   place (with the serialized fields on `SquirrelHUDVariant.prefab`) rather than ripped out on a
@@ -399,6 +402,6 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
   so the roll is inert for AI. Unchanged by this branch; trigger synthesis is
   `Docs/ElementalAbilitySystem/BACKLOG.md` Phase 2.5.
 - **Balance to watch.** Boost is now unbounded in duration, which makes the TIME quantitative
-  (`MultiplierAtFullLevel 1.5`) load-bearing in a way it was not when heat capped the hold. If the
+  (`BoostSpeedMultiplier` ×1.5 at Time 10, on `Sparrow.prefab`) load-bearing in a way it was not when heat capped the hold. If the
   Sparrow reads as too fast for too long, that number and `VesselTransformer.MaxBoostMultiplier` are
   the levers — not a reintroduced meter.

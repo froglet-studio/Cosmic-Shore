@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] Domains menuVesselDomain = Domains.Jade;
 
         [Header("Freestyle AI Companions")]
-        [Tooltip("Pilot skill (0..1) for AI companions released by the freestyle Lifeform Matrix " +
+        [Tooltip("Pilot skill (0..1) for AI companions released by the freestyle Spawn Matrix " +
                  "toy. The menu has no intensity to derive one from, so it is authored here.")]
         [SerializeField, Range(0f, 1f)] float companionSkill = 0.5f;
 
@@ -52,8 +52,35 @@ namespace CosmicShore.Gameplay
 
         bool _isSwapping;
 
-        /// <summary>Whether a vessel swap is currently in progress.</summary>
-        public bool IsSwapping => _isSwapping;
+        // CLIENT half of the latch. A party client's swap runs on the server, so `_isSwapping`
+        // never rises on the client - and between the server despawning the old hull and
+        // ReplaceVesselForPlayer_ClientRpc binding the new one, the client's player.Vessel is a
+        // destroyed controller while IsSwapping read false. Every caller that waits on IsSwapping
+        // (the vessel changer, the mode preview) then went on to read that dead vessel or fire
+        // a second swap from it (URCHIN_BACKLOG U13). The latch holds until the local player is
+        // bound to a DIFFERENT, live vessel, or until the deadline - the server refuses a swap it
+        // cannot spawn without telling the client, and then the old vessel simply stays.
+        IVessel _clientSwapFrom;
+        float _clientSwapDeadline;
+        const float ClientSwapTimeoutSeconds = 5f;
+
+        /// <summary>
+        /// Whether a vessel swap is in progress: from the request until the new vessel is BOUND
+        /// to the player, on the server and on a requesting client alike.
+        /// </summary>
+        public bool IsSwapping => _isSwapping || ClientSwapPending();
+
+        bool ClientSwapPending()
+        {
+            if (_clientSwapFrom == null) return false;
+
+            var current = gameData != null ? gameData.LocalPlayer?.Vessel : null;
+            bool rebound = current.IsAlive() && !ReferenceEquals(current, _clientSwapFrom);
+            if (rebound || Time.unscaledTime >= _clientSwapDeadline)
+                _clientSwapFrom = null;
+
+            return _clientSwapFrom != null;
+        }
 
         // Menu vessels spawn with destroyWithScene=false so a joining client's vessel
         // survives the client's Single-mode Menu_Main scene-synchronize, which would
@@ -77,6 +104,13 @@ namespace CosmicShore.Gameplay
         {
             base.OnNetworkSpawn();
 
+            // freestyle: any person may move to any free hull or seat of their domain (CrewStations), on every peer
+            CrewStations.MenuLive = true;
+            CrewStations.ConfigureFreestyleAI = pilot =>
+            {
+                if (pilot) pilot.ConfigureForGameMode(gameData, shouldSeekPlayers: false, companionSkill);
+            };
+
             // Register the swap + AI-companion callbacks so client-originated requests
             // route to the server-side handlers.
             if (NetworkManager.Singleton.IsServer)
@@ -88,6 +122,8 @@ namespace CosmicShore.Gameplay
 
         protected override void OnNetworkDespawn()
         {
+            CrewStations.MenuLive = false;
+            CrewStations.ConfigureFreestyleAI = null;
             if (clientPlayerVesselInitializer)
             {
                 clientPlayerVesselInitializer.OnSwapRequested -= HandleSwapRequest;
@@ -96,6 +132,14 @@ namespace CosmicShore.Gameplay
 
             base.OnNetworkDespawn();
         }
+
+        /// <summary>
+        /// The MENU does not adopt a departed player's vessel. There is no match to finish, so an
+        /// abandoned menu ship would just accumulate as another autopilot vessel in the lava lamp -
+        /// and a player who leaves the party here is going back to their own menu, where they get a
+        /// fresh vessel anyway.
+        /// </summary>
+        protected override bool ConvertDepartedPlayersToAI => false;
 
         /// <summary>
         /// Menu override: reset the player's domain to the menu domain BEFORE the base
@@ -109,12 +153,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
         {
-            if (!player.NetIsAI.Value && player.NetDomain.Value != menuVesselDomain)
-                player.NetDomain.Value = menuVesselDomain;
+            // The voyage scene runs this initializer too: there every person flies the Ark's one domain, the host's pick
+            // (VoyageLobbyLink.ArkDomain; Shombith, 2026-11-21), so the vessels and the Ark, which wears its pilot's
+            // vessel's domain, agree.
+            var domain = InVoyageScene() ? VoyageLobbyLink.ArkDomain : menuVesselDomain;
+            if (!player.NetIsAI.Value && player.NetDomain.Value != domain)
+                player.NetDomain.Value = domain;
 
             await base.OnPlayerReadyToSpawnAsync(player, ct);
             ActivateAutopilot(player);
         }
+
+        /// <summary>True when this initializer stands in the voyage scene (loaded, whether or not it is active yet).</summary>
+        bool InVoyageScene() => gameObject.scene.name == VoyageLaunch.SceneName;
 
         // ---------------------------------------------------------
         // VESSEL SWAP (server-side)
@@ -126,10 +177,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void RequestSwap(VesselClassType targetClass)
         {
-            if (_isSwapping) return;
+            if (IsSwapping) return;
 
+            // IsAlive, not `== null`: IVessel is an interface, so a reference compare sails past
+            // a vessel a failed swap already destroyed and throws on its VesselStatus below.
             var localPlayer = gameData.LocalPlayer;
-            if (localPlayer?.Vessel == null) return;
+            if (localPlayer == null || !localPlayer.Vessel.IsAlive()) return;
 
             var currentClass = localPlayer.Vessel.VesselStatus.VesselType;
             if (targetClass == currentClass) return;
@@ -155,7 +208,9 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                // Client path: send RPC to server
+                // Client path: latch until the new vessel is bound here, then ask the server.
+                _clientSwapFrom = localPlayer.Vessel;
+                _clientSwapDeadline = Time.unscaledTime + ClientSwapTimeoutSeconds;
                 clientPlayerVesselInitializer.RequestVesselSwap_ServerRpc(
                     netPlayer.NetworkObjectId,
                     targetClass,
@@ -194,10 +249,37 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
+                // The id arrives from a RequireOwnership = false RPC, so it is a claim, not a fact:
+                // a pilot may only swap THEIR OWN hull. Without this a client could name any
+                // player's NetworkObjectId, despawn that ship (the host's included) and be handed
+                // ownership of the replacement via SpawnWithOwnership(ownerClientId). The host's
+                // own path passes netPlayer.OwnerClientId, so it always passes.
+                if (player.OwnerClientId != ownerClientId)
+                {
+                    CSDebug.LogWarning($"[MenuServerVesselInit] Client {ownerClientId} asked to swap player {playerNetId}, owned by {player.OwnerClientId} - refused.");
+                    return;
+                }
+
                 var oldVessel = player.Vessel;
-                if (oldVessel == null)
+                if (!oldVessel.IsAlive())
                 {
                     CSDebug.LogError($"[MenuServerVesselInit] Player {playerNetId} has no vessel to swap.");
+                    return;
+                }
+
+                // ASK BEFORE DESTROYING. Step 2 despawns the pilot's current ship and step 3
+                // builds the next one — and step 3 can fail (an unregistered class, a prefab
+                // whose VesselStatus claims a different type, no NetworkObject), at which point
+                // the pilot has NO vessel: no hull, no camera target, input still paused by the
+                // swap. The player reads that as the game having FROZEN, and the console says
+                // only "No prefab for vessel type X" — a sentence about an asset, in a session
+                // that was about pressing a button. Refusing here costs the pilot nothing: they
+                // keep the ship they were flying and the changer is free to try another.
+                if (!CanSpawnVesselType(targetClass))
+                {
+                    CSDebug.LogError(
+                        $"[MenuServerVesselInit] Refusing the swap to {targetClass}: no spawnable " +
+                        "prefab. The pilot keeps their current vessel.");
                     return;
                 }
 
@@ -229,7 +311,7 @@ namespace CosmicShore.Gameplay
                 ActivateAutopilot(player);
 
                 // 5. Wait for replication, then notify all non-host clients
-                await UniTask.Delay(postSpawnDelayMs, cancellationToken: ct);
+                await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
                 NotifyClientsOfSwap(player, newVessel);
 
             }
@@ -278,13 +360,16 @@ namespace CosmicShore.Gameplay
         int _aiCompanionCount;
 
         /// <summary>
-        /// Release an AI-piloted vessel into the menu cell - the freestyle Lifeform Matrix's
+        /// Release an AI-piloted vessel into the menu cell - the freestyle Spawn Matrix's
         /// VESSELS branch. Host does it directly; a party client asks the host over the same
         /// request/handler shape as <see cref="RequestSwap"/>, so the bot exists once, on the
         /// server, and replicates to everyone (a locally-spawned one would be invisible to the
         /// rest of the party).
         /// </summary>
-        public void RequestSpawnAiCompanion(VesselClassType vesselClass, Domains domain, Pose pose)
+        /// <param name="onSpawned">Host only: handed the companion's vessel once it is flying (a voyage seats it in its
+        /// squad slot, Docs/Voyages/SLICE.md §2). A party client's request is answered on the host, so it gets no call.</param>
+        public void RequestSpawnAiCompanion(VesselClassType vesselClass, Domains domain, Pose pose,
+            System.Action<IVessel> onSpawned = null)
         {
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _cts == null)
             {
@@ -293,7 +378,7 @@ namespace CosmicShore.Gameplay
             }
 
             if (NetworkManager.Singleton.IsServer)
-                SpawnAiCompanionAsync(vesselClass, domain, pose, _cts.Token).Forget();
+                SpawnAiCompanionAsync(vesselClass, domain, pose, _cts.Token, onSpawned).Forget();
             else
                 clientPlayerVesselInitializer.RequestAiCompanion_ServerRpc(
                     vesselClass, domain, pose.position, pose.rotation);
@@ -305,6 +390,21 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Host only: take back a companion this machine released (a voyage's AI wingmate, once the squad is
+        /// recalled), its vessel and its Player both. False off the host or for a vessel that is already gone.
+        /// </summary>
+        public bool DespawnAiCompanion(IVessel vessel)
+        {
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return false;
+            if (vessel is not Component c || !c) return false;
+            var player = vessel.VesselStatus?.Player as Component;
+            bool any = false;
+            if (c.TryGetComponent(out NetworkObject vesselNO) && vesselNO.IsSpawned) { vesselNO.Despawn(true); any = true; }
+            if (player && player.TryGetComponent(out NetworkObject playerNO) && playerNO.IsSpawned) { playerNO.Despawn(true); any = true; }
+            return any;
+        }
+
+        /// <summary>
         /// The server-side release. Deliberately the SAME chain a backfill AI goes through in
         /// <see cref="ServerPlayerVesselInitializerWithAI"/> - spawn the Player NetworkObject,
         /// stamp its NetworkVariables, spawn its vessel, initialize the pair, configure the pilot,
@@ -312,7 +412,8 @@ namespace CosmicShore.Gameplay
         /// second, parallel kind of bot.
         /// </summary>
         async UniTaskVoid SpawnAiCompanionAsync(
-            VesselClassType vesselClass, Domains domain, Pose pose, CancellationToken ct)
+            VesselClassType vesselClass, Domains domain, Pose pose, CancellationToken ct,
+            System.Action<IVessel> onSpawned = null)
         {
             var playerPrefab = ResolveAiPlayerPrefab();
             if (!playerPrefab)
@@ -321,7 +422,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            if (!vesselPrefabContainer.TryGetShipPrefab(vesselClass, out _))
+            if (!vesselPrefabContainer.TryGetShipPrefab(vesselClass, out _, reportMissing: false))
             {
                 CSDebug.LogError($"[MenuServerVesselInit] No prefab for vessel type {vesselClass} - companion not released.");
                 return;
@@ -385,8 +486,9 @@ namespace CosmicShore.Gameplay
             // AIPilot.StopAIPilot cannot clean the duplicate up. ActivateAutopilot exists for the
             // menu's HUMAN vessel, where StartPlayer deliberately does not touch autopilot.
             aiPlayer.StartPlayer();
+            onSpawned?.Invoke(vessel);
 
-            CSDebug.Log($"[MenuServerVesselInit] Released AI companion '{aiPlayer.NetName.Value}' " +
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MenuServerVesselInit] Released AI companion '{aiPlayer.NetName.Value}' " +
                         $"({vesselClass}, {domain}) at {pose.position}.");
 
             // Let the vessel NetworkObject replicate before telling clients to bind the pair.

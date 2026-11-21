@@ -40,6 +40,14 @@ the moment of fixing (all carry citations).
 
 ### 1.2 What is broken (all CONFIRMED by adversarial verification)
 
+> **Historical record — measured at the audit, not current.** The 2026-09-18 element-scaling
+> unification fixed items 1 and 2 by DELETING `ElementalFloatBinder` outright (dead, and broken in
+> the two ways #2 describes), so the `ElementalFloatBinder.cs:33` reference below no longer
+> resolves to a file. `ShipActionSO`-hosted `ElementalFloat`s are now read live through
+> `EvaluateLive(status)`, and `Tools/Build/check_elemental_floats.py` fails the build on one that
+> is authored with a real ramp and never evaluated. Do not act on this section; read
+> `ELEMENT_SCALING_UNIFICATION.md` and `FLEET_GAPS.md` for the current state.
+
 1. **The entire SO-side quantitative element→ability layer is dead.**
    `ShipActionSO.Initialize` has the `ElementalFloatBinder.BindAndClone` call commented out with
    "TODO : Not sure what it does" (`VesselActionSO.cs:11-13`). Every `ElementalFloat` inside an
@@ -48,7 +56,8 @@ the moment of fixing (all carry citations).
    (`FullAutoAction.asset`: `speedValue {Enabled:1, Min:1500, Max:4000, element:3=Space}`) **and
    does nothing.** Same for `OverheatingAction.heatDecayRate` (Charge — that asset and its SO were
    deleted in 2026-08 with the overheat mechanic), Rhino's
-   `GrowTrailAction.maxSize` (Mass), Serpent's `ConsumeBoostAction.boostMultiplier` (Time,
+   `GrowTrailAction.maxSize` (Mass — the action itself never ran and was deleted 2026-10-16; the
+   Rhino's Mass is now Afterimage, `FLEET_MAPS.md` §2), Serpent's `ConsumeBoostAction.boostMultiplier` (Time,
    also `Enabled:0`).
 2. **The binder is doubly broken even if re-enabled.** `ElementalFloatBinder.cs:33` reflects
    `GetProperty("Ship")` — the property was renamed `Vessel`; the `?.` swallows the null → silent
@@ -118,9 +127,13 @@ Full-history forensics (`git fetch --unshallow`, 7,248 commits) plus code verifi
   verified present on that branch and absent from HEAD. Its commit message describes this exact
   crash. Cherry-pick it (BACKLOG Phase 0.1).
 - Related trap: `4861801bd` (in HEAD) fixed client-side vessel injection but explicitly does not
-  cover pool replenishment. And `origin/claude/falcon-brittlestar-reintro-oyx1q1` carries a
-  `maxSyncPrewarm=8` pool cap **without** `f1f278ab4` — merging it as-is would make the NRE fire
-  after ~8 shots, i.e. strictly worse.
+  cover pool replenishment. **Correction (2026-10-14):** this row used to say
+  `origin/claude/falcon-brittlestar-reintro-oyx1q1` carries a `maxSyncPrewarm=8` pool cap; no such
+  field exists on that branch, on `Bleeding-Edge-Reintroduce-Falcon` or on HEAD (`git grep
+  maxSyncPrewarm`). The branch prewarms `max(defaultCapacity, bufferSizeTarget)` = 100 and lacks the
+  injection fix, which HEAD now has (`ProjectilePoolManager.OnInstanceCreated`). The Brittle Star
+  was rebuilt from its class document as `VesselClassType.BrittleStar = 16`: the Unity contract is
+  `R_VesselActions/BRITTLE_STAR.md`, the research and design studio `Docs/Studios/BRITTLE_STAR.md`.
 
 ### #2 — Skyburst missiles become permanent duds via pooled collider state (CONFIRMED)
 
@@ -181,6 +194,10 @@ at."
   _resourceAmount: 1, _overrideAmount: 1`) sits in `SparrowImpactorDataContainer.asset`'s
   `vesselCrystalEffects` — any crystal impact refills Missiles to full (2 rockets). The economy
   is 2 rockets per crystal, as the ability card promises.
+  **SUPERSEDED 2026-09** — that asset is now DELETED. The Sparrow's missiles reload by destroying
+  hostile prisms (`VesselRearmOnPrismDestruction`, 0.01 per prism = 50 per rocket) and the omni crystal grants an
+  elemental-debuff ward instead. The finding above is kept as the dated record it is; do not read
+  its present tense as current wiring.
 - **Dead `Gun` with `projectileFactory: {fileID: 0}`** on the prefab (`Sparrow.prefab:212-227`,
   since Oct 2025) — unreferenced rewire trap; any `FireGun` call on it NREs.
 - Pool return is **delegated entirely to impact end-effects** (`Projectile.cs:197-198`); a

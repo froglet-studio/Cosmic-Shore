@@ -5,6 +5,7 @@ using CosmicShore.Utility;
 using CosmicShore.Gameplay;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Serialization;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Data;
 using System.Linq;
@@ -39,18 +40,54 @@ namespace CosmicShore.Gameplay
 
         [Header("Elemental (per-vessel, authored on the prefab)")]
         [Tooltip("MASS -> trail prism VOLUME multiplier (evaluated live each spawn). Authored as " +
-                 "an ElementalFloat on the vessel prefab (the Squirrel maps it to Mass, 1 -> 2.5); " +
+                 "an ElementalFloat on the vessel prefab (the Manta maps it to Mass, 1 -> 2.5; " +
+                 "the Squirrel now fixes it at a constant with Enabled off - see Value); " +
                  "applied as the cube root per axis so prism volume scales linearly with the level. " +
                  "Disabled (1x) on vessels that don't map Mass to their trail.")]
         [SerializeField] ElementalFloat trailVolume = new(1f);
 
-        [Tooltip("MASS level-5 'Heavy Trail': when enabled on this vessel, its trail prisms " +
-                 "arrive shielded while the Mass elemental upgrade is active (regular shield, " +
-                 "never SuperShield - fauna keep their devastate sink).")]
-        [SerializeField] bool massUpgradeShieldsTrail = false;
+        [Tooltip("BASE 'armoured drift line': when enabled on this vessel, prisms laid while " +
+                 "DRIFTING arrive shielded (regular shield, never SuperShield - fauna keep their " +
+                 "devastate sink). NO elemental gate - this was the Squirrel's Mass level-5 " +
+                 "'Heavy Trail' until Mass took the boost ring; the drift line is armoured for " +
+                 "every pilot now, which is what keeps a reason to drift.")]
+        [FormerlySerializedAs("massUpgradeShieldsTrail")]
+        [SerializeField] bool driftShieldsTrail = false;
+
+        [Tooltip("MASS level-5 'Shielded Turn Trails' (the Manta's Yawstery): prisms laid while " +
+                 "a hard TURN is held arrive shielded once the Mass upgrade is live (regular " +
+                 "shield, never SuperShield). The turn window is whatever drives SetTurnTrail " +
+                 "above half intensity. Off on every vessel whose Mass 5 means something else.")]
+        [SerializeField] bool turnUpgradeShieldsTrail = false;
+
+        [Tooltip("How much fatter the OUTER lane's prisms get at full turn intensity (X " +
+                 "multiplier; 1 disables the flare). Visual flare only — it exaggerates the " +
+                 "bank without changing what the trail is worth.")]
+        [SerializeField, Min(1f)] float turnFlareMaxScale = 2f;
+
+        float _turnFlare01;
+        int _turnFlareLaneSign;
+
+        [Header("Speed shape (the Manta's trail)")]
+        [Tooltip("When enabled, a two-rail prism's X, Y and Z come from speed and turning (uniform width, " +
+                 "longer toward Soar, taller at a crawl and in a Yawstery, inside rail shorter and outside " +
+                 "longer in a turn) instead of BaseScale x the scalers. Off on every vessel that does not author it. " +
+                 "Picked in the Manta Trail Lab (Docs/Manta/POLISH.md).")]
+        [SerializeField] TrailSpeedShape speedShape = new();
+
+        // The vessel's yaw rate at the last lay (rad/s, + = turning right), measured lay to lay for the speed
+        // shape's inside/outside rails. Only kept while the speed shape is on.
+        float _layYawRate;
+        Vector3 _lastLayForward;
+        float _lastLayTime = -1f;
+        // The speed shape lays by distance (TrailSpeedShape.StepLay): the spacing behind this lay (unwarped)
+        // and how far behind the vessel it goes (world units).
+        float _laySpacing;
+        float _layBack;
 
         [Header("Gap Settings")]
-        public float offset;
+        [SerializeField] float offset;
+        public float Offset => offset;
         public float Gap;
         public float MinimumGap = 1f;
         public Vector3 TargetScale;
@@ -58,6 +95,7 @@ namespace CosmicShore.Gameplay
         [Header("Spawner Control")]
         [SerializeField] bool spawnerEnabled = true;
         bool trailPenUp; // painting pen-up - independent of spawnerEnabled (see SetSpawnerPaused)
+        bool tierHold;   // device-tier creation hold - independent of both (see SetTierHold)
         float waitTime;
         [SerializeField] float startDelay = 2.1f;
 
@@ -72,6 +110,38 @@ namespace CosmicShore.Gameplay
         public float XScaler = 1f;
         public float YScaler = 1f;
         public float ZScaler = 1f;
+
+        /// <summary>
+        /// A runtime multiplier on the laid prism's WIDTH (x), on top of everything else that
+        /// sizes it. 1 = no change, which is every vessel that never writes it.
+        ///
+        /// <para>It exists because <see cref="SetNormalizedXScale"/> is a NORMALIZED dial capped at
+        /// <see cref="maxBlockScale"/> and eased by an async lerp that restarts on every call - it
+        /// cannot express a width that tracks an element level live, and two lerps in flight write
+        /// the same field on alternating frames. A single owner writing one float per frame can.
+        /// The Butterfly's Mass mode is that owner (<c>SpreadWingsActionExecutor</c>).</para>
+        ///
+        /// <para>A widened prism is STATED rather than grown, so the lay admits it past the
+        /// pool's scale window (<see cref="Prism.AdmitTargetScale"/>, AFTER Initialize) - the
+        /// interactive pool clamps x at 40, and without the admission every width past it is
+        /// trimmed silently, which reads as "the element stopped doing anything".</para>
+        /// </summary>
+        public float WidthMultiplier { get; set; } = 1f;
+
+        /// <summary>
+        /// The height sibling of <see cref="WidthMultiplier"/>: every prism laid is this many times THICKER
+        /// (its Y scale), 1 = as authored. Same single-owner contract and the same pool-window admission —
+        /// the Stoat's Mass mode is its owner (<c>StoatModeExecutor</c>, the thick trail).
+        /// </summary>
+        public float ThicknessMultiplier { get; set; } = 1f;
+
+        /// <summary>
+        /// While set, every prism this controller lays arrives SHIELDED (the regular tier). A
+        /// runtime sibling of the authored <see cref="shielded"/> flag, for an ability that armours
+        /// its trail only while a MODE is live (the Butterfly's Mass-mode level 5). Composes with
+        /// the drift/turn upgrade rules by OR, never replaces them.
+        /// </summary>
+        public bool ForceShielded { get; set; }
 
         // Cancellation
         CancellationTokenSource cts;
@@ -106,11 +176,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
 
+        /// <summary>The AUTHORED block size (<see cref="BaseScale"/>), for a hull that lays extra trails of the same
+        /// block (the Brittle Star's Creation Mode corners). The same caveat as <see cref="TrailZScale"/>: the real lay
+        /// multiplies it by the scalers, the boost scale and MASS.</summary>
+        public Vector3 TrailBaseScale => BaseScale;
+
         // Guards on the waitTillOutsideSkimmer clearance delay (see CreateBlock). Neither is a
         // tuning dial: the speed floor stops a stationary or near-stationary vessel dividing its
         // way to an infinite delay, and the ceiling stops a slow lay leaving a prism collider-less
         // (and therefore un-hittable by ANYONE, since this delay is not owner-scoped) for longer
         // than the self-trail grace would have covered anyway.
+        // Keyed by vessel name so one unwired hull cannot spam a loop that runs per prism.
+        static readonly HashSet<string> _warnedNoSkimmer = new();
+
         const float MinClearanceSpeed = 1f;
         const float MaxClearanceWaitSeconds = 2f;
 
@@ -141,6 +219,12 @@ namespace CosmicShore.Gameplay
         public void Initialize(IVesselStatus vesselStatus)
         {
             this.vesselStatus = vesselStatus;
+
+            // The vessel's own wake is the one trail whose dead prisms go back to the pool after their death
+            // effect (PrismRecycler; Trail.RecycleDestroyedMembers says why nothing else opts in). Set here, not
+            // in the field initializer: `Trail` is a serialized field, so Unity replaces that instance on load.
+            Trail.RecycleDestroyedMembers = true;
+            Trail2.RecycleDestroyedMembers = true;
 
             waitTime = defaultWaitTime;
             wavelength = initialWavelength;
@@ -184,6 +268,22 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetSpawnerPaused(bool paused) => trailPenUp = paused;
 
+        /// <summary>Read-only: is the spawn loop running (started by the turn, not stopped by an ability)? An ability
+        /// that lays its own trail beside this one (the Brittle Star's Creation Mode pentagon) lays only while this
+        /// is, so it never builds before the turn starts or after an ability stopped the trail.</summary>
+        public bool SpawnerEnabled => spawnerEnabled;
+
+        /// <summary>
+        /// Device-tier creation hold: a THIRD independent axis beside <see cref="spawnerEnabled"/>
+        /// and the pen, owned only by <c>MenuCrystalClickHandler</c>'s tier trail policy (on
+        /// MobileLow the menu backdrop lays no trail, and freestyle trail waits while the cell is
+        /// over its prism budget - Docs/PLATFORM_UNIFICATION.md §3.6). Creation-side only: a
+        /// spawner that waits, which is the sanctioned lever - it never removes a prism. Its own
+        /// bool so it can neither release a pen a fold, painting or cell swap is holding, nor be
+        /// released by one of them.
+        /// </summary>
+        public void SetTierHold(bool held) => tierHold = held;
+
         public void ToggleBlockWaitTime(bool extended)
         {
             waitTime = extended ? defaultWaitTime * 3f : defaultWaitTime;
@@ -205,16 +305,47 @@ namespace CosmicShore.Gameplay
             wavelength = Mathf.Max(minWavelength, initialWavelength * Mathf.Abs(amount));
         }
 
+        /// <summary>
+        /// Turn-trail state (the Manta's Yawstery): while a hard turn is held, the OUTER lane's
+        /// prisms flare fatter with turn intensity — the bank is legible from across the cell
+        /// — and, on a vessel that authors <see cref="turnUpgradeShieldsTrail"/>, prisms laid
+        /// during the turn arrive SHIELDED once the Mass level-5 upgrade is live (regular
+        /// shield only, per-spawn snapshot — the Heavy Trail rule with the drift swapped for
+        /// the turn). Drive it every frame from whatever owns the turn
+        /// (<c>YawsteryActionExecutor</c> on touch, <c>MantaAnalogTurnBoostExecutor</c> on
+        /// gamepad/keyboard); 0 clears it.
+        /// </summary>
+        /// <param name="amount01">Turn intensity, 0..1.</param>
+        /// <param name="turnSign">+1 turning right, -1 turning left — the OUTER lane is the
+        /// opposite wing.</param>
+        public void SetTurnTrail(float amount01, int turnSign)
+        {
+            _turnFlare01 = Mathf.Clamp01(amount01);
+            _turnFlareLaneSign = -turnSign;
+        }
+
 
         /// <summary>Main spawn loop using UniTask.</summary>
         async UniTaskVoid SpawnLoopAsync(CancellationToken ct)
         {
             await UniTask.Delay(TimeSpan.FromSeconds(startDelay), cancellationToken: ct);
 
+            if (speedShape.Enabled)
+            {
+                await ShapedSpawnLoopAsync(ct);
+                return;
+            }
+
             while (!ct.IsCancellationRequested)
             {
-                if (spawnerEnabled && !trailPenUp && !vesselStatus.IsAttached && vesselStatus.Speed > 3f)
+                // The warp field's local length scale here (Docs/WARP_FIELD.md; exactly 1 with no
+                // field). Speed arrives already multiplied by it, so the gate and the wavelength
+                // are measured in the same shrunken lengths and the lay RATE is unchanged.
+                float warp = WarpFieldRuntime.ScaleAt(transform.position);
+
+                if (spawnerEnabled && !trailPenUp && !tierHold && !vesselStatus.IsAttached && vesselStatus.Speed > 3f * warp)
                 {
+                    if (speedShape.Enabled) MeasureLayYawRate();
                     if (Mathf.Approximately(Gap, 0f))
                     {
                         CreateBlock(ApplyBoostGap(0f), Trail);
@@ -226,7 +357,7 @@ namespace CosmicShore.Gameplay
                     }
                 }
 
-                float raw = vesselStatus.Speed > 0f ? wavelength / vesselStatus.Speed : defaultWaitTime;
+                float raw = vesselStatus.Speed > 0f ? wavelength * warp / vesselStatus.Speed : defaultWaitTime;
                 float clamped = float.IsNaN(raw) || float.IsInfinity(raw)
                     ? defaultWaitTime
                     : Mathf.Clamp(raw, 0f, 3f);
@@ -234,6 +365,95 @@ namespace CosmicShore.Gameplay
                 float finalDelay = ApplyBoostSpawnDelay(clamped);
                 await UniTask.Delay(TimeSpan.FromSeconds(finalDelay), cancellationToken: ct);
             }
+        }
+
+        /// <summary>
+        /// The speed shape's lay loop: every frame, lay when the vessel has flown a wavelength since the last prism
+        /// (<see cref="TrailSpeedShape.StepLay"/>), placed back along the course to the exact wavelength point, so
+        /// the spacing is even at every speed; above Soar, one prism a frame sized to the distance flown. Same
+        /// gates as the timed loop, and a prism at least every 3 s while they hold.
+        /// </summary>
+        async UniTask ShapedSpawnLoopAsync(CancellationToken ct)
+        {
+            float travelled = float.PositiveInfinity, sinceLay = 0f;
+            Vector3 lastPos = transform.position;
+            while (!ct.IsCancellationRequested)
+            {
+                float warp = WarpFieldRuntime.ScaleAt(transform.position);
+                // The distance actually flown since the last loop, read from the hull's position rather than
+                // Speed x deltaTime: this loop runs BEFORE VesselTransformer.Update moves the hull, so this frame's
+                // Speed x deltaTime has not been flown yet. Counting it placed the prism a whole frame's flight
+                // too far back, and after a long frame (an editor hitch) right up against the previous one.
+                Vector3 pos = transform.position;
+                float moved = Vector3.Distance(pos, lastPos);
+                lastPos = pos;
+                // A jump far beyond the speed (a respawn or teleport) restarts the trail instead of laying across it.
+                if (moved > Mathf.Max(vesselStatus.Speed, 10f) * Mathf.Max(Time.deltaTime, 0.1f) * 4f + 50f)
+                {
+                    travelled = float.PositiveInfinity;
+                    moved = 0f;
+                }
+                if (spawnerEnabled && !trailPenUp && !tierHold && !vesselStatus.IsAttached && vesselStatus.Speed > 3f * warp)
+                {
+                    float step = moved;
+                    sinceLay += Time.deltaTime;
+                    // Lay spacing in unwarped lengths (it stretches above Soar), then back into the warped world.
+                    float nominal = speedShape.LaySpacing(wavelength, vesselStatus.Speed / Mathf.Max(warp, 1e-4f));
+                    float wl = nominal * warp;
+                    // Every prism is sized to the NOMINAL spacing, so lengths stay regular whatever the frame did.
+                    _laySpacing = speedShape.FrameAwareSpacing ? nominal : wavelength;
+                    bool lay = TrailSpeedShape.StepLay(ref travelled, step, wl, out float back);
+                    if (!lay && sinceLay >= 3f)
+                    {
+                        lay = true; back = 0f; travelled = 0f;
+                    }
+                    // A long frame (a hitch, a low frame rate at Top Speed) can fly past several spacing points: lay
+                    // each one back along the path, so the trail stays even. Past four, the rest open one gap.
+                    for (int n = 0; lay; n++)
+                    {
+                        sinceLay = 0f;
+                        _layBack = back;
+                        if (n == 0) MeasureLayYawRate();
+                        if (Mathf.Approximately(Gap, 0f))
+                        {
+                            CreateBlock(ApplyBoostGap(0f), Trail);
+                        }
+                        else
+                        {
+                            CreateBlock(ApplyBoostGap(Gap * 0.5f), Trail);
+                            CreateBlock(ApplyBoostGap(-Gap * 0.5f), Trail2);
+                        }
+                        _layBack = 0f;
+                        if (n >= 3) { travelled = Mathf.Repeat(travelled, wl); break; }
+                        lay = TrailSpeedShape.NextLay(ref travelled, wl, out back);
+                    }
+                }
+                else
+                {
+                    // Gated off (stopped, pen up, too slow): the next prism goes down as soon as the gate opens.
+                    travelled = float.PositiveInfinity;
+                    sinceLay = 0f;
+                }
+
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+        }
+
+        /// <summary>
+        /// The yaw rate since the previous lay, signed so a right turn is positive (the speed shape's
+        /// convention, <see cref="TrailSpeedShape.ArcFactor"/>). Lay to lay rather than per frame: the
+        /// shape only reads it at a lay, and a lay is at most 3 s from the last (or it reads 0).
+        /// </summary>
+        void MeasureLayYawRate()
+        {
+            var ship = vesselStatus.ShipTransform;
+            Vector3 forward = ship.forward;
+            float now = Time.time, dt = now - _lastLayTime;
+            _layYawRate = _lastLayTime >= 0f && dt > 1e-4f && dt <= 3.5f
+                ? Vector3.SignedAngle(_lastLayForward, forward, ship.up) * Mathf.Deg2Rad / dt
+                : 0f;
+            _lastLayForward = forward;
+            _lastLayTime = now;
         }
 
         async UniTask LerpXScalerAsync(float from, float to, float duration, CancellationToken ct)
@@ -267,7 +487,7 @@ namespace CosmicShore.Gameplay
         /// however far the hole opens.
         ///
         /// Nothing else bounds the two against each other - <see cref="Gap"/> and
-        /// <see cref="XScaler"/> are driven independently (<c>GrowTrailActionExecutor</c> moves
+        /// <see cref="XScaler"/> are driven independently (<c>GrowTrailAction</c> moves
         /// both, on separate weights, with no clamp on the gap) - and a hole wider than its slab
         /// gives a ZERO OR NEGATIVE rail. That does not fail loudly:
         /// <c>PrismScaleAnimator.SetTargetScale</c> silently clamps the axis up to its 0.5 floor
@@ -300,9 +520,11 @@ namespace CosmicShore.Gameplay
             return Mathf.Clamp(halfGap, -limit, limit);
         }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmCreateBlock = new("Vessel.Prism.CreateBlock");
         /// <summary>Creates a block at offset using PrismFactory via event channel.</summary>
         void CreateBlock(float halfGap, Trail trail)
         {
+            using var __pm = s_pmCreateBlock.Auto();
             if (!_onPrismSpawnedEventChannel)
             {
                 CSDebug.LogError("[PrismSpawner] Prism spawn event channel is not assigned.");
@@ -318,6 +540,18 @@ namespace CosmicShore.Gameplay
                 BaseScale.z * ZScaler
             ));
 
+            // Speed shape (the Manta's trail): X, Y and Z from speed and turning, never from what is near the
+            // vessel. Measured in UNWARPED lengths, since the warp scales the whole lay below.
+            bool shaped = speedShape.Enabled && halfGap != 0f;
+            if (shaped)
+            {
+                float fieldScale = WarpFieldRuntime.ScaleAt(transform.position);
+                float speedHere = vesselStatus.Speed / Mathf.Max(fieldScale, 1e-4f);
+                float spacing = _laySpacing > 0f ? _laySpacing : wavelength;
+                scale = speedShape.Evaluate(BaseScale.y, BaseScale.z, halfGap, speedHere, _turnFlare01,
+                    _layYawRate, (int)Mathf.Sign(halfGap), spacing);
+            }
+
             // MASS -> trail prism volume: live per-spawn read of the prefab-authored
             // ElementalFloat (1x when disabled). Cube root per axis so VOLUME scales
             // linearly with the element level; the mass still flows through the normal
@@ -326,9 +560,33 @@ namespace CosmicShore.Gameplay
             if (volumeMult > 0f && !Mathf.Approximately(volumeMult, 1f))
                 scale *= Mathf.Pow(volumeMult, 1f / 3f);
 
+            bool thickened = ThicknessMultiplier > 1.0001f;
+            if (thickened) scale.y *= ThicknessMultiplier;
+            bool widened = WidthMultiplier > 1.0001f || thickened || shaped;
+            if (WidthMultiplier > 1.0001f) scale.x *= WidthMultiplier;
+
+            // Yawstery flare: the OUTER lane fattens with turn intensity, so a hard bank throws
+            // visibly flared prisms off the outer wing. Applied BEFORE xShift is derived so
+            // the flared rail still nests against the gap edge rather than drifting outboard.
+            if (_turnFlare01 > 0.01f && halfGap != 0f
+                && (int)Mathf.Sign(halfGap) == _turnFlareLaneSign
+                && turnFlareMaxScale > 1f)
+                scale.x *= Mathf.Lerp(1f, turnFlareMaxScale, _turnFlare01);
+
+            // Warp field (Docs/WARP_FIELD.md): every length of the lay — the prism, the lane gap,
+            // the offset behind the hull — shrinks with the vessel, so a shrunken vessel lays a
+            // trail that looks exactly like its own to itself. Exactly 1 with no field.
+            float warp = WarpFieldRuntime.ScaleAt(transform.position);
+            bool warped = !Mathf.Approximately(warp, 1f);
+            if (warped)
+            {
+                scale *= warp;
+                halfGap *= warp;
+            }
+
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
-            Vector3 pos = transform.position - vesselStatus.Course * offset
+            Vector3 pos = transform.position - vesselStatus.Course * (offset * warp + _layBack)
                         + vesselStatus.ShipTransform.right * xShift;
             Quaternion rot = vesselStatus.blockRotation;
 
@@ -368,11 +626,25 @@ namespace CosmicShore.Gameplay
             // Note this delay hides the prism from EVERYONE, which is why it stays a geometry
             // correction and is not the lever for self-trail contact: that is owner-scoped and
             // lives in SelfTrailContactConfigSO.
-            prism.waitTime = waitTillOutsideSkimmer
-                ? Mathf.Min((skimmer.transform.localScale.z + scale.z) /
+            //
+            // `skimmer` is a per-vessel serialized reference, and an unwired one used to throw
+            // here — on EVERY spawn, from inside the UniTaskVoid spawn loop, which swallows the
+            // exception and ends the loop. That vessel then lays NOTHING for the rest of its
+            // life, which on screen is a ship flying with no trail: the one symptom that reads
+            // as a missing FEATURE rather than as a missing reference. Degrade to the authored
+            // wait and say so once, by vessel, so the next hull authored without it loses a
+            // clearance delay instead of its whole trail.
+            prism.waitTime = waitTillOutsideSkimmer && skimmer
+                ? Mathf.Min((skimmer.transform.localScale.z * warp + scale.z) /
                             Mathf.Max(vesselStatus.Speed, MinClearanceSpeed),
                             MaxClearanceWaitSeconds)
                 : waitTime;
+
+            if (waitTillOutsideSkimmer && !skimmer && _warnedNoSkimmer.Add(name))
+                CSDebug.LogWarning(
+                    $"[VesselPrismController] '{name}' has waitTillOutsideSkimmer on with no " +
+                    "skimmer assigned — laying prisms with the authored wait instead. Wire the " +
+                    "vessel's near-field Skimmer on this component, or switch the flag off.", this);
 
             if (_dangerMode)
             {
@@ -388,18 +660,38 @@ namespace CosmicShore.Gameplay
             }
 
             
-            // Shield. MASS level-5 'Heavy Trail': trail prisms arrive shielded ONLY while
-            // DRIFTING with the Mass upgrade active (per-spawn snapshot; regular shield only).
-            // Straight-line trail stays unshielded - the armor is the drift line's reward.
-            if (shielded || (massUpgradeShieldsTrail
-                             && vesselStatus is { IsDrifting: true }
+            // Shield. BASE 'armoured drift line': trail prisms arrive shielded while DRIFTING,
+            // with NO elemental gate (per-spawn snapshot; regular shield only). Straight-line
+            // trail stays unshielded - the armor is the drift line's reward, and it is the reward
+            // for drifting rather than for levelling, which is why the Mass-5 gate came off.
+            // 'Shielded Turn Trails' is the same rule with the drift swapped for a held hard
+            // TURN (the Manta's Yawstery, above half intensity) and KEEPS its Mass-5 gate - that
+            // is the Manta's shipped level-5, and nothing about this hull's re-cut touches it.
+            // ForceShielded is the base branch's unconditional override and composes with both.
+            if (shielded || ForceShielded || (driftShieldsTrail
+                             && vesselStatus is { IsDrifting: true })
+                         || (turnUpgradeShieldsTrail
+                             && _turnFlare01 >= 0.5f
                              && vesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true))
                 prism.prismProperties.IsShielded = true;
 
             // Add to trail & initialize
             trail.Add(prism);
-            prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
+            prism.prismProperties.Index = (ushort)trail.GetBlockIndex(prism);   // O(1) map read; was an O(n) IndexOf per lay
             prism.Initialize(vesselStatus.PlayerName);
+
+            // A WIDENED prism is a stated size, not a grown one: admit it past the pool's scale
+            // window AFTER Initialize (whose ResetState restores and re-clamps that window), or
+            // everything past x = 40 is trimmed with no error. Un-widened lays are untouched, so
+            // every vessel that never writes WidthMultiplier is byte-identical. A THICKENED prism
+            // (ThicknessMultiplier, the Stoat's Mass mode) is stated the same way: y = 10 is the window.
+            // A WARPED prism is a stated size too, and usually far BELOW the pool's window (the
+            // trail's 0.5 floor would otherwise turn a 1% vessel's prisms into boulders).
+            if (widened || warped)
+            {
+                prism.AdmitTargetScale(scale);
+                prism.TargetScale = scale;
+            }
 
             // AFTER Initialize (pool-reuse reset clears membership - AssignTrail's contract).
             // This stamp is what makes a wake block a member of ITS ribbon: without it every

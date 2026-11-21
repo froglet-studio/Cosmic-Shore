@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-16-every-empty-vessel-sound-slot-and-the-ra-e7ed7b",
+  "to": "aradia1",
+  "by": "Garrett",
+  "date": "2026-11-16T22:35:21+00:00",
+  "area": "FMOD audio: the sound slots, the audio convention, CHARLES_TASKS",
+  "summary": "Every empty vessel sound slot (and the race-mode, menu and payload slots) now plays a recycled, already-banked placeholder event, listed with the target event that replaces it; Gun Fire and Explosion (empty events) are stood in for by Projectile Launch and Mine Explode; the C4 boost loops on Squirrel, Goby and Thresher are cleared",
+  "why": "Garrett 2026-11-16: recycle obvious sounds, fill all the holes, give Charles a prioritised list with placeholders he can replace easily. Author the target path in Studio, build, run sound_placeholders.py --promote: no Unity work. Your Charles-Land Thresher trigger sounds were left alone and merge cleanly over this.",
+  "branch": "cece/zealous-davinci-wnqfli",
+  "commit": "b0cb93ba0",
+  "paths": [
+    "Docs/AudioSystem/CHARLES_TASKS.md",
+    "Docs/AudioSystem/PLACEHOLDERS.md",
+    "Docs/AudioSystem/sound_placeholders.json"
+  ]
+}

@@ -11,7 +11,7 @@ The generator is the source; the .asset files are the build. Keep it committed.
 
 Run from the repo root:
     python3 Tools/Build/author_urchin_assets.py            # write
-    python3 Tools/Build/author_urchin_assets.py --check    # validate only, write nothing
+    python3 Tools/Build/author_urchin_assets.py --check    # validate + diff against disk, write nothing
 """
 
 import glob
@@ -129,9 +129,17 @@ add(f"{EFFECTS}/Projectile Prism Effects/ProjectileChainFirePrismEffect.asset",
 # projectileEndEffects is NOT optional: MoveProjectileAsync deliberately does not call
 # ReturnToFactory, so a spike that expires without hitting anything would leak its pool
 # slot permanently - the exact defect that drained the 2023 build's 1,500-deep pool.
+#
+# projectileShipEffects is NOT empty either: with [] a spike passed straight through a rival
+# pilot and did nothing (BROADSIDE.md, "The Urchin's spike container had projectileShipEffects:
+# []"). VesselCombatHitBySpike is the combat-hit REPORT - what scores the hit and drains the
+# victim's petals. It shipped with a spin beside it; the spin was retired with every other
+# heading-snap effect (Docs/ELEMENTAL_ECONOMY.md), so the report is the one entry. This script
+# still wrote [] until 2026-10, which --check could not see while it only validated keys.
 add(f"{EFFECTS}/Effect Containers/Projectile Containers/UrchinSpikeProjectileImpactContainer.asset",
     "UrchinSpikeProjectileImpactContainer", "ProjectileImpactorDataContainerSO",
-    "  projectileShipEffects: []\n"
+    "  projectileShipEffects:\n"
+    f"  - {aref('VesselCombatHitBySpike')}\n"
     "  projectilePrismEffects:\n"
     f"  - {nref('ProjectileEmbedPrismEffect')}\n"
     f"  - {nref('ProjectileStealPrismEffect')}\n"
@@ -152,14 +160,32 @@ add(f"{EFFECTS}/Effect Containers/VesselContainers/UrchinImpactorDataContainer.a
     f"  - {aref('VesselDamagePrismEffect')}\n"
     f"  - {aref('VesselElementalDebuffByDangerPrismEffect')}\n"
     "  vesselCrystalEffects:\n"
-    f"  - {aref('VesselHapticsByCrystalEffect')}\n")
+    f"  - {aref('VesselHapticsByCrystalEffect')}\n"
+    # the omnicrystal ability, "reloads its spikes" (2026-11-17, #2194): ammo slot 0 set to full
+    f"  - {aref('UrchinVesselChangeResourceByCrystalEffect')}\n")
 
 # --- the three ability assets -------------------------------------------------
 # CHARGE: the one spike weapon, both shots. TAP = the aimed shotgun (ConcentricRings, ammo);
 # HOLD-then-RELEASE = the omni burst, free, with the spike count taken from the hold. It was
 # two abilities on two triggers until the merge; the freed trigger now carries the track.
 # repeatWhileHeld is OFF - the press is semi-automatic and the hold belongs to the charge.
+#
+# chargeRangeMultiplier is the CHARGE -> spike reach curve (x1 resting, x2.5 at full Charge,
+# floored at x0.5, the fleet floor rule #2070), moved onto this asset by the 2026-09-18 element-scaling unification
+# (Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md). The migration inserted it at the
+# TOP of the shipped asset although the class declares it last; Unity matches fields by name, so
+# the order is cosmetic, and it is emitted where the shipped file has it so --check stays
+# byte-exact. (The Editor will move it to the bottom on its next save of this asset; move it
+# here too when that lands.)
 add(f"{ACTIONS}/UrchinSpikeAction.asset", "UrchinSpikeAction", "UrchinSpikeActionSO",
+    "  chargeRangeMultiplier:\n"
+    "    Enabled: 1\n"
+    "    Value: 1\n"
+    "    Min: 1\n"
+    "    Max: 2.5\n"
+    "    element: 1\n"            # Element.Charge
+    "    UseFloor: 1\n"
+    "    Floor: 0.5\n"
     "  firingPattern: 2\n"          # ConcentricRings - the shotgun
     "  repeatWhileHeld: 0\n"
     "  barrageSpikeCount: 36\n"
@@ -210,7 +236,7 @@ add(f"{ACTIONS}/UrchinTrackAction.asset", "UrchinTrackAction", "UrchinTrackActio
     "  spawnPerFrame: 8\n"
     "  cooldown: 20\n"
     "  lengthMultiplierAtFullSpace: 2\n"
-    "  minLengthMultiplier: 0.4\n"
+    "  minLengthMultiplier: 0.5\n"
     "  upgradeExtraLength: 100\n")
 
 # TIME: detach + ghost.
@@ -282,15 +308,55 @@ print("Validating authored YAML against the C# it claims to configure...")
 if not validate():
     sys.exit("VALIDATION FAILED - nothing written.")
 
+# ---------------------------------------------------------------- render, diff, write
+# --check compares against the DISK, file by file. It used to stop at validate() - which only
+# proves the authored keys exist on the C# class - so it passed while the generator's spike
+# container and spike action had drifted from the shipped assets (the combat-hit report and the
+# Charge reach curve), and a write would have silently reverted both.
+FILES = {}
+for path, name, script, body in ASSETS:
+    FILES[path] = HEADER.format(script=script, name=name) + body
+    FILES[path + ".meta"] = META.format(guid=guid_for(name))
+
+
+def disk(path):
+    try:
+        with open(path, encoding="utf-8", newline="") as fh:
+            return fh.read()
+    except FileNotFoundError:
+        return None
+
+
+drifted = []
+for path, want in FILES.items():
+    have = disk(path)
+    if have == want:
+        continue
+    drifted.append(path)
+    if have is None:
+        print(f"  MISSING {path}")
+        continue
+    hl, wl = have.splitlines(), want.splitlines()
+    for i in range(max(len(hl), len(wl))):
+        a = hl[i] if i < len(hl) else "<eof>"
+        b = wl[i] if i < len(wl) else "<eof>"
+        if a != b:
+            print(f"  DRIFT {path}\n      line {i + 1}: disk {a!r} != authored {b!r}")
+            break
+
 if CHECK:
-    print("\n--check: validation passed, no files written.")
+    if drifted:
+        print(f"\n--check: {len(drifted)} file(s) differ from what this script authors. "
+              "Re-run without --check to author them.")
+        sys.exit(1)
+    print(f"\n--check: validation passed; all {len(FILES)} files match disk; nothing written.")
     sys.exit(0)
 
 written = 0
-for path, name, script, body in ASSETS:
+for path in drifted:
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    open(path, "w", encoding="utf-8").write(HEADER.format(script=script, name=name) + body)
-    open(path + ".meta", "w", encoding="utf-8").write(META.format(guid=guid_for(name)))
+    with open(path, "w", encoding="utf-8", newline="") as fh:
+        fh.write(FILES[path])
     written += 1
     print(f"  wrote {path}")
 
@@ -301,4 +367,4 @@ if os.path.exists(MAP) and not os.path.exists(MAP + ".meta"):
     open(MAP + ".meta", "w", encoding="utf-8").write(META.format(guid=guid_for("ElementalAbilityMap")))
     print(f"  wrote {MAP}.meta")
 
-print(f"\n{written} assets authored.")
+print(f"\n{written} file(s) written; {len(FILES) - written} already matched.")

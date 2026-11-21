@@ -2,7 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -119,8 +119,7 @@ namespace CosmicShore.Gameplay
             Transform t = transform.Find(name);
             if (t)
             {
-                var ctrl = t.GetComponent<ICameraController>();
-                if (ctrl == null)
+                if (!t.TryGetComponent(out ICameraController ctrl))
                 {
                     ctrl = t.gameObject.AddComponent<CustomCameraController>();
                 }
@@ -142,6 +141,15 @@ namespace CosmicShore.Gameplay
         {
             if(!gameObject.activeInHierarchy) gameObject.SetActive(true);
 
+            // A loan is still running (the mode preview has this rig drawing into its window) and
+            // the local vessel has just been (re)initialized - the preview swapping the hull it
+            // flies, on the way in or back out. That vessel IS the one the loan must hand back
+            // when it ends, so record it as the target to restore. Otherwise End "restored" the
+            // target captured at Begin: the hull the swap has just destroyed, which left the
+            // camera following nothing. The loan itself stays - the window is still drawing.
+            if (_windowedLoanActive)
+                _windowedPreviousTarget = followTarget;
+
             _playerFollowTarget = followTarget;
             _playerCamera?.SetFollowTarget(_playerFollowTarget);
             _deathCamera?.SetFollowTarget(_playerFollowTarget);
@@ -154,8 +162,7 @@ namespace CosmicShore.Gameplay
             _themeManagerData.SetBackgroundColor(activeCam != null ? activeCam : Camera.main);
 
             var shipGO = _playerFollowTarget.gameObject;
-            var shipCustomizer = shipGO.GetComponent<VesselCameraCustomizer>();
-            if (shipCustomizer != null)
+            if (shipGO.TryGetComponent(out VesselCameraCustomizer shipCustomizer))
                 shipCustomizer.Configure(_playerCamera);
 
             // Snap camera to correct initial position to prevent retaining
@@ -273,6 +280,17 @@ namespace CosmicShore.Gameplay
                 if (_deathCamera != null) _deathCamera.Deactivate();
                 if (endCamera != null) endCamera.Deactivate();
 
+            // The player rig becoming the SCREEN view takes it back from a mode-preview loan. A loan that is still
+            // running here (the preview's stop races the freestyle entry, or a stop never came) left the rig drawing
+            // into the preview's RenderTexture while the scene camera stood down for freestyle - Display 1 with no
+            // camera, the vessel HUD over a frozen frame (the owner's play test, 2026-10-19). The loan bookkeeping
+            // stays, so the preview's End still restores the follow target; it just has no texture left to clear.
+            if (controller == _playerCamera && _windowedCamera)
+            {
+                _windowedCamera.targetTexture = null;
+                _windowedCamera = null;
+            }
+
             controller?.Activate();
             _activeController = controller;
             if (mainMenuCamera != null)
@@ -283,6 +301,16 @@ namespace CosmicShore.Gameplay
 
         Camera _windowedCamera;
         Transform _windowedPreviousTarget;
+
+        // True only between a BeginWindowedPlayerCamera and its matching End. The loan has to be
+        // balanced, because End RESTORES state: with no loan in force there is nothing to restore,
+        // and _windowedPreviousTarget is null - so an unmatched End (the mode preview calls it
+        // from four teardown paths, including while a card was only being LOOKED at, and twice in
+        // a row on a tap-out followed by a stop) used to hand the gameplay camera a NULL follow
+        // target. CustomCameraController returns on `!_followTarget`, so the camera froze where it
+        // was while the ship flew on, and nothing re-pointed it until the next freestyle entry ran
+        // SetupGamePlayCameras - "the camera stops following; go to the menu and back to fix it".
+        bool _windowedLoanActive;
 
         /// <summary>
         /// Point the ordinary gameplay camera at <paramref name="target"/> and render it into
@@ -301,9 +329,23 @@ namespace CosmicShore.Gameplay
         public Camera BeginWindowedPlayerCamera(Transform target, RenderTexture renderTexture)
         {
             if (_playerCamera == null || renderTexture == null) return null;
+
+            // Never lend the rig while it IS the screen (freestyle, a gameplay scene): pointing its output at a
+            // texture leaves Display 1 with no camera at all. The preview shows its unavailable face instead.
+            if (_activeController == _playerCamera)
+            {
+                CSDebug.LogWarning("[CameraManager] A windowed camera was asked for while the player camera draws the " +
+                                   "screen; refused so the screen keeps its camera.");
+                return null;
+            }
             if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
 
-            _windowedPreviousTarget = _playerFollowTarget;
+            // Capture the target to give back only on the FIRST Begin of a loan: a re-Begin while
+            // a loan is already running (a card re-armed mid-flight) would otherwise record the
+            // borrowed target as the one to restore, and the player's own ship would be lost.
+            if (!_windowedLoanActive)
+                _windowedPreviousTarget = _playerFollowTarget;
+            _windowedLoanActive = true;
 
             _playerFollowTarget = target;
             _playerCamera.SetFollowTarget(target);
@@ -334,6 +376,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void EndWindowedPlayerCamera()
         {
+            // Nothing was lent, so there is nothing to give back - and "giving back" a loan that
+            // never happened writes a null follow target onto the live gameplay camera (see
+            // _windowedLoanActive). Safe to call when no windowed camera is running means a no-op.
+            if (!_windowedLoanActive) return;
+            _windowedLoanActive = false;
+
             if (_windowedCamera)
             {
                 _windowedCamera.targetTexture = null;
@@ -362,6 +410,41 @@ namespace CosmicShore.Gameplay
         }
 
         public ICameraController GetActiveController() => _activeController;
+
+        static Camera s_viewCamera;
+        static int s_viewCameraFrame = -1;
+
+        // Enter Play Mode keeps statics (domain reload is off): never serve last session's camera.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetViewCamera()
+        {
+            s_viewCamera = null;
+            s_viewCameraFrame = -1;
+        }
+
+        /// <summary>
+        /// The camera the player is looking through: the active controller's camera ("CM PlayerCam" in flight,
+        /// the death or end camera after), falling back to <c>Camera.main</c> where no controller is active (the
+        /// main menu and its lava lamp, a test scene). Resolved once a frame. Use it for anything that depends
+        /// on where the viewer is - a billboard, a projection onto the screen, a distance LOD.
+        ///
+        /// NOT <c>Camera.main</c> in flight: Bootstrap's MainCamera-tagged "Camera" (the menu's Cinemachine brain,
+        /// with the AudioListener) stays enabled and never follows the vessel, while "CM PlayerCam" is untagged.
+        /// A view-dependent effect that read <c>Camera.main</c> measured everything from a point that never moved
+        /// (the depth prisms froze, Omni Shepard Lab round 9; refactor row F4 swept the rest, 2026-10-13).
+        /// </summary>
+        public static Camera ViewCamera
+        {
+            get
+            {
+                if (s_viewCameraFrame == Time.frameCount) return s_viewCamera;
+                s_viewCameraFrame = Time.frameCount;
+                var manager = Instance;
+                var controller = manager ? manager.GetActiveController() as CustomCameraController : null;
+                s_viewCamera = controller && controller.Camera && controller.Camera.isActiveAndEnabled ? controller.Camera : Camera.main;
+                return s_viewCamera;
+            }
+        }
 
         /// <summary>
         /// Deactivates all managed cameras (player, death, end) without activating a replacement.

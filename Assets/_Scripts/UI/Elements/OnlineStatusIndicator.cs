@@ -62,6 +62,10 @@ namespace CosmicShore.UI
 
         [SerializeField] string goOfflineQuestion = "GO OFFLINE?";
         [SerializeField] string goOnlineQuestion = "GO ONLINE?";
+        [SerializeField, Tooltip("The question bar's note line when asking to go offline: what that pauses.")]
+        string goOfflineNote = "Party, friends and the weekly board pause until you come back.";
+        [SerializeField, Tooltip("The question bar's note line when asking to go online.")]
+        string goOnlineNote = "Reconnects to party, friends and the weekly board.";
 
         [Header("Feel")]
         [SerializeField, Tooltip("Seconds for the colour crossfade when the state changes.")]
@@ -84,11 +88,18 @@ namespace CosmicShore.UI
 
         bool IsOffline => _gameData != null && _gameData.IsOfflineSession;
 
-        Color OnlineColor => _palette != null ? _palette.limeColor : new Color(0.59f, 0.92f, 0.16f, 1f);
-        Color OfflineColor => _palette != null ? _palette.greyColor : new Color(0.51f, 0.51f, 0.54f, 1f);
+        Color OnlineColor => _palette != null ? _palette.LimeColor : new Color(0.59f, 0.92f, 0.16f, 1f);
+        Color OfflineColor => _palette != null ? _palette.GreyColor : new Color(0.51f, 0.51f, 0.54f, 1f);
 
         void Awake()
         {
+            // The browser Toybox has no online state to show and no way to go online.
+            if (WebToybox.IsBuild)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
             _button = GetComponent<Button>();
             if (lamp == null) lamp = GetComponent<Image>();
 
@@ -237,7 +248,8 @@ namespace CosmicShore.UI
                 return;
             }
 
-            questionBar.Ask(offline ? goOnlineQuestion : goOfflineQuestion, () => Switch(offline));
+            questionBar.Ask(offline ? goOnlineQuestion : goOfflineQuestion, offline ? goOnlineNote : goOfflineNote,
+                            () => Switch(offline));
         }
 
         void Switch(bool currentlyOffline)

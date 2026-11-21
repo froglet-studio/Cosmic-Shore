@@ -1,5 +1,7 @@
 # Network Diagnostics — TODOs
 
+> The prioritised multiplayer list is [`Docs/Multiplayer/TODO.md`](../Multiplayer/TODO.md). This file holds the detail for this system's items.
+
 Deferred improvements to the overlay. Each entry has enough context
 that it can be picked up cold.
 
@@ -41,9 +43,7 @@ read per tick.
 |---|---|
 | `Assets/_Scripts/System/AuthenticationServiceFacade.cs` | `SignInAnonymouslyAsync` catches — would distinguish offline auth from quota/UGS errors |
 | `Assets/_Scripts/System/FriendsServiceFacade.cs` | Friend-request, presence-set catches — UGS Friends service can drop the same way |
-| `Assets/_Scripts/System/Playfab/Authentication/*.cs` (legacy, deprecated) | Lower priority — auth is moving to UGS |
 | `Assets/_Scripts/System/Instrumentation/CSAnalyticsManager.cs` | Analytics upload catches |
-| `Assets/_Scripts/Integrations/PlayFabSDK/*` | PlayFab catalog / inventory / leaderboard catches |
 | `Assets/_Scripts/System/IAPManager.cs` | Purchase failure paths |
 
 **Pattern.** Identical to the party-side decoration — one appended log
@@ -164,7 +164,7 @@ frequencies. A simple script that scans recent log files and tallies
 `NetDiag: class=*` occurrences would directly inform refactor
 priority (see `../PartySystem/REFACTOR.md` § "Sequencing").
 
-**Outline.** Editor menu item `FrogletTools > Validation > NetDiag Report`
+**Outline.** Editor menu item `FrogletTools > Utilities > NetDiag Report`
 that:
 1. Reads the last N hours of Editor / Player logs.
 2. Counts `NetDiag: class=*` per class, per source file.

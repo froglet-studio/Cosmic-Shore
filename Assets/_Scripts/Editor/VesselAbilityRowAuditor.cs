@@ -34,7 +34,7 @@ namespace CosmicShore.Editor
         const float PitchTolerancePx = 1.5f;
         const float SizeTolerancePx = 1.5f;
 
-        [MenuItem("FrogletTools/Vessels/Audit Vessel Ability Rows")]
+        [MenuItem("FrogletTools/Vessels/Audits/Audit Vessel Ability Rows", false, 271)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Four icons, charge-mass-space-time order, per vessel HUD.")]
         public static void Audit()

@@ -91,7 +91,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (FrameTimingManager.GetLatestTimings(1, _frameTimings) > 0)
             {
                 Smooth(ref _smCpuMs, (float)_frameTimings[0].cpuFrameTime);
-                Smooth(ref _smGpuMs, (float)_frameTimings[0].gpuFrameTime);
+                Smooth(ref _smGpuMs, FrameBoundness.SanitizeGpuMs((float)_frameTimings[0].gpuFrameTime));
                 Smooth(ref _smMainMs, (float)_frameTimings[0].cpuMainThreadFrameTime);
                 Smooth(ref _smWaitMs, (float)_frameTimings[0].cpuMainThreadPresentWaitTime);
                 Smooth(ref _smRenderMs, (float)_frameTimings[0].cpuRenderThreadFrameTime);

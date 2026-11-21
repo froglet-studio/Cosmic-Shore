@@ -102,17 +102,20 @@ EXISTING = {
     "Cytoplasm_prefab":   "9cacd903fcf4643459f5f14ac811bb20",
     "CellIcon":           "6aa1c06e11b265744a5f9fa8858ac72a",
     "Vessel_Sparrow":     "7b7053dd065edb54baa3b831b90f4985",
-    # arcade card art - shared with the Wildlife Blitz family (this is its multiplayer cousin)
+    # arcade card art - the icons are shared with the Wildlife Blitz family (this is its
+    # multiplayer cousin); the BACKGROUND is this mode's own /cardart render
+    # (Assets/_Graphics/ARCADE/CardBackgrounds/WildlifeLiberation.png). It used to name the
+    # Blitz family's shared background, so a re-run silently reverted the shipped card art.
     "IconActive":         "576d21301c622e9489beb58263f393cb",
     "IconInactive":       "ebb26aeda98ffe840ad60e7ab88c8a28",
-    "CardBackground":     "325ba2d27b2b2c24c9a6b06681eecbe5",
-    "PreviewClip":        "4fb5927c0dce75b4298b94514abc0150",
+    "CardBackground":     "d158c4fd34d94218a67750ebf3d7190c",
     # fauna prefabs
     "TadpolePrefab":      "c7fd418d426de8740ac888dcc23a5d24",
     "QuadFishPrefab":     "19615ed0c903b1041973d70593d4b0a3",
     "BrittlestarPrefab":  "c719f00ea7596c24185379994f7dc824",
     "SharkPrefab":        "a67ba7ddaecf6624ab37cd9f5f2210a6",
     "WormColonyPrefab":   "8f79c97ef2bd4624a730a96900e4daaa",
+    "ClawfishPrefab":     "a525483096f54bc44a73646161623bf5",
     "TadpoleBodyMat":     "5140ec1c42866e849927f442d5965f7f",
     # the cell's CellRuntimeDataSO - the spawn ring resolves its Cell through this, and it now
     # also owns the fauna-kill SOAP channel this mode scores on
@@ -127,6 +130,7 @@ FAUNA_FILEID = {
     "Brittlestar": 5351160486092638538,   # LightFauna, herbivore, 10 body prisms
     "Shark":       5351160486092638538,   # LightFauna, PREDATOR,  11 body prisms
     "WormColony":                  1002,  # WormFauna,  apex omnivore colony
+    "Clawfish":     369859875180954115,   # LightFauna, herbivore, 4 fluke-rib body prisms
 }
 FAUNA_PREFAB = {
     "Tadpole":     EXISTING["TadpolePrefab"],
@@ -134,6 +138,7 @@ FAUNA_PREFAB = {
     "Brittlestar": EXISTING["BrittlestarPrefab"],
     "Shark":       EXISTING["SharkPrefab"],
     "WormColony":  EXISTING["WormColonyPrefab"],
+    "Clawfish":    EXISTING["ClawfishPrefab"],
 }
 
 # Per-element sibling configs, reused verbatim (read-only species identity assets) so every
@@ -149,12 +154,13 @@ PALETTE = {
                     "eaf56c14345740849f35fc84467059e9", "78ce842bb8554d748af1e96abf430137"],
     "WormColony":  ["c1a7e2b45f0d4c1e8a6b9d3f2e7c5a10", "a3d59c8e71b24f6a9c0e4d8b5f172c33",
                     "e7f1b3a2c9d84e5fb6a08c7d4e392b55", "b9c4d7e2a1f34b8cd5e6f0a39b8d1c77"],
+    "Clawfish":    ["9a71c56e49ff4ee493c70be766f1b335", "d6d14731fd184959b837ab47e378f813",
+                    "0e87f3117e7141a7b5bce66b0385a2d0", "c7ff7791587d4467ba9fbe88358b2119"],
 }
 
 PRISM_FILEID = 4563009547826722997
 MEMBRANE_FILEID = 346633111830028674
 CYTOPLASM_FILEID = 639495419069806261
-PREVIEW_FILEID = 241334157148977051
 
 # The kill target - the race metric, summed PER DOMAIN. The 25%/50% milestone rungs are
 # fractions of this (so 8 and 15), and moving it moves the whole progress ladder.
@@ -172,7 +178,7 @@ WILDLIFE_KILL_TARGET = 30
 #
 # 0.35 puts a quarter-of-target deficit (7.5 kills) at 2.6 levels, which is Dog Fight's curve
 # (90 x 0.12 = 2.7) - the nearest sibling by structure: same vessel, same "many small
-# increments" race. The shipped family spans 1.25 (Scarab Scramble) to 5.0 (Rampage/Ribcage).
+# increments" race. The shipped family spans 1.25 (Scarab Scramble) to 5.0 (Rampage/Cleave).
 # The assert at the bottom FAILS the build if this ever drops back under one whole level.
 COMEBACK_RATE = 0.35
 
@@ -264,8 +270,8 @@ RUNTIME_CELL_PATH = "Assets/_SO_Assets/Cell Data/Runtime Cell Data.asset"
 with open(os.path.join(ROOT, RUNTIME_CELL_PATH), encoding="utf-8") as fh:
     runtime_cell = fh.read()
 if "OnFaunaKilled:" not in runtime_cell:
-    anchor = re.search(r"^  OnFaunaHeartsChanged: \{[^}]*\}\n", runtime_cell, re.M)
-    assert anchor, "OnFaunaHeartsChanged not found in the cell runtime SO"
+    anchor = re.search(r"^  OnFaunaWaveSpawned: \{[^}]*\}\n", runtime_cell, re.M)
+    assert anchor, "OnFaunaWaveSpawned not found in the cell runtime SO"
     runtime_cell = runtime_cell.replace(
         anchor.group(0),
         anchor.group(0) +
@@ -357,7 +363,7 @@ emit("Assets/_SO_Assets/Scoring Rules/WildlifeLiberationScoringRule.asset.meta",
 # (GameDataSO.SyncFromArcadeGame's launcher clamp, ServerPlayerVesselInitializer's server-side
 # spawn clamp, and the AI clamp in ServerPlayerVesselInitializerWithAI). 1-4 players.
 #
-# MinDomainsAllowed 2, like Ribcage: this is a DOMAIN race, and a one-domain lobby has no race
+# MinDomainsAllowed 2, like Cleave: this is a DOMAIN race, and a one-domain lobby has no race
 # in it - the single colour would cross the target unopposed. Note 4 players over 3 domains
 # always means teammates; that is the intended shape, not a defect (see
 # WildlifeLiberationScoringRuleSO for why a free-for-all was tried here and reverted).
@@ -372,18 +378,16 @@ emit("Assets/_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset",
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
-  PreviewClip: {{fileID: {PREVIEW_FILEID}, guid: {EXISTING['PreviewClip']}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameWildlifeLiberation
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Sparrow']}, type: 2}}
   MinPlayersAllowed: 1
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
-  CallToActionTargetType: 427
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: {COMEBACK_RATE}
@@ -415,17 +419,20 @@ def fauna_asset_path(species, intensity):
 
 
 # The tadpole swarm keeps the authored Blob expression (small body, long tail prisms, 90s
-# starvation clock, forager). Everything else keeps its prefab as authored.
+# starvation clock, forager). Everything else keeps its prefab as authored. The body and its
+# body-relative lengths are x 3.55/1.737, matching the one heart size (Docs/ECOSYSTEM.md 64.4).
 TADPOLE_VARIANT = f"""  Variant:
     Enabled: 1
-    BaseBodyScale: 0.4
+    BaseBodyScale: 0.8175
     BodyPrismScale: {{x: 0.8, y: 0.8, z: 7}}
     BodyMaterial: {{fileID: 2100000, guid: {EXISTING['TadpoleBodyMat']}, type: 2}}
     StarvationSeconds: 90
     Forager: 1
-    CohesionRadius: 50
+    CohesionRadius: 102.2
     BehaviorUpdateRate: 1.5
-    TrailBlockInteractionRadius: 30
+    TrailBlockInteractionRadius: 61.31
+    SeparationRadius: 30.66
+    FeedingClusterRadius: 20.44
     GoalWeight: 3
     MinSpeed: 10
     MaxSpeed: 15
@@ -440,6 +447,11 @@ TADPOLE_VARIANT = f"""  Variant:
     AudioMinDistance: -1
     AudioMaxDistance: -1
 """
+# Species replicated server-authoritatively (FaunaConfigurationSO.NetworkSynced, the per-species
+# rollout gate - Docs/ECOSYSTEM_NETWORK_SYNC.md). The Shark is the one this mode switched on;
+# the key is only emitted where it is set, so the other species keep their shipped bytes.
+NETWORK_SYNCED_SPECIES = {"Shark"}
+
 PLAIN_VARIANT = """  Variant:
     Enabled: 0
 """
@@ -454,13 +466,15 @@ for i in INTENSITIES:
 
         # Reproduction: the population DRIVER above the seed floor. Bigger creatures convert
         # prey to offspring more slowly, so the swarm churns and the kaiju does not.
-        feeds = {"Tadpole": 24, "QuadFish": 20, "Brittlestar": 16, "Shark": 8, "WormColony": 0}[species]
-        cooldown = {"Tadpole": 10, "QuadFish": 12, "Brittlestar": 14, "Shark": 30, "WormColony": 60}[species]
+        feeds = {"Tadpole": 24, "QuadFish": 20, "Brittlestar": 16, "Shark": 8, "WormColony": 0,
+                 "Clawfish": 18}[species]
+        cooldown = {"Tadpole": 10, "QuadFish": 12, "Brittlestar": 14, "Shark": 30, "WormColony": 60,
+                    "Clawfish": 13}[species]
 
         emit(fauna_asset_path(species, i),
              HEADER_FOR(EXISTING["FaunaConfigurationSO"], fauna_asset_name(species, i)) +
              f"""  FaunaPrefab: {{fileID: {FAUNA_FILEID[species]}, guid: {FAUNA_PREFAB[species]}, type: 3}}
-  InitialSpawnCount: {seed}
+""" + ("  NetworkSynced: 1\n" if species in NETWORK_SYNCED_SPECIES else "") + f"""  InitialSpawnCount: {seed}
   PopulationSize: {seed}
   SpawnProbability: 1
   FeedsPerOffspring: {feeds}
@@ -550,9 +564,41 @@ for i in INTENSITIES:
 # a fresh copy of whatever MinigameRampage.unity has since become.
 if not POPULATION_ONLY:
     # ── 7. Scene: clone MinigameRampage, swap the mode-specific wiring ───────────
+    #
+    # ONE-SHOT, AND THE DONOR HAS MOVED ON. The Rampage rework deleted RampageController's
+    # arenaCell / aiRetargetSeconds block and replaced its single Cell config, so the asserts
+    # below fire on a donor that is simply a different scene now. Before this guard that assert
+    # aborted the whole script ABOVE `errors = []`, so `--check` validated nothing at all
+    # (CLAUDE.md: a spent one-shot must STAND DOWN, not take the checks with it). The clone is
+    # GUARDED, not asserted: when the donor no longer matches, the already-committed scene is
+    # registered read-only so every scene check below describes the artifact that SHIPS. It is
+    # byte-identical to disk, so a write-mode run cannot rewrite the scene from here. If this
+    # mode ever needs a re-clone, re-point it at a current donor instead of satisfying these.
     DONOR_SCENE = os.path.join(ROOT, "Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
     with open(DONOR_SCENE, encoding="utf-8") as fh:
         scene = fh.read()
+    _DONOR_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}
+      arenaCell: {{fileID: 1700000065}}
+      aiRetargetSeconds: 1.5
+    """
+    SCENE_STEP_LIVE = (_DONOR_FIELDS in scene
+                       and scene.count(EXISTING["RampageController"]) == 1
+                       and scene.count(EXISTING["RampagePrismTurnMonitor"]) == 1)
+else:
+    SCENE_STEP_LIVE = False
+
+_SCENE_REL = "Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity"
+if not SCENE_STEP_LIVE:
+    if not POPULATION_ONLY:
+        print("note: section 7 (scene clone) stood down - the Rampage donor has moved on and "
+              "MinigameWildlifeLiberation.unity is already committed. Every other section still runs.")
+    # The .meta goes in too: the minted-GUID sweep excludes metas THIS script owns, so leaving
+    # it out reports the committed scene as a foreign asset colliding with its own minted guid.
+    for _rel in (_SCENE_REL, _SCENE_REL + ".meta"):
+        with open(os.path.join(ROOT, _rel), encoding="utf-8") as _fh:
+            files[_rel] = _fh.read()
+
+if SCENE_STEP_LIVE:
 
     # 7a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
     scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["WildlifeKillTurnMonitor"], scene)
@@ -628,6 +674,7 @@ if not POPULATION_ONLY:
          scene_meta(G_ASSET["MinigameWildlifeLiberation.unity"]))
 
 
+if not POPULATION_ONLY:
     # ── 8. Register the card in the party-games list ─────────────────────────────
     LIST_PATH = "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset"
     with open(os.path.join(ROOT, LIST_PATH), encoding="utf-8") as fh:
@@ -677,8 +724,8 @@ if not POPULATION_ONLY:
 END_PATH = "Assets/Resources/EndConditionOverrides.asset"
 with open(os.path.join(ROOT, END_PATH), encoding="utf-8") as fh:
     endcond = fh.read()
-for after_key, new_key in (("ribcagePrismTarget", "wildlifeKillTarget"),
-                           ("ribcagePrismTargetBuild", "wildlifeKillTargetBuild")):
+for after_key, new_key in (("cleavePrismTarget", "wildlifeKillTarget"),
+                           ("cleavePrismTargetBuild", "wildlifeKillTargetBuild")):
     line = f"  {new_key}: {WILDLIFE_KILL_TARGET}\n"
     m = re.search(rf"^  {new_key}: (\d+)\n", endcond, re.M)
     if m:
@@ -735,12 +782,7 @@ for species, pal in PALETTE.items():
 
 # the scene must no longer mention the donor's mode-specific guids. Read from disk under
 # --population (this run did not re-clone it) so the assertions still hold against what SHIPS.
-_scene_rel = "Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity"
-if _scene_rel in files:
-    sc = files[_scene_rel]
-else:
-    with open(os.path.join(ROOT, _scene_rel), encoding="utf-8") as _fh:
-        sc = _fh.read()
+sc = files[_SCENE_REL]
 for name in ("RampageController", "RampagePrismTurnMonitor", "RampageCellConfig", "RampageScoringRule"):
     if EXISTING[name] in sc:
         errors.append(f"cloned scene still references {name}")
@@ -855,9 +897,12 @@ if _quarter_deficit_levels < 1.0:
         f"quarter-of-target deficit - under one whole level the comeback does nothing. Rescale "
         f"COMEBACK_RATE with the target (>= {4.0 / WILDLIFE_KILL_TARGET:.3f}).")
 
+# No `PreviewClip`: SO_Game.PreviewClip is RETIRED (arcade_mode_lib.RETIRED_CARD_KEYS). This set
+# listed it, which is how the card kept emitting a dead key - pointing at a video - with the
+# key-validation below waving it through.
 SO_BASE = {"CellName", "Description", "Icon", "Difficulty", "CellEndGameScore", "Mode",
            "IsMultiplayer", "DisplayName", "IconActive", "IconInactive", "CardBackground",
-           "PreviewClip", "GolfScoring", "SceneName"}
+           "GolfScoring", "SceneName"}
 for asset_path, cs_path in CHECKS:
     keys = set(re.findall(r"^  (\w+):", files[asset_path], re.M)) - {
         "m_ObjectHideFlags", "m_CorrespondingSourceObject", "m_PrefabInstance", "m_PrefabAsset",
@@ -931,7 +976,26 @@ if stale:
         print("   -", os.path.relpath(f, ROOT))
 
 if CHECK_ONLY:
-    print("\n--check: no files written, nothing deleted.")
+    # --check must read the DISK (flora skill 8): a check that only re-runs the in-memory
+    # validation passes whatever the shipped assets actually say. Drift or a pending prune is a
+    # failure, so a hand-edit or a generator change that was never re-run cannot sit green.
+    drifted = []
+    for rel, content in sorted(files.items()):
+        path = os.path.join(ROOT, rel)
+        if not os.path.exists(path):
+            drifted.append(rel + " (missing)")
+            continue
+        with open(path, encoding="utf-8", newline="") as fh:
+            if fh.read() != content:
+                drifted.append(rel)
+    if drifted or stale:
+        print(f"\n--check: {len(drifted)} file(s) differ from the authored output"
+              f"{f' and {len(stale)} stale file(s) await pruning' if stale else ''}:")
+        for rel in drifted:
+            print("  -", rel)
+        print("Re-run without --check to author them.")
+        sys.exit(1)
+    print(f"\n--check: OK, all {len(files)} generated file(s) match disk; nothing written.")
     sys.exit(0)
 
 for f in stale:

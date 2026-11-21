@@ -8,6 +8,7 @@ using Reflex.Attributes;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Gameplay
 {
     public class Projectile : MonoBehaviour
@@ -41,6 +42,27 @@ namespace CosmicShore.Gameplay
         /// segment query rather than the PhysX trigger — read by
         /// <c>ProjectileImpactor</c> to suppress the trigger's prism case.</summary>
         public bool UsesSweptPrismDetection => sweptPrismDetection;
+
+        [Tooltip("Test the SEGMENT this projectile crossed each frame for VESSEL contact, " +
+                 "instead of relying on the PhysX trigger at the point it landed on.\n\n" +
+                 "The same defect the prism flag above fixes, on the other kind of target - and " +
+                 "worse, because the sampling interval is not the frame but the FIXED " +
+                 "TIMESTEP (0.04 s here). A Sparrow round at its base 375 u/s therefore jumps " +
+                 "15 u between trigger samples, and an enemy hull is 4.38 u deep along the " +
+                 "flight axis behind a 1.65-diameter hit sphere - a ~6 u window - so roughly " +
+                 "60% of otherwise-perfect shots pass straight through an enemy without PhysX " +
+                 "ever sampling inside them. At SPACE 10 the round reaches 4875 u/s (195 u per " +
+                 "step) and it is ~97%.\n\n" +
+                 "That reads in play as a gun that damages the arena reliably (prisms ARE " +
+                 "swept) and cannot hit a pilot - which is exactly how it was reported. With " +
+                 "this on, vessel contact comes from the swept query ONLY and the trigger path " +
+                 "is suppressed for vessels, so nothing double-dispatches.")]
+        [SerializeField] private bool sweptVesselDetection = false;
+
+        /// <summary>True when VESSEL contact for this projectile is owned by the swept segment
+        /// query rather than the PhysX trigger — read by <c>ProjectileImpactor</c> to suppress
+        /// the trigger's vessel case.</summary>
+        public bool UsesSweptVesselDetection => sweptVesselDetection;
 
         [Header("In-flight Growth (MASS)")]
         [Tooltip("A see-through shell that DRAWS this round's hit volume while MASS in-flight " +
@@ -117,12 +139,140 @@ namespace CosmicShore.Gameplay
                  "round with no measured body, which keeps the prefab's authored width.")]
         [SerializeField, Range(0f, 3f)] private float tailWidthPerBodyDiameter = 0.4f;
 
+        [Header("Proximity Fuze")]
+        [Tooltip("Detonate EARLY when something worth detonating on comes within this many " +
+                 "times the round's own hit radius. 0 (every round but the skyburst) = no fuze; " +
+                 "the round detonates only on contact or at the end of its life.\n\n" +
+                 "It trips on TWO things and nothing else: an opposing VESSEL, and a living " +
+                 "FAUNA's heart. Never on a prism — a fuze that tripped on mass would detonate " +
+                 "the instant a rocket left a hull inside any trail — and never on flora, whose " +
+                 "hearts stand in their thousands in a seeded cell.\n\n" +
+                 "The radius is a multiple of the round's LIVE hit radius, so a missile that " +
+                 "swells 14x-38x with MASS carries a fuze that grows with it, and a round still " +
+                 "leaving the bay is barely armed at all - the fuze reaches full size exactly " +
+                 "when the model does (Flight Growth Complete At), which is an arming delay " +
+                 "nobody had to author.")]
+        [SerializeField, Min(0f)] private float proximityFuzeRadiusMultiplier = 0f;
+
+        [Header("Warhead Blast")]
+        [Tooltip("A blast this round spawns on EVERY detonation, sized off the round's own body " +
+                 "rather than off an authored effect scale. Empty on every round but the " +
+                 "skyburst.\n\n" +
+                 "It is spawned by ProjectileDetonatorSO, which is the ONE place every " +
+                 "detonation path funnels through - the timeout, the proximity fuze, a prism " +
+                 "hit, a vessel hit and a mine all call it - so the warhead cannot fire on some " +
+                 "of them and not others. The effect assets' own aoePrefabs stay exactly as they " +
+                 "are: this is the blast aimed at LIVING things, alongside the one aimed at the " +
+                 "arena, not a replacement for it.")]
+        [SerializeField] private AOEExplosion warheadBlast;
+
+        [Tooltip("The warhead's radius as a multiple of the round's own hit radius - the SAME " +
+                 "base the proximity fuze multiplies, so the two numbers are one scale and the " +
+                 "blast can be read against the trigger at a glance. Above the fuze multiplier " +
+                 "means the blast OUTREACHES the trigger distance - but reach is not capture: " +
+                 "the sphere GROWS over the blast's ExplosionDuration, so a target already " +
+                 "running can outpace it. Catching a target receding at v needs the margin " +
+                 "(warhead - fuze) x hitRadius to be closed within that duration; at the shipped " +
+                 "25/20 and 0.15s that is ~130 u/s, so ordinary flight is caught and a boosting " +
+                 "escape is not. Raise this OR shorten the blast to catch faster targets.")]
+        [SerializeField, Min(0f)] private float warheadBlastRadiusMultiplier = 0f;
+
+        [Header("Flight Prism Trail")]
+        [Tooltip("Pooled-prism spawn channel (EventOnSpawnPrismAndReturn) - the SAME asset the " +
+                 "vessel trail and every boost ring use. Empty (every round but the Sparrow's " +
+                 "heavy skyburst) = this round can lay nothing, whatever a shot asks for.")]
+        [SerializeField] private PrismEventChannelWithReturnSO prismTrailChannel;
+
+        [Tooltip("World units between prisms laid along the flight. 0 = no trail.\n\n" +
+                 "This is a DISTANCE, not a period: a round's speed varies with SPACE, with the " +
+                 "vessel's inherited velocity and with the cosine falloff of its own flight, so " +
+                 "a per-second lay would space the ribbon differently on every shot.")]
+        [SerializeField, Min(0f)] private float prismTrailSpacing = 0f;
+
+        [Tooltip("The size of ONE prism in that trail. Small on purpose - the trail is a line a " +
+                 "rocket drew, not a second vessel trail; the Sparrow's own trail prism is " +
+                 "(2, 2, 5) and this reads as a thinner, shorter version of it.")]
+        [SerializeField] private Vector3 prismTrailScale = new Vector3(1f, 1f, 3f);
+
+        [Tooltip("HARD CAP on prisms laid by one flight - the COLLIDER BUDGET line, and the " +
+                 "number to quote when asked what a missile costs the arena.\n\n" +
+                 "Spacing alone does not bound the count, because the count is range/spacing " +
+                 "and RANGE is derived: speed x 2T/pi, where both terms are authored per shot " +
+                 "and per variant. At the shipped 240 u/s and 3 s that is 458 u = 15 prisms, so " +
+                 "the cap is headroom rather than a limiter - and it is what keeps a future " +
+                 "speed or lifetime retune from silently multiplying the budget.")]
+        [SerializeField, Min(0)] private int prismTrailMaxPrisms = 24;
+
+        [Tooltip("What the laid prisms ARE. Plain is ordinary conserved mass in the shooter's " +
+                 "domain - grazeable by fauna, stealable, destroyable. Anything else is a " +
+                 "balance decision: Danger bites its own pilot (locked law) and the shield " +
+                 "tiers make the trail food the ecology can never remove.")]
+        [SerializeField] private PrismKind prismTrailKind = PrismKind.Plain;
+
+        [Tooltip("Seconds a freshly-laid trail prism is immune to EVERY projectile, using the " +
+                 "same Prism.ProjectileImmuneUntil window the turret stance's placed prisms use " +
+                 "(\"a spray does not erase its own freshest output\").\n\n" +
+                 "It exists for the SECOND rocket: a bay that holds two heavy missiles fires " +
+                 "them down nearly the same line, and without it rocket 2 detonates on rocket " +
+                 "1's ribbon a few units out of the bay. The round's own contact with its own " +
+                 "ribbon is handled separately and PERMANENTLY, by trail identity - a window " +
+                 "cannot answer that, because a round that curls back should still not blow up " +
+                 "on mass it laid itself.")]
+        [SerializeField, Min(0f)] private float prismTrailImmunitySeconds = 1f;
+
         [Header("Data Containers")]
         [SerializeField] private ThemeManagerDataContainerSO _themeManagerData;
 
         public float Charge { get; private set; }
         public ProjectileType Type { get; private set; }
         public float ProjectileTime { get; private set; }
+
+        /// <summary>
+        /// This round's hit sphere radius in WORLD units, at its CURRENT growth — the one
+        /// measurement the proximity fuze and the warhead blast are both sized from, so "how big
+        /// is this round right now" has a single answer.
+        ///
+        /// Maintained wherever the hit volume can move: at launch (after the parent chain, the
+        /// intended world scale and the model fit are all final) and on every growth frame. It is
+        /// deliberately CACHED rather than read live, because the detonator reads it after the
+        /// collider has been switched off.
+        /// </summary>
+        public float HitRadiusWorld { get; private set; }
+
+        /// <summary>The blast this round spawns on every detonation, sized to its own body; null
+        /// on a round with no warhead. See the serialized field.</summary>
+        public AOEExplosion WarheadBlast => warheadBlast;
+
+        /// <summary>
+        /// The warhead's radius as a multiple of <see cref="HitRadiusWorld"/> — zero when this
+        /// flight is not carrying one, which is what makes the detonator need no new condition:
+        /// it already refuses to spawn a warhead at a non-positive radius.
+        /// </summary>
+        public float WarheadBlastRadiusMultiplier =>
+            Payload.ArmWarhead ? warheadBlastRadiusMultiplier : 0f;
+
+        /// <summary>
+        /// True once this flight has committed to a detonation. Per-FLIGHT — cleared by
+        /// <see cref="Initialize"/>, so a pooled reissue starts live again.
+        /// </summary>
+        public bool IsDetonating { get; private set; }
+
+        /// <summary>
+        /// Claims this flight's FIRST detonation, returning false for every later one.
+        ///
+        /// Two impact paths can commit a detonation in the same frame — a prism trigger and a
+        /// vessel trigger both fire inside one physics step — and each spawns its own authored
+        /// explosion, which is long-standing behaviour and not this method's business. What it
+        /// does own is the once-per-flight things: the WARHEAD blast, which is sized off the
+        /// round's own body and must not be doubled, and the proximity fuze, which must not set
+        /// off a round that has already gone off.
+        /// </summary>
+        internal bool TryBeginDetonation()
+        {
+            if (IsDetonating) return false;
+            IsDetonating = true;
+            return true;
+        }
 
         public Domains OwnDomain { get; private set; }
         public IVesselStatus VesselStatus { get; private set; }
@@ -140,6 +290,50 @@ namespace CosmicShore.Gameplay
         /// Per-shot: the CHARGE level-5 'Domain-Safe Skybursts' upgrade — direct-hit
         /// damage spares prisms of the shooter's own domain. Snapshot at fire time.
         public bool SpareOwnDomain { get; private set; }
+
+        /// <summary>
+        /// Per-flight: the round CRUISES - it flies at its launch velocity for as long as it is
+        /// alive, with no <c>cos(pi t / 2T)</c> ease-out and no lifetime, so its range is
+        /// unbounded. It ends only when its owner stops it (<see cref="Freeze"/>) or retires it
+        /// (<see cref="ReturnToFactory"/>), or when something else ends the flight (a proximity
+        /// fuze, a stopping impact). The Grizzly trigger bomb is the one user: it flies until the
+        /// trigger or another vessel stops it, and goes off only on the trigger.
+        /// Read every frame by the move loop and cleared by <see cref="Initialize"/>, so set it
+        /// AFTER the gun fires - the loop's first step runs inside the fire call, and a cruise
+        /// step and an eased step are identical there (<c>cos 0 = 1</c>).
+        /// </summary>
+        public bool Cruises { get; set; }
+
+        /// <summary>
+        /// Raised for every HULL this flight touches - the shooter's own included: the domain
+        /// rule in <c>ProjectileImpactor</c> decides what the round's EFFECTS may hit, not what a
+        /// listener may hear about, so a listener filters for itself. Fired before the effects
+        /// run, once per hull per dispatch. Per-FLIGHT, cleared by <see cref="Initialize"/>.
+        /// A listener may <see cref="Freeze"/> the round from inside the handler: the sweep then
+        /// leaves it at the contact point rather than at the end of the frame's step.
+        /// </summary>
+        public event Action<Projectile, VesselImpactor> VesselStruck;
+
+        internal void RaiseVesselStruck(VesselImpactor vessel) => VesselStruck?.Invoke(this, vessel);
+
+        /// <summary>
+        /// What THIS flight is carrying. Reset to <see cref="ProjectilePayload.Default"/> by
+        /// <see cref="Initialize"/>, so a pooled reissue can never inherit the previous shot's
+        /// payload and a caller that says nothing gets the prefab's own authoring.
+        /// </summary>
+        public ProjectilePayload Payload { get; private set; } = ProjectilePayload.Default;
+
+        /// <summary>Hands this flight its payload set. Called by the gun at fire time, after
+        /// <see cref="Initialize"/> and before launch.</summary>
+        public void SetPayload(in ProjectilePayload payload) => Payload = payload;
+
+        /// <summary>
+        /// The fuze radius this flight actually carries, as a multiple of
+        /// <see cref="HitRadiusWorld"/>. Zero when the flight is not carrying its warhead: the
+        /// fuze and the blast it triggers are ONE weapon, so disarming collapses both here
+        /// rather than at each of the three places that read the fuze.
+        /// </summary>
+        float FuzeRadiusMultiplier => Payload.ArmWarhead ? proximityFuzeRadiusMultiplier : 0f;
 
         /// Per-shot: this projectile is a PART of a pooled host object (the Sparrow's
         /// turret prism carries one), not an instance of the projectile pool. Its
@@ -253,12 +447,27 @@ namespace CosmicShore.Gameplay
             // Proximity collider-LOD: a projectile in flight is a focus, so the prism
             // colliders along its path (including distant structures it was fired at)
             // are awake by the time it arrives. Unregistered on pool return.
-            PrismColliderLodManager.RegisterFocus(transform);
+            //
+            // ONLY a round that meets prisms through PhysX needs that. A SWEPT round reads
+            // prisms out of PrismSpatialIndex (SweepPrismsAlong) and its trigger's prism case is
+            // suppressed (ProjectileImpactor), so a prism collider near it does nothing for it -
+            // while every focus is paid for by the LOD manager PER PRISM (the cull drain's
+            // re-validation, NotifyPrismActivated and the Burst classification all loop the
+            // foci). The Sparrow's full-auto keeps ~60 rounds in the air and the Brittle Star's
+            // five guns up to ~2000 (its pool prewarms 1400), which turned the focus list - meant
+            // for the handful of vessels - into the largest term of the LOD cost the moment
+            // either gun was held.
+            if (NeedsPrismColliders) PrismColliderLodManager.RegisterFocus(transform);
         }
+
+        /// <summary>True when this round meets prisms through their PhysX colliders and so must
+        /// keep the collider-LOD bubble awake around itself (see OnEnable).</summary>
+        bool NeedsPrismColliders => !sweptPrismDetection;
 
         private void OnDisable()
         {
-            PrismColliderLodManager.UnregisterFocus(transform);
+            if (NeedsPrismColliders) PrismColliderLodManager.UnregisterFocus(transform);
+            ProjectileSweepBatch.Remove(this);
 
             // A pooled round is reissued to a different pilot at a different MASS level, so it
             // must not carry the last flight's shell back out with it. LaunchProjectile decides
@@ -357,6 +566,20 @@ namespace CosmicShore.Gameplay
             SetSpikeOpacity(0.5f);
         }
 
+        Renderer[] _domainRenderers;
+
+        /// <summary>
+        /// Every renderer of this round that is authored with the domain placeholder (the base set's ship material)
+        /// wears the firing domain's ship material, per flight like the spike's paint (a pooled round changes hands).
+        /// </summary>
+        void PaintDomainPlaceholders()
+        {
+            if (_themeManagerData == null) return;
+            _domainRenderers ??= GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < _domainRenderers.Length; i++)
+                _themeManagerData.PaintDomainPlaceholders(_domainRenderers[i], OwnDomain);
+        }
+
         /// <summary>Per-instance opacity via MPB — never <c>renderer.material</c>.</summary>
         internal void SetSpikeOpacity(float opacity)
         {
@@ -386,16 +609,28 @@ namespace CosmicShore.Gameplay
             StopOnFirstPrismImpact = stopOnFirstPrismImpact;
             SpareOwnDomain = spareOwnDomain;
             IsCarriedByHost = carriedByHost;
+            Cruises = false;
+            _frozen = false;
 
             // Per-flight: a pooled reissue must not inherit the previous shooter's
-            // end-of-flight handler, and the once-only latch must re-arm.
+            // end-of-flight handler, and the once-only latches must re-arm.
             FlightEnded = null;
+            VesselStruck = null;
             _flightEndRaised = false;
+            IsDetonating = false;
 
             // Likewise the previous shot's MASS growth — a caller that does not set it gets
             // the un-grown default rather than whoever fired this instance last.
             _flightGrowthFactor = 1f;
             _intendedWorldScale = Vector3.zero;
+
+            // Per-flight payload. A pooled reissue must not inherit the previous shot's
+            // warhead, its cairn, or a half-laid prism trail: a base rocket handed a heavy
+            // rocket's instance would arrive carrying a fuze nobody armed.
+            Payload = ProjectilePayload.Default;
+            _prismTrail = null;
+            _prismTrailLaid = 0;
+            _sinceLastTrailPrism = 0f;
 
             // Per-flight chain state. Without these two an instance recycled out of the pool
             // would carry the previous cascade's remaining depth (deepening the chain for
@@ -473,7 +708,15 @@ namespace CosmicShore.Gameplay
         ///     cases; once the window closes the prism is ordinary friendly-fire mass.
         /// </summary>
         public bool DisallowImpactOnPrism(Prism prism) =>
-            (!friendlyFire && prism.Domain == OwnDomain) || Time.time < prism.ProjectileImmuneUntil;
+            (!friendlyFire && prism.Domain == OwnDomain)
+            || Time.time < prism.ProjectileImmuneUntil
+            // A round never detonates on the ribbon IT laid. An IDENTITY test, not a window:
+            // the mass is directly behind the round and inside its own hit sphere on the very
+            // frame it appears, and a round that curls back onto its own line should still
+            // pass through. Pool reuse clears trail membership (Prism.ResetState) and every
+            // layer re-stamps its own, so "is this prism still in the ribbon I laid" is exactly
+            // what this asks - the same identity test the Urchin's track teardown uses.
+            || (_prismTrail != null && prism.Trail == _prismTrail);
         public bool DisallowImpactOnVessel(Domains vesselDomain) => vesselDomain == OwnDomain;
         #endregion
 
@@ -488,6 +731,7 @@ namespace CosmicShore.Gameplay
             }
 
             FlightGeneration++;
+            _frozen = false;   // a new flight is never frozen, whatever the last one ended as
             if (audioSystem)
                 audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, transform.position);
             ProjectileTime = projectileTime;
@@ -512,6 +756,7 @@ namespace CosmicShore.Gameplay
                 _detachedThisFlight = true;
                 ApplySpikeAppearance();
             }
+            PaintDomainPlaceholders();
 
             Stop(); // Stop any running movement before starting a new one
 
@@ -523,6 +768,7 @@ namespace CosmicShore.Gameplay
             // After every scale/parent change above — the carried turret collider is sized
             // per shot, so this cannot be cached at Awake.
             if (sweptPrismDetection) CacheSweepRadius();
+            else _memberSweepRadius = MeasureHitRadius();
 
             // The growth baseline is whatever this shot actually launched at (the gun applies
             // projectileScale, the turret sizes its carried collider per shot), never the
@@ -544,6 +790,7 @@ namespace CosmicShore.Gameplay
             // because the parent chain (and so the root-local matrix) is only final here.
             CaptureModelHitSphere();
             FitColliderToModel(1f);
+            RefreshHitRadiusWorld();
 
             // The TAIL, for the same reason and at the same point as the hit sphere: the
             // round's parent chain, scale and position are all final here, and its body has
@@ -608,6 +855,18 @@ namespace CosmicShore.Gameplay
         #region Embed (the Urchin spike's landing)
 
         bool _embedded;
+
+        /// <summary>
+        /// The sweep loops' one exit test. A FROZEN round (<see cref="Freeze"/>, possibly from
+        /// inside a <see cref="VesselStruck"/> handler mid-sweep) has stopped too, and must stay at
+        /// the point it was stopped rather than step on to the segment's end. An EMBEDDED round
+        /// has stopped where it struck but has not raised <c>FlightEnded</c> yet (<see cref="EmbedAndRetire"/> defers that by the
+        /// dwell), so <c>_flightEndRaised</c> alone let a spike that had visibly stopped keep
+        /// dispatching the rest of that frame's hits - stealing and chain-firing from inside the
+        /// prism it stuck in - then step on to the segment's end and run the fuze test
+        /// (URCHIN_BACKLOG U4).
+        /// </summary>
+        bool FlightHalted => _flightEndRaised || _embedded || _frozen;
 
         /// <summary>
         /// Halts this round where it struck and leaves it standing in the prism for
@@ -682,18 +941,41 @@ namespace CosmicShore.Gameplay
 
         #endregion
 
+        // The per-frame flight step, split into its named parts so a Profiler capture can say
+        // which one a heavy gunfight is paying for (PERFORMANCE_OPTIMIZATION.md §1, S5). The
+        // step itself runs as a UniTask continuation, which the Profiler otherwise reports only
+        // as the self time of UniTaskLoopRunnerPreLateUpdate.
+        static readonly Unity.Profiling.ProfilerMarker s_GrowthMarker = new("Projectile.Growth");
+        static readonly Unity.Profiling.ProfilerMarker s_SweepVesselsMarker = new("Projectile.SweepVessels");
+        static readonly Unity.Profiling.ProfilerMarker s_SweepPrismsMarker = new("Projectile.SweepPrisms");
+        static readonly Unity.Profiling.ProfilerMarker s_FuzeMarker = new("Projectile.Fuze");
+
         private async UniTaskVoid MoveProjectileAsync(float projectileTime, CancellationToken token)
         {
             float elapsedTime = 0f;
             var t = transform; // cache
             var useSpike = spike && meshRenderer;
+            bool fuzed = false;
+            int generation = FlightGeneration;
+            bool batched = sweptPrismDetection || sweptVesselDetection;
 
             try
             {
-                while (elapsedTime < projectileTime && !token.IsCancellationRequested)
+                // A CRUISING round (Cruises) has no lifetime and no ease-out: it holds its
+                // launch velocity until its owner freezes or retires it. Read per frame, because
+                // the owner sets it after the first step has already run inside the fire call.
+                while ((Cruises || elapsedTime < projectileTime) && !token.IsCancellationRequested)
                 {
                     float deltaTime = Time.deltaTime;
-                    float factor = Mathf.Cos(elapsedTime * Mathf.PI / (2f * projectileTime));
+                    float factor = Cruises ? 1f : Mathf.Cos(elapsedTime * Mathf.PI / (2f * projectileTime));
+
+                    // The batched broad phase (ProjectileSweepBatch): join it, and if this is the frame's first
+                    // swept step, build it for every round in flight - before any of them moves.
+                    if (batched)
+                    {
+                        ProjectileSweepBatch.Add(this);
+                        ProjectileSweepBatch.EnsureBuilt();
+                    }
 
                     // Grow BEFORE the step is swept, so this frame's hit volume is the size the
                     // round has actually reached rather than the one it left the muzzle at.
@@ -701,21 +983,85 @@ namespace CosmicShore.Gameplay
                     // change again, and re-writing that transform every frame for the rest of
                     // the flight would dirty its hierarchy for nothing.
                     if (_flightGrowthFactor != 1f && !_flightGrowthSettled)
-                        ApplyFlightGrowth(elapsedTime / projectileTime);
+                    {
+                        using (s_GrowthMarker.Auto())
+                            ApplyFlightGrowth(Mathf.Min(1f, elapsedTime / projectileTime));
+                    }
 
                     Vector3 sweepFrom = t.position;
                     t.position += Velocity * (deltaTime * factor);
 
+                    // The prism trail. Laid off the DISTANCE actually covered by this step, so
+                    // the ribbon's spacing is the authored one whatever the round's speed, its
+                    // SPACE level or the cosine falloff of its own flight are doing.
+                    LayFlightTrail(sweepFrom, t.position);
+
+                    // Vessels FIRST: a round that would have struck a hull mid-step must not
+                    // be consumed by a prism it reached later along the same segment. The two
+                    // sweeps are separate queries because their target sets live in different
+                    // places - prisms in PrismSpatialIndex, vessels in PhysX - and merging
+                    // them would mean putting one of those populations in the other's store.
+                    if (sweptVesselDetection)
+                    {
+                        using (s_SweepVesselsMarker.Auto())
+                            SweepVesselsAlong(sweepFrom, t.position);
+                        // FlightHalted, not _flightEndRaised: it also covers _embedded, so a
+                        // projectile that lodged mid-sweep stops sweeping too.
+                        if (FlightHalted) return;
+                    }
+
+                    if (!sweptPrismDetection && HasVirtualPrisms())
+                    {
+                        // a trigger round reaches every PRISM with a GameObject through PhysX; a VIRTUAL entry (a
+                        // creature that is only data, Docs/SWARM_FAUNA.md §19) has no collider, so the index's own
+                        // virtual entries are swept for (and join the same dispatch) explicitly
+                        SweepPrismsAlong(sweepFrom, t.position, virtualOnly: true);
+                        if (FlightHalted) return;
+                    }
+
                     if (sweptPrismDetection)
                     {
-                        SweepPrismsAlong(sweepFrom, t.position);
+                        using (s_SweepPrismsMarker.Auto())
+                            SweepPrismsAlong(sweepFrom, t.position);
 
                         // A stopping impact has already run the whole end-of-flight path
                         // (RaiseFlightEnded + ReturnToFactory). Returning rather than
                         // breaking is deliberate: the loop's tail would otherwise fire the
                         // end effects a second time on an instance already back in the pool.
-                        if (_flightEndRaised)
+                        // An embedded round has stopped too, and owns its own retirement.
+                        if (FlightHalted)
                             return;
+                    }
+
+                    // LIT: the sphere this round would detonate inside, drawn on the mass it
+                    // covers in the shooter's domain colour, so a warhead's threat volume is
+                    // something the arena can READ rather than something only the shooter knows.
+                    // Published from inside the flight loop off the same radius the fuze itself
+                    // tests, so the light and the trigger are one number - a fuze that armed at a
+                    // radius the light did not draw would be worse than no light. The bank fades
+                    // it out by itself when the round is retired or detonates.
+                    bool fuzeTripped;
+                    using (s_FuzeMarker.Auto())
+                    {
+                        PublishFuzeLit(t.position);
+
+                        // The PROXIMITY FUZE. Checked after the step so it reads the position the
+                        // round actually reached this frame, and after the swept prism dispatch so a
+                        // direct hit - which ends the flight from inside that call - always wins.
+                        fuzeTripped = FuzeRadiusMultiplier > 0f && !IsDetonating
+                            && ProximityFuzeTripped(t.position);
+                    }
+
+                    if (fuzeTripped)
+                    {
+                        // The round stops here, and its DIRECT-hit collider goes with it: the
+                        // detonation's return delay leaves this object parked and live for a
+                        // quarter second, and a pilot brushing it in that window would run the
+                        // whole direct-strike chain on a rocket that has already gone off.
+                        // OnEnable re-enables it on the next pull from the pool.
+                        if (_rootCollider) _rootCollider.enabled = false;
+                        fuzed = true;
+                        break;
                     }
 
                     if (useSpike)
@@ -729,11 +1075,14 @@ namespace CosmicShore.Gameplay
                     await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
                 }
 
-                // Death point #1: the lifetime expired. Signal before the end effects,
-                // so a host that leaves something behind (the turret prism's anchor)
-                // acts on the position the shot actually reached rather than a pooled
-                // instance that has already been reset.
-                RaiseFlightEnded(stoppedByImpact: false);
+                // Death point #1: the lifetime expired, or the proximity fuze tripped. Signal
+                // before the end effects, so a host that leaves something behind (the turret
+                // prism's anchor) acts on the position the shot actually reached rather than a
+                // pooled instance that has already been reset.
+                //
+                // A fuzed round reports stoppedByImpact: it did not run out of life, something
+                // came close enough to set it off.
+                RaiseFlightEnded(stoppedByImpact: fuzed);
 
                 projectileImpactor.ExecuteEndEffects();
                 // ReturnToFactory(); // handled by end effects (delayed)
@@ -743,9 +1092,86 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogError($"[Projectile] Move loop error: {ex}");
             }
+            finally
+            {
+                // Only THIS flight's registration: a relaunch has already bumped the generation and joined
+                // the batch again, and this (cancelled) loop must not take that away.
+                if (batched && generation == FlightGeneration) ProjectileSweepBatch.Remove(this);
+            }
         }
 
-        #region Swept prism detection
+        #region Flight prism trail
+
+        // ONE Trail per flight, created lazily at the first prism. It is what makes the ribbon a
+        // 1D PRISMSCAPE rather than a line of loose Singletons - the dimension the topology
+        // ladder reads, and the membership stamp rule 30's identity test needs. Cleared per
+        // flight in Initialize, so a pooled reissue starts a new ribbon rather than extending
+        // whoever fired this instance last.
+        Trail _prismTrail;
+        int _prismTrailLaid;
+        float _sinceLastTrailPrism;
+
+        /// <summary>
+        /// Lays this step's share of the round's prism trail.
+        ///
+        /// <para><b>It is CONSERVED MASS, placed by an active force.</b> Nothing here removes a
+        /// prism, and nothing ages one out: once laid, a trail prism is ordinary mass in the
+        /// shooter's domain that the food web grazes, a rival steals, and any weapon destroys —
+        /// which is also what returns it to the pool. There is no teardown for the same reason a
+        /// vessel's own trail has none.</para>
+        ///
+        /// <para><b>Per-peer, like the flight that lays it.</b> A projectile is a local,
+        /// unreplicated object simulated on every peer off a replicated press at a replicated
+        /// pose, exactly as a vessel's trail is laid locally off replicated motion. The ribbon
+        /// therefore agrees across peers to the same extent the flight does, and needs no
+        /// networking of its own.</para>
+        ///
+        /// <para>The CAP is the collider-budget statement and is checked before the spacing: a
+        /// round's range is a function of its SPACE level, so spacing alone bounds nothing.</para>
+        /// </summary>
+        void LayFlightTrail(Vector3 from, Vector3 to)
+        {
+            if (!Payload.LayPrismTrail) return;
+            if (prismTrailSpacing <= 0f || !prismTrailChannel) return;
+            if (_prismTrailLaid >= prismTrailMaxPrisms) return;
+
+            _sinceLastTrailPrism += Vector3.Distance(from, to);
+            if (_sinceLastTrailPrism < prismTrailSpacing) return;
+            _sinceLastTrailPrism = 0f;
+
+            // Aim the prism down the round's own flight so the ribbon reads as a line the rocket
+            // drew. A round is never stationary in this loop, but guard anyway: SafeLookRotation
+            // refuses a zero direction rather than inventing a pose.
+            if (!SafeLookRotation.TryGet(Velocity, out var rotation, this, logError: false))
+                rotation = transform.rotation;
+
+            _prismTrail ??= new Trail();
+
+            var playerName = VesselStatus?.Player != null ? VesselStatus.PlayerName : null;
+
+            var laid = BoostRingBuilder.LayOne(
+                prismTrailChannel, to, rotation, prismTrailScale, prismTrailKind,
+                OwnDomain, playerName, $"{playerName}::missiletrail::{GetInstanceID()}::{_prismTrailLaid}",
+                _prismTrail);
+
+            if (!laid) return;   // pool exhausted - lay the next one at the next interval
+
+            if (prismTrailImmunitySeconds > 0f)
+                laid.ProjectileImmuneUntil = Time.time + prismTrailImmunitySeconds;
+
+            _prismTrailLaid++;
+        }
+
+        #endregion
+
+        #region Swept contact detection
+        //
+        // TWO sweeps, one shape. A projectile's mover TELEPORTS (position += Velocity*dt),
+        // so the only thing PhysX ever sees is where a step LANDED - and it sees even that
+        // once per FIXED timestep, not once per frame. Both target populations therefore
+        // need the segment testing explicitly; they stay separate queries only because the
+        // two populations live in different stores (prisms in PrismSpatialIndex, vessels in
+        // PhysX), and merging them would mean putting one inside the other.
 
         /// <summary>
         /// Extra radius added when GATHERING candidates, on top of the projectile's own hit
@@ -758,11 +1184,21 @@ namespace CosmicShore.Gameplay
         /// </summary>
         const float SweepCandidateExtent = 8f;
 
+        /// <summary>
+        /// One ordered contact along this frame's segment. The impactor is held as
+        /// <see cref="ImpactorBase"/> rather than as a concrete type because BOTH sweeps —
+        /// prisms and vessels — order and dispatch identically; the base is a MonoBehaviour,
+        /// so the destroyed-since-gathered null check below still reads correctly.
+        /// </summary>
         readonly struct SweepHit
         {
             public readonly float T;                 // parameter along this frame's segment
-            public readonly PrismImpactor Impactor;
-            public SweepHit(float t, PrismImpactor impactor) { T = t; Impactor = impactor; }
+            public readonly ImpactorBase Impactor;
+            /// <summary>A VIRTUAL index entry (Docs/SWARM_FAUNA.md §19), or -1. Its impactor is null until its turn in
+            /// the nearest-first dispatch, when the index materialises it into a real prism.</summary>
+            public readonly int VirtualId;
+            public SweepHit(float t, ImpactorBase impactor) { T = t; Impactor = impactor; VirtualId = -1; }
+            public SweepHit(float t, int virtualId) { T = t; Impactor = null; VirtualId = virtualId; }
         }
 
         // Shared scratch, RENTED BY DEPTH. The sweep is main-thread but it is NOT
@@ -784,12 +1220,21 @@ namespace CosmicShore.Gameplay
             {
                 s_candidatePool.Add(new List<Prism>(64));
                 s_hitPool.Add(new List<SweepHit>(16));
+                s_virtualPool.Add(new List<int>(8));
             }
             return (s_candidatePool[depth], s_hitPool[depth]);
         }
+        // rented by depth with the other two, for the same re-entrancy reason
+        static readonly List<List<int>> s_virtualPool = new();
         static readonly Comparison<SweepHit> s_nearestFirst = (x, y) => x.T.CompareTo(y.T);
 
         float _sweepRadius = 0.5f;
+
+        static bool HasVirtualPrisms()
+        {
+            var index = PrismSpatialIndex.Instance;
+            return index && index.IsAvailable && index.VirtualCount > 0;
+        }
 
         // ---- in-flight growth (MASS) ----
         float _flightGrowthFactor = 1f;
@@ -867,7 +1312,32 @@ namespace CosmicShore.Gameplay
             else if (_transformIsHitVolume)
                 transform.localScale = new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
 
+            RefreshHitRadiusWorld();
             SizeChargeField();
+        }
+
+        /// <summary>
+        /// Re-reads <see cref="HitRadiusWorld"/> off the live collider and the live scale — the
+        /// same "largest lossy component" rule <see cref="CacheSweepRadius"/> uses, because that
+        /// is the rule PhysX itself applies to a SphereCollider.
+        ///
+        /// Rounds whose hit volume is not a sphere fall back to a conservative half-extent; the
+        /// fuze and the warhead are opt-in and every round that uses them is a sphere.
+        /// </summary>
+        void RefreshHitRadiusWorld()
+        {
+            if (_rootCollider is SphereCollider sphere)
+            {
+                Vector3 lossy = _rootCollider.transform.lossyScale;
+                HitRadiusWorld = sphere.radius * Mathf.Max(Mathf.Abs(lossy.x),
+                    Mathf.Max(Mathf.Abs(lossy.y), Mathf.Abs(lossy.z)));
+                return;
+            }
+
+            HitRadiusWorld = _rootCollider
+                ? Mathf.Min(_rootCollider.bounds.extents.x,
+                    Mathf.Min(_rootCollider.bounds.extents.y, _rootCollider.bounds.extents.z))
+                : 0f;
         }
 
         /// <summary>
@@ -1032,6 +1502,169 @@ namespace CosmicShore.Gameplay
         /// or this projectile's own root when none is wired (every round that already grew).
         /// </summary>
         Transform GrowthTarget => flightGrowthTarget ? flightGrowthTarget : transform;
+
+        #region Proximity fuze
+
+        // The fuze asks TWO questions of two very differently-populated layers, so it runs two
+        // queries with two buffers rather than one query over a combined mask.
+        //
+        // WHY (this replaced a single 24-slot Collider[] over Ships|Crystals, and the reasoning
+        // that justified it was inverted): OverlapSphereNonAlloc fills its buffer in unspecified
+        // broadphase order and silently discards the rest, and EVERY discriminating test here
+        // runs AFTER the fill. "It takes the first qualifying hit and stops" is therefore not a
+        // defence - the query cannot be asked for only qualifying hits. Layer 9 (Crystals) is
+        // dominated by things this fuze REJECTS: every flora heart (one always-on collider per
+        // plant - a lattice colony or a Hesperides garden stands hundreds), every own-domain
+        // creature's heart, and every free crystal drop. Any of those can fill the buffer and
+        // push the one opposing hull out of the result, so an armed rocket flies straight
+        // through a pilot, order-dependently and with nothing logged.
+        //
+        // Splitting the query makes the VESSEL half exact: a Ships-only buffer can only ever
+        // hold vessels, so with a lobby of at most a handful it cannot truncate at all. The
+        // crowded layer gets a bigger buffer plus grow-and-retry.
+        static Collider[] s_fuzeVesselHits = new Collider[16];
+        static Collider[] s_fuzeHeartHits = new Collider[128];
+
+        // A saturated query is a POSSIBLY-TRUNCATED query, so grow and re-ask instead of
+        // accepting an arbitrary subset. Capped so a pathological cell cannot allocate without
+        // bound; at the cap we take what we got, which is still strictly more than before.
+        const int FuzeBufferCap = 1024;
+
+        // Ships and Crystals, resolved once each. 0 = not looked up yet, -1 = this project has
+        // no such layer (in which case that half of the fuze stands down rather than querying
+        // everything).
+        static int s_fuzeVesselMask;
+        static int s_fuzeHeartMask;
+
+        static int ResolveLayerMaskOnce(ref int cache, string layerName)
+        {
+            if (cache != 0) return cache;
+            int layer = LayerMask.NameToLayer(layerName);
+            cache = layer >= 0 ? 1 << layer : -1;
+            return cache;
+        }
+
+        /// <summary>
+        /// Overlap that never silently truncates: if the buffer came back full the result may be
+        /// a subset, so grow and re-ask. Returns the hit count and leaves the (possibly
+        /// reallocated) buffer in <paramref name="buffer"/>.
+        /// </summary>
+        static int OverlapGrowing(Vector3 position, float radius, int mask, ref Collider[] buffer)
+        {
+            while (true)
+            {
+                int found = Physics.OverlapSphereNonAlloc(position, radius, buffer, mask,
+                                                          QueryTriggerInteraction.Collide);
+                if (found < buffer.Length || buffer.Length >= FuzeBufferCap) return found;
+                buffer = new Collider[buffer.Length * 2];
+            }
+        }
+
+        /// <summary>
+        /// Publish this round's armed fuze volume as a LIT sphere. A no-op on every round in the
+        /// game but the skyburst: <c>proximityFuzeRadiusMultiplier</c> is 0 elsewhere, so there
+        /// is no fuze to draw and nothing is published.
+        ///
+        /// The radius is <see cref="HitRadiusWorld"/> x the fuze multiplier - the exact expression
+        /// <see cref="ProximityFuzeTripped"/> tests - which means it GROWS with MASS along with
+        /// the round it belongs to, and a round still leaving the bay draws the small volume it
+        /// actually has.
+        /// </summary>
+        void PublishFuzeLit(Vector3 position)
+        {
+            float radius = HitRadiusWorld * FuzeRadiusMultiplier;
+            if (radius <= 0f || IsDetonating) return;
+
+            // Domains.Blue for an unrostered round (the anonymous-explosion case) rather than a
+            // guessed team: PrismLit.DomainTint answers white for the sentinel, which reads as a
+            // neutral threat rather than as somebody else's.
+            var domain = VesselStatus?.Player != null ? VesselStatus.Domain : Domains.Blue;
+            PrismLit.PublishLight(GetInstanceID(), LitVolume.Sphere(position, radius), 1f, domain);
+        }
+
+        /// <summary>
+        /// Is there anything within the fuze radius worth detonating on?
+        ///
+        /// <para>An explicit overlap rather than a second trigger collider, for three reasons.
+        /// A 150-unit trigger dragged through a cell would mint thousands of PhysX pairs per
+        /// frame that all get discarded (the problem <c>AOEExplosion.ApplyPrismExclusion</c>
+        /// exists to solve). A trigger would arrive through <c>AcceptImpactee</c> and run the
+        /// round's DIRECT-hit effect list - spinning a pilot and scoring a missile strike on a
+        /// near miss. And the overlap ignores the collision matrix, which is what lets one query
+        /// see both vessels and crystals. It is the same reasoning
+        /// <c>ExplosionImpactor.SweepCrystals</c> records.</para>
+        ///
+        /// <para><b>Own-domain things never trip it</b>, vessels and creatures alike. Detonating
+        /// on a teammate is pure grief, and detonating on your own domain's wildlife wastes the
+        /// rocket - so the rule is one rule, and it does not depend on an upgrade state that
+        /// would make the fuze behave differently at different element levels.</para>
+        /// </summary>
+        bool ProximityFuzeTripped(Vector3 position)
+        {
+            float radius = HitRadiusWorld * FuzeRadiusMultiplier;
+            if (radius <= 0f) return false;
+
+            // A VESSEL - identified the way every other impact path identifies one, through the
+            // ImpactCollider its hull carries. Asked first: it is the cheap query, it is the
+            // case the weapon exists for, and it is the one that must never be crowded out.
+            int vesselMask = ResolveLayerMaskOnce(ref s_fuzeVesselMask, "Ships");
+            if (vesselMask > 0)
+            {
+                int found = OverlapGrowing(position, radius, vesselMask, ref s_fuzeVesselHits);
+                for (int i = 0; i < found; i++)
+                {
+                    var col = s_fuzeVesselHits[i];
+                    if (!col) continue;
+                    if (!col.TryGetComponent(out ImpactCollider impactCollider)) continue;
+                    if (impactCollider.Impactor is not VesselImpactor vesselImpactor) continue;
+
+                    var status = vesselImpactor.Vessel?.VesselStatus;
+                    if (status != null && !DisallowImpactOnVessel(status.Domain)) return true;
+                }
+            }
+
+            // A living CREATURE, reached through its heart - the same surface the Squirrel
+            // jousts, and the only part of a creature that is on the Crystals layer.
+            int heartMask = ResolveLayerMaskOnce(ref s_fuzeHeartMask, "Crystals");
+            if (heartMask > 0)
+            {
+                int found = OverlapGrowing(position, radius, heartMask, ref s_fuzeHeartHits);
+                for (int i = 0; i < found; i++)
+                {
+                    var col = s_fuzeHeartHits[i];
+                    if (!col) continue;
+                    if (col.TryGetComponent(out Crystal crystal) && TripsOnLifeform(crystal)) return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// True for a LIVING fauna's heart of a domain this round is willing to detonate on.
+        ///
+        /// <para>Flora are excluded deliberately: a seeded cell stands a thousand plant hearts
+        /// and a rocket that armed on scenery could not cross a forest.</para>
+        ///
+        /// <para><b>Liveness is asked explicitly</b>, because <c>IsEmbedded</c> does not answer
+        /// it: a creature with a progressive wither re-homes its heart onto the cell at the TOP
+        /// of its death and leaves it embedded for the whole animation, so a corpse's heart
+        /// looks exactly like a living one for seconds (Docs/ECOSYSTEM.md §26). Without this a
+        /// Sparrow that guns a shark and then fires through the same volume has the rocket armed
+        /// and spent by the corpse it just made.</para>
+        /// </summary>
+        bool TripsOnLifeform(Crystal crystal)
+        {
+            if (!crystal || !crystal.IsEmbedded) return false;
+
+            var lifeform = crystal.EmbeddedIn;
+            if (lifeform is not Fauna fauna) return false;
+            if (fauna.IsDying) return false;
+
+            return fauna.Domain != OwnDomain;
+        }
+
+        #endregion
 
         #region Tail
 
@@ -1235,24 +1868,95 @@ namespace CosmicShore.Gameplay
         /// A SphereCollider takes the LARGEST lossy-scale component — the same rule that once
         /// turned a 0.3 radius on a ×20-stretched tracer into a 6.0 world radius.
         /// </summary>
-        void CacheSweepRadius()
+        void CacheSweepRadius() => _sweepRadius = MeasureHitRadius();
+
+        #region Batched broad phase (ProjectileSweepBatch)
+
+        /// <summary>This round's place in <see cref="ProjectileSweepBatch"/>; -1 when not in it.</summary>
+        internal int SweepBatchSlot = -1;
+
+        // This frame's batched answer, valid only for the step it was taken for (see BatchClear).
+        int _batchFrame = -1;
+        int _batchStamp;
+        Vector3 _batchFrom;
+        Vector3 _batchVelocity;
+        float _batchVesselRadius;
+        float _batchPrismRadius;
+        bool _batchVesselsClear;
+        bool _batchPrismsClear;
+
+        /// <summary>The most this flight's sweep radius can reach: in-flight growth moves it between the launch
+        /// radius and launch x growth factor (<see cref="RoundGrowthRamp"/>), never past either end.</summary>
+        internal float MaxSweepRadius =>
+            Mathf.Max(_sweepRadius, _launchSweepRadius * Mathf.Max(1f, _flightGrowthFactor));
+
+        /// <summary>
+        /// The capsule this frame's step can at most cover: from here to <c>here + Velocity * dt</c> (the real step is
+        /// that times the flight's cosine factor, in (0, 1]), at the largest radius the sweeps can use. The prism
+        /// radius carries <see cref="SweepCandidateExtent"/>, as <see cref="SweepPrismsAlong"/> asks the index with it.
+        /// </summary>
+        internal void SweepEnvelope(float dt, out Vector3 from, out Vector3 to, out float vesselRadius, out float prismRadius)
+        {
+            from = transform.position;
+            to = from + Velocity * dt;
+            vesselRadius = MaxSweepRadius + BatchRadiusSlack;
+            prismRadius = vesselRadius + SweepCandidateExtent;
+            _batchFrom = from;
+            _batchVelocity = Velocity;
+            _batchVesselRadius = vesselRadius;
+            _batchPrismRadius = prismRadius;
+        }
+
+        // Float slack so the batched capsule strictly contains the real one (bucket edges, rounding).
+        const float BatchRadiusSlack = 0.01f;
+
+        internal void StampSweepBatch(int frame, int indexStamp, bool vesselsClear, bool prismsClear)
+        {
+            _batchFrame = frame;
+            _batchStamp = indexStamp;
+            _batchVesselsClear = vesselsClear;
+            _batchPrismsClear = prismsClear;
+        }
+
+        /// <summary>
+        /// True only when this frame's batch said the step from <paramref name="from"/> touches nothing of that kind
+        /// AND the step is still the one it was asked about: same frame, same start, same velocity, a radius it
+        /// covered, and (prisms) no index write since. Anything else answers false and the caller queries as before.
+        /// </summary>
+        bool BatchClear(Vector3 from, bool prisms)
+        {
+            if (_batchFrame != Time.frameCount) return false;
+            if (from != _batchFrom || Velocity != _batchVelocity) return false;
+            if (!prisms) return _batchVesselsClear && _sweepRadius <= _batchVesselRadius;
+            if (!_batchPrismsClear || _sweepRadius + SweepCandidateExtent > _batchPrismRadius) return false;
+            var index = PrismSpatialIndex.Instance;
+            return index && index.WriteStamp == _batchStamp;
+        }
+
+        #endregion
+
+        float MeasureHitRadius()
         {
             if (_rootCollider is SphereCollider sphere)
             {
                 Vector3 s = _rootCollider.transform.lossyScale;
-                _sweepRadius = sphere.radius *
+                return sphere.radius *
                     Mathf.Max(Mathf.Abs(s.x), Mathf.Max(Mathf.Abs(s.y), Mathf.Abs(s.z)));
-                return;
             }
 
             // Non-sphere colliders: the smallest half-extent is the conservative read (a long
             // dart's AABB diagonal would massively overstate its cross-section). Swept
             // detection is opt-in and every current user is a sphere.
-            _sweepRadius = _rootCollider
+            return _rootCollider
                 ? Mathf.Min(_rootCollider.bounds.extents.x,
                     Mathf.Min(_rootCollider.bounds.extents.y, _rootCollider.bounds.extents.z))
                 : 0.5f;
         }
+
+        // The hit radius a NON-swept round tests VIRTUAL index entries with (its trigger reaches prisms with a
+        // GameObject; a virtual entry has no collider, so it is swept for explicitly - Docs/SWARM_FAUNA.md §19).
+        // Measured at launch.
+        float _memberSweepRadius = 0.5f;
 
         /// <summary>
         /// Tests the segment this projectile crossed THIS FRAME for prism contact and
@@ -1265,7 +1969,7 @@ namespace CosmicShore.Gameplay
         /// its prism "wherever the bullet would be destroyed" — sees where the shot actually
         /// met the prism, not where the frame's step happened to end.
         /// </summary>
-        void SweepPrismsAlong(Vector3 from, Vector3 to)
+        void SweepPrismsAlong(Vector3 from, Vector3 to, bool virtualOnly = false)
         {
             if (!projectileImpactor) return;
 
@@ -1276,14 +1980,34 @@ namespace CosmicShore.Gameplay
             try
             {
             var (s_sweepCandidates, s_sweepHits) = RentSweepBuffers(depth);
+            var virtuals = s_virtualPool[depth];
+            float radius = virtualOnly ? _memberSweepRadius : _sweepRadius;
 
-            if (index.QuerySegment(from, to, _sweepRadius + SweepCandidateExtent, s_sweepCandidates) == 0)
+            s_sweepCandidates.Clear();
+            if (!virtualOnly && !BatchClear(from, prisms: true))
+                index.QuerySegment(from, to, _sweepRadius + SweepCandidateExtent, s_sweepCandidates);
+
+            // VIRTUAL entries (Docs/SWARM_FAUNA.md §19) - QuerySegment returns only prisms with a GameObject - on the
+            // same segment with the same allowance, refined below by the same bounding-sphere contact a prism gets.
+            virtuals.Clear();
+            if (index.VirtualCount > 0)
+                index.QuerySegmentVirtualIds(from, to, radius + SweepCandidateExtent, virtuals);
+
+            if (s_sweepCandidates.Count == 0 && virtuals.Count == 0)
                 return;
 
             Vector3 ab = to - from;
             float abLenSq = ab.sqrMagnitude;
 
             s_sweepHits.Clear();
+            for (int i = 0; i < virtuals.Count; i++)
+            {
+                if (!index.TryGetVirtualEntry(virtuals[i], out var point, out _, out float bodyRadius)) continue;
+                float t = abLenSq > 1e-8f ? Mathf.Clamp01(Vector3.Dot(point - from, ab) / abLenSq) : 0f;
+                float contact = radius + bodyRadius;
+                if ((point - (from + ab * t)).sqrMagnitude > contact * contact) continue;
+                s_sweepHits.Add(new SweepHit(t, virtuals[i]));
+            }
             for (int i = 0; i < s_sweepCandidates.Count; i++)
             {
                 var prism = s_sweepCandidates[i];
@@ -1311,20 +2035,158 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < s_sweepHits.Count; i++)
             {
                 var hit = s_sweepHits[i];
-                if (!hit.Impactor) continue;
+                ImpactorBase impactor = hit.Impactor;
+                if (!impactor && hit.VirtualId >= 0)
+                {
+                    // the entry becomes a real prism at its turn (its owner materialises it; the index suspends the
+                    // entry), which this round's own prism effects then act on exactly as on any prism. A round's
+                    // handful of virtual hits is never deferred.
+                    var real = index.ResolvePrism(hit.VirtualId, materialise: true);
+                    if (real && !real.destroyed && real.TryGetComponent(out PrismImpactor bodyImpactor)) impactor = bodyImpactor;
+                }
+                if (!impactor) continue;
 
                 transform.position = from + ab * hit.T;
-                projectileImpactor.AcceptImpacteeFromSweep(hit.Impactor);
+                projectileImpactor.AcceptImpacteeFromSweep(impactor);
 
                 // A stopping impact ran the whole end-of-flight path from inside that call;
-                // the shot rests here.
-                if (_flightEndRaised) return;
+                // the shot rests here. So does one that EMBEDDED in this prism.
+                if (FlightHalted) return;
             }
 
             // Pierced everything it met — finish the frame's step.
             transform.position = to;
             }
             finally { s_sweepDepth--; }
+        }
+
+        // Bounded scratch for the vessel sweep. A hull is several colliders and an arena holds
+        // at most a handful of vessels, so 32 is generous; grown on saturation by the same rule
+        // the fuze uses - see OverlapCapsuleGrowing.
+        //
+        // DEPTH-RENTED like the prism buffers, even though no vessel effect fires another
+        // projectile mid-sweep today. That is true only because ProjectileChainFire is authored
+        // as a projectile-PRISM effect, so the ship arm cannot reach it - an absence guarded by
+        // which container someone dropped an asset into, not by anything in this file. The prism
+        // sweep asserted the same non-reentrancy in a comment and the Urchin disproved it; the
+        // rent costs six lines and removes the class rather than the instance.
+        static readonly List<Collider[]> s_vesselHitPool = new();
+        static readonly List<List<SweepHit>> s_vesselOrderedPool = new();
+        static int s_vesselSweepDepth;
+
+        static List<SweepHit> RentVesselBuffers(int depth)
+        {
+            while (s_vesselHitPool.Count <= depth)
+            {
+                s_vesselHitPool.Add(new Collider[32]);
+                s_vesselOrderedPool.Add(new List<SweepHit>(8));
+            }
+            return s_vesselOrderedPool[depth];
+        }
+
+        // Ships, resolved once through the fuze's own cache: both readers want the same layer,
+        // and a second copy is a second thing to keep in step.
+        static int s_sweepVesselMask;
+
+        /// <summary>
+        /// The capsule twin of <see cref="OverlapGrowing"/> — a saturated query is a
+        /// POSSIBLY-TRUNCATED query, and truncating here would silently drop the nearest hull.
+        /// </summary>
+        static int OverlapCapsuleGrowing(Vector3 a, Vector3 b, float radius, int mask,
+                                         ref Collider[] buffer)
+        {
+            while (true)
+            {
+                int found = Physics.OverlapCapsuleNonAlloc(a, b, radius, buffer, mask,
+                                                           QueryTriggerInteraction.Collide);
+                if (found < buffer.Length || buffer.Length >= FuzeBufferCap) return found;
+                buffer = new Collider[buffer.Length * 2];
+            }
+        }
+
+        /// <summary>
+        /// Test the segment this projectile crossed for VESSEL contact — the exact analogue of
+        /// <see cref="SweepPrismsAlong"/>, against the other target population.
+        ///
+        /// <para>A capsule OVERLAP rather than a sphere CAST, deliberately: a cast ignores
+        /// colliders it starts already inside, which is precisely the case a round that is
+        /// mid-hull at the frame boundary presents. The overlap also needs no separate
+        /// start-point test.</para>
+        ///
+        /// <para>Contacts are ordered nearest-first along the segment and the projectile is
+        /// moved to each before dispatch, so an effect reading the shot's position sees where
+        /// it met the hull rather than where the step happened to end — same contract the prism
+        /// sweep holds.</para>
+        ///
+        /// <para>One hull is MANY colliders, so contacts are deduplicated per impactor here.
+        /// The combat-hit latch would collapse the duplicates for scoring anyway, but every
+        /// other effect in the container (spin, debuff, detonation) would still have run once
+        /// per collider.</para>
+        /// </summary>
+        void SweepVesselsAlong(Vector3 from, Vector3 to)
+        {
+            if (!projectileImpactor) return;
+
+            int vesselMask = ResolveLayerMaskOnce(ref s_sweepVesselMask, "Ships");
+            if (vesselMask <= 0) return;
+
+            // The batched broad phase found no Ships collider anywhere along this frame's step envelope.
+            if (BatchClear(from, prisms: false)) return;
+
+            int depth = s_vesselSweepDepth++;
+            try
+            {
+                var ordered = RentVesselBuffers(depth);
+                var buffer = s_vesselHitPool[depth];
+
+                int found = OverlapCapsuleGrowing(from, to, _sweepRadius, vesselMask, ref buffer);
+                s_vesselHitPool[depth] = buffer;   // OverlapCapsuleGrowing may have replaced it
+                if (found == 0) return;
+
+                Vector3 ab = to - from;
+                float abLenSq = ab.sqrMagnitude;
+
+                ordered.Clear();
+                for (int i = 0; i < found; i++)
+                {
+                    var col = buffer[i];
+                    if (!col) continue;
+                    if (!col.TryGetComponent(out ImpactCollider impactCollider)) continue;
+                    if (impactCollider.Impactor is not VesselImpactor vesselImpactor) continue;
+
+                    // One entry per HULL, not per collider.
+                    bool already = false;
+                    for (int j = 0; j < ordered.Count && !already; j++)
+                        already = ReferenceEquals(ordered[j].Impactor, vesselImpactor);
+                    if (already) continue;
+
+                    Vector3 centre = col.bounds.center;
+                    float t = abLenSq > 1e-8f
+                        ? Mathf.Clamp01(Vector3.Dot(centre - from, ab) / abLenSq)
+                        : 0f;
+
+                    ordered.Add(new SweepHit(t, vesselImpactor));
+                }
+
+                if (ordered.Count == 0) return;
+                if (ordered.Count > 1) ordered.Sort(s_nearestFirst);
+
+                for (int i = 0; i < ordered.Count; i++)
+                {
+                    var hit = ordered[i];
+                    if (!hit.Impactor) continue;
+
+                    transform.position = from + ab * hit.T;
+                    projectileImpactor.AcceptImpacteeFromSweep(hit.Impactor);
+
+                    // A vessel impact can end the flight (the skyburst detonates on its direct
+                    // hit); the shot rests where it landed.
+                    if (FlightHalted) return;
+                }
+
+                transform.position = to;
+            }
+            finally { s_vesselSweepDepth--; }
         }
 
         #endregion
@@ -1337,5 +2199,21 @@ namespace CosmicShore.Gameplay
             _moveCts.Dispose();
             _moveCts = null;
         }
+
+        /// <summary>
+        /// Halts the projectile in place while keeping it alive, rendered, and detonatable
+        /// (the cancelled move loop skips FlightEnded / end effects / pool return).
+        /// Velocity is zeroed so a later FaceExitVelocity detonation cannot read stale motion.
+        /// Latched until the next <see cref="Initialize"/>, so a freeze issued from inside this
+        /// frame's sweep (a <see cref="VesselStruck"/> handler) halts the rest of that sweep too.
+        /// </summary>
+        public void Freeze()
+        {
+            _frozen = true;
+            Stop();
+            Velocity = Vector3.zero;
+        }
+
+        bool _frozen;
     }
 }

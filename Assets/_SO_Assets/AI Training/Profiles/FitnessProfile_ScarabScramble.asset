@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d62d971cd1d4a8aa1da345d70d9c3b8, type: 3}
+  m_Name: FitnessProfile_ScarabScramble
+  m_EditorClassIdentifier: 
+  Description: "Scarab Scramble: this pilot's GoalsScored. The match ends on the domain sum. AssignScores copies that personal tally into Score (higher is better), so the recipe does not also weight Score."
+  Entries:
+  - Kind: 19
+    Weight: 100
+    Label: Goals
+  - Kind: 10
+    Weight: 1
+    Label: TimePenalty

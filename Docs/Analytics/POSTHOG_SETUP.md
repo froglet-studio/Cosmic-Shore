@@ -1,5 +1,10 @@
 # PostHog Setup — Step-by-Step
 
+> **Retired 2026-11-06 (Shombith).** The game no longer sends to PostHog. `PostHogAnalyticsSink` and
+> `PostHogConfig.asset` became `FrogletAnalyticsSink` and `FrogletAnalyticsConfig.asset`, which ship already pointed at
+> Froglet's own analytics server, with nothing to fill in. Read `Tools/Analytics/server/README.md`; PostHog's history is
+> copied in once with `analytics_server.py import-posthog`. This page is kept as the record of how PostHog was set up.
+
 > What shipped in code: `AnalyticsServiceFacade` now fans every event out to pluggable
 > sinks (`IAnalyticsSink`). Sink #1 is UGS (unchanged, still the system of record). Sink #2
 > is `PostHogAnalyticsSink` — a thin client over PostHog's `/batch/` capture endpoint, enabled the

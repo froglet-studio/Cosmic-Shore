@@ -19,9 +19,9 @@ namespace CosmicShore.Gameplay
 
         public enum CrystalType
         {
-            All,
-            Omni,
-            Elemental
+            All = 0,
+            Omni = 1,
+            Elemental = 2
         }
 
         public CrystalsCollectedScoring(IScoreTracker tracker, GameDataSO scoreData, float scoreMultiplier = 145.65f, CrystalType type = CrystalType.All, bool ScaleWithSize = false) 
@@ -69,7 +69,7 @@ namespace CosmicShore.Gameplay
                 _ => 0
             };*/
             
-            Score = roundStats.CrystalsCollected * scoreMultiplier;
+            SetScore(roundStats, roundStats.CrystalsCollected * scoreMultiplier);
             ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }

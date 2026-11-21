@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.ECS;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -22,7 +23,12 @@ namespace CosmicShore.Gameplay
     /// Never Release a live environment prism during gameplay. Live mass stays
     /// until an active sink (fauna, vessel ability, or cell-swap drain of the
     /// authored environment gathered under the retiring root). Consumed/exploded
-    /// prisms Destroy and ForgetDestroyed drops them; they do not return.
+    /// prisms mostly stay destroyed in place until that drain (Destroy, and
+    /// ForgetDestroyed drops them). The one exception is DEAD free mass whose
+    /// owner opted in: a natural-death skeleton (Prism.RecyclesWhenDestroyed)
+    /// that is later destroyed comes back here through PrismRecycler once its
+    /// death effect has played (Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-29).
+    /// Live mass is still never released.
     ///
     /// PrepareForLay snaps Domains.Blue materials even on first mint so
     /// ChangeTeam(final domain) is a real Blue → domain clock lerp. A raw
@@ -107,29 +113,43 @@ namespace CosmicShore.Gameplay
                 clones[filled++] = reused;
             }
 
+            LoadInsights.Count("Prisms reused from the environment pool", filled);
             bool batchedFailed = false;
             int shortfall = count - filled;
             if (shortfall > 0 && useBatchedInstantiate)
             {
                 try
                 {
+                    LoadInsights.Count("Prisms cloned by InstantiateAsync", shortfall);
+                    long insightT0 = LoadInsights.AccumulateStart();
                     var op = UnityEngine.Object.InstantiateAsync(prefab, shortfall, parent);
                     float waitStart = Time.unscaledTime;
-                    while (!op.isDone)
+                    // Instrumentation only (B45): a frozen frame names how many batches were waiting on the engine.
+                    FrameStallWatch.BeginAsyncClone();
+                    try
                     {
-                        await UniTask.Yield(PlayerLoopTiming.Update);
-                        if (!parent) return (null, batchedFailed);
-                        if (Time.unscaledTime - waitStart > stallSeconds)
+                        while (!op.isDone)
                         {
-                            CSDebug.LogWarning(
-                                $"[EnvironmentPrismPool] Async clone batch ({shortfall} prisms) not " +
-                                $"integrated after {stallSeconds:F0}s — forcing WaitForCompletion. " +
-                                "The engine's async-instantiate budget is being starved by other loading.");
-                            op.WaitForCompletion();
-                            break;
+                            await UniTask.Yield(PlayerLoopTiming.Update);
+                            LoadInsights.Count("Frames an async clone batch waited to integrate");
+                            if (!parent) return (null, batchedFailed);
+                            if (Time.unscaledTime - waitStart > stallSeconds)
+                            {
+                                CSDebug.LogWarning(
+                                    $"[EnvironmentPrismPool] Async clone batch ({shortfall} prisms) not " +
+                                    $"integrated after {stallSeconds:F0}s — forcing WaitForCompletion. " +
+                                    "The engine's async-instantiate budget is being starved by other loading.");
+                                op.WaitForCompletion();
+                                break;
+                            }
                         }
                     }
+                    finally
+                    {
+                        FrameStallWatch.EndAsyncClone();
+                    }
 
+                    LoadInsights.AccumulateSample("Prism clone: InstantiateAsync batch, call to integrated (wall time)", insightT0);
                     var result = op.Result;
                     if (result != null)
                     {
@@ -180,9 +200,15 @@ namespace CosmicShore.Gameplay
             if (!prism.gameObject.activeSelf && prism.transform.parent == s_host)
                 return true;
 
+            // A prism in the pool belongs to nobody: sever the plant, limb and fauna
+            // back-references (and the owners' tracker entries) before it can be re-issued.
+            if (prism is HealthPrism healthPrism)
+                healthPrism.DetachForPool();
+
             prism.ClearSuctionClockStamp();
             if (PrismRenderService.IsHandleUsable(in prism.RenderHandle))
                 PrismRenderService.ClearPrismStamps(in prism.RenderHandle);
+            PrismMeshRendererStamps.ClearPrismStamps(prism.StampRenderer); // §4.11 twin (no-op where entities run)
 
             // worldPositionStays: false so a suctioned localScale is not baked in
             // (same as vessel pooled returns).
@@ -197,6 +223,29 @@ namespace CosmicShore.Gameplay
             stack.Push(prism);
             return true;
         }
+
+        /// <summary>
+        /// How many prisms this pool has handed out and not had back. It only ever falls
+        /// when a caller releases or forgets one, so a producer that DESTROYS issued mass
+        /// (rather than releasing it) shows up here as a number that only climbs - which is
+        /// the one question a "why did this world lay nothing?" report cannot answer on its
+        /// own. Diagnostic only; nothing branches on it.
+        /// </summary>
+        public static int IssuedCount => s_issued.Count;
+
+        /// <summary>Prisms parked inactive and ready to re-issue, across every prefab.</summary>
+        public static int ParkedCount
+        {
+            get
+            {
+                int n = 0;
+                foreach (var stack in s_stacks.Values) n += stack.Count;
+                return n;
+            }
+        }
+
+        /// <summary>True for a prism this pool minted and has not forgotten (parked or live).</summary>
+        public static bool IsIssued(Prism prism) => prism && s_issued.ContainsKey(prism);
 
         public static void ForgetDestroyed(Prism prism)
         {
@@ -269,8 +318,7 @@ namespace CosmicShore.Gameplay
                 instanceScale.SetTargetScale(restore);
             }
 
-            var team = instance.GetComponent<PrismTeamManager>();
-            if (team == null)
+            if (!instance.TryGetComponent(out PrismTeamManager team))
             {
                 CSDebug.LogError($"[EnvironmentPrismPool] PrepareForLay: PrismTeamManager missing on {instance.name}");
             }

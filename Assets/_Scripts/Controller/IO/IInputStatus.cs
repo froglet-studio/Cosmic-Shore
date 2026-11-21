@@ -49,6 +49,15 @@ namespace CosmicShore.Gameplay
         Vector2 SingleTouchValue { get; set; }
         Vector3 ThreeDPosition { get; set; }
 
+        /// <summary>
+        /// Roll held as an ANGLE rather than a rate: while true, the hull's roll since this went true is
+        /// <see cref="HeldRollDegrees"/> (clockwise from behind positive), one to one - the phone held like
+        /// an augmented-reality window (the Dolphin's aim). Owner-local, never replicated: the hull's pose
+        /// already replicates through its owner-authority NetworkTransform.
+        /// </summary>
+        bool HoldsRollAngle { get; set; }
+        float HeldRollDegrees { get; set; }
+
         Quaternion GetGyroRotation();
         void ResetForReplay();
     }

@@ -46,9 +46,14 @@ namespace CosmicShore.Gameplay
                  "than the engine is a feel choice, not a tug of war.")]
         [SerializeField, Min(0f)] float accelerationPerSecond = 90f;
 
+        [Tooltip("TIME: multiplier on accelerationPerSecond, x1 at rest -> x2 at Time 10 (floor x0.5). A Time-heavy " +
+                 "Scarab punches up to its ceiling in half the time - the throttle's tempo, beside the ceiling Time " +
+                 "already raises (ThrottleScalerMultiplier). 2026-11-18, the element-placeholder pass.")]
+        [SerializeField] ElementalFloat accelerationScale = ElementalFloat.Multiplier(1f, 2f, Element.Time, 0.5f);
+
         [Tooltip("Speed shed per second when the trigger is released (world units/s²). The Scarab " +
                  "has no brake — releasing the throttle IS the brake, so this is deliberately " +
-                 "strong: at 120 a full-speed vessel is stopped in about a second and a half. " +
+                 "strong: at 120 a full-speed vessel is stopped in about 1.8 seconds. " +
                  "Linear rather than proportional so it actually reaches zero instead of " +
                  "asymptotically crawling. Speed never decays below MinimumSpeed (authored 0 on " +
                  "the Scarab, so releasing brings you to a genuine stop).")]
@@ -57,16 +62,35 @@ namespace CosmicShore.Gameplay
         [Tooltip("The throttle ceiling at element level 0. The EFFECTIVE ceiling is this × " +
                  "ThrottleScalerMultiplier.EvaluateLive — author that ElementalFloat on the " +
                  "prefab as the TIME element, 1 → 1.5 (SCARAB.md §7: Time = top speed of the " +
-                 "throttle ramp; the map's generic Time multiplier stays pinned to 1).")]
-        [SerializeField, Min(0f)] float baseTopSpeed = 180f;
+                 "throttle ramp; the map's generic Time multiplier stays pinned to 1), so the " +
+                 "shipped band is 216 → 324. NOTE this initializer IS the authored value: the " +
+                 "Scarab prefab's transformer block was last written by Unity before these " +
+                 "fields existed, so it carries no override for any of them (SCARAB.md §13). " +
+                 "At accelerationPerSecond 90 the ramp to 216 is 2.4s, and coastDragPerSecond " +
+                 "120 brings it back down in 1.8s.")]
+        [SerializeField, Min(0f)] float baseTopSpeed = 216f;
 
         [Header("Snap Dash (TIME 5)")]
         [Tooltip("Two throttle-trigger presses inside this window fire the dash (seconds).")]
         [SerializeField, Min(0.05f)] float doubleTapWindowSeconds = 0.3f;
         [Tooltip("Peak dash speed injected along the current course via ModifyVelocity " +
-                 "(world u/s; the channel clamps at 100 — see VesselTransformer).")]
-        [SerializeField, Min(0f)] float dashSpeed = 100f;
+                 "(world u/s). 500 since 2026-10-29 (Garrett: five times the old 100). The " +
+                 "dash raises the displacement channel's ceiling to this for its own life, so " +
+                 "the shared 100 clamp does not cut it back.")]
+        [SerializeField, Min(0f)] float dashSpeed = 500f;
         [SerializeField, Min(0.05f)] float dashDurationSeconds = 0.4f;
+        [Tooltip("Seconds after a Snap Dash before the next one fires (2026-10-29: 5). A tap " +
+                 "inside it is just more throttle.")]
+        [SerializeField, Min(0f)] float snapDashCooldownSeconds = 5f;
+
+        float _lastSnapDashTime = float.NegativeInfinity;
+
+        /// <summary>True when the Snap Dash can fire (off its cooldown).</summary>
+        public bool SnapDashReady => SnapDashOffCooldown(Time.time, _lastSnapDashTime, snapDashCooldownSeconds);
+
+        /// <summary>Pure cooldown test, pinned by a test.</summary>
+        public static bool SnapDashOffCooldown(float now, float lastDash, float cooldown)
+            => now - lastDash >= cooldown;
 
         bool _triggerHeld;
         float _lastTapTime = float.NegativeInfinity;
@@ -76,6 +100,9 @@ namespace CosmicShore.Gameplay
         /// within one MoveShip, so the value is always fresh — sampling the input twice would
         /// risk reading a different frame's trigger between them.</summary>
         float _throttle01;
+
+        /// <summary>This frame's trigger depth, 0..1 (what the Throttle card's wake shows).</summary>
+        public float Throttle01 => _throttle01;
 
         public override void Initialize(IVessel vessel)
         {
@@ -107,19 +134,42 @@ namespace CosmicShore.Gameplay
         {
             if (InputStatus == null || BankIntoTurnSuppressed) return;
             accumulatedRotation = Quaternion.AngleAxis(
-                -InputStatus.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
+                -InputStatus.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + RollScaler) * RollScalar * Time.deltaTime,
                 transform.forward) * accumulatedRotation;
         }
 
         // ------------------- The integrator -------------------
         /// <summary>Live throttle 0..1: the right trigger's analog depth (the keyboard strategy
-        /// writes RightTriggerAnalog binary from RShift, so desktop works unchanged). Autopilot
-        /// reads as fully held — AIPilot produces no trigger input.</summary>
+        /// writes RightTriggerAnalog binary from RShift, so desktop works unchanged), or on a phone
+        /// the set-and-hold slider (<see cref="PilotThrottle01"/>). Autopilot reads as fully held —
+        /// AIPilot produces no trigger input.</summary>
         float ReadThrottle01()
         {
             if (VesselStatus != null && VesselStatus.AutoPilotEnabled) return 1f;
-            return InputStatus != null ? Mathf.Clamp01(InputStatus.RightTriggerAnalog) : 0f;
+            return PilotThrottle01(InputStatus);
         }
+
+        /// <summary>
+        /// A human pilot's throttle 0..1, by the device they fly with. A phone has no analog trigger
+        /// (touch writes <c>RightTriggerAnalog</c> 0), so on <see cref="InputDeviceType.Touch"/> the
+        /// throttle is <c>InputStatus.Throttle</c>, which the phone HUD's set-and-hold slider writes
+        /// (Garrett, 2026-10-21: "scarab can have a throttle appear on mobile as a slider that is
+        /// set"; SCARAB.md §3.11). Every other device keeps the right trigger's depth. Both values
+        /// and the device are owner-write NetworkVariables, so every peer reads the same throttle.
+        /// Shared with <c>ScarabAnimation</c> so the wing cases sweep off the throttle the hull flies on.
+        /// </summary>
+        public static float PilotThrottle01(IInputStatus input)
+        {
+            if (input == null) return 0f;
+            return Mathf.Clamp01(input.ActiveInputDevice == InputDeviceType.Touch
+                ? input.Throttle
+                : input.RightTriggerAnalog);
+        }
+
+        /// <summary>True when the pilot's throttle is SET rather than held (the phone slider): it stays
+        /// where it was left with no finger on the glass, so an idle frame is not a released throttle.</summary>
+        public static bool ThrottleIsSetAndHold(IInputStatus input)
+            => input != null && input.ActiveInputDevice == InputDeviceType.Touch;
 
         /// <summary>The Time-scaled throttle ceiling. ThrottleScalerMultiplier is the base
         /// class's existing ElementalFloat (dormant fleet-wide until now) — authored on the
@@ -136,13 +186,16 @@ namespace CosmicShore.Gameplay
         /// <summary>Double-tap detector for the TIME-5 dash. A rising edge is the analog value
         /// crossing the same deadzone the input strategy uses for its own trigger edges; two
         /// rising edges inside the window fire the dash. The upgrade gate is read at the moment
-        /// of the second tap (per-use snapshot), never cached.</summary>
+        /// of the second tap (per-use snapshot), never cached.
+        /// On a phone the dash is a flick on the slider instead (<see cref="TryTouchSnapDash"/>), so the
+        /// slider's own value never counts as taps here: a flick raises and restores it, and two flicks
+        /// would otherwise fire the dash twice (SCARAB.md §3.11).</summary>
         void DetectSnapDash(float throttle01)
         {
             bool held = throttle01 > TriggerDeadzone;
             bool risingEdge = held && !_triggerHeld;
             _triggerHeld = held;
-            if (!risingEdge) return;
+            if (!risingEdge || ThrottleIsSetAndHold(InputStatus)) return;
 
             // Autopilot holds the trigger permanently — no edges, no dash. (Defensive: held
             // stays true under AI, so risingEdge can never fire there anyway.)
@@ -156,10 +209,54 @@ namespace CosmicShore.Gameplay
             if (VesselStatus == null) return;
             if (!VesselStatus.ElementalAbilityHandler.IsUpgradeActive(Element.Time)) return;
 
+            FireSnapDash();
+        }
+
+        /// <summary>
+        /// The Snap Dash for a pilot with no trigger to double-tap: an autopilot reads as holding the
+        /// throttle permanently (<see cref="ReadThrottle01"/>), so it can never produce the two
+        /// rising edges the human gesture is. Same TIME-5 gate, read at the moment of use, and the
+        /// same impulse; pacing is the caller's (<c>SnapDashAIPolicySO</c>). Refused for a vessel
+        /// that is not on autopilot, so it can never fire on top of a human's own double-tap.
+        /// Returns whether the dash fired.
+        /// </summary>
+        public bool TryAutopilotSnapDash()
+        {
+            if (VesselStatus == null || !VesselStatus.AutoPilotEnabled) return false;
+            if (VesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) != true) return false;
+
+            return FireSnapDash();
+        }
+
+        /// <summary>
+        /// The Snap Dash on a phone: a quick upward FLICK of the right thumb on the throttle slider
+        /// (Garrett, 2026-10-21: "why can't the scarab just record a swipe with the right thumb for the
+        /// snap dash?"). The pad's dash is a double-tap of the throttle; on a phone the throttle is the
+        /// set-and-hold slider, so a flick ON it is the same gesture's twin, and it cannot be confused
+        /// with the juke: a touch that starts on the slider is the slider's (FlightTouchClaims), never the
+        /// right stick the juke reads. Same TIME-5 gate, read at the moment of use, and the same impulse.
+        /// Only for this machine's human on touch, which is the only place the slider exists.
+        /// </summary>
+        public bool TryTouchSnapDash()
+        {
+            if (VesselStatus == null || VesselStatus.AutoPilotEnabled) return false;
+            if (!ThrottleIsSetAndHold(InputStatus)) return false;
+            if (VesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) != true) return false;
+
+            return FireSnapDash();
+        }
+
+        /// <summary>Fires the dash unless it is recharging; returns whether it fired.</summary>
+        bool FireSnapDash()
+        {
+            if (!SnapDashReady) return false;
+            _lastSnapDashTime = Time.time;
+
             Vector3 course = VesselStatus.Course.sqrMagnitude > 1e-4f
                 ? VesselStatus.Course
                 : transform.forward;
-            ModifyVelocity(course.normalized * dashSpeed, dashDurationSeconds);
+            ModifyVelocity(course.normalized * dashSpeed, dashDurationSeconds, false, dashSpeed);
+            return true;
         }
 
         // The Scarab's speed is state, not a tracked target, so there is no meaningful "target"
@@ -177,7 +274,7 @@ namespace CosmicShore.Gameplay
         {
             _throttle01 = ReadThrottle01();
             DetectSnapDash(_throttle01);
-            return _throttle01 * accelerationPerSecond * dt;
+            return _throttle01 * accelerationPerSecond * Mathf.Max(0f, accelerationScale.EvaluateLive(VesselStatus)) * dt;
         }
 
         /// <summary>

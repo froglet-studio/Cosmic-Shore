@@ -1,0 +1,1796 @@
+using System.Collections.Generic;
+using System.Linq;
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
+using Unity.Collections;
+using Unity.Netcode;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// The shared machinery of a GATE RACE: a course of switch rings, flown in ORDER by every
+    /// pilot, with the first domain's lead runner home the winner. Switchback flies an open
+    /// chain of them and Headlong flies laps of a closed circuit; everything below is the same
+    /// in both, and a second copy of it would have drifted at the first tuning pass.
+    ///
+    /// <para><b>Ordered gates are what make the whole thing cheap.</b> Because a pilot may only
+    /// thread their next gate, <see cref="IRoundStats.SwitchesThreaded"/> is simultaneously the
+    /// score, the progress bar, the index of the ring to test this frame, and the token the
+    /// server validates a report against. One replicated int carries the race; there is no
+    /// per-pilot bitmask, no per-gate state, and detection is one segment test per pilot per
+    /// frame rather than pilots x gates. A LAPPED course changes nothing about that - the count
+    /// keeps rising past the ring count and <see cref="RingIndexFor"/> wraps it, so a lap is not
+    /// a thing the race has to remember either.</para>
+    ///
+    /// <para><b>The course travels, the seed does not.</b> The server generates it and BROADCASTS
+    /// the geometry. Generating locally from a shared seed would have worked - the generators are
+    /// deterministic on purpose - but it would rest on <c>Mathf.Sin</c>/<c>Acos</c> agreeing to
+    /// the last bit across Mono and IL2CPP, and a single flipped branch yields a completely
+    /// different course rather than a slightly different one.</para>
+    ///
+    /// <para><b>Detection is owner-detects / server-records</b>
+    /// (<c>Player.ReportSwitchThreaded_ServerRpc</c>). Each machine tests only the vessels it
+    /// simulates - the host's human plus every AI, a client's own human - because a remote
+    /// vessel's replicated position is interpolated and would miss or invent crossings. The
+    /// server credits its own directly; a client forwards the index and the server re-validates
+    /// it against its own copy of the count, so a pilot can neither skip a gate nor be paid
+    /// twice for one. A hull with a second threading body (<see cref="IRingThreadProbe"/>: the
+    /// Thresher's ball) threads its gate with either, tested the same way, one credit a frame.</para>
+    ///
+    /// <para>A subclass supplies two things and inherits the rest: the mode's NAME (for logs)
+    /// and its COURSE SOURCE (<see cref="CreateCourseSource"/>) - the one definition of the
+    /// course, its laps, its lead-in and its authored length, which the arcade card's preview
+    /// reads too (<see cref="RaceCourseSource"/>).</para>
+    /// </summary>
+    public abstract class GateRaceController : MultiplayerDomainGamesController, IAIPilotArming
+    {
+        [Header("Scoring")]
+        [Tooltip("Drag the mode's ScoringRule asset - the per-mode scoring strategy (end condition, scores, results).")]
+        [SerializeField] protected ScoringRuleSO rule;
+
+        [Header("Course")]
+        [Tooltip("The cell the course is laid inside. Resolved through Cell.FindByRuntimeData, " +
+                 "which answers immediately - unlike CellRuntimeDataSO.Cell, which is still null " +
+                 "for the first second while the cell's own Initialize waits behind InitDelayMs.")]
+        [SerializeField] protected CellRuntimeDataSO cellData;
+
+        [Tooltip("Course shell, outer edge. 0.9 x the CapsuleMembrane's authored radius (1200), " +
+                 "measured rather than read because Cell.MembraneRadius returns 0 until the " +
+                 "membrane has spawned and the course is generated before that.")]
+        [SerializeField, Min(1f)] protected float courseOuterRadius = RaceCourseSource.DefaultOuterRadius;
+
+        [Tooltip("Course shell, inner edge, used only when the cell cannot be resolved. " +
+                 "Normally derived as the nucleus radius x Inner Radius Nucleus Factor.")]
+        [SerializeField, Min(1f)] protected float courseInnerRadiusFallback = RaceCourseSource.DefaultInnerRadiusFallback;
+
+        [Tooltip("How far outside the nucleus the course's inner shell sits. The nucleus is the " +
+                 "crystal respawn volume and the Dolphin's own seeding band's inner clamp; a gate " +
+                 "inside it would sit in the middle of that traffic.")]
+        [SerializeField, Min(1f)] protected float innerRadiusNucleusFactor = RaceCourseSource.DefaultInnerRadiusNucleusFactor;
+
+
+        [Tooltip("Seconds a gate's ring takes to bloom in. Detection is live at the full mouth " +
+                 "from frame one; only the drawing grows into it.")]
+        [SerializeField, Min(0f)] float gateBloomSeconds = 0.9f;
+
+        [Tooltip("0 = roll a fresh course each match. Non-zero pins the seed, which is how a " +
+                 "reported course is reproduced.")]
+        [SerializeField] protected int courseSeed;
+
+        [Header("Audio")]
+        [Tooltip("FMOD event played for the LOCAL pilot each time they thread a gate. Shipped empty " +
+                 "(FMOD convention): leave empty for silence until a sound is authored. Every gate " +
+                 "race inherits this slot, so wire it per mode scene.")]
+        [SerializeField] FMODUnity.EventReference gateThreadedEvent;
+
+        [Tooltip("FMOD event played for the LOCAL pilot when they thread the LAST gate of the course " +
+                 "(replaces the gate sound on that crossing). Shipped empty; leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference courseFinishedEvent;
+
+        [Tooltip("How long the server keeps re-trying a course build that could not run yet. " +
+                 "A course built from PURE GEOMETRY (Switchback, Headlong) either works on the " +
+                 "first frame or never, and spends this on nothing; a course built from SCENE " +
+                 "state (Skein reads the cable off the cell config) needs it, because that " +
+                 "state does not exist at OnNetworkSpawn. 0 = the built-in default.")]
+        [SerializeField, Min(0f)] float courseBuildTimeoutSeconds;
+
+        /// <summary>
+        /// Retry window when <see cref="courseBuildTimeoutSeconds"/> is 0.
+        ///
+        /// <para><b>Why a sentinel and not just an initializer.</b> The two cases are not the
+        /// same and it is worth being exact, because getting it backwards costs an afternoon.
+        /// A field ABSENT from an asset's YAML keeps its C# initializer - proven here by
+        /// <c>GunVesselTransformer</c>, whose nine ride-tuning fields appear in no prefab and
+        /// whose play-tested behaviour depends on values like <c>throttleRestPosition = 0.5f</c>.
+        /// A field PRESENT with a stale value overrides the initializer, which is why
+        /// <c>Cell.retireSuctionSeconds</c> carries a 0-sentinel: it is serialized as 0 in twelve
+        /// scenes. (<c>Cell.PhaseTickIntervalSeconds</c> is a <c>const</c> and is not evidence
+        /// either way.)</para>
+        ///
+        /// <para>So the initializer alone would work TODAY - the field is in no scene - and stops
+        /// working the first time anyone opens a gate-race scene and saves it, because Unity then
+        /// writes <c>courseBuildTimeoutSeconds: 0</c> and that 0 wins forever after. A one-attempt
+        /// window is precisely the bug the retry exists to fix, restored silently by a save.</para>
+        ///
+        /// <para>6 s against a known ~1 s wait (<c>InitDelayMs</c>): generous, because the cost
+        /// of waiting too long is a slightly later countdown and the cost of waiting too little
+        /// is a match with no rings in it.</para>
+        /// </summary>
+        const float DefaultCourseBuildTimeoutSeconds = 6f;
+
+        float CourseBuildTimeout =>
+            courseBuildTimeoutSeconds > 0f ? courseBuildTimeoutSeconds : DefaultCourseBuildTimeoutSeconds;
+
+        [Header("AI")]
+        [Tooltip("Distance at which an AI stops lining up on its gate's axis and commits to the " +
+                 "fly-through point on the far side.")]
+        [SerializeField, Min(1f)] float aiCommitDistance = 260f;
+
+        [Tooltip("How far back along the gate's axis an AI aims while lining up. AIPilot has no " +
+                 "arrive-and-stop behaviour, so this point must be genuinely behind the ring or " +
+                 "the pilot orbits it.")]
+        [SerializeField, Min(1f)] float aiApproachLead = 300f;
+
+        [Tooltip("How far PAST the gate the fly-through point sits. Same reason: the AI flies at " +
+                 "its target and through it, so the target has to be on the other side of the mouth.")]
+        [SerializeField, Min(1f)] float aiThroughDistance = 220f;
+
+        [Tooltip("Commit to the fly-through point no earlier than the approach point (commit = the smaller of " +
+                 "aiCommitDistance and the approach lead plus half the hull's turning radius), and after crossing a " +
+                 "ring's plane OUTSIDE the mouth, re-latch the side from where the pilot is and break off at once. " +
+                 "Off: commit at aiCommitDistance whatever the line, and circle the far-side point after a miss " +
+                 "until AIPilot's orbit detector fires. On, the approach point also stays inside the commit radius " +
+                 "(ApproachLeadFor). Ported from the Regatta AI studio (17/32 Hard races finished off, 30/32 on). " +
+                 "Regatta and Switchback turn it on in code; every other gate race keeps its shipped steering until " +
+                 "its owner tests it on.")]
+        [SerializeField] bool aiCommitFromApproachPoint;
+
+        [Tooltip("Extra distance an AI will accept flying to take a crystal ON THE WAY to its next " +
+                 "gate - read ONLY by a mode whose race needs crystals (AIDetoursForCrystals). A racing " +
+                 "AI flies the course's waypoints and nothing else (Yash, 2026-10-26), so in every gate " +
+                 "race today this value is not used, whatever the scene says.")]
+        [SerializeField, Min(0f)] float aiCrystalDetourSlack = 220f;
+
+        [Tooltip("Seconds between an AI's scans of the live crystal registry. The chosen crystal " +
+                 "is re-tested every frame; only the search for a new one is throttled.")]
+        [SerializeField, Min(0.1f)] float aiCrystalScanSeconds = 0.5f;
+
+        [Header("Detection")]
+        [Tooltip("Ignore a single frame's motion longer than the fastest Dolphin could fly plus a " +
+                 "margin - a respawn or an eject must never read as having threaded a gate.")]
+        [SerializeField, Min(1f)] float maxPlausibleSpeed = 400f;
+
+        [Tooltip("Seconds before an unacknowledged gate report is assumed lost and the local " +
+                 "optimistic progress resyncs to the replicated value. Without this a rejected " +
+                 "report would leave a client testing a gate it can never be credited for.")]
+        [SerializeField, Min(0.5f)] float reportResyncSeconds = 3f;
+
+        protected int Intensity => Mathf.Clamp(gameData.SelectedIntensity.Value, 1, 4);
+
+        protected override bool UseGolfRules => true;
+        protected override bool UseSceneReloadForReplay => true;
+
+        // The race ends from OnTurnEndedCustom (server) -> SyncFinalScores_ClientRpc, which
+        // raises WinnerCalculated + MiniGameEnd itself. Suppressing the base game-end flow is
+        // what stops SyncGameEnd_ClientRpc raising them a second time.
+        protected override bool HasEndGame => false;
+
+        // ── What a subclass supplies ──────────────────────────────────────
+
+        /// <summary>Mode name for log lines, so a message names the mode that emitted it.</summary>
+        protected abstract string ModeName { get; }
+
+        /// <summary>
+        /// This mode's course, built from this scene's serialized knobs. Everything about the
+        /// course lives on the source rather than on the controller, so the arcade preview -
+        /// which never loads this scene - can ask the same question with the shipped defaults
+        /// (<see cref="RaceCourseSource.For"/>). A subclass copies its own serialized knobs onto
+        /// the source it returns; the shell knobs are copied by the base.
+        /// </summary>
+        protected abstract RaceCourseSource CreateCourseSource();
+
+        RaceCourseSource _courseSource;
+
+        /// <summary>The course source, created once from this scene's knobs.</summary>
+        protected RaceCourseSource CourseSource
+        {
+            get
+            {
+                if (_courseSource != null) return _courseSource;
+                _courseSource = CreateCourseSource();
+                _courseSource.OuterRadius = courseOuterRadius;
+                _courseSource.InnerRadiusFallback = courseInnerRadiusFallback;
+                _courseSource.InnerRadiusNucleusFactor = innerRadiusNucleusFactor;
+                return _courseSource;
+            }
+        }
+
+        /// <summary>
+        /// Laps of the ring set that make one race. 1 = an open chain flown once (Switchback);
+        /// more = a closed circuit (Headlong), where the ring count and the RACE LENGTH stop
+        /// being the same number. Answered by the course source.
+        /// </summary>
+        protected int LapsPerRace => CourseSource.LapsPerRace(Intensity);
+
+        /// <summary>
+        /// Rings at the FRONT of the course that are threaded ONCE and never come round again -
+        /// a lead-in the laps do not include. 0 for a course that is all circuit.
+        ///
+        /// <para><b>Why the platform carries this rather than one mode.</b> A closed circuit
+        /// cannot start fairly on its own: pilots spawn on an <c>EquatorialRing</c> and a fair
+        /// first gate sits on that ring's POLE, but a closed loop's tangent at an axial point is
+        /// PERPENDICULAR to the approach - measured over 400 seeds, presentation at such a gate
+        /// ran 12.8-90.0 deg with up to 73.5 deg of spread ACROSS PADS. Inside a bounded shell
+        /// that is unsatisfiable rather than untuned, so the answer is a start gate OFF the
+        /// circuit, and "off the circuit" is exactly a ring the laps skip. Breakwater needs it
+        /// today; any lapped course that wants a fair start needs it tomorrow.</para>
+        ///
+        /// <para>At 0 every expression below collapses to what it was, algebraically - which is
+        /// why Switchback and Headlong are untouched by this.</para>
+        /// </summary>
+        protected int LeadInGates => CourseSource.LeadInGates;
+
+        /// <summary>Gate-threadings that finish the race - the target the monitor ends on.</summary>
+        protected int RaceLength => RaceLengthFor(_rings.Count, LeadInGates, LapsPerRace);
+
+        /// <summary>
+        /// Which RING a pilot on <paramref name="threaded"/> gates must fly next. The identity
+        /// for an open chain; on a circuit it wraps, which is the whole of what a lap is; with a
+        /// lead-in it wraps only over the lapped tail, so the start gate is never re-offered.
+        /// </summary>
+        protected int RingIndexFor(int threaded) =>
+            RingIndexFor(threaded, _rings.Count, LeadInGates, LapsPerRace);
+
+        // ── The fold, as pure arithmetic ──────────────────────────────────
+        //
+        // STATIC and public so it can be proven rather than reasoned about: GateRaceFoldTests
+        // asserts that at leadIn 0 these reproduce the pre-lead-in formulas exactly, over the
+        // whole parameter space, which is what makes adding a lead-in safe for the two modes that
+        // do not use one. Generalising a shared base by argument is how a third mode breaks the
+        // first two.
+
+        /// <summary>Threadings that finish a race of <paramref name="ringCount"/> rings, of which
+        /// the first <paramref name="leadIn"/> are flown once and the rest <paramref name="laps"/>
+        /// times.</summary>
+        public static int RaceLengthFor(int ringCount, int leadIn, int laps)
+        {
+            int lead = Mathf.Clamp(leadIn, 0, Mathf.Max(0, ringCount));
+            return lead + Mathf.Max(0, ringCount - lead) * Mathf.Max(1, laps);
+        }
+
+        /// <summary>The ring a pilot on <paramref name="threaded"/> threadings must fly next.</summary>
+        public static int RingIndexFor(int threaded, int ringCount, int leadIn, int laps)
+        {
+            if (ringCount <= 0) return -1;
+
+            int lead = Mathf.Clamp(leadIn, 0, ringCount);
+            if (threaded < lead) return threaded;
+
+            int lapped = ringCount - lead;
+            if (lapped <= 0) return ringCount - 1;          // every ring is lead-in: hold the last
+
+            // The open chain is the identity, exactly as before - a race of N gates ends at N, so
+            // `threaded` never reaches the wrap.
+            if (lead == 0 && Mathf.Max(1, laps) <= 1) return threaded;
+
+            return lead + (((threaded - lead) % lapped) + lapped) % lapped;
+        }
+
+        /// <summary>
+        /// The mode's course, in CELL-LOCAL coordinates, or null if it cannot be built - asked of
+        /// the course source with this match's intensity and cell config.
+        /// </summary>
+        List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer)
+        {
+            var request = new RaceCourseRequest(seed, Intensity, gateCount, inner, outer,
+                                                ResolveCourseConfig());
+            var course = CourseSource.Build(request, out string failure);
+            if (course == null) CourseFailureDetail = failure;
+            return course;
+        }
+
+        /// <summary>The seed this match's course is generated from, drawn ONCE per match on the server. Default:
+        /// the authored seed, else <see cref="CourseSeedOverride.Forced"/>, else a fresh draw.</summary>
+        protected virtual int PickCourseSeed() => CourseSeedOverride.Pick(courseSeed);
+
+        /// <summary>The seed the current course was generated from (server), or 0.</summary>
+        protected int CourseSeedUsed => _pendingCourseSeed;
+
+        /// <summary>
+        /// The config a course that is a property of its ARENA reads (Skein's cable, Regatta's
+        /// rails): the cell's EXPECTED config, never <c>Config</c>, which latches a second after
+        /// the first build attempt. A mode whose course is pure geometry ignores it.
+        /// </summary>
+        protected virtual CellConfigDataSO ResolveCourseConfig()
+        {
+            var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
+            return cell != null ? cell.ExpectedConfig : null;
+        }
+
+        /// <summary>
+        /// Why the last <see cref="BuildCourse"/> returned null, in one sentence, for the ONE
+        /// error the platform prints if the retry window closes.
+        ///
+        /// <para>A subclass must set this rather than logging its own: <c>BuildCourse</c> is
+        /// retried every frame until it works, so a <c>LogError</c> inside it is a per-frame
+        /// path and would bury the console under hundreds of copies of a message that was only
+        /// ever true about one frame.</para>
+        /// </summary>
+        protected string CourseFailureDetail { get; set; }
+
+        /// <summary>The least throttle the mode's AI flies (0 = the AI's own skill throttle). Regatta races at full.</summary>
+        protected virtual float AIThrottleFloor => 0f;
+
+        /// <summary>The least throttle THIS AI flies, set as it is armed: <see cref="AIThrottleFloor"/> for every pilot unless
+        /// a mode answers per pilot (Redline: by the seat's difficulty, 2026-11-11). Asked once per arming, after
+        /// <see cref="OnRacerArmed"/>.</summary>
+        protected virtual float AIThrottleFloorFor(IPlayer pilot) => AIThrottleFloor;
+
+        /// <summary>
+        /// Whether this mode's AIs commit at the approach point and re-attack after a missed mouth
+        /// (<see cref="CommitDistanceFor"/>, <see cref="RaceGateRing.PlaneCrossing"/>). The inspector switch by
+        /// default; a mode that measured the fix overrides it on.
+        /// </summary>
+        protected virtual bool AICommitFromApproachPoint => aiCommitFromApproachPoint;
+
+        /// <summary>
+        /// <b>A racing AI flies the waypoints, not the crystals</b> (Yash, 2026-10-26: "while playing any racing game
+        /// mode, AI should not go for crystals. It should only focus on waypoints. If the crystals are the waypoints,
+        /// then go for crystals"). Every gate race used to let an AI swing up to 220 u off its line for any crystal near
+        /// its route (Regatta alone opted out, 2026-10-17); in Switchback the AI Dolphins took crystals instead of the
+        /// gates, losing the approach to the mouth each time. A mode whose race really needs a crystal (one that IS a
+        /// waypoint, or one the vessel cannot finish without) overrides this to true; none does today. In such a mode
+        /// <see cref="aiCrystalDetourSlack"/> bounds the detour.
+        /// </summary>
+        protected virtual bool AIDetoursForCrystals => false;
+
+        /// <summary>
+        /// The extra distance an AI flies for a crystal on the way to its next ring: <see cref="aiCrystalDetourSlack"/> in
+        /// a mode that opts in (<see cref="AIDetoursForCrystals"/>), else 0 - the AI never steers at a crystal and flies
+        /// the course's rings and nothing else.
+        /// </summary>
+        protected virtual float AICrystalDetourSlack => AIDetoursForCrystals ? aiCrystalDetourSlack : 0f;
+
+        /// <summary>
+        /// The crystal detour budget for ONE pilot: <see cref="AICrystalDetourSlack"/> unless the mode says otherwise.
+        /// Serpent Time answers per pilot, because there a crystal is a sniper round and only a pilot short of rounds
+        /// should go out of its way for one.
+        /// </summary>
+        protected virtual float AICrystalDetourSlackFor(IPlayer pilot) =>
+            Mathf.Max(AICrystalDetourSlack, LearnedCrystalDetourSlack(pilot));
+
+        /// <summary>
+        /// The pilot's hull's LEARNED crystal detour budget (<see cref="RaceAICrystalGenesSO"/>, Garrett 2026-11-16): a
+        /// gene of the hull's Time genome, 0 until a search finds that taking crystals on the way wins. Relaxes Yash's
+        /// waypoints-only rule only as far as the training proves it pays.
+        /// </summary>
+        protected static float LearnedCrystalDetourSlack(IPlayer pilot)
+        {
+            var status = pilot?.Vessel?.VesselStatus;
+            return status != null ? RaceAICrystalGenesSO.LearnedDetourSlack(status.VesselType) : 0f;
+        }
+
+        /// <summary>
+        /// Did <paramref name="prev"/> to <paramref name="cur"/> thread course ring <paramref name="ringIndex"/>? The ring's
+        /// own mouth by default. A mode that stands several rings at one gate (Serpent Time's clusters, any one of which
+        /// counts) answers for all of them; detection, credit and the server's validation are unchanged.
+        /// </summary>
+        protected virtual bool ThreadsGate(int ringIndex, Vector3 prev, Vector3 cur) =>
+            _rings[ringIndex] && _rings[ringIndex].CrossedMouth(prev, cur);
+
+        /// <summary>
+        /// The ring an AI should fly for the gate it is on: <paramref name="gate"/> (the course's) by default. Asked every
+        /// time the AI's steering is, before anything reads the gate, so a mode with several rings at one gate picks the
+        /// one this pilot can get through (Serpent Time: the open ring of the cluster).
+        /// </summary>
+        protected virtual RaceGate ChooseAIGate(IPlayer pilot, int threaded, int ringIndex, RaceGate gate) => gate;
+
+        /// <summary>The LOCAL pilot's next course ring changed (-1 = none). For a mode that lights rings of its own.</summary>
+        protected virtual void OnLocalNextGateChanged(int previousRing, int nextRing) { }
+
+        /// <summary>
+        /// The approach point never sits further before a ring than this share of the leg into it. Without the cap a
+        /// short leg (Regatta: 461-858 u against a 480 u lead) put the approach point BEHIND the ring just threaded,
+        /// often inside a fast hull's turning circle, so the AI broke orbit and flew away from the course every ring
+        /// (2026-10-14 Regatta audit, the Manta). 1 = no cap.
+        /// </summary>
+        const float ApproachLeadShareOfLeg = 0.4f;
+
+        /// <summary>
+        /// With <see cref="AICommitFromApproachPoint"/> on, the approach point never sits further from the ring than this
+        /// share of <see cref="aiCommitDistance"/>, so a pilot that reaches it is inside the commit radius and turns in.
+        /// Without it a leg over 650 u put the approach point at the full 300 u lead, outside the 260 u commit radius: the
+        /// pilot arrived, was still "approaching", and steered at the point it sat on. A wide-turning hull overshoots
+        /// into the radius by luck; the Dolphin turns on a 35 u circle and orbited 265-335 u out for the whole race
+        /// (Switchback, Yash's races of 2026-10-26: AI Dolphins threaded 0-2 of 20 rings, circling gate 0;
+        /// <c>Tools/Build/switchback_dolphin_sim.py</c>: 0 rings, and 20 of 20 on all six recorded courses with this).
+        /// </summary>
+        const float ApproachLeadShareOfCommit = 0.8f;
+
+        /// <summary>The approach lead for a leg of <paramref name="legLength"/>: <paramref name="approachLead"/> capped at
+        /// <see cref="ApproachLeadShareOfLeg"/> of the leg and, with the Regatta steering on, at
+        /// <see cref="ApproachLeadShareOfCommit"/> of the commit radius. Pure, for the tests.</summary>
+        public static float ApproachLeadFor(float approachLead, float legLength, float commitDistance, bool fromApproachPoint)
+        {
+            float lead = Mathf.Min(approachLead, ApproachLeadShareOfLeg * legLength);
+            return fromApproachPoint ? Mathf.Min(lead, ApproachLeadShareOfCommit * commitDistance) : lead;
+        }
+
+        /// <summary>
+        /// The range inside which an AI stops lining up and aims through the ring. Shipped behaviour is the
+        /// fixed <paramref name="commitDistance"/>; with <paramref name="fromApproachPoint"/> it is never more than
+        /// the approach lead plus half the hull's turning radius, so on a short leg the pilot actually flies to
+        /// its approach point (the 40% lead) before it turns in, instead of committing from wherever it is and
+        /// crossing the plane outside the mouth. Line for line from the Regatta AI studio
+        /// (the deleted Regatta AI page, <c>Docs/Studios/RegattaAI/index.html</c> in git history, <c>aiInput</c>'s <c>commit</c>).
+        /// </summary>
+        public static float CommitDistanceFor(float commitDistance, float approachLead, float minTurnRadius, bool fromApproachPoint)
+        {
+            if (!fromApproachPoint || float.IsNaN(minTurnRadius)) return commitDistance;
+            return Mathf.Min(commitDistance, approachLead + 0.5f * Mathf.Max(0f, minTurnRadius));
+        }
+
+        /// <summary>The lap (1-based) a pilot on <paramref name="threaded"/> threadings is flying, for the AI report.</summary>
+        int DiagnosticLap(int threaded)
+        {
+            int lead = Mathf.Clamp(LeadInGates, 0, _rings.Count);
+            int lapped = _rings.Count - lead;
+            return threaded < lead || lapped <= 0 ? 1 : 1 + (threaded - lead) / lapped;
+        }
+
+        /// <summary>
+        /// A mode-specific AI aim point, consulted BEFORE the gate logic. Return false (the
+        /// default) to fly at the next gate the ordinary way.
+        ///
+        /// <para>Exists because a gate race does not have to be flown in FREE FLIGHT. Skein's
+        /// vessel ATTACHES to a rail, and while attached the aim point is the rail rather than
+        /// the ring: aiming at a ring while riding leaves the range roughly constant as the
+        /// cable corkscrews, and <c>OrbitDetector</c> trips on swept angle without progress -
+        /// at which point <c>LookingAtCrystal</c> goes false, <c>ram</c> disengages, and the
+        /// pilot drops from 150 to 30 u/s mid-grind. A lead point down the pilot's own rail
+        /// makes the range fall every frame AND holds the bearing near the tangent, which is
+        /// both halves of that problem.</para>
+        ///
+        /// <para>Steering only, and only while the override answers - an unattached pilot falls
+        /// straight through to the gate aiming, including the crystal detour.</para>
+        /// </summary>
+        protected virtual bool TryOverrideAim(IPlayer pilot, out Vector3 target)
+        {
+            target = default;
+            return false;
+        }
+
+        /// <summary>The per-frame imminent-impact hook installed on every armed AI (<see cref="AIPilot.SetEmergencySteerProvider"/>), or null.</summary>
+        protected virtual AIPilot.EmergencySteer AIEmergencySteerFor(IPlayer pilot) => null;
+
+        /// <summary>
+        /// A mode's way onto ring <paramref name="ringNo"/> for a FREE pilot: a point to fly to instead of the gate's
+        /// approach / mouth points, or false (the default) to fly the gate way. Asked after the missed-mouth test and the
+        /// leg latch, so a missed ring still re-latches and breaks off. Skein answers it for a free Urchin: fly to catch
+        /// a rail that threads the ring when the ride beats the straight flight (<see cref="SkeinRailSeek"/>).
+        /// </summary>
+        protected virtual bool TrySeekAim(IPlayer pilot, int ringNo, in RaceGate gate, Vector3 self, out Vector3 aim)
+        {
+            aim = default;
+            return false;
+        }
+
+        /// <summary>
+        /// A per-pilot offset (in the ring's plane, inside its mouth) added to where an AI aims through ring
+        /// <paramref name="ringNo"/>. Zero by default: every AI aims at the same centre-line points, so in a mode whose
+        /// hulls lay trails each AI flies straight down the trail the one ahead just laid (Switchback, Yash 2026-10-29).
+        /// </summary>
+        protected virtual Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate) => Vector3.zero;
+
+        /// <summary>
+        /// Where a DRIFTING pilot points its nose instead of its steering target (the default drift look), or false for
+        /// the default. Switchback's blast AI holds the nose - and so the Dolphin's blast cone - on the obstacle while it
+        /// takes its key (<see cref="SwitchbackBlastAI"/>). Server only, like the steering it sits beside.
+        /// </summary>
+        protected virtual bool TryOverrideDriftLook(IPlayer pilot, out Vector3 look)
+        {
+            look = default;
+            return false;
+        }
+
+        /// <summary>
+        /// True when the point <see cref="TryOverrideAim"/> just returned is a LEAD POINT the pilot steers by rather than a
+        /// place to reach (<see cref="AIPilot.MarkAimAsPathLead"/>), so the orbit break-off leaves it alone. Asked only when
+        /// the override answered. Waystation's belly aim is one: a point off the nose that turns the hull, never reached.
+        /// </summary>
+        protected virtual bool OverrideAimIsLead(IPlayer pilot) => false;
+
+        /// <summary>
+        /// A direction the pilot should ROLL its belly onto while it steers at the point <see cref="TryOverrideAim"/> just
+        /// returned (<see cref="AIPilot.MarkBellyTarget"/>), or false to keep the bank the stick couples to the yaw. Asked
+        /// only when the override answered. Waystation's drop aim: hold the heading square to the next cluster and roll
+        /// the belly onto it.
+        /// </summary>
+        protected virtual bool OverrideBellyTarget(IPlayer pilot, out Vector3 worldDirection)
+        {
+            worldDirection = default;
+            return false;
+        }
+
+        /// <summary>
+        /// The hull's own RACE LINE: where <paramref name="pilot"/> steers instead of the gate's approach / mouth points,
+        /// and the point after it (the boost driver's corner). Asked after the difficulty belief and the missed-mouth test,
+        /// so an Easy pilot's mistakes and a missed ring are still flown the gate way. False (the default) = the gate way.
+        /// Regatta answers it per hull (<see cref="RaceLineStyleSO"/>): Yash, 2026-10-17, every hull races its own line.
+        /// </summary>
+        protected virtual bool TryRaceLine(IPlayer pilot, Vector3 self, out Vector3 aim, out Vector3 after)
+        {
+            aim = after = default;
+            return false;
+        }
+
+        /// <summary>The cell shell the course is laid inside, resolved from the live cell.</summary>
+        protected void ResolveShell(out float inner, out float outer)
+        {
+            var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
+            // ExpectedNucleusWorldRadius measures the CONFIG's nucleus prefab without
+            // instantiating it, so unlike NucleusWorldRadius it answers correctly this early.
+            float nucleus = cell != null ? cell.ExpectedNucleusWorldRadius : 0f;
+            CourseSource.ResolveShell(nucleus, out inner, out outer);
+        }
+
+        protected readonly List<RaceGate> _course = new();
+        protected readonly List<RaceGateRing> _rings = new();
+        readonly Dictionary<IPlayer, PilotRun> _runs = new();
+        readonly List<IPlayer> _stalePilots = new();
+
+        bool _courseBuilt;
+
+        // Course-build retry, server only. The seed is captured ONCE so a course is never a
+        // function of how many frames the scene took to become answerable.
+        int _pendingCourseSeed;
+
+        /// <summary>The seed this match's course was built from (0 until it is drawn), for the match replay.</summary>
+        public int CourseSeed => _pendingCourseSeed;
+        bool _awaitingCourse;
+        float _courseRetryDeadline;
+        bool _finalResultsSent;
+        bool _arenaBuildAnnounced;
+        bool _warnedCourseMissing;
+        int _litGate = -1;
+        int _litProgress = -1;
+
+        // The race beats as toasts (halfway, lead change, home stretch, final lap). A local
+        // poll over the replicated gate counts, run on every peer - see DomainRaceToasts.
+        DomainRaceToasts _raceToasts;
+
+        /// <summary>Gates from home at which the leading domain's HOME STRETCH beat fires.</summary>
+        const int HomeStretchGates = 3;
+
+        /// <summary>Per-pilot detection state, on the machine that simulates that pilot.</summary>
+        class PilotRun
+        {
+            public Vector3 LastPosition;
+            public bool HasLastPosition;
+
+            /// <summary>
+            /// <c>VesselTransformer.TeleportCount</c> as of the last sample. A CHANGE means the
+            /// step we are about to test is a jump rather than a flight, and a jump threads
+            /// nothing — see the note in <see cref="GateRaceController.Update"/>.
+            /// </summary>
+            public int TeleportCount;
+
+            /// <summary>
+            /// Gates this machine BELIEVES the pilot has threaded. On the server it tracks the
+            /// authoritative stat exactly; on a client it may run ahead of the replicated value
+            /// while a report is in flight, which is the point - without it a pilot flying a
+            /// boosted leg during one round trip would be tested against a gate they have
+            /// already passed and would miss the next one entirely.
+            /// </summary>
+            public int Optimistic;
+            public float LastReportTime;
+
+            /// <summary>The hull's second threading body, when it has one (the Thresher's ball,
+            /// <see cref="IRingThreadProbe"/>): a gate is threaded by the hull OR by it.</summary>
+            public readonly RingThreadProbeSample Probe = new();
+        }
+
+        // The race running on this machine, for TryGetNextRing. One gate race runs at a time (one per scene).
+        static GateRaceController _current;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _current = null;
+
+        /// <summary>
+        /// The ring <paramref name="vessel"/> must thread next in the gate race running on this machine, or false (no race,
+        /// no course yet, the turn not running, the pilot finished, or a pilot this machine does not simulate). A second
+        /// body reads it to know where to go: the Wrasse's kite navigator flies through it, for the local pilot and for an
+        /// AI crew alike (KiteNavigator).
+        /// </summary>
+        public static bool TryGetNextRing(IVessel vessel, out RaceGateRing ring)
+        {
+            ring = null;
+            var race = _current;
+            if (!race || vessel == null || race._rings.Count == 0 || race.gameData == null || !race.gameData.IsTurnRunning) return false;
+            var players = race.gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var p = players[i];
+                if (p == null || !ReferenceEquals(p.Vessel, vessel)) continue;
+                int next = race._runs.TryGetValue(p, out var run) ? run.Optimistic
+                         : p.RoundStats != null ? p.RoundStats.SwitchesThreaded : -1;
+                if (next < 0 || next >= race.RaceLength) return false;
+                ring = race._rings[race.RingIndexFor(next)];
+                return ring;
+            }
+            return false;
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            _current = this;
+            gameData.ScoringRule = rule;
+            numberOfRounds = 1;
+            numberOfTurnsPerRound = 1;
+            _finalResultsSent = false;
+            _warnedCourseMissing = false;
+
+            // This mode lays NO prisms, so the connecting panel's arena-ready gate has nothing to
+            // observe and would release the moment it opened - and a pilot released before the
+            // course arrives flies gate 1 (which sits straight ahead of every spawn point) and is
+            // credited nothing, permanently, with nothing on screen to say why. Announce the
+            // pending build so the panel holds through the generation + broadcast, exactly as
+            // SkimRaceController does through its seed wait.
+            _arenaBuildAnnounced = true;
+            PrismTrailBuilder.BeginArenaBuild();
+
+            _awaitingCourse = false;
+
+            if (IsServer) BeginCourseGeneration();
+            else RequestCourse_ServerRpc();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (_current == this) _current = null;
+            _awaitingCourse = false;
+            ReleaseArenaBuildAnnouncement();
+            ClearCourse();
+            base.OnNetworkDespawn();
+        }
+
+        /// <summary>
+        /// Close the BeginArenaBuild bracket exactly once - when the course lands, when
+        /// generation gives up, or on despawn, whichever comes first. A bracket left open
+        /// wedges the connecting panel on a build that is never going to happen.
+        /// </summary>
+        void ReleaseArenaBuildAnnouncement()
+        {
+            if (!_arenaBuildAnnounced) return;
+            _arenaBuildAnnounced = false;
+            PrismTrailBuilder.EndArenaBuild();
+        }
+
+        // ── Course ────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Start building the course, and keep trying until it works or the window closes.
+        ///
+        /// <para><b>Why a window and not one attempt.</b> A gate race whose course is PURE
+        /// GEOMETRY (Switchback's walk, Headlong's relaxation) is answerable on the frame this
+        /// runs and a retry costs it nothing. A gate race whose course is a property of the
+        /// SCENE is not: Skein's rings sit on the cable authored on the cell config, and
+        /// <c>Cell</c> does not latch its config until <c>Initialize</c> runs on
+        /// <c>OnInitializeGame</c>, a full second after <c>OnNetworkSpawn</c>. With a single
+        /// attempt that is not a slow build, it is a build that never happens again - no rings,
+        /// no scoring, no turn end, and one error on the host console. Skein shipped exactly
+        /// that.</para>
+        ///
+        /// <para>The seed is drawn ONCE, here, so retrying cannot change which course this match
+        /// gets: a course that depended on how many frames the cell took to answer would differ
+        /// between two runs of the same build for no reason a player could see.</para>
+        /// </summary>
+        void BeginCourseGeneration()
+        {
+            _pendingCourseSeed = PickCourseSeed();
+            _courseRetryDeadline = Time.time + CourseBuildTimeout;
+            _awaitingCourse = true;
+            TickCourseGeneration();
+        }
+
+        /// <summary>One attempt, plus the decision to keep waiting or to give up loudly.</summary>
+        void TickCourseGeneration()
+        {
+            if (!_awaitingCourse) return;
+
+            if (TryGenerateAndBroadcastCourse())
+            {
+                _awaitingCourse = false;
+                return;
+            }
+
+            if (Time.time < _courseRetryDeadline) return;
+
+            _awaitingCourse = false;
+
+            // Nothing this mode can do but say so - loudly, and with the numbers that have to
+            // change. Returning silently used to hang the match outright: no rings, no
+            // scoring, no turn end, and one error on the host console only.
+            ResolveShell(out float inner, out float outer);
+            CSDebug.LogError(
+                $"[{ModeName}] Course generation FAILED for {AuthoredGateTarget()} gates in " +
+                $"shell {inner:F0}..{outer:F0} after {CourseBuildTimeout:F1}s of retries. " +
+                (string.IsNullOrEmpty(CourseFailureDetail)
+                    ? "Widen the shell or shorten the course."
+                    : CourseFailureDetail));
+            ReleaseArenaBuildAnnouncement();
+        }
+
+        /// <summary>The attempt itself. False means "not this frame" - the caller decides
+        /// whether that is a wait or a failure.</summary>
+        bool TryGenerateAndBroadcastCourse()
+        {
+            // ONE authority for the race length: the same overrides key the turn monitor reads
+            // for the target. Read here rather than waiting for the monitor to publish it, so the
+            // course cannot be built before the number that describes it exists - and cannot
+            // disagree with it either.
+            int gateCount = AuthoredGateTarget();
+            int seed = _pendingCourseSeed;
+
+            ResolveShell(out float inner, out float outer);
+            List<RaceGate> course = BuildCourse(seed, gateCount, inner, outer);
+
+            if (course == null || course.Count == 0) return false;
+
+            // The generators work about the ORIGIN; the spawn ring, the membrane and the nucleus
+            // are all measured from the CELL. They coincide in the shipped scenes and would stop
+            // coinciding the moment anyone moved or nested the Cell - at which point the whole
+            // course slides off the arena and gate 0 is no longer on the spawn ring's pole.
+            // Offset once here, before the broadcast, so every peer receives world positions and
+            // the generators stay pure functions of their shell.
+            Vector3 centre = ResolveCellCentre();
+            if (centre != Vector3.zero)
+                for (int i = 0; i < course.Count; i++)
+                    course[i] = new RaceGate(course[i].Position + centre, course[i].Axis,
+                                             course[i].Radius);
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[{ModeName}] Course seed {seed}: {course.Count} rings, " +
+                $"{LapsPerRace} lap(s), intensity {Intensity}.");
+
+            ApplyCourse(course);
+            BroadcastCourse(course, default);
+            return true;
+        }
+
+        /// <summary>
+        /// The gate target this match is actually run against - the course's OWN length once it
+        /// exists, and the authored override only before that.
+        ///
+        /// <para>The turn monitor reads this rather than the overrides directly, because the two
+        /// numbers must never disagree: a target naming a gate the course does not contain is
+        /// unreachable, and an unreachable target is a match that cannot end. A course can come
+        /// out shorter than asked (Switchback backs off when a shell is too tight) or longer
+        /// (Headlong rounds its ring count up so a lap is whole), so the COURSE is the honest
+        /// authority and this - laps included - is the number the race is run against.</para>
+        /// </summary>
+        public int AuthoritativeGateCount => _courseBuilt && _course.Count > 0 ? RaceLength : 0;
+
+        /// <summary>
+        /// The authored race length, before the course has had its say - the mode's own key in
+        /// <see cref="EndConditionOverridesSO"/> (FrogletTools &gt; Game Modes &gt; End Game
+        /// Conditions; never a per-scene field).
+        ///
+        /// <para>Public, and answered by the mode's own course source, for the same reason:
+        /// <c>RaceGateTurnMonitor</c> asks the CONTROLLER instead of reading a key of its own, so
+        /// the monitor never has to know which mode it is monitoring - and because
+        /// <see cref="CreateCourseSource"/> is abstract, a new gate race cannot silently inherit
+        /// another mode's finish line.</para>
+        /// </summary>
+        public int AuthoredGateTarget() => CourseSource.AuthoredGateTarget(Intensity);
+
+
+        [ServerRpc(RequireOwnership = false)]
+        void RequestCourse_ServerRpc(ServerRpcParams rpcParams = default)
+        {
+            if (!IsServer || _course.Count == 0) return;
+
+            // Targeted reply, mirroring MultiplayerMiniGameControllerBase's config pull: a client
+            // that spawned after the broadcast has no other way to learn the course, and NGO only
+            // holds a message for an unspawned object for a few seconds.
+            BroadcastCourse(_course, new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { rpcParams.Receive.SenderClientId } }
+            });
+        }
+
+        void BroadcastCourse(IReadOnlyList<RaceGate> course, ClientRpcParams target)
+        {
+            // Seven floats per gate, interleaved into one array: the same primitive-array shape the
+            // final-score snapshots use, which is the serialization this project has proven. The seventh is the
+            // gate's OWN radius - Switchback's needle rings are smaller than the rest.
+            var packed = new float[course.Count * FloatsPerGate];
+            for (int i = 0; i < course.Count; i++)
+            {
+                int o = i * FloatsPerGate;
+                packed[o + 0] = course[i].Position.x;
+                packed[o + 1] = course[i].Position.y;
+                packed[o + 2] = course[i].Position.z;
+                packed[o + 3] = course[i].Axis.x;
+                packed[o + 4] = course[i].Axis.y;
+                packed[o + 5] = course[i].Axis.z;
+                packed[o + 6] = course[i].Radius;
+            }
+            SyncCourse_ClientRpc(packed, target);
+        }
+
+        const int FloatsPerGate = 7;
+
+        [ClientRpc]
+        void SyncCourse_ClientRpc(float[] packed, ClientRpcParams rpcParams = default)
+        {
+            if (IsServer) return;   // the server laid its own copy before broadcasting
+
+            var course = new List<RaceGate>(packed.Length / FloatsPerGate);
+            for (int o = 0; o + FloatsPerGate - 1 < packed.Length; o += FloatsPerGate)
+                course.Add(new RaceGate(
+                    new Vector3(packed[o], packed[o + 1], packed[o + 2]),
+                    new Vector3(packed[o + 3], packed[o + 4], packed[o + 5]),
+                    packed[o + 6]));
+
+            ApplyCourse(course);
+        }
+
+        void ApplyCourse(IReadOnlyList<RaceGate> course)
+        {
+            if (_courseBuilt) return;
+            _courseBuilt = true;
+
+            var theme = gameData ? gameData.ThemeManagerData : null;
+            var root = new GameObject($"{ModeName}Course").transform;
+            root.SetParent(transform, false);
+
+            for (int i = 0; i < course.Count; i++)
+            {
+                _course.Add(course[i]);
+
+                var go = new GameObject($"Gate_{i + 1:00}");
+                go.transform.SetParent(root, false);
+                var ring = go.AddComponent<RaceGateRing>();
+                ring.Build(i, course[i], theme, gateBloomSeconds, FindCoincidentRing(course, i));
+                _rings.Add(ring);
+            }
+
+            // Anything the MODE hangs off the course, while the panel still covers the screen.
+            // Before the release, deliberately: a mode that streams prisms opens its own
+            // arena-build bracket inside this call, so releasing first would leave a gap in which
+            // nothing is pending and the gate would slip the screen open onto a bare arena.
+            try
+            {
+                OnCourseRaised();
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogError($"[{ModeName}] OnCourseRaised threw - the course is up but the " +
+                                 $"mode's own geometry is missing. {e}");
+            }
+
+            // Training only: a course genome's placements round this mode's own gates (null in shipped play).
+            if (TrainingCourseOverlay.Override != null)
+            {
+                try
+                {
+                    ResolveShell(out float nucleus, out float membrane);
+                    TrainingCourseOverlay.Lay(course, root, ResolveCellCentre(), nucleus, membrane, ModeName);
+                }
+                catch (System.Exception e)
+                {
+                    CSDebug.LogError($"[{ModeName}] The training course overlay threw; the course is up without it. {e}");
+                }
+            }
+
+            // The geometry exists: release the connecting panel.
+            ReleaseArenaBuildAnnouncement();
+        }
+
+        /// <summary>
+        /// Called once per peer, after the rings stand and before the connecting panel is
+        /// released. A mode with structure of its own (Breakwater's stations) builds it here.
+        /// Contained, because every step between OnNetworkSpawn and here runs inside the
+        /// arena-ready bracket: a throw that escaped would leave the bracket open, which is a
+        /// covered screen and no other symptom until the builder's 180-second stall cap.
+        /// </summary>
+        protected virtual void OnCourseRaised() { }
+
+        /// <summary>
+        /// An EARLIER gate standing in exactly this place, or null.
+        ///
+        /// <para>An open chain may legitimately visit one point twice: Skein's course opens and
+        /// closes on the same spine collar, so its first and last gates are one hoop. Drawn as
+        /// two rings that is a duplicate object, and the consequence is not cosmetic - the
+        /// highlight becomes invisible, because lighting one lime leaves its neutral twin drawn
+        /// in the same place and the renderer picks between them. <see cref="RaceGateRing"/>
+        /// draws one and forwards the other.</para>
+        ///
+        /// <para>A LAPPED course (Headlong) never lands here: it stores one ring per index and
+        /// <see cref="RingIndexFor"/> wraps the count, so its repeats are laps rather than
+        /// duplicate gates. The tolerance is a unit rather than an epsilon because the two
+        /// positions come from the SAME expression when they coincide at all - anything within
+        /// a unit of another gate is one gate, and two distinct gates a unit apart would be a
+        /// course bug in their own right.</para>
+        /// </summary>
+        RaceGateRing FindCoincidentRing(IReadOnlyList<RaceGate> course, int index) =>
+            RaceGateRing.FindCoincident(course, _rings, index);
+
+        void ClearCourse()
+        {
+            // Withering rather than destroying: continuity of existence applies to a marker as
+            // much as to a prism, and a scene teardown is the one case where it costs nothing.
+            for (int i = 0; i < _rings.Count; i++)
+                if (_rings[i]) _rings[i].Retire(0.4f);
+
+            _rings.Clear();
+            _course.Clear();
+            _runs.Clear();
+            _courseBuilt = false;
+            _litGate = -1;
+            _litProgress = -1;
+        }
+
+        /// <summary>
+        /// The gate <paramref name="player"/> must thread next, or null when they have finished
+        /// (or the course has not arrived). Read by <see cref="RaceGateObjectiveProvider"/> so
+        /// the objective arrow points at the right ring for the pilot looking at it.
+        /// </summary>
+        public bool TryGetNextGate(IPlayer player, out Transform gate)
+        {
+            gate = null;
+            if (player?.RoundStats == null) return false;
+
+            int index = player.RoundStats.SwitchesThreaded;
+            if (index < 0 || index >= RaceLength) return false;
+
+            var ring = _rings[RingIndexFor(index)];
+            if (!ring) return false;
+
+            gate = ring.transform;
+            return true;
+        }
+
+        /// <summary>Gates in this match's course, 0 until it arrives.</summary>
+        public int GateCount => _rings.Count;
+
+        /// <summary>
+        /// Light the LOCAL pilot's next gate lime and put the previous one back to neutral.
+        ///
+        /// <para>Twenty identical rings scattered through a cell is a course you have to be told
+        /// the ORDER of. The objective arrow points a direction but not at a specific ring, and at
+        /// the far end of a leg several line up behind one another - so the gate itself says
+        /// "this one", in the platform's existing free-pickup lime.</para>
+        ///
+        /// <para><b>Local only, and no networking is added.</b> Every peer builds its own copy of
+        /// the course, so a <see cref="RaceGateRing"/> already belongs to exactly one viewer;
+        /// painting one here changes nothing on anyone else's screen. Driven from the pilot's live
+        /// progress rather than from the crossing event, so it is correct after a rollback, after
+        /// a late course arrival, and for a client whose report is still in flight.</para>
+        /// </summary>
+        void LightLocalNextGate()
+        {
+            int next = gameData.LocalPlayer?.RoundStats != null
+                ? gameData.LocalPlayer.RoundStats.SwitchesThreaded
+                : -1;
+            PlayLocalThreadSound(next);
+            if (next >= RaceLength) next = -1;   // finished: nothing to light
+            if (next >= 0) next = RingIndexFor(next);
+            if (next == _litGate) return;
+
+            if (_litGate >= 0 && _litGate < _rings.Count && _rings[_litGate])
+                _rings[_litGate].SetIsNextForLocalPilot(false);
+
+            if (next >= 0 && _rings[next])
+                _rings[next].SetIsNextForLocalPilot(true);
+
+            OnLocalNextGateChanged(_litGate, next);
+            _litGate = next;
+        }
+
+        /// <summary>
+        /// The local pilot's per-gate reward sound. Driven from the same live progress as the lit
+        /// ring, so it plays once per forward step and stays quiet on a rollback (progress going
+        /// DOWN) and on the first read after a course build (<c>_litProgress</c> = -1).
+        /// </summary>
+        void PlayLocalThreadSound(int progress)
+        {
+            int previous = _litProgress;
+            _litProgress = progress;
+            if (previous < 0 || progress <= previous) return;
+
+            var sound = progress >= RaceLength && !courseFinishedEvent.IsNull ? courseFinishedEvent : gateThreadedEvent;
+            if (!sound.IsNull) CosmicShore.Core.AudioSystem.Instance.PlaySFXEvent(sound);
+        }
+
+        /// <summary>
+        /// True for a mode whose domain score is the SUM of its pilots' gates (Regatta) rather
+        /// than its lead runner's: the race beats then measure a team against its own pilots'
+        /// combined courses instead of one pilot's (see <see cref="DomainRaceToasts"/>). False
+        /// for every other gate race, whose arithmetic is unchanged.
+        /// </summary>
+        protected virtual bool RaceToastsSumTeams => false;
+
+        /// <summary>
+        /// Does the HULL still thread gates while its vessel has a live second body (<see cref="IRingThreadProbe"/>)? True for
+        /// every race (hull OR probe, the Thresher's rule). Wrasse Run answers false: there the Wrasse's kite collects the
+        /// rings and the Grouper only carries it to them. A hull with no live probe (an AI Wrasse, which seats no kite)
+        /// always threads, so an all-AI domain can still finish (the Tollway rule).
+        /// </summary>
+        protected virtual bool HullThreadsWhileProbeLive => true;
+
+        /// <summary>
+        /// Feed the race beats. The FINAL LAP threshold is where the last lap's first gate
+        /// falls - the race length of a course one lap shorter - so it means the same thing on
+        /// a plain circuit (Headlong, Redline) and behind a lead-in (Breakwater), and an open
+        /// chain (Switchback, Skein) simply never has one.
+        /// </summary>
+        void TickRaceToasts()
+        {
+            _raceToasts ??= new DomainRaceToasts(rule,
+                RaceToastsSumTeams ? DomainRaceToasts.CountPilots : null);
+            int finalLapAt = LapsPerRace > 1
+                ? RaceLengthFor(_rings.Count, LeadInGates, LapsPerRace - 1)
+                : 0;
+            _raceToasts.Tick(gameData, HomeStretchGates, finalLapAt);
+        }
+
+        // ── Detection ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// One server tick, for a subclass that has to DRIVE something every frame rather than
+        /// answer a question — Waystation presses the Butterfly's Fold for its autopilots here.
+        ///
+        /// <para>It exists because <see cref="Update"/> is a Unity message rather than a virtual:
+        /// a subclass that declared its own <c>Update</c> would HIDE this one, Unity would call
+        /// only the derived slot, and crossing detection — the whole race — would silently stop
+        /// working with nothing in the console. No gate-race subclass had ever declared one, so
+        /// the hazard was untested rather than absent. Called on the server every frame,
+        /// unconditionally: a driver usually needs the turn-running test, and a driver TEARING
+        /// DOWN what it started needs the frames after it.</para>
+        /// </summary>
+        protected virtual void OnServerTick() { }
+
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Race.GateRace.Update");
+        void Update()
+        {
+            using var __pm = s_pmUpdate.Auto();
+            if (IsServer) OnServerTick();
+
+            // Ahead of every guard below: the course is built while the turn has NOT started
+            // (that is what the arena-build announcement is holding the connecting panel for),
+            // so a retry gated on IsTurnRunning would never run.
+            if (_awaitingCourse) TickCourseGeneration();
+
+            if (_finalResultsSent) return;
+            if (gameData == null || !gameData.IsTurnRunning) return;
+
+            // Despawned (leaving play mode, a scene teardown): OnNetworkDespawn cleared the course
+            // on purpose while the turn can still read as running for a frame. Without this the
+            // check below reported a "missed SyncCourse" that never happened (Bug Ledger
+            // E-76d7341dae, captured after a Regatta run ended).
+            if (!IsSpawned) return;
+
+            if (_rings.Count == 0)
+            {
+                // Flying with no course is silent by construction - the pilot simply is never
+                // credited - so it has to announce itself. Once: this is a per-frame path.
+                if (!_warnedCourseMissing)
+                {
+                    _warnedCourseMissing = true;
+                    CSDebug.LogError($"[{ModeName}] Turn started with no course on this peer - " +
+                                     "gates flown now cannot be credited. The SyncCourse broadcast " +
+                                     "was missed and the RequestCourse pull has not answered yet.");
+                }
+                return;
+            }
+
+            LightLocalNextGate();
+            TickRaceToasts();
+
+            float maxStep = maxPlausibleSpeed * Time.deltaTime * 2f + 5f;
+            float maxStepSqr = maxStep * maxStep;
+
+            var players = gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var p = players[i];
+
+                // Only ever test a vessel THIS machine simulates. IsNetworkOwner - not
+                // IsLocalUser - because the host owns every AI and a mode that used the narrower
+                // test would silently never advance one (the gate the Bends records for combat
+                // hits, reached from the other direction).
+                if (p == null || !p.IsNetworkOwner) continue;
+
+                var vessel = p.Vessel;
+                if (vessel == null || vessel is Object uo && !uo) { Forget(p); continue; }
+                var t = vessel.Transform;
+                if (!t) { Forget(p); continue; }
+
+                var stats = p.RoundStats;
+                if (stats == null) { Forget(p); continue; }
+
+                if (!_runs.TryGetValue(p, out var run))
+                {
+                    run = new PilotRun { Optimistic = stats.SwitchesThreaded };
+                    _runs[p] = run;
+                }
+
+                Reconcile(run, stats.SwitchesThreaded);
+
+                Vector3 cur = t.position;
+                // Sampled every frame, ahead of every skip below, so the probe's next segment is one frame long.
+                bool probeFlew = run.Probe.Advance(vessel, maxStepSqr, out var probePrev, out var probeCur);
+                if (!run.HasLastPosition)
+                {
+                    run.LastPosition = cur;
+                    run.TeleportCount = TeleportCountOf(vessel);
+                    run.HasLastPosition = true;
+                    continue;
+                }
+
+                Vector3 prev = run.LastPosition;
+                run.LastPosition = cur;
+
+                // A GATE IS THREADED BY FLYING THROUGH IT. A teleport is a jump from one place
+                // to another and threads nothing on the line between them — the Butterfly's Fold
+                // crosses hundreds of units along its own heading, and the next cluster's rings
+                // are on that heading by construction.
+                //
+                // The step guard below does NOT cover this, and the way it fails is the reason
+                // this is a counter rather than a distance: it rejects a LONG jump by accident
+                // and credits a SHORT one, so the rule would be "a fold far enough away does not
+                // cheat". The mover states the fact instead (VesselTransformer.TeleportCount),
+                // and comparing COUNTS rather than magnitudes is correct whatever the frame
+                // ordering and however many jumps land in one frame.
+                int teleports = TeleportCountOf(vessel);
+                if (teleports != run.TeleportCount)
+                {
+                    run.TeleportCount = teleports;
+                    continue;
+                }
+
+                // A respawn, an eject or a frame-rate hitch is not a gate.
+                if ((cur - prev).sqrMagnitude > maxStepSqr) continue;
+
+                int index = run.Optimistic;
+                if (index < 0 || index >= RaceLength) continue;   // finished the course
+
+                int ringNo = RingIndexFor(index);
+                if (!_rings[ringNo]) continue;
+                bool hullThreads = HullThreadsWhileProbeLive || !run.Probe.Live;
+                if (!(hullThreads && ThreadsGate(ringNo, prev, cur)) && !(probeFlew && ThreadsGate(ringNo, probePrev, probeCur))) continue;
+
+                run.Optimistic = index + 1;
+                run.LastReportTime = Time.time;
+
+                if (IsServer) SwitchThreadScoring.Credit(stats, index);
+                else if (p is Player netPlayer) netPlayer.ReportSwitchThreaded_ServerRpc(index);
+            }
+
+            PruneDepartedPilots(players);
+        }
+
+        /// <summary>
+        /// Keep the optimistic count honest against the replicated one: adopt the server's value
+        /// when it catches up or overtakes, and fall BACK to it when a report has gone
+        /// unacknowledged for too long. Without the second half a rejected or dropped report
+        /// would strand this pilot testing a gate the server will never credit.
+        /// </summary>
+        void Reconcile(PilotRun run, int confirmed)
+        {
+            if (confirmed >= run.Optimistic) { run.Optimistic = confirmed; return; }
+            if (Time.time - run.LastReportTime > reportResyncSeconds) run.Optimistic = confirmed;
+        }
+
+        /// <summary>
+        /// This vessel's teleport tally, or 0 for a hull that has no transformer to ask (nothing
+        /// shipped, but the vessel is being torn down on some of the frames this runs on). 0 is
+        /// safe: the only thing done with it is a comparison against the last one we saw, and a
+        /// vessel whose count cannot be read cannot be teleporting either.
+        /// </summary>
+        static int TeleportCountOf(IVessel vessel)
+        {
+            var transformer = vessel?.VesselStatus?.VesselTransformer;
+            return transformer ? transformer.TeleportCount : 0;
+        }
+
+        void Forget(IPlayer p)
+        {
+            if (!_runs.TryGetValue(p, out var run)) return;
+            run.HasLastPosition = false;
+            run.Probe.Forget();
+        }
+
+        void PruneDepartedPilots(List<IPlayer> players)
+        {
+            if (_runs.Count <= players.Count) return;
+
+            _stalePilots.Clear();
+            foreach (var key in _runs.Keys)
+                if (!players.Contains(key)) _stalePilots.Add(key);
+            for (int i = 0; i < _stalePilots.Count; i++) _runs.Remove(_stalePilots[i]);
+        }
+
+        // ── AI ────────────────────────────────────────────────────────────
+
+        protected override void OnCountdownTimerEnded()
+        {
+            if (!IsServer) return;
+            base.OnCountdownTimerEnded();
+            ArmRacers();
+        }
+
+        /// <summary>
+        /// Point every AI at its own next gate, as TWO waypoints rather than one.
+        ///
+        /// <para>AIPilot has no arrive-and-stop behaviour - it steers at its target forever and
+        /// flies through on arrival - so handing it the ring's centre produces a pilot orbiting
+        /// the hoop, which is the defect Cleave and Dog Fight both record. Instead: while
+        /// far out, aim at a point BEHIND the ring on its own axis, which lines the approach up
+        /// with the mouth; inside the commit distance, aim at a point BEYOND it, which flies the
+        /// pilot through.</para>
+        ///
+        /// <para>Which side is "behind" is LATCHED when the gate changes, not recomputed. A pilot
+        /// that drifts just past the plane without threading would otherwise see the sides swap
+        /// and swing away - the same latch Dog Fight's break-off needed, for the same reason.</para>
+        ///
+        /// <para><b>No crystals.</b> Installing an external target provider replaces AIPilot's own
+        /// crystal seeking outright, so a racing AI flies the course's waypoints and nothing else
+        /// (<see cref="AIDetoursForCrystals"/>, 2026-10-26). A mode whose race needs crystals opts in
+        /// to an on-the-way detour, bounded by a distance budget rather than a radius: a crystal is
+        /// taken only when going through it costs less than <see cref="aiCrystalDetourSlack"/> of
+        /// extra flying, and the test stops holding the instant the pilot is past it.</para>
+        ///
+        /// <para>Steering only: no ability, throttle or weapon is touched here, and the provider
+        /// is per-pilot, so nothing leaks into another mode.</para>
+        /// </summary>
+        void ArmRacers()
+        {
+            Vector3 centre = ResolveCellCentre();
+
+            // Every AI seat, plus a human's hull the AI is holding when the race starts (PilotControl, the
+            // Third Eye's "AI flies" toggle): that hull races on the same steering as a seat.
+            foreach (var p in gameData.Players)
+            {
+                if (p == null || (!p.IsInitializedAsAI && !HeldByAutopilot(p))) continue;
+                ArmRacer(p, centre, RaceHandicapLevel(p));
+            }
+        }
+
+        /// <summary>
+        /// Arm ONE pilot mid-race: a human's hull handed to the AI after the start (<see cref="PilotControl"/>).
+        /// The same steering <see cref="ArmRacers"/> gives every seat at the start. On the server, or on the machine
+        /// that flies the hull (a guest handing its OWN hull over): the steering reads the course and the ring count,
+        /// and a guest has both (<c>SyncCourse_ClientRpc</c>, the replicated <c>SwitchesThreaded</c>).
+        /// </summary>
+        public bool ArmAIPilot(IPlayer player)
+        {
+            if (player == null || _course.Count == 0) return false;
+            if (!IsServer && player is not Player { IsLocalUser: true }) return false;
+            ArmRacer(player, ResolveCellCentre(), RaceHandicapLevel(player));
+            return true;
+        }
+
+        // The lobby's AI difficulty (every mode offers it, AIDifficultyRules.IsOfferedFor):
+        // Easy, Medium and Hard race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
+        // Legendary on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO). Per PILOT: each AI races
+        // at its own seat's level (picked with its pedestal selected), else the match's.
+        SkimRaceHandicapLevel RaceHandicapLevel(IPlayer pilot) => AIDifficultyRules.IsOfferedFor(gameData.GameMode)
+            ? SkimRaceDifficultySO.Load().For(gameData.AIDifficultyFor(pilot))
+            : default;
+
+        // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot to a human's hull.
+        static bool HeldByAutopilot(IPlayer p) =>
+            p.Vessel?.VesselStatus is Component status && status &&
+            status.TryGetComponent(out AIPilot autopilot) && autopilot.AutoPilotEnabled;
+
+        /// <summary>A mode's per-pilot set-up as each AI racer is armed (server): Switchback sets its AI's nose follow
+        /// rate by difficulty here. Default: nothing.</summary>
+        protected virtual void OnRacerArmed(IPlayer pilot) { }
+
+        /// <summary>
+        /// One hull's AI NOSE LEAD in a mode (<see cref="AIPilot.NoseLeadGain"/>, <see cref="AIPilot.NoseLeadMaxExtraDegrees"/>):
+        /// a mode-side setting, never a vessel change. The Time minigames carry one row per hull they race
+        /// (<see cref="AINoseLeadTable"/>); Regatta reads its race-line styles instead (<c>RegattaController.OnRacerArmed</c>).
+        /// </summary>
+        [System.Serializable]
+        public struct AINoseLeadRow
+        {
+            [Tooltip("The hull this row is for.")]
+            public VesselClassType Hull;
+            [Tooltip("The AI's nose lead gain, stated at the fleet nose lag (1.5/s): 0 = off, the pilot judges its error from " +
+                     "the nose; above 0 it judges from where it commands the nose (AIPilot.NoseLeadGain).")]
+            [Range(0f, 6f)] public float Gain;
+            [Tooltip("How far past the aim the nose lead may place the command, degrees (AIPilot.NoseLeadMaxExtraDegrees).")]
+            [Range(0f, 120f)] public float MaxExtraDegrees;
+            [Tooltip("The AI nose's follow rate per second in this mode (VesselTransformer.AINoseFollowPerSecond): 0 = leave " +
+                     "it alone (the fleet lag, 1.5/s, unless the mode sets its own rate), higher = a quicker nose. Learned " +
+                     "by the Time-game AI search (2026-11-17: the nose lag, not the boost drive, held the slow AIs back).")]
+            [Range(0f, 30f)] public float NoseFollow;
+
+            public AINoseLeadRow(VesselClassType hull, float gain, float maxExtraDegrees = AIPilot.DefaultNoseLeadMaxExtraDegrees,
+                                 float noseFollow = 0f)
+            {
+                Hull = hull;
+                Gain = gain;
+                MaxExtraDegrees = maxExtraDegrees;
+                NoseFollow = noseFollow;
+            }
+        }
+
+        /// <summary>This mode's per-hull AI nose lead, or null: the mode leaves <see cref="AIPilot.NoseLeadGain"/> alone
+        /// (Regatta sets it itself). When a table is given, every armed AI gets its hull's row, and a hull with no row
+        /// flies with the lead off, so no pilot carries another mode's value into this race.</summary>
+        protected virtual AINoseLeadRow[] AINoseLeadTable => null;
+
+        /// <summary>The nose lead <paramref name="table"/> gives <paramref name="hull"/>: its row, or off (0) with the
+        /// default max-extra angle when the table has no row for it. The first row for a hull wins.</summary>
+        public static AINoseLeadRow NoseLeadFor(AINoseLeadRow[] table, VesselClassType hull)
+        {
+            if (table != null)
+                foreach (var row in table)
+                    if (row.Hull == hull) return row;
+            return new AINoseLeadRow(hull, 0f);
+        }
+
+        void ArmNoseLead(IPlayer p)
+        {
+            var table = AINoseLeadTable;
+            // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot (HeldByAutopilot).
+            if (table == null || p?.Vessel?.VesselStatus is not Component status || !status ||
+                !status.TryGetComponent(out AIPilot autopilot)) return;
+            var row = NoseLeadFor(table, p.Vessel.VesselStatus.VesselType);
+            autopilot.NoseLeadGain = row.Gain;
+            autopilot.NoseLeadMaxExtraDegrees = row.MaxExtraDegrees;
+            // A learned nose rate for this hull in this mode; 0 leaves the transformer's rate alone (OnRacerArmed, which
+            // runs next, may still set the mode's own, as Switchback and Redline do).
+            var transformer = p.Vessel.VesselStatus.VesselTransformer;
+            if (row.NoseFollow > 0f && transformer) transformer.AINoseFollowPerSecond = row.NoseFollow;
+        }
+
+        void ArmRacer(IPlayer p, Vector3 centre, SkimRaceHandicapLevel handicapLevel)
+        {
+            var pilot = p.Vessel?.VesselStatus?.AIPilot;
+            if (pilot == null) return;
+            ArmNoseLead(p);
+            OnRacerArmed(p);
+
+            var captured = p;
+            int lockedIndex = -1;
+            float side = 1f;
+            float approachLead = aiApproachLead;
+            float nextCrystalScan = 0f;
+            Crystal detour = null;
+            var refuel = new RefuelDetour();
+            Vector3 lastSelf = default;
+            bool hasLastSelf = false;
+            // Where the pilot flies after the point the provider below returns (the boost driver's corner), or null.
+            Vector3? after = null;
+            // The ring this pilot missed while flying its race line: that ring is flown the gate way until threaded, or
+            // the line (a closed loop) would carry the pilot a whole lap round to it.
+            int lineLostIndex = -1;
+            // Seeded per seat and per race, so each AI errs differently every race.
+            var handicap = handicapLevel.IsNone ? null
+                : new GateRaceHandicap(handicapLevel, unchecked(System.Environment.TickCount * 31 + (int)p.PlayerNetId));
+            // The race's ring handicap IS this pilot's difficulty: drop the platform belief its spawn gave it
+            // (ConfigureAIPilotForMode installs one on every offered mode), or each mistake would be made twice.
+            pilot.SetTargetBelief(null);
+
+            pilot.SetExternalTargetProvider(() =>
+            {
+                var selfTf = captured.Vessel?.Transform;
+                if (selfTf == null) return centre;
+
+                after = null;
+
+                // Where the pilot was on the previous call, for the missed-mouth test below.
+                Vector3 previousSelf = lastSelf;
+                bool hadPreviousSelf = hasLastSelf;
+                lastSelf = selfTf.position;
+                hasLastSelf = true;
+
+                // A mode whose vessel is ATTACHED to geometry aims at the geometry, not the
+                // ring. Asked first, every frame, so the answer can change the instant the
+                // pilot latches on or launches off.
+                if (TryOverrideAim(captured, out Vector3 overridden))
+                {
+                    if (OverrideAimIsLead(captured)) pilot.MarkAimAsPathLead();
+                    if (OverrideBellyTarget(captured, out Vector3 belly)) pilot.MarkBellyTarget(belly);
+                    pilot.ReportObjective(AIPilot.ObjectivePhase.Override, overridden);
+                    return overridden;
+                }
+
+                int index = captured.RoundStats?.SwitchesThreaded ?? 0;
+                if (index < 0 || index >= RaceLength)
+                {
+                    pilot.ReportObjective(AIPilot.ObjectivePhase.Finished, centre);
+                    return centre;   // finished: loiter
+                }
+
+                // RingIndexFor, not the raw index: on a lapped circuit an AI reading
+                // _course[index] straight would run off the end of the list after one lap
+                // and loiter for the rest of the race. lockedIndex stays RAW on purpose -
+                // arriving at the same ring on the next lap IS a new leg.
+                int ringNo = RingIndexFor(index);
+                // Which mouth of this gate the pilot flies for (a mode with several rings per gate picks one).
+                var gate = ChooseAIGate(captured, index, ringNo, _course[ringNo]);
+                Vector3 self = selfTf.position;
+                int lap = DiagnosticLap(index);
+
+                // What this pilot BELIEVES about its ring (GateRaceHandicap): nothing yet (it flies
+                // straight on), or the mouth off to one side (it flies there and turns back).
+                Vector3 ringAt = gate.Position;
+                if (handicap != null)
+                {
+                    var belief = handicap.Believe(index, gate.Position, gate.Axis, gate.Radius, self, selfTf.forward, Time.time);
+                    if (belief.Unnoticed)
+                    {
+                        pilot.ReportObjective(AIPilot.ObjectivePhase.NotNoticed, gate.Position, ringNo, lap);
+                        return self + selfTf.forward * 200f;
+                    }
+                    ringAt = belief.Point;
+                }
+                bool misjudged = ringAt != gate.Position;
+                // The pilot's own lane through the mouth (zero unless the mode spreads its AIs: AILaneOffset).
+                ringAt += AILaneOffset(captured, ringNo, gate);
+
+                // Crossed this ring's plane OUTSIDE the mouth: a miss. The side latched for this ring is now
+                // the wrong one and the far-side point is behind the pilot and close, so it would circle that
+                // point until the orbit detector fired (REGATTA.md section 6.1). Re-latch from where it is (a
+                // ring threads from either side) and extend and re-attack now. A crossing INSIDE the mouth is
+                // the ring's to count; the same formula decides both (RaceGateRing.PlaneCrossing).
+                if (AICommitFromApproachPoint && hadPreviousSelf &&
+                    RaceGateRing.PlaneCrossing(previousSelf, self, gate.Position, gate.Axis, gate.Radius)
+                        == GatePlaneCrossing.OutsideMouth)
+                {
+                    lockedIndex = -1;
+                    lineLostIndex = index;
+                    pilot.BreakOffNow();
+                }
+
+                // A prism ON THE WAY while the ramp's tank is low (the Rhino ploughs fuel, the Swordfish slices it;
+                // RHINO_RAMP_BOOST.md § Fuel), as far as the hull's learned refuel genes allow (RaceAIRefuelGenesSO, no
+                // row = never). Before the race line, so a hull flying one still refuels when its genes say it pays.
+                if (!misjudged && refuel.TryAim(captured, self, gate.Position, aiCrystalScanSeconds, out Vector3 prismAim))
+                {
+                    pilot.ReportObjective(AIPilot.ObjectivePhase.CrystalDetour, prismAim, ringNo, lap);
+                    return prismAim;
+                }
+
+                // The hull's own race line (Regatta: the gap between two rails, RegattaRaceLine), when the mode has one
+                // for this hull and the pilot is not flying a difficulty mistake or recovering from a missed mouth.
+                if (!misjudged && lineLostIndex != index && TryRaceLine(captured, self, out Vector3 lineAim, out Vector3 lineAfter))
+                {
+                    pilot.ReportObjective(AIPilot.ObjectivePhase.Approach, gate.Position, ringNo, lap);
+                    // A look-ahead along a line, not a point to reach: the pilot's orbit break-off must not judge it.
+                    pilot.MarkAimAsPathLead();
+                    after = lineAfter;
+                    return lineAim;
+                }
+
+                if (index != lockedIndex)
+                {
+                    lockedIndex = index;
+                    side = Vector3.Dot(self - gate.Position, gate.Axis) >= 0f ? 1f : -1f;
+                    detour = null;   // a new leg is a new line; re-decide what is on the way
+                    // The leg into this ring: from the ring before it, or from where the pilot is for the first.
+                    Vector3 legFrom = index > 0 ? _course[RingIndexFor(index - 1)].Position : self;
+                    approachLead = ApproachLeadFor(aiApproachLead, Vector3.Distance(legFrom, gate.Position),
+                        aiCommitDistance, AICommitFromApproachPoint);
+                }
+
+                // The mode's own way onto the ring (Skein: a free Urchin flies to catch a rail that threads it), asked
+                // once the leg is latched and only for a pilot flying the ring it really sees (a difficulty mistake is
+                // flown the gate way).
+                if (!misjudged && TrySeekAim(captured, ringNo, gate, self, out Vector3 seekAim))
+                {
+                    pilot.ReportObjective(AIPilot.ObjectivePhase.Approach, gate.Position, ringNo, lap);
+                    return seekAim;
+                }
+
+                // A crystal ON THE WAY: in a mode whose race needs crystals (AIDetoursForCrystals), or as far as the
+                // hull's learned gene allows (RaceAICrystalGenesSO, 0 until training finds it pays; Garrett 2026-11-16
+                // relaxed Yash's 2026-10-26 waypoints-only rule into this gene).
+                float detourSlack = AICrystalDetourSlackFor(captured);
+                if (detourSlack > 0f)
+                {
+                    if (Time.time >= nextCrystalScan)
+                    {
+                        nextCrystalScan = Time.time + aiCrystalScanSeconds;
+                        detour = FindDetourCrystal(self, gate.Position, captured.Domain, detourSlack);
+                    }
+
+                    // Re-tested every frame, not latched: "on the way" is a cheap monotone
+                    // test that stops holding the moment the pilot is past the crystal, so
+                    // the detour cannot become an orbit the way an aim point can.
+                    if (detour)
+                    {
+                        Vector3 c = detour.transform.position;
+                        if (Vector3.Distance(self, c) + Vector3.Distance(c, gate.Position)
+                            <= Vector3.Distance(self, gate.Position) + detourSlack)
+                        {
+                            pilot.ReportObjective(AIPilot.ObjectivePhase.CrystalDetour, c, ringNo, lap);
+                            return c;
+                        }
+                        detour = null;
+                    }
+                }
+
+                var transformer = captured.Vessel?.VesselStatus?.VesselTransformer;
+                float commit = CommitDistanceFor(aiCommitDistance, approachLead,
+                    transformer != null ? transformer.MinTurnRadius : 0f, AICommitFromApproachPoint);
+                bool approaching = (ringAt - self).sqrMagnitude > commit * commit;
+                pilot.ReportObjective(
+                    misjudged ? AIPilot.ObjectivePhase.Misjudged
+                    : approaching ? AIPilot.ObjectivePhase.Approach : AIPilot.ObjectivePhase.Through,
+                    gate.Position, ringNo, lap);
+                // Regatta (AICommitFromApproachPoint): through the CENTRE from where the pilot is. A drifting hull locks
+                // its course on this point, and a point on the ring's axis lies off that line whenever the pilot commits
+                // off-axis - the locked line then passes beside the mouth and the drift cannot correct it (the offline
+                // models stalled every Dolphin race at I2-I4, and the Rhino's at I3-I4; on this line all of them finish:
+                // AI/AI_BOOST.md). Any crossing inside the mouth threads it, from either side.
+                Vector3 throughCentre = ringAt - self;
+                Vector3 throughPoint = AICommitFromApproachPoint && throughCentre.sqrMagnitude > 1f
+                    ? ringAt + throughCentre.normalized * aiThroughDistance
+                    : ringAt - gate.Axis * (side * aiThroughDistance);
+                if (approaching)
+                {
+                    after = throughPoint;   // the corner at the approach point is the turn onto the mouth's axis
+                    return ringAt + gate.Axis * (side * approachLead);
+                }
+                // The corner past the mouth is the turn toward the next ring.
+                if (index + 1 < RaceLength) after = _course[RingIndexFor(index + 1)].Position;
+                return throughPoint;
+            });
+            pilot.SetNextLegProvider(() => after);
+            pilot.SetEmergencySteerProvider(AIEmergencySteerFor(captured));
+
+            // A race flies flat out, and a drifting hull (the Dolphin's charge) points its nose where it is
+            // going rather than at the cell centre, so a discharge fires down the line to the ring
+            // (2026-10-14 Regatta audit: it fired wide of the ring).
+            pilot.SetThrottleFloor(AIThrottleFloorFor(captured));
+            var aiPilot = pilot;
+            pilot.SetDriftLookTargetProvider(() =>
+                TryOverrideDriftLook(captured, out Vector3 look) ? look
+                : aiPilot && aiPilot.Objective.Has ? aiPilot.TargetPosition : (Vector3?)null);
+        }
+
+        /// <summary>
+        /// The nearest crystal this pilot may collect that costs less than
+        /// <paramref name="slack"/> (<see cref="AICrystalDetourSlackFor"/>) of extra flying between here and the next gate.
+        ///
+        /// <para>Filtered to MANAGED crystals (<c>Crystal.CrystalManager</c> is set only by
+        /// <c>CrystalManager.SpawnWithDomain</c>) for the reason RampageObjectiveProvider
+        /// records: <c>Crystal.Active</c> also holds every lifeform heart the food web drops and
+        /// every crystal a Dolphin seeds, and steering at those would take the pilot off the
+        /// course chasing whatever just died.</para>
+        /// </summary>
+        /// <summary>
+        /// One racer's refuel detour (<see cref="RaceAIRefuelGenesSO"/>): while its ramp's tank is below the learned
+        /// threshold, the nearest live, not super-shielded prism within the learned slack of the straight line to the
+        /// gate. Re-scanned every <c>aiCrystalScanSeconds</c>; the on-the-way test is re-run every frame, so a passed
+        /// prism is dropped at once (no orbit), exactly as the crystal detour does.
+        /// </summary>
+        sealed class RefuelDetour
+        {
+            static readonly List<Prism> s_hits = new();
+
+            RampBoostActionExecutor _ramp;
+            bool _looked;
+            float _nextScan;
+            Prism _target;
+
+            public bool TryAim(IPlayer pilot, Vector3 self, Vector3 gate, float scanSeconds, out Vector3 aim)
+            {
+                aim = default;
+                var status = pilot?.Vessel?.VesselStatus;
+                if (status == null || !RaceAIRefuelGenesSO.Learned(status.VesselType, out var genes)) return false;
+                if (!_looked)
+                {
+                    _looked = true;
+                    if (status is Component c && c) _ramp = c.GetComponentInChildren<RampBoostActionExecutor>(true);
+                }
+                if (!_ramp || !RaceAIRefuelGenesSO.WantsFuel(genes, _ramp.Fuel01)) { _target = null; return false; }
+
+                if (Time.time >= _nextScan)
+                {
+                    _nextScan = Time.time + scanSeconds;
+                    _target = Find(self, gate, genes.PrismDetourSlack, pilot.Name);
+                }
+                if (!_target || _target.destroyed) { _target = null; return false; }
+
+                Vector3 p = _target.transform.position;
+                if (!Ahead(self, gate, p)
+                    || Vector3.Distance(self, p) + Vector3.Distance(p, gate) > Vector3.Distance(self, gate) + genes.PrismDetourSlack)
+                {
+                    _target = null;
+                    return false;
+                }
+                aim = p;
+                return true;
+            }
+
+            // Only a prism between the vessel and its gate: one beside or behind it (its own fresh trail, mostly)
+            // would turn the racer round.
+            static bool Ahead(Vector3 self, Vector3 gate, Vector3 p)
+            {
+                Vector3 line = gate - self;
+                float t = Vector3.Dot(p - self, line) / Mathf.Max(line.sqrMagnitude, 1e-4f);
+                return t > 0.05f && t < 1f;
+            }
+
+            static Prism Find(Vector3 self, Vector3 gate, float slack, string selfName)
+            {
+                var index = PrismSpatialIndex.Instance;
+                if (index == null) return null;
+                // A prism whose detour costs at most `slack` lies within slack/2 of the straight line.
+                index.QuerySegment(self, gate, slack * 0.5f, s_hits);
+                float budget = Vector3.Distance(self, gate) + slack;
+                Prism best = null;
+                float bestNear = float.MaxValue;
+                for (int i = 0; i < s_hits.Count; i++)
+                {
+                    var prism = s_hits[i];
+                    if (!prism || prism.destroyed || prism.prismProperties is { IsSuperShielded: true }) continue;
+                    if (!string.IsNullOrEmpty(selfName) && prism.PlayerName == selfName) continue;
+                    Vector3 p = prism.transform.position;
+                    if (!Ahead(self, gate, p)) continue;
+                    float near = Vector3.Distance(self, p);
+                    if (near < 1f || near + Vector3.Distance(p, gate) > budget || near >= bestNear) continue;
+                    bestNear = near;
+                    best = prism;
+                }
+                s_hits.Clear();
+                return best;
+            }
+        }
+
+        Crystal FindDetourCrystal(Vector3 self, Vector3 gate, Domains domain, float slack)
+        {
+            var crystals = Crystal.Active;
+            float budget = Vector3.Distance(self, gate) + slack;
+
+            Crystal best = null;
+            float bestCost = float.MaxValue;
+
+            for (int i = 0, n = crystals.Count; i < n; i++)
+            {
+                var crystal = crystals[i];
+                // A manager-less crystal is a heart, a preview or a toy's - except the element ladder's I3 crystals.
+                if (crystal == null || (crystal.CrystalManager == null && !ElementLadderCrystals.IsLadderCrystal(crystal)))
+                    continue;
+                if (!crystal.CanBeCollected(domain)) continue;
+
+                Vector3 c = crystal.transform.position;
+                float cost = Vector3.Distance(self, c) + Vector3.Distance(c, gate);
+                if (cost > budget || cost >= bestCost) continue;
+
+                bestCost = cost;
+                best = crystal;
+            }
+
+            return best;
+        }
+
+        /// <summary>
+        /// A race lays its I3 ladder crystals BESIDE its rings (<see cref="ElementLadderCrystals"/>): a random gate each,
+        /// pushed off the ring's axis by 1.5-3 ring radii so taking one is a detour the racing AI's learned gene
+        /// decides (<see cref="RaceAICrystalGenesSO"/>), never a crystal threaded for free. Falls back to the cell
+        /// scatter before the course is built.
+        /// </summary>
+        public override void CollectLadderCrystalPoints(Domains team, int count, System.Random rng, List<Vector3> into)
+        {
+            if (_course.Count == 0) { base.CollectLadderCrystalPoints(team, count, rng, into); return; }
+            for (int i = 0; i < count; i++)
+            {
+                var gate = _course[rng.Next(_course.Count)];
+                Vector3 axis = gate.Axis.sqrMagnitude > 1e-6f ? gate.Axis.normalized : Vector3.forward;
+                Vector3 side = Vector3.Cross(axis, Mathf.Abs(axis.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
+                side = Quaternion.AngleAxis((float)(rng.NextDouble() * 360.0), axis) * side;
+                float reach = Mathf.Max(gate.Radius, 20f) * (1.5f + 1.5f * (float)rng.NextDouble());
+                into.Add(gate.Position + side * reach);
+            }
+        }
+
+        protected Vector3 ResolveCellCentre()
+        {
+            var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
+            return cell ? cell.transform.position : Vector3.zero;
+        }
+
+        // ── Race end ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Server-side winner detection. Runs on EVERY peer via SyncTurnEnd_ClientRpc, and
+        /// BEFORE ExecuteServerTurnEnd -> SetupNewRound, so the latch below is set in time to
+        /// suppress the Ready button.
+        /// </summary>
+        protected override void OnTurnEndedCustom()
+        {
+            base.OnTurnEndedCustom();
+            if (!IsServer || _finalResultsSent) return;
+            if (!rule.IsObjectiveReached(gameData, out var winningDomain)) return;
+
+            _finalResultsSent = true;
+
+            float finishTime = Mathf.Max(0f, Time.time - gameData.TurnStartTime);
+
+            // Display name only - VICTORY/DEFEAT is decided by WinnerDomain. The representative
+            // is the domain's lead runner, which under this mode's fold IS the pilot whose run
+            // won it.
+            var winnerRep = gameData.RoundStatsList
+                .Where(s => s.Domain == winningDomain)
+                .OrderByDescending(s => s.SwitchesThreaded)
+                .FirstOrDefault();
+
+            rule.AssignScores(gameData, winningDomain, finishTime);
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
+
+            SyncFinalScoresSnapshot(winnerRep?.Name ?? "", winningDomain);
+        }
+
+        protected override void SetupNewRound()
+        {
+            if (_finalResultsSent) return;
+            base.SetupNewRound();
+        }
+
+        void SyncFinalScoresSnapshot(string winnerName, Domains winnerDomain)
+        {
+            var statsList = gameData.RoundStatsList;
+            int count = statsList.Count;
+
+            var names = new FixedString64Bytes[count];
+            var scores = new float[count];
+            var domains = new int[count];
+            var gates = new int[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                names[i] = new FixedString64Bytes(statsList[i].Name);
+                scores[i] = statsList[i].Score;
+                domains[i] = (int)statsList[i].Domain;
+                gates[i] = statsList[i].SwitchesThreaded;
+            }
+
+            SyncFinalScores_ClientRpc(names, scores, domains, gates,
+                new FixedString64Bytes(winnerName), (int)winnerDomain);
+        }
+
+        [ClientRpc]
+        void SyncFinalScores_ClientRpc(FixedString64Bytes[] names, float[] scores, int[] domains,
+                                      int[] gatesThreaded, FixedString64Bytes winnerName, int winnerDomain)
+        {
+            for (int i = 0; i < names.Length; i++)
+            {
+                string sName = names[i].ToString();
+                var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
+                if (stat == null)
+                {
+                    CSDebug.LogError($"[{ModeName}] Client could not match RoundStats for '{sName}'.");
+                    continue;
+                }
+                stat.Score = scores[i];
+                stat.Domain = (Domains)domains[i];
+                // The gate count travels too: without it a client's scoreboard reads 0 gates for
+                // every remote pilot, and BuildResults' tiebreak sorts on nothing.
+                stat.SwitchesThreaded = gatesThreaded[i];
+            }
+
+            gameData.WinnerName = winnerName.ToString();
+            gameData.WinnerDomain = (Domains)winnerDomain;
+
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
+            gameData.SetResults(rule.BuildResults(gameData));
+            gameData.InvokeWinnerCalculated();
+            gameData.InvokeMiniGameEnd();
+        }
+    }
+}

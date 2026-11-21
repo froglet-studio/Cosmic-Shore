@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
@@ -106,7 +106,7 @@ namespace CosmicShore.Gameplay
             if (!gameData.TryGetRoundStats(playerName, out var roundStats))
                 return;
 
-            float totalScore = scoringArray.Sum(scoring => scoring.Score);
+            float totalScore = scoringArray.Sum(scoring => scoring.ScoreFor(playerName));
 
             roundStats.Score = totalScore;
         }

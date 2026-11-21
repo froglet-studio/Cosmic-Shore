@@ -24,7 +24,7 @@ namespace CosmicShore.Tests
     [TestFixture]
     public class MicroscenePatternsTests
     {
-        // 1500 = the shipped Toy_Conveyor budget (20 scenes × 1500 = the belt's 30,000-prism
+        // 1500 = the shipped Wander_WithoutArk budget (20 scenes × 1500 = the belt's 30,000-prism
         // conserved stock); the small values keep the low-budget paths honest.
         static readonly int[] Budgets = { 12, 42, 60, 100, 1500 };
         static readonly int[] Seeds = { 1, 7, 12345 };
@@ -141,8 +141,9 @@ namespace CosmicShore.Tests
         [Test]
         public void Theming_RespectsCollider_BudgetCapsOnShieldedPrisms()
         {
-            // Shielded / supershielded prisms carry an always-on convex MeshCollider the collider-LOD
-            // cannot reclaim, so the palette caps them per scene (danger is capped for readability).
+            // The palette caps the shielded tiers per scene for GEOMETRY (a shield reaches 1.5x
+            // leafSize) and for the food web (armoured mass is never food), not for colliders - a
+            // shield swaps the mesh, never the collider (danger is capped for readability).
             // The painter's EnforceKindCaps backstop must hold for EVERY scheme it can roll.
             var pal = MicroscenePalette.Default;
             for (int recipe = 0; recipe < MicroscenePatterns.RecipeCount; recipe++)

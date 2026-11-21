@@ -22,6 +22,44 @@ namespace CosmicShore.Gameplay
         public ElementalFloat ProjectileTime = new ElementalFloat(3f);
 
         [SerializeField] int ammoIndex = 0;
+
+        // An ability's temporary raise of this gun's output, held as a FLOOR rather than written
+        // into the authored fields. EnergizeAction used to do the latter -- including
+        // `ProjectileTime.Value = x`, which is the element's own parameter -- and it cost three
+        // things: a level change mid-energize made ScaleValueWithLevel overwrite the raise and
+        // silently drop it; the "default" it restored was captured from fireActions[0] and written
+        // to EVERY gun, so two guns with different authored values collapsed onto the first one's;
+        // and that captured default was the pre-scaling authored Value (5 on the Urchin), so a
+        // restore replaced the element-scaled lifetime with a constant until the next level event.
+        // A floor cannot do any of the three: the authored parameter is never written, so it is
+        // always the element that decides the base and the ability only ever lifts it.
+        float speedFloor;
+        float projectileTimeFloor;
+        int energyFloor;
+
+        /// <summary>This shot's lifetime: the element's live value, or an ability's floor if higher.</summary>
+        public float ResolvedProjectileTime => Mathf.Max(
+            IsInitialized ? ProjectileTime.EvaluateLive(VesselStatus) : ProjectileTime.Value,
+            projectileTimeFloor);
+
+        public float ResolvedSpeed  => Mathf.Max(Speed, speedFloor);
+        public int   ResolvedEnergy => Mathf.Max(Energy, energyFloor);
+
+        /// <summary>Lift this gun's output for as long as an ability holds it. Never lowers.</summary>
+        public void RaiseOutputFloors(float speed, float projectileTime, int energy)
+        {
+            speedFloor          = Mathf.Max(speedFloor, speed);
+            projectileTimeFloor = Mathf.Max(projectileTimeFloor, projectileTime);
+            energyFloor         = Mathf.Max(energyFloor, energy);
+        }
+
+        /// <summary>Drop every floor. The gun returns to its OWN authored values, not a neighbour's.</summary>
+        public void ClearOutputFloors()
+        {
+            speedFloor = projectileTimeFloor = 0f;
+            energyFloor = 0;
+        }
+
     
         public float Ammo01
         {
@@ -50,7 +88,7 @@ namespace CosmicShore.Gameplay
                 else inheritedVelocity = VesselStatus.Course;
                 OnGunFired?.Invoke();
                 OnShotFired?.Invoke(VesselStatus.PlayerName);
-                gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * VesselStatus.Speed, ProjectileScale, true, ProjectileTime.Value, 0, FiringPatterns.Default, Energy);
+                gun.FireGun(projectileContainer.transform, ResolvedSpeed, inheritedVelocity * VesselStatus.Speed, ProjectileScale, true, ResolvedProjectileTime, 0, FiringPatterns.Default, ResolvedEnergy);
             }
         }
 

@@ -6,9 +6,10 @@ using CosmicShore.Gameplay;
 namespace CosmicShore.ScriptableObjects
 {
     [CreateAssetMenu(fileName = "FloraCollection", menuName = "ScriptableObjects/FloraCollection")]
-    public class FloraCollection : ScriptableObject
+    public class SO_FloraCollection : ScriptableObject
     {
-        public List<Flora> prefabs;
+        [SerializeField] List<Flora> prefabs;
+        public List<Flora> Prefabs => prefabs;
 
         public Flora GetRandomPrefab()
         {

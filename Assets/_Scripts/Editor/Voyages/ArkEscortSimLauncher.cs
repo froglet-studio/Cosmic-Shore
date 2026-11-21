@@ -1,0 +1,53 @@
+using System;
+using CosmicShore.Gameplay;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+namespace CosmicShore.Editor
+{
+    /// <summary>
+    /// Starts the escort sim (<see cref="ArkEscortSim"/>) from the command line and closes the editor when it is done, so
+    /// a tuning session can play escorts with nobody at the keyboard:
+    /// <code>Unity.exe -projectPath . -executeMethod CosmicShore.Editor.ArkEscortSimLauncher.Run
+    ///   -arkEscortSim "5:Sparrow,Rhino,Manta" -arkEscortOut Logs/escort.jsonl -arkEscortTimeScale 3 -arkEscortQuit</code>
+    /// It opens Bootstrap and enters Play; the sim does the rest: from the menu, each run sets sail into the voyage scene
+    /// (<c>Voyage.unity</c>) the way the Voyage window does, and the scene returns to the menu when the escort is over.
+    /// <see cref="RunSmoke"/> (with <c>-voyageSmoke</c>) plays the voyage scene's smoke test (<see cref="VoyageSmoke"/>)
+    /// the same way. A reader of the game, it writes no assets.
+    /// </summary>
+    [InitializeOnLoad]
+    public static class ArkEscortSimLauncher
+    {
+        const string QuitArg = "-arkEscortQuit";
+
+        static ArkEscortSimLauncher()
+        {
+            ArkEscortSim.AllDone -= OnDone;
+            ArkEscortSim.AllDone += OnDone;
+            VoyageSmoke.Done -= OnDone;
+            VoyageSmoke.Done += OnDone;
+        }
+
+        /// <summary>The <c>-executeMethod</c> entry: Bootstrap, then Play.</summary>
+        public static void Run()
+        {
+            EditorSceneManager.OpenScene("Assets/_Scenes/Bootstrap.unity", OpenSceneMode.Single);
+            EditorApplication.isPlaying = true;
+        }
+
+        /// <summary>The <c>-executeMethod</c> entry for the smoke test (pass <c>-voyageSmoke</c> and <c>-arkEscortQuit</c>):
+        /// Bootstrap, then Play.</summary>
+        public static void RunSmoke() => Run();
+
+        static void OnDone(bool ok)
+        {
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), QuitArg) < 0) return;
+            EditorApplication.delayCall += () =>
+            {
+                EditorApplication.isPlaying = false;
+                EditorApplication.delayCall += () => EditorApplication.Exit(ok ? 0 : 1);
+            };
+        }
+    }
+}

@@ -24,8 +24,8 @@ namespace CosmicShore.Gameplay
     ///     punch included. A seeded ball is an ordinary live body, and the ball itself notices it
     ///     has left (AstroLeagueBall.TickNucleusDepartureServer) rather than each force announcing
     ///     it. Once dislodged it can never be seeded again: it is a ball, permanently.
-    ///   • Bank one too many and the nucleus OVERLOADS: every ball detonates with an explosion
-    ///     twice its own radius. Feeding the core is the greedy line, and the greedy line has a
+    ///   • Bank one too many of ONE Scarab's balls and the nucleus OVERLOADS: every ball
+    ///     detonates with an explosion six times its own radius. Feeding the core is the greedy line, and the greedy line has a
     ///     cliff.
     ///
     /// THE CONTAINMENT FOR BOTH DIRECTIONS IS THE BALL'S OWN — one nucleus surface ridden from
@@ -122,25 +122,25 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public AstroLeagueBall TrySeed(Domains domain, float sizeScale)
         {
-            if (_config == null || _config.ballPrefab == null) return null;
+            if (_config == null || _config.BallPrefab == null) return null;
             if (!ScarabBallForge.CanSpawnLocally) return null;
 
             float radius = NucleusRadius;
             if (radius <= 1e-3f) return null;         // no nucleus in this cell — nothing to stud
 
-            if (CountEmbedded(domain) >= Mathf.Max(1, _config.maxEmbeddedPerDomain)) return null;
+            if (CountEmbedded(domain) >= Mathf.Max(1, _config.MaxEmbeddedPerDomain)) return null;
 
             // A point anywhere on the sphere. Server-only, so no cross-peer determinism is owed —
             // the ball's own replicated position is what every client renders.
             Vector3 outward = Random.onUnitSphere;
 
-            var ball = ScarabBallForge.Spawn(_config.ballPrefab, Centre + outward * radius,
+            var ball = ScarabBallForge.Spawn(_config.BallPrefab, Centre + outward * radius,
                                              Vector3.zero, domain, sizeScale);
             if (ball == null) return null;
 
             // Sink it into the surface so it reads as EMBEDDED rather than resting on the shell.
             // It is PLACED there, not pinned — the ball stays a fully live body (SCARAB.md §4.6).
-            float sink = ball.BallWorldRadius() * Mathf.Clamp01(_config.embedSinkFraction);
+            float sink = ball.BallWorldRadius() * Mathf.Clamp01(_config.EmbedSinkFraction);
             ball.EmbedOnNucleusServer(Centre + outward * (radius - sink), outward);
 
             _embedded.Add(ball);
@@ -196,9 +196,11 @@ namespace CosmicShore.Gameplay
             if (!inward) return;
 
             // INWARD → into the nucleus. One too many overloads it, and the check runs BEFORE the
-            // ball is banked so the limit counts what may rest inside, not what may enter.
+            // ball is banked so the limit counts what may rest inside, not what may enter. The
+            // limit is PER SCARAB — counted by the ball's domain, which a forged or seeded ball
+            // carries from its maker — while the overload itself still takes everything.
             PruneInNucleus();
-            if (_inNucleus.Count >= Mathf.Max(1, _config.nucleusEntryLimit))
+            if (CountInNucleus(ball.LastHitDomain) >= Mathf.Max(1, _config.NucleusEntryLimit))
             {
                 Overload();
                 return;
@@ -213,19 +215,27 @@ namespace CosmicShore.Gameplay
                 if (_inNucleus[i] == null || _inNucleus[i].IsHidden) _inNucleus.RemoveAt(i);
         }
 
+        int CountInNucleus(Domains domain)
+        {
+            int n = 0;
+            for (int i = 0; i < _inNucleus.Count; i++)
+                if (_inNucleus[i].LastHitDomain == domain) n++;
+            return n;
+        }
+
         // ── Overload ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// The nucleus takes one ball too many: everything detonates, each with an explosion twice
-        /// its own radius. Every ball leaves through its own scaled detonate-then-despawn beat, so
+        /// The nucleus takes one ball too many: everything detonates, each with an explosion
+        /// <c>detonationRadiusScale</c>× its own radius. Every ball leaves through its own scaled detonate-then-despawn beat, so
         /// the continuity law holds for all of them at once — nothing blinks out.
         /// </summary>
         void Overload()
         {
-            float scale = Mathf.Max(0.1f, _config.detonationRadiusScale);
+            float scale = Mathf.Max(0.1f, _config.DetonationRadiusScale);
             int n;
 
-            if (_config.detonateAllLiveBalls)
+            if (_config.DetonateAllLiveBalls)
             {
                 // The SHARED implementation, the same beat the per-CELL overload uses
                 // (AstroLeagueBall.DetonateAllLooseInCellServer), so "too many balls" produces

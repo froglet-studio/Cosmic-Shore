@@ -4,7 +4,6 @@ using CosmicShore.ScriptableObjects;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using PlayFab.ClientModels;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -103,35 +102,11 @@ namespace CosmicShore.Core
             AddKeysToList();
         }
 
-        private void OnEnable()
-        {
-            // Subscribe update and pull data logic to getting data event 
-            PlayerDataController.OnGettingPlayerData += SaveToPref;
-        }
-
-        /// <summary>
-        /// Save user data result to PlayerPref
-        /// Everytime daily challenge data is updated, pull data from PlayFab immediately and save to PlayerPref
-        /// So that the client only need to access PlayerPref for data
-        /// Not anti-cheating, but anyways, the updating logic goes to the server side.
-        /// </summary>
-        /// <param name="result">User data result form PlayFab Player Data</param>
-        private void SaveToPref(GetUserDataResult result)
-        {
-            foreach (var key in PrefKeys)
-            {
-                if (!result.Data.TryGetValue(key, out var value)) continue;
-                
-                if (key == InitializedDatePrefKey || key == LastTicketIssuedDatePrefKey)
-                {
-                    PlayerPrefs.SetString(key, value.Value);
-                }
-                else
-                {
-                    PlayerPrefs.SetInt(key, int.Parse(value.Value));
-                }
-            }
-        }
+        // There used to be an OnEnable here subscribing SaveToPref(GetUserDataResult) to
+        // PlayerDataController.OnGettingPlayerData, which mirrored PlayFab player data down into
+        // the PlayerPrefs keys below. That publisher's prefab was in no scene, so the event could
+        // never fire and the mirror never ran — this system has always been PlayerPrefs-only in
+        // practice. Removed with PlayFab; the ticket/reward logic is untouched.
 
         void SelectDailyGame()
         {
@@ -205,7 +180,7 @@ namespace CosmicShore.Core
             var remainingAttempts = CatalogManager.Instance.GetDailyChallengeTicketBalance();//PlayerPrefs.GetInt(TicketBalancePrefKey);
             if (remainingAttempts > 0)
             {
-                CSDebug.Log($"DailyChallenge - Remaining Attempts:{remainingAttempts - 1}");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[DailyChallenge] Remaining Attempts:{remainingAttempts - 1}");
                 CatalogManager.Instance.UseDailyChallengeTicket();
                 Arcade.Instance.LaunchTrainingGame(dailyChallenge.GameMode, DailyGame._SO_Vessel.Class, ShipResources, dailyChallenge.Intensity, 1, true);
             }
@@ -233,7 +208,7 @@ namespace CosmicShore.Core
 
         public bool ClaimReward(int tier)
         {
-            CSDebug.Log($"ClaimRewardTierOne - dailyGame:{DailyGame}, tier:{tier}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[DailyChallenge] ClaimReward - dailyGame:{DailyGame}, tier:{tier}");
             switch (tier)
             {
                 case 1:

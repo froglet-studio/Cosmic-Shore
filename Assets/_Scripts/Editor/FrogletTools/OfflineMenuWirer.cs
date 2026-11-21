@@ -84,15 +84,16 @@ namespace CosmicShore.Editor.Froglet
             new("FriendsListPanel",             false),
             new("ArcadeLobbyList",              false),
             new("LeaderboardsMenu",             true),   // PortScreen - must stay navigable
-            new("StoreScreen",                  true),   // ArkScreen  - must stay navigable
+            // Not StoreScreen: its ArkScreen host is the Elemental Converter now, a local animation that
+            // works offline (Tools/Build/author_elemental_converter.py removed that gate).
         };
 
-        [MenuItem("FrogletTools/Interface/Wire Offline Menu Surfaces")]
+        [MenuItem("FrogletTools/UI/Wire Offline Menu Surfaces", false, 231)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 4,
             Description = "Wire the online/offline lamp, its confirm bar, and the online-only UI gates into Menu_Main.")]
         static void Wire() => Run(regenerateIcons: false);
 
-        [MenuItem("FrogletTools/Interface/Wire Offline Menu Surfaces (Regenerate Icons)")]
+        [MenuItem("FrogletTools/UI/Wire Offline Menu Surfaces (Regenerate Icons)", false, 232)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 2,
             Description = "Same, but re-renders the offline icon set from scratch - use after changing the icon geometry.")]
         static void WireAndRegenerate() => Run(regenerateIcons: true);
@@ -274,6 +275,14 @@ namespace CosmicShore.Editor.Froglet
         static void StyleAnswerButton(Button button, Sprite icon, Color accent, List<string> report)
         {
             if (button == null) return;
+
+            // The style-B Home (Tools/Build/author_menu_home.py) authors its answers - a kit fill, a
+            // glyph and a word under a child named "Label". Restyling one would undo that look.
+            if (FindChild(button.gameObject, "Label") != null)
+            {
+                report.Add($"• '{button.name}' is already styled (style-B) - left as is.");
+                return;
+            }
 
             // Tint the button's own graphic and give it real pressed/hover states, so the answer
             // controls read as controls rather than as two identical glyphs.

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
+    <ProjectReference Include="../CosmicShore.Data/CosmicShore.Data.csproj" />
+    <ProjectReference Include="../CosmicShore.Game/CosmicShore.Game.csproj" />
+  </ItemGroup>
+
+</Project>

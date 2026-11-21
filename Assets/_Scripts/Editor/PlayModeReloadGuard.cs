@@ -8,7 +8,7 @@ namespace CosmicShore.Editor
     /// reload MID-PLAY. A mid-play reload runs "Run managed callbacks" against a live
     /// scene — FMOD system teardown, Netcode transport, background threads — and is the
     /// most hang-prone reload the editor can attempt (see
-    /// Docs/PERFORMANCE_OPTIMIZATION.md Task 10; the 2026-08-21 hang reports). With the
+    /// Docs/archive/PERFORMANCE_LOG_2026.md Task 10; the 2026-08-21 hang reports). With the
     /// lock held the refresh simply queues, and the reload runs at EnteredEditMode
     /// exactly as the "Recompile After Finished Playing" preference would do — but
     /// enforced project-wide instead of depending on each developer's editor prefs.

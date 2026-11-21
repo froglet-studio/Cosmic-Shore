@@ -7,7 +7,7 @@ using UnityEngine;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// <b>FrogletTools ▸ Vessels ▸ Audit Corridor Vessel Radii.</b>
+    /// <b>FrogletTools ▸ Vessels ▸ Audits ▸ Audit Corridor Vessel Radii.</b>
     ///
     /// The occlusion corridor is SHIP-SIZED: its cone radii are multiples of the vessel's
     /// own circumscribing hull radius, measured at bind by
@@ -29,7 +29,7 @@ namespace CosmicShore.Editor
     {
         const string VesselFolder = "Assets/_Prefabs/Spacevessels";
 
-        [MenuItem("FrogletTools/Vessels/Audit Corridor Vessel Radii", false, 62)]
+        [MenuItem("FrogletTools/Vessels/Audits/Audit Corridor Vessel Radii", false, 276)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Measure every vessel's corridor hull radius with the exact runtime code, " +
                           "name the top contributing renderers, and flag fleet outliers.")]

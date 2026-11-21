@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
@@ -44,6 +45,10 @@ namespace CosmicShore.Gameplay
         CancellationTokenSource _rosterRetryCts;
         bool _localPairResolved;
 
+        // The vessel this machine last initialised as its OWN (the local user's pair). A rejoin's
+        // seat claim reads it to tell "already set up as mine" from "set up as somebody else's" (B47).
+        IVessel _vesselInitializedAsLocal;
+
         // Load Time Insights span: open while pairs are queued waiting for replication.
         int _pendingWaitSpan = -1;
 
@@ -52,7 +57,11 @@ namespace CosmicShore.Gameplay
             base.OnNetworkSpawn();
 
             if (NetworkManager.Singleton.IsServer)
+            {
+                SpectatorSession.ServerWatchTargetsChanged += ApplySpectatorCounts;
+                ApplySpectatorCounts();
                 return;
+            }
 
             // Re-register persistent Players that survived the Netcode scene load
             // but were cleared from gameData.Players by ResetRuntimeData().
@@ -79,6 +88,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            SpectatorSession.ServerWatchTargetsChanged -= ApplySpectatorCounts;
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= OnPlayerNetworkSpawnedForPending;
             gameData.OnVesselNetworkSpawned.OnRaised -= ProcessPendingPairs;
             gameData.OnVesselNetworkSpawned.OnRaised -= ProcessPendingSwaps;
@@ -221,7 +231,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Called by a non-host client to release an AI companion (the freestyle Lifeform Matrix's
+        /// Called by a non-host client to release an AI companion (the freestyle Spawn Matrix's
         /// VESSELS branch). Spawning a <see cref="Player"/> + vessel is server-only, exactly like a
         /// vessel swap, so a client asks and the server does it - never a locally-spawned bot that
         /// nobody else in the party can see.
@@ -252,6 +262,145 @@ namespace CosmicShore.Gameplay
         }
 
         // ---------------------------------------------------------
+        // REJOIN (section 103): the host handed this client its old seat back
+        // ---------------------------------------------------------
+
+        /// <summary>
+        /// Sent to a client that REJOINED a running match when the host has handed it back the Player the AI was flying
+        /// (<see cref="ServerPlayerVesselInitializer"/>.TryReclaimSeat). The pair may already have been initialised here
+        /// as somebody else's, so it is re-initialised as this machine's own once the ownership and the human flag land.
+        ///
+        /// <para>It also carries the match's turn state. This client loaded the scene after the countdown's StartTurn
+        /// went out, so on its own it reads the match as not started: the HUD played the intro and showed READY, and
+        /// the press waited forever on a ready gate the racing pilots would never press again.</para>
+        /// </summary>
+        [ClientRpc]
+        internal void SeatReclaimed_ClientRpc(ulong playerNetId, bool turnRunning, float turnElapsedSeconds,
+            int roundsPlayed, int turnsTakenThisRound, ClientRpcParams rpcParams = default)
+        {
+            if (IsServer) return;
+            // Kept as a local start time, so the seconds spent waiting for the claim below count too.
+            var turn = new RunningTurn(turnRunning, Time.time - turnElapsedSeconds, roundsPlayed, turnsTakenThisRound);
+            ClaimReclaimedSeatAsync(playerNetId, turn, this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        /// <summary>The host's turn state at the moment it handed a rejoiner its seat back.</summary>
+        readonly struct RunningTurn
+        {
+            public readonly bool Running;
+            public readonly float LocalStartTime;
+            public readonly int RoundsPlayed, TurnsTakenThisRound;
+
+            public RunningTurn(bool running, float localStartTime, int roundsPlayed, int turnsTakenThisRound)
+            {
+                Running = running;
+                LocalStartTime = localStartTime;
+                RoundsPlayed = roundsPlayed;
+                TurnsTakenThisRound = turnsTakenThisRound;
+            }
+        }
+
+        async UniTaskVoid ClaimReclaimedSeatAsync(ulong playerNetId, RunningTurn turn, CancellationToken ct)
+        {
+            // Ownership (the Player's AND the vessel's), NetIsAI and the vessel id replicate on their own messages;
+            // wait for all of them (bounded). p.Vessel is set only by InitializePair, so the roster has always
+            // initialised the pair here by the time this loop lets go - as somebody else's if the ownership and
+            // the human flag had not landed yet (B47).
+            Player player = null;
+            float until = Time.unscaledTime + 10f;
+            while (Time.unscaledTime < until)
+            {
+                if (gameData.TryGetPlayerByNetworkObjectId(playerNetId, out var ip) && ip is Player p
+                    && p.IsOwner && !p.NetIsAI.Value && p.Vessel != null
+                    && (p.Vessel is not NetworkBehaviour vesselNet || !vesselNet.IsSpawned || vesselNet.IsOwner))
+                {
+                    player = p;
+                    break;
+                }
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            MatchRejoin.ClearApprovalPayload();
+            if (player == null)
+            {
+                CSDebug.LogWarning("[ClientPlayerVesselInitializer] Rejoined, but the reclaimed seat never became ours - the join watchdog will bounce.");
+                return;
+            }
+
+            gameData.ClaimLocalPlayer(player);
+            ClaimReclaimedPair(player, player.Vessel);
+
+            MatchRejoin.Remember(gameData.PartyId, gameData.GameMode);
+            _signalClientReadyWhenDone = false;
+            _localPairResolved = true;
+            _rosterRetryCts?.Cancel();
+
+            // ClientReady before the turn joins: the HUD's ClientReady handler clears its score and cards first thing,
+            // so the turn-started setup has to land after that clear, not be wiped by it.
+            gameData.InvokeClientReady();
+
+            if (turn.Running)
+                JoinRunningTurn(player, turn);
+        }
+
+        /// <summary>
+        /// The match was already racing when this client came back: join the turn where the others are instead of
+        /// starting it over. The countdown that activates the pilots and frees input has been and gone, so this does
+        /// what its ClientRpc would have done here, without zeroing anybody's score.
+        /// </summary>
+        void JoinRunningTurn(Player player, RunningTurn turn)
+        {
+            gameData.RoundsPlayed = turn.RoundsPlayed;
+            gameData.TurnsTakenThisRound = turn.TurnsTakenThisRound;
+            gameData.SetPlayersActive();
+            gameData.JoinRunningTurn(Time.time - turn.LocalStartTime);
+            NetSessionRecorder.Mark("rejoinedRunningTurn", $"{Time.time - turn.LocalStartTime:F1}s in");
+
+            if (player.InputController != null)
+            {
+                player.InputController.SetPause(false);
+                player.InputController.SetIdle(false);
+                player.Vessel.VesselStatus.IsStationary = false;
+            }
+        }
+
+        /// <summary>
+        /// Makes the reclaimed pair this machine's own (B47, Docs/PartySystem/BUGS.md). Nothing to do when the roster
+        /// already initialised it as the local user's.
+        ///
+        /// <para>The vessel is LIVE: the roster initialised it before the claim could run (the claim waits for
+        /// <c>Player.Vessel</c>, which only InitializePair sets). Calling <c>Initialize</c> on it again is refused by
+        /// VesselController's double-initialization guard, which skips every local-user binding (input, camera, HUD,
+        /// the platform laws) and left the rejoiner watching a ship it could not fly. A live hull handed to the local
+        /// pilot goes through <c>ChangePlayer</c>, exactly as the arena pilot swap does (<see cref="PilotSwap"/>).
+        /// A vessel nobody has initialised (not reachable today) still takes the full Initialize path.</para>
+        /// </summary>
+        void ClaimReclaimedPair(Player player, IVessel vessel)
+        {
+            if (ReferenceEquals(_vesselInitializedAsLocal, vessel))
+                return;
+
+            if (vessel.VesselStatus.Player == null)
+            {
+                ReInitializePair(player, vessel);
+                return;
+            }
+
+            InjectVesselDependencies(vessel);
+            if (vessel.VesselStatus.AutoPilotEnabled) vessel.ToggleAIPilot(false);
+            player.SetDomain(player.NetDomain.Value);
+            vessel.ChangePlayer(player);
+            // This machine simulates the hull from here; it was following the network's kinematics a frame ago.
+            vessel.VesselStatus.VesselTransformer.AdoptCurrentMotion();
+            ShipHelper.SetShipProperties(themeManagerData, vessel);
+            player._vesselThemeManagerData = themeManagerData;
+            _vesselInitializedAsLocal = vessel;
+
+            gameData.InvokePlayerPairInitialized(player.PlayerNetId);
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
+        }
+
+        // ---------------------------------------------------------
         // CLIENT-PULL ROSTER BOOTSTRAP (client-side)
         // ---------------------------------------------------------
 
@@ -265,6 +414,45 @@ namespace CosmicShore.Gameplay
         internal void RequestRosterFromHost_ServerRpc(ServerRpcParams rpcParams = default)
         {
             OnRosterRequested?.Invoke(rpcParams.Receive.SenderClientId);
+        }
+
+        /// <summary>
+        /// A SPECTATOR telling the server which pilot it is watching (0 = nobody), so that
+        /// pilot's own HUD can show it has an audience. <c>RequireOwnership = false</c> is not a
+        /// convenience here, it is the only option: a spectator owns no NetworkObject at all, so
+        /// every owner-gated channel is closed to it. The server keeps the answer in
+        /// <see cref="SpectatorSession"/>'s watch book and re-derives every player's count from
+        /// it - never an increment, so a viewer that switches pilots or drops cannot leave a
+        /// count stranded above zero.
+        /// </summary>
+        [ServerRpc(RequireOwnership = false)]
+        internal void ReportSpectating_ServerRpc(ulong watchedPlayerNetId, ServerRpcParams rpcParams = default)
+        {
+            SpectatorSession.ServerSetWatchTarget(rpcParams.Receive.SenderClientId, watchedPlayerNetId);
+        }
+
+        /// <summary>
+        /// Server: re-derive every player's spectator count from the watch book. Called on every
+        /// change and once at spawn, because a viewer that was already watching when this scene
+        /// loaded never re-reports on its own.
+        /// </summary>
+        void ApplySpectatorCounts()
+        {
+            if (!IsServer || gameData == null) return;
+            foreach (var p in gameData.Players)
+                if (p is Player player)
+                    player.SetSpectatorCountServer(SpectatorSession.ServerCountWatching(player.PlayerNetId));
+        }
+
+        /// <summary>
+        /// Tells every peer that a departed pilot's ship is now flown by the AI. The toast feed is
+        /// a per-peer surface, so the server's own post does not travel - this carries it.
+        /// </summary>
+        [ClientRpc]
+        internal void AnnouncePilotHandedToAI_ClientRpc(string playerName, int domain)
+        {
+            if (IsServer) return;   // the server already posted its own
+            GameToastAPI.Post(GameToastSituation.PilotHandedToAI, (Domains)domain, playerName);
         }
 
         /// <summary>
@@ -355,7 +543,23 @@ namespace CosmicShore.Gameplay
                     _pendingWaitSpan = -1;
                 }
 
-                InitializePair(player, vessel);
+                // ISOLATED. InitializePair runs vessel.Initialize, which walks a whole vessel's
+                // components - and one of them throwing used to abort this loop, so every pair
+                // still queued behind it was never initialised and the client sat on a black
+                // veil until its join watchdog bounced it. A vessel that cannot initialise is
+                // one broken ship; it must not cost the client the other five. Reported once per
+                // player, loudly, with the offender attached.
+                try
+                {
+                    InitializePair(player, vessel);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(
+                        $"[ClientPlayerVesselInitializer] InitializePair threw for '{player.Name}' " +
+                        $"({e.GetType().Name}): {e}. That pair is skipped; the rest of the roster " +
+                        "still resolves.");
+                }
                 _pendingPairs.RemoveAt(i);
             }
 
@@ -377,6 +581,20 @@ namespace CosmicShore.Gameplay
 
             if (_pendingPairs.Count == 0 && _signalClientReadyWhenDone)
             {
+                // A SPECTATOR has no local pair: it owns no Player, so "the local vessel
+                // resolved" can never come true and the gate below would spin the roster pull
+                // for its full 60s while the viewer sat on the opaque veil. Every pair the host
+                // sent has resolved, which is all a viewer needs. OnClientReady is deliberately
+                // NOT raised - it means "my vessel is initialised", and SpectatorController
+                // fades the veil on its own gate ("watching a vessel") instead.
+                if (SpectatorSession.IsLocalSpectator)
+                {
+                    _signalClientReadyWhenDone = false;
+                    _localPairResolved = true;
+                    _rosterRetryCts?.Cancel();
+                    return;
+                }
+
                 // The batch only counts as complete once the LOCAL pair actually
                 // resolved. The client-pull roster request fires from our own
                 // OnNetworkSpawn, so the host's reply can legitimately predate our
@@ -447,7 +665,7 @@ namespace CosmicShore.Gameplay
 
         void InitializePair(IPlayer player, IVessel vessel)
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair - Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-6] [ClientVesselInit] InitializePair - Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}");
             // Explicit handle (not `using`): the local pair raises OnClientReady - the visual-ready
             // milestone - from inside this method, so the span must close before that call.
             int pairSpan = LoadInsights.Begin(
@@ -462,7 +680,7 @@ namespace CosmicShore.Gameplay
             // reset, NormalizeUnassignedHumans reroll, shape-mode SetDomain, etc).
             if (player is Player p) p._vesselThemeManagerData = themeManagerData;
             gameData.AddPlayer(player);
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-6] [ClientVesselInit] AddPlayer done. Players.Count={gameData.Players.Count}, LocalPlayer={gameData.LocalPlayer?.Name}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-6] [ClientVesselInit] AddPlayer done. Players.Count={gameData.Players.Count}, LocalPlayer={gameData.LocalPlayer?.Name}");
 
             // Signal this specific player-vessel pair is fully initialized.
             // Subscribers (e.g. MainMenuController) activate non-local players
@@ -470,6 +688,9 @@ namespace CosmicShore.Gameplay
             // condition of batch-activating players whose vessels haven't
             // replicated yet.
             gameData.InvokePlayerPairInitialized(player.PlayerNetId);
+            // A viewer may already be watching this pilot from before it spawned into this
+            // scene; the count is re-derived rather than assumed to be zero. Server-only inside.
+            ApplySpectatorCounts();
 
             if (player.IsLocalUser && CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
@@ -478,10 +699,11 @@ namespace CosmicShore.Gameplay
 
             if (player.IsLocalUser)
             {
+                _vesselInitializedAsLocal = vessel;
                 // Local pair resolved - stop the client-pull retry loop and clear the splash.
                 _localPairResolved = true;
                 _rosterRetryCts?.Cancel();
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFFFFF><b>[FLOW-6] [ClientVesselInit] Raising OnClientReady (local player initialized)</b></color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<b>[FLOW-6] [ClientVesselInit] Raising OnClientReady (local player initialized)</b>");
                 gameData.InvokeClientReady();
             }
         }
@@ -517,8 +739,12 @@ namespace CosmicShore.Gameplay
             // while in freestyle; MainMenuController re-activates non-local swapped vessels.
             gameData.InvokePlayerPairInitialized(player.PlayerNetId);
 
-            if (player.IsLocalUser && CameraManager.Instance)
-                CameraManager.Instance.SnapPlayerCameraToTarget();
+            if (player.IsLocalUser)
+            {
+                _vesselInitializedAsLocal = newVessel;
+                if (CameraManager.Instance)
+                    CameraManager.Instance.SnapPlayerCameraToTarget();
+            }
         }
     }
 }

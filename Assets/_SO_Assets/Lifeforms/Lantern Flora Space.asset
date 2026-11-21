@@ -17,11 +17,18 @@ MonoBehaviour:
   InitialSpawnCount: 1
   OverrideDefaultPlantPeriod: 0
   NewPlantPeriod: 2147483647
+  PopulationSize: 1
+  MaxLivePopulation: 3
+  GrowthPerOffspring: 17
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 5
+  MaturityFraction: 0.5
+  OffspringSpread: 60
   PreferredSites: 4
   Element: 3
   Variant:
     Enabled: 1
-    HeartWorldScale: 1.309
+    HeartWorldScale: 1.455
     LeafSize: {x: 2, y: 2, z: 1.5}
     GrowPeriod: 1.98
     ShieldPeriod: 0.0

@@ -1,6 +1,7 @@
 using System.Collections;
 using CosmicShore.Core;
 using Reflex.Attributes;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -20,6 +21,14 @@ namespace CosmicShore.UI
         [Header("Controller")]
         [Tooltip("When true, pressing gamepad B (East) will close this modal.")]
         [SerializeField] private bool closeOnGamepadB = true;
+
+        /// <summary>
+        /// Whether gamepad B may close this window RIGHT NOW. The serialized flag is a property of
+        /// the window; this is a property of its current state, which some windows genuinely have
+        /// (the arcade card is a lobby the HOST owns while a guest is in it, so a guest pressing B
+        /// would dismiss something they cannot ask for again).
+        /// </summary>
+        protected virtual bool AllowGamepadBClose => closeOnGamepadB;
 
         [Header("Input Blocking")]
         [Tooltip("When true, a full-screen transparent raycast blocker is spawned behind the " +
@@ -41,12 +50,37 @@ namespace CosmicShore.UI
         /// </summary>
         public event System.Action OnModalClosed;
 
+        /// <summary>
+        /// Raised whenever this modal transitions from closed to open - AFTER the stack push
+        /// and the "Window In" animation has started, so a listener runs against a window that
+        /// is already on its way up. The hook the card grids play their staggered reveal on:
+        /// these windows never deactivate (they hide by CanvasGroup alpha), so OnEnable is a
+        /// scene-load event here, never an open. Not raised for a re-open of an already-open
+        /// modal.
+        /// </summary>
+        public event System.Action OnModalOpened;
+
         [Header("Scene References")]
         [SerializeField] ScreenSwitcher screenSwitcher;
 
         /// <summary>The scene's screen switcher, for a subclass that must move the app shell
         /// itself (the arcade modal follows the host onto the arcade screen). May be null.</summary>
         protected ScreenSwitcher Switcher => screenSwitcher;
+
+        /// <summary>
+        /// Binds the scene's switcher to a modal that was BUILT rather than authored, so it takes
+        /// part in the modal stack (gamepad B, the close sweeps, the return-to-modal preference)
+        /// exactly like a scene-wired one.
+        ///
+        /// <para>Set-if-null on purpose: an authored reference always wins, so this can never
+        /// silently re-point a modal a human wired. The only caller today is
+        /// <see cref="ScreenSwitcher"/> ensuring the credits window exists — see
+        /// <see cref="CreditsModal"/> for why that window is structural rather than authored.</para>
+        /// </summary>
+        public void AttachScreenSwitcher(ScreenSwitcher switcher)
+        {
+            if (screenSwitcher == null) screenSwitcher = switcher;
+        }
 
         /// <summary>
         /// True while this modal is actually being presented. ScreenSwitcher reads it to
@@ -76,7 +110,22 @@ namespace CosmicShore.UI
             // Parent containers stay active so OnEnable/OnDisable lifecycle
             // fires for all children. Hide via CanvasGroup to prevent flash.
             if (!isOn)
+            {
+                SleepAnimator();
                 SetCanvasGroupVisible(false);
+            }
+        }
+
+        /// <summary>
+        /// A closed window's Animator is switched off. Its clips write the CanvasGroup (and the content's
+        /// scale) EVERY frame - "Window Out" holds its last frame - and an Animator dirties what it writes
+        /// even when the value does not change, so every closed window re-batched the whole menu canvas every
+        /// frame (Docs/MENU_REDESIGN_B.md §46.3). <see cref="ModalWindowIn"/> wakes it before the open
+        /// cross-fade; it restarts from its default state, as on a first open.
+        /// </summary>
+        void SleepAnimator()
+        {
+            if (windowAnimator && windowAnimator.enabled) windowAnimator.enabled = false;
         }
 
         /// <summary>
@@ -140,7 +189,7 @@ namespace CosmicShore.UI
 
         protected virtual void Update()
         {
-            if (!isOn || !closeOnGamepadB) return;
+            if (!isOn || !AllowGamepadBClose) return;
 
             // While a mode-preview window holds input focus, the pad belongs to the VESSEL -
             // every face button is a flight control, so B closing the modal here would yank the
@@ -148,6 +197,10 @@ namespace CosmicShore.UI
             // cover this path: it silences EventSystem-driven UI, and this is a direct device
             // poll that sails straight past it.
             if (ModePreviewWindow.AnyHasFocus) return;
+
+            // A guided path (MenuGuide) takes B away from every window on the path - backing out
+            // is a way off it. Settings keeps B: it is never part of a path and always closable.
+            if (MenuGuide.IsActive && !MenuGuide.IsAlwaysAvailable(ModalType)) return;
 
             if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
             {
@@ -166,8 +219,37 @@ namespace CosmicShore.UI
             // path asked (direct pollers, EventSystem Submit, scene-wired onClick). The
             // appshell UI is hidden and non-raycastable in freestyle, so there is no
             // legitimate open; the freestyle pause menu is not a ModalWindowManager.
+            // A preview holding the stick is not freestyle: the player clicked a window, so the flight ends (the
+            // preview gives the pad back) and the window opens. Only freestyle, where the appshell is hidden, refuses.
+            if (!isOn && ModePreviewWindow.AnyHasFocus && !(screenSwitcher && screenSwitcher.IsInFreestyle))
+                ModePreviewWindow.ReleaseAnyFocus();
+
+            if (!isOn && EventSystem.current && !EventSystem.current.sendNavigationEvents
+                && screenSwitcher && !screenSwitcher.IsInFreestyle)
+            {
+                // Outside freestyle with no preview flying, navigation off is a leak: give the pad back and open.
+                CSDebug.LogWarningFormat("{0} - EventSystem navigation was off outside freestyle when '{1}' opened; " +
+                                         "restored (a preview ended without giving the pad back).", nameof(ModalWindowManager), name);
+                EventSystem.current.sendNavigationEvents = true;
+            }
+
             if (!isOn && EventSystem.current && !EventSystem.current.sendNavigationEvents)
+            {
+                // Say so. This was the codebase's only silent, log-free modal refusal, and on
+                // screen it is indistinguishable from a dead button - a press arrives, is
+                // accepted, and nothing opens. That is exactly the symptom the arcade's 13th
+                // card produced for five rounds from a completely different cause, so the two
+                // must not look alike in a console. Only freestyle reaches here now: a flying
+                // preview is told to give the stick back above, and a leaked flag outside
+                // freestyle is restored above (2026-10-19).
+                CSDebug.LogWarningFormat(
+                    "{0} - '{1}' declined to open because EventSystem navigation is off (the " +
+                    "appshell does not own the pad). If no freestyle flight or preview is " +
+                    "active, sendNavigationEvents has been leaked and no modal will open until " +
+                    "it is restored.",
+                    nameof(ModalWindowManager), name);
                 return;
+            }
 
             // First open can happen before Start (modal GameObjects that begin inactive).
             EnsureBackdrop();
@@ -206,14 +288,18 @@ namespace CosmicShore.UI
 
                 if (windowAnimator)
                 {
+                    if (!windowAnimator.enabled) windowAnimator.enabled = true;
                     if (sharpAnimations == false)
                         windowAnimator.CrossFade("Window In", 0.1f);
                     else
                         windowAnimator.Play("Window In");
                 }
 
-                audioSystem.PlayMenuAudio(MenuAudioCategory.OpenView);
+                PlayMenuAudio(MenuAudioCategory.OpenView);
                 isOn = true;
+                // The window never deactivates, so its entrances last played behind it at scene load.
+                KitEntrance.ReplayUnder(transform);
+                OnModalOpened?.Invoke();
             }
         }
 
@@ -236,7 +322,7 @@ namespace CosmicShore.UI
                     windowAnimator.Play("Window Out");
             }
 
-            audioSystem.PlayMenuAudio(MenuAudioCategory.CloseView);
+            PlayMenuAudio(MenuAudioCategory.CloseView);
             isOn = false;
 
             if (ModalType != ModalWindows.SETTINGS)
@@ -251,11 +337,117 @@ namespace CosmicShore.UI
             OnModalClosed?.Invoke();
         }
 
+        /// <summary>
+        /// The half-second that lets "Window Out" play before the group is switched off.
+        ///
+        /// <para><b>REALTIME, not scaled.</b> <c>WaitForSeconds</c> is multiplied by
+        /// <c>Time.timeScale</c>, and this menu runs PAUSED - <c>PauseSystem.TogglePauseGame</c>
+        /// sets <c>timeScale = 0</c> whenever the player is not flying. So a modal closed while
+        /// paused started a coroutine that could never finish, <c>SetCanvasGroupVisible(false)</c>
+        /// never ran, and the window stayed fully on screen with every other part of the close
+        /// (backdrop, modal stack, isOn, OnModalClosed) already done - a modal that is logically
+        /// shut and visually still there, which is exactly how it reads to a player: UI in the way
+        /// that nothing will take down.
+        ///
+        /// <para>Everything else timing this UI layer is already unscaled
+        /// (<c>ScreenSwitcher.SmoothMove</c>, the freestyle toggle cooldown); this was the
+        /// straggler.</para>
+        /// </summary>
         IEnumerator DisableWindow()
         {
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSecondsRealtime(0.5f);
+            SleepAnimator();
             SetCanvasGroupVisible(false);
             _disableCoroutine = null;
+        }
+
+        /// <summary>
+        /// Take this window off screen NOW, whatever it believes its own state to be.
+        ///
+        /// <para>Exists because <see cref="ModalWindowOut"/> is gated on <c>isOn</c> while callers
+        /// reasonably decide what to close by looking at what is VISIBLE, and the two can
+        /// disagree: <see cref="ModalWindowIn"/> deliberately refuses to open while the freestyle
+        /// gate is engaged (leaving <c>isOn</c> false), and a launch panel makes itself visible
+        /// through its own <c>Show()</c> before asking its host modal to open. A modal in that
+        /// state ignores every ordinary close request, forever.</para>
+        ///
+        /// <para>Also skips the animate-out dwell on purpose. This is the "get out of the way"
+        /// path - the player is being handed the ship - and half a second of menu over the start
+        /// of flight is the complaint, not the remedy.</para>
+        /// </summary>
+        public void ForceCloseImmediate()
+        {
+            if (_disableCoroutine != null)
+            {
+                StopCoroutine(_disableCoroutine);
+                _disableCoroutine = null;
+            }
+
+            EnsureCanvasGroupCached();
+            bool wasVisible = _canvasGroup && _canvasGroup.alpha > 0.01f;
+
+            SetBackdropActive(false);
+            SetCanvasGroupVisible(false);
+
+            // The Animator must be moved OFF its open state, not just the CanvasGroup written:
+            // "Window In" transitions into "Window Loop", and that clip writes alpha 1,
+            // blocksRaycasts 1 and interactable 1 EVERY FRAME - so an open modal force-closed
+            // by writing the group alone was back on screen the next frame, and it sat over the
+            // whole freestyle flight. Jumping to the END of "Window Out" (which has no outgoing
+            // transition) is the pose the normal close settles in; sampled now so this frame
+            // agrees with the next one.
+            if (windowAnimator && windowAnimator.isActiveAndEnabled)
+            {
+                windowAnimator.Play("Window Out", 0, 1f);
+                windowAnimator.Update(0f);
+                SleepAnimator();
+                SetCanvasGroupVisible(false);
+            }
+
+            if (!isOn && !wasVisible) return;
+
+            isOn = false;
+            if (screenSwitcher != null)
+                screenSwitcher.PopModal(ModalType, this);
+
+            // Raised last, and raised even when isOn was already false: something WAS on screen
+            // and is not any more, so subscribers that unwind content (the arcade modal's preview
+            // window and launch panel) have to hear about it.
+            OnModalClosed?.Invoke();
+        }
+
+        void EnsureCanvasGroupCached()
+        {
+            if (_canvasGroup == null)
+                _canvasGroup = GetComponent<CanvasGroup>();
+        }
+
+        bool _warnedAudioFallback;
+
+        /// <summary>
+        /// The open/close sting, through the injected system when there is one and through
+        /// <c>AudioSystem.Instance</c> when there is not - the same fallback <c>MenuAudio</c>
+        /// carries, for the same reason. <c>ModalWindowIn</c>/<c>Out</c> are wired as PERSISTENT
+        /// onClick listeners in the scene, and a persistent listener that throws eats every
+        /// runtime listener behind it; a modal whose close button did nothing because its audio
+        /// field was null would be exactly that defect. Losing the sting is the failure this
+        /// buys instead.
+        /// </summary>
+        protected void PlayMenuAudio(MenuAudioCategory category)
+        {
+            var system = audioSystem ? audioSystem : AudioSystem.Instance;
+            if (!system)
+            {
+                if (!_warnedAudioFallback)
+                {
+                    _warnedAudioFallback = true;
+                    CSDebug.LogWarningFormat("{0} on '{1}' has no AudioSystem (never injected, and " +
+                                             "no instance) - the open/close sting is silent.",
+                                             nameof(ModalWindowManager), name);
+                }
+                return;
+            }
+            system.PlayMenuAudio(category);
         }
 
         protected void SetCanvasGroupVisible(bool visible)

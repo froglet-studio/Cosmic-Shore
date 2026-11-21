@@ -1,0 +1,70 @@
+# AI System — start here
+
+Every vessel AI in Cosmic Shore is reviewed, restructured, diagnosed, tested and tuned on
+**`Ys-bleeding-edge`** (since 2026-10-09; the `ai-system` branch that held this work was merged there and
+retired). Others keep writing AI on `bleeding-edge`; it is pulled in, taken in, and diagnosed one AI at a
+time. Performance testing runs in parallel on `perf/performance-optimization`, and the branches exchange
+work by merge. Testing an AI visually: the one Vessel Studio artifact (`/vessel-studio`) in a browser, and the **AI Diagnose panel**
+(code name Third Eye) in the game view: F2 opens/closes it, its buttons take the main camera; editor and development builds. The rules every AI follows, difficulty, finish times and the
+test ladder: the **`/vessel-ai`** skill.
+
+**Yash's sessions, any area: build on `Ys-bleeding-edge`, PR into it, and never push or open a PR into `bleeding-edge`**
+unless Yash asks; Yash tests there and decides what is promoted (2026-10-25, [`BRANCH_WORKFLOW.md`](BRANCH_WORKFLOW.md) §1).
+
+| Read | When |
+|---|---|
+| [`AI_PLAN.md`](AI_PLAN.md) | **First, always: the ONE plan every AI effort serves (LOCKED, Garrett 2026-11-02).** Readable by anyone on the Froglet Compute console's AI plan page, which is also the default place AI training runs (CLAUDE.md). In a voyage the squad seat's cards choose its AI: the vessel and element choose the genome (one universal AI per vessel per element, trained on that element's arcade game, scored on I1-I4 together), the pilot biases it. The ladder is arcade intensities, then the element's arena balanced against those fixed AIs, then voyages. Every effort names its step (`ai_plan.json`; Froglet Compute runs no job off it) |
+| [`../ElementalAbilitySystem/SILENCE.md`](../ElementalAbilitySystem/SILENCE.md) §6 | **The combat-balance plan (Garrett, 2026-10-20):** optimize each hull's AI in mirror matches in its Charge arcade game, then against the other hulls in Broadside (the Charge arena game: the mixed-fleet rumble), scored on the petals each pilot makes opponents lose (strip, steal, danger-prism collisions), until each hull's score plateaus; then balance the hulls so every plateau is the same. Never balance against an AI that has not plateaued. Needs a per-attacker petal ledger first, and the AI has to learn silence both ways |
+| [`AUTO_LEARNING.md`](AUTO_LEARNING.md) | **The AIs learn on their own (LOCKED, Yash 2026-10-26):** every recorded race reaches the daily AI learning sweep (03:47 IST, `ai_learn.py --run`), which relearns, judges and pushes. Never ask a person to run a learner; a new learner joins `ai_learn.py` |
+| [`MINIGAME_TRAINING_PLAN.md`](MINIGAME_TRAINING_PLAN.md) | **The current plan (Yash, 2026-10-26, restated 2026-10-27):** train each vessel's AI in its OWN minigames, its Time minigame first (Dolphin → Switchback, Stoat → Warpline; the vessel → minigame map), never in Regatta; learn from repeated play (automatic: `AUTO_LEARNING.md`); then rebuild the arena games (Regatta first) as a mix of the learned skills, so any vessel fits them |
+| [`../../Assets/_Scripts/Controller/Arcade/SWITCHBACK.md`](../../Assets/_Scripts/Controller/Arcade/SWITCHBACK.md) | **The Dolphin in Switchback (Blast Run), Yash's own:** the blast planner and executor, the four AI steps of 2026-11-02 (dodge only Danger prisms, strike straight, measured hit costs, drift carving measured), difficulty by AI nose lag set to Yash's time bands, the offline simulator `Tools/Build/switchback_sim_harness` and the headless Unity soak (`SwitchbackSoakLauncher`). Summary: `MINIGAME_TRAINING_PLAN.md` §9.1 |
+| [`../../Assets/_Scripts/Controller/Arcade/THRESHERTIME.md`](../../Assets/_Scripts/Controller/Arcade/THRESHERTIME.md) §4 | **The Thresher in Thresher Time** (next after the Stoat): the sling AI and, since 2026-11-02, the aimed launch learned from Garrett's races; the Thresher Time soak (`ThresherTimeSoakLauncher`), AI Threshers winning I1-I4 headless |
+| [`REGATTA_BALANCE_PLAN.md`](REGATTA_BALANCE_PLAN.md) | **The Regatta balance plan (Garrett, 2026-10-26; Yash follows it, `/regatta-balance` guides):** stage 1 trains each hull's AI on its own Time games at I1-I4, stage 2 searches the Regatta course that levels the fastest and slowest trained AIs (today 2.05-2.18x in the models), stage 3 the smallest elemental baseline that closes the rest. Every stage is a compute search on the team's idle machines (`Docs/Compute/README.md`, `/compute`) |
+| [`REGATTA_AI_ROADMAP.md`](REGATTA_AI_ROADMAP.md) | **The Regatta record (superseded as the plan 2026-10-26):** six racing AIs for Regatta (Squirrel, Stoat, Manta, Rhino, Urchin, Dolphin), one way to build a racing AI (a hull drive on the shared course / belief / steering), and the order with each step's status. As of 2026-10-17: the Stoat is on the card, the Rhino drive is rebuilt (step 4), the Dolphin drifts again at the peak (step 6), Regatta steers through the ring's centre; none of it run in the editor yet |
+| [`BRANCH_WORKFLOW.md`](BRANCH_WORKFLOW.md) | Before any merge into or out of `Ys-bleeding-edge`: the branches, which way work flows, conflict rules, verification |
+| [`AI_TRAINING_PLAN.md`](AI_TRAINING_PLAN.md) | AI training end to end (training data from Unity editor play only; the Training AI for Regatta page was deleted 2026-10-16), what Unity has today, the four layers (watch in the AI Lab, AIs train each other in the genetic trainer, learn from players with consent, nothing ships itself) and the order of work |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Before touching any AI: the six layers, the roster of every AI (source of truth), what is wrong today, the target architecture |
+| [`DIAGNOSIS_PLAYBOOK.md`](DIAGNOSIS_PLAYBOOK.md) | Before diagnosing an AI or taking a new one in: the five tiers of evidence, the procedure, the intake checklist, the user's test script, the status board |
+| [`SYNC_LOG.md`](SYNC_LOG.md) | One row per merge |
+| [`SITUATION_RECORDING_PLAN.md`](SITUATION_RECORDING_PLAN.md) | The flight recorder (`HumanFlightRecorder`, schema `cosmic-shore.flight/3`): what a Regatta flight records, how the learners read it, what was learned from which flights |
+| [`RACING_LINE.md`](RACING_LINE.md) | The Squirrel's racing line from people's Regatta flights, and how a flight reaches the repo |
+| [`LEARNED_FROM_FLIGHTS.md`](LEARNED_FROM_FLIGHTS.md) | Generated by `learn_from_flights.py --write`: the Regatta Squirrel's skim numbers and the flights they came from |
+| [`../SKIM_RACE_AI.md`](../SKIM_RACE_AI.md) | The Skim Race pilot in depth (the most developed AI; its methods are the model for the rest) |
+
+**First command of every AI session:**
+
+```sh
+python3 Tools/Build/ai_branch_sync.py
+```
+
+It fetches `Ys-bleeding-edge` and the three source branches and reports what is waiting, which of it is AI work, and which AI
+files the roster does not know yet. It only reads; merging is a separate, deliberate step.
+
+## Facts a newcomer needs
+
+- **Per-mode variants.** A drive's numbers for one mode live in `Assets/Resources/AIBoostPolicies/<base asset name>_<GameModes name>`
+  (e.g. `RhinoAIBoostPolicy_Regatta`), read by `AIBoostPolicySO.ForMode`, `AIModeTuning.For` and
+  `MantaSoarAITuningSO.LoadForMode`. A variant of a different class than its base is ignored. The folder holds one
+  variant so far, `MantaSoarAITuning_Regatta` (Soar bands 0.8 / 0.85, set 2026-10-17 from `manta_drive_sim.py` (since 2026-10-24: 0.975 / 0.975, learned from Yash's 3 fastest of 9 finished Manta flights; `LEARNED_DRIVES.md`) with the
+  learner's writer; a person's Manta flights replace it). So in Regatta the Squirrel and the Manta fly Regatta numbers;
+  the Rhino, the Dolphin and the Stoat fly their shipped numbers until their flights are learned. Renaming a base asset
+  orphans its variant.
+- **The Squirrel's Regatta numbers** are `Assets/Resources/SkimRaceAIConfig_Regatta.asset` (`SkimRaceAIConfigSO.LoadForRegatta`).
+  It is generated: edit `POLICIES` in `Tools/Build/author_skimrace_ai_config.py`, never the asset.
+- **The Stoat's three configs** (`StoatModeAction`, `StoatDipoleConfig`, `StoatSlingConfig`) resolve their variant only once
+  the pilot's game data exists (`AIModeTuning.ForPilot` returns null until then; the executors ask again next frame).
+- **The Manta has no base tuning asset.** Its Soar bands are fields on `MantaAnalogTurnBoostExecutor` (0.35 / 0.75);
+  a `MantaSoarAITuning_<mode>` asset replaces them in that mode (Regatta: 0.8 / 0.85 (since 2026-10-24: 0.975 / 0.975, learned from Yash's 3 fastest of 9 finished Manta flights; `LEARNED_DRIVES.md`)). The Manta does not drop Soar
+  before a corner: that look-ahead was modelled and was slower on every course (its turn radius barely shrinks when
+  it slows), so it was not shipped.
+- **Ring geometry for the Python learners** comes from the flight's own `ringList`; a flight without one falls back to
+  `Tools/Build/regatta_course_harness/course.js`. Re-run `export_course.sh` there after any Regatta course change.
+- **Opponent seats draw from the card like allies** (the Squirrel pin, `SO_ArcadeGame.OpponentAIVessel`, retired
+  2026-11-17; `author_regatta_assets.py --check` keeps it empty).
+- **What is where.** Since PR #1712 (2026-11-02) `bleeding-edge` has everything `Ys-bleeding-edge` had, the Switchback
+  steps and difficulty table included; Garrett's `AI_PLAN.md` (#1704) came back into `Ys-bleeding-edge` the same day.
+  `SYNC_LOG.md` has the rows.
+- **Checking an AI change in the real editor without a person:** `Tools/Build/verify_unity.sh` (headless compile + EditMode
+  tests, needs Unity on the machine) and the headless soaks (`SwitchbackSoakLauncher`, `ThresherTimeSoakLauncher`). A cloud
+  session has no Unity; it hands these to a session on a PC.
+- **Dates.** These docs use the team's local date, one day ahead of git's UTC timestamps for evening work.

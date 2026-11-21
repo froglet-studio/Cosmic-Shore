@@ -30,6 +30,14 @@ namespace CosmicShore.UI
         /// </summary>
         public static SO_ColorSet ColorSet { private get; set; }
 
+        /// <summary>
+        /// Every post, raised just before the channel. Nothing in the game subscribes: it exists
+        /// because Soap's <c>ScriptableEvent.Raise</c> early-returns while
+        /// <c>!Application.isPlaying</c>, so an EditMode test can never observe a post through the
+        /// channel (<c>RaceRankToastDriverTests</c> subscribes here instead).
+        /// </summary>
+        internal static event System.Action<GameToastData> Posted;
+
         public static void Post(GameToastSituation situation, Domains domain = Domains.Blue,
             params string[] args)
             => Post(situation, domain, Domains.Blue, args);
@@ -44,7 +52,9 @@ namespace CosmicShore.UI
                 return;
             }
 
-            channel.Raise(new GameToastData(situation, primaryDomain, secondaryDomain, args));
+            var data = new GameToastData(situation, primaryDomain, secondaryDomain, args);
+            Posted?.Invoke(data);
+            channel.Raise(data);
         }
 
         /// <summary>

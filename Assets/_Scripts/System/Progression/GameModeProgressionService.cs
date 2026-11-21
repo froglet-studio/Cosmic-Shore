@@ -20,7 +20,7 @@ namespace CosmicShore.Core
         public static GameModeProgressionService Instance { get; private set; }
 
         [Header("Quest Data")]
-        [SerializeField] private SO_GameModeQuestList questList;
+        [SerializeField] private SO_UnlockList questList;
 
         [Header("Progression Config")]
         [Tooltip("Designer-tunable unlock rules (always-unlocked modes, first-free, intensity " +
@@ -35,7 +35,7 @@ namespace CosmicShore.Core
         [Inject] AnalyticsServiceFacade _analytics;
 
         public GameModeProgressionData ProgressionData { get; private set; } = new();
-        public SO_GameModeQuestList QuestList => questList;
+        public SO_UnlockList QuestList => questList;
         public bool IsInitialized { get; private set; }
 
         SO_ProgressionConfig _runtimeDefaultConfig;
@@ -58,7 +58,7 @@ namespace CosmicShore.Core
         public event Action<GameModeProgressionData> OnProgressionChanged;
 
         /// <summary>Fired when a quest is newly completed during gameplay.</summary>
-        public event Action<SO_GameModeQuestData> OnQuestCompleted;
+        public event Action<SO_UnlockData> OnQuestCompleted;
 
         /// <summary>Fired when an intensity level is newly unlocked for a game mode. Args: (mode, newlyUnlockedIntensity)</summary>
         public event Action<GameModes, int> OnIntensityUnlocked;
@@ -87,7 +87,11 @@ namespace CosmicShore.Core
                 gameData.OnMiniGameEnd.OnRaised -= HandleGameEnd;
 
             if (_ugsDataService != null)
+            {
                 _ugsDataService.OnInitialized -= HandleDataServiceReady;
+                if (_ugsDataService.ProgressionRepo != null)
+                    _ugsDataService.ProgressionRepo.OnDataChanged -= HandleProgressionRepoChanged;
+            }
         }
 
         void Start()
@@ -105,18 +109,44 @@ namespace CosmicShore.Core
         {
             _ugsDataService.OnInitialized -= HandleDataServiceReady;
 
-            // Use the repo's data directly
-            if (_ugsDataService.ProgressionRepo != null)
+            // Use the repo's data directly — unless the backend gate is closed, in which case
+            // progression stays session-local (fresh every launch, ideal for FTUE testing).
+            if (ProgressionBackendGate.CloudEnabled && _ugsDataService.ProgressionRepo != null)
+            {
                 ProgressionData = _ugsDataService.ProgressionRepo.Data;
+                _ugsDataService.ProgressionRepo.OnDataChanged -= HandleProgressionRepoChanged;
+                _ugsDataService.ProgressionRepo.OnDataChanged += HandleProgressionRepoChanged;
+            }
+            else if (!ProgressionBackendGate.CloudEnabled)
+                CSDebug.Log("[GameModeProgressionService] ProgressionBackendGate closed — cloud record " +
+                            "ignored; progression is session-local and starts fresh each launch.");
 
             EnsureFirstModeUnlocked();
             SyncSOCompletedFlags();
             IsInitialized = true;
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
 
-            CSDebug.Log($"[GameModeProgressionService] Initialized from UGSDataService. " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Initialized from UGSDataService. " +
                        $"Unlocked: {ProgressionData.UnlockedModes.Count}, " +
                        $"Completed: {ProgressionData.CompletedQuests.Count}");
+        }
+
+        /// <summary>
+        /// The repository can REPLACE its data object after we bound to it - a failed sign-in load
+        /// that later recovers adopts the cloud record, and a late sign-in after an offline boot
+        /// reloads it. Every write after that went to the old object, which nothing saves, so it
+        /// was silently lost. Rebind to what the repository holds now.
+        /// </summary>
+        void HandleProgressionRepoChanged()
+        {
+            var repoData = _ugsDataService?.ProgressionRepo?.Data;
+            if (!ProgressionBackendGate.CloudEnabled || repoData == null
+                || ReferenceEquals(repoData, ProgressionData)) return;
+
+            ProgressionData = repoData;
+            EnsureFirstModeUnlocked();
+            SyncSOCompletedFlags();
+            RaiseProgressionChanged();
         }
 
         // ── Public API ──────────────────────────────────────────────────────────
@@ -126,12 +156,17 @@ namespace CosmicShore.Core
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
-            // Always-unlocked modes (e.g. Tournament, a session-level meta outside the chain).
+            // The master developer unlock opens every mode. ON by default until the FTUE is
+            // designed - see DeveloperUnlockGate.
+            if (DeveloperUnlockGate.AllUnlocked)
+                return true;
+
+            // Always-unlocked modes (e.g. Maelstrom, a session-level meta outside the chain).
             if (Config.IsAlwaysUnlocked(mode))
                 return true;
 
             // First quest mode is free when configured ('the first game is free').
-            if (Config.firstQuestAlwaysUnlocked &&
+            if (Config.FirstQuestAlwaysUnlocked &&
                 questList != null && questList.Quests.Count > 0 &&
                 questList.Quests[0].GameMode == mode)
                 return true;
@@ -167,13 +202,17 @@ namespace CosmicShore.Core
         /// <summary>
         /// Returns true if the Vessel Hangar quest has been reached in the progression chain.
         /// The hangar quest is identified by DisplayName "VESSEL HANGAR" and is unlocked when
-        /// every quest before it in the chain is completed.
+        /// every game-mode quest before it in the chain is done (completed or already claimed).
         /// </summary>
         public bool IsVesselHangarUnlocked()
         {
+            // The master developer unlock opens the hangar - see DeveloperUnlockGate.
+            if (DeveloperUnlockGate.AllUnlocked)
+                return true;
+
             if (questList == null) return false;
 
-            string hangarQuestName = Config.vesselHangarQuestDisplayName;
+            string hangarQuestName = Config.VesselHangarQuestDisplayName;
             int hangarIndex = -1;
             for (int i = 0; i < questList.Quests.Count; i++)
             {
@@ -186,12 +225,16 @@ namespace CosmicShore.Core
 
             if (hangarIndex < 0) return false;
 
-            // All quests before the hangar must be completed
+            // Every quest before the hangar must be DONE. Use the persistent done signal
+            // (IsUnlockObjectiveDone — a completed quest stays at max intensity) rather than the
+            // transient CompletedQuests set: ClaimQuestAndUnlockNext removes a quest from
+            // CompletedQuests the moment it is claimed to unlock the next mode, so a conjunction
+            // over CompletedQuests can never hold once the player has claimed down the chain.
             for (int i = 0; i < hangarIndex; i++)
             {
                 var quest = questList.Quests[i];
                 if (quest == null || quest.IsPlaceholder) continue;
-                if (!ProgressionData.IsQuestCompleted(quest.GameMode.ToString()))
+                if (!IsUnlockObjectiveDone(quest))
                     return false;
             }
 
@@ -232,12 +275,31 @@ namespace CosmicShore.Core
                 var nextQuest = questList.Quests[nextIndex];
                 string nextModeName = nextQuest.GameMode.ToString();
                 ProgressionData.MarkUnlocked(nextModeName);
-                ProgressionData.EnsureIntensityInitialized(nextModeName, Config.defaultMaxIntensity);
+                ProgressionData.EnsureIntensityInitialized(nextModeName, Config.DefaultMaxIntensity);
                 _analytics?.RecordModeUnlocked(nextQuest.GameMode);
-                CSDebug.Log($"[GameModeProgressionService] Unlocked next mode: {nextQuest.GameMode}");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Unlocked next mode: {nextQuest.GameMode}");
             }
 
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
+            SaveImmediateAsync();
+        }
+
+        /// <summary>
+        /// Unlocks a mode directly (Quest Graph–driven source-of-truth write). Marks it
+        /// unlocked, opens the default intensity range, records analytics, refreshes
+        /// listeners, and saves. No-op if already unlocked.
+        /// </summary>
+        public void UnlockMode(GameModes mode)
+        {
+            string modeName = mode.ToString();
+            if (ProgressionData.IsUnlocked(modeName)) return;
+
+            ProgressionData.MarkUnlocked(modeName);
+            ProgressionData.EnsureIntensityInitialized(modeName, Config.DefaultMaxIntensity);
+            _analytics?.RecordModeUnlocked(mode);
+            CSDebug.Log($"[GameModeProgressionService] Quest-graph unlock: {mode}");
+
+            RaiseProgressionChanged();
             SaveImmediateAsync();
         }
 
@@ -263,21 +325,40 @@ namespace CosmicShore.Core
             {
                 ProgressionData.MarkQuestCompleted(modeName);
                 quest.IsCompleted = true;
-                CSDebug.Log($"[GameModeProgressionService] Quest completed for {mode}! stat={value} target={quest.TargetValue}");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Quest completed for {mode} stat={value} target={quest.TargetValue}");
                 OnQuestCompleted?.Invoke(quest);
-                OnProgressionChanged?.Invoke(ProgressionData);
+                RecordQuestCompletedAnalytics(quest);
+                RaiseProgressionChanged();
                 SaveImmediateAsync();
                 return;
             }
 
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
             ScheduleDebouncedSave();
+        }
+
+        /// <summary>
+        /// Emits the `quest_completed` analytics event. Its only producer used to be
+        /// <c>QuestSystem.cs</c>, which this branch deleted along with the XP/shard economy —
+        /// so the event was documented LIVE with nothing left to raise it, and
+        /// <c>AnalyticsServiceFacade.RecordQuestCompleted</c> had become dead code.
+        ///
+        /// The <c>shardValue</c> parameter is passed 0 because shards no longer exist. The
+        /// facade signature and the UGS event key are deliberately NOT changed to drop it: a
+        /// custom parameter is validated against a dashboard schema whose rows are PERMANENT
+        /// and capped per environment, so removing one costs a row that can never be reclaimed
+        /// and buys nothing. A constant 0 is the honest reading of "this game has no shards".
+        /// </summary>
+        void RecordQuestCompletedAnalytics(SO_UnlockData quest)
+        {
+            if (quest == null) return;
+            _analytics?.RecordQuestCompleted(quest.DisplayName, 0);
         }
 
         /// <summary>
         /// Returns the quest data for a given game mode, or null if not found.
         /// </summary>
-        public SO_GameModeQuestData GetQuestForMode(GameModes mode)
+        public SO_UnlockData GetQuestForMode(GameModes mode)
         {
             if (questList == null) return null;
 
@@ -314,7 +395,7 @@ namespace CosmicShore.Core
         /// </summary>
         public void InvokeProgressionChanged()
         {
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
         }
 
         /// <summary>
@@ -326,13 +407,13 @@ namespace CosmicShore.Core
             if (unlocked)
             {
                 ProgressionData.MarkUnlocked(modeName);
-                ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
+                ProgressionData.EnsureIntensityInitialized(modeName, Config.DefaultMaxIntensity);
             }
             else
             {
                 ProgressionData.UnlockedModes.Remove(modeName);
             }
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
         }
 
         /// <summary>
@@ -341,14 +422,14 @@ namespace CosmicShore.Core
         /// </summary>
         public void DebugSetMaxIntensity(GameModes mode, int maxIntensity)
         {
-            maxIntensity = Mathf.Clamp(maxIntensity, Config.defaultMaxIntensity, Config.maxIntensity);
+            maxIntensity = Mathf.Clamp(maxIntensity, Config.DefaultMaxIntensity, Config.MaxIntensity);
             string modeName = mode.ToString();
-            ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
+            ProgressionData.EnsureIntensityInitialized(modeName, Config.DefaultMaxIntensity);
             ProgressionData.SetMaxUnlockedIntensity(modeName, maxIntensity);
             OnIntensityUnlocked?.Invoke(mode, maxIntensity);
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
             ScheduleDebouncedSave();
-            CSDebug.Log($"[GameModeProgressionService] Debug: Set {mode} max intensity to {maxIntensity}.");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Debug: Set {mode} max intensity to {maxIntensity}.");
         }
 
         // ── Intensity Progression Public API ─────────────────────────────────
@@ -359,12 +440,18 @@ namespace CosmicShore.Core
         /// </summary>
         public int GetMaxUnlockedIntensity(GameModes mode)
         {
-            // Full-intensity modes (e.g. Tournament) aren't gated behind progression - the full
+            // The master developer unlock opens every tier. This is the ONE intensity choke
+            // point - IsIntensityUnlocked and GetPlaysRemainingForIntensity both resolve
+            // through it, so gating it here covers the intensity ladder entirely.
+            if (DeveloperUnlockGate.AllUnlocked)
+                return Config.MaxIntensity;
+
+            // Full-intensity modes (e.g. Maelstrom) aren't gated behind progression - the full
             // range is available (one intensity is chosen in the lobby and applied to every game).
-            if (Config.HasFullIntensity(mode)) return Config.maxIntensity;
+            if (Config.HasFullIntensity(mode)) return Config.MaxIntensity;
 
             if (!IsGameModeUnlocked(mode)) return 0;
-            return ProgressionData.GetMaxUnlockedIntensity(mode.ToString(), Config.defaultMaxIntensity);
+            return ProgressionData.GetMaxUnlockedIntensity(mode.ToString(), Config.DefaultMaxIntensity);
         }
 
         /// <summary>
@@ -430,9 +517,9 @@ namespace CosmicShore.Core
                     quest.IsCompleted = false;
 
             EnsureFirstModeUnlocked();
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
             SaveImmediateAsync();
-            CSDebug.Log("[GameModeProgressionService] All quest progress reset.");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[GameModeProgressionService] All quest progress reset.");
         }
 
         /// <summary>
@@ -457,7 +544,7 @@ namespace CosmicShore.Core
                 var quest = questList.Quests[i];
                 string modeName = quest.GameMode.ToString();
                 ProgressionData.MarkUnlocked(modeName);
-                ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
+                ProgressionData.EnsureIntensityInitialized(modeName, Config.DefaultMaxIntensity);
                 quest.IsCompleted = false;
             }
 
@@ -465,9 +552,9 @@ namespace CosmicShore.Core
             for (int i = targetIndex; i < questCount; i++)
                 questList.Quests[i].IsCompleted = false;
 
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
             SaveImmediateAsync();
-            CSDebug.Log($"[GameModeProgressionService] Progress set to index {targetIndex}/{questCount}.");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Progress set to index {targetIndex}/{questCount}.");
         }
 
         // ── Internal ────────────────────────────────────────────────────────────
@@ -484,13 +571,13 @@ namespace CosmicShore.Core
             var quest = GetQuestForMode(mode);
             if (quest == null || quest.IsPlaceholder)
             {
-                CSDebug.Log($"[GameModeProgressionService] No quest found for mode {mode}, skipping.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] No quest found for mode {mode}, skipping.");
                 return;
             }
 
             if (ProgressionData.IsQuestCompleted(mode.ToString()))
             {
-                CSDebug.Log($"[GameModeProgressionService] Quest for {mode} already completed, skipping.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Quest for {mode} already completed, skipping.");
                 return;
             }
 
@@ -505,7 +592,7 @@ namespace CosmicShore.Core
 
             // Legacy stat-based quest evaluation
             float legacyStatValue = ExtractStatForQuest(quest);
-            CSDebug.Log($"[GameModeProgressionService] HandleGameEnd - mode:{mode}, targetType:{quest.TargetType}, " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] HandleGameEnd - mode:{mode}, targetType:{quest.TargetType}, " +
                        $"targetValue:{quest.TargetValue}, extractedStat:{legacyStatValue}");
 
             if (legacyStatValue > 0f)
@@ -521,16 +608,16 @@ namespace CosmicShore.Core
         /// Uses stat-based checks when IntensityUnlockStatType is configured, otherwise falls back to play counts.
         /// When intensity 4 is unlocked, the quest is marked as completed.
         /// </summary>
-        void RecordIntensityPlay(GameModes mode, SO_GameModeQuestData quest, int playedIntensity, float statValue)
+        void RecordIntensityPlay(GameModes mode, SO_UnlockData quest, int playedIntensity, float statValue)
         {
             string modeName = mode.ToString();
-            ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
+            ProgressionData.EnsureIntensityInitialized(modeName, Config.DefaultMaxIntensity);
 
             int newCount = ProgressionData.IncrementIntensityPlayCount(modeName, playedIntensity);
-            int maxUnlocked = ProgressionData.GetMaxUnlockedIntensity(modeName, Config.defaultMaxIntensity);
+            int maxUnlocked = ProgressionData.GetMaxUnlockedIntensity(modeName, Config.DefaultMaxIntensity);
             bool useStatBased = quest.IntensityUnlockStatType != QuestTargetType.Placeholder;
 
-            CSDebug.Log($"[GameModeProgressionService] RecordIntensityPlay - mode:{mode}, " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] RecordIntensityPlay - mode:{mode}, " +
                        $"intensity:{playedIntensity}, playCount:{newCount}, maxUnlocked:{maxUnlocked}, " +
                        $"statBased:{useStatBased}, statValue:{statValue}");
 
@@ -544,10 +631,10 @@ namespace CosmicShore.Core
                 if (shouldUnlock)
                 {
                     ProgressionData.SetMaxUnlockedIntensity(modeName, 3);
-                    CSDebug.Log($"[GameModeProgressionService] Intensity 3 unlocked for {mode}!");
+                    CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Intensity 3 unlocked for {mode}");
                     OnIntensityUnlocked?.Invoke(mode, 3);
                     _analytics?.RecordIntensityUnlocked(mode, 3);
-                    OnProgressionChanged?.Invoke(ProgressionData);
+                    RaiseProgressionChanged();
                     SaveImmediateAsync();
                     return;
                 }
@@ -563,7 +650,7 @@ namespace CosmicShore.Core
                 if (shouldUnlock)
                 {
                     ProgressionData.SetMaxUnlockedIntensity(modeName, 4);
-                    CSDebug.Log($"[GameModeProgressionService] Intensity 4 unlocked for {mode}! Quest complete.");
+                    CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Intensity 4 unlocked for {mode} Quest complete.");
                     OnIntensityUnlocked?.Invoke(mode, 4);
                     _analytics?.RecordIntensityUnlocked(mode, 4);
 
@@ -571,14 +658,23 @@ namespace CosmicShore.Core
                     ProgressionData.MarkQuestCompleted(modeName);
                     quest.IsCompleted = true;
                     OnQuestCompleted?.Invoke(quest);
-                    OnProgressionChanged?.Invoke(ProgressionData);
+                    RecordQuestCompletedAnalytics(quest);
+                    RaiseProgressionChanged();
                     SaveImmediateAsync();
                     return;
                 }
+
+                // Name the shortfall — "played I3, nothing advanced" must be diagnosable
+                // from the console (and the Quest Graph tool surfaces the same goal).
+                CSDebug.Log($"[GameModeProgressionService] {mode} intensity-4 goal NOT met this game — " +
+                            (useStatBased
+                                ? $"{quest.IntensityUnlockStatType} was {statValue}, needs " +
+                                  $"{(quest.IntensityUnlockStatType == QuestTargetType.RaceTimeUnder ? "a winning finish ≤" : "≥")} {quest.Intensity4StatTarget}."
+                                : $"plays at intensity 3: {newCount}/{quest.PlaysToUnlockIntensity4}."));
             }
 
-            // No tier unlock - just save the updated play count
-            OnProgressionChanged?.Invoke(ProgressionData);
+            // No tier unlock — just save the updated play count
+            RaiseProgressionChanged();
             ScheduleDebouncedSave();
         }
 
@@ -586,7 +682,7 @@ namespace CosmicShore.Core
         /// Extracts the relevant stat from the game data for intensity unlock evaluation.
         /// Uses the quest's IntensityUnlockStatType to determine which stat to read.
         /// </summary>
-        float ExtractStatForIntensityGoal(SO_GameModeQuestData quest)
+        float ExtractStatForIntensityGoal(SO_UnlockData quest)
         {
             if (quest.IntensityUnlockStatType == QuestTargetType.Placeholder)
                 return 0f;
@@ -610,6 +706,10 @@ namespace CosmicShore.Core
             switch (quest.IntensityUnlockStatType)
             {
                 case QuestTargetType.CrystalsCollected:
+                    // The dedicated crystal counter — NOT Score. Score is mode-defined (finish
+                    // time under golf rules, points elsewhere) and silently broke crystal goals.
+                    return localStats?.CrystalsCollected ?? 0;
+
                 case QuestTargetType.ScoreAbove:
                 case QuestTargetType.SurvivalTime:
                     return localStats?.Score ?? 0f;
@@ -622,10 +722,7 @@ namespace CosmicShore.Core
                     return GolfScoreSentinels.IsFinishTime(time) ? time : 0f;
 
                 case QuestTargetType.WinMatch:
-                    if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0 &&
-                        gameData.RoundStatsList[0].Name == localName)
-                        return 1f;
-                    return 0f;
+                    return DidLocalPlayerWin() ? 1f : 0f;
 
                 default:
                     return 0f;
@@ -633,9 +730,25 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
+        /// Authoritative local-win check (same semantics as EndGameSequencer's reveal):
+        /// domain modes set WinnerDomain server-side; anything else falls back to the
+        /// per-domain stats winner. RoundStatsList ORDER is roster order, not rank — never
+        /// infer a win from list position.
+        /// </summary>
+        bool DidLocalPlayerWin()
+        {
+            if (gameData == null || gameData.LocalPlayer == null) return false;
+
+            if (gameData.WinnerDomain != Domains.Blue)
+                return gameData.LocalPlayer.Domain == gameData.WinnerDomain;
+
+            return gameData.IsLocalDomainWinner(out _);
+        }
+
+        /// <summary>
         /// Evaluates whether the given stat value meets the intensity unlock target.
         /// </summary>
-        bool EvaluateIntensityStat(SO_GameModeQuestData quest, float value, int targetIntensity)
+        bool EvaluateIntensityStat(SO_UnlockData quest, float value, int targetIntensity)
         {
             float target = targetIntensity == 3 ? quest.Intensity3StatTarget : quest.Intensity4StatTarget;
 
@@ -656,7 +769,7 @@ namespace CosmicShore.Core
             }
         }
 
-        float ExtractStatForQuest(SO_GameModeQuestData quest)
+        float ExtractStatForQuest(SO_UnlockData quest)
         {
             if (gameData.LocalPlayer == null) return 0f;
 
@@ -677,7 +790,8 @@ namespace CosmicShore.Core
             switch (quest.TargetType)
             {
                 case QuestTargetType.CrystalsCollected:
-                    return localStats?.Score ?? 0f;
+                    // The dedicated crystal counter — NOT Score (mode-defined; golf time in races).
+                    return localStats?.CrystalsCollected ?? 0;
 
                 case QuestTargetType.ScoreAbove:
                     return localStats?.Score ?? 0f;
@@ -692,11 +806,7 @@ namespace CosmicShore.Core
                     return localStats?.JoustCollisions ?? 0;
 
                 case QuestTargetType.WinMatch:
-                    // Check if the local player is first in the sorted round stats
-                    if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0 &&
-                        gameData.RoundStatsList[0].Name == localName)
-                        return 1f;
-                    return 0f;
+                    return DidLocalPlayerWin() ? 1f : 0f;
 
                 case QuestTargetType.SurvivalTime:
                     return localStats?.Score ?? 0f;
@@ -710,7 +820,7 @@ namespace CosmicShore.Core
             }
         }
 
-        bool EvaluateQuestTarget(SO_GameModeQuestData quest, float value)
+        bool EvaluateQuestTarget(SO_UnlockData quest, float value)
         {
             switch (quest.TargetType)
             {
@@ -727,7 +837,7 @@ namespace CosmicShore.Core
 
                 case QuestTargetType.IntensityUnlocked:
                     // Evaluated via RecordIntensityPlay, not here
-                    return ProgressionData.GetMaxUnlockedIntensity(quest.GameMode.ToString(), Config.defaultMaxIntensity) >= quest.TargetValue;
+                    return ProgressionData.GetMaxUnlockedIntensity(quest.GameMode.ToString(), Config.DefaultMaxIntensity) >= quest.TargetValue;
 
                 case QuestTargetType.Placeholder:
                     return false;
@@ -743,7 +853,7 @@ namespace CosmicShore.Core
 
             string firstMode = questList.Quests[0].GameMode.ToString();
             ProgressionData.MarkUnlocked(firstMode);
-            ProgressionData.EnsureIntensityInitialized(firstMode, Config.defaultMaxIntensity);
+            ProgressionData.EnsureIntensityInitialized(firstMode, Config.DefaultMaxIntensity);
         }
 
         /// <summary>
@@ -757,10 +867,42 @@ namespace CosmicShore.Core
                 quest.IsCompleted = ProgressionData.IsQuestCompleted(quest.GameMode.ToString());
         }
 
+        /// <summary>
+        /// The single funnel for every progression mutation.
+        /// </summary>
+        void RaiseProgressionChanged()
+        {
+            OnProgressionChanged?.Invoke(ProgressionData);
+        }
+
+        /// <summary>
+        /// True if the player has already accomplished this unlock's objective. Game-mode nodes are
+        /// done when their quest is complete or the mode is maxed. Non-mode nodes have no persistent
+        /// completion record, so they are never reported done here.
+        /// </summary>
+        bool IsUnlockObjectiveDone(SO_UnlockData node)
+        {
+            if (node.FeatureKind != FeatureKind.GameMode) return false;
+
+            if (IsQuestCompleted(node.GameMode)) return true;
+
+            // Full-intensity modes (e.g. Maelstrom/Tournament) have no intensity ladder to climb —
+            // the raw persisted record stays at the default forever, which made every gate chained
+            // AFTER them (the Vessel Hangar) permanently unsatisfiable. Their objective is done
+            // once the chain has unlocked them.
+            if (Config.HasFullIntensity(node.GameMode))
+                return IsGameModeUnlocked(node.GameMode);
+
+            return ProgressionData.GetMaxUnlockedIntensity(node.GameMode.ToString(), Config.DefaultMaxIntensity)
+                   >= Config.MaxIntensity;
+        }
+
         // ── Cloud Save (delegated to UGSDataService.ProgressionRepo) ──
 
         async void SaveImmediateAsync()
         {
+            if (!ProgressionBackendGate.CloudEnabled) return;
+
             var repo = _ugsDataService?.ProgressionRepo;
             if (repo == null)
             {
@@ -770,8 +912,17 @@ namespace CosmicShore.Core
 
             try
             {
-                await repo.SaveAsync();
-                CSDebug.Log("[GameModeProgressionService] Saved progression data immediately.");
+                // SaveAsync reports a failed upload by returning false - it does not throw - so the
+                // catch below never saw it, nothing marked the repo dirty, and a quest claim or an
+                // unlock saved only through this path was lost to the older cloud record on the
+                // next online launch.
+                if (!await repo.SaveAsync())
+                {
+                    CSDebug.LogWarning("[GameModeProgressionService] Immediate save did not reach the cloud. Queuing debounced save.");
+                    ScheduleDebouncedSave();
+                    return;
+                }
+                CSDebug.LogVerbose(CSLogChannel.CloudData, "[GameModeProgressionService] Saved progression data immediately.");
             }
             catch (Exception e)
             {
@@ -782,6 +933,7 @@ namespace CosmicShore.Core
 
         void ScheduleDebouncedSave()
         {
+            if (!ProgressionBackendGate.CloudEnabled) return;
             _ugsDataService?.ProgressionRepo?.MarkDirty();
         }
     }

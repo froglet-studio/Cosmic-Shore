@@ -15,86 +15,39 @@ MonoBehaviour:
   vesselClass: 12
   entries:
   - Element: 1
-    AbilityLabel: Cavitation Blast
-    AbilityDescription: 'The mantis-shrimp punch that rides the dash: push the RIGHT
-      THUMBSTICK to the perimeter and the dash throws a swept PLATE - a broad disc
-      lying flat across your course, starting on the hull and sweeping along the
-      dash - shredding prisms, killing fauna (a creature dies when its body prisms
-      are destroyed) and elementally debuffing any opposing pilot it engulfs.
-      Everything it claims is thrown the way the punch travelled, not away from a
-      point. Charge shortens its cooldown - authored on ScarabCavitationBlast,
-      x1 at rest -> x0.5 at level 10, so the generic map multiplier stays 1.0 (no
-      double-dip). THE DASH ITSELF IS FREE AND NEVER PACED: only the punch waits,
-      so a recharging blast never costs you the dodge. No input-event binding: the
-      juke polls the right thumbstick directly (ScarabJukeController), and the enum
-      has no member for it - InputEvents.RightStickAction (1) and
-      OnlyRightStickAction (11) are both raised from the right TRIGGER despite
-      their names, and 11 is what this entry used to claim, which would have taught
-      the four-icon row that the blast is a trigger ability.'
+    AbilityLabel: Shove
+    AbilityDescription: 'The punch that rides the dash: push the RIGHT THUMBSTICK to the perimeter and the dash throws a swept PLATE - a broad disc lying flat across your course, starting on the hull and sweeping along the dash - shredding prisms, killing fauna and elementally debuffing any opposing pilot it engulfs. Everything it claims is thrown the way the punch travelled. Charge sets how often the plate fires: its cooldown is 4.25 s at rest down to 2.125 s at level 10 (ScarabCavitationBlast.cooldownSeconds x cooldownScale, read off the shover''s replicated Charge level when the plate fires), and the debuff it bites with is the flat priced one. The dash itself is free and never paced. No input-event binding: the juke polls the right thumbstick directly (ScarabJukeController).'
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Cavitation Shear
-    UpgradeDescription: The blast destroys SHIELDED prisms outright instead of only
-      shedding their shields (per-use snapshot at fire time, via the explosion's
-      devastating flag). Super-shielded mass is still untouchable - that tier has
-      no sanctioned breaker.
+    UpgradeLabel: Backdraft
+    UpgradeDescription: 'The shove pushes AND pulls: the plate also claims its mirror image behind the hull, doubling the swept cylinder, and everything in the back half is dragged FORWARD through the ship. At rest the shove only pushes (ScarabCavitationBlast.PlateMirrors, per-use snapshot at fire time).'
   - Element: 2
     AbilityLabel: Switch
-    AbilityDescription: Mass grows the switch structure - ring aperture and the span
-      of the prism fill across its mouth (authored on
-      PlaceSwitchActionSO.switchScale ElementalFloat, x1 -> x2.5 at level 10; the
-      generic map multiplier stays 1.0 to avoid double-dipping).
+    AbilityDescription: 'Mass grows the switch''s RING RADIUS - the mouth a ball has to thread (PlaceSwitchActionExecutor multiplies RingRadius by the PlaceSwitchActionSO.switchScale ElementalFloat, x1 -> x2.5 at level 10, read live at placement).'
     Input: 6
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Armored Switch
-    UpgradeDescription: The switch is built from SHIELDED prisms (the sanctioned
-      shield tier - never SuperShield), snapshotted at placement so a switch keeps
-      the armour it was born with. An opposing ball now caroms off it and sheds one
-      shield per prism instead of eating straight through, which is what turns a
-      switch placed in front of someone else's shot into real defence.
+    UpgradeLabel: Sun Cores
+    UpgradeDescription: 'A scored switch raises its dais WITH the super-shielded sun cores; without the upgrade the wings rise round empty crooks (ScarabSwitch.LaysDaisElement, snapshot at placement).'
   - Element: 3
-    AbilityLabel: Ball Forge
-    AbilityDescription: 'Space scales the ball you mint: x1 at rest, x4 at level 10.
-      Unlike the other three rows the map''s generic multiplier IS the carrier here
-      (MultiplierAtFullLevel 4), read live at forge time and stamped once - a ball
-      keeps the size it was born with. No input binding: you forge by flying THROUGH
-      an omni crystal at the speed and heading you want the ball to leave with, so
-      making a ball is a piece of driving. The launch velocity is the vessel''s TRUE
-      motion including the dash channel, so dashing into a crystal and dashing into
-      a resting ball produce the same trajectory.'
+    AbilityLabel: Nucleus Seeding
+    AbilityDescription: 'While you fly, balls of your domain appear embedded in the nucleus membrane for anyone to knock loose (ScarabNucleusSeeder). Space scales the balls you seed: x1 at rest, x4 at level 10 (ScarabBallForge.SizeScaleFor, stamped once - a ball keeps the size it was born with). No input binding.'
     Input: 0
-    MultiplierAtFullLevel: 4
-    MinMultiplier: 0.5
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel:
-    UpgradeDescription: '(open design slot) Space 5 is deliberately unfilled - the
-      design notes assign Space the ball''s size and name no qualitative upgrade for
-      it. Do not invent one without sign-off (SCARAB.md section 7).'
+    UpgradeLabel: Core Breaker
+    UpgradeDescription: 'Your balls DESTROY super-shielded prisms and fly on, where a ball is otherwise spent on one (AstroLeagueBall''s replicated breaks-super-shielded stamp, read off your Space upgrade when the ball is minted, seeded or forged).'
   - Element: 4
     AbilityLabel: Throttle
-    AbilityDescription: Time raises the top speed of the throttle ramp (authored on
-      the transformer's ThrottleScalerMultiplier ElementalFloat, x1 -> x1.5 at level
-      10; the generic map Time multiplier stays 1.0 - the no-double-dip pin). The
-      throttle is analog on the right trigger, thrust always along the nose, and
-      releasing it is the only brake.
+    AbilityDescription: 'Time raises the top speed of the throttle ramp (authored on the transformer''s ThrottleScalerMultiplier ElementalFloat, x0.95 -> x1 at level 10) and how hard it pushes there (ScarabVesselTransformer.accelerationScale, x2 at level 10). The throttle is analog on the right trigger, thrust always along the nose, and releasing it is the only brake.'
     Input: 1
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Snap Dash
-    UpgradeDescription: 'Double-tap the THROTTLE (right trigger) for a short forward
-      burst - a gap-closer along the nose. Distinct from the right-stick dash, which
-      is base kit and always available: Snap Dash is the throttle''s upgrade, not the
-      dash''s.'
+    UpgradeDescription: 'Double-tap the THROTTLE (right trigger) for a hard forward burst - 500 u/s along the nose, five times the old dash - with a 5 s cooldown. Distinct from the right-stick dash, which is base kit and always available.'
+  omniAbilityLabel: forges its ball

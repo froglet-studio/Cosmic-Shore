@@ -88,6 +88,15 @@ namespace CosmicShore.Gameplay
         /// <summary>Segments ride the colony's motion — jousting a heart means outracing the kaiju.</summary>
         public override float CurrentSpeed => Colony ? Colony.CurrentSpeed : 0f;
 
+        /// <summary>A rider that stings any segment takes the colony's head (Garrett, 2026-11-14: "just take over the head
+        /// when any segment is entered").</summary>
+        public override Fauna PossessionHost => Colony ? Colony : this;
+
+        /// <summary>A segment's body is its own prisms, so a team change re-colours it whole. It is never stolen on its own
+        /// (<see cref="Fauna.CanBeStolen"/> stays false, so a worm never wears two colours): its colony is, and hands the
+        /// domain to every segment (<c>WormFauna.OnTeamChanged</c>).</summary>
+        protected override void OnTeamChanged() => RecolourBodyPrisms();
+
         /// <summary>
         /// Colony-driven: no per-segment goal coroutine (the base Start would tick
         /// ResolveGoal per segment for a Goal nothing reads — the colony steers).
@@ -127,6 +136,8 @@ namespace CosmicShore.Gameplay
             crystal = LifeFormCrystal.EnsureElementalCrystal(this, heartElement);
             if (crystal) crystal.SetEmbeddedIn(this);
             PlaceHeart();
+            // The element's armour on the body (Docs/ECOSYSTEM.md §65): Mass shielded, Charge all danger.
+            ArmourBody();
         }
 
         /// <summary>
@@ -140,8 +151,7 @@ namespace CosmicShore.Gameplay
         /// Position ONLY: the heart's size is one curve keyed on LEVEL, applied for every
         /// lifeform at the single gate <see cref="Crystal.SetEmbeddedIn"/>
         /// (Docs/ECOSYSTEM.md §33) — a per-prefab scale here would be a per-prefab REWARD,
-        /// because a crystal's world scale is read as gameplay by both the collect reward
-        /// and the live domain fauna buff.
+        /// because a crystal's world scale is read as gameplay by the collect reward.
         /// </summary>
         void PlaceHeart()
         {
@@ -154,8 +164,8 @@ namespace CosmicShore.Gameplay
         public void SyncBodyPrismsToIndex() => NotifyBodyPrismsMoved();
 
         /// <summary>
-        /// The jaws: centroid of this segment's live DANGER prisms (the head's fangs /
-        /// the tail's stinger) — the suction sink a devoured creature implodes toward,
+        /// The jaws: centroid of this segment's live AUTHORED danger prisms (the head's fangs /
+        /// the tail's stinger - never a Charge body's elemental danger, <see cref="Fauna.IsAuthoredDanger"/>) — the suction sink a devoured creature implodes toward,
         /// same construction as the shark's mouth. Falls back to just ahead of the
         /// segment centre when the danger prisms are shot off.
         /// </summary>
@@ -171,7 +181,7 @@ namespace CosmicShore.Gameplay
                     for (int i = 0; i < prisms.Length; i++)
                     {
                         var hp = prisms[i];
-                        if (!hp || hp.destroyed || hp.prismProperties is not { IsDangerous: true }) continue;
+                        if (!hp || hp.destroyed || !IsAuthoredDanger(hp)) continue;
                         sum += hp.transform.position;
                         count++;
                     }
@@ -201,26 +211,34 @@ namespace CosmicShore.Gameplay
         public void WitherAway(string reason) => Die(reason);
 
         /// <summary>
+        /// Re-applies the one heart size while the heart still beats inside this segment. The
+        /// colony calls it as the segment's scale glides (a grown segment blooms from zero), since
+        /// a heart is sized in WORLD units against its parent. A released heart is left alone: it
+        /// belongs to the cell, and its capture animation owns its scale.
+        /// </summary>
+        public void KeepHeartSize()
+        {
+            if (crystal && crystal.IsEmbedded) ApplyHeartSize();
+        }
+
+        /// <summary>
         /// Element-as-data forwarding from the colony (see WormFauna.ProvisionHeart):
         /// re-provisions this segment's heart to the picked element — every member of the
         /// population carries one, so the colony's pick reaches all of them.
         /// EnsureElementalCrystal keeps a matching authored crystal and replaces a
         /// mismatched one with the set's model for the requested element.
         /// </summary>
-        public void ReprovisionHeart(Element element, float heartWorldScale = 0f)
+        public void ReprovisionHeart(Element element)
         {
             if (_dead || element == Element.None) return;
             heartElement = element;
-            // The colony's authored heart SIZE travels with its element, for the same reason
-            // the element does: a segment is a member of the population, not a body part, so
-            // it carries the species' heart rather than the platform default. A segment never
-            // gets AssignLineage of its own (the COLONY holds the config), so this forward is
-            // the only channel that reaches it - without it every worm member would render
-            // ElementalCrystalSet.defaultHeartWorldScale (Docs/ECOSYSTEM.md §40.2).
-            ApplyHeartSize(heartWorldScale);
+            // Every heart is the one elemental crystal size (Docs/ECOSYSTEM.md §40.2).
+            ApplyHeartSize();
             crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
             if (crystal) crystal.SetEmbeddedIn(this);
             PlaceHeart();
+            // The colony's element reaches the body too, not only the heart (Docs/ECOSYSTEM.md §65).
+            ArmourBody();
         }
 
         protected override void OnDeath(string killerName = "")

@@ -39,6 +39,11 @@ Shader "Shader Graphs/ChargeCrystal"
         [Header(Vertex Terminals)]
         _NodeRadius        ("Node Radius (model radii)", Range(0.002, 0.1)) = 0.011
         _NodeIntensity     ("Node Intensity", Range(0, 8))      = 3.5
+
+        // The discharge's clock. Negative (the default, every shipped material) runs on the scene's _Time.y. A
+        // display that animates while the game is paused (the Elemental Converter on the Ark screen, where the
+        // menu runs at timeScale 0 and _Time.y stands still) writes its own seconds here through a property block.
+        [HideInInspector] _ArcClock ("Arc Clock (seconds; negative = scene time)", Float) = -1
     }
 
     SubShader
@@ -73,6 +78,7 @@ Shader "Shader Graphs/ChargeCrystal"
             float  _ArcShimmer;
             float  _NodeRadius;
             float  _NodeIntensity;
+            float  _ArcClock;
         CBUFFER_END
         ENDHLSL
 
@@ -152,7 +158,7 @@ Shader "Shader Graphs/ChargeCrystal"
                     input.bary,
                     input.edgeH,
                     input.edgeSeed,
-                    _Time.y,
+                    (_ArcClock >= 0.0 ? _ArcClock : _Time.y),
                     _DullCrystalColor,
                     _BrightCrystalColor,
                     _KeyDir.xyz,

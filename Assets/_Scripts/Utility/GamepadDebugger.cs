@@ -23,7 +23,7 @@ namespace CosmicShore.Utility
             var gamepads = Gamepad.all;
             if (gamepads.Count == 0)
             {
-                CSDebug.LogWarning("<color=yellow>No gamepads detected.</color>");
+                CSDebug.LogVerbose(CSLogChannel.Input, "[GamepadDebugger] No gamepads detected");
                 return;
             }
 

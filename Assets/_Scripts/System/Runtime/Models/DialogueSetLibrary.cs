@@ -6,7 +6,8 @@ namespace CosmicShore.Core
     [CreateAssetMenu(menuName = "ScriptableObjects/Dialogue/Dialogue Library")]
     public class DialogueSetLibrary : ScriptableObject
     {
-        public List<DialogueSet> allDialogueSets;
+        [SerializeField] List<DialogueSet> allDialogueSets;
+        public List<DialogueSet> AllDialogueSets => allDialogueSets;
 
         public DialogueSet GetSetById(string id)
         {

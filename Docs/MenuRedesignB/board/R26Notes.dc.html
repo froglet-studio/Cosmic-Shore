@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 26 notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.card{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0;background:none}
+.card:focus{outline:none}
+.card{transition:filter 120ms ease-out}
+.card:hover{filter:brightness(1.18)}
+.num{font-variant-numeric:tabular-nums}
+@keyframes r26Breath{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes r26Rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes r26Turn{0%,100%{transform:rotateY(-14deg) translateY(0)}50%{transform:rotateY(14deg) translateY(-8px)}}
+@keyframes r26Toast{0%{opacity:0;transform:translateX(40px)}10%,85%{opacity:1;transform:none}100%{opacity:0;transform:translateX(40px)}}
+@keyframes r26Fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1000px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif"><div style="position:absolute;left:80px;top:70px;right:80px"><div style="font-size:30px;margin-bottom:34px">Rev 26 - the Codex</div><div style="display:flex;gap:28px;margin-bottom:18px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Asked</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">The Codex brought up from the design board, with mockups of how it shows the ethirions and everything else: pilots, artifacts, elements, ecology (Shombith, 2026-10-26).</div></div><div style="display:flex;gap:28px;margin-bottom:18px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Where</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">CODEX is the first tab of the top bar (section 84: CODEX, HANGAR, HOME, ARK, PORT). It is locked today and has no screen; these boards are that screen. LT / RT reach it once it opens.</div></div><div style="display:flex;gap:28px;margin-bottom:18px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Chapters</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">ETHIRIONS, ELEMENTS, ECOLOGY (Flora / Fauna), PILOTS, VESSELS, ARTIFACTS, TOOLS. LB / RB step chapters; the grid on the left, the open page on the right, the same split as the Hangar.</div></div><div style="display:flex;gap:28px;margin-bottom:18px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Data</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">Ethirions, ecology and tools: Assets/Resources/Codex.asset (CodexSO, Garrett&#x27;s, Docs/CODEX.md), read through CodexSO.Load(). Pilots: SO_Captain_&lt;Hull&gt;_&lt;Element&gt;. Vessels and elements: element_ability_table.py. Every number on these boards is the shipped value.</div></div><div style="display:flex;gap:28px;margin-bottom:18px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Not in the game yet</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">Discovery (Docs/CODEX.md section 5: every entry ships unlocked; UnlockedByDefault and DiscoveryKey exist but nothing reads them), so the counts, NEW badges and silhouettes show the proposed shape. Artifacts have no game data: Afterburner Coil and Deep Missile Bay come from the Rev 24 Hangar board. Descriptions are blank in the Codex asset and show as [bracketed] slots.</div></div><div style="display:flex;gap:28px;margin-bottom:18px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Colour</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">Elements carry no colour: their petals are white. Blue is the selection; gold is a level-5 upgrade; lime is NEW and the one call to action (Fly with Shrapnel); fire is the risk on an artifact.</div></div><div style="display:flex;gap:28px;margin-bottom:18px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Proposed copy</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">The one-line meaning of each element (the strike you carry, what you build, how far you reach, how fast you move) is read off the fleet&#x27;s ability table, for review.</div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+{
+  "id": "marlin",
+  "order": 7,
+  "name": "Marlin",
+  "tagline": "the drifter: the nose is free, the velocity is yours to earn",
+  "round": "concept · round 1",
+  "accent": "#4fa3ff",
+  "kind": "momentum",
+  "chip": "concept · round 1",
+  "summary": "The drifter. Velocity and nose are two different things: the sticks turn the hull freely while it keeps sliding, RT burns along the nose, LT is a retro burn against the velocity, B flips it 180° in a third of a second (flip and burn). A drift assist bends the velocity gently toward the nose so it reads as 3D drifting rather than a physics puzzle; turn it to 0 in Vessel Config for pure Newtonian flight.",
+  "spec": [
+    {
+      "k": "Mechanic",
+      "v": "RT thrust · LT retro · B flip · velocity decoupled"
+    },
+    {
+      "k": "Thrust",
+      "v": "70 u/s², retro 45, cap 220 u/s"
+    },
+    {
+      "k": "Assist",
+      "v": "1.2/s lateral damping (0 = pure)"
+    },
+    {
+      "k": "Why",
+      "v": "3D drift: Chorus's Drift Trance; Squadrons; Everspace 2"
+    }
+  ],
+  "fantasy": "It points one way and goes another. A corner is a slide you set up two seconds early, and a chase is a dance of flips.",
+  "why": "Arcade flight players want tight, drifting, momentum-preserving ships, not sims (Squadrons 'pure arcade joy', Chorus's Drift Trance 'car drifting in three dimensions and zero gravity, feels incredible', Jett panned for fiddly controls). Every Cosmic Shore hull tracks its throttle; the Marlin is the one whose speed is a vector you carry, with an assist dial so the first session rewards.",
+  "flight": {
+    "cruise": 100,
+    "pitchYaw": 180,
+    "roll": 140,
+    "grip": 30,
+    "accel": 1.5,
+    "topSpeed": 220,
+    "chase": "nose"
+  },
+  "params": {},
+  "elements": {
+    "charge": {
+      "name": "Main Burn",
+      "param": "thrust",
+      "range": [
+        1,
+        1.4
+      ],
+      "l5": "Overburn",
+      "tip": "Charge is the main engine's thrust."
+    },
+    "mass": {
+      "name": "Momentum",
+      "param": "topSpeed",
+      "range": [
+        1,
+        1.2
+      ],
+      "l5": "Juggernaut",
+      "tip": "Mass is how much velocity it can carry."
+    },
+    "space": {
+      "name": "Retro",
+      "param": "retro",
+      "range": [
+        1,
+        1.5
+      ],
+      "l5": "Full Stop",
+      "tip": "Space is the braking burn's strength."
+    },
+    "time": {
+      "name": "Agility",
+      "param": "turn",
+      "range": [
+        1,
+        1.4
+      ],
+      "l5": "Snap Flip",
+      "tip": "Time is how fast the free nose turns."
+    }
+  },
+  "styles": [
+    {
+      "name": "Balanced",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Every element at 0: the recipe's numbers."
+    },
+    {
+      "name": "Racer",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Big burns and a high cap: fast and committed."
+    },
+    {
+      "name": "Duellist",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Quick nose and strong retro: stops and turns on a thought."
+    },
+    {
+      "name": "Maxed",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Every element at 10. A ceiling, not a match state."
+    }
+  ],
+  "players": [
+    {
+      "ai": false,
+      "domain": "jade",
+      "level": "Hard",
+      "style": "Balanced"
+    }
+  ],
+  "controls": {
+    "lt": "retro burn (analog)",
+    "rt": "main burn (analog)",
+    "b": "flip 180°"
+  },
+  "notModelled": [
+    "The game's throttle axis (the sticks' spread) is unused: throttle is RT. This is a second input strategy, like the Dragonfly's.",
+    "The assist is one lateral-damping number; a shipped version would want the Dolphin's drift-hold shape and a camera that reads the slip."
+  ],
+  "sources": [
+    "Design: Docs/Studios/CONCEPT_FLEET.md (Marlin). Nearest shipped relatives: the Dolphin's locked drift (velocity frozen, no thrust) and the Squirrel's live-thrust drift."
+  ],
+  "docs": "Docs/Studios/CONCEPT_FLEET.md"
+}

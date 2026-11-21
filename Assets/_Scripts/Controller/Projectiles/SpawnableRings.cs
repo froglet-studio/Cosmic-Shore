@@ -54,6 +54,7 @@ namespace CosmicShore.Gameplay
         // share ownerIDs (bare container-name IDs collide across pickups — the
         // container is recreated with the same name every Spawn).
         static int s_spawnSerial;
+        GameObject _container;
 
         public override GameObject Spawn(int intensity = 1)
         {
@@ -61,9 +62,15 @@ namespace CosmicShore.Gameplay
             trails.Clear();
 
             // Pose anchor + owner prefix only - the pooled prisms live under the Boost pool, not
-            // here, so destroying the spawner never destroys the laid mass.
-            GameObject container = new GameObject($"Rings_{name}");
-            container.transform.SetParent(transform, false);
+            // here, so destroying the spawner never destroys the laid mass. Made once and reused:
+            // the AOE shell that owns this is pooled (AOEExplosionPool), so a container per Spawn
+            // would pile up under it.
+            if (!_container)
+            {
+                _container = new GameObject($"Rings_{name}");
+                _container.transform.SetParent(transform, false);
+            }
+            GameObject container = _container;
 
             var spec = new BoostRingSpec(prismsPerRing, ringRadius, prismScale, Kind);
 

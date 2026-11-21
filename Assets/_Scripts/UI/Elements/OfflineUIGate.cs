@@ -148,10 +148,14 @@ namespace CosmicShore.UI
                 control.interactable = !offline;
             }
 
+            // The browser Toybox is offline by design, with no way online, so the offline-only
+            // surfaces (the "you're offline" notice, the reconnect button) would explain a state
+            // the player never left and offer an action that cannot work.
+            bool showOfflineOnly = offline && !WebToybox.IsBuild;
             foreach (var go in offlineOnlyObjects)
             {
                 if (go == null) continue;
-                go.SetActive(offline);
+                go.SetActive(showOfflineOnly);
             }
         }
 

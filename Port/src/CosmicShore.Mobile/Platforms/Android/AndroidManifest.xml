@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- OpenGL ES 3.0 is the render path (Unity's "Graphics APIs: OpenGLES3"). -->
+  <uses-feature android:glEsVersion="0x00030000" android:required="true" />
+  <uses-feature android:name="android.hardware.touchscreen.multitouch" android:required="false" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <application android:label="${csTitle}" android:icon="${csIcon}" android:allowBackup="true" android:hardwareAccelerated="true" android:isGame="true" android:extractNativeLibs="true" />
+</manifest>

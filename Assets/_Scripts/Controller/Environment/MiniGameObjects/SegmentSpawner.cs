@@ -5,7 +5,7 @@ using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 using UnityEngine;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
@@ -42,7 +42,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] public int NumberOfSegments = 1;
 
         [Header("Segment Layout")]
-        [SerializeField] public Vector3 origin = Vector3.zero;
+        [SerializeField] Vector3 origin = Vector3.zero;
+        public Vector3 Origin => origin;
         [SerializeField] public float Radius;
         [SerializeField] public float StraightLineLength;
         [SerializeField] public float RotationAmount;
@@ -63,7 +64,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// When true, SegmentSpawner will not auto-reset on OnResetForReplay.
-        /// Set by external controllers (e.g. HexRaceController) that manage the track lifecycle themselves.
+        /// Set by external controllers (e.g. SkimRaceController) that manage the track lifecycle themselves.
         /// </summary>
         [HideInInspector] public bool ExternalResetControl;
 
@@ -146,7 +147,7 @@ namespace CosmicShore.Gameplay
 
             NormalizeWeights();
 
-            Debug.Log($"[SegmentSpawner] Initialize - Seed={Seed}, weightedSegments={weightedSegments.Count}, guaranteed={guaranteedSpawnables.Count}, NumberOfSegments={NumberOfSegments}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[SegmentSpawner] Initialize - Seed={Seed}, weightedSegments={weightedSegments.Count}, guaranteed={guaranteedSpawnables.Count}, NumberOfSegments={NumberOfSegments}");
 
             int currentIntensity = intensityLevelData ? intensityLevelData.Value : 1;
 
@@ -201,7 +202,7 @@ namespace CosmicShore.Gameplay
         ///
         /// Resets the legacy <c>IsShielded</c>/<c>IsSuperShielded</c> flags
         /// before engaging. Some authored prefabs (notably
-        /// ShieldedSpawnablePrism, used as the regular HexRace track block)
+        /// ShieldedSpawnablePrism, used as the regular SkimRace track block)
         /// ship with <c>prismProperties.IsShielded = true</c>, which causes
         /// <c>Prism.Initialize()</c> to call <c>ActivateShield()</c> →
         /// <c>materialAnimator.UpdateMaterial()</c>. That swap to the
@@ -229,8 +230,10 @@ namespace CosmicShore.Gameplay
                     prism.prismProperties.IsShielded = false;
                 prism.DeactivateShields();
 
-                var shield = prism.gameObject.GetComponent<PrismStellatedOctahedronShield>()
-                             ?? prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
+                // TryGetComponent, never `GetComponent() ?? AddComponent()`: a missing component is
+                // a fake-null object in the Editor, so the coalesce never added one there.
+                if (!prism.gameObject.TryGetComponent(out PrismStellatedOctahedronShield shield))
+                    shield = prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
                 // This runs during the track's spawn window, so honour the same birth rule
                 // PrismStateManager applies: a shield engaged before the prism has ever been
                 // on screen must SNAP. The morph is invisible by construction there (the
@@ -248,7 +251,7 @@ namespace CosmicShore.Gameplay
                     prism.prismProperties.IsSuperShielded = true;
                 shielded++;
             }
-            Debug.Log($"[SegmentSpawner] Super-shielded {shielded} track prisms (instant={superShieldEngageInstant}).");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[SegmentSpawner] Super-shielded {shielded} track prisms (instant={superShieldEngageInstant}).");
         }
 
         /// <summary>

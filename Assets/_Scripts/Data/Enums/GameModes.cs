@@ -11,14 +11,14 @@ namespace CosmicShore.Data
         // (Repurposed from the legacy single-player arcade entry, whose scene never
         // shipped.) See _Scripts/Controller/Arcade/RAMPAGE.md.
         Rampage = 2,
-        Darts = 3,
+        DolphinDarts = 3,
         ShootingGallery = 4,
         BlockBandit = 5,
         RiskyDriftness = 6,
         // 7 (Freestyle) retired: the standalone arcade Freestyle game was removed.
         // Freestyle now refers to the Menu_Main lava-lamp experience (see CLAUDE.md,
         // "Lava-Lamp Mode"). Do not reuse ID 7.
-        CellularDuel = 8,
+        DuelForTheCell = 8,        // single-player scene retired 2026-09; id kept (never reuse)
         DashNGrab = 9,
         CellularBrawl = 10,
         Denial = 11,
@@ -35,35 +35,46 @@ namespace CosmicShore.Data
         Multipass = 22,
         BotDuel = 23,
         Curvatious = 24,
-        MazeRunner = 25,
-        WildlifeBlitz = 26,
+        MazeRun = 25,
+        WildlifeBlitz = 26,        // single-player scene retired 2026-09; still set by BenchmarkSceneLauncher
         ProtectMission = 27,
-        MultiplayerFreestyle = 28,
-        MultiplayerCellularDuel = 29,
+        // 28 was MultiplayerFreestyle, the prototype multiplayer sandbox (no rules, no clock,
+        // no score) that grew into the Menu_Main lava lamp, freestyle, toybox and lobby, which
+        // replaced it. Removed 2026-10 with its card, scene and controller; the mode is in git.
+        // 28 IS RESERVED FOREVER, exactly like 7, 31 and 47 - saved selections still carry it.
+        // 29 was OnlineDuelForTheCell, the two-human vessel-swap duel. Brood Rush (38) replaced
+        // it. Removed 2026-10 with its card, scene and mode preview; OnlineDuelForTheCellController
+        // stays because the CoOp Wildlife Blitz scene still runs on it. 29 IS RESERVED FOREVER.
         Multiplayer2v2CoOpVsAI = 30,
-        MultiplayerWildlifeBlitzGame = 32,
-        HexRace = 33,
-        MultiplayerJoust = 34,
-        MultiplayerCrystalCapture = 35,
-        // Tournament (36): session-level meta that chains the domain minigames
-        // (HexRace, Joust, CrystalCapture) into one tournament. See
-        // Docs/TournamentSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
-        Tournament = 36,
+        CoOpWildlifeBlitz = 32,     // retired 2026-10 (Bug_Hunt BH-5.5/5.7); scene + controller deleted; enum kept
+        SkimRace = 33,
+        Joust = 34,
+        Scurry = 35,
+        // Maelstrom (36): session-level meta that chains the domain minigames
+        // (SkimRace, Joust, Scurry) into one tournament. See
+        // Docs/MaelstromSystem/ARCHITECTURE.md. (7, 28, 29 and 31 stay reserved.)
+        Maelstrom = 36,
         // AstroLeague (37): hypersea soccer domain minigame. See
         // _Scripts/Controller/Arcade/ASTROLEAGUE.md.
         AstroLeague = 37,
-        // NucleusRush (38, display name "Brood Rush"): nucleus-control domain
+        // BroodRush (38, display name "Brood Rush"): nucleus-control domain
         // minigame - every 30s fauna wave born under your domain's nucleus claim
         // scores a point; first domain to the wave target (default 3) wins. See
-        // _Scripts/Controller/Arcade/NUCLEUSRUSH.md.
-        NucleusRush = 38,
-        // Ribcage (39): Rhino-only cage-breaking race. A hollow SHIELDED prism sphere
-        // pens the cell's brood; domains race to smash the destruction target, and the
-        // leader IS the cell's controlling domain - so the fauna wave hatches in the
-        // leader's colour and the legacy herbivore diet (eat opposing-domain mass) turns
-        // the swarm loose on every trailing team's trails. See
-        // _Scripts/Controller/Arcade/RIBCAGE.md.
-        Ribcage = 39,
+        // _Scripts/Controller/Arcade/BROODRUSH.md.
+        BroodRush = 38,
+        // Cleave (39): the Rhino-only SLICING race. Domains race to cut a per-INTENSITY
+        // target of hostile prisms out of the arena (1200 / 1200 / 1500 / 1500 - a target is
+        // a fraction of the arena, so it is re-priced whenever the arena is re-cut), and the
+        // arena IS the score. Intensity picks WHICH PLACE you cut rather than how much of it
+        // there is - four unrelated arenas, one CellConfigDataSO each: angled panes, wide
+        // wavy roads, a three-rind cage, and interlocked one-sided Mobius ribbons. Every
+        // arena is built from the same SMALL prisms (SliceArenaGeometry.PrismScaleI1..I4, all
+        // 2): destroying lots of little prisms is the fun, one big prism reads as low
+        // poly. Every prism is plain or danger; nothing is shielded,
+        // because an AI never pulls the triggers that energize a blade and hardened mass
+        // would be mass an all-AI domain could never score against. See
+        // _Scripts/Controller/Arcade/CLEAVE.md.
+        Cleave = 39,
         // WildlifeLiberation (40): the Sparrow-only hunt. Three concentric cages at 1050 / 600
         // / 200 pen three tiers of wildlife - a huge swarm of small creatures in the outer
         // room, much bigger ones in the middle, the biggest and toughest in the core. Break in
@@ -97,9 +108,532 @@ namespace CosmicShore.Data
         // keeps the strikers firing. First DOMAIN to the prism target wins. See
         // _Scripts/Controller/Arcade/SALVO.md.
         Salvo = 44,
+        // Switchback (45): the Dolphin-only gate race. A course of randomly placed and randomly
+        // ORIENTED switch rings is scattered through the cell, and every pilot flies the same
+        // course in order - thread your next gate, or go back for it. The first DOMAIN whose
+        // LEAD RUNNER threads the last gate wins, so a teammate does not shorten the course;
+        // what they can do is put the Dolphin's blast cone on a rival. Intensity is the COURSE
+        // (tighter mouths, sharper corners, gates twisted further off the line you arrive on),
+        // never the arena. See _Scripts/Controller/Arcade/SWITCHBACK.md.
+        Switchback = 45,
+        // Hijack (46): the Urchin-only heist race. Three great-circle RAILS ring a hollow core,
+        // meeting at spiny BURRS of raw prism where the rings cross. Every rail is painted in
+        // three domain thirds and every burr wears one colour, so the yard belongs to nobody
+        // for long: you latch onto a rail and grind it fast where it wears your colour and at a
+        // crawl where it does not, spike the road ahead to convert it, fly off the open end -
+        // aimed at the next burr by the geometry, not by a bonus - and rake the cluster with a
+        // chain cascade. NOTHING here is ever destroyed: mass only changes hands. First DOMAIN
+        // to steal the prism target wins (ScoringMetric.PrismsStolen). See
+        // _Scripts/Controller/Arcade/HIJACK.md.
+        Hijack = 46,
+
+        // 47 was Drumfire, the Dolphin-only rhythm range: a prism DRUM at the cell centre
+        // and a firing lane of crystals per pilot, clock-ended and scored on volume. Removed
+        // 2026-09 - it read as Rampage (same hull, same weapon, same 'aim the cone at a lot of
+        // mass') without offering enough of its own to earn a second slot. Its lane geometry
+        // survives as a platform capability (ApproachLaneGeometry,
+        // CrystalManager.CrystalPlacementMode.ApproachLanes) and the mode itself is in git.
+        // 47 IS RESERVED FOREVER, exactly like 7 and 31 - saved selections still carry it.
+
+        // Tollway (48): the Scarab-only ring race, built on the one Scarab idea no mode had
+        // used - a switch pays its PLACER when ANY ball threads it, friend or enemy. Plant
+        // rings in the court's own TOLL POSTS (unconstrained placement made the mode one move
+        // long); every ball that threads one pays the pilot who planted it and raises
+        // a 255-prism scarab-wing monument on the spot, so the arena is built by the scoring.
+        // Rings are consumed when they pay and must be replanted. First DOMAIN to the toll
+        // target wins. See _Scripts/Controller/Arcade/TOLLWAY.md.
+        Tollway = 48,
+
+        // Headlong (49): the Rhino-only circuit race. A closed loop of switch rings is cut
+        // through the cell and every pilot flies LAPS of it in order; the first domain whose
+        // LEAD RUNNER threads the last gate of the last lap wins. Every corner is cut against
+        // the Rhino's FLAT-OUT turn radius - the tightest circle it can fly without dropping
+        // the ramp boost - so a corner is a decision rather than a chore: thread it and keep
+        // 910 u/s, or turn properly and pay six seconds winding the ramp back up. Intensity is
+        // how many corners let you choose. See _Scripts/Controller/Arcade/HEADLONG.md.
+        Headlong = 49,
+
+        // Breakwater (50): the Sparrow-only station race. A polar START GATE plus a closed
+        // fourteen-station CIRCUIT hangs on a generated walk through the cell - each station a
+        // shallow dish of plates flaring back toward you, its throat welded shut by a weave of
+        // DANGER bars around an 18-unit EYE. Closing on one you pick your way through: fire a
+        // skyburst and vaporise a door, flip to turret stance and saw the weave open, or thread
+        // the eye and take nothing but nerve. The walls you shoot ARE the ammunition (50 hostile
+        // prisms buy a rocket), so opening one door roughly funds the next and a clean thread
+        // banks a rocket for a station you cannot read. Two laps of the circuit = 29 crossings;
+        // the first DOMAIN's LEAD RUNNER home wins, so a teammate does not shorten the race.
+        // See _Scripts/Controller/Arcade/BREAKWATER.md.
+        //
+        // 50, not 48: Tollway took 48 and Headlong 49 on bleeding-edge while this was in flight.
+        Breakwater = 50,
+
+        // Skein (51): the Urchin-only cable race - the first mode built around the vessel's
+        // GRIND rather than around what the grind can steal. A trefoil-knot cable hangs in the
+        // cell, wrapped in one family of rails whose radii BREATHE: each strand oscillates
+        // between 45 and 135 units with its own phase, so at every station the strands cover
+        // the whole band, and each spends part of the lap as the direct inner path and part
+        // spiralling out. Ride an outward-bound strand and it carries you out; the inward
+        // phase is 1.315x shorter, so the fast line means CHANGING STRANDS. Rails END, and
+        // every end is AIMED - run one off its tip and its own tangent throws you onto a live
+        // rail somewhere else, so "hold the throttle and the arena navigates for you" is a
+        // property of the geometry rather than a bonus anyone authored. Ordered rings are
+        // threaded in sequence; two are wide collars that swallow the whole cable (the start
+        // and the finish, so nobody wins or loses for the lane they were in) and the rest sit
+        // on ONE specific rail, so the question is never "can you thread it" but "can you be
+        // on that rail when you get there". First DOMAIN whose LEAD RUNNER threads the last
+        // ring wins - the gate-race fold, reusing metric 9 outright.
+        // See _Scripts/Controller/Arcade/SKEIN.md.
+        //
+        // 51, and it took THREE renumbers to get here: Tollway took 48 and Headlong 49 while
+        // this branch was in flight, and Breakwater took 50 in the window between this
+        // branch's review pass and its push. That is the trap DRUMFIRE.md records, hit a
+        // third time - two parallel branches each take "the next free id", git merges two
+        // additions to opposite ends of one enum without a conflict, and the duplicate
+        // surfaces as CS0152 in whichever switch has to tell them apart. Never assume the
+        // last row is the highest, and re-run check_switch_label_collisions.py after a merge.
+        Skein = 51,
+
+        // Bloomrush (52): the Manta-only party game - the delayed-detonation race, and the
+        // vessel's accessibility thesis as a mode: nobody has to learn a button. Skim the reef
+        // to arm bombs, graze wildlife and rival Mantas to plant them (silently - one bomb per
+        // target, tagging is denial), then reach a crystal before the fuses burn down and set
+        // the whole board off at once. 120-second round; score = hostile VOLUME destroyed
+        // (crystal blooms are bigger than fuse fizzles, so beating the fuse pays by
+        // construction); tiebreaker = fuses beaten. First DOMAIN sum wins. See
+        // _Scripts/Controller/Arcade/BLOOMRUSH.md.
+        //
+        // 52, not 45: this branch took 45 while Switchback took it on bleeding-edge - the
+        // parallel-branch collision the Skein note above records, hit a fourth time.
+        Bloomrush = 52,
+
+        // Redline (53): the Manta-only circuit race. A closed loop of switch rings is cut
+        // through the cell and every pilot flies LAPS of it in order; the first DOMAIN whose
+        // LEAD RUNNER threads the last gate of the last lap wins. Every corner is cut against
+        // the Manta's FULL-BOOST turn radius - the 237u circle it holds with both triggers
+        // flat - and since Soar is the OVERLAP of the triggers and Yawstery their DIFFERENCE, a
+        // corner is one question: how much Soar is it worth? Intensity is how many corners a
+        // lap asks it at. The solver is Headlong's, the cut is the Manta's. See
+        // _Scripts/Controller/Arcade/REDLINE.md.
+        Redline = 53,
+
+        // WreckingBall (54, display name "Wrecking Ball"): the Scarab-only demolition race, and
+        // Rampage's analog for the hull whose weapons are a BALL and a PLATE. A sphere court is
+        // grown full of Rampage's five breakable flora; every bright crystal you fly through
+        // becomes your ball and every prism it plows through is yours, and the juke dash's
+        // cavitation plate shreds whatever is beside you. First DOMAIN to the hostile-prism
+        // target wins (ScoringMetric.PrismsDestroyed). Intensity is DENSITY and SUPPLY: more
+        // forest and more crystals at 1, a sparse court and a scarce ball at 4. See
+        // _Scripts/Controller/Arcade/WRECKING_BALL.md.
+        WreckingBall = 54,
+
+        // Undertow (55): the Scarab-only cavitation duel - The Bends for the hull whose blast is a
+        // sideways PLATE rather than a cone. Fought in Wildlife Liberation's caged arena: dash
+        // beside a rival to catch them in the plate (every element stripped for four seconds -
+        // one BEND) and drag the wildlife through it (a creature caught in the plate dies -
+        // one KILL). Points are bends and kills together; first DOMAIN to the target wins.
+        // See _Scripts/Controller/Arcade/UNDERTOW.md.
+        Undertow = 55,
+
+        // Regatta (56): the ARENA race - every playable hull on the same closed circuit of
+        // switch rings, three super-shielded rails (one per domain) braided along the racing
+        // line so an Urchin grinds it and a Squirrel skims it while a Manta, a Rhino, a Scarab
+        // or a Sparrow flies beside it; first DOMAIN whose LEAD RUNNER threads the last gate
+        // of the last lap wins. The mixed fleet is balanced by the card's per-hull STARTING
+        // ELEMENTS (SO_ArcadeGame.StartingElements) and the corner mix, never by a mode-local
+        // speed dial. See _Scripts/Controller/Arcade/REGATTA.md.
+        Regatta = 56,
+
+        // Broadside (57): the ARENA brawl - Regatta's fighting twin. Seven hulls loose in Dog
+        // Fight's Boneyard, each fighting with the weapon it actually has: a Sparrow's guns and
+        // rockets, an Urchin's chain spikes, a Rhino's energised sword, a Squirrel's joust, a
+        // Dolphin's cone, a Scarab's plate, a Manta's bloom. A hit is priced by the VERB that
+        // landed it and never by the hull - a round is 1, a contact strike 8, an area debuff 12,
+        // a rocket 10/20/30 by how close it got - and the first DOMAIN to the point target wins
+        // on ScoringMetric.CombatPoints. See _Scripts/Controller/Arcade/BROADSIDE.md.
+        Broadside = 57,
+
+        // Waystation (58): the Butterfly-only migration race. The course is a chain of
+        // CLUSTERS - tight knots of switch rings - laid far apart in the cell. Inside a cluster
+        // you FLY, on the fleet's slowest hull and its widest turning circle; between clusters
+        // you FOLD, and the Fold has exactly one degree of freedom, the heading you leave on. So
+        // the last ring of a cluster is also the aiming device for the next jump, and threading
+        // it on the right LINE is worth more than threading it fast. First DOMAIN whose LEAD
+        // RUNNER threads the last ring wins, on ScoringMetric.SwitchesThreaded - the gate-race
+        // platform, reused whole. See _Scripts/Controller/Arcade/WAYSTATION.md.
+        // Since 2026-11-01 Waystation is the Tiger Moth's Drop Tower race: the clusters with a staircase of short hops
+        // through plain and danger floor plates in every gap but the last (Docs/Studios/TIGER_MOTH_TIME.md). It was
+        // built as WaystationPrototype (76) beside this mode and folded in; 76 is retired and stays reserved.
+        Waystation = 58,
+
+        // Dustup (59): the Butterfly's CHARGE game - a dust duel. The Butterfly carries no gun;
+        // its one weapon is the Scale Dust capsule hanging BELOW the hull in Dust mode, so a
+        // rival is hit by flying OVER them. Every rival the dust passes through takes the
+        // Charge-scaled all-element bite and pays one DUSTING (a Strike-class combat hit); first
+        // DOMAIN to the point target wins, on ScoringMetric.CombatPoints. Fought in Dog Fight's
+        // Boneyard. See _Scripts/Controller/Arcade/DUSTUP.md.
+        Dustup = 59,
+
+        // Tapestry (60): the Butterfly's MASS game - a TIMED painting war. Mass mode lays a wake
+        // 5x-20x wide; Dust mode raids a rival's painting (destroying, shrinking or stealing
+        // what it touches). The score is the mass a domain has STANDING when the clock runs out
+        // (ScoringMetric.VolumeRemaining) - a live stock, so every raid moves two scores at
+        // once. Fought in the bare Barren cell, with no food web. See
+        // _Scripts/Controller/Arcade/TAPESTRY.md.
+        Tapestry = 60,
+
+        // Sirocco (61): the Butterfly's SPACE game - an erosion race through Rampage's cactus
+        // forest. The dust's LENGTH is Space, and on opposing mass it destroys, shrinks or
+        // steals; first DOMAIN to destroy the hostile-prism target wins on
+        // ScoringMetric.PrismsDestroyed (Rampage's metric and machinery). See
+        // _Scripts/Controller/Arcade/SIROCCO.md.
+        Sirocco = 61,
+
+
+        // GrizzlyCharge (62): the Grizzly-only assault mode (in development). Authored as 42
+        // on grizzly-v2, moved to 44 when Bends/ScarabScramble took 42/43, to 54 at the
+        // 2026-09-12 merge after Salvo took 44 and Switchback 45, and to 62 at the 2026-10-02
+        // merge after WreckingBall took 54 (bleeding-edge had run on to Sirocco = 61) - the
+        // parallel-branch collision the Skein and Bloomrush notes above record, hit a SIXTH
+        // time. The ArcadeGameGrizzlyCharge asset's serialized Mode moved with it each time.
+        GrizzlyCharge = 62,
+
+        // GrizzlyTime (63): the Grizzly-only circuit race - Redline's shape (a lapped gate
+        // circuit on the shared HeadlongCircuit solver) cut against the Grizzly riding its own
+        // trigger-bomb blasts rather than a boost: a corner asks how much launch it is worth. See
+        // _Scripts/Controller/Arcade/GRIZZLYTIME.md.
+        GrizzlyTime = 63,
+
+        // Slingshot (64): the Stoat's TIME race (since 2026-10-27) - Redline's shape (a lapped gate circuit on
+        // the shared HeadlongCircuit solver) cut for a 60 u/s hull whose only speed is the
+        // attractor-repulsor wormhole pair it slings on its triggers: a corner asks where to lay
+        // the attractor. See _Scripts/Controller/Arcade/SLINGSHOT.md.
+        Slingshot = 64,
+
+        // Warpline (65): the Meerkat's TIME race (the Stoat's until 2026-10-27) - Slingshot's shape
+        // (a lapped gate circuit on the shared HeadlongCircuit solver) with five long legs a lap,
+        // flown on the wormhole: bend the reticle, form the tunnel, ride it. See
+        // _Scripts/Controller/Arcade/WARPLINE.md.
+        Warpline = 65,
+
+        // ThresherTime (66): the Thresher-only circuit race - Grizzly Time's shape (a lapped gate
+        // circuit on the shared HeadlongCircuit solver) cut against the Thresher's SLING: plant
+        // the ball, orbit it, wind the chain in and let go, and the launch is the hull's own
+        // momentum on a fixed 120 deg/s turn - a corner asks how much sling it is worth. See
+        // _Scripts/Controller/Arcade/THRESHERTIME.md.
+        ThresherTime = 66,
+
+        // WrasseRun (68): the Wrasse and Grouper's circuit race - Thresher Time's shape (a lapped gate
+        // circuit on the shared HeadlongCircuit solver) where a ring counts only when the WRASSE (the
+        // navigator's kite) threads it: the Grouper flies the plane through the next ring, the kite swings
+        // through its mouth, and Time loops save the boosts that reach the next one. 67 is SerpentCharge's
+        // on an in-flight branch. See _Scripts/Controller/Arcade/WRASSERUN.md.
+        WrasseRun = 68,
+
+        // Tandava (69): the co-op ARENA hunt (Squirrel / Sparrow / Rhino, every pilot on ONE domain) - one tadpole swarm
+        // (the sort core's scripted-form mode) forages a small closed cell and takes four remembered forms, Great Serpent ->
+        // Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion, decided by TandavaDirectorCore; break it
+        // before the Antlion's last feast. Authored as 62 on claude/tandava-arena-mode and moved to 69 at the 2026-10-25
+        // merge: GrizzlyCharge had taken 62 and the modes after it 63-68 (67 is SerpentCharge's, in flight). The
+        // ArcadeGameTandava, ModePreview_Tandava and GameToastConfig_Tandava assets carry the number and moved with it.
+        // See _Scripts/Controller/Arcade/TANDAVA.md.
+        Tandava = 69,
+
+        // TandavaSevering (70): Voyage 2, a FORK of Tandava carrying the severing, wound memory and whale-jelly chimera
+        // work of PR #1046 (cut it in two and the piece crawls off as the Severed; it learns from its wounds; on its way
+        // up to the dance it tears between a whale and a jelly). Its own controller, scene, card and assets, so Tandava
+        // itself moves on without it (Garrett, 2026-10-26). See _Scripts/Controller/Arcade/TandavaSevering/TANDAVA_SEVERING.md.
+        TandavaSevering = 70,
+
+        // BurrowRun (71): the Meerkat's TIME race - Warpline's shape (a lapped gate circuit on the shared HeadlongCircuit
+        // solver, Slingshot's cut) with eight rings a lap, two laps: the Vessel Studio's Meerkat race. The Meerkat digs its
+        // own way - bend the reticle with the right stick, RT dives you through the tunnel it forms, out the far end with
+        // the speed you went in with. See _Scripts/Controller/Arcade/BURROWRUN.md.
+        BurrowRun = 71,
+
+        // ScarabRally (72): the Scarab's TIME race - Switchback's walk (an open chain of rings flown in order,
+        // hairpins only a drift makes, I3 walls and I4 danger prisms beside the line) cut for the Scarab: hold
+        // the throttle, drift the hairpins, juke into the mouths. No ball. Scarab Scramble is the Scarab's Mass
+        // card. 71 is BurrowRun's on Ys-bleeding-edge, 67 SerpentCharge's in flight. See
+        // _Scripts/Controller/Arcade/SCARABRALLY.md.
+        ScarabRally = 72,
+
+        // SerpentTime (73): the Serpent's TIME race - Thresher Time's shape (a lapped circuit on the shared
+        // HeadlongCircuit solver) where the speed is the fuel pellets: four in the tank, each a 6 s burn that
+        // stacks, refilled only by the Serpent's wall eating its own trail. See _Scripts/Controller/Arcade/SERPENTTIME.md.
+        SerpentTime = 73,
+
+        // BrittleStarTime (74): the Brittle Star's TIME race - the same lapped circuit, where Speed Mode (x6
+        // cruise) is the race and the mouths ask when to drop back to Cruise to thread. See
+        // _Scripts/Controller/Arcade/BRITTLESTARTIME.md.
+        BrittleStarTime = 74,
+
+        // LanternRun (75): the Angler's TIME race - a lapped circuit (the shared HeadlongCircuit solver) where every leg
+        // carries TWO regrowing prism MASS clusters on the ring's axis, one for each of the Angler's two groups: paint the
+        // near cluster and throw one group, paint the far one (past the ring) and throw the other, then dash to each in
+        // turn - you paint your path and zoom along it. See _Scripts/Controller/Arcade/LANTERNRUN.md.
+        LanternRun = 75,
+
+        // SerpentHood (77): "Hood", the Serpent's CHARGE game, a SNIPER DUEL across a crystal heart in a 3,600 u cell.
+        // Perches (Serpentine's ring shapes bent into hoods, mouths to the heart) stand on a sphere round it; a sniper
+        // sits in a hood's cup and fires out through its exits, and breaking a hood's core brings it down. Charge
+        // shortens the rifle's recovery, so the heart is the risk and the reward. A snipe (a Sniper Shot that strips a
+        // rival pilot) is one point; first DOMAIN to the target wins. Was SerpentGulag (same id, renamed and rebuilt in
+        // place 2026-11-09, Shombith). Beside Garrett's in-flight SerpentCharge (67, cece/vibrant-archimedes-n3xn3x),
+        // which it does not touch. See _Scripts/Controller/Arcade/SERPENTHOOD.md.
+        SerpentHood = 77,
+
+        // Thornline (79): the Shrike's TIME race - a chain of THORNS (one big block each) with a ring at the middle of
+        // every leg. The Shrike cruises at 18 u/s, so the race is its Void Sling: dock, aim at the next thorn, sling,
+        // reload; I2 adds plain thorns and rim-line Time crystals, I3 snipes through two rings, I4 the smallest thorns.
+        // 78 was SpeedPainter's for one commit (renamed LanternRun 75 on its branch) and is left alone.
+        // See _Scripts/Controller/Arcade/THORNLINE.md.
+        Thornline = 79,
+
+        // The Jacks' Time race (DECOY_RUN.md): herd the jacks past the rings, take off, fly
+        // to the decoys. Rings in groups a cycle takes; I3-I4 on rolled flats.
+        DecoyRun = 80,
+
+        // The Goby's Time race (PERCH_RUN.md): dart through the rings; a dart costs a second
+        // however far it goes. I2 hairpins (length), I3 coral blockers (line), I4 doubles.
+        PerchRun = 81,
+
+        // The Honeyguide's Time race (SLIP_LINE.md): rings with prism RAILS in the slip colours.
+        // Riding a rail the battery holds a charge for zips the hull down it at the slip's speed; the race is
+        // which rails to spend the Ratel's charges on.
+        SlipLine = 82,
+
+        // The Orca's Time race (BREACH.md): the helm's burn is five times cruise but turns at a fifth of
+        // its sweep, and the tank refills slowly. I2 hard turns, I3 danger walls before a ring, I4 both.
+        Breach = 83,
+
+        // The Thresher's CHARGE game (JACKSTRAW.md): a 0G heap of pick-up sticks, each about a chain long. A STRIKE -
+        // the ball or chain reaching a rival hull - is one point; first domain to the target wins. I1-I4 grow the heap
+        // (34 -> 230 sticks), add crossed jacks, red-tipped and ironwood sticks, and shrink the clearings.
+        Jackstraw = 85,
+
+        // The Brittle Star's CHARGE game (FLATLINE.md): thin panes of prisms crossing the cell. A pane stops rounds,
+        // the cords cut straight through it, and a ring thrown face-on into it bursts flat along it. Only rounds (1)
+        // and cord / thrown-saber Strikes (8) on rival hulls score; the ring blast pays nothing. Per-intensity target.
+        Flatline = 84,
+        // The Angler's CHARGE game (KELPWOOD.md): kelp strands radiate from a core in every direction. Sweep the eraser
+        // onto a rival to LOCK: one creature leaves your school and hunts them; each BITE is one point. I1-I4 grow the
+        // kelp (28 -> 88 strands), thin the herds and omni crystals, and add danger tips and collars.
+        Kelpwood = 86,
+
+        // The Manta's CHARGE game (CORONA.md): nested prism shells round a crystal heart. Skim a shell to arm a bomb,
+        // graze a rival to plant it, touch an omni crystal in the heart to set every bomb off. Each rival a bloom
+        // catches is one point. I1-I4 add shells (1 -> 4), narrow and rim the gates, and thin the heart's crystals.
+        Corona = 87,
+
+        // The Thresher's SPACE game (HARVEST.md): a field of sheaves - a core of blocks with stalks standing out of it.
+        // Mow the stalks with the chain to charge the ball, smash it into the core for one big blast. Hostile prisms
+        // destroyed score; first domain to the target wins. I1-I4 shrink and multiply the sheaves, shield the cores,
+        // colour them by domain and add danger stalks.
+        Harvest = 88,
+
+        // The Angler's MASS game (GLASSHOUSE.md): a timed garden. An omni crystal is a creature and a SEED; let go of the
+        // lure and the seed is planted in your colour, and the lure's light grows every plant in reach three times as
+        // fast. The score is the mass standing in your colour at the whistle (VolumeRemaining): your trail plus the
+        // garden grown from your seeds, outside the nucleus. Wild herds graze it and rival schools are thrown at it.
+        // I1-I4 thin the seeds, crowd in the grazers and shrink the room the gardens share.
+        // First authored as 88; Harvest (the Thresher's Space game) took 88 first, so this is 89.
+        Glasshouse = 89,
+
+        // The Brittle Star's SPACE game (SHATTERPLANE.md): wide, thin round plates of neutral prisms hang in the cell.
+        // Square up to a plate and the thrown ring's flat blast erases it whole; the guns chew what it misses. First
+        // domain to break the per-intensity prism target wins. I1-I4: plates facing the spawn, plates at mixed angles,
+        // stacks of three, plates braced by super-shielded ribs and half behind grilles.
+        // Took 88 first; Harvest landed with it, and 89 is Glasshouse's in flight (claude/peaceful-cerf-vpl3x8).
+        Shatterplane = 90,
+
+        // The Angler's SPACE game (CHUM.md): a timed feed on a reef. Shoals of neutral prisms hang in the cell; paint one,
+        // let go, and half the school is thrown at it and eats it. Score = prisms taken off the board (hull + school).
+        // I1-I4: few near shoals, more and farther, shielded crusts (Space starts at 5 for Paint Shields), the farthest.
+        // Row 1 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Chum = 91,
+
+        // The Brittle Star's MASS game (STARWEAVE.md): a timed weaving war in the bare cell. Creation Mode lays five
+        // trails from the ring's corners; the volume standing in your colour at the whistle wins, and every rival's
+        // guns, cords and ring are aimed at it. Row 2 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Starweave = 92,
+
+        // The Thresher's MASS game (HAUL.md): a timed steal. Bales of neutral prisms hang in the cell; the Mass Mode ball
+        // steals what it touches into your colour, shields your own and lays your trail. Volume standing in your colour
+        // at the whistle wins. Row 3 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Haul = 93,
+
+        // The Serpent's MASS game (HEDGEROW.md): a timed steal. Hedges of neutral bricks stand round the core; stop dead
+        // short of one and your seed wall eats along it into your colour, and a rival's trail the same way. Volume
+        // standing in your colour at the whistle wins. Row 4 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Hedgerow = 94,
+
+        // The Serpent's SPACE game (LONGSHOT.md): a timed shoot. Lances of neutral prisms hang round the core; line up
+        // along one and the sniper round breaks the whole run. Most hostile prisms broken at the whistle wins. Row 5 of
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Longshot = 95,
+
+        // The Swordfish's TIME game (SPEARLINE.md): three laps of Headlong's circuit, the rings sealed with panes of
+        // prisms. A sealed ring counts only through a hole, and the hull alone rams too small a one, so each seal asks for
+        // a swing of the bill; Quickdraw (Time) is the sword's rate. Reserved 96 in Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Spearline = 96,
+
+        // The Swordfish's CHARGE game (RIPOSTE.md): a sword duel in Jackstraw's heap of sticks. A sword hit on a rival
+        // (a Strike, which lands only while the Swordfish is faster than its victim) is one point; first domain to the
+        // target wins. The sticks are cover the blade cuts and the hull rams through. Reserved 97 (GAME_KIT_ROSTER.md).
+        Riposte = 97,
+
+        // The Swordfish's MASS game (PALISADE.md): a timed build-and-raid in the bare Barren cell. The afterimages (the
+        // blade's prism copies of itself, Mass scales their volume) and the trail are your mass; every rival's sword
+        // cuts it. Most volume standing at the whistle wins (VolumeRemaining). Reserved 98 (GAME_KIT_ROSTER.md).
+        Palisade = 98,
+        // RESERVED 91-127 (2026-11-15): the missing elemental arcade games, one id per game, assigned by vessel and
+        // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
+        // building one of those games takes ITS row's id; anything else takes 128 or above.
+
+        // The Orca's CHARGE game (PODHUNT.md): a missile hunt through the Boneyard's wreckage. Every blast a crew's flown
+        // missile or bomb lands on a rival hull is one point; first domain to the target wins. Ids 99 / toast 174
+        // reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (row 9).
+        PodHunt = 99,
+
+        // The Orca's MASS game (ICESHELF.md): a timed hold in Glasshouse's cell. The score is the mass standing in your
+        // colour at the whistle - trail, pen strokes and the helm's danger shield, which lingers 20 s where it drops, as
+        // the server counts it. Roster row 10 (100 / toast 175).
+        IceShelf = 100,
+
+        // The Orca's SPACE game (DEPTHCHARGE.md): a demolition race through Rampage's regrowing forest. Missiles and the
+        // bomb burst in the canopy, the sniper's line breaks everything on it; hostile prisms destroyed score, first
+        // domain to the target wins. Roster row 11 (101 / toast 176).
+        DepthCharge = 101,
+        // The Shrike's CHARGE game (LARDER.md): a duel in the Dog Fight's wreckage (the Boneyard cells). Every crystal
+        // becomes a missile plant and every nest is crowned with one; paint a rival with the Targeting Array and every
+        // plant with a ready missile launches at them. A missile that reaches a rival hull is a point. First domain to
+        // the target wins. I1-I4 are the Boneyard's own ladder (more wreckage to hide behind) and fewer crystals.
+        // Reserved for it by Docs/ElementalLoop/GAME_KIT_ROSTER.md (row 12).
+        Larder = 102,
+
+        // The Shrike's MASS game (THORNBUSH.md): a timed nest-building match in Jackstraw's heap of sticks. Dock on a
+        // stick, press Mass to leave a super-shielded nest, and hold the mass standing in your colour at the whistle
+        // (VolumeRemaining: nests plus trail). Rival missiles crack shields; a Void-Pierce lance breaks them. I1-I4 are
+        // the heap's own ladder. Reserved by GAME_KIT_ROSTER.md (row 13).
+        Thornbush = 103,
+
+        // The Shrike's SPACE game (LANCEFALL.md): Shatterplane's plates, broken by the Void Lance. The beam breaks every
+        // block it passes, so a plate taken EDGE-ON gives up a whole strip; face-on it gives up a few tiles. First
+        // domain to the prism target wins. I1-I4 are the plates' own ladder; I4's super-shielded ribs need Void Pierce.
+        // Reserved by GAME_KIT_ROSTER.md (row 14).
+        Lancefall = 104,
+
+        // The Stoat's CHARGE game (SHOCKFRONT.md): a duel in Dog Fight's Boneyard. Sling round and let the pair close:
+        // the annihilation's ripple strips a petal of every element from each rival its front sweeps over, and every
+        // rival stripped is one point. Ids 119 / toast 194 reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (row 29).
+        Shockfront = 119,
+
+        // The Stoat's SPACE game (FULMEN.md): Rampage's forest, its omni crystals contested in the nucleus. Each one you
+        // take throws a Fulmen bolt that burns the forest; a crystal a branch reaches bolts again. Hostile prisms
+        // destroyed score. Ids 120 / toast 195 reserved by GAME_KIT_ROSTER.md (row 30).
+        Fulmen = 120,
+        // The Honeyguide's three element games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 18-20, ids reserved there on
+        // 2026-11-15 so the parallel builds of the roster never collide).
+        // CHARGE (FLITSTRIKE.md): hold LT for the Flit's lane, let go to dart through a rival - every strike is a point.
+        // Dog Fight's Boneyard; first domain to the strike target wins.
+        Flitstrike = 108,
+        // MASS (HONEYCOMB.md): a timed build in the Barren cell. An omni crystal is a hive, a comb of your prisms behind
+        // you while the Ratel plays the hive puzzle; the volume standing in your colour at the whistle wins.
+        Honeycomb = 109,
+        // SPACE (WOODPECKER.md): a pecking race through Rampage's cactus forest. RT's three quick shots chip hostile
+        // prisms; first domain to the prism target wins.
+        Woodpecker = 110,
+        // The Jacks' CHARGE game (STINGHERD.md): herd your danger creatures into rival hulls. A danger creature of your
+        // herd that touches a rival stings it (a Strike, Danger Share) and is spent; first domain to the sting target
+        // wins. Played in Kelpwood's ball of kelp, whose grazing tadpoles join the herd. Id reserved by the game kit
+        // roster (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 27); 91-116 belong to other vessels' games in flight.
+        Stingherd = 117,
+
+        // The Jacks' SPACE game (TRAWL.md): the net drags prisms, and a dragged prism that hits another destroys both
+        // (PRISM_MOTION.md). First domain to destroy the hostile-prism target wins, in Harvest's field of sheaves.
+        // Id reserved by the game kit roster (row 28).
+        Trawl = 118,
+        // The Rhino's three missing games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 31-33, ids reserved there on
+        // 2026-11-15 so the parallel sessions building the roster never take one another's numbers).
+        // CHARGE (BULLRUSH.md): a joust on speed in Jackstraw's heap. A gore - ramming a rival while faster than it and
+        // above the gore speed, which Charge lowers from 150 to 50 u/s - is one point; first domain to the target wins.
+        Bullrush = 121,
+        // MASS (WINDROW.md): a timed war over standing trail in the bare Barren cell. The plough's throws break rival
+        // rows (a thrown prism that hits another destroys both); Heft steers them and Berm banks your own into armour.
+        Windrow = 122,
+        // SPACE (LANDSLIDE.md): a demolition race through Cleave's four arenas. Every prism scored is a plough strike,
+        // and the Blade's width (Space) is how many ribs a pass catches. First domain to the target wins.
+        Landslide = 123,
+
+        // The Urchin's CHARGE game (RAILRUSH.md): Hijack's Switchyard of open rails, scored on chain-spike hits on rival
+        // hulls. A spike flies at its muzzle speed PLUS the hull's, so a volley thrown off a friendly third at grind
+        // speed reaches about three times as far as one thrown at cruise: ride a rail, launch, and lance a rival. First
+        // domain to the hit target wins. 124 is the id GAME_KIT_ROSTER.md reserved for it (row 34).
+        Railrush = 124,
+        // The Meerkat's CHARGE game (SENTRY.md): Corona's shells round a crystal heart. Turn Sentinel Mode on and every
+        // soliton leaves a sentinel at its way in that zaps rival hulls in its guard; each ZAP (a Bullet-class combat hit)
+        // is one point, first domain to the target wins. Reserved for it by Docs/ElementalLoop/GAME_KIT_ROSTER.md row 15.
+        Sentry = 105,
+
+        // The Meerkat's MASS game (WARREN.md): a TIMED round in the bare Barren cell, scored on the volume standing in your
+        // colour at the whistle (VolumeRemaining). Every soliton rings its way out with an Exit Portal; a rival's soliton
+        // swallows your mass and fires it back into the rest of it. Roster row 16.
+        Warren = 106,
+
+        // The Meerkat's SPACE game (CAVEIN.md): Shatterplane's plates of neutral prisms, referenced read-only. Form a
+        // soliton beside a plate and it swallows the plate's prisms and fires them out of the way out; each fired prism
+        // that hits another breaks both. Hostile prisms broken score, first domain to the target wins. Roster row 17.
+        CaveIn = 107,
+
+        // The Jewel Wasp's CHARGE game (MARIONETTE.md): a duel among Kelpwood's kelp and herds. Sting a creature, ride it
+        // into a rival pilot: its attack is a Strike, one point, and with Charge 5 leaving it bursts it on every rival
+        // hull near it. First domain to the target wins. 126 is the id GAME_KIT_ROSTER.md reserved for it (rows 36-37).
+        Marionette = 126,
+
+        // The Jewel Wasp's SPACE game (GORGE.md): a timed feast on Chum's reef. Ride a creature to a shoal of neutral
+        // prisms and hold RT: its suction pulls them in (Space widens the reach; every shield is food to a possessed
+        // creature). Most prisms taken off the board when the clock runs out wins. 127, the roster's (rows 36-37).
+        Gorge = 127,
+
+        // The Grizzly's CHARGE game (STANDOFF.md): square posts of prism tiles stand on a sphere round an open centre.
+        // A trigger bomb that touches a rival hull freezes on it; pull and release again to blow it. Every rival a blast
+        // of yours catches is a point; Dig In behind a post to aim and recharge. First domain to the target wins.
+        // I1-I4 add posts, an inner ring of posts, shielded rims and danger corners. 125 is the id the game kit roster
+        // reserved for it (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 35), so parallel sessions never collide; 91-124
+        // and 126-127 are the roster's other games.
+        Standoff = 125,
+
+
+        // The Goby & Pistol's three element games (GAME_KIT_ROSTER.md rows 24-26; ids reserved there, 2026-11-15, so the
+        // parallel sessions building the other vessels' games never take them). Nothing about the pair changes: each
+        // game turns one of its abilities into the score.
+        // Snap (114): the CHARGE game (SNAP.md) - a hunt in Kelpwood's kelp ball. The Goby locks a rival, and a vortex
+        // ring the Pistol fires while that rival is on its screen homes on them; every ring hit (Vortex Sting, a
+        // MissileDirect-class combat hit) is one point. First domain to the target wins.
+        Snap = 114,
+        // Den Builder (115): the MASS game (DEN_BUILDER.md) - timed, in Glasshouse's grazed cell. Jump the trail to
+        // earn energy, rest at each perch to build a den from it; the mass standing in your colour at the whistle
+        // (VolumeRemaining: dens, perches and the islands' trail) wins.
+        DenBuilder = 115,
+        // Riptide (116): the SPACE game (RIPTIDE.md) - Shatterplane's neutral plates. The undertow pulls their tiles
+        // into the Pistol's plane and its vortex rings smash them; first domain to the hostile-prism target wins.
+        Riptide = 116,
+
+        // The Wrasse and Grouper's three reef games (WRASSEREEF.md), ids reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md
+        // (rows 21-23, 2026-11-15) so the parallel sessions building the missing games never take the same number.
+        // The CHARGE game: loop Charge motes to power the kite's ram, ram rival hulls; each ram is one point. A reef of
+        // mostly Charge crystals in the bare Barren cell; I1-I4 thin the crystals.
+        CleanerRam = 111,
+        // The MASS game: a timed reef war. Loop Mass motes and the kite lays a cluster of your prisms; most volume
+        // STANDING at the whistle wins (VolumeRemaining). Mostly Mass crystals in the bare Barren cell; I1-I4 thin them.
+        Reefbuild = 112,
+        // The SPACE game: loop Space motes and a blast destroys hostile prisms where the loop closed; first domain to the
+        // prism target wins. Rampage's living forest, read-only, with mostly Space crystals; I1-I4 are Rampage's rungs.
+        Blastline = 113,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 43) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
+        // 120) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
     }

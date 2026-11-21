@@ -15,4 +15,6 @@ MonoBehaviour:
   metric: 8
   golfRules: 1
   bulletPoints: 1
-  missilePoints: 50
+  missileShockwavePoints: 10
+  missileBlastPoints: 20
+  missileDirectPoints: 30

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
+using CosmicShore.Game;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -17,10 +18,15 @@ namespace CosmicShore.Gameplay
     /// <see cref="Cell.SatellitePrismStride"/>) drawn from the cell selector's rotation and
     /// tuned for the voyage:
     ///
-    ///   • <see cref="Cell.NucleusIsControlZone"/> = false - control is whole-cell VOLUME and
-    ///     the herbivore diet is the legacy opposing-domain rule, which is the toy's whole
-    ///     mechanic: out-lay a cell and its fauna waves spawn in your colour and cannot eat the
-    ///     Ark; lose the volume and the waves hunt it.
+    ///   • An ORDINARY CELL: it keeps its authored nucleus AND its control zone (the shipped
+    ///     default), and it is handed a CRYSTAL at its core. So control is the nucleus claim -
+    ///     lay environment mass through the core to take the cell and its fauna waves spawn in
+    ///     your colour - and the herbivore diet is the shipped SPATIAL rule: the nucleus is
+    ///     sanctuary and everything outside it is voraciously grazed by any domain. The Ark's
+    ///     hull is ordinary mass sailing that exterior, so it is FOOD the whole crossing and
+    ///     safe only under the core it is making for. Nothing here is bespoke: it is the
+    ///     nucleus-cell ecology as shipped, and both halves of the toy - who owns the cell, and
+    ///     what the swarm does to your ship - fall out of it.
     ///   • <see cref="Cell.SatelliteEcologyEnabled"/> = true - unlike a preview, a traversal
     ///     cell RUNS its life spawner (the food web is the point), scaled down by
     ///     <see cref="Cell.RuntimePopulationScale"/>.
@@ -58,12 +64,24 @@ namespace CosmicShore.Gameplay
 
         readonly List<TraversalCell> _cells = new();
         readonly List<CellConfigDataSO> _bag = new();      // shuffle-bag of traversal configs
+        readonly List<int> _route = new();                 // a voyage's ordered worlds (indices), or empty
+        readonly List<CellConfigDataSO> _worlds = new();   // the route's index space, unshuffled
+        int _routeNext;
         readonly Plane[] _frustumPlanes = new Plane[6];
         Camera _cam;
 
         Cell _template;            // the scene's own cell - prefab + runtime shape to clone
         Vector3 _heading = Vector3.forward;
         int _targetIndex;          // index into _cells of the cell the Ark is sailing toward
+
+        // Worlds struck but not yet fully drained. A strike hands back a NEW world-space root
+        // that is deliberately NOT parented to anything the conveyor owns (so the cell can be
+        // destroyed immediately while its mass drains a slice per frame) - which also means
+        // nothing else can collect it. If the drain is cancelled (the toybox root torn down
+        // mid-retire) the root would survive with its whole world in it, so it is tracked and
+        // swept on teardown. The general shape: an object deliberately orphaned for the
+        // duration of an async is an object whose async no longer owns its cleanup.
+        readonly List<GameObject> _retiringRoots = new();
 
         // Drains in flight - a COUNT, not a bool: a routine off-screen retire and a voyage-end
         // sweep can overlap, and a bool that either one clears reopens Update's one-at-a-time
@@ -97,10 +115,120 @@ namespace CosmicShore.Gameplay
 
         public bool HasCells => _cells.Count > 0;
 
+        /// <summary>Centre to centre between traversal cells: the authored spacing grown with the cells
+        /// (<see cref="ArkwayConfig.CellScale"/>) so bigger cells never overlap, or, with a
+        /// <see cref="ArkwayConfig.CellGap"/>, two grown membranes and that much open water between them.</summary>
+        float Spacing => _cfg.CellGap > 0f
+            ? CellSpacingFor(_membraneRadius, _cfg.CellScale, _cfg.CellGap)
+            : _cfg.CellSpacing * Mathf.Max(1f, _cfg.CellScale);
+
+        /// <summary>The largest authored membrane radius among the corridor's worlds (read in <see cref="Begin"/>).</summary>
+        float _membraneRadius = MembraneRadiusFloor;
+
+        /// <summary>The freestyle membrane's authored radius: the least a world's membrane is taken to be.</summary>
+        public const float MembraneRadiusFloor = 1200f;
+
+        /// <summary>Centre to centre for cells of authored membrane <paramref name="radius"/> grown
+        /// <paramref name="scale"/> times, with <paramref name="gap"/> of open water between neighbouring membranes.</summary>
+        public static float CellSpacingFor(float radius, float scale, float gap) =>
+            2f * Mathf.Max(MembraneRadiusFloor, radius) * Mathf.Max(1f, scale) + Mathf.Max(0f, gap);
+
+        /// <summary>A world's membrane radius as authored: a capsule membrane's radius, any other membrane's scale.
+        /// 0 with no membrane.</summary>
+        public static float AuthoredMembraneRadius(CellConfigDataSO config)
+        {
+            var prefab = config ? config.MembranePrefab : null;
+            if (!prefab) return 0f;
+            return prefab.TryGetComponent<CapsuleMembrane>(out var cm) ? cm.Radius : prefab.transform.localScale.x;
+        }
+
+        // The cell the Ark last left (its core reached, the corridor advanced): the departure anchor of the Ark's
+        // cell-aware speed profile. None before the first advance (the voyage opens in open water).
+        Cell _departedCell;
+        Vector3 _departedCentre;
+        bool _hasDeparture;
+
+        /// <summary>True once there is a cell behind the Ark (each world whose core it has reached).</summary>
+        public bool HasDeparture => _hasDeparture;
+
+        /// <summary>Centre of the cell the Ark is leaving.</summary>
+        public Vector3 DepartureCentre => _departedCentre;
+
+        /// <summary>Membrane radius of the cell the Ark is leaving, with the same fallback as <see cref="CurrentCellRadius"/>
+        /// (a struck or unbuilt membrane reads 0).</summary>
+        public float DepartureRadius
+        {
+            get
+            {
+                float r = _departedCell ? _departedCell.MembraneRadius : 0f;
+                return r > 1f ? r : _cfg?.LeashRadiusFallback ?? 1200f;
+            }
+        }
+
         /// <summary>
-        /// Stand the first two traversal cells (current + next) down the player's heading.
-        /// Call inside the run's arena-build bracket: the environment lays join the raised
-        /// veil's hold and the veil releases when everything is laid, created and grown.
+        /// Raised as a traversal cell is struck, BEFORE its drain runs. The run listens so the
+        /// player's own trail mass laid in (and on the way to) that cell goes with it — a struck
+        /// world takes its loose trail mass with it, exactly as
+        /// <see cref="Cell.RequestCellSwap"/>'s <c>clearLooseTrailMass</c> does for a world swap.
+        /// That is what makes the corridor explorable indefinitely rather than accumulating an
+        /// unbounded ribbon behind it.
+        /// </summary>
+        public event System.Action CellRetired;
+
+        /// <summary>
+        /// Called for each traversal cell just before it initializes (its spawners start inside that), with the cell and
+        /// its position on the route (-1 off a route): where a route tunes its own worlds, such as an Ark escort raising a
+        /// cell's population past the corridor's cap or starting it hostile. Unset, every cell is the corridor's own.
+        /// </summary>
+        public System.Action<Cell, int> PrepareCell;
+
+        /// <summary>True while the corridor sails an ordered ROUTE (a voyage leg) instead of the shuffle-bag.</summary>
+        public bool HasRoute => _route.Count > 0;
+
+        /// <summary>True once every world on the route has been stood: the Ark is at (or bound for) the last.</summary>
+        public bool RouteExhausted => _route.Count > 0 && _routeNext >= _route.Count;
+
+        /// <summary>
+        /// Sail <paramref name="worlds"/> in order (indices into <see cref="TraversalWorlds"/>, modulo its count) instead
+        /// of the shuffle-bag: the voyage's leg (Docs/Voyages/SLICE.md §1.5). Once the last is stood, no further cell
+        /// stands, so <see cref="AdvancePastTarget"/> returns false at the last world and the run holds there until a
+        /// new route is set. Null or empty goes back to the bag. Safe before <see cref="Begin"/> and mid-voyage.
+        /// </summary>
+        public void SetRoute(IReadOnlyList<int> worlds)
+        {
+            _route.Clear();
+            _routeNext = 0;
+            if (worlds != null) _route.AddRange(worlds);
+        }
+
+        /// <summary>
+        /// The worlds a corridor may stand, in their authored order: <paramref name="authored"/> when it names any, else
+        /// <paramref name="template"/>'s own configs, without the environment-free ones (open water, which the corridor
+        /// already has between cells) and without the crystal-wormhole world (its poles would pull the Ark). The
+        /// shuffle-bag and a route both draw from this; a route's indices count into it.
+        /// </summary>
+        public static void TraversalWorlds(IReadOnlyList<CellConfigDataSO> authored, Cell template,
+            List<CellConfigDataSO> into)
+        {
+            into.Clear();
+            IReadOnlyList<CellConfigDataSO> source = authored is { Count: > 0 }
+                ? authored
+                : template ? template.AvailableConfigs : null;
+            if (source == null) return;
+            foreach (var config in source)
+                if (config && config.EnvironmentPrefab && config.EnvironmentPrefab is not SpawnableCrystalWormhole
+                    && !into.Contains(config))
+                    into.Add(config);
+        }
+
+        /// <summary>
+        /// Stand the FIRST traversal cell down the player's heading. Call inside the run's
+        /// arena-build bracket: its environment lay joins the raised veil's hold and the veil
+        /// releases when it is laid, created and grown. Only ONE cell stands behind the veil —
+        /// the second is <see cref="StandAhead"/>, called once the screen is open, so it streams
+        /// in beside live play exactly as every later cell does. Two 10k-prism worlds behind
+        /// the veil was a 30–90 s blind opening (`Docs/ECOSYSTEM.md` §41.3.3.3); one is half that,
+        /// and a satellite build beside live play is what a satellite build is for.
         /// </summary>
         public bool Begin(ArkwayConfig cfg, Container container, Vector3 origin, Vector3 heading)
         {
@@ -124,9 +252,12 @@ namespace CosmicShore.Gameplay
 
             _template = Cell.FindCellContaining(origin);
             if (!_template) _template = Cell.FindNearestActiveCell(origin);
+            _worlds.Clear();
             if (!_template || !_template.RuntimeData)
             {
-                CSDebug.LogWarning("[Arkway] No scene cell to clone traversal cells from - no voyage.");
+                CSDebug.LogWarning($"[Arkway] No scene cell to clone traversal cells from " +
+                                   $"(template {(_template ? _template.name : "null")}, runtime " +
+                                   $"{(_template && _template.RuntimeData ? "ok" : "null")}) - no voyage.");
                 return false;
             }
 
@@ -135,12 +266,44 @@ namespace CosmicShore.Gameplay
             // membrane has spawned (the ModePreviewArena.FramingRadius bug class) - floor it
             // at the freestyle membrane's authored size so a mid-rebuild host can't fold the
             // corridor back onto itself.
-            float hostRadius = Mathf.Max(1200f, _template.MembraneRadius);
-            Vector3 first = origin + _heading * (hostRadius + _cfg.CellSpacing * 0.5f);
+            // The corridor's membranes, for the gap spacing: the largest any of its worlds authors.
+            _membraneRadius = MembraneRadiusFloor;
+            var worlds = new List<CellConfigDataSO>();
+            if (cfg is { RouteWorldsAsAuthored: true, Cells: { Count: > 0 } }) worlds.AddRange(cfg.Cells);
+            else TraversalWorlds(cfg.Cells, _template, worlds);
+            foreach (var world in worlds)
+                _membraneRadius = Mathf.Max(_membraneRadius, AuthoredMembraneRadius(world));
 
-            if (!StandCell(first)) return false;
-            StandCell(NextCentreFrom(first));
+            float hostRadius = Mathf.Max(1200f, _template.MembraneRadius);
+            Vector3 first = origin + _heading * (hostRadius + Spacing * 0.5f);
+            // No departure anchor at the start: the Ark sets sail from wherever the player stood in the host (often deep
+            // inside it), and crawling out through the host would be a long empty opening. It cruises to the first cell.
+            _departedCell = null;
+            _hasDeparture = false;
+
+            if (!StandCell(first))
+            {
+                CSDebug.LogWarning("[Arkway] The FIRST traversal cell could not be stood - no voyage.");
+                return false;
+            }
             return _cells.Count > 0;
+        }
+
+        /// <summary>
+        /// Stand one more cell beyond the last standing one — the voyage's second cell, stood
+        /// UNVEILED once the screen is open. Idempotent in effect: <see cref="AdvancePastTarget"/>
+        /// retries a missing next cell on its own, so a failure here only costs a warning.
+        /// </summary>
+        public bool StandAhead()
+        {
+            if (_cells.Count == 0) return false;
+            if (!StandCell(NextCentreFrom(_cells[^1].Centre)))
+            {
+                CSDebug.LogWarning("[Arkway] The second traversal cell could not be stood - the " +
+                                   "corridor will retry when the Ark reaches the first.");
+                return false;
+            }
+            return true;
         }
 
         /// <summary>
@@ -159,6 +322,9 @@ namespace CosmicShore.Gameplay
                     return false;
             }
 
+            _departedCell = _cells[_targetIndex].Cell;
+            _departedCentre = _cells[_targetIndex].Centre;
+            _hasDeparture = true;
             _targetIndex++;
 
             // Stand the new NEXT beyond the new current, so the corridor always reaches one
@@ -171,6 +337,32 @@ namespace CosmicShore.Gameplay
                 _cells[i].RetireQueued = true;
 
             return true;
+        }
+
+        /// <summary>Open water the Ark must put between itself and the membrane of the cell it departed before that cell
+        /// is queued for its (off-screen-gated) retirement.</summary>
+        public const float DepartedRetireMargin = 600f;
+
+        /// <summary>The margin this conveyor uses (<see cref="DepartedRetireMargin"/> unless its owner sets one: a voyage on a
+        /// phone retires the cell behind sooner, VoyageToyDefinitionSO.RetireMargin).</summary>
+        public float RetireMargin { get; set; } = DepartedRetireMargin;
+
+        /// <summary>
+        /// Queue the cell the Ark departed for its off-screen retirement once the Ark is
+        /// <see cref="DepartedRetireMargin"/> clear of its membrane, instead of only when the Ark reaches the NEXT core.
+        /// Voyage cells are big (2.5x) and the Ark crawls inside them, so waiting kept the cell behind standing, still
+        /// growing its whole ecology, for the length of a cell: three full worlds plus one draining, the frame-rate fall
+        /// after a few cells (Shombith, 2026-11-17). The retirement itself is unchanged (off-screen gate, frame-sliced
+        /// drain, nothing dies), so nothing is watched popping out.
+        /// </summary>
+        public void QueueDepartedOnceClear(Vector3 arkPosition)
+        {
+            if (!_hasDeparture || _targetIndex < 1 || _targetIndex - 1 >= _cells.Count) return;
+            var record = _cells[_targetIndex - 1];
+            if (record.RetireQueued || !record.Root) return;
+            float r = record.Cell && record.Cell.MembraneRadius > 1f ? record.Cell.MembraneRadius : MembraneRadiusFloor;
+            float clear = r + Mathf.Max(0f, RetireMargin);
+            if ((arkPosition - record.Centre).sqrMagnitude > clear * clear) record.RetireQueued = true;
         }
 
         void Update()
@@ -205,8 +397,11 @@ namespace CosmicShore.Gameplay
 
         bool StandCell(Vector3 centre)
         {
+            // A failed stand must not cost the route its world: NextConfig has consumed the index, and the retry
+            // (StandAhead / AdvancePastTarget) would otherwise stand the NEXT world and silently skip this one.
+            int routeBefore = _routeNext;
             var config = NextConfig();
-            if (!config || !_template || !_template.RuntimeData) return false;
+            if (!config || !_template || !_template.RuntimeData) { UnconsumeRoute(routeBefore, config); return false; }
 
             // The mode preview's satellite recipe, verbatim: instantiate under an INACTIVE root
             // so the cell's OnEnable cannot wipe the shared runtime asset's config before it has
@@ -220,6 +415,8 @@ namespace CosmicShore.Gameplay
             cellGo.name = $"ArkwayCell_{_cells.Count} ({config.CellName})";
             cellGo.transform.localPosition = Vector3.zero;
             cellGo.transform.localRotation = Quaternion.identity;
+
+            StripAccumulatedContent(cellGo.transform);
 
             // A runtime Instantiate gets no dependency injection, and the whole of
             // Controller/Environment relies on being present at load - inject or the cell's
@@ -235,6 +432,7 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogError("[Arkway] The cloned cell carries no Cell component - stand aborted.");
                 Destroy(root);
+                UnconsumeRoute(routeBefore, config);
                 return false;
             }
 
@@ -249,17 +447,30 @@ namespace CosmicShore.Gameplay
             cell.SatellitePrismStride = Mathf.Max(1, _cfg.PrismStride);
             cell.SatelliteEcologyEnabled = true;
             cell.RuntimePopulationScale = Mathf.Clamp(_cfg.PopulationScale, 0.1f, 1f);
-            // Whole-cell volume control + the legacy opposing-domain diet: the state the
-            // ecology already supports for a cell with no claim (Docs/ECOSYSTEM.md §25.1),
-            // and the spine of the Arkway's protect-the-Ark mechanic.
-            cell.NucleusIsControlZone = false;
+            cell.SatelliteSizeScale = Mathf.Max(1f, _cfg.CellScale);
+            cell.ScatterLifeSpawns = _cfg.ScatterLifeSpawns;
+            // NucleusIsControlZone is deliberately LEFT AT ITS DEFAULT (true). A traversal cell
+            // is an ordinary cell, not a mode's borrowed play geometry: its nucleus is a claim
+            // to contest, its interior is fauna sanctuary, and its exterior is the feeding
+            // ground the Ark has to cross. Collapsing the control zone (which this used to do)
+            // made the whole cell legacy opposing-domain territory, which is what left the Ark
+            // untouchable by any swarm wearing its own colour.
+
+            // A route's own tuning for this world (an Ark escort's per-cell threat), after the voyage's and before the
+            // spawner starts. -1 when the corridor sails the shuffle-bag.
+            PrepareCell?.Invoke(cell, _route.Count > 0 ? _routeNext - 1 : -1);
 
             if (!cell.InitializeSatellite(config))
             {
+                CSDebug.LogWarning($"[Arkway] Traversal cell '{config.CellName}' refused " +
+                                   "InitializeSatellite - stand aborted (the Cell warned above with the reason).");
                 Destroy(root);
                 Destroy(runtime);
+                UnconsumeRoute(routeBefore, config);
                 return false;
             }
+
+            SpawnCoreCrystal(runtime, root.transform);
 
             _cells.Add(new TraversalCell
             {
@@ -270,9 +481,131 @@ namespace CosmicShore.Gameplay
                 Centre = centre,
             });
 
-            CSDebug.Log($"[Arkway] Traversal cell stood: {config.CellName} at {centre} " +
-                        $"(stride {cell.SatellitePrismStride}, populations ×{cell.RuntimePopulationScale:0.##}).");
+            if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[Arkway] Traversal cell stood: {config.CellName} at {centre} " +
+                    $"(stride {cell.SatellitePrismStride}, populations x{cell.RuntimePopulationScale:0.##}).");
             return true;
+        }
+
+        /// <summary>
+        /// A traversal cell must START EMPTY.
+        ///
+        /// The corridor clones the LIVE SCENE CELL — there is no prefab to instantiate at
+        /// runtime, and the scene cell is the only thing that carries the right prefab, runtime
+        /// shape and component wiring — but a live cell ACCUMULATES: <see cref="Cell"/> parents
+        /// its authored environment to itself, every lifeform heart the food web drops is
+        /// re-homed onto it (<see cref="Crystal.ActivateCrystal"/>,
+        /// <see cref="Crystal.DetachHeartToCell"/>), and anything a mode or toy parents there
+        /// stays. Cloning it verbatim copies all of that into EVERY traversal cell, three
+        /// standing at a time, for the whole voyage — so a session that has been running a while
+        /// makes each new cell more expensive than the last, which is exactly the shape of "the
+        /// world got sparser and the frame rate got worse".
+        ///
+        /// So the clone is stripped of world CONTENT and keeps only the cell's own structure.
+        /// The doomed branches are re-parented into an INACTIVE scrap root first and destroyed
+        /// with it: <c>Destroy</c> alone defers to end of frame, and <c>root.SetActive(true)</c>
+        /// runs a few lines later would wake every one of them (a cloned Prism registering with
+        /// the spatial index, a cloned Crystal joining <c>Crystal.Active</c>) before the deferred
+        /// destroy took them away again.
+        ///
+        /// Deliberately a DENYLIST of content types rather than an allowlist of components: the
+        /// cell's own structure is whatever the prefab author put there and must survive
+        /// untouched, while the things that accumulate are a short, knowable list.
+        /// </summary>
+        static void StripAccumulatedContent(Transform cellRoot)
+        {
+            GameObject scrap = null;
+            int stripped = 0;
+
+            // Depth-first over the clone; a branch that is stripped is not descended into.
+            var stack = new Stack<Transform>();
+            for (int i = cellRoot.childCount - 1; i >= 0; i--) stack.Push(cellRoot.GetChild(i));
+
+            while (stack.Count > 0)
+            {
+                var t = stack.Pop();
+                if (!t) continue;
+
+                if (t.GetComponent<Prism>() || t.GetComponent<Crystal>() ||
+                    t.GetComponent<LifeForm>() || t.GetComponent<Toy>() ||
+                    t.GetComponent<Unity.Netcode.NetworkObject>())
+                {
+                    if (!scrap)
+                    {
+                        scrap = new GameObject("ArkwayCell_StrippedContent");
+                        scrap.SetActive(false);
+                    }
+                    t.SetParent(scrap.transform, false);
+                    stripped++;
+                    continue;
+                }
+
+                for (int i = t.childCount - 1; i >= 0; i--) stack.Push(t.GetChild(i));
+            }
+
+            if (!scrap) return;
+            Destroy(scrap);
+            CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                $"[Arkway] Traversal cell clone stripped of {stripped} accumulated object(s).");
+        }
+
+        /// <summary>
+        /// Give a traversal cell the CRYSTAL every cell has: one omni crystal at the core,
+        /// inside the nucleus - the canonical omni volume (Docs/ECOSYSTEM.md §27: the nucleus
+        /// IS the crystal volume, and a crystal that respawns elsewhere makes the nucleus
+        /// marker a lie). A satellite gets none by itself, because a scene cell's crystals come
+        /// from a <see cref="CrystalManager"/> and a satellite has no manager feeding it, so
+        /// this is the one thing the corridor has to hand its cells.
+        ///
+        /// It is a real crystal, not a marker: registered in the satellite's OWN runtime
+        /// (never the scene asset's list), collectable by anyone, and it blooms in through the
+        /// crystal's own fade rather than popping. It is also what makes the cell's core worth
+        /// flying to, which is the same place the Ark is heading and the one place the food web
+        /// cannot follow it.
+        ///
+        /// One always-on trigger collider per standing cell - three in steady state.
+        ///
+        /// The prefab's own serialized <c>cellData</c> still points at the shared asset, so its
+        /// self-removal on destroy may miss this list; <see cref="CellRuntimeDataSO.PruneDestroyed"/>
+        /// makes that self-healing. Same accepted trade the mode preview's crystals make.
+        /// </summary>
+        void SpawnCoreCrystal(CellRuntimeDataSO runtime, Transform parent)
+        {
+            var prefab = _cfg?.CrystalPrefab;
+            if (!prefab)
+            {
+                var library = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+                prefab = library ? library.OmniCrystalPrefab : null;
+            }
+            if (!prefab)
+            {
+                CSDebug.LogWarning("[Arkway] No crystal prefab (definition, and no omni crystal on " +
+                                   "Resources/ModePreviewLibrary) - the traversal cell's core is bare.");
+                return;
+            }
+
+            var crystal = Instantiate(prefab, parent);
+            crystal.transform.localPosition = Vector3.zero;   // the cell's core
+            crystal.gameObject.SetActive(true);
+            crystal.enabled = true;
+            crystal.DeactivateModels();                        // the crystal's own fade-in bloom
+            if (!runtime) return;
+            // AddCrystalToList raises the shared OnCellItemsUpdated event: every AI pilot's handler runs inside this
+            // call. A listener's exception must not abort the STAND (it did: a pilot reading a destroyed crystal from
+            // another runtime's list threw here, and the escort skipped the world).
+            try { runtime.AddCrystalToList(crystal); }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[Arkway] A cell-items listener threw while the core crystal was registered " +
+                                   $"({e.GetType().Name}: {e.Message}) - the cell stands regardless.");
+            }
+        }
+
+        /// <summary>Give a failed stand's world back to the route (the retry stands the same world, not the next).</summary>
+        void UnconsumeRoute(int routeBefore, CellConfigDataSO consumed)
+        {
+            if (_route.Count > 0 && consumed && _routeNext > routeBefore) _routeNext = routeBefore;
         }
 
         /// <summary>
@@ -292,28 +625,40 @@ namespace CosmicShore.Gameplay
                 Vector3 axis = Quaternion.AngleAxis(roll, _heading) * side;
                 _heading = (Quaternion.AngleAxis(angle, axis) * _heading).normalized;
             }
-            return from + _heading * Mathf.Max(2000f, _cfg.CellSpacing);
+            return from + _heading * Mathf.Max(2000f, Spacing);
         }
 
         /// <summary>
         /// The traversal rotation: the definition's authored list when present, else the host
         /// cell's own configs (the cell selector's list) minus its environment-free entries - a
-        /// cell that builds nothing is open water, which the corridor already has between cells.
+        /// cell that builds nothing is open water, which the corridor already has between cells -
+        /// and minus its crystal-wormhole world (<see cref="SpawnableCrystalWormhole"/>).
         /// Shuffle-bag so every world appears before any repeats.
         /// </summary>
         CellConfigDataSO NextConfig()
         {
+            if (_route.Count > 0)
+            {
+                // A voyage leg: the next world in order, and nothing once the route is spent.
+                if (_routeNext >= _route.Count) return null;
+                if (_worlds.Count == 0)
+                {
+                    // An Ark escort names its worlds exactly, environment or not (a bare world's flora and fauna are
+                    // the whole of it); every other route keeps the traversal filter.
+                    if (_cfg is { RouteWorldsAsAuthored: true, Cells: { Count: > 0 } }) _worlds.AddRange(_cfg.Cells);
+                    else TraversalWorlds(_cfg?.Cells, _template, _worlds);
+                }
+                if (_worlds.Count == 0) return null;
+                int index = _route[_routeNext++] % _worlds.Count;
+                return _worlds[index < 0 ? index + _worlds.Count : index];
+            }
+
             if (_bag.Count == 0)
             {
-                var authored = _cfg?.Cells;
-                IReadOnlyList<CellConfigDataSO> source = authored is { Count: > 0 }
-                    ? authored
-                    : _template ? _template.AvailableConfigs : null;
-                if (source == null) return null;
-
-                foreach (var config in source)
-                    if (config && config.EnvironmentPrefab && !_bag.Contains(config))
-                        _bag.Add(config);
+                // A crystal-wormhole world is skipped too: it lays nothing either, and its poles are
+                // live wells that would pull and push the Ark and every vessel in the corridor
+                // (Docs/CRYSTAL_WORMHOLE.md). An authored Cells list can still name it on purpose.
+                TraversalWorlds(_cfg?.Cells, _template, _bag);
 
                 // Fisher-Yates on the seeded stream, so a seeded voyage is reproducible.
                 for (int i = _bag.Count - 1; i > 0; i--)
@@ -382,11 +727,34 @@ namespace CosmicShore.Gameplay
             // BELOW the target shifts every later index down by one.
             int index = _cells.IndexOf(record);
             _cells.Remove(record);
+            CellRetired?.Invoke();
             if (index >= 0 && index < _targetIndex)
                 _targetIndex = Mathf.Max(0, _targetIndex - 1);
 
             GameObject retiring = null;
             if (record.Cell) retiring = record.Cell.StrikeSatelliteWorld();
+            if (retiring)
+            {
+                _retiringRoots.Add(retiring);
+
+                // Quiesce the struck world before the drain, which runs over MANY frames.
+                // Cell.StrikeSatelliteWorld re-parents the cell's lifeforms onto this root -
+                // which is NOT under record.Root - so they outlive the Destroy calls below by
+                // the whole length of the drain, and go on running their behaviour coroutines
+                // against a destroyed Cell, a destroyed CellRuntimeDataSO and a spatial index
+                // whose bindings for this cell have already been cleared. Deactivating the
+                // root stops every Update and coroutine under it in one call, so the drain
+                // costs only its own Destroys. The cell is off-screen by the retirement gate,
+                // so nothing is watched popping out and the continuity law is untouched;
+                // Destroy still reaches an inactive object, and GetComponentsInChildren below
+                // already passes includeInactive.
+                // The world goes as a whole, so nothing in it DIES: without this each plant
+                // ran its full death path (sound, crystal, DamageAll over its tracker) when the
+                // root was destroyed at the end of the drain.
+                foreach (var lifeForm in retiring.GetComponentsInChildren<LifeForm>(true))
+                    if (lifeForm) lifeForm.RetireWithWorld();
+                retiring.SetActive(false);
+            }
 
             if (record.Root) Destroy(record.Root);
             if (record.Runtime) Destroy(record.Runtime);
@@ -397,12 +765,80 @@ namespace CosmicShore.Gameplay
                 var prisms = retiring.GetComponentsInChildren<Prism>(true);
                 for (int i = 0; i < prisms.Length; i++)
                 {
-                    if (prisms[i]) Destroy(prisms[i].gameObject);
+                    var prism = prisms[i];
+                    if (!prism) continue;
+
+                    // A struck world holds mass from TWO pools, and only one of them was
+                    // handled. Cell.StrikeSatelliteWorld returns the vessel-trail prisms
+                    // (the ones carrying a pool-return delegate) before handing this root
+                    // over - but the AUTHORED ENVIRONMENT and every flora HealthPrism come
+                    // from EnvironmentPrismPool, whose membership is an issued dictionary
+                    // rather than a delegate, so they arrive here still issued. Destroying
+                    // them leaks the issue record and forces the next cell to mint its whole
+                    // environment from scratch: ~10k Instantiate + ~10k Destroy per corridor
+                    // advance, which is most of what the corridor costs. Cell's own swap
+                    // drain (ReleaseRetiredWorld) has always released them; this path was
+                    // written from the mode preview's teardown, which has no environment
+                    // pool to return to, and inherited the omission.
+                    if (!EnvironmentPrismPool.TryRelease(prism))
+                        Destroy(prism.gameObject);
+
                     if ((i + 1) % PrismsPerFrame == 0)
                         await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
+                _retiringRoots.Remove(retiring);
                 Destroy(retiring);
             }
+        }
+
+        /// <summary>
+        /// One line naming everything the corridor is holding. Off by default (channel
+        /// <see cref="CSLogChannel.ToyBox"/>) and raised once per advance, so it costs
+        /// nothing in a normal session and answers "what is growing?" in the one that is
+        /// getting slower — which is a question no amount of reading the code settles.
+        /// </summary>
+        readonly List<Prism> _censusScratch = new();
+
+        /// <summary>
+        /// How many prisms under the standing cells are laid and initialized but have not yet
+        /// COMPLETED creation - i.e. are waiting, invisible, for Prism's per-frame creation
+        /// budget. A spindle needs no such budget, so a cell whose prisms are all pending reads
+        /// as "spindles and crystals but no prisms". This is the one number that separates a
+        /// world that never grew from one that grew and is still waiting to be SHOWN.
+        /// </summary>
+        public int CountPendingCreation(out int total)
+        {
+            int pending = 0;
+            total = 0;
+            for (int i = 0; i < _cells.Count; i++)
+            {
+                var root = _cells[i].Root;
+                if (!root) continue;
+                root.GetComponentsInChildren(false, _censusScratch);
+                for (int j = 0; j < _censusScratch.Count; j++)
+                {
+                    var prism = _censusScratch[j];
+                    if (!prism || prism.destroyed) continue;
+                    total++;
+                    if (!prism.IsCreationComplete) pending++;
+                }
+            }
+            _censusScratch.Clear();
+            return pending;
+        }
+
+        public string Census()
+        {
+            int prisms = 0;
+            for (int i = 0; i < _cells.Count; i++)
+            {
+                var cell = _cells[i].Cell;
+                if (cell) prisms += cell.LiveBlockCount;
+            }
+            return $"cells {_cells.Count} (target {_targetIndex}), tracked prisms {prisms}, " +
+                   $"draining {_drains}, retiring roots {_retiringRoots.Count}, bag {_bag.Count}, " +
+                   $"env pool {EnvironmentPrismPool.IssuedCount} issued / " +
+                   $"{EnvironmentPrismPool.ParkedCount} parked";
         }
 
         /// <summary>
@@ -430,16 +866,40 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
-            // Scene teardown: the drain coroutine dies with us - strike synchronously, pool-safe,
-            // and let the scene unload take the instantiated remainder in one sweep (the unload
-            // pays that cost anyway).
+            // The toybox root torn down while the scene lives: the drain coroutine dies with us, so
+            // strike synchronously, pool-safe.
+            // The scene itself closing is different: a strike gathers the world under a NEW
+            // GameObject, and one made while a scene closes is left behind ("Some objects were not
+            // cleaned up when closing the scene", Cell0_RetiringWorld, six machines) and re-parents
+            // creatures whose NetworkManager is already gone. The unload destroys every cell and
+            // its world in the same sweep, and Cell.OnDestroy retires the cell's own books, so
+            // there is nothing for a strike to do.
+            bool sceneClosing = !gameObject.scene.isLoaded;
             for (int i = 0; i < _cells.Count; i++)
             {
                 var record = _cells[i];
-                if (record.Cell) record.Cell.StrikeSatelliteWorld();
+                if (record.Cell && !sceneClosing) record.Cell.StrikeSatelliteWorld();
                 if (record.Runtime) Destroy(record.Runtime);
             }
             _cells.Clear();
+
+            // Anything a cancelled drain orphaned. Not a scene-unload concern (that sweeps
+            // everything anyway) - it is the toybox root being torn down while the scene lives.
+            for (int i = 0; i < _retiringRoots.Count; i++)
+            {
+                var root = _retiringRoots[i];
+                if (!root) continue;
+
+                // Same two-pool rule as the drain: the environment pool's host is
+                // DontDestroyOnLoad, so returning this mass keeps the pool whole for the
+                // next voyage instead of leaving issue records pointing at dead objects.
+                var orphaned = root.GetComponentsInChildren<Prism>(true);
+                for (int p = 0; p < orphaned.Length; p++)
+                    if (orphaned[p]) EnvironmentPrismPool.TryRelease(orphaned[p]);
+
+                Destroy(root);
+            }
+            _retiringRoots.Clear();
         }
     }
 }

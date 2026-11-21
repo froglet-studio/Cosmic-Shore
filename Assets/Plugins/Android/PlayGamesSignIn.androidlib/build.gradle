@@ -1,0 +1,21 @@
+// Google Play Games sign-in for UGS (fair play, Threat Board T1). Unity adds this folder to the Android build as a
+// library module. The one dependency: Google's Play Games Services v2 library. Docs: Tools/UGS/README.md.
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'com.froglet.cosmicshore.playgames'
+    compileSdk 36
+
+    defaultConfig {
+        minSdk 28
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'com.google.android.gms:play-services-games-v2:22.1.0'
+}

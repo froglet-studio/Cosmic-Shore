@@ -25,6 +25,9 @@ namespace CosmicShore.Gameplay
     ///    worm population (see <see cref="TickSeparation"/>). Both halves regrow their
     ///    missing ends by DIFFERENTIATING the wound segment (a state change of
     ///    existing mass), so mid-body kills multiply the problem.
+    ///  • A fed colony at full length REPRODUCES by fission: it splits itself at the
+    ///    middle through the same severance (see <see cref="TryFission"/>), gated by the
+    ///    cell's species cap — so the colony completes its lifecycle without a player.
     ///  • Optimal play emerges: chain end-kills faster than the cell's fauna production
     ///    cycle and you always face soft tissue; slower and every kill is armored.
     ///    Starve it (deny mass) and it digests itself tail-first.
@@ -40,13 +43,24 @@ namespace CosmicShore.Gameplay
     /// a kaiju), and <see cref="Predated"/> is sealed off — the segments are the
     /// killable surface.
     /// </summary>
-    public class WormFauna : Fauna
+    public class WormFauna : Fauna, ISpeciesDataOverride
     {
         const string PLAYER_NAME = "WormColony";
         const string MouthName = "Mouth";
 
         [Header("Worm Colony")]
         [SerializeField] WormColonyConfigSO config;
+
+        /// <summary>
+        /// A per-world colony config (FaunaConfigurationSO.SpeciesDataOverride) replaces the prefab's
+        /// before the chain is built, so one world's kaiju can hunt from further and more often
+        /// (The Maw) without the shared WormColonyConfig changing under every other biome. The
+        /// swap is on this instance's field only (a split-born half clones the root and inherits it).
+        /// </summary>
+        public void BindSpeciesData(FaunaConfigurationSO cfg)
+        {
+            if (cfg && cfg.SpeciesDataOverride is WormColonyConfigSO worldConfig) config = worldConfig;
+        }
         [Tooltip("The three colony member types. Head and Tail author danger prisms + " +
                  "an elemental heart; Body is the splittable connective tissue.")]
         [SerializeField] WormSegmentFauna headPrefab;
@@ -68,6 +82,15 @@ namespace CosmicShore.Gameplay
         // before its first production.
         float _lastProductionTime;
         float _lastStarvationShed;
+
+        // Fission (natural reproduction, §23.10). Per colony, like Fauna's per-individual
+        // birth stamp; a split-born colony is a fresh individual and starts unstamped.
+        float _lastFissionTime = float.NegativeInfinity;
+
+        // Each fission half keeps one of the parent's capital ends plus at least one body
+        // member, so after its one regrowth cycle it is at least the 3-member colony
+        // BuildChain spawns. Binds only for a config whose MaxSegmentsPerWorm is under 4.
+        const int FissionMinSegmentsPerHalf = 2;
 
         // --- Attack state machine (souls-like grammar) ---
         //  Cruise → (pilot sensed in a hunt window) Pursue → (inside StrikeRange)
@@ -93,6 +116,43 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Live head speed — jousting a segment heart means outracing the kaiju.</summary>
         public override float CurrentSpeed => _currentSpeed;
+
+        // --- Possession (Fauna.Possession): a rider steers the HEAD, whichever segment it stung ----------------------
+
+        /// <summary>The rider nests beside the head's heart.</summary>
+        public override Transform PossessionNest => segments.Count > 0 && segments[0] ? segments[0].PossessionNest : transform;
+        public override Vector3 PossessionForward => segments.Count > 0 && segments[0] ? segments[0].transform.forward : transform.forward;
+        public override Transform PossessionMouth => _mouth ? _mouth : transform;
+        public override float PossessionMouthReach => config
+            ? Mathf.Max(config.MouthRadius, config.FaunaBiteRange, 6f) : base.PossessionMouthReach;
+        public override float PossessionTopSpeed => config ? config.CruiseSpeed * Mathf.Max(1f, config.PursuitSpeedMultiplier) : base.PossessionTopSpeed;
+        public override float PossessionBodyRadius => segments.Count > 0 && segments[0]
+            ? Mathf.Max(2f, segments[0].PossessionBodyRadius * 1.5f) : base.PossessionBodyRadius;
+
+        /// <summary>The worm's attack is its own lunge (the kaiju's strike), aimed where the rider says.</summary>
+        public override void PlayPossessionAttack(Vector3 at, float seconds)
+        {
+            if (segments.Count == 0 || !config) return;
+            _threat = null;
+            _lungePoint = at;
+            SetState(AttackState.Lunge);
+        }
+
+        /// <summary>A colony is its segments: a steal (the Jewel Wasp riding it, the Jacks' net) takes every one of them,
+        /// and a segment it adopts later takes the colony's domain then (<c>AdoptChain</c>).</summary>
+        public override bool CanBeStolen => true;
+
+        protected override void OnTeamChanged()
+        {
+            for (int i = 0; i < segments.Count; i++)
+                if (segments[i]) segments[i].SetTeam(domain);
+        }
+
+        protected override void OnPossessionChanged(bool possessed)
+        {
+            _threat = null;
+            if (_state != AttackState.Lunge) SetState(AttackState.Cruise);
+        }
 
         /// <summary>Current chain length (the boss's visible health-and-history bar).</summary>
         public int SegmentCount => segments.Count;
@@ -179,7 +239,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Element-as-data for a POPULATION: the colony root stays heartless (it is the
         /// anchor; the crystal invariant lands on its members — Docs/ECOSYSTEM.md §23.3),
-        /// so a per-element species config (the Lifeform Matrix toy, an element-authored
+        /// so a per-element species config (the Spawn Matrix toy, an element-authored
         /// SpawnProfile entry) forwards its pick to EVERY segment's heart instead of
         /// provisioning a crystal on this empty anchor. Remembered so every member grown on
         /// a later production cycle carries the same element — a colony breeds true.
@@ -190,11 +250,19 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < segments.Count; i++)
             {
                 var seg = segments[i];
-                // The colony's authored heart SIZE rides along with its element: a segment is
-                // a MEMBER of the population and carries the species' own heart, and it never
-                // gets an AssignLineage of its own to read one from (Docs/ECOSYSTEM.md §40.2).
-                if (seg) seg.ReprovisionHeart(element, HeartWorldScale);
+                // A segment is a MEMBER of the population and carries the colony's element, and
+                // it never gets an AssignLineage of its own to read one from.
+                if (seg) seg.ReprovisionHeart(element);
             }
+        }
+
+        protected override float AuthoredArmourBite(bool superShielded) =>
+            config ? (superShielded ? config.SuperShieldBite : config.ShieldBite) : 0f;
+
+        protected override void ApplyRuntimeTuning(FaunaRuntimeTuning tuning, string species)
+        {
+            base.ApplyRuntimeTuning(tuning, species);
+            config = tuning.ResolveWormConfig(config, species);   // the run's copy, never the asset
         }
 
         public override void Initialize(Cell cell)
@@ -282,7 +350,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < count; i++)
             {
                 var prefab = i == 0 ? headPrefab : i == count - 1 ? tailPrefab : bodyPrefab;
-                AddSegmentToChain(Instantiate(prefab, pos, facing), segments.Count,
+                AddSegmentToChain(prefab, pos, facing, segments.Count,
                     Vector3.one * SegmentTargetScale(i));
                 if (i + 1 < count)
                     pos -= dir * LinkSpacing(i + 1, RoleForBuildIndex(i, count),
@@ -307,21 +375,40 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void AddSegmentToChain(WormSegmentFauna seg, int index, Vector3 scale)
+        /// <summary>
+        /// Creates a segment and links it in. This method OWNS the Instantiate - all four
+        /// producers (the initial chain, and the head / tail / body regrowths) route through
+        /// it - because the replication seam below has to run after the heart reprovision,
+        /// and a producer that instantiates for itself is a producer that can skip it. Same
+        /// rule as CellLifeSpawnerBase.SpawnFaunaWithDomain, one level down: enforce at the
+        /// one call they all reach.
+        /// </summary>
+        WormSegmentFauna AddSegmentToChain(WormSegmentFauna prefab, Vector3 pos, Quaternion rot,
+                                           int index, Vector3 scale)
         {
+            var seg = Instantiate(prefab, pos, rot);
             seg.transform.localScale = scale;
             seg.domain = domain;
             seg.Colony = this;
             seg.Initialize(cell);
             // A colony breeds true: a member grown after the species config picked an
-            // element carries that element's heart - its MODEL and its SIZE - not the body
-            // prefab's authored one. No-ops when they already agree (EnsureElementalCrystal
-            // keeps a match), and the size is re-applied either way so a segment grown at
-            // any point in the colony's life matches the ones it grew beside.
+            // element carries that element's heart model, not the body prefab's authored one.
+            // No-ops when they already agree (EnsureElementalCrystal keeps a match), and the
+            // one heart size is re-applied either way.
             if (_pickedHeartElement != Element.None)
-                seg.ReprovisionHeart(_pickedHeartElement, HeartWorldScale);
+                seg.ReprovisionHeart(_pickedHeartElement);
             if (cell) cell.RegisterSpawnedObject(seg.gameObject);
+            // The replication seam, at the one funnel every one of this colony's four segment
+            // producers reaches (grow-head / grow-tail / grow-body / initial chain). AFTER the
+            // heart reprovision above, which is this member's identity. A segment carries no
+            // config of its own - the COLONY holds it - so this resolves to NeutralizeStray,
+            // which is the correct reading of a locally-simulated colony. No worm prefab
+            // carries a NetworkObject today, so it is a no-op; it is here so that adding one
+            // cannot silently leak four producers' worth of strays
+            // (Docs/PartySystem/BUGS.md B16, B5).
+            FaunaNetworkSync.ServerSpawn(seg);
             segments.Insert(index, seg);
+            return seg;
         }
 
         // -------------------------------------------------------------------
@@ -329,8 +416,10 @@ namespace CosmicShore.Gameplay
         //  a head-driven slither wave; the body propagates it naturally).
         // -------------------------------------------------------------------
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Fauna.Worm.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             // Defensive sweep: segments can be destroyed outside the death path
             // (scene teardown, turn-end cleanup) — a null in the chain is fatal to
             // the follow pass, and an emptied colony must die, not idle.
@@ -376,9 +465,13 @@ namespace CosmicShore.Gameplay
 
         void SetState(AttackState state)
         {
+            if (state == AttackState.Lunge && _state != AttackState.Lunge) Lunges++;
             _state = state;
             _stateSince = Time.time;
         }
+
+        /// <summary>Sim telemetry: lunges at vessels this session, every colony (read by the Ark escort's metrics).</summary>
+        public static int Lunges;
 
         void UpdateAttackState()
         {
@@ -485,6 +578,16 @@ namespace CosmicShore.Gameplay
                     break;
 
                 default:
+                    if (IsPossessed && Leash.TrySteer(this, out var riderGoal, out float riderSpeed, out _))
+                    {
+                        // POSSESSED (Fauna.Possession): the rider's sticks steer the head and the body follows it
+                        desiredDirection = (riderGoal - leader.position).normalized;
+                        if (desiredDirection.sqrMagnitude <= DegenerateSteeringSqr) desiredDirection = leader.forward;
+                        targetSpeed = riderSpeed;
+                        turnRate *= config.PursuitTurnMultiplier * 2f;
+                        swayMultiplier = 0.6f;
+                        break;
+                    }
                     desiredDirection = (Goal - leader.position).normalized;
                     targetSpeed = config.CruiseSpeed * speedMult;
                     separates = true;
@@ -529,6 +632,10 @@ namespace CosmicShore.Gameplay
                 Vector3 target = Vector3.one * SegmentTargetScale(i);
                 if ((seg.localScale - target).sqrMagnitude <= 1e-4f) continue;
                 seg.localScale = Vector3.Lerp(seg.localScale, target, glideT);
+                // The heart is sized in WORLD units against its segment's scale, so a segment
+                // that is still blooming (it starts at zero) or re-tapering carries its heart
+                // with it unless the one size is re-applied as the scale moves.
+                segments[i].KeepHeartSize();
             }
         }
 
@@ -572,7 +679,7 @@ namespace CosmicShore.Gameplay
         {
             while (true)
             {
-                yield return new WaitForSeconds(
+                yield return CosmicShore.Utility.WaitCache.Seconds(
                     Mathf.Max(0.1f, config ? config.BehaviorTickSeconds : 1.5f)
                     * AggressionMultiplier(config ? config.CadenceByAggression : null));
 
@@ -656,6 +763,11 @@ namespace CosmicShore.Gameplay
             }
             if (_state == AttackState.Lunge || _state == AttackState.Recover)
                 return; // committed — the locked strike plays out
+            if (IsPossessed)
+            {
+                _threat = null;   // a possessed worm strikes only at its rider's word (PlayPossessionAttack)
+                return;
+            }
 
             Vector3 headPos = segments[0].transform.position;
             _threat = FindNearestVessel(headPos, config.AggroRadius);
@@ -705,9 +817,10 @@ namespace CosmicShore.Gameplay
             {
                 var prism = PrismScratch[i];
                 if (!IsEdiblePrism(prism)) continue;
-                prism.Consume(head, domain, PLAYER_NAME, true, true);
-                NotifyFed();
-                bites++;
+                float meal = Mathf.Max(0f, prism.Volume);   // read before the consume (round 11f: the stomach is conserved)
+                var result = BiteMass(prism, head, domain, PLAYER_NAME, true);
+                if (result == BiteResult.Ate) NotifyFed(meal);
+                if (result != BiteResult.None) bites++;
             }
         }
 
@@ -741,9 +854,25 @@ namespace CosmicShore.Gameplay
                 // Predated respects the prey's immunity and returns false if it
                 // couldn't be eaten — only feed on a real kill.
                 if (f.Predated(PLAYER_NAME, _mouth))
-                    NotifyFed();
+                    NotifyFed(f.SurrenderedMeal);
+            }
+
+            // Swarm members in reach of the jaws (most are DATA the registry cannot see, Docs/SWARM_FAUNA.md
+            // §16.3, §19) - handed back as real creatures and eaten the same way.
+            if (VirtualFauna.Any)
+            {
+                s_swarmPrey.Clear();
+                VirtualFauna.PreyInReach(mouthPos, config.FaunaBiteRange, this, false, s_swarmPrey);
+                for (int i = 0; i < s_swarmPrey.Count; i++)
+                {
+                    var f = s_swarmPrey[i];
+                    if (f && f.Predated(PLAYER_NAME, _mouth))
+                        NotifyFed(f.SurrenderedMeal);
+                }
             }
         }
+
+        static readonly List<Fauna> s_swarmPrey = new(16);
 
         /// <summary>
         /// Canonical herbivore edibility (the same rule LightFauna grazes by): the
@@ -756,7 +885,7 @@ namespace CosmicShore.Gameplay
         bool IsEdiblePrism(Prism prism)
         {
             if (!prism || prism.destroyed) return false;
-            if (IsShieldedMass(prism)) return false;
+            if (IsInedibleShield(prism)) return false;
             if (prism is HealthPrism hp)
             {
                 if (!hp.LifeForm) return false;
@@ -778,7 +907,9 @@ namespace CosmicShore.Gameplay
         ///   1. a HEAD, if it has none — a decapitated colony cannot feed, so a mouth comes
         ///      before length, and this is the only way a beheaded worm ever recovers;
         ///   2. a TAIL, if it has none — the stinger that makes its rear dangerous again;
-        ///   3. otherwise a BODY segment behind the head — the colony simply gets longer.
+        ///   3. otherwise a BODY segment behind the head — the colony simply gets longer;
+        ///   4. at full length (<see cref="WormColonyConfigSO.MaxSegmentsPerWorm"/>) a fed
+        ///      colony instead REPRODUCES by fission (<see cref="TryFission"/>).
         ///
         /// Same shape as the lattice flora colonies, which birth one plant per fauna-wave
         /// period (Docs/ECOSYSTEM.md §32.7): the cell's fauna cadence is the platform's
@@ -809,7 +940,16 @@ namespace CosmicShore.Gameplay
             // shot-off head on the next behavior tick (~1.5 s) instead of the next wave.
             _lastProductionTime = Time.time;
 
-            if (segments.Count >= config.MaxSegmentsPerWorm) return;
+            // A diagnostic production hold skips the cycle it lands on - AFTER the stamp above,
+            // so a held colony banks nothing and grows at its ordinary rate once released.
+            if (Cell.DiagnosticProductionHold) return;
+
+            if (segments.Count >= config.MaxSegmentsPerWorm)
+            {
+                // Full length: a fed colony's next member is a whole new COLONY (fission).
+                if (!IsStarving) TryFission();
+                return;
+            }
 
             if (segments[0].Role != WormSegmentRole.Head)
                 GrowHead();
@@ -835,6 +975,42 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The colony's natural REPRODUCTION (Docs/ECOSYSTEM.md §23.10): a fed, complete colony
+        /// at full length splits at the middle of its chain into two colonies, through exactly
+        /// the severance a player's mid-body cut runs (<see cref="SpawnSplitColony"/>) minus the
+        /// dead member — so continuity, heredity, hearts (every member keeps its own), wither and
+        /// regrowth are the cut's, and segment totals are conserved. The front half keeps the head
+        /// and regrows a tail, the rear half keeps the tail and regrows a head, each on its own
+        /// next production cycle.
+        ///
+        /// Gated like <c>Fauna.TryReproduce</c> (which stays inert for the worm — its configs
+        /// author <c>FeedsPerOffspring 0</c>): sim authority only, a lineage config is required,
+        /// the cell's species cap (<see cref="Cell.IsFaunaAtCap"/>) and the species'
+        /// <c>ReproductionCooldownSeconds</c> both hold. The caller has already stamped the
+        /// production clock, so a refused fission still costs the cycle. A refusal is not a
+        /// fault and is silent: the colony simply holds at full length.
+        /// </summary>
+        void TryFission()
+        {
+            if (!IsSimAuthority) return;
+            var cfg = SourceConfig;
+            var host = cell;
+            if (!cfg || !host || host.IsFaunaAtCap(cfg)) return;
+            if (Time.time - _lastFissionTime < cfg.ReproductionCooldownSeconds) return;
+
+            int count = segments.Count;
+            int mid = count / 2;
+            if (mid < FissionMinSegmentsPerHalf || count - mid < FissionMinSegmentsPerHalf) return;
+            if (segments[0].Role != WormSegmentRole.Head ||
+                segments[count - 1].Role != WormSegmentRole.Tail) return;
+
+            _lastFissionTime = Time.time;
+            var rear = segments.GetRange(mid, count - mid);
+            segments.RemoveRange(mid, count - mid);
+            SpawnSplitColony(rear);
+        }
+
+        /// <summary>
         /// Grows a real HEAD at the front of the chain — the whole armored prefab, not a
         /// hardened stump: a regrown mouth has its plate cage, its danger fangs and its own
         /// heart. Both halves of the colony's appetite key off it — grazing is gated on the
@@ -849,8 +1025,7 @@ namespace CosmicShore.Gameplay
             Transform leader = segments[0].transform;
             Vector3 pos = leader.position
                           + leader.forward * LinkSpacing(1, WormSegmentRole.Head, segments[0].Role);
-            var seg = Instantiate(headPrefab, pos, leader.rotation);
-            AddSegmentToChain(seg, 0, Vector3.zero);
+            var seg = AddSegmentToChain(headPrefab, pos, leader.rotation, 0, Vector3.zero);
             _leaderBaseRotation = seg.transform.rotation;
         }
 
@@ -861,7 +1036,7 @@ namespace CosmicShore.Gameplay
             Transform last = segments[index - 1].transform;
             Vector3 pos = last.position
                           - last.forward * LinkSpacing(index, segments[index - 1].Role, WormSegmentRole.Tail);
-            AddSegmentToChain(Instantiate(tailPrefab, pos, last.rotation), index, Vector3.zero);
+            AddSegmentToChain(tailPrefab, pos, last.rotation, index, Vector3.zero);
         }
 
         /// <summary>
@@ -876,7 +1051,7 @@ namespace CosmicShore.Gameplay
             Transform head = segments[0].transform;
             Vector3 pos = head.position
                           - head.forward * LinkSpacing(1, WormSegmentRole.Head, WormSegmentRole.Body);
-            AddSegmentToChain(Instantiate(bodyPrefab, pos, head.rotation), 1, Vector3.zero);
+            AddSegmentToChain(bodyPrefab, pos, head.rotation, 1, Vector3.zero);
         }
 
         void TickTailWhip()
@@ -956,6 +1131,9 @@ namespace CosmicShore.Gameplay
         /// behavior tick — the two bodies are interpenetrating at the instant of the cut,
         /// which is exactly where the falloff in <see cref="TickSeparation"/> is strongest,
         /// so they shoulder apart on the next frame instead of swimming home in convoy.
+        ///
+        /// Two callers, one path: a player's interior kill (<see cref="HandleSegmentDeath"/>)
+        /// and the colony's own fission at full length (<see cref="TryFission"/>).
         /// </summary>
         void SpawnSplitColony(List<WormSegmentFauna> rear)
         {
@@ -975,6 +1153,10 @@ namespace CosmicShore.Gameplay
                 colony.AssignLineage(cell, SourceConfig, VariantPick);
             if (cell)
                 cell.RegisterSpawnedObject(colony.gameObject);
+            // The replication seam, AFTER the lineage bind (which settles the element the spawn
+            // payload would carry). A split is a second population, so it is a producer like any
+            // other - see AddSegmentToChain.
+            FaunaNetworkSync.ServerSpawn(colony);
 
             // Both populations feel each other NOW (see the summary above).
             colony.TickSeparation();

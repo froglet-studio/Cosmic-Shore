@@ -1,0 +1,48 @@
+# Accessibility corrections applied to the de-publicized Unity 6 reference DLLs (see
+# Depublicize/Program.cs). Format: Assembly|Namespace.Type|Member-or-<type>|access
+# Appended automatically by build.py from PACKAGE diagnostics only (CS0507 -> family, CS0122 ->
+# public); packages compile cleanly in Unity, so each line is evidence about the real engine API.
+# --- learned ---
+UnityEngine.AnimationModule|UnityEngine.Animator|avatarRoot|public
+UnityEngine.CoreModule|Unity.Collections.LowLevel.Unsafe.BurstRuntime|<type>|assembly
+UnityEngine.CoreModule|UnityEngine.IconAttribute|<type>|public
+UnityEngine.CoreModule|UnityEngine.Rendering.RenderPipelineAsset|EnsureGlobalSettings|family
+UnityEngine.CoreModule|UnityEngine.Rendering.RenderPipelineAsset|requiresCompatibleRenderPipelineGlobalSettings|family
+UnityEngine.CoreModule|UnityEngine.Rendering.RenderPipelineGlobalSettings|settingsList|family
+UnityEngine.CoreModule|UnityEngine.Rendering.RenderPipeline|IsRenderRequestSupported|family
+UnityEngine.CoreModule|UnityEngine.Rendering.RenderPipeline|ProcessRenderRequests|family
+UnityEngine.PropertiesModule|Unity.Properties.PropertyVisitor|VisitProperty|family
+UnityEngine.UI|UnityEngine.EventSystems.BaseInputModule|OnDisable|family
+UnityEngine.UI|UnityEngine.EventSystems.BaseInputModule|OnEnable|family
+UnityEngine.UI|UnityEngine.EventSystems.BaseRaycaster|OnDisable|family
+UnityEngine.UI|UnityEngine.EventSystems.BaseRaycaster|OnEnable|family
+UnityEngine.UI|UnityEngine.EventSystems.EventSystem|OnDisable|family
+UnityEngine.UI|UnityEngine.EventSystems.EventSystem|OnEnable|family
+UnityEngine.UI|UnityEngine.EventSystems.EventSystem|Update|family
+UnityEngine.UI|UnityEngine.EventSystems.UIBehaviour|Awake|family
+UnityEngine.UI|UnityEngine.EventSystems.UIBehaviour|OnDestroy|family
+UnityEngine.UI|UnityEngine.UI.Toggle|Start|family
+# --- manual (documented Unity API, not learnable from package code) ---
+# uGUI: Graphic.OnPopulateMesh(VertexHelper) is `protected virtual` (Image/RawImage/Text override it as
+# protected); no package we compile overrides it, so it cannot be learned, and the publicized ugui DLL
+# would otherwise reject every project Graphic that overrides it correctly.
+UnityEngine.UI|UnityEngine.UI.Graphic|OnPopulateMesh|family
+UnityEngine.UI|UnityEngine.UI.Image|OnPopulateMesh|family
+UnityEngine.UI|UnityEngine.UI.RawImage|OnPopulateMesh|family
+UnityEngine.UI|UnityEngine.UI.Text|OnPopulateMesh|family
+# uGUI: Selectable's lifecycle and state hook are `protected` (`protected override void Awake()`,
+# `protected override void OnDisable()`, `protected virtual void DoStateTransition(SelectionState,
+# bool)` in com.unity.ugui's Selectable.cs). No package subclasses Selectable, so they cannot be
+# learned; the style-B kit's KitSelectableBase (a Button subclass) overrides all three.
+UnityEngine.UI|UnityEngine.UI.Selectable|Awake|family
+UnityEngine.UI|UnityEngine.UI.Selectable|OnDisable|family
+UnityEngine.UI|UnityEngine.UI.Selectable|DoStateTransition|family
+# uGUI: RectMask2D's OnEnable / OnDisable / OnDestroy / OnTransformParentChanged / OnCanvasHierarchyChanged
+# are `protected override` and UIBehaviour.OnCanvasGroupChanged is `protected virtual` (documented);
+# KitRectMask2D overrides them.
+UnityEngine.UI|UnityEngine.UI.RectMask2D|OnEnable|family
+UnityEngine.UI|UnityEngine.UI.RectMask2D|OnDisable|family
+UnityEngine.UI|UnityEngine.UI.RectMask2D|OnDestroy|family
+UnityEngine.UI|UnityEngine.UI.RectMask2D|OnTransformParentChanged|family
+UnityEngine.UI|UnityEngine.UI.RectMask2D|OnCanvasHierarchyChanged|family
+UnityEngine.UI|UnityEngine.EventSystems.UIBehaviour|OnCanvasGroupChanged|family

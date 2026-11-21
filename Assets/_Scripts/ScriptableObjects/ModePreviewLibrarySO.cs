@@ -14,7 +14,7 @@ namespace CosmicShore.ScriptableObjects
     /// scene on disk — a preview system that assumed every card was previewable would surface
     /// dead modes as broken ones.</para>
     ///
-    /// <para><b>Maelstrom (Tournament) is deliberately excluded</b> and is enforced in code
+    /// <para><b>Maelstrom (Maelstrom) is deliberately excluded</b> and is enforced in code
     /// (<see cref="IsPreviewable"/>) rather than left to authoring: it is a session-level meta
     /// that draws other modes, so "a mini version of it" is a different design, not a smaller
     /// arena. An entry for it is ignored and reported.</para>
@@ -56,11 +56,11 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>
         /// Modes the preview system refuses on principle rather than for want of authoring.
-        /// Tournament/Maelstrom draws OTHER modes per round, so it has no arena of its own to
+        /// Maelstrom/Maelstrom draws OTHER modes per round, so it has no arena of its own to
         /// shrink.
         /// </summary>
         public static bool IsPreviewable(GameModes mode) =>
-            mode != GameModes.Tournament && mode != GameModes.Random;
+            mode != GameModes.Maelstrom && mode != GameModes.Random;
 
         /// <summary>
         /// The definition for <paramref name="mode"/>, or null when the mode has no preview.
@@ -72,6 +72,27 @@ namespace CosmicShore.ScriptableObjects
 
             EnsureIndex();
             return _byMode.TryGetValue(mode, out var def) ? def : null;
+        }
+
+        static ModePreviewLibrarySO s_loaded;
+
+        /// <summary>
+        /// A mode's genre elements (<see cref="ModeGenre.TryElementsFor"/>, with the metric read from this library's
+        /// definition for the mode) - the one answer the card's flower, the grid's element filter and the standard
+        /// element ladder (<see cref="ElementLadder"/>) share. Loads the library from Resources on first use.
+        /// </summary>
+        public static bool TryGenres(GameModes mode, out Element primary, out Element secondary) =>
+            ModeGenre.TryElementsFor(mode, ObjectiveMetricOf(mode), out primary, out secondary);
+
+        /// <summary>A mode's arcade category (<see cref="ModeGenre.CategoryFor"/>, with the metric read from this library).</summary>
+        public static ArcadeCategory CategoryOf(GameModes mode) => ModeGenre.CategoryFor(mode, ObjectiveMetricOf(mode));
+
+        /// <summary>The metric a mode is scored on, from its preview definition; null when the library has none.</summary>
+        public static ScoringMetric? ObjectiveMetricOf(GameModes mode)
+        {
+            if (!s_loaded) s_loaded = Resources.Load<ModePreviewLibrarySO>(ResourcePath);
+            var definition = s_loaded ? s_loaded.Resolve(mode) : null;
+            return definition ? definition.ObjectiveMetric : (ScoringMetric?)null;
         }
 
         void EnsureIndex()

@@ -5,7 +5,7 @@ namespace CosmicShore.Gameplay
 {
     public class ToggleStationaryModeAction : ShipAction
     {
-        private enum Mode { Sparrow, Serpent }
+        private enum Mode { Sparrow = 0, Serpent = 1 }
 
         [Header("Mode")]
         [SerializeField] private Mode mode;

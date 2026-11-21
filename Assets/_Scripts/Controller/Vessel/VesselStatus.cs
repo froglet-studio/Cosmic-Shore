@@ -24,12 +24,32 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(VesselAnimation))]
     [RequireComponent(typeof(R_VesselActionHandler))]
     [RequireComponent(typeof(VesselCustomization))]
-    [RequireComponent(typeof(R_ShipElementStatsHandler))]
+    [RequireComponent(typeof(R_VesselElementStatsHandler))]
 
     public class VesselStatus : MonoBehaviour, IVesselStatus
     {
+        static readonly List<VesselStatus> s_live = new();
+
+        /// <summary>
+        /// Every enabled vessel, kept by OnEnable/OnDisable: the set
+        /// <c>FindObjectsByType&lt;VesselStatus&gt;</c> answers, without walking the scene. That walk
+        /// costs in proportion to EVERY object loaded (each trail prism is one), so it grows all
+        /// session: in a Stoat match it measured 1.8 ms a call in the first minute and 20 ms
+        /// (worst 61 ms) eight minutes in — the black-hole pull, the Stoat's ripple and the warp
+        /// scaler each paid it on a timer (2026-10-17). Copy it before doing anything that can
+        /// enable or disable a vessel while you iterate.
+        /// </summary>
+        public static IReadOnlyList<VesselStatus> Live => s_live;
+
+        // Drops only dead entries, never live ones: this project enters Play without a domain or a
+        // scene reload, so a vessel already in the open scene may have registered before this runs,
+        // and clearing would hide it until it is toggled. OnDisable keeps the list clean otherwise.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetLive() => s_live.RemoveAll(v => !v);
+
         void OnEnable()
         {
+            s_live.Add(this);
             // Proximity collider-LOD: every vessel (human, AI, menu autopilot) is a
             // focus that keeps nearby prism colliders alive - hull, skimmer, and
             // trigger interactions all happen here. Registration lazily creates the
@@ -40,6 +60,7 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
+            s_live.Remove(this);
             PrismColliderLodManager.UnregisterFocus(transform);
         }
 
@@ -64,7 +85,12 @@ namespace CosmicShore.Gameplay
             get
             {
                 if (vesselHUDController is IVesselHUDController c) return c;
-                CSDebug.LogError($"{name}: vesselHUDController does not implement IVesselHUDController", this);
+                // A hull may legitimately carry NO HUD (the Urchin has no HUD prefab yet), and
+                // VesselController.Initialize already warns once for that. Only a reference that
+                // is SET but of the wrong type is an authoring error worth shouting about -
+                // logging on every read turned an optional component into console spam.
+                if (vesselHUDController)
+                    CSDebug.LogError($"{name}: vesselHUDController does not implement IVesselHUDController", this);
                 return null;
             }
         }
@@ -109,53 +135,51 @@ namespace CosmicShore.Gameplay
         public List<GameObject> ShipGeometries { get; set; }
         public Prism AttachedPrism { get; set; }
 
-        R_VesselActionHandler actionHandler;
-        public R_VesselActionHandler ActionHandler
+        /// <summary>
+        /// The one shape of every lazy component getter below. A DESTROYED vessel answers null,
+        /// the way Unity's own null does. Callers reach these getters through
+        /// <c>IVessel.VesselStatus</c>, an interface-typed cache that outlives the vessel, so a
+        /// <c>vessel?.VesselStatus?.ResourceSystem</c> chain - written to mean "skip if the vessel
+        /// is gone" - cannot see the destruction itself (<c>?.</c> is a plain reference test) and
+        /// used to fall through to <c>gameObject</c>, which throws MissingReferenceException typed
+        /// VesselStatus. Measured: the mode preview's teardown (ModePreviewSession.SetLocalTrailPaused,
+        /// bug ledger E-1f2ed4d48a) and the in-match systems that outlive a despawned vessel by a
+        /// frame. A live vessel is unchanged; a caller that does not test for null now fails at
+        /// its OWN line instead of inside this getter.
+        /// </summary>
+        T Lazy<T>(ref T cache) where T : Component
         {
-            get
-            {
-                actionHandler = actionHandler != null ? actionHandler : gameObject.GetOrAdd<R_VesselActionHandler>();
-                return actionHandler;
-            }
+            if (cache) return cache;
+            if (!this) return null;
+            cache = gameObject.GetOrAdd<T>();
+            return cache;
         }
+
+        R_VesselActionHandler actionHandler;
+        public R_VesselActionHandler ActionHandler => Lazy(ref actionHandler);
 
         VesselCustomization customization;
-        public VesselCustomization Customization
-        {
-            get
-            {
-                customization = customization != null ? customization : gameObject.GetOrAdd<VesselCustomization>();
-                return customization;
-            }
-        }
+        public VesselCustomization Customization => Lazy(ref customization);
 
         VesselAnimation vesselAnimation;
-        public VesselAnimation VesselAnimation
-        {
-            get
-            {
-                vesselAnimation = vesselAnimation != null ? vesselAnimation : gameObject.GetOrAdd<VesselAnimation>();
-                return vesselAnimation;
-            }
-        }
+        public VesselAnimation VesselAnimation => Lazy(ref vesselAnimation);
 
         VesselPrismController vesselPrismController;
-        public VesselPrismController VesselPrismController
-        {
-            get
-            {
-                vesselPrismController = vesselPrismController != null ? vesselPrismController : gameObject.GetOrAdd<VesselPrismController>();
-                return vesselPrismController;
-            }
-        }
+        public VesselPrismController VesselPrismController => Lazy(ref vesselPrismController);
 
         ResourceSystem _resourceSystem;
-        public ResourceSystem ResourceSystem
+        public ResourceSystem ResourceSystem => Lazy(ref _resourceSystem);
+
+        VesselPilotLoadout _pilotLoadout;
+        /// <summary>The pilot in the seat and the slotted artifacts; created and initialized on first use.</summary>
+        public VesselPilotLoadout PilotLoadout
         {
             get
             {
-                _resourceSystem = _resourceSystem != null ? _resourceSystem : gameObject.GetOrAdd<ResourceSystem>();
-                return _resourceSystem;
+                _pilotLoadout = Lazy(ref _pilotLoadout);
+                if (_pilotLoadout && !_pilotLoadout.IsInitialized)
+                    _pilotLoadout.Initialize(this);
+                return _pilotLoadout;
             }
         }
 
@@ -164,74 +188,30 @@ namespace CosmicShore.Gameplay
         {
             get
             {
-                _elementalAbilityHandler = _elementalAbilityHandler != null
-                    ? _elementalAbilityHandler
-                    : gameObject.GetOrAdd<R_VesselElementalAbilityHandler>();
-                if (!_elementalAbilityHandler.IsInitialized)
+                _elementalAbilityHandler = Lazy(ref _elementalAbilityHandler);
+                if (_elementalAbilityHandler && !_elementalAbilityHandler.IsInitialized)
                     _elementalAbilityHandler.Initialize(this);
                 return _elementalAbilityHandler;
             }
         }
 
         VesselTransformer vesselTransformer;
-        public VesselTransformer VesselTransformer
-        {
-            get
-            {
-                vesselTransformer = vesselTransformer != null ? vesselTransformer : gameObject.GetOrAdd<VesselTransformer>();
-                return vesselTransformer;
-            }
-        }
+        public VesselTransformer VesselTransformer => Lazy(ref vesselTransformer);
 
         AIPilot aiPilot;
-        public AIPilot AIPilot
-        {
-            get
-            {
-                aiPilot = aiPilot != null ? aiPilot : gameObject.gameObject.GetOrAdd<AIPilot>();
-                return aiPilot;
-            }
-        }
+        public AIPilot AIPilot => Lazy(ref aiPilot);
 
         AICinematicBehavior aiCinematicBehavior;
-        public AICinematicBehavior AICinematicBehavior
-        {
-            get
-            {
-                aiCinematicBehavior = aiCinematicBehavior != null ? aiCinematicBehavior : gameObject.gameObject.GetOrAdd<AICinematicBehavior>();
-                return aiCinematicBehavior;
-            }
-        }
+        public AICinematicBehavior AICinematicBehavior => Lazy(ref aiCinematicBehavior);
 
         ElementalBarsController _elementalBarsController;
-        public ElementalBarsController ElementalBarsController
-        {
-            get
-            {
-                _elementalBarsController = _elementalBarsController != null ? _elementalBarsController : gameObject.GetOrAdd<ElementalBarsController>();
-                return _elementalBarsController;
-            }
-        }
+        public ElementalBarsController ElementalBarsController => Lazy(ref _elementalBarsController);
 
         VesselCameraCustomizer _vesselCameraCustomizer;
-        public VesselCameraCustomizer VesselCameraCustomizer
-        {
-            get
-            {
-                _vesselCameraCustomizer = _vesselCameraCustomizer != null ? _vesselCameraCustomizer : gameObject.GetOrAdd<VesselCameraCustomizer>();
-                return _vesselCameraCustomizer;
-            }
-        }
+        public VesselCameraCustomizer VesselCameraCustomizer => Lazy(ref _vesselCameraCustomizer);
 
-        R_ShipElementStatsHandler _elementalStatsHandler;
-        public R_ShipElementStatsHandler ElementalStatsHandler
-        {
-            get
-            {
-                _elementalStatsHandler = _elementalStatsHandler != null ? _elementalStatsHandler : gameObject.GetOrAdd<R_ShipElementStatsHandler>();
-                return _elementalStatsHandler;
-            }
-        }
+        R_VesselElementStatsHandler _elementalStatsHandler;
+        public R_VesselElementStatsHandler ElementalStatsHandler => Lazy(ref _elementalStatsHandler);
         
         // booleans
         public bool IsBoosting { get; set; }
@@ -278,6 +258,10 @@ namespace CosmicShore.Gameplay
             IsSlowed = false;
 
             ResourceSystem.Reset();
+            ResourceSystem.MarkSpawned();
+            // A silence bought in the last turn does not carry into this one. Every peer resets
+            // its copy of the vessel, so every peer lifts it.
+            if (Player != null) VesselSilence.Lift(Player.Name);
             VesselTransformer.ResetTransformer();
             VesselPrismController.StopSpawn();
             VesselPrismController.ClearTrails();

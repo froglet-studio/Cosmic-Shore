@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Arcade notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:9px}
+li{font-size:16px;line-height:1.45}
+li span{color:#747BAD}
+</style>
+</helmet>
+<div style="width: 1100px; height: 1240px; box-sizing: border-box; padding: 40px 48px; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif; display: flex; flex-direction: column; gap: 24px; border: 1px solid #222645">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span class="lab">Item 3 / Arcade</span>
+    <h1 style="margin: 0; font-weight: 400; font-size: 32px; line-height: 1.15">What this mockup changes</h1>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span class="lab" style="color: #E6E9FF">One party panel (your request)</span>
+    <ul>
+      <li>Party slots, invites and friends online are one panel. The separate friends overlay is gone, so there is nothing to open, close or leave open <span>(today B closes the modal and leaves the friends overlay open for next time)</span>.</li>
+      <li>An empty slot reads "Open slot - invite a friend below" and jumps to the friends list. Friends rows carry Invite, Join (when their party is joinable) or the inactive Invited; invites and friend requests sit above them with accept / decline.</li>
+      <li>Built once as a shared prefab for Arcade, Arena, Toy Box and Mission, replacing four scene copies of each of the two old panels.</li>
+      <li>New: "No friends are online right now..." when the list is empty <span>(today it is blank)</span>; the host's row reads "You / Host"; kick is an icon button on remote rows (host only, as today).</li>
+    </ul>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span class="lab" style="color: #E6E9FF">Games</span>
+    <ul>
+      <li>"Explore games" with Back (and B) at the top right; the weekly challenge and Maelstrom as two wide feature cards; then all 28 games four across, favourites first, then A to Z, as today.</li>
+      <li>A card shows what it shows today - art, title, vessel icon, favourite star, party picks - in the kit: your pick is a Jade border, a favourite a filled Jade star, focus the CTA ring. Locked adds a padlock and "Locked" to today's dimming.</li>
+      <li>Retired: the weekly card's hidden LEADERBOARD button, the friends overlay's header buttons and refresh icons (no listeners), its empty ControllerButtonPress hooks, and ArcadeScreen's unwired Loadout toggles.</li>
+    </ul>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span class="lab" style="color: #E6E9FF">For the build gate</span>
+    <ul>
+      <li>Gamepad: cards become the list's Selectables and scroll into view when focused <span>(today ArcadeDPadNav does nothing while the modal is open and the grid never scrolls, so rows 4-7 are unreachable by pad)</span>.</li>
+      <li>Back and B close the same way, with the window's out animation <span>(today Back deactivates the object and jumps home)</span>.</li>
+    </ul>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span class="lab" style="color: #E6E9FF">State shown, and content flagged</span>
+    <ul>
+      <li>The developer unlock is on by default, so nothing is locked; the "favourites and party picks" board shows the locked look on two cards for illustration. Which cards lock really depends on the quest chain and the FTUE funnel.</li>
+      <li>The weekly challenge rotates; Skim Race is an example. Party and friends names are placeholders; avatars are the real profile icons.</li>
+      <li>Joust's description is the placeholder "Joust joust joust". The Grizzly's icon is a legacy "BUFO selected" button graphic, so its two cards show no vessel icon. Cards look their titles up in OrganicRematchGames, not the Arcade roster (a mode added only to the roster would keep a placeholder title).</li>
+    </ul>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1100,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

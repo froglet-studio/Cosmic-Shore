@@ -4,7 +4,7 @@ using UnityEngine;
 using CosmicShore.Gameplay;
 namespace CosmicShore.Gameplay
 {
-    public class QueenDronesShipAction : ShipAction
+    public class QueenDronesVesselAction : ShipAction
     {
         [SerializeField] GameObject dronePrefab;
         [SerializeField] int Drones = 10;

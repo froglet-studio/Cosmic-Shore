@@ -83,6 +83,10 @@ namespace CosmicShore.UI
         private Tween[]   _labelScaleTweens;
         private Tween[]   _labelColorTweens;
         private bool _built;
+        // Elements whose container the ability lockup BUILT at runtime (TrySetPetalRoot with a socket that is not
+        // the authored container). Their petals are part of that runtime card build, so making them is the design,
+        // not a missing bake, and says nothing.
+        private int _socketedMask;
 
         // Scratch buffer reused by DistributePetalValues to avoid per-call allocations.
         private readonly int[] _tmpVals = new int[ElementalBarsConfigSO.PetalCount];
@@ -129,13 +133,13 @@ namespace CosmicShore.UI
             for (int i = 0; i < bars.Length; i++)
                 if (!bars[i].petalRoot) { allFlowersAuthored = false; break; }
 
-            if (config.enforceStandardPlacement && !allFlowersAuthored)
+            if (config.EnforceStandardPlacement && !allFlowersAuthored)
             {
-                _rootRT.anchorMin        = config.standardAnchorMin;
-                _rootRT.anchorMax        = config.standardAnchorMax;
-                _rootRT.pivot            = config.standardPivot;
-                _rootRT.anchoredPosition = config.standardAnchoredPosition;
-                _rootRT.sizeDelta        = config.standardSize;
+                _rootRT.anchorMin        = config.StandardAnchorMin;
+                _rootRT.anchorMax        = config.StandardAnchorMax;
+                _rootRT.pivot            = config.StandardPivot;
+                _rootRT.anchoredPosition = config.StandardAnchoredPosition;
+                _rootRT.sizeDelta        = config.StandardSize;
             }
 
             int count = bars.Length;
@@ -231,6 +235,7 @@ namespace CosmicShore.UI
             for (int i = 0; i < bars.Length; i++)
             {
                 if (bars[i].element != element) continue;
+                if (bars[i].petalRoot != root) _socketedMask |= 1 << i;
                 bars[i].petalRoot = root;
                 return true;
             }
@@ -267,10 +272,14 @@ namespace CosmicShore.UI
                 petals[p] = img;
             }
 
-            // Authored-in-prefab is the norm (FrogletTools > Vessels > Wire Elemental Petal Bars, or
+            // Authored-in-prefab is the norm (FrogletTools > Vessels > Wiring > Wire Elemental Petal Bars, or
             // the bake-all variant). Runtime creation is a fallback so the fleet-required display
             // can never silently ship missing - but it should be loud, not invisible.
-            if (runtimeCreated > 0)
+            // Not for a socket the ability lockup built at runtime: the card around it is built at runtime as well,
+            // so its petals are part of that build rather than a missing bake (a baked container is re-homed into the
+            // card with its petals, which only saves these 20 images). That path warned four times on every spawn of
+            // an unbaked hull - each Hangar TRY, each menu hull swap. A container AUTHORED without petals still warns.
+            if (runtimeCreated > 0 && (_socketedMask & (1 << index)) == 0)
                 Debug.LogWarning($"[ElementalBarsView] Created {runtimeCreated} petal(s) for '{bar.element}' at " +
                                  "RUNTIME. Author them into the prefab instead: FrogletTools > Vessels > " +
                                  "Bake Elemental Petal Bars Into All Vessel HUDs.", this);
@@ -406,8 +415,8 @@ namespace CosmicShore.UI
             int level = _currentLevels[idx];
             ElementalBarsConfigSO.DistributePetalValues(level, _tmpVals);
 
-            if (level < previousLevel && config.hapticOnDebuff)
-                HapticController.PlayConstant(config.debuffHapticAmplitude, config.debuffHapticFrequency, config.debuffHapticDuration);
+            if (level < previousLevel && config.HapticOnDebuff)
+                HapticController.PlayConstant(config.DebuffHapticAmplitude, config.DebuffHapticFrequency, config.DebuffHapticDuration);
 
             var oldVals = _petalValues[idx];
             var tweens  = _petalTweens[idx];
@@ -437,23 +446,23 @@ namespace CosmicShore.UI
                     img.color = target;
                     int bi = idx, pi = p;
                     tweens[p] = rt
-                        .DOScale(Vector3.one * config.buffPopScale, config.buffPopDuration * 0.4f)
+                        .DOScale(Vector3.one * config.BuffPopScale, config.BuffPopDuration * 0.4f)
                         .SetEase(Ease.OutQuad)
                         .SetLink(img.gameObject)
                         .OnComplete(() =>
                         {
                             _petalTweens[bi][pi] = rt
-                                .DOScale(Vector3.one, config.buffPopDuration * 0.6f)
+                                .DOScale(Vector3.one, config.BuffPopDuration * 0.6f)
                                 .SetEase(Ease.OutBounce)
                                 .SetLink(img.gameObject);
                         });
                 }
                 else                               // downgraded -> flash + shake then settle
                 {
-                    img.color = config.debuffFlashColor;
+                    img.color = config.DebuffFlashColor;
                     tweens[p] = DOTween.Sequence()
-                        .Append(rt.DOShakePosition(config.debuffShakeDuration, config.debuffShakeStrength, 20, 90f, false, false))
-                        .Join(img.DOColor(target, config.debuffShakeDuration + 0.1f).SetEase(Ease.OutQuad))
+                        .Append(rt.DOShakePosition(config.DebuffShakeDuration, config.DebuffShakeStrength, 20, 90f, false, false))
+                        .Join(img.DOColor(target, config.DebuffShakeDuration + 0.1f).SetEase(Ease.OutQuad))
                         .SetLink(img.gameObject);
                 }
 
@@ -494,7 +503,7 @@ namespace CosmicShore.UI
         {
             if (!_built) return;
             for (int i = 0; i < bars.Length; i++)
-                PunchIconWithColor(i, config.joustFlashColor);
+                PunchIconWithColor(i, config.JoustFlashColor);
         }
 
         // ---------------------------------------------------------------
@@ -504,25 +513,25 @@ namespace CosmicShore.UI
         {
             if (!_built) return;
 
-            float targetAngle = isLeft ? config.driftRotationAngle : -config.driftRotationAngle;
+            float targetAngle = isLeft ? config.DriftRotationAngle : -config.DriftRotationAngle;
 
             for (int i = 0; i < bars.Length; i++)
             {
                 var label = bars[i].labelIcon;
                 if (!label) continue;
 
-                if (isDoubleDrift && config.doubleDriftSprite)
-                    label.sprite = config.doubleDriftSprite;
+                if (isDoubleDrift && config.DoubleDriftSprite)
+                    label.sprite = config.DoubleDriftSprite;
 
                 _driftRotationTweens[i]?.Kill();
                 _driftRotationTweens[i] = label.rectTransform
-                    .DOLocalRotate(new Vector3(0, 0, targetAngle), config.driftRotationDuration)
+                    .DOLocalRotate(new Vector3(0, 0, targetAngle), config.DriftRotationDuration)
                     .SetEase(Ease.OutBack)
                     .SetLink(label.gameObject);
 
                 _labelColorTweens[i]?.Kill();
                 _labelColorTweens[i] = label
-                    .DOColor(config.driftTintColor, config.driftRotationDuration)
+                    .DOColor(config.DriftTintColor, config.DriftRotationDuration)
                     .SetEase(Ease.OutQuad)
                     .SetLink(label.gameObject);
             }
@@ -542,13 +551,13 @@ namespace CosmicShore.UI
 
                 _driftRotationTweens[i]?.Kill();
                 _driftRotationTweens[i] = label.rectTransform
-                    .DOLocalRotate(Vector3.zero, config.driftRotationDuration)
+                    .DOLocalRotate(Vector3.zero, config.DriftRotationDuration)
                     .SetEase(Ease.OutQuad)
                     .SetLink(label.gameObject);
 
                 _labelColorTweens[i]?.Kill();
                 _labelColorTweens[i] = label
-                    .DOColor(_originalLabelColors[i], config.colorTweenDuration)
+                    .DOColor(_originalLabelColors[i], config.ColorTweenDuration)
                     .SetEase(Ease.OutQuad)
                     .SetLink(label.gameObject);
             }
@@ -570,13 +579,13 @@ namespace CosmicShore.UI
             _labelScaleTweens[idx]?.Kill();
             rt.localScale = origScale;
             _labelScaleTweens[idx] = rt
-                .DOScale(origScale * config.iconPunchScale, config.iconPunchDuration * 0.3f)
+                .DOScale(origScale * config.IconPunchScale, config.IconPunchDuration * 0.3f)
                 .SetEase(Ease.OutQuad)
                 .SetLink(label.gameObject)
                 .OnComplete(() =>
                 {
                     _labelScaleTweens[bi] = rt
-                        .DOScale(origScale, config.iconPunchDuration * 0.7f)
+                        .DOScale(origScale, config.IconPunchDuration * 0.7f)
                         .SetEase(Ease.OutBounce)
                         .SetLink(label.gameObject);
                 });
@@ -584,7 +593,7 @@ namespace CosmicShore.UI
             _labelColorTweens[idx]?.Kill();
             label.color = flashColor;
             _labelColorTweens[idx] = label
-                .DOColor(_originalLabelColors[idx], config.colorTweenDuration)
+                .DOColor(_originalLabelColors[idx], config.ColorTweenDuration)
                 .SetEase(Ease.OutQuad)
                 .SetLink(label.gameObject);
         }

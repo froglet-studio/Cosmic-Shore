@@ -11,9 +11,10 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Locks the SWITCH shader vocabulary (Docs/ToySystem/ARCHITECTURE.md, "The switch"):
-    /// every switch is drawn in the prism shader, and WHICH prism it is painted as says what it
-    /// will do.
+    /// Locks the SWITCH colour vocabulary (Docs/ToySystem/ARCHITECTURE.md, "The switch"): WHICH
+    /// prism's colour a switch wears says what it will do. (Since 2026-10-21 the ring itself is drawn
+    /// as a spindle wearing that colour - Docs/SPINDLE_LOD.md section 8 - so the vocabulary is the
+    /// colour, not the shader.)
     ///
     /// <para>The rule that needs holding is the RESERVATION - <b>a switch wearing a playable
     /// domain's colour is one that hands you that domain</b>. Half of it is structural and needs
@@ -30,14 +31,12 @@ namespace CosmicShore.Tests
         // deliberate act the reservation exists to make deliberate.
         static readonly Dictionary<string, string> SanctionedDomainSwitches = new()
         {
-            ["DomainChangerToySet.cs"] =
-                "the Domain Changer's slots - threading one calls RequestSetDomain_ServerRpc",
             ["PaintingRunner.cs"] =
                 "the painting's stroke-start gates - crossing one sets the stroke's domain",
             ["ScarabSwitch.cs"] =
-                "the Scarab's placed switch - the one wearer OUTSIDE the toybox, where the colour " +
-                "names the domain the switch belongs to (SCARAB.md section 5). Nothing in that " +
-                "mode changes a pilot's domain, so the two readings never share a screen.",
+                "the Scarab's placed switch - the first wearer OUTSIDE the toybox, where the " +
+                "colour names the domain the switch belongs to (SCARAB.md section 5). Nothing in " +
+                "that mode changes a pilot's domain, so the two readings never share a screen.",
         };
 
         // Files that NAME the member without requesting a switch.
@@ -45,7 +44,7 @@ namespace CosmicShore.Tests
         {
             "ToySwitchSignal.cs",           // the enum's own declaration
             "ToyFactory.cs",                // the resolver that implements the vocabulary
-            "Toy.cs",                       // the base that carries a signal to the builder
+            "ToyStation.cs",                // the base that carries a signal to the builder
             "ToySwitchVocabularyTests.cs",  // this file
         };
 
@@ -56,13 +55,26 @@ namespace CosmicShore.Tests
 
         // ── The structural half ──────────────────────────────────────────────
 
+        /// <summary>
+        /// Every signal EXCEPT <see cref="ToySwitchSignal.Domain"/>, enumerated from the enum
+        /// rather than listed. The reservation is "only Domain may wear a playable domain", and a
+        /// test that names the members it knows about stops testing the law the moment a member is
+        /// added - which is exactly what happened when <see cref="ToySwitchSignal.Next"/> landed
+        /// and this file still only knew Neutral.
+        /// </summary>
+        static IEnumerable<ToySwitchSignal> NonDomainSignals =>
+            System.Enum.GetValues(typeof(ToySwitchSignal))
+                       .Cast<ToySwitchSignal>()
+                       .Where(s => s != ToySwitchSignal.Domain);
+
         [Test]
-        public void NeutralSwitchIsAlwaysBlue_WhateverDomainTheCallerPasses()
+        public void ANonDomainSwitchIsAlwaysBlue_WhateverDomainTheCallerPasses()
         {
-            foreach (Domains domain in System.Enum.GetValues(typeof(Domains)))
-                Assert.AreEqual(Domains.Blue, ToyFactory.SwitchDomain(ToySwitchSignal.Neutral, domain),
-                    $"A Neutral switch asked for {domain} must still be painted Blue - the signal " +
-                    "picks the colour, never the caller.");
+            foreach (var signal in NonDomainSignals)
+                foreach (Domains domain in System.Enum.GetValues(typeof(Domains)))
+                    Assert.AreEqual(Domains.Blue, ToyFactory.SwitchDomain(signal, domain),
+                        $"A {signal} switch asked for {domain} must still be painted Blue - the " +
+                        "signal picks the colour, never the caller, and only Domain claims one.");
         }
 
         [Test]
@@ -81,21 +93,42 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void NeutralAndPlayableSwitchColoursAreDistinguishable()
+        public void UnreservedAndPlayableSwitchColoursAreDistinguishable()
         {
             // No theme wired: the fixed fallback palette. Neutral must not be mistakable for a
             // playable domain, or the reservation says nothing on screen.
-            Color neutral = ToyFactory.SwitchColor(null, ToySwitchSignal.Neutral, Domains.Blue);
-            foreach (var domain in GameDataSO.ActiveDomains)
+            foreach (var signal in NonDomainSignals)
             {
-                Color playable = ToyFactory.SwitchColor(null, ToySwitchSignal.Domain, domain);
-                float delta = Mathf.Abs(neutral.r - playable.r)
-                            + Mathf.Abs(neutral.g - playable.g)
-                            + Mathf.Abs(neutral.b - playable.b);
-                Assert.Greater(delta, 0.5f,
-                    $"The neutral switch colour is too close to {domain}'s ({delta:F2} summed " +
-                    "channel distance) - a player cannot read the reservation off it.");
+                Color unreserved = ToyFactory.SwitchColor(null, signal, Domains.Blue);
+                foreach (var domain in GameDataSO.ActiveDomains)
+                {
+                    Color playable = ToyFactory.SwitchColor(null, ToySwitchSignal.Domain, domain);
+                    float delta = Mathf.Abs(unreserved.r - playable.r)
+                                + Mathf.Abs(unreserved.g - playable.g)
+                                + Mathf.Abs(unreserved.b - playable.b);
+                    Assert.Greater(delta, 0.5f,
+                        $"The {signal} switch colour is too close to {domain}'s ({delta:F2} summed " +
+                        "channel distance) - a player cannot read the reservation off it.");
+                }
             }
+        }
+
+        [Test]
+        public void EveryUnreservedVerbReadsAsItself()
+        {
+            // The unreserved verbs must not be mistakable for EACH OTHER either: a halo ring that reads
+            // as "thread me next" would send a pilot into the one ring the dance is guarding.
+            var verbs = NonDomainSignals.ToList();
+            for (int a = 0; a < verbs.Count; a++)
+                for (int b = a + 1; b < verbs.Count; b++)
+                {
+                    Color ca = ToyFactory.SwitchColor(null, verbs[a], Domains.Blue);
+                    Color cb = ToyFactory.SwitchColor(null, verbs[b], Domains.Blue);
+                    float delta = Mathf.Abs(ca.r - cb.r) + Mathf.Abs(ca.g - cb.g) + Mathf.Abs(ca.b - cb.b);
+                    Assert.Greater(delta, 0.5f,
+                        $"{verbs[a]} and {verbs[b]} switches are too close in colour ({delta:F2} summed " +
+                        "channel distance) - the signal is the only thing that says what a ring does.");
+                }
         }
 
         [Test]

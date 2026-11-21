@@ -1,32 +1,48 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
-using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Builds the runtime pieces of a <see cref="Toy"/>: a trigger-collider root, a tinted sphere
-    /// body or a mini vessel model, and a world-space label. Visuals are procedural so toys work
-    /// with zero prefab authoring.
+    /// Builds the runtime pieces of toys and their play: a toy's bodiless logic root
+    /// (<see cref="CreateToyRoot"/>), a fly-through <see cref="ToyStation"/>'s trigger root, ring
+    /// and hub, and the procedural models the Toy Box previews show. Visuals are procedural so
+    /// they work with zero prefab authoring.
     ///
-    /// Continuity-of-existence law: pieces are created at full size here; the <see cref="Toy"/> base
-    /// scales the root from zero (bloom-in) on <see cref="Toy.Initialize"/>.
+    /// Continuity-of-existence law: pieces are created at full size here; the
+    /// <see cref="ToyStation"/> base scales the root from zero (bloom-in) on initialize.
     /// </summary>
     public static class ToyFactory
     {
-        /// <summary>Composite: bare root + sphere body + label. Used by single toys (e.g. painting).</summary>
-        public static GameObject CreateRoot(string toyName, Transform parent, ToyPlacement placement, Color accent, string label)
+        /// <summary>
+        /// Composite: bare root + sphere body, for a <see cref="ToyStation"/> (a wander's way home).
+        /// There is no label: a station carries NO text - its switch ring and its hub say what it does.
+        /// </summary>
+        public static GameObject CreateRoot(string toyName, Transform parent, ToyPlacement placement, Color accent)
         {
             var root = CreateBareRoot(toyName, parent, placement.Position, placement.LookTarget, placement.TriggerRadius);
             var body = new GameObject("Body");
             body.transform.SetParent(root.transform, false);
             AddSphereBody(body.transform, placement.BodyRadius, accent);
-            // The switch ring itself is drawn by Toy.Initialize off the trigger collider (one
-            // implementation, every toy) - the label only needs to know how big it will be so it
-            // can hang clear above the rim.
-            AddRingedLabel(root.transform, label, accent, placement.TriggerRadius, placement.BodyRadius);
+            // The switch ring itself is drawn by ToyStation.Initialize off the trigger collider (one
+            // implementation, every station).
+            return root;
+        }
+
+        /// <summary>
+        /// A toy's logic object: positioned at its anchor and facing the cell centre, with NO body,
+        /// collider or ring - toys are chosen in the app shell's Toy Box, never flown into.
+        /// </summary>
+        public static GameObject CreateToyRoot(string toyName, Transform parent, ToyPlacement placement)
+        {
+            var root = new GameObject($"Toy_{toyName}");
+            root.transform.SetParent(parent, false);
+            root.transform.position = placement.Position;
+            Vector3 toTarget = placement.LookTarget - placement.Position;
+            if (toTarget.sqrMagnitude > 1e-4f)
+                root.transform.rotation = Quaternion.LookRotation(toTarget.normalized, Vector3.up);
             return root;
         }
 
@@ -39,7 +55,14 @@ namespace CosmicShore.Gameplay
 
             Vector3 toCenter = lookTarget - position;
             if (toCenter.sqrMagnitude > 0.0001f)
-                root.transform.rotation = Quaternion.LookRotation(toCenter.normalized, Vector3.up);
+            {
+                // A toy at a POLE looks straight down (or up) at the centre, and LookRotation is
+                // undefined when up is parallel to forward - Unity does not say so, it invents a
+                // pose. Name the up explicitly there instead.
+                Vector3 look = toCenter.normalized;
+                Vector3 up = Mathf.Abs(Vector3.Dot(look, Vector3.up)) > 0.98f ? Vector3.forward : Vector3.up;
+                root.transform.rotation = Quaternion.LookRotation(look, up);
+            }
 
             var col = root.AddComponent<SphereCollider>();
             col.isTrigger = true;
@@ -259,42 +282,29 @@ namespace CosmicShore.Gameplay
         // ── The SWITCH ───────────────────────────────────────────────────────
         //
         // A ring you thread is the platform's one word for "this activates something" - the
-        // Scarab's placed switches, Astro League's goals, the painting's stroke gates, and (since
-        // this pass) every freestyle toy and every choice a toy unfolds into. What makes it
+        // Scarab's placed switches, Astro League's goals, the painting's stroke gates, a wander's
+        // way home. What makes it
         // teachable rather than decorative is a single rule:
         //
         //     THE RING IS THE TRIGGER VOLUME, DRAWN AT ITS OWN RADIUS.
         //
         // so a ring can never advertise a volume the collider does not have, and "fly through the
-        // ring" is a promise the code keeps. `Toy` therefore draws its own from its own collider
-        // rather than each toy's builder remembering to - see Toy.ConfigureSwitchRing for the two
-        // explicit opt-outs (resize, waive).
+        // ring" is a promise the code keeps. `ToyStation` therefore draws its own from its own
+        // collider rather than each builder remembering to - see ToyStation.ConfigureSwitchRing.
 
         /// <summary>Ring tube radius as a fraction of ring radius (<see cref="RingMesh"/>: r/R = 0.04/0.5).</summary>
         public const float RingTubeFraction = 0.08f;
 
-        /// <summary>
-        /// Widest a switch ring may be, as a fraction of the spacing between it and its
-        /// neighbour. A station's TRIGGER can legitimately overrun half that gap (the vessel
-        /// changer's does, and the domain changer's slots do on a small placement circle), but
-        /// rings that interpenetrate read as noise instead of as a row of switches. Threading a
-        /// ring smaller than its trigger still always fires it, so clamping never breaks the
-        /// promise above.
-        ///
-        /// <para>Its callers are <see cref="StationRingRadius"/> for a matrix and
-        /// <c>SwapToySetCoordinator.SlotRingRadius</c> for a flip-set, whose "spacing" is the
-        /// chord between adjacent slots. (The lifeform variant station used to be the third tight
-        /// case at level 5; lifeform levels are retired — Docs/ECOSYSTEM.md §40 — so every variant
-        /// station is now the plain station radius and no longer exercises the clamp.)</para>
-        /// </summary>
-        public const float MaxRingSpacingFraction = 0.45f;
-
         // ── What a switch's SHADER says ──────────────────────────────────────
         //
-        // EVERY switch is drawn in the PRISM shader - the same material family the painted trail
-        // wears - so the ring is made of the same stuff as the world it acts on, and the one
-        // channel left free to carry meaning is WHICH prism it is painted as. That channel is
-        // `ToySwitchSignal`:
+        // A switch's COLOUR comes from the prism the signal names - the same material family the
+        // painted trail wears - and the one channel free to carry meaning is WHICH prism's colour
+        // it wears. The RING itself is a SYNTHETIC WIRE (Garrett, 2026-10-21: "a synthetic spindle
+        // geometry that is more like a wire ... synthetic constructs up close, but spindles from
+        // afar"): a machined three-strand cable on SpindleWireGraph, tiered by the spindle LOD - solid
+        // up close, unravelling into a spindle's lace on the prisms' depth ramp, settling back into a
+        // glowing thread, never culled (SwitchRingLod, Docs/SPINDLE_LOD.md §9). Hubs and cones beside
+        // a ring stay prisms. The colour channel is `ToySwitchSignal`:
         //
         //     Domain  -> that domain's plain prism material. RESERVED: in the toybox, a switch
         //                wearing a playable domain's colour is one that HANDS you that domain
@@ -327,6 +337,17 @@ namespace CosmicShore.Gameplay
         public static Material SwitchMaterial(ThemeManagerDataContainerSO theme, ToySwitchSignal signal,
             Domains domain)
         {
+            // NEXT is the one signal that is not a domain reading, so it does not go through the
+            // per-domain material sets at all - it is the free-pickup lime, minted on the prism
+            // shader and cached by colour, so a whole course of highlighted rings is one material.
+            if (signal == ToySwitchSignal.Next)
+                return PrismShaderMaterial(CtaLime(theme),
+                                           theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null);
+            // HALO likewise: the pearl, minted on the prism shader once and cached by colour.
+            if (signal == ToySwitchSignal.Halo)
+                return PrismShaderMaterial(ColorTrace.Retrace(ColorTrace.World, HaloPearl),
+                                           theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null);
+
             var painted = SwitchDomain(signal, domain);
             // Unity's null is not C#'s, so this is an explicit truthiness test rather than `??`.
             var themed = DomainPrismMaterial(theme, painted);
@@ -339,67 +360,147 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The colour a switch of this signal reads as (its label, its hub, its ring tint fallback).</summary>
         public static Color SwitchColor(ThemeManagerDataContainerSO theme, ToySwitchSignal signal, Domains domain)
-            => DomainAccentColor(theme, SwitchDomain(signal, domain));
+            => signal switch
+            {
+                ToySwitchSignal.Next => CtaLime(theme),
+                ToySwitchSignal.Halo => ColorTrace.Retrace(ColorTrace.World, HaloPearl),
+                _ => DomainAccentColor(theme, SwitchDomain(signal, domain)),
+            };
+
+        /// <summary>
+        /// A HALO switch's pearl: a warm white, fixed rather than themed - a halo is light, and the one colour no playable
+        /// domain, no danger rim and no free pickup wears (ToySwitchVocabularyTests keeps it over 0.5 summed channel
+        /// distance from each of them, Gold's accent the nearest at ~0.9).
+        /// </summary>
+        public static readonly Color HaloPearl = new(0.96f, 0.94f, 0.86f);
+
+        /// <summary>
+        /// The free-pickup LIME - the platform's "this one is available to you" colour, taken from
+        /// <c>SO_ColorSet.GetCtaSignalColor</c> and NOT from <c>DarkCTA</c> directly.
+        ///
+        /// <para>A switch ring is a PRISM, and a prism has no <c>lerp(dull, bright, (1-N.V)^4)</c>
+        /// composition to put the pair back together - so the dull half alone renders the shipped
+        /// (0.28, 0.50, 0.08) as a dark olive rather than as lime. The signal accessor normalizes
+        /// the CTA hue to full strength, which is also what makes the themed value and the fixed
+        /// fallback below agree: at (0.5625, 1, 0.15625) against (0.55, 0.95, 0.15) they are the
+        /// same colour, where reading DarkCTA raw put them 0.79 apart and a fallback that does not
+        /// match what it falls back FROM is not a fallback.</para>
+        ///
+        /// <para>The fixed value covers both an absent theme and a palette that authors no CTA at
+        /// all - <c>CosmicWaveColorSetSO</c> and <c>PastelColorSetSO</c> both author it (0,0,0,0),
+        /// so a raw read would paint the ring black on either.</para>
+        /// </summary>
+        public static Color CtaLime(ThemeManagerDataContainerSO theme)
+        {
+            if (theme && theme.ColorSet)
+            {
+                var cta = theme.ColorSet.GetCtaSignalColor();
+                if (cta.a > 0f) return cta;
+            }
+            return new Color(0.55f, 0.95f, 0.15f);
+        }
 
         /// <summary>
         /// A <b>switch ring</b>: one continuous ring square across the flight path, at the radius
-        /// of the trigger volume it advertises, in the prism material its
-        /// <paramref name="signal"/> resolves to. Named in the hierarchy so it is never confused
-        /// with an emblem's tilted halo. Returns null for a waived (non-positive) radius.
+        /// of the trigger volume it advertises, in the colour its <paramref name="signal"/> resolves
+        /// to. Built as the SYNTHETIC WIRE (<see cref="SwitchRingLod"/>): a machined cable up close
+        /// and a spindle from afar. Where the wire cannot run (edit mode, no profile, LOD off) it is
+        /// the signal's prism ring, as before. Named in the hierarchy so it is never confused with an
+        /// emblem's tilted halo. Returns null for a waived (non-positive) radius.
         /// </summary>
         public static GameObject AddSwitchRing(Transform parent, float radius,
             ThemeManagerDataContainerSO theme, ToySwitchSignal signal = ToySwitchSignal.Neutral,
             Domains domain = Domains.Blue)
         {
             if (radius <= 0.01f) return null;
-            var ring = AddRingBody(parent, radius, SwitchColor(theme, signal, domain),
-                                   SwitchMaterial(theme, signal, domain));
+            var color = SwitchColor(theme, signal, domain);
+            var wire = WireRingMaterial(color, out var wireMesh);
+            var ring = AddRingBody(parent, radius, color, wire ? wire : SwitchMaterial(theme, signal, domain));
             ring.name = "SwitchRing";
+            if (wire && ring.TryGetComponent(out MeshFilter filter))
+            {
+                filter.sharedMesh = wireMesh;
+                ring.AddComponent<SwitchRingLod>().Bind(wire);
+            }
             return ring;
         }
 
         /// <summary>
         /// Repaint an existing switch ring for a new signal - the Domain Changer's slots flip to
-        /// the domain you just left, and the ring IS what says which domain that is. Prism
-        /// materials are shared theme assets, so this swaps the reference and never mutates one.
+        /// the domain you just left, and the ring IS what says which domain that is. Materials are
+        /// shared, so this swaps the reference and never mutates one (a wire ring re-registers with
+        /// its LOD on the new colour).
         /// </summary>
         public static void RepaintSwitchRing(GameObject ring, ThemeManagerDataContainerSO theme,
             ToySwitchSignal signal, Domains domain)
         {
             if (!ring || !ring.TryGetComponent(out MeshRenderer renderer)) return;
-            ApplyBodyMaterial(renderer, SwitchColor(theme, signal, domain),
-                              SwitchMaterial(theme, signal, domain));
+            var color = SwitchColor(theme, signal, domain);
+            if (ring.TryGetComponent(out SwitchRingLod lod))
+            {
+                var wire = WireRingMaterial(color, out _);
+                if (wire) { lod.Bind(wire); return; }
+            }
+            ApplyBodyMaterial(renderer, color, SwitchMaterial(theme, signal, domain));
         }
 
-        /// <summary>Switch ring radius for a matrix station, clamped by <see cref="MaxRingSpacingFraction"/>.</summary>
-        public static float StationRingRadius(float triggerRadius, float stationSpacing)
-            => Mathf.Min(triggerRadius, Mathf.Max(1f, stationSpacing) * MaxRingSpacingFraction);
+        // The wire's near materials, one per signal colour, so a course of rings is one material
+        // (and one set of LOD tiers) and a repaint swaps a reference. Nothing mutates these after
+        // creation, and they are never destroyed (the same lifetime as the prism-minted switch
+        // materials), so a ring the LOD hands back always has its material.
+        static readonly System.Collections.Generic.Dictionary<int, Material> s_wireRingMaterials = new();
+
+        static readonly int DullColorId = Shader.PropertyToID("_DullColor");
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int SpindleGirthId = Shader.PropertyToID("_SpindleLodGirth");
+        static readonly int SpindleStrandId = Shader.PropertyToID("_SpindleLodStrand");
+        static readonly int SpindleStrengthId = Shader.PropertyToID("_SpindleLodStrength");
+        static readonly int SpindleDistanceId = Shader.PropertyToID("_Distance");
+        static readonly int SpindleSwayId = Shader.PropertyToID("_SwayAmplitude");
 
         /// <summary>
-        /// Height at which a label clears a switch ring of <paramref name="ringRadius"/> for text
-        /// of <paramref name="fontSize"/>. TMP anchors world text at its MIDDLE and toy labels run
-        /// to two lines (the second at 60%), so half a block is 0.8 x fontSize - clearing that plus
-        /// the ring's own tube is what keeps text off the rim.
+        /// The synthetic wire's NEAR material for a signal colour - <c>SpindleLodProfileSO.wireTemplate</c>
+        /// (SpindleMaterial on SpindleWireGraph), DARK at <c>switchRingDarkShare</c> of the signal and BRIGHT
+        /// at the signal itself (<c>switchRingRimWhiten</c> toward white), so its facets read; the wire's measured
+        /// girth and strand radius, <c>switchRingStrength</c>, no sway and its lace kept out to
+        /// <c>switchRingDistance</c> - and the wire mesh it draws. Null outside Play or wherever the
+        /// spindle LOD cannot run, and the caller keeps the prism ring.
         /// </summary>
-        public static float SwitchRingLabelHeight(float ringRadius, float fontSize)
-            => ringRadius * (1f + RingTubeFraction) + fontSize * 0.85f;
-
-        /// <summary>
-        /// A label sized for content <paramref name="contentRadius"/> across, hung clear above that
-        /// station's switch ring. Font size is unchanged from the pre-ring layout
-        /// (<c>contentRadius x 1.425</c>, i.e. the old <c>1.9 x radius</c> offset x 0.75); only the
-        /// height moves, so the far read is exactly what it was.
-        /// </summary>
-        public static TMP_Text AddRingedLabel(Transform parent, string text, Color color,
-            float ringRadius, float contentRadius)
+        static Material WireRingMaterial(Color signal, out Mesh mesh)
         {
-            float fontSize = Mathf.Max(8f, contentRadius * 1.425f);
-            return AddLabel(parent, text, color, SwitchRingLabelHeight(ringRadius, fontSize), fontSize);
+            mesh = null;
+            var profile = SpindleLodProfileSO.Instance;
+            var set = profile ? profile.SyntheticSet : null;
+            if (set == null || !set.source || !profile.LodEnabled || !profile.WireTemplate) return null;
+            var template = profile.WireTemplate;
+            if (!template.shader || !template.shader.isSupported) return null;
+            // The wire's tiers and the effect's globals are the system's.
+            if (!SpindleLodSystem.EnsureRunning()) return null;
+            mesh = set.source;
+
+            Color32 c = signal;
+            int key = (c.r << 24) | (c.g << 16) | (c.b << 8) | c.a;
+            if (s_wireRingMaterials.TryGetValue(key, out var cached) && cached) return cached;
+
+            var body = new Color(signal.r, signal.g, signal.b, 1f);
+            var mat = new Material(template) { name = $"SwitchRingWire_{ColorUtility.ToHtmlStringRGB(body)}" };
+            // Dark body, bright facets: the prism rings' own pairing (dark = rim x 0.22). Both ends near
+            // the signal colour washed every facet into one flat band.
+            float dark = profile.SwitchRingDarkShare;
+            mat.SetColor(DullColorId, new Color(body.r * dark, body.g * dark, body.b * dark, 1f));
+            mat.SetColor(BrightColorId, Color.Lerp(body, Color.white, profile.SwitchRingRimWhiten));
+            mat.SetFloat(SpindleGirthId, set.girth);
+            mat.SetFloat(SpindleStrandId, set.strandRadius);
+            mat.SetFloat(SpindleStrengthId, profile.SwitchRingStrength);
+            mat.SetFloat(SpindleDistanceId, profile.SwitchRingDistance);
+            mat.SetFloat(SpindleSwayId, profile.SwitchRingSway);
+            s_wireRingMaterials[key] = mat;
+            return mat;
         }
 
         /// <summary>
-        /// A fly-through gate: trigger root facing <paramref name="flightDirection"/>, ring, hub,
-        /// label, and a <see cref="SwapToy"/> that raises <paramref name="onActivated"/> (inheriting
+        /// A fly-through gate: trigger root facing <paramref name="flightDirection"/>, ring and
+        /// hub (no text - see <see cref="CreateRoot"/>), and a <see cref="SwapToy"/> that raises <paramref name="onActivated"/> (inheriting
         /// the standard bloom-in + local-user + freestyle gating + re-arm).
         ///
         /// <para><paramref name="signal"/> is what the RING says (see <see cref="ToySwitchSignal"/>):
@@ -410,7 +511,7 @@ namespace CosmicShore.Gameplay
         /// a gate can say "this changes your domain" without also claiming to start a stroke.</para>
         /// </summary>
         public static GameObject CreateGate(string gateName, Transform parent, Vector3 position,
-            Vector3 flightDirection, float ringRadius, Color color, string label,
+            Vector3 flightDirection, float ringRadius, Color color,
             bool hubIsCone, ToySwitchSignal signal, Domains domain,
             ToyDefinitionSO definition, ToyContext context, System.Action<SwapToy> onActivated)
         {
@@ -420,8 +521,6 @@ namespace CosmicShore.Gameplay
                             SwitchMaterial(Theme(context), signal, domain));
             else
                 AddSphereBody(root.transform, ringRadius * 0.16f, color);
-            // 0.79 x the ring reproduces the pre-ring font exactly (old offset 1.5R x 0.75).
-            AddRingedLabel(root.transform, label, color, ringRadius, ringRadius * 0.79f);
 
             var toy = root.AddComponent<SwapToy>();
             if (onActivated != null) toy.Activated += onActivated;
@@ -696,56 +795,6 @@ namespace CosmicShore.Gameplay
                 Domains.Blue => new Color(0.40f, 0.50f, 1.00f),
                 _ => Color.gray,
             };
-        }
-
-        /// <summary>
-        /// Adds a world-space TMP label above the body. Returns the text so callers can
-        /// recolor/retext it. <paramref name="fontSize"/> defaults to the historic
-        /// <c>0.75 x upOffset</c>; pass it explicitly when the height is set by something other
-        /// than legibility (a label hung above a switch ring - see <see cref="AddRingedLabel"/>),
-        /// or the text grows with the clearance it needed.
-        /// </summary>
-        public static TMP_Text AddLabel(Transform parent, string text, Color color, float upOffset,
-            float fontSize = 0f)
-        {
-            // 3D TextMeshPro uses a RectTransform - create it up front so AddComponent is safe.
-            var go = new GameObject("Label", typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = Vector3.up * upOffset;
-
-            var tmp = go.AddComponent<TextMeshPro>();
-            tmp.text = text;
-            tmp.fontSize = fontSize > 0f ? fontSize : Mathf.Max(8f, upOffset * 0.75f);
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = color;
-            if (TMP_Settings.defaultFontAsset) tmp.font = TMP_Settings.defaultFontAsset;
-            go.AddComponent<BillboardLabel>(); // every toy label reads from all sides
-            return tmp;
-        }
-    }
-
-    /// <summary>
-    /// Faces its transform away from the main camera each LateUpdate so world-space toy text is
-    /// readable from every approach direction. Cheap: one rotation write per frame; re-resolves
-    /// the camera only when the cached one dies (scene loads).
-    /// </summary>
-    public class BillboardLabel : MonoBehaviour
-    {
-        Camera _cam;
-
-        void LateUpdate()
-        {
-            if (!_cam) _cam = Camera.main;
-            if (!_cam) return;
-            // Forward points AWAY from the camera - TextMeshPro's readable face looks at the viewer.
-            Vector3 away = transform.position - _cam.transform.position;
-            if (away.sqrMagnitude < 1e-6f) return;
-            // Directly above/below a label, world-up is colinear with the view direction and
-            // LookRotation's implicit up degenerates (the text rolls wildly) - use the camera's up.
-            Vector3 up = Mathf.Abs(Vector3.Dot(away.normalized, Vector3.up)) > 0.98f
-                ? _cam.transform.up
-                : Vector3.up;
-            transform.rotation = Quaternion.LookRotation(away, up);
         }
     }
 }

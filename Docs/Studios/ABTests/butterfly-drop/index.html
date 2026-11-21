@@ -1,0 +1,876 @@
+<title>Butterfly Fold or Drop</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Chakra+Petch:wght@500;700&display=swap">
+<style>
+/* Layout: the 3D stage fills the screen; one card floats over it for the menu, the vote, the reveal and the designer
+   settings. The game is night space, so this is one dark look on purpose, every colour set explicitly.
+   Type is the Vessel Studio's (Chakra Petch + Atkinson Hyperlegible). Chrome is dust gold, the colour of the
+   Butterfly's falling dust (ButterflyDustField.dustColor), because the dust is the whole idea of B. */
+:root {
+  color-scheme: dark;
+  --night: #060918;
+  --panel: rgba(10, 14, 34, 0.9);
+  --panel-2: rgba(22, 29, 66, 0.92);
+  --line: #2b356b;
+  --fg: #e8ecff;
+  --dim: #9aa6d6;
+  --accent: #ffdb85;      /* dust gold, chrome only */
+  --a: #13fff2;           /* letter A: Jade signal colour (studio-domains.js) */
+  --b: #ffa700;           /* letter B: Gold signal colour */
+  --good: #7dff9a;
+  --warn: #ff6b8a;
+  --display: "Chakra Petch", "Arial Narrow", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[hidden] { display: none !important; }   /* outside the claude.ai viewer a component rule beats [hidden] (L-STU-6) */
+html, body { height: 100%; }
+body { background: var(--night); color: var(--fg); font: 15px/1.45 var(--body); overflow: hidden; -webkit-tap-highlight-color: transparent; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+button { font: 700 0.9rem var(--display); letter-spacing: 0.04em; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 14px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary { background: var(--accent); color: #1a1200; border-color: var(--accent); }
+button.link { background: none; border: 0; padding: 4px 0; color: var(--dim); font: 400 0.85rem var(--body); text-decoration: underline; }
+
+/* ---- the HUD over the stage ---- */
+.hud { position: fixed; z-index: 3; pointer-events: none; font-family: var(--display); text-shadow: 0 1px 3px #000; }
+#hudTop { top: calc(env(safe-area-inset-top, 0px) + 10px); left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+#hudTop .left, #hudTop .right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#hudTop .right { justify-content: flex-end; text-align: right; }
+.letter { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; font: 700 1.25rem var(--display); color: #00110f; flex: none; }
+.letter.A { background: var(--a); } .letter.B { background: var(--b); color: #1a1000; }
+.stat { font-size: 0.95rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.stat b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+#hudBtns { pointer-events: auto; display: flex; gap: 6px; }
+#hudBtns button { padding: 6px 10px; font-size: 0.8rem; background: var(--panel); }
+#help { left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); width: min(660px, calc(100% - 32px)); text-align: center; font: 400 0.95rem/1.35 var(--body); color: var(--fg); background: rgba(6, 9, 24, 0.66); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; transition: opacity 0.6s; }
+#help.faded { opacity: 0; }
+#flash { left: 50%; top: 30%; transform: translate(-50%, -50%); font: 700 1.35rem var(--display); letter-spacing: 0.06em; text-transform: uppercase; opacity: 0; transition: opacity 0.25s; white-space: nowrap; }
+#ability { left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 74px); transform: translateX(-50%); width: 200px; text-align: center; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+#ability .bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; margin-top: 4px; }
+#ability .bar i { display: block; height: 100%; width: 100%; background: var(--accent); }
+#countdown { left: 50%; top: 42%; transform: translate(-50%, -50%); font: 700 4.5rem var(--display); opacity: 0; transition: opacity 0.2s; }
+
+/* ---- the card (menu, vote, thanks, designer settings) ---- */
+#overlay { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; overflow-y: auto; padding-block: calc(env(safe-area-inset-top, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 16px); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); background: radial-gradient(ellipse at center, rgba(6, 9, 24, 0.3), rgba(6, 9, 24, 0.8)); }
+.card { width: min(580px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px 20px 18px; display: grid; gap: 14px; box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55); }
+.eyebrow { font: 700 0.78rem var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 2.6rem/1 var(--display); margin: 0; letter-spacing: 0.02em; text-wrap: balance; }
+h1 .A { color: var(--a); } h1 .B { color: var(--b); }
+h2 { font: 700 1.35rem/1.15 var(--display); margin: 0; text-wrap: balance; }
+.card p { margin: 0; color: var(--fg); max-width: 62ch; }
+.card p.dim, .dim { color: var(--dim); font-size: 0.9rem; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { display: grid; gap: 6px; justify-items: start; text-align: left; padding: 14px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); min-width: 0; }
+.tile .row { display: flex; align-items: center; gap: 10px; }
+.tile .name { font: 700 1.2rem var(--display); }
+.tile .meta { font-size: 0.82rem; color: var(--dim); font-family: var(--body); letter-spacing: 0; font-weight: 400; }
+.tile.A:hover:not(:disabled), .tile.A[aria-pressed="true"] { border-color: var(--a); }
+.tile.B:hover:not(:disabled), .tile.B[aria-pressed="true"] { border-color: var(--b); }
+.tile[aria-pressed="true"] { box-shadow: 0 0 0 2px currentColor inset; }
+.tile.A[aria-pressed="true"] { color: var(--a); } .tile.B[aria-pressed="true"] { color: var(--b); }
+.tile.A[aria-pressed="true"] .meta, .tile.B[aria-pressed="true"] .meta { color: var(--fg); }
+.controls { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 0.9rem; color: var(--dim); }
+.controls kbd { font: 700 0.8rem var(--display); color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
+.opts { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.9rem; color: var(--dim); }
+.opts label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+.actions .note { margin-right: auto; font-size: 0.85rem; color: var(--dim); }
+textarea { width: 100%; box-sizing: border-box; min-height: 84px; resize: vertical; font: 0.95rem/1.4 var(--body); color: var(--fg); background: rgba(0, 0, 0, 0.3); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; }
+label.q { font: 700 0.95rem var(--display); letter-spacing: 0.02em; }
+.reveal { display: grid; gap: 10px; }
+.reveal .item { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+.reveal .item p { font-size: 0.92rem; }
+.tally { display: grid; gap: 6px; }
+.tally .bar { display: flex; height: 26px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); font: 700 0.8rem var(--display); }
+.tally .bar span { display: grid; place-items: center; color: #10131f; white-space: nowrap; overflow: hidden; min-width: 0; }
+.status { font-size: 0.88rem; }
+.status.bad { color: var(--warn); } .status.ok { color: var(--good); }
+.tune { display: grid; gap: 10px; }
+.tune .r { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: 0.9rem; }
+.tune .r input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+.tune .r output { font: 700 0.9rem var(--display); font-variant-numeric: tabular-nums; }
+.tune .r output.changed { color: var(--accent); text-decoration: underline; }
+.tune .r .tip { grid-column: 1 / -1; color: var(--dim); font-size: 0.8rem; }
+
+/* ---- touch controls (phones only) ---- */
+.touch { display: none; }
+body.phone.playing .touch { display: block; }
+#steerZone { position: fixed; z-index: 2; left: 0; bottom: 0; width: 55%; height: 70%; }
+#steerKnob { position: fixed; z-index: 3; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.08); pointer-events: none; display: none; }
+#steerHint { position: fixed; z-index: 2; left: max(14px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); font: 700 0.75rem var(--display); letter-spacing: 0.1em; color: var(--dim); pointer-events: none; }
+#touchBtns { position: fixed; z-index: 3; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); display: grid; grid-template-columns: auto auto; gap: 10px; align-items: end; }
+#touchBtns button { border-radius: 50%; padding: 0; background: rgba(10, 14, 34, 0.7); border: 2px solid var(--accent); touch-action: none; user-select: none; -webkit-user-select: none; }
+#tAbility { width: 92px; height: 92px; font-size: 0.8rem; grid-row: span 2; }
+#tRollL, #tRollR { width: 52px; height: 52px; font-size: 0.7rem; border-color: var(--line) !important; }
+#touchBtns button.on { background: var(--accent); color: #1a1000; }
+body.phone #help { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 100px); font-size: 0.85rem; }
+body.phone #ability { bottom: calc(env(safe-area-inset-bottom, 0px) + 130px); left: auto; right: max(14px, env(safe-area-inset-right, 0px)); transform: none; width: 150px; }
+body.phone #flash { top: 44%; font-size: 1.1rem; }
+@media (max-width: 460px) { h1 { font-size: 2.1rem; } .pair { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { #flash, #countdown, #help { transition: none; } }
+</style>
+
+<div id="stage"></div>
+
+<div class="hud" id="hudTop" hidden>
+  <div class="left"><span class="letter A" id="hudLetter">A</span><span class="stat" id="hudGate">Crystal <b>1/7</b></span></div>
+  <div class="right"><span class="stat" id="hudTime"><b>0:00.0</b></span>
+    <span id="hudBtns"><button id="btnRestart" type="button" title="Restart the lap (R)">Restart</button><button id="btnMenu" type="button" title="Back to the menu (Esc)">Menu</button></span></div>
+</div>
+<div class="hud" id="help" hidden></div>
+<div class="hud" id="flash"></div>
+<div class="hud" id="countdown"></div>
+<div class="hud" id="ability" hidden><span id="abLabel">Ability ready</span><div class="bar"><i id="abBar"></i></div></div>
+
+<div class="touch"><div id="steerZone"></div><div id="steerKnob"></div><div id="steerHint">DRAG HERE TO STEER</div>
+  <div id="touchBtns"><button id="tAbility" type="button">HOLD</button><button id="tRollL" type="button">ROLL<br>L</button><button id="tRollR" type="button">ROLL<br>R</button></div></div>
+
+<div id="overlay">
+  <!-- menu -->
+  <section class="card" id="cardMenu">
+    <div class="eyebrow">Cosmic Shore · Butterfly Time ability test</div>
+    <h1><span class="A">A</span> or <span class="B">B</span>?</h1>
+    <p>The Butterfly is the slowest ship in the fleet, so its Time ability takes it a long way in one go. We built two ways to do it. Fly both around the crystals, then tell us which one you'd rather play.</p>
+    <div class="pair">
+      <button class="tile A" id="flyA" type="button"><span class="row"><span class="letter A">A</span><span class="name">Fly A</span></span><span class="meta" id="metaA">Not flown yet</span></button>
+      <button class="tile B" id="flyB" type="button"><span class="row"><span class="letter B">B</span><span class="name">Fly B</span></span><span class="meta" id="metaB">Not flown yet</span></button>
+    </div>
+    <div class="controls" id="controlsList"></div>
+    <div class="opts"><label><input type="checkbox" id="optInvert"> Invert up and down</label></div>
+    <div class="actions"><span class="note" id="voteNote">Fly both for a few seconds to unlock the vote.</span><button class="primary" id="toVote" type="button" disabled>Pick your favourite</button></div>
+    <div class="actions"><button class="link" id="toTune" type="button">Designer settings</button></div>
+  </section>
+
+  <!-- vote -->
+  <section class="card" id="cardVote" hidden>
+    <div class="eyebrow">Your call</div>
+    <h2>Which did you like better?</h2>
+    <div class="pair">
+      <button class="tile A" id="pickA" type="button" aria-pressed="false"><span class="row"><span class="letter A">A</span><span class="name">I liked A</span></span><span class="meta" id="vmetaA"></span></button>
+      <button class="tile B" id="pickB" type="button" aria-pressed="false"><span class="row"><span class="letter B">B</span><span class="name">I liked B</span></span><span class="meta" id="vmetaB"></span></button>
+    </div>
+    <label class="q" for="why">Why? One line is plenty.</label>
+    <textarea id="why" maxlength="600" placeholder="What felt better, or what bugged you about the other one?"></textarea>
+    <div class="actions"><span class="note status" id="voteStatus"></span><button id="voteBack" type="button">Fly more</button><button class="primary" id="voteSend" type="button" disabled>Send</button></div>
+  </section>
+
+  <!-- thanks + reveal -->
+  <section class="card" id="cardThanks" hidden>
+    <div class="eyebrow">Thanks</div>
+    <h2 id="thanksHead">Here's what you were flying</h2>
+    <div class="reveal" id="reveal"></div>
+    <div class="tally" id="tally" hidden></div>
+    <p class="status" id="saveStatus"></p>
+    <div class="actions"><button id="copyAnswer" type="button">Copy my answer</button><button id="changeVote" type="button">Change my vote</button><button class="primary" id="flyAgain" type="button">Fly again</button></div>
+    <textarea id="copyBox" readonly hidden></textarea>
+  </section>
+
+  <!-- designer settings: the drop's own numbers, which the game does not have yet -->
+  <section class="card" id="cardTune" hidden>
+    <div class="eyebrow">Designer settings</div>
+    <h2>Tune the drop</h2>
+    <p class="dim">These are proposals for the drop (the tiger moth idea). The game has no fields for them yet. They stay in this browser and ride along with your vote. The fold's numbers are the shipped ones and are not tunable here.</p>
+    <div class="tune" id="tuneRows"></div>
+    <div class="actions"><button id="tuneReset" type="button">Back to the proposal</button><button class="primary" id="tuneDone" type="button">Done</button></div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="studio-look.js" onerror="(function(){var s=document.createElement('script');s.src='../../VesselStudio/studio-look.js';document.head.appendChild(s);})()"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const clamp01 = (x) => clamp(x, 0, 1);
+  const smooth = (x) => { const t = clamp01(x); return t * t * (3 - 2 * t); };
+  const DEG = Math.PI / 180;
+  const fmt = (s) => { if (s == null) return '-'; const m = Math.floor(s / 60); return m + ':' + (s - m * 60).toFixed(1).padStart(4, '0'); };
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } } };
+
+  // =====================================================================================================
+  // The shipped numbers. Every value names the asset it was read from (the asset, never a C# initializer).
+  // =====================================================================================================
+  const SHIP = {
+    cruise: 55,                 // Butterfly.prefab VesselTransformer.DefaultThrottleScaler (u/s)
+    pitch: 45, yaw: 45,         // Butterfly.prefab PitchScaler / YawScaler (deg/s at full stick)
+    roll: 70,                   // Butterfly.prefab RollScaler (deg/s)
+  };
+  const FOLD = {                // Assets/_SO_Assets/VesselActions/Butterfly/ButterflyFoldAction.asset
+    reachSpeed: 900, reachRange: 1800, ghostTravelSpeed: 1400, departSeconds: 0.22, arriveSeconds: 0.3,
+    cooldownSeconds: 30,        // shipped; this test uses TEST.cooldown for both (see below)
+  };
+  const CAM = {                 // Assets/_SO_Assets/Camera/ButterflyCameraSettingsSO.asset (Dust mode keeps the authored height)
+    offset: [0, 37.4, -204], followSmoothTime: 0.2, rotationSmoothTime: 5, far: 12000,
+    teleportStep: 50,           // CustomCameraController: a follow point that jumps further in one frame snaps the camera
+  };
+  const DUST = { fallSpeed: 6, life: 1.1, color: 0xffdb85 };   // ButterflyDustField (fallSpeed, moteLifetime, dustColor 1,.86,.52)
+  const TEST = {
+    cooldown: 2.5,              // TEST ONLY, both variants: the shipped 30 s would allow one use a lap
+    crystalRadius: 60,          // TEST ONLY: how close counts as collecting a crystal
+    wakeSpacing: 7,             // TEST ONLY: a block of the narrow Dust-mode wake every 7 u
+  };
+  // The drop (B): a PROPOSAL. Nothing in the game has these fields yet. The speed and reach default to the fold's,
+  // so a held second takes you exactly as far in either variant: the only thing that differs is how you get there.
+  const DROP0 = {
+    dropSpeed: 900,             // = FOLD.reachSpeed
+    dropRange: 1800,            // = FOLD.reachRange
+    dropEase: 0.12,             // seconds to reach full drop speed
+    landBrake: 0.25,            // seconds from letting go to landed; forward speed comes back over the same time
+    camEnter: 0.35,             // seconds for the camera to swing up over the hull
+    camExit: 0.6,               // seconds for the camera to swing back behind it after landing
+    camTilt: 90,                // degrees the camera rig pitches: 90 = down reads as straight ahead
+    layWake: 0,                 // 1 = the wake keeps laying while you drop (a vertical curtain)
+  };
+  const DROP_SPEC = [           // [key, lo, hi, step, label, tip]
+    ['dropSpeed', 300, 1800, 50, 'Drop speed (u/s)', 'How fast the hull falls belly-first. 900 is the fold\'s reach speed.'],
+    ['dropRange', 400, 3600, 100, 'Longest drop (u)', 'You land on your own here even if you keep holding. 1800 is the fold\'s reach.'],
+    ['dropEase', 0, 0.5, 0.01, 'Into the drop (s)', 'Time to reach full speed after the press.'],
+    ['landBrake', 0.05, 0.8, 0.01, 'Landing (s)', 'Time from letting go to landed. Forward flight returns over the same time.'],
+    ['camEnter', 0.05, 1.2, 0.05, 'Camera up (s)', 'Time for the camera to swing up over the hull so down reads as forward.'],
+    ['camExit', 0.1, 2, 0.05, 'Camera back (s)', 'Time for the camera to relevel behind the hull after you land.'],
+    ['camTilt', 0, 90, 5, 'Camera tilt (deg)', '90: the camera rides straight above and looks down the drop. 0: it stays behind you.'],
+    ['layWake', 0, 1, 1, 'Wake while dropping', '1 lays the wake through the drop. 0 pens it up, as the fold does.'],
+  ];
+  const DROP = Object.assign({}, DROP0, store.get('bfab.drop', {}));
+  for (const k of Object.keys(DROP)) if (!(k in DROP0)) delete DROP[k];
+  const dropDiff = () => { const o = {}; for (const k in DROP0) if (Math.abs(DROP[k] - DROP0[k]) > 1e-9) o[k] = DROP[k]; return o; };
+
+  const MECH = {
+    fold: {
+      name: 'The fold', short: 'fold',
+      origin: 'The one in the game today: the Butterfly\'s Fold, its Time ability.',
+      how: 'Hold <b>KEY</b>: you stop, and a ghost of you glides out ahead, further the longer you hold. Let go and you are there.',
+      reveal: 'You stop with your wings shut, a ghost reaches out along your heading, and you blink across when you let go. The camera follows the ghost so you can see where you will land. In the game it also leaves a pair of wormholes behind.',
+    },
+    drop: {
+      name: 'The drop', short: 'drop',
+      origin: 'A new idea from the tiger moth, which escapes bats by shutting its wings and dropping. If it wins, the Butterfly becomes the Tiger Moth.',
+      how: 'Hold <b>KEY</b>: you shut your wings and fall belly-first, the way your dust falls, and the camera swings up over you. Let go to land.',
+      reveal: 'The hull never turns. It flies the way its dust falls instead of the way its nose points, and the camera swings up over it so the drop reads as straight ahead, then levels out behind you when you land. Same reach per second held as the fold.',
+    },
+  };
+
+  // =====================================================================================================
+  // Blind assignment: which mechanic is A is random per viewer, kept across visits.
+  // =====================================================================================================
+  const TEST_ID = 'butterfly-fold-vs-drop-v1';
+  let assign = store.get('bfab.assign', null);
+  if (!assign || assign.test !== TEST_ID) { assign = Math.random() < 0.5 ? { test: TEST_ID, A: 'fold', B: 'drop' } : { test: TEST_ID, A: 'drop', B: 'fold' }; store.set('bfab.assign', assign); }
+  const mechOf = (L) => assign[L];
+  const STATS0 = () => ({ secs: 0, laps: 0, best: null, uses: 0, camPeak: 0, starts: 0 });
+  let stats = store.get('bfab.stats', null);
+  if (!stats || stats.test !== TEST_ID) stats = { test: TEST_ID, A: STATS0(), B: STATS0() };
+  const saveStats = () => store.set('bfab.stats', stats);
+  let invertY = !!store.get('bfab.invert', false);
+
+  const PHONE = (matchMedia('(pointer: coarse)').matches && !matchMedia('(hover: hover)').matches) || /Android|iPhone|iPad|Mobi/i.test(navigator.userAgent);
+  document.body.classList.toggle('phone', PHONE);
+
+  // =====================================================================================================
+  // Vector and quaternion maths (arrays). Local axes follow three.js: forward +z, up +y, so RIGHT is -x.
+  // =====================================================================================================
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const mul = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const len = (a) => Math.hypot(a[0], a[1], a[2]);
+  const norm = (a) => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+  const QI = [0, 0, 0, 1];
+  const qmul = (a, b) => [
+    a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+    a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+    a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+    a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]];
+  const qaxis = (ax, ang) => { const s = Math.sin(ang / 2); return [ax[0] * s, ax[1] * s, ax[2] * s, Math.cos(ang / 2)]; };
+  const qconj = (q) => [-q[0], -q[1], -q[2], q[3]];
+  const qnorm = (q) => { const l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; return [q[0] / l, q[1] / l, q[2] / l, q[3] / l]; };
+  const qrot = (q, v) => { const u = [q[0], q[1], q[2]], t = mul(cross(u, v), 2); return add(add(v, mul(t, q[3])), cross(u, t)); };
+  function qslerp(a, b, t) {
+    let d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3], bb = b;
+    if (d < 0) { d = -d; bb = [-b[0], -b[1], -b[2], -b[3]]; }
+    if (d > 0.9995) return qnorm([a[0] + (bb[0] - a[0]) * t, a[1] + (bb[1] - a[1]) * t, a[2] + (bb[2] - a[2]) * t, a[3] + (bb[3] - a[3]) * t]);
+    const th = Math.acos(d), s = Math.sin(th), wa = Math.sin((1 - t) * th) / s, wb = Math.sin(t * th) / s;
+    return [a[0] * wa + bb[0] * wb, a[1] * wa + bb[1] * wb, a[2] * wa + bb[2] * wb, a[3] * wa + bb[3] * wb];
+  }
+  const qangle = (a, b) => 2 * Math.acos(clamp(Math.abs(a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]), 0, 1));
+  function qbasis(x, y, z) {   // rotation whose columns are x, y, z
+    const m00 = x[0], m01 = y[0], m02 = z[0], m10 = x[1], m11 = y[1], m12 = z[1], m20 = x[2], m21 = y[2], m22 = z[2], tr = m00 + m11 + m22;
+    if (tr > 0) { const s = 0.5 / Math.sqrt(tr + 1); return [(m21 - m12) * s, (m02 - m20) * s, (m10 - m01) * s, 0.25 / s]; }
+    if (m00 > m11 && m00 > m22) { const s = 2 * Math.sqrt(1 + m00 - m11 - m22); return [0.25 * s, (m01 + m10) / s, (m02 + m20) / s, (m21 - m12) / s]; }
+    if (m11 > m22) { const s = 2 * Math.sqrt(1 + m11 - m00 - m22); return [(m01 + m10) / s, 0.25 * s, (m12 + m21) / s, (m02 - m20) / s]; }
+    const s = 2 * Math.sqrt(1 + m22 - m00 - m11); return [(m02 + m20) / s, (m12 + m21) / s, 0.25 * s, (m10 - m01) / s];
+  }
+  // a CAMERA's rotation (three.js cameras look down their -z) looking along f with up as near `up` as it can be
+  function lookRot(f, up) {
+    const z = norm(mul(f, -1)); let x = cross(up, z);
+    if (len(x) < 1e-5) x = cross([0, 0, 1], z); if (len(x) < 1e-5) x = cross([1, 0, 0], z);
+    x = norm(x); return qbasis(x, cross(z, x), z);
+  }
+  const FWD = [0, 0, 1], UP = [0, 1, 0], RIGHT = [-1, 0, 0];
+  // Unity's Vector3.SmoothDamp, per axis (the camera's position follow)
+  function smoothDamp(cur, target, vel, st, dt) {
+    const omega = 2 / Math.max(1e-4, st), x = omega * dt, e = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x), out = [0, 0, 0];
+    for (let i = 0; i < 3; i++) { const ch = cur[i] - target[i], tmp = (vel[i] + omega * ch) * dt; vel[i] = (vel[i] - omega * tmp) * e; out[i] = target[i] + (ch + tmp) * e; }
+    return out;
+  }
+
+  // =====================================================================================================
+  // The course: seven crystals in order. Each long leg is 700 u and points a different way from the hull as it
+  // arrives: straight ahead (the fold's natural line), straight below (the drop's), to the side and above (both
+  // have to turn first). The game flies in a cell; this is a stand-in with the same scale.
+  // =====================================================================================================
+  const CRYSTALS = [[0, 0, 260], [0, 0, 960], [0, -700, 1000], [-200, -700, 1200], [-900, -700, 1200], [-900, 0, 1150], [-400, 0, 500]];
+  const START = { pos: [0, 0, -40], q: QI };
+  const CENTRE = [-450, -350, 600];
+  const TILT_AXIS = [1, 0, 0];   // pitching the rig about local +x by +angle turns its forward toward -up (nose down)
+
+  // =====================================================================================================
+  // The pure step. inp: { pitch, yaw, roll in -1..1 (+ = nose up / right / right wing down), ability: bool }
+  // =====================================================================================================
+  function newWorld(mech) {
+    const w = {
+      mech, t: 0, race: 'countdown', count: 3, raceT: 0, idx: 0,
+      pos: START.pos.slice(), q: START.q.slice(), v: 0,
+      mode: 'fly', held: false, heldT: 0, ghost: null, wither: 1, phaseT: 0, cdUntil: 0,
+      dropDist: 0, dropV: 0, brakeV: 0, camBlend: 0, camTarget: 0,
+      events: [], wake: [], wakeAcc: 0, uses: 0, abDist: 0,
+      cam: null, camPeak: 0, camTurnTotal: 0,
+    };
+    resetCam(w); return w;
+  }
+  const isStill = (w) => w.mode === 'hold' || w.mode === 'depart';
+  const isDropping = (w) => w.mode === 'drop' || w.mode === 'brake';
+  const ready = (w) => w.t >= w.cdUntil;
+  function anchorOf(w) { return (w.mech === 'fold' && isStill(w) && w.ghost) ? w.ghost : w.pos; }
+  function camFrame(w) {
+    if (w.mech !== 'drop') return w.q;
+    return qmul(w.q, qslerp(QI, qaxis(TILT_AXIS, DROP.camTilt * DEG), smooth(w.camBlend)));
+  }
+  function resetCam(w) {
+    const fr = camFrame(w), a = anchorOf(w), p = add(a, qrot(fr, CAM.offset));
+    w.cam = { pos: p, vel: [0, 0, 0], rot: lookRot(sub(a, p), qrot(fr, UP)), last: a.slice() };
+  }
+  function stepCam(w, dt) {
+    const c = w.cam, a = anchorOf(w), fr = camFrame(w), up = qrot(fr, UP), want = add(a, qrot(fr, CAM.offset)), prev = c.rot;
+    if (len(sub(a, c.last)) > CAM.teleportStep) { resetCam(w); w.cam.last = a.slice(); return; }
+    c.pos = smoothDamp(c.pos, want, c.vel, CAM.followSmoothTime, dt);
+    c.rot = qnorm(qslerp(c.rot, lookRot(sub(a, c.pos), up), 1 - Math.exp(-CAM.rotationSmoothTime * dt)));
+    c.last = a.slice();
+    if (w.race === 'running') { const turn = qangle(prev, c.rot) / DEG; w.camTurnTotal += turn; w.camPeak = Math.max(w.camPeak, turn / dt); }
+  }
+  function engage(w) {
+    if (!ready(w)) { w.events.push({ k: 'refused' }); return; }
+    w.uses++; w.events.push({ k: 'engage' });
+    if (w.mech === 'fold') { w.mode = 'hold'; w.heldT = 0; w.ghost = w.pos.slice(); }
+    else { w.mode = 'drop'; w.heldT = 0; w.dropDist = 0; w.dropV = 0; w.camTarget = 1; }
+  }
+  function release(w) {
+    if (w.mode === 'hold') { w.mode = 'depart'; w.phaseT = 0; w.cdUntil = w.t + TEST.cooldown; w.events.push({ k: 'depart' }); }
+    else if (w.mode === 'drop') { w.mode = 'brake'; w.phaseT = 0; w.brakeV = w.dropV; w.cdUntil = w.t + TEST.cooldown; }
+  }
+  function step(w, dt, inp) {
+    w.t += dt;
+    if (w.race === 'countdown') { w.count -= dt; if (w.count <= 0) { w.race = 'running'; w.raceT = 0; w.v = SHIP.cruise; } }
+    else if (w.race === 'running') w.raceT += dt;
+    const live = w.race !== 'countdown';
+    // the trigger: press engages, release lets go (a press during the cooldown is refused and costs nothing)
+    const down = live && !!inp.ability;
+    if (down && !w.held && w.mode === 'fly') engage(w);
+    if (!down && w.held) release(w);
+    w.held = down;
+
+    // rotation: free in flight; the fold keeps roll only (restrictedTurnMultiplier 0); the drop never rotates
+    if (live && !isDropping(w)) {
+      const free = !isStill(w), r = SHIP;
+      let dq = QI;
+      if (free) dq = qmul(dq, qaxis([1, 0, 0], -clamp(inp.pitch || 0, -1, 1) * r.pitch * DEG * dt));
+      if (free) dq = qmul(dq, qaxis([0, 1, 0], -clamp(inp.yaw || 0, -1, 1) * r.yaw * DEG * dt));
+      dq = qmul(dq, qaxis([0, 0, 1], clamp(inp.roll || 0, -1, 1) * r.roll * DEG * dt));
+      w.q = qnorm(qmul(w.q, dq));
+    }
+    const prevPos = w.pos.slice();
+    // A: the fold
+    if (w.mode === 'hold') {
+      w.heldT += dt;
+      const target = add(w.pos, mul(qrot(w.q, FWD), Math.min(w.heldT * FOLD.reachSpeed, FOLD.reachRange)));
+      const d = sub(target, w.ghost), l = len(d), s = FOLD.ghostTravelSpeed * dt;
+      w.ghost = l <= s ? target : add(w.ghost, mul(d, s / l));
+    } else if (w.mode === 'depart') {
+      w.phaseT += dt; w.wither = clamp01(1 - w.phaseT / FOLD.departSeconds);
+      if (w.phaseT >= FOLD.departSeconds) { w.abDist += len(sub(w.ghost, w.pos)); w.pos = w.ghost.slice(); w.ghost = null; w.mode = 'arrive'; w.phaseT = 0; w.wither = 0; w.events.push({ k: 'arrive' }); }
+    } else if (w.mode === 'arrive') {
+      w.phaseT += dt; w.wither = clamp01(w.phaseT / FOLD.arriveSeconds);
+      if (w.phaseT >= FOLD.arriveSeconds) { w.mode = 'fly'; w.wither = 1; }
+    }
+    // B: the drop, along the hull's own down (the way its dust falls), the hull never turning
+    const down3 = mul(qrot(w.q, UP), -1);
+    if (w.mode === 'drop') {
+      w.heldT += dt;
+      w.dropV = DROP.dropSpeed * (DROP.dropEase > 0 ? smooth(w.heldT / DROP.dropEase) : 1);
+      const stepLen = Math.min(w.dropV * dt, DROP.dropRange - w.dropDist);
+      w.pos = add(w.pos, mul(down3, stepLen)); w.dropDist += stepLen; w.abDist += stepLen;
+      if (w.dropDist >= DROP.dropRange - 1e-6) { w.mode = 'brake'; w.phaseT = 0; w.brakeV = w.dropV; w.cdUntil = w.t + TEST.cooldown; }
+    } else if (w.mode === 'brake') {
+      w.phaseT += dt; const k = clamp01(w.phaseT / DROP.landBrake);
+      const v = w.brakeV * (1 - k); w.pos = add(w.pos, mul(down3, v * dt)); w.abDist += v * dt;
+      w.v = SHIP.cruise * k;
+      w.pos = add(w.pos, mul(qrot(w.q, FWD), w.v * dt));
+      if (k >= 1) { w.mode = 'fly'; w.v = SHIP.cruise; w.camTarget = 0; w.events.push({ k: 'land' }); }
+    }
+    // forward flight: the fold is stopped while held and gone while it withers; the drop has no forward speed
+    if (live && (w.mode === 'fly' || w.mode === 'arrive')) { w.v = SHIP.cruise; w.pos = add(w.pos, mul(qrot(w.q, FWD), w.v * dt)); }
+    // the camera blend (B only): up over the hull on the press, back behind it once landed
+    if (w.camTarget > w.camBlend) w.camBlend = Math.min(w.camTarget, w.camBlend + dt / Math.max(0.01, DROP.camEnter));
+    else if (w.camTarget < w.camBlend) w.camBlend = Math.max(w.camTarget, w.camBlend - dt / Math.max(0.01, DROP.camExit));
+    // the wake: penned up while the fold holds or withers; the drop lays it only when asked to
+    const moved = len(sub(w.pos, prevPos)), penned = isStill(w) || (isDropping(w) && !DROP.layWake) || moved > 60;
+    if (!penned && live) {
+      w.wakeAcc += moved;
+      while (w.wakeAcc >= TEST.wakeSpacing) { w.wakeAcc -= TEST.wakeSpacing; w.wake.push({ p: sub(w.pos, mul(qrot(w.q, FWD), 9)), q: w.q.slice() }); if (w.wake.length > 600) w.wake.shift(); }
+    }
+    // crystals: collected by being within reach of one, so a fold's ghost never collects and its arrival does
+    if (w.race === 'running') {
+      const c = CRYSTALS[w.idx];
+      if (len(sub(w.pos, c)) <= TEST.crystalRadius && !isStill(w)) {
+        w.events.push({ k: 'crystal', i: w.idx }); w.idx++;
+        if (w.idx >= CRYSTALS.length) { w.race = 'finished'; w.events.push({ k: 'finish', time: w.raceT }); }
+      }
+    }
+    stepCam(w, dt);
+  }
+
+  // A plain pilot for the attract mode and the test hook. INPUTS only (the game's AI rule). On a long leg it aims
+  // the nose (fold) or the belly (drop) at the crystal, presses, and lets go when it is there.
+  function botInput(w) {
+    const out = { pitch: 0, yaw: 0, roll: 0, ability: false };
+    if (w.race !== 'running') return out;
+    const c = CRYSTALS[Math.min(w.idx, CRYSTALS.length - 1)], d = sub(c, w.pos), dist = len(d);
+    const L = qrot(qconj(w.q), d), rx = -L[0], uy = L[1], fz = L[2];
+    if (w.mode === 'hold') { out.ability = len(sub(w.ghost, w.pos)) < dist - 4; return out; }
+    if (w.mode === 'drop') { out.ability = (w._lastDist == null || dist <= w._lastDist + 0.01) && dist > 20; w._lastDist = dist; return out; }
+    w._lastDist = null;
+    if (isStill(w) || isDropping(w) || w.mode === 'arrive') return out;
+    const long = dist > 300;
+    if (long && w.mech === 'drop') {
+      const errP = Math.atan2(fz, -uy), errR = Math.atan2(rx, -uy);
+      out.pitch = clamp(errP * 3, -1, 1); out.roll = clamp(-errR * 3, -1, 1);
+      const off = Math.acos(clamp(dot(norm(L), [0, -1, 0]), -1, 1)) / DEG;
+      out.ability = ready(w) && off < 2;
+    } else {
+      out.yaw = clamp(Math.atan2(rx, fz) * 3, -1, 1); out.pitch = clamp(Math.atan2(uy, Math.hypot(rx, fz)) * 3, -1, 1);
+      const off = Math.acos(clamp(dot(norm(L), FWD), -1, 1)) / DEG;
+      out.ability = long && w.mech === 'fold' && ready(w) && off < 2;
+    }
+    return out;
+  }
+
+  // =====================================================================================================
+  // Rendering (three.js r128 + the Vessel Studio look)
+  // =====================================================================================================
+  const T = window.THREE;
+  let renderer = null, scene, camera, look = null, hull, ghostG, crystalMeshes = [], wakeMesh, dustPts, motes = null, plankton;
+  const glowTex = (() => { if (!T) return null; const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.3, 'rgba(255,255,255,0.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c); })();
+  function sprite(color, size, opacity) { const s = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color, transparent: true, opacity, depthWrite: false, blending: T.AdditiveBlending })); s.scale.setScalar(size); return s; }
+
+  // The Butterfly at its shipped size (span 21.35, length 11.55): a body and four wings, each on its own hinge.
+  function wingMesh(pts, sign, mat, edgeMat) {
+    const sh = new T.Shape(); pts.forEach(([x, z], i) => (i ? sh.lineTo(x * sign, z) : sh.moveTo(x * sign, z)));
+    const geo = new T.ShapeGeometry(sh), g = new T.Group(), m = new T.Mesh(geo, mat); m.rotation.x = Math.PI / 2; g.add(m);
+    const eg = new T.BufferGeometry().setFromPoints(pts.concat([pts[0]]).map(([x, z]) => new T.Vector3(x * sign, 0.05, z)));
+    g.add(new T.Line(eg, edgeMat)); return g;
+  }
+  function makeButterfly(opts) {
+    const g = new T.Group(), vis = new T.Group(); g.add(vis);
+    const tr = opts && opts.ghost, op = tr ? 0.4 : 1;
+    const wingM = new T.MeshStandardMaterial({ color: 0x13fff2, emissive: 0x0b6d68, roughness: 0.5, side: T.DoubleSide, transparent: tr, opacity: op, depthWrite: !tr, flatShading: true });
+    const bodyM = new T.MeshStandardMaterial({ color: 0x3a4152, emissive: 0x10131c, roughness: 0.4, metalness: 0.4, transparent: tr, opacity: op, depthWrite: !tr });
+    const edgeM = new T.LineBasicMaterial({ color: 0xc8fffb, transparent: true, opacity: tr ? 0.5 : 0.9 });
+    const thorax = new T.Mesh(new T.SphereGeometry(1, 14, 10), bodyM); thorax.scale.set(1.4, 1.2, 2.6); thorax.position.z = 1.2; vis.add(thorax);
+    const abdomen = new T.Mesh(new T.SphereGeometry(1, 14, 10), bodyM); abdomen.scale.set(1.0, 0.9, 3.4); abdomen.position.z = -3.2; vis.add(abdomen);
+    const head = new T.Mesh(new T.SphereGeometry(1, 12, 8), bodyM); head.position.z = 4.4; vis.add(head);
+    const FORE = [[0, 1.6], [3, 3.4], [7.5, 4.0], [10.6, 2.0], [9.4, -0.8], [4.5, -1.3], [0, -0.4]];
+    const HIND = [[0, 0.2], [3.8, -0.4], [7.6, -2.6], [6.4, -5.6], [2.8, -5.4], [0, -2.0]];
+    const wings = [];
+    for (const [pts, z, lag] of [[FORE, 1.2, 0], [HIND, -0.8, 1]]) for (const sign of [1, -1]) {
+      const pivot = new T.Group(); pivot.position.set(0.9 * sign, 0.5, z); pivot.add(wingMesh(pts, sign, wingM, edgeM)); vis.add(pivot);
+      wings.push({ pivot, sign, lag });
+    }
+    if (!tr) { const glow = sprite(0x13fff2, 34, 0.35); vis.add(glow); }
+    g.userData = { vis, wings, beat: 0, shut: 0 };
+    return g;
+  }
+  function poseWings(g, dt, shutWanted, speedish) {
+    const u = g.userData; u.beat += dt * (1.15 + 0.55 * speedish) * Math.PI * 2;
+    u.shut += ((shutWanted ? 1 : 0) - u.shut) * (1 - Math.exp(-10 * dt));
+    const amp = (52 - 36 * speedish) * DEG;   // ButterflyAnimation: 52 deg at a standstill, 16 in a glide
+    for (const wg of u.wings) {
+      const beat = Math.sin(u.beat - wg.lag * 0.18 * Math.PI * 2) * amp, base = (wg.lag ? -6.3 : 14) * DEG;   // the rig's dihedrals
+      const open = base + beat, closed = 84 * DEG;                  // shut over the back: the resting butterfly
+      wg.pivot.rotation.z = wg.sign * (open + (closed - open) * u.shut);
+    }
+  }
+  function initRender() {
+    if (!T) return false;
+    try { renderer = new T.WebGLRenderer({ antialias: true }); } catch (e) { renderer = null; return false; }
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    $('stage').appendChild(renderer.domElement);
+    scene = new T.Scene();
+    camera = new T.PerspectiveCamera(60, 1, 0.5, CAM.far);
+    const C = new T.Vector3(CENTRE[0], CENTRE[1], CENTRE[2]);
+    if (window.VesselStudioLook) { look = window.VesselStudioLook.install(scene, { field: 1600, prismScale: 7, fieldRadius: 1500, fieldHeight: 1000 }); look.placeField(C, 1500, 1000); }
+    else { scene.background = new T.Color(0x060918); scene.add(new T.HemisphereLight(0x9fbaff, 0x1a1230, 0.9)); }
+    // the cell's membrane, faint, so up and down have a far wall to read against
+    const mem = new T.Mesh(new T.IcosahedronGeometry(2400, 3), new T.MeshBasicMaterial({ color: 0x4a6bd8, wireframe: true, transparent: true, opacity: 0.07, depthWrite: false }));
+    mem.position.copy(C); scene.add(mem);
+    // drifting plankton through the whole volume: the parallax that says how fast and which way you move
+    { const n = 14000, p = new Float32Array(n * 3); let s = 99; const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+      for (let i = 0; i < n; i++) { p[i * 3] = CENTRE[0] + (r() - 0.5) * 3600; p[i * 3 + 1] = CENTRE[1] + (r() - 0.5) * 3000; p[i * 3 + 2] = CENTRE[2] + (r() - 0.5) * 3600; }
+      const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(p, 3));
+      plankton = new T.Points(g, new T.PointsMaterial({ color: 0x8fa8ff, size: 7, sizeAttenuation: true, transparent: true, opacity: 0.7, depthWrite: false, map: glowTex, blending: T.AdditiveBlending })); scene.add(plankton); }
+    hull = makeButterfly(); scene.add(hull);
+    ghostG = makeButterfly({ ghost: true }); ghostG.visible = false; scene.add(ghostG);
+    // the narrow Dust-mode wake
+    wakeMesh = new T.InstancedMesh(new T.BoxGeometry(3.2, 1.1, 6.5), new T.MeshStandardMaterial({ color: 0x13fff2, emissive: 0x0a5f5a, roughness: 0.5, flatShading: true }), 600);
+    wakeMesh.count = 0; wakeMesh.frustumCulled = false; scene.add(wakeMesh);
+    // the dust: motes rain from a capsule under the hull and fall along its down (ButterflyDustField)
+    motes = { n: 420, p: new Float32Array(420 * 3), c: new Float32Array(420 * 3), v: new Float32Array(420 * 3), age: new Float32Array(420).fill(99), next: 0, acc: 0 };
+    const dg = new T.BufferGeometry(); dg.setAttribute('position', new T.BufferAttribute(motes.p, 3)); dg.setAttribute('color', new T.BufferAttribute(motes.c, 3));
+    dustPts = new T.Points(dg, new T.PointsMaterial({ size: 4.5, sizeAttenuation: true, vertexColors: true, transparent: true, depthWrite: false, blending: T.AdditiveBlending, map: glowTex }));
+    dustPts.frustumCulled = false; scene.add(dustPts);
+    // crystals
+    CRYSTALS.forEach((c) => {
+      const m = window.VesselStudioLook ? window.VesselStudioLook.crystal(0xffdb85, 11) : new T.Mesh(new T.OctahedronGeometry(11), new T.MeshBasicMaterial({ color: 0xffdb85 }));
+      m.position.set(c[0], c[1], c[2]); scene.add(m); crystalMeshes.push(m);
+    });
+    onResize(); window.addEventListener('resize', onResize);
+    return true;
+  }
+  function onResize() {
+    if (!renderer) return;
+    const W = window.innerWidth, H = window.innerHeight; renderer.setSize(W, H, false);
+    camera.aspect = W / H;
+    // keep about 80 deg across, so a phone held upright still sees beside the hull
+    const hf = 80 * DEG, vf = 2 * Math.atan(Math.tan(hf / 2) / camera.aspect) / DEG;
+    camera.fov = clamp(vf, 50, 100); camera.updateProjectionMatrix();
+  }
+  const tmpM = T ? new T.Matrix4() : null, tmpQ = T ? new T.Quaternion() : null, tmpV = T ? new T.Vector3() : null, tmpS = T ? new T.Vector3(1, 1, 1) : null;
+  function render(w, dt) {
+    if (!renderer) return;
+    hull.position.set(w.pos[0], w.pos[1], w.pos[2]); hull.quaternion.set(w.q[0], w.q[1], w.q[2], w.q[3]);
+    hull.userData.vis.scale.setScalar(Math.max(0.001, w.wither));
+    const shut = isStill(w) || isDropping(w);
+    poseWings(hull, dt, shut, 1);
+    ghostG.visible = !!(w.ghost && w.mode === 'hold');
+    if (ghostG.visible) {
+      ghostG.position.set(w.ghost[0], w.ghost[1], w.ghost[2]); ghostG.quaternion.copy(hull.quaternion);
+      ghostG.userData.vis.scale.setScalar(clamp01(len(sub(w.ghost, w.pos)) / 30)); poseWings(ghostG, dt, false, 1);
+    }
+    // wake
+    const n = w.wake.length; wakeMesh.count = n;
+    for (let i = 0; i < n; i++) { const b = w.wake[i]; tmpV.set(b.p[0], b.p[1], b.p[2]); tmpQ.set(b.q[0], b.q[1], b.q[2], b.q[3]); tmpM.compose(tmpV, tmpQ, tmpS); wakeMesh.setMatrixAt(i, tmpM); }
+    wakeMesh.instanceMatrix.needsUpdate = true;
+    // dust: emitted while the hull is visible, falling along its own down
+    const dn = mul(qrot(w.q, UP), -1), rt = qrot(w.q, RIGHT), fw = qrot(w.q, FWD);
+    if (w.wither > 0.5 && w.race !== 'countdown') {
+      motes.acc += dt * 180;
+      while (motes.acc >= 1) {
+        motes.acc -= 1; const i = motes.next; motes.next = (i + 1) % motes.n;
+        const a = 2 + Math.random() * 26, sx = (Math.random() - 0.5) * 12, sz = (Math.random() - 0.5) * 8;
+        motes.p[i * 3] = w.pos[0] + dn[0] * a + rt[0] * sx + fw[0] * sz; motes.p[i * 3 + 1] = w.pos[1] + dn[1] * a + rt[1] * sx + fw[1] * sz; motes.p[i * 3 + 2] = w.pos[2] + dn[2] * a + rt[2] * sx + fw[2] * sz;
+        motes.v[i * 3] = dn[0] * DUST.fallSpeed; motes.v[i * 3 + 1] = dn[1] * DUST.fallSpeed; motes.v[i * 3 + 2] = dn[2] * DUST.fallSpeed; motes.age[i] = 0;
+      }
+    }
+    for (let i = 0; i < motes.n; i++) {
+      motes.age[i] += dt; const k = motes.age[i] / DUST.life, b = k < 1 ? (1 - k) * 0.95 : 0;
+      motes.p[i * 3] += motes.v[i * 3] * dt; motes.p[i * 3 + 1] += motes.v[i * 3 + 1] * dt; motes.p[i * 3 + 2] += motes.v[i * 3 + 2] * dt;
+      motes.c[i * 3] = b; motes.c[i * 3 + 1] = b * 0.86; motes.c[i * 3 + 2] = b * 0.52;
+    }
+    dustPts.geometry.attributes.position.needsUpdate = true; dustPts.geometry.attributes.color.needsUpdate = true;
+    // crystals: the next one pulses, the collected ones are gone
+    crystalMeshes.forEach((m, i) => {
+      m.visible = i >= w.idx; const next = i === w.idx && w.race !== 'finished';
+      m.scale.setScalar(next ? 1.25 + 0.12 * Math.sin(w.t * 5) : 0.8);
+      if (window.VesselStudioLook) window.VesselStudioLook.spinCrystal(m, w.t + i);
+    });
+    camera.position.set(w.cam.pos[0], w.cam.pos[1], w.cam.pos[2]); camera.quaternion.set(w.cam.rot[0], w.cam.rot[1], w.cam.rot[2], w.cam.rot[3]);
+    if (look) look.update(dt);
+    renderer.render(scene, camera);
+  }
+  let marker = null;
+
+  // =====================================================================================================
+  // Input: keyboard, gamepad, touch - all into one input object
+  // =====================================================================================================
+  const keys = new Set();
+  window.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) return;
+    keys.add(e.code);
+    if (mode === 'play') {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'].includes(e.code)) e.preventDefault();
+      if (e.code === 'KeyR') restart();
+      if (e.code === 'Escape') toMenu();
+    }
+  });
+  window.addEventListener('keyup', (e) => keys.delete(e.code));
+  window.addEventListener('blur', () => keys.clear());
+  const touch = { x: 0, y: 0, ability: false, rollL: false, rollR: false, id: null, x0: 0, y0: 0 };
+  function bindTouch() {
+    const zone = $('steerZone'), knob = $('steerKnob'), R = 60;
+    zone.addEventListener('pointerdown', (e) => { touch.id = e.pointerId; touch.x0 = e.clientX; touch.y0 = e.clientY; try { zone.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ } knob.style.display = 'block'; knob.style.left = e.clientX + 'px'; knob.style.top = e.clientY + 'px'; e.preventDefault(); });
+    zone.addEventListener('pointermove', (e) => { if (e.pointerId !== touch.id) return; touch.x = clamp((e.clientX - touch.x0) / R, -1, 1); touch.y = clamp((e.clientY - touch.y0) / R, -1, 1); knob.style.left = (touch.x0 + touch.x * R) + 'px'; knob.style.top = (touch.y0 + touch.y * R) + 'px'; });
+    const up = (e) => { if (e.pointerId !== touch.id) return; touch.id = null; touch.x = touch.y = 0; knob.style.display = 'none'; };
+    zone.addEventListener('pointerup', up); zone.addEventListener('pointercancel', up);
+    for (const [id, key] of [['tAbility', 'ability'], ['tRollL', 'rollL'], ['tRollR', 'rollR']]) {
+      const b = $(id);
+      b.addEventListener('pointerdown', (e) => { touch[key] = true; b.classList.add('on'); try { b.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ } e.preventDefault(); });
+      const off = () => { touch[key] = false; b.classList.remove('on'); };
+      b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
+      b.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+  }
+  function readInput() {
+    let pitch = 0, yaw = 0, roll = 0, ability = false;
+    if (keys.has('KeyA') || keys.has('ArrowLeft')) yaw -= 1;
+    if (keys.has('KeyD') || keys.has('ArrowRight')) yaw += 1;
+    if (keys.has('KeyW') || keys.has('ArrowUp')) pitch += 1;
+    if (keys.has('KeyS') || keys.has('ArrowDown')) pitch -= 1;
+    if (keys.has('KeyQ')) roll -= 1;
+    if (keys.has('KeyE')) roll += 1;
+    if (keys.has('Space') || keys.has('ShiftLeft') || keys.has('ShiftRight')) ability = true;
+    try {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      for (const gp of pads) {
+        if (!gp) continue;
+        const dz = (v) => (Math.abs(v) > 0.15 ? v : 0);
+        yaw += dz(gp.axes[0] || 0); pitch += -dz(gp.axes[1] || 0); roll += dz(gp.axes[2] || 0);   // the pad's Y is up = -1
+        const lt = gp.buttons[6] ? gp.buttons[6].value : 0;
+        if (lt > 0.3 || (gp.buttons[0] && gp.buttons[0].pressed)) ability = true;
+        break;
+      }
+    } catch (e) { /* gamepads not allowed in this frame */ }
+    yaw += touch.x; pitch += -touch.y; ability = ability || touch.ability; roll += (touch.rollR ? 1 : 0) - (touch.rollL ? 1 : 0);
+    if (invertY) pitch = -pitch;
+    return { pitch: clamp(pitch, -1, 1), yaw: clamp(yaw, -1, 1), roll: clamp(roll, -1, 1), ability };
+  }
+
+  // =====================================================================================================
+  // Screens and flow
+  // =====================================================================================================
+  let mode = 'menu', letter = 'A', world = newWorld(mechOf('A')), attract = newWorld('fold'), attractLaps = 0;
+  attract.race = 'running'; attract.v = SHIP.cruise;
+  function controlsHtml() {
+    return PHONE
+      ? '<span><kbd>Left thumb</kbd></span><span>Drag to steer: up and down pitch, sideways turns</span><span><kbd>HOLD</kbd></span><span>The Time ability: hold it, let go when you are there</span><span><kbd>ROLL</kbd></span><span>Roll left or right</span><span><kbd>Tip</kbd></span><span>Turn your phone sideways for a wider view</span>'
+      : '<span><kbd>W</kbd> <kbd>S</kbd> <kbd>A</kbd> <kbd>D</kbd> or arrows</span><span>Pitch and turn</span><span><kbd>Q</kbd> <kbd>E</kbd></span><span>Roll</span><span><kbd>Space</kbd> hold</span><span>The Time ability: hold it, let go when you are there (gamepad: LT)</span><span><kbd>R</kbd> <kbd>Esc</kbd></span><span>Restart the lap / back to this menu</span>';
+  }
+  function tileMeta(L) {
+    const s = stats[L]; if (!s.starts) return 'Not flown yet';
+    return 'Flown ' + fmt(s.secs) + (s.best != null ? ' · best lap ' + s.best.toFixed(1) + ' s' : ' · no lap yet');
+  }
+  const flownEnough = () => stats.A.secs >= 10 && stats.B.secs >= 10;
+  function showCard(id) { for (const c of ['cardMenu', 'cardVote', 'cardThanks', 'cardTune']) $(c).hidden = c !== id; $('overlay').hidden = !id; }
+  function refreshMenu() {
+    $('metaA').textContent = tileMeta('A'); $('metaB').textContent = tileMeta('B');
+    $('controlsList').innerHTML = controlsHtml(); $('optInvert').checked = invertY;
+    const ok = flownEnough(); $('toVote').disabled = !ok;
+    const myVote = store.get('bfab.vote', null);
+    $('voteNote').textContent = ok ? (myVote && myVote.test === TEST_ID ? 'You picked ' + myVote.pick + '. You can change it.' : 'Ready when you are.') : 'Fly both for 10 seconds or more to unlock the vote.';
+  }
+  function toMenu() {
+    mode = 'menu'; document.body.classList.remove('playing');
+    $('hudTop').hidden = $('help').hidden = $('ability').hidden = true; $('countdown').style.opacity = 0;
+    refreshMenu(); showCard('cardMenu'); $(letter === 'A' ? 'flyA' : 'flyB').focus({ preventScroll: true });
+  }
+  let helpFade = 0;
+  function fly(L) {
+    letter = L; world = newWorld(mechOf(L)); mode = 'play'; stats[L].starts++; saveStats();
+    document.body.classList.add('playing'); showCard(null);
+    $('hudTop').hidden = false; $('help').hidden = false; $('ability').hidden = false;
+    const lt = $('hudLetter'); lt.textContent = L; lt.className = 'letter ' + L;
+    $('help').innerHTML = '<b>' + L + ':</b> ' + MECH[mechOf(L)].how.replace('<b>KEY</b>', PHONE ? 'the <b>HOLD</b> button' : '<b>Space</b>') + ' Collect the gold crystals in order.';
+    $('help').classList.remove('faded'); clearTimeout(helpFade); helpFade = setTimeout(() => $('help').classList.add('faded'), 9000);
+  }
+  function restart() { if (mode === 'play') fly(letter); }
+  $('flyA').addEventListener('click', () => fly('A'));
+  $('flyB').addEventListener('click', () => fly('B'));
+  $('btnRestart').addEventListener('click', restart);
+  $('btnMenu').addEventListener('click', toMenu);
+  $('optInvert').addEventListener('change', () => { invertY = $('optInvert').checked; store.set('bfab.invert', invertY); });
+
+  // ---- designer settings (the drop's proposal numbers) ----
+  const tuneOut = {};
+  function buildTune() {
+    const box = $('tuneRows'); box.innerHTML = '';
+    for (const [key, lo, hi, st, label, tip] of DROP_SPEC) {
+      const r = document.createElement('div'); r.className = 'r';
+      r.innerHTML = '<label></label><output></output><input type="range"><div class="tip"></div>';
+      const id = 'tune-' + key, inp = r.querySelector('input');
+      r.querySelector('label').textContent = label; r.querySelector('label').htmlFor = id; r.querySelector('.tip').textContent = tip;
+      Object.assign(inp, { id, min: lo, max: hi, step: st, value: DROP[key] });
+      inp.addEventListener('input', () => { DROP[key] = parseFloat(inp.value); store.set('bfab.drop', dropDiff()); paintTune(); });
+      tuneOut[key] = { out: r.querySelector('output'), inp, st }; box.appendChild(r);
+    }
+    paintTune();
+  }
+  function paintTune() {
+    for (const k in tuneOut) { const o = tuneOut[k], dec = o.st < 1 ? String(o.st).split('.')[1].length : 0; o.out.textContent = Number(DROP[k]).toFixed(dec); o.out.classList.toggle('changed', Math.abs(DROP[k] - DROP0[k]) > 1e-9); o.out.title = 'proposal ' + DROP0[k]; o.inp.value = DROP[k]; }
+  }
+  $('toTune').addEventListener('click', () => { buildTune(); showCard('cardTune'); });
+  $('tuneDone').addEventListener('click', toMenu);
+  $('tuneReset').addEventListener('click', () => { Object.assign(DROP, DROP0); store.set('bfab.drop', {}); paintTune(); });
+
+  // ---- flash text and the HUD ----
+  let flashT = 0;
+  function flash(text, color) { const el = $('flash'); el.textContent = text; el.style.color = color || '#e8ecff'; el.style.opacity = 1; flashT = 1.2; }
+  function handleEvents(w) {
+    for (const e of w.events) {
+      if (e.k === 'crystal') flash('Crystal ' + (e.i + 1) + '/' + CRYSTALS.length, '#ffdb85');
+      else if (e.k === 'refused') flash('Recharging', '#9aa6d6');
+      else if (e.k === 'finish') {
+        const s = stats[letter]; s.laps++; if (s.best == null || e.time < s.best) s.best = e.time; saveStats();
+        flash('Lap ' + e.time.toFixed(1) + ' s' + (s.best === e.time ? '  best' : ''), '#7dff9a');
+        setTimeout(() => { if (mode === 'play' && world.race === 'finished') { $('help').classList.remove('faded'); $('help').innerHTML = 'Lap done in <b>' + e.time.toFixed(1) + ' s</b>. Press <b>' + (PHONE ? 'Restart' : 'R') + '</b> to go again, or <b>Menu</b> to try the other one and vote.'; } }, 1200);
+      }
+    }
+    w.events.length = 0;
+  }
+  function updateHud(w) {
+    $('hudGate').innerHTML = w.race === 'finished' ? 'Lap <b>done</b>' : 'Crystal <b>' + Math.min(w.idx + 1, CRYSTALS.length) + '/' + CRYSTALS.length + '</b>';
+    $('hudTime').innerHTML = '<b>' + fmt(w.race === 'countdown' ? 0 : w.raceT) + '</b>';
+    const cd = $('countdown'); if (w.race === 'countdown') { cd.textContent = Math.ceil(w.count); cd.style.opacity = 1; } else if (w.raceT < 0.6 && w.race === 'running') { cd.textContent = 'GO'; cd.style.opacity = 1; } else cd.style.opacity = 0;
+    // the ability chip names no mechanic (the test is blind): reach while held, recharge after
+    let label, fill;
+    if (w.mode === 'hold') { const r = len(sub(w.ghost, w.pos)); label = Math.round(r) + ' u'; fill = r / FOLD.reachRange; }
+    else if (isDropping(w)) { label = Math.round(w.dropDist) + ' u'; fill = w.dropDist / DROP.dropRange; }
+    else if (!ready(w)) { label = 'Recharging'; fill = 1 - (w.cdUntil - w.t) / TEST.cooldown; }
+    else { label = 'Ability ready'; fill = 1; }
+    $('abLabel').textContent = label; $('abBar').style.width = Math.round(clamp01(fill) * 100) + '%';
+    if (marker && renderer) {
+      if (w.race !== 'finished') { const c = CRYSTALS[w.idx]; marker.set(camera, new T.Vector3(c[0], c[1], c[2]), 'Crystal ' + (w.idx + 1) + ' · ' + Math.round(len(sub(c, w.pos))) + ' u', '#ffdb85', window.innerWidth, window.innerHeight); }
+      else marker.hide();
+    }
+  }
+
+  // ---- the frame loop (fixed 120 Hz step) ----
+  let last = performance.now(), acc = 0;
+  const DT = 1 / 120;
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (mode === 'play') {
+      acc += dt; const inp = readInput();
+      while (acc >= DT) { step(world, DT, inp); acc -= DT; }
+      if (world.race === 'running') stats[letter].secs += dt;
+      const s = stats[letter]; s.camPeak = Math.max(s.camPeak, Math.round(world.camPeak));
+      if (world.events.some((e) => e.k === 'engage')) s.uses++;
+      handleEvents(world); updateHud(world); render(world, dt);
+    } else {
+      acc += dt;
+      while (acc >= DT) { step(attract, DT, botInput(attract)); acc -= DT; }
+      if (attract.race === 'finished') { attractLaps++; attract = newWorld(attractLaps % 2 ? 'drop' : 'fold'); attract.race = 'running'; attract.v = SHIP.cruise; }
+      attract.events.length = 0; if (marker) marker.hide(); render(attract, dt);
+    }
+    if (flashT > 0) { flashT -= dt; if (flashT <= 0) $('flash').style.opacity = 0; }
+    requestAnimationFrame(frame);
+  }
+
+  // =====================================================================================================
+  // The vote: saved to the artifact's shared store (one document per viewer), with a copy-paste fallback
+  // =====================================================================================================
+  let db = null, uid = null, pick = null, tallyOff = null;
+  const capsReady = (async () => {
+    try {
+      if (!window.claude || !window.claude.use) return;
+      const [d, u] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      db = d; if (u) { try { uid = await u.id(); } catch (e) { uid = null; } }
+    } catch (e) { db = null; }
+  })();
+  function setPick(L) { pick = L; $('pickA').setAttribute('aria-pressed', L === 'A'); $('pickB').setAttribute('aria-pressed', L === 'B'); $('voteSend').disabled = !L; }
+  $('toVote').addEventListener('click', () => {
+    const prev = store.get('bfab.vote', null);
+    $('vmetaA').textContent = tileMeta('A'); $('vmetaB').textContent = tileMeta('B');
+    if (prev && prev.test === TEST_ID) { setPick(prev.pick); $('why').value = prev.why || ''; } else setPick(null);
+    $('voteStatus').textContent = ''; showCard('cardVote'); $('pickA').focus({ preventScroll: true });
+  });
+  $('pickA').addEventListener('click', () => setPick('A'));
+  $('pickB').addEventListener('click', () => setPick('B'));
+  $('voteBack').addEventListener('click', toMenu);
+  $('changeVote').addEventListener('click', () => $('toVote').click());
+  $('flyAgain').addEventListener('click', toMenu);
+  function statFor(mech) { const L = assign.A === mech ? 'A' : 'B', s = stats[L]; return { letter: L, secs: Math.round(s.secs), laps: s.laps, best: s.best != null ? +s.best.toFixed(2) : null, uses: s.uses, camPeak: s.camPeak }; }
+  function answerText(v) {
+    return 'Butterfly fold/drop A/B: I liked ' + v.pick + ' (the ' + MECH[v.mech].short + ').' + (v.why ? ' Why: ' + v.why : '') +
+      ' Best laps: fold ' + (v.flew.fold.best != null ? v.flew.fold.best + ' s' : '-') + ', drop ' + (v.flew.drop.best != null ? v.flew.drop.best + ' s' : '-') + '.' +
+      (Object.keys(v.dropTune).length ? ' Drop settings: ' + JSON.stringify(v.dropTune) : '');
+  }
+  $('voteSend').addEventListener('click', async () => {
+    if (!pick) return;
+    const v = {
+      test: TEST_ID, pick, mech: mechOf(pick), why: $('why').value.trim().slice(0, 600),
+      assign: { A: assign.A, B: assign.B }, flew: { fold: statFor('fold'), drop: statFor('drop') },
+      dropTune: dropDiff(), device: PHONE ? 'phone' : 'pc', at: Date.now(),
+    };
+    store.set('bfab.vote', v);
+    $('voteSend').disabled = true; $('voteStatus').textContent = 'Saving...'; $('voteStatus').className = 'note status';
+    await capsReady;
+    let saved = false, why = '';
+    if (db && uid) {
+      try { await db.doc('votes/' + uid).set(v); saved = true; }
+      catch (e) { why = e && e.code === 'invalid_argument' ? 'This link lets you look but not save.' : 'The save did not go through.'; }
+    } else why = 'Votes save when you open this page signed in to claude.ai with the team\'s link.';
+    showThanks(v, saved, why);
+  });
+  function showThanks(v, saved, why) {
+    $('thanksHead').textContent = 'You liked ' + v.pick + '. Here\'s what you were flying';
+    $('reveal').innerHTML = ['A', 'B'].map((L) => { const m = MECH[mechOf(L)]; return '<div class="item"><span class="letter ' + L + '">' + L + '</span><div><b>' + m.name + '.</b> <span class="dim">' + m.origin + '</span><p>' + m.reveal + '</p></div></div>'; }).join('');
+    const st = $('saveStatus');
+    if (saved) { st.textContent = 'Saved. Thanks for flying.'; st.className = 'status ok'; }
+    else { st.textContent = why + ' Use "Copy my answer" and send it to whoever shared this link.'; st.className = 'status bad'; }
+    $('copyBox').value = answerText(v); $('copyBox').hidden = true;
+    showCard('cardThanks'); watchTally();
+  }
+  $('copyAnswer').addEventListener('click', () => {
+    const t = $('copyBox').value, box = $('copyBox');
+    const done = () => { $('copyAnswer').textContent = 'Copied'; setTimeout(() => { $('copyAnswer').textContent = 'Copy my answer'; }, 1600); };
+    try { navigator.clipboard.writeText(t).then(done, () => { box.hidden = false; box.select(); }); } catch (e) { box.hidden = false; box.select(); }
+  });
+  function watchTally() {
+    if (!db || tallyOff) return;
+    try {
+      tallyOff = db.collection('votes').onSnapshot((snap) => {
+        let f = 0, d = 0; for (const doc of snap.docs) { const x = doc.data(); if (!x || x.test !== TEST_ID) continue; if (x.mech === 'fold') f++; else if (x.mech === 'drop') d++; }
+        const n = f + d, el = $('tally'); if (!n) { el.hidden = true; return; }
+        const pf = Math.round(f / n * 100), pd = 100 - pf;
+        el.innerHTML = '<span class="dim">Everyone so far (' + n + ' vote' + (n === 1 ? '' : 's') + ')</span><div class="bar">' +
+          (f ? '<span style="width:' + pf + '%;background:#13fff2">Fold ' + pf + '%</span>' : '') + (d ? '<span style="width:' + pd + '%;background:#ffdb85">Drop ' + pd + '%</span>' : '') + '</div>';
+        el.hidden = false;
+      }, () => { $('tally').hidden = true; });
+    } catch (e) { /* no tally */ }
+  }
+
+  // ---- boot ----
+  const ok = initRender();
+  if (!ok) { $('stage').innerHTML = '<p style="padding:24px;font-family:var(--display)">This needs WebGL to draw the course. Try a recent Chrome, Edge, Safari or Firefox.</p>'; }
+  const tryMarker = () => { if (ok && !marker && window.VesselStudioLook) marker = window.VesselStudioLook.marker(document.body); return !!marker; };
+  if (!tryMarker() && ok) { const iv = setInterval(() => { if (tryMarker()) clearInterval(iv); }, 300); setTimeout(() => clearInterval(iv), 5000); }
+  if (PHONE) bindTouch();
+  refreshMenu();
+  if (location.hash === '#tune') { buildTune(); showCard('cardTune'); }
+  requestAnimationFrame((t) => { last = t; requestAnimationFrame(frame); });
+
+  // the test hook (headless checks drive the same step the page flies)
+  window.__abTest = {
+    SHIP, FOLD, CAM, DROP, DROP0, TEST, CRYSTALS, MECH, newWorld, step, botInput, qrot, UP, FWD,
+    get assign() { return assign; }, get world() { return world; }, get stats() { return stats; }, fly, toMenu,
+    runLap(mech, maxSeconds) {   // a headless bot lap: the same step, the same pilot, no drawing
+      const w = newWorld(mech); for (let i = 0; i < (maxSeconds || 240) * 120 && w.race !== 'finished'; i++) { step(w, DT, botInput(w)); w.events.length = 0; }
+      return { mech, finished: w.race === 'finished', time: +w.raceT.toFixed(2), uses: w.uses, abDist: Math.round(w.abDist), camPeak: Math.round(w.camPeak), camTurn: Math.round(w.camTurnTotal), crystals: w.idx };
+    },
+  };
+})();
+</script>

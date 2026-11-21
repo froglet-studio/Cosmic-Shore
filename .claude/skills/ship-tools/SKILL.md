@@ -22,6 +22,14 @@ Two asymmetries make this specific failure likely rather than rare:
 So the confirmation has to be **asked for**, not inferred, and the commit has to be
 **scoped**, not `git add -A`.
 
+**§0.05 of `/ship` (the verify rule) applies to any C# in the commit.** Nothing else in this
+skill needs a compiler — every check below is a git, `.meta` and GUID question — so do not
+run `/verify-unity` (not required until that skill merges), do not stand up a syntax-only
+compiler, do not gate the commit on CI being green, and do not wait on checks after
+the push. The one compile in this document belongs to `FrogletToolShipPanel`, which runs in
+the HUMAN's editor, not here. This gate is why the setting is safe: it is exactly the check
+that does not depend on a build.
+
 ## Modes
 
 | Invocation | Behaviour |
@@ -54,6 +62,14 @@ will not have it; its absence proves nothing.
 | **WRITER** | any of the above | its output, committed |
 
 A tool that both audits and offers a "fix" button is a WRITER. Say so.
+
+**A LAB is classified by the same evidence, and it is usually a READER that has one WRITER
+button.** Examples are an in-editor lab window (`*Lab.cs`) or a script that bakes a lab viewer.
+The Occlusion Dither Lab only previews and measures until you press **Bake**, and Bake writes
+the shader. Classify the Bake path, not the window. A viewer generator that writes only its own
+HTML or results under `Tools/`, never under `Assets/`, has no asset output for this gate. Commit
+its output by the lab's own rule (`/labmaker` §5). Either way, a lab on the branch also
+triggers `/ship` §3.55. Note it in the report so the full ship runs it.
 
 ## 3. Establish the truth about each WRITER
 
@@ -103,7 +119,6 @@ Never commit tool output blind. It is the one commit nobody reviews, so you revi
 - The changed set is consistent with what the tool's write path can actually touch — read
   the tool and enumerate it. Files it cannot write are somebody else's change riding
   along: **split them out**, do not sweep them in.
-- `python3 Tools/Build/check_conditional_compilation.py` if any script changed.
 
 ## 6. Commit the output as its own commit
 
@@ -134,9 +149,22 @@ Those belong in `Docs/TOOLING.md`'s tool index; scaffolding does not.
 Order matters: **output first, retirement second.** Deleting the tool while its output is
 still uncommitted strands the output with nothing left that could reproduce it.
 
+## 7.5 Fire CI once (skipped by `check`)
+
+After the last push of this run, dispatch `unity-ci.yml` with `mode: static` on the branch,
+exactly as `/ship` §5.5 says. A `claude/**` branch fires no CI on its own push; this is the
+one dispatch. Fire-and-forget — do not wait on it. If nothing was pushed, fire nothing.
+
+## 7.6 Refresh the Fleet Codex (skipped by `check`)
+
+When the pushed output touches a vessel (a map, prefab, class asset, HUD or ability icon), refresh the codex as
+`/ship` §5.6 says: built on bleeding-edge with this branch merged on top (`--pending`), published to the one codex url.
+
 ## 8. Report
 
 - Every tool: name, menu path, READER/WRITER, and its state from §3.
+- Whether the §7.5 CI dispatch went out (or was refused, with the manual route).
+- The §7.6 Fleet Codex refresh (published hash and pending list), or "no codex surface touched".
 - Which commit carries the output, and what §5 checked on it.
 - What was retired, and what was kept with the reason.
 - Anything a human must still do (an unrun tool, an unsaved editor), stated as a blocker.
@@ -179,7 +207,8 @@ sealed class MyWirer : EditorWindow
 ```
 
 - **Validate & Push** — saves assets and open scenes, runs the built-in checks (`.meta`
-  present, no orphan metas, no unsaved scenes, scripts compile) plus the tool's own
+  present, no orphan metas, no unsaved scenes, and — when a human runs it in the editor —
+  scripts compile) plus the tool's own
   `Validate`, then stages **only** this tool's recorded paths, commits and pushes to the
   current branch. Everything else dirty is listed and deliberately left alone.
 - **Retire Tool** — deletes the tool's own scripts and scratch assets and commits the

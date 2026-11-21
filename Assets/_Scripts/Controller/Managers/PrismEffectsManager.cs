@@ -35,8 +35,7 @@ namespace CosmicShore.Gameplay
 
             var go = new GameObject("[PrismEffectsManager]");
             go.AddComponent<PrismEffectsManager>();
-            Debug.LogWarning("[PrismEffectsManager] No instance found in scene - auto-created. " +
-                             "Consider adding one to the scene to avoid this overhead.");
+            CSDebug.LogVerbose(CSLogChannel.PrismRuntime, "[PrismEffectsManager] Created on first use.");
             return Instance;
         }
 
@@ -133,9 +132,9 @@ namespace CosmicShore.Gameplay
                 // and fauna swarm-eat its trail) from "leak accumulating zombies".
                 // Only log when count is interesting (>0 zombies or >32 healthy)
                 // so the console isn't spammy on quiet scenes.
-                if (zombies > 0 || activeGameObjects > 32)
+                if ((zombies > 0 || activeGameObjects > 32) && CSDebug.IsVerbose(CSLogChannel.PrismRuntime))
                 {
-                    CSDebug.Log($"[PrismEffectsManager] Active implosions: total={activeGameObjects} healthy={healthy} zombies={zombies}");
+                    CSDebug.LogVerbose(CSLogChannel.PrismRuntime, $"[PrismEffectsManager] Active implosions: total={activeGameObjects} healthy={healthy} zombies={zombies}");
                 }
             }
 #endif

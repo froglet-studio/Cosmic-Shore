@@ -53,13 +53,74 @@ namespace CosmicShore.Gameplay
                 LifeForm.AddHealthBlock(this);
 
             // Spindle logic disabled for now
-            spindle ??= transform.parent.GetComponent<Spindle>(); // Every healthPrism requires a spindle parent
+            ResolveSpindle(); // Every healthPrism requires a spindle parent
             if (spindle) spindle.AddHealthBlock(this);
+        }
+
+        /// <summary>
+        /// A living health prism rides its limb's sway (Docs/ECOSYSTEM.md §47). This is the
+        /// creation stamp and it has to be HERE rather than in <see cref="Initialize"/>:
+        /// Initialize runs before the companion entity exists and, on the assembled-flora
+        /// path, before the prism has been re-parented onto its spindle at local identity —
+        /// baking a basis off a transform that is about to change is how a prism ends up
+        /// swaying in the wrong direction with nothing to explain it.
+        /// </summary>
+        protected override void OnCreationComplete()
+        {
+            base.OnCreationComplete();
+            if (spindle) PrismSway.TryStamp(this, spindle);
+        }
+
+        /// <summary>
+        /// Severs this prism from the plant and limb it belonged to, WITHOUT the death cascade
+        /// a removal normally triggers. Called by <see cref="EnvironmentPrismPool.TryRelease"/>:
+        /// a prism in the pool belongs to nobody.
+        ///
+        /// <para>Without this a released prism kept THREE back-references into its previous
+        /// life - <see cref="LifeForm"/>, <c>OwnerFauna</c>, and the cached <c>spindle</c> - and
+        /// the old owner's trackers kept it too. The pool then re-issued it to a plant growing
+        /// in a DIFFERENT cell, and two things went wrong: <see cref="Initialize"/>'s
+        /// <c>spindle ??=</c> kept the OLD limb (so the prism joined a limb about to be
+        /// destroyed), and when the retired world was finally torn down its lifeforms ran
+        /// <c>Die</c> -> <c>DamageAll</c> over a tracker that still listed the re-issued prism,
+        /// blowing it out of the NEW plant. That is the Arkway's "later cells lose their prisms
+        /// but keep their spindles and crystals": the corridor retires a cell while the next one
+        /// grows, so re-issue and teardown overlap, and the loss grows as the pool's stock of
+        /// recycled prisms does.</para>
+        /// </summary>
+        public void DetachForPool()
+        {
+            if (spindle)
+                spindle.ForgetHealthBlock(this);
+            spindle = null;
+
+            var owner = LifeForm;
+            LifeForm = null;
+            if (owner) owner.ForgetHealthBlock(this);
+
+            OwnerFauna = null;
+            PrismSway.Clear(this);
+        }
+
+        /// <summary>
+        /// Fills <see cref="spindle"/> from the parent when it is not set. An explicit Unity-null
+        /// test, never <c>??=</c>: the field is serialized and unassigned on every leaf prefab, and
+        /// in the EDITOR an unassigned serialized reference is a "fake null" object that <c>??=</c>
+        /// treats as set - so leaves never linked to their spindle in Editor play (branches did not
+        /// evaporate with their leaves) while they did in builds. Also parent-safe: a skeleton left
+        /// with no cell sits at the scene root, and the old form dereferenced a null parent on its
+        /// next hit.
+        /// </summary>
+        void ResolveSpindle()
+        {
+            if (spindle) return;
+            var parent = transform.parent;
+            spindle = parent ? parent.GetComponent<Spindle>() : null;
         }
 
         public void Reparent(Transform newParent)
         {
-            spindle ??= transform.parent.GetComponent<Spindle>();
+            ResolveSpindle();
             if (spindle) spindle.RemoveHealthBlock(this);
 
             transform.parent = newParent;
@@ -86,11 +147,20 @@ namespace CosmicShore.Gameplay
         /// </summary>
         /// <param name="newParent">Where the freed prism is re-homed - the host cell. Null
         /// detaches it to the scene root, which is still better than dying with the husk.</param>
-        public void LeaveAsSkeleton(Transform newParent)
+        /// <param name="recycleWhenDestroyed">Natural-death skeletons pass true: nobody keeps a reference to that
+        /// mass any more, so when the food web or a weapon later destroys it, <see cref="PrismRecycler"/> returns it
+        /// to <see cref="EnvironmentPrismPool"/> after its death effect (<see cref="Prism.RecyclesWhenDestroyed"/>).
+        /// Ability plucks (Meerkat swallow, Jacks' net) leave it false: those executors go on holding the prism.</param>
+        public void LeaveAsSkeleton(Transform newParent, bool recycleWhenDestroyed = false)
         {
             if (destroyed) return;
+            if (recycleWhenDestroyed) RecyclesWhenDestroyed = true;
 
-            spindle ??= transform.parent ? transform.parent.GetComponent<Spindle>() : null;
+            // A skeleton is ordinary cell mass and is drawn as one, whoever was drawing the living
+            // body before (a swarm member's body is hidden while the swarm draws it, Docs/SWARM_FAUNA.md §14).
+            SetOwnerHidden(false);
+
+            ResolveSpindle();
             if (spindle)
             {
                 spindle.RemoveHealthBlock(this);
@@ -107,6 +177,11 @@ namespace CosmicShore.Gameplay
 
             transform.SetParent(newParent, true);
 
+            // The lifeform is gone; what is left is ordinary cell mass. Stopping the sway
+            // is the visible half of that — a skeleton that went on swaying would read as
+            // a creature nobody could kill (Docs/ECOSYSTEM.md §47).
+            PrismSway.Clear(this);
+
             NotifyPositionChanged();
             if (SpatialIndexId >= 0)
                 PrismSpatialIndex.Instance?.NotifyOwnershipChanged(SpatialIndexId);
@@ -115,7 +190,7 @@ namespace CosmicShore.Gameplay
         protected override void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false,
                                         float debrisSpeedLimit = 0f)
         {
-            spindle ??= transform.parent.GetComponent<Spindle>();
+            ResolveSpindle();
             if (spindle) spindle.RemoveHealthBlock(this);
 
             base.Explode(impactVector, domain, playerName, devastate, debrisSpeedLimit);
@@ -136,7 +211,7 @@ namespace CosmicShore.Gameplay
         
         protected override void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
-            spindle ??= transform.parent.GetComponent<Spindle>();
+            ResolveSpindle();
             if (spindle) spindle.RemoveHealthBlock(this);
 
             base.Implode(targetTransform, domain, playerName, devastate);

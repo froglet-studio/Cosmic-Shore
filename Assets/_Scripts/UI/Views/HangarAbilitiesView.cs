@@ -32,7 +32,7 @@ namespace CosmicShore.UI
         {
             var model = SelectedModel as SO_VesselAbility;
 
-            if (ClassName != null) ClassName.text = model.Vessel.Name;
+            if (ClassName != null) ClassName.text = model.Vessel.CardName;
             if (ClassLockedImage != null) ClassLockedImage.gameObject.SetActive(model.Vessel.IsLocked);
             if (AbilityName != null) AbilityName.text = model.Name;
             if (AbilityDescription != null) AbilityDescription.text = model.Description;

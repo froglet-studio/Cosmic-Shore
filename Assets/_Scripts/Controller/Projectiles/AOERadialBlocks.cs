@@ -13,8 +13,8 @@ namespace CosmicShore.Gameplay
 {
     public class AOERadialBlocks : AOEConicExplosion
     {
-        // Scale both ray radius and block size in Z
-        private ElementalFloat depthScale = new(1f);
+        /// <summary>This blast LAYS prisms - see <see cref="AOEExplosion.CreatesMass"/>.</summary>
+        public override bool CreatesMass => true;
 
         [SerializeField] private float growthRate = .05f;
 
@@ -47,8 +47,12 @@ namespace CosmicShore.Gameplay
         {
             base.Initialize(initStruct);
 
-            baseBlockScale.z *= depthScale.Value;
-            maxRadius        *= depthScale.Value;
+            // A `private ElementalFloat depthScale = new(1f)` used to scale these two here.
+            // It carried no [SerializeField], so it was never serialized, never bound and
+            // permanently 1 -- and because both lines multiply INSTANCE fields on a POOLED
+            // component, a value other than 1 would have compounded on every reuse. Removed:
+            // an ElementalFloat nothing can author is a constant wearing a scaling channel's
+            // clothes, and the next reader believes it.
 
             rayDirection = coneContainer.transform.forward;
             scaleCurve ??= AnimationCurve.Linear(0, 1, 1, 0.5f);

@@ -1,0 +1,133 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using CosmicShore.Data;
+using Cysharp.Threading.Tasks;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// Plasma-claw spray: while held, scans a forward cone each tick (via
+    /// PrismSpatialIndex.QuerySphere + angle filter) and ignites enemy prisms
+    /// through PrismBurnManager. Free to use — no energy cost by design; every prism it lights
+    /// REFILLS energy instead, by the Mass level (the Grizzly's Mass card).
+    /// Mass-5 state is sampled at IGNITE time: burns started while the upgrade is
+    /// active convert (steal) on burnout even if the level later drops.
+    /// </summary>
+    public sealed class GrizzlyFlamethrowerActionExecutor : ShipActionExecutorBase
+    {
+        /// <summary>HUD: spray active.</summary>
+        public event Action<bool> OnSprayChanged;
+
+        IVesselStatus _status;
+        CancellationTokenSource _sprayCts;
+        readonly List<Prism> _scratch = new();
+        GrizzlyClawConeVisual _cone;
+
+        public override void Initialize(IVesselStatus shipStatus)
+        {
+            _status = shipStatus;
+            EndSpray();
+        }
+
+        void OnDisable() => EndSpray();
+
+        public void BeginSpray(GrizzlyFlamethrowerActionSO so, IVesselStatus status)
+        {
+            if (!so || status == null) return;
+            EndSpray();
+
+            _sprayCts = CancellationTokenSource.CreateLinkedTokenSource(
+                this.GetCancellationTokenOnDestroy());
+
+            // Draw the reach. The cone is built from this ability's own reach (Mass, live) and
+            // ConeHalfAngle - the same two numbers IgniteCone filters on - so the
+            // visual cannot drift from what actually catches fire. IgniteCone redraws it
+            // each tick, so a Mass level that moves mid-spray moves the cone with it.
+            var vesselTf = status.Transform;
+            if (vesselTf != null)
+            {
+                _cone = GrizzlyClawConeVisual.EnsureFor(vesselTf);
+                _cone?.Show(so.RangeFor(status), so.ConeHalfAngle);
+            }
+
+            OnSprayChanged?.Invoke(true);
+            SprayAsync(so, status, _sprayCts.Token).Forget();
+        }
+
+        public void EndSpray()
+        {
+            _cone?.Hide();
+            if (_sprayCts == null) return;
+            _sprayCts.Cancel();
+            _sprayCts.Dispose();
+            _sprayCts = null;
+            OnSprayChanged?.Invoke(false);
+        }
+
+        async UniTaskVoid SprayAsync(GrizzlyFlamethrowerActionSO so, IVesselStatus status, CancellationToken token)
+        {
+            try
+            {
+                float tickSeconds = so.IgniteTicksPerSecond > 0f ? 1f / so.IgniteTicksPerSecond : 0.25f;
+                var burn = PrismBurnManager.EnsureInstance();
+
+                while (!token.IsCancellationRequested)
+                {
+                    IgniteCone(so, status, burn);
+                    await UniTask.Delay(TimeSpan.FromSeconds(tickSeconds),
+                        DelayType.DeltaTime, PlayerLoopTiming.Update, token);
+                }
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        void IgniteCone(GrizzlyFlamethrowerActionSO so, IVesselStatus status, PrismBurnManager burn)
+        {
+            var index = PrismSpatialIndex.Instance;
+            var vesselTf = status?.Vessel?.Transform;
+            if (index == null || burn == null || vesselTf == null) return;
+
+            var origin = vesselTf.position;
+            var forward = vesselTf.forward;
+            float range = so.RangeFor(status);
+            int bite = so.IgnitesPerTickFor(status);
+            _cone?.Show(Mathf.Round(range), so.ConeHalfAngle);   // whole units: a drifting level rebuilds the mesh only when the reach really moved
+
+            // Sphere centered mid-cone, then angle-filter — QuerySphere is the only
+            // spatial primitive and this keeps the scan cheap.
+            _scratch.Clear();
+            index.QuerySphere(origin + forward * (range * 0.5f), range * 0.6f, _scratch);
+
+            bool convert = status.ElementalAbilityHandler != null &&
+                           status.ElementalAbilityHandler.IsUpgradeActive(Element.Mass);
+            float cosLimit = Mathf.Cos(so.ConeHalfAngle * Mathf.Deg2Rad);
+            int ignited = 0;
+
+            foreach (var prism in _scratch)
+            {
+                if (ignited >= bite) break;
+                if (prism == null || prism.destroyed) continue;
+                if (prism.Domain == status.Domain) continue;
+
+                var to = prism.transform.position - origin;
+                float dist = to.magnitude;
+                if (dist > range || dist < 0.01f) continue;
+                if (Vector3.Dot(to / dist, forward) < cosLimit) continue;
+
+                // Super-shielded mass cannot burn; the flame still lands on it, visibly - the
+                // deflection jiggle - and spends no ignite on it (Docs/LIT.md, "dynamic contact
+                // never does nothing").
+                if (prism.AbsorbSuperShieldHit(0f)) continue;
+
+                burn.Ignite(prism, status.PlayerName, status.Domain, convert);
+                ignited++;
+            }
+
+            // MASS: the claw feeds the Grizzly. Each prism it lit this tick refills energy.
+            if (ignited > 0 && status.ResourceSystem)
+                status.ResourceSystem.ChangeResourceAmount(so.EnergyIndex, ignited * so.EnergyPerIgniteFor(status));
+        }
+    }
+}

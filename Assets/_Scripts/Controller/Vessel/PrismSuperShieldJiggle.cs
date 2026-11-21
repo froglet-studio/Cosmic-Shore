@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     ///
     /// This is §1 ANIMATION — a pure function of the clock and what was known at the hit — so
     /// it is a per-instance STAMP. It is deliberately NOT the §4.7 global-uniform shape used
-    /// by <c>PrismOcclusionCorridor</c> and <c>PrismDestructionSight</c>: those are
+    /// by <c>PrismOcclusionCorridor</c> and <c>PrismLit</c>: those are
     /// view-dependent (they change every frame for every prism as the camera moves), a jiggle
     /// is not.
     /// </summary>
@@ -122,6 +122,11 @@ namespace CosmicShore.Gameplay
             if (!stamped && prism.TryEnsureRenderEntityForStamp())
                 stamped = PrismRenderService.StampJiggle(in prism.RenderHandle, now, duration, in p);
 
+            // No Entities Graphics on this device (a WebGL2 browser): the same stamp rides the
+            // MeshRenderer's property block (Docs/PRISM_ANIMATION.md §4.11). False everywhere else.
+            if (!stamped)
+                stamped = PrismMeshRendererStamps.StampJiggle(prism.StampRenderer, now, duration, in p);
+
             if (!stamped)
             {
                 // STRICT MODE: no CPU fallback. The prism simply absorbs the hit without moving,
@@ -172,6 +177,8 @@ namespace CosmicShore.Gameplay
 
             float padding = CullingPadding(radius, config.MaxTiltRadians, prism.transform.lossyScale);
             PrismRenderService.ExpandBoundsForClockAnimation(in prism.RenderHandle, float3.zero, padding);
+            // §4.11 twin (no-op where entities run, and the entity calls above no-op where they do not).
+            PrismMeshRendererStamps.ExpandBounds(prism.StampRenderer, mesh, float3.zero, padding);
         }
 
         /// <summary>
@@ -240,6 +247,7 @@ namespace CosmicShore.Gameplay
                 if (prism == null || prism.LastSuperShieldJiggleTime != stampTime) return;
 
                 PrismRenderService.ClearJiggleStamp(in prism.RenderHandle);
+                PrismMeshRendererStamps.ClearJiggleStamp(prism.StampRenderer); // §4.11 twin
                 var mesh = prism.EffectiveRenderMesh();
                 if (mesh != null)
                     PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, mesh);

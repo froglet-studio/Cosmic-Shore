@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
+  m_Name: SO_Class_Goby
+  m_EditorClassIdentifier: 
+  Class: 18
+  Name: Goby
+  Description: Two seats, one hull, like a goby and the pistol shrimp it shares a burrow
+    with. One player flies the Goby, the hull, on two thumbs and lays the path; the other
+    rides that path side on as the Pistol, a sidescroller - diving down the hills,
+    launching into clusters and firing vortex rings. D-pad left or right swaps seats;
+    the AI takes the empty one.
+  CrewNames:
+  - Goby
+  - Pistol
+  CrewNameTemplate: '{0} and {1}'
+  PrimaryElement: 3
+  Element: {fileID: 0}
+  InitialResourceLevels:
+    Mass: 0
+    Charge: 0
+    Space: 0
+    Time: 0
+  IconActive: {fileID: 21300000, guid: 5b6726ed5424e3deb8369214abbba94d, type: 3}
+  IconInactive: {fileID: 21300000, guid: 02d2ae58371fce5a26b91cc6fa267784, type: 3}
+  PreviewImage: {fileID: 21300000, guid: 96244072175522bcf4b6a44b67dd1e4c, type: 3}
+  SquadImage: {fileID: 21300000, guid: 9623ac1001600874773566faccc6c9d9, type: 3}
+  TrailPreviewImage: {fileID: 0}
+  CardSilohoutteActive: {fileID: 21300000, guid: 5b6726ed5424e3deb8369214abbba94d, type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: a07d7983156c6c5c26dd3bacb13484b4, type: 3}
+  Abilities: []
+  Games: []
+  TrainingGames: []
+  gameplayParameter1:
+    LeftHandLabel: Casual
+    RightHandLabel: Challenging
+    Value: 0.5
+  gameplayParameter2:
+    LeftHandLabel: Relaxing
+    RightHandLabel: Thrilling
+    Value: 0.6
+  gameplayParameter3:
+    LeftHandLabel: Solo
+    RightHandLabel: Social
+    Value: 0.8
+  isLocked: 0
+  ownedFromStart: 1
+  UnlockCost: 0

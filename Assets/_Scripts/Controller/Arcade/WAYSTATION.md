@@ -1,0 +1,616 @@
+# Waystation (`GameModes.Waystation = 58`)
+
+> **Since 2026-11-11 the Drop Towers are LANTERN TOWERS** (Yash: "make the Tiger Moth's Time game super fun"). Every hop
+> stands between two dotted lantern posts that reach as deep as that hop can land; from I2 some hops are tight and their
+> lanterns visibly short; a deep landing lights its lanterns in your colour and a run of them lights the tower; at I4 a
+> Time crystal hangs on every plunge. The AI reads the same lanterns. Section "Lantern Towers" below; the design round,
+> the judge panel and the numbers are `Docs/Studios/TIGER_MOTH_TIME.md` §6. **Not run in the editor yet.**
+>
+> **Since 2026-11-01 Waystation is the Drop Tower race** (Shombith: "make Waystation Prototype as Waystation"). It
+> was built beside this mode as Waystation Prototype (GameModes 76, PR #1661) and then folded in: the towers, their
+> walls and the hop autopilot now live in `WaystationTower` and `WaystationController`, and 76 is retired and reserved.
+> Garrett's clusters, square exit gates and belly-aim autopilot are unchanged. The design round, its numbers and the
+> fun score are in `Docs/Studios/TIGER_MOTH_TIME.md`. Everything from "The loop, in the Butterfly's own terms" down is
+> the Butterfly- and Fold-era record of the clusters, kept because the clusters are still those clusters.
+>
+> **Flown by the Tiger Moth since 2026-10-29**, when it replaced the Butterfly (`R_VesselActions/TIGER_MOTH.md`). The
+> exit gate faces SQUARE to the next cluster since the same day (Garrett: "keep your flow by dropping to the next
+> cluster").
+
+The **Tiger Moth's Time race**. The rings come in **clusters**, coils you weave, with a **Drop Tower** of short hops in
+every gap but the last, and one long drop to finish. Every pilot flies the same course in ORDER, and the first
+**DOMAIN** whose **LEAD RUNNER** threads the last ring wins.
+
+| | |
+|---|---|
+| Scene | `Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity` |
+| Controller | `WaystationController : GateRaceController` (clusters' belly-aim autopilot, tower walls, hop autopilot); `WaystationController.Feedback.cs` (lanterns, crown gems, the local pilot's grade, its lights and sound slots) |
+| Course | `WaystationCourse` (clusters) + `WaystationTower` (towers, walls, shelves, lanterns, crown gems), assembled by `WaystationCourseSource`; `WaystationHopPlan` (grades, streak, the AI's target depth) |
+| Metric | `ScoringMetric.SwitchesThreaded` (9) — **reused**, not added |
+| Domain fold | `ScoringMetrics.BestByDomain` (the lead runner, via `GateRaceScoringRuleSO`) |
+| Rule asset | `WaystationScoringRule.asset` — a **second asset** on `GateRaceScoringRuleSO` |
+| Turn monitor | `RaceGateTurnMonitor` — the platform's, which reads the laid course's ring count |
+| Target | `EndConditionOverridesSO.waystationClusterTarget` (5 CLUSTERS; the finish line is every ring laid, 18-41) |
+| Comeback | rate **0.4** (sized on the shortest race, 15 cluster rings) |
+| Cell | `Skim Race Cell Config` — the same cell Switchback runs in |
+| Offline authority | `Tools/Build/waystation_tower_course.py` (`--check`, `--self-test`, `--compile`, `--sweep`) over `Tools/Build/waystation_course.py` (the clusters) |
+| Compile harnesses | `Tools/Build/waystation_tower_harness/` (towers; `run_tests.sh` runs the shipped `WaystationTowerTests` and `WaystationHopPlanTests` without Unity), `Tools/Build/waystation_harness/` (clusters) |
+| Generator | `Tools/Build/author_waystation_assets.py` (`--check`; it also retires the prototype's assets and registrations) |
+
+## Lantern Towers (2026-11-11)
+
+**The problem it solves.** A Drop Tower hop was a timing test with one right answer per rung: hold for the window's
+middle. Nothing told you how deep you could land, every hop of a rung was the same, and the race gave nothing back for
+a good hold. Lantern Towers make the HOLD a decision you read off the world, hop by hop.
+
+### What the player sees
+
+1. **Lanterns.** Every hop that has a hop after it stands between two dotted Blue posts, either side of the drop line,
+   from the window's near edge down to a little short of the hop's **shelf**: the deepest landing after which the Drop
+   is recharged and the roll done exactly as you reach the next press point (`WaystationTower.ShelfDepth`). The posts
+   get denser over their last 30-45 u, the **deep band**. One rule at every rung: *land as deep as the lanterns reach.*
+2. **Tight hops (I2 and up).** A share of the down-hops is laid with a short runway after it (`ShelfShare`,
+   `ShelfCutMin..Max`), so its shelf - and its lanterns - stop well short of the window's far edge. Land past them and
+   you reach the next ring before the Drop is back: you press late, and past the hop's **far edge**
+   (`WaystationTower.FarEdge`) the ring is out of reach and you loop round for it (or meet the pipe). Loose hops let you
+   land deep; tight ones punish it. You can only tell them apart by looking.
+3. **The grade, in the world.** Each landing on a tower ring is graded against its lanterns (`WaystationHopPlan`):
+   Deep (the deep band, or past it but still inside the far edge), Clean (inside the lanterns), Short (on the plate),
+   Past (beyond the far edge, or a missed ring). A Deep landing lights that hop's lanterns in YOUR domain's colour for a
+   second (a `PrismLit` light; the prisms stay Blue), a Clean one half as bright. Three, six and ten Deep landings in a
+   row light the whole tower. Nothing is posted as text: the light is on the posts.
+4. **The crown gem (I4).** A Time crystal hangs on each tower's plunge line, 40 u short of the plunge's deepest landing:
+   land a little short of max and you fly through it (+1 Time, the ordinary crystal rule); land at max and you skip it.
+5. **The AI reads the same lanterns.** It aims for the middle of each hop's deep band plus its own seat's error, at its
+   live speed, released on the nearest frame; it turns round and re-flies a press point it overshot instead of flying
+   on for ever; at I4 it lands short of the gem. The four seats differ, so they are beatable and not identical.
+
+### Ladder (one added demand per rung)
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Added demand | hold into the lanterns; every hop loose | **read the lanterns' length**: tight hops | roll gates (existing) | **the crown gem**: depth against +1 Time |
+| Window (travel), unchanged | 50..250 u | 66..234 u | 85..225 u | 102..218 u |
+| Tight share / cut | 0 | 0.40 / 50-100 u | 0.50 / 45-80 u | 0.75 / 40-90 u |
+| Deep band | 45 u | 45 u | 40 u | 30 u |
+| Roll gates / danger share, unchanged | 0 / 0.10 | 0 / 0.20 | 0.5 / 0.35 | 1 / 0.50 |
+| AI seat error | ±6 u | ±10 u | ±12 u | ±12 u |
+| Crown gems | - | - | - | one a tower (≤ 3) |
+
+At I1 most towers are a single plunge (1.27 down-hops a tower on average), so a race shows only a few lantern hops
+there: I1 is the introduction, the lanterns' work starts at I2.
+
+### What the mode owns, and what it does not touch
+
+| Piece | Where |
+|---|---|
+| Shelf, laid depth, far edge, tight hops, lanterns, crown gems | `WaystationTower` (pure; a tight hop's runway is sized in `Lay`, the rest is read back from the broadcast course on every peer) |
+| Grade, streak, AI target depth, seat error | `WaystationHopPlan` (pure) |
+| Lanterns laid and regrown, gems minted (Headlong's stampede recipe), the local grade, its light and sounds | `WaystationController.Feedback.cs` |
+| AI hop: live-speed hold, nearest-frame release, miss recovery (`aiHopMissMargin`) | `WaystationController.TickHops` / `TryHopAim` |
+| Wall regrowth: a tile the dust STOLE stays standing (it is still the wall); before, a Blue tile was laid on top of it | `WaystationTower.TileNeedsRegrow` |
+| Seven FMOD slots, all shipped EMPTY, local pilot only | `hopDeepEvent`, `hopCleanEvent`, `hopShortEvent`, `hopPastEvent`, `streakTierEvents[3]`, `streakBrokenEvent`, `crownGemEvent` |
+| Toasts | no new ids: 117 and 118 re-worded for the lanterns ("land between the lanterns", "short lanterns mean a tight hop") |
+
+**The vessel is not changed** (LOCKED, Shombith 2026-10-31): no Tiger Moth code, asset or number moved. The lanterns
+are environment prisms (shielded, Blue, off every flight line by 18 u or more), the gem is an ordinary Time crystal,
+and the grade reads the Drop executor's public `IsDropping`.
+
+### Gates
+
+```
+py -3 Tools/Build/waystation_tower_course.py --check          # 200 seeds x 4: 16 checks
+py -3 Tools/Build/waystation_tower_course.py --self-test      # 12 negative controls + the hull radius
+py -3 Tools/Build/waystation_tower_course.py --compile        # the shipped C# against the model
+py -3 Tools/Build/waystation_tower_course.py --sweep          # what reading the lanterns saves
+bash Tools/Build/waystation_tower_harness/run_tests.sh --self-test   # the shipped EditMode tests, no Unity, + 8 mutations
+py -3 Tools/Build/author_waystation_assets.py --check
+```
+
+New checks: `shelf` (the course says what `Lay` laid; the shelf presses exactly on time; the hash draws the authored
+tight share), `past` (a landing 5 u past the far edge cannot reach the next ring), `lantern` (every post segment clear
+of every flight line by the hull + 4 u + its own reach, of every ring's mouth and every plate, inside the cell),
+`gem` (I4 only, one a tower, reachable by a short plunge and skipped by the deepest, clear of every tile and mouth),
+`aibudget` (the AI's target, with a 30 fps frame and the live-speed carry, stays 2 u inside the plate and the far
+edge on every hop and seat), and the hull radius against `TigerMoth.prefab`'s Hull collider.
+
+### Measured (2026-11-11)
+
+`waystation_tower_course.py --sweep --seeds 200` (release on the nearest 60 fps frame, +-8 u carry; a miss costs one
+8 s turning circle). "Strict" is against the BEST fixed plan per rung (the best constant depth, or deep sideways and
+a constant down), not against today's AI:
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Reading the lanterns saves (tower time, strict) | -0.5 % | **3.4 %** | **3.8 %** | **3.2 %** |
+| ... of the whole race (strict) | -0.2 % | 1.2 % | 1.1 % | 0.9 % |
+| ... of tower time against today's AI (the window's centre) | 18.1 % | 14.5 % | 12.8 % | 10.5 % |
+| An expert at the hard edge saves (strict, tower time) | 0.3 % | 4.8 % | 5.1 % | 5.3 % |
+| Best fixed depth on a down-hop | 250 u | 171 u | 180 u | 167 u |
+| A lantern reader's race (median, modelled) | 59.5 s | 85.5 s | 105.2 s | 126.5 s |
+| Today's AI on the OLD towers (median, modelled) | 61.9 s | 85.0 s | 110.4 s | 128.7 s |
+| The new AI: misses a race, deep landings | 0, 35 % | 0, 55 % | 0, 59 % | 0, 72 % |
+| Crown gems a race, new AI / reader | - | - | - | 2.8 / 0.0 |
+| Drop every (centre hops) | 5.1 s | 3.8 s | 3.7 s | 3.2 s |
+| Lantern segments / wall tiles a course (max) | 96 / 960 | 80 / 960 | 112 / 1,472 | 130 / 1,984 |
+
+I1 is every hop loose, so there is nothing to read (a fixed deep pilot is as good), as the ladder intends. A pilot who
+IGNORES the lanterns gets 1-2 more rings and up to 2.7 s more tower time at I2-I4 from the tight hops; one who reads
+them finishes as fast as or faster than today's pilot did on the old towers. The race clock is a model: cluster legs
+at cruise with a turn allowance, towers flown hop by hop; whole-race medians over the ~90 s target at I3/I4 were
+already there before this round.
+
+### What was tried and dropped
+
+- **Lanterns at the depth the course was laid for** (the shelf with the 0.35 s reaction kept). Reading them saved
+  1.2 / 1.0 / -0.7 % of tower time at I2-I4 against the best fixed depth: a fixed pilot simply spent the reaction
+  margin. At the shelf proper they save what the table above says. The reaction stays built into the course (`Lay`
+  sizes each tight runway with it); it is just not hidden inside the lanterns.
+- **Wider cuts** (I2 40-130 u, I3 40-110 u): no better than the shipped cuts (2.6-3.2 %), and more misses for fixed
+  pilots. The I4 cut was widened (40-90 u at 0.75) because the narrowest window needed more spread to stay worth reading.
+- **Lanterns on the plunge.** Not laid: the plunge's posts would reach into the next cluster's approach, and the plunge
+  has no next press to set a shelf. Its deep landing is graded, and at I4 the gem marks it.
+- **Rim/core danger, a bare-gap pick, ClustersByIntensity, a Time-dependent shelf, re-laying prisms in the pilot's
+  domain**: out of scope (each either changes Garrett's cluster pick, a shared file, or a prism's team).
+
+### Found and fixed on the way
+
+- **A post through a ring's mouth.** `Lay`'s first post test only looked at the rim and the centre; I4 seeds 77 and 190
+  stood a post in a cluster ring's mouth. The test now finds where the post crosses the ring's plane.
+- **`SegmentDistance` for a point.** The closed form treats a zero-length segment as parallel and answered from the
+  wrong end (88 u for a true 35 u), so every ring and plate bound passed what it should have caught.
+- **A later tower's plate on a plunge's landing stretch** (I4 seed 11: 2.5 u from the crown gem). The plunge's landing
+  stretch is now an obstacle for the towers laid after it.
+
+### In-editor verification (owed; `Docs/UNITY_VERIFICATION_CHECKLIST.md`)
+
+None of this has been compiled by Unity or flown. The pure classes (`WaystationTower`, `WaystationHopPlan`) and both test
+classes compile and pass under Roslyn against the harness's Unity math stub; the controller partials reach Netcode and
+the gameplay monolith and have had a read, no type check. Only the editor can show: whether the lanterns read from the
+chase camera and through the drop camera; how the domain-coloured light looks on Blue posts and whether it fits
+PrismLit's slot bank; the gem pickup at drop speed; the AI finishing at I1-I4 with real steering; phone frame rate with
+up to ~130 post segments and ~2,000 tiles at I4; and the feel of the hold.
+
+## The Drop Tower (2026-11-01)
+
+### The loop, in the Tiger Moth's own terms
+
+1. **Clusters.** You weave the coils of rings. Each cluster ends at its square exit
+   gate, which leaves the next cluster under your belly once you roll.
+2. **A Drop Tower in every gap but the last.** The tower is a staircase of short hops laid along the gap's drop line:
+   - Each hop's ring hangs just past a **floor plate**, under the line you fly.
+   - Fly over the ring and **tap the Drop**. The fall is incorporeal, so you pass through the plate, thread the ring
+     and land flying along the fall line.
+   - **Too short a hold** lands you on or in front of the plate.
+   - **Too long a hold** leaves too little runway for the Drop to recharge and the next roll to finish, and the
+     **pipe** standing across your new heading meets you.
+   - The pattern is down, sideways (no roll), roll 180, down, sideways back. Every Drop is a 90-degree turn, and from
+     Garrett's square exit gate this square wave is the only pattern that makes progress toward the cluster.
+   - At I3 and I4 some sideways hops are **roll gates**: the ring is abeam, so you roll 90 degrees first.
+3. **The last gap is the long drop.** One Garrett-style drop of 1000 u or more. It leaves the Tiger Moth's neutral
+   wormhole pair, the team route for whoever follows. It comes last, so its 20 s recharge never costs a tower.
+
+### What the mode owns, and what it reuses
+
+| Piece | Where it comes from |
+|---|---|
+| Clusters, exit gates, ring order, scoring (`SwitchesThreaded`, golf), turn monitor, race beats | Waystation and the gate-race platform, unedited |
+| Long-drop autopilot (belly aim, roll onto an abeam ring) | `WaystationController`; its `aiFoldMinDistance` rose 420 -> 700 so it takes only the long gap and the clusters |
+| Drop Towers (rings) | `WaystationTower.Lay` / `Build` (pure), mirrored by `Tools/Build/waystation_tower_course.py` |
+| Tower walls (floor plates, pipes) | `WaystationTower.Walls` (pure, from the broadcast course), laid by `WaystationController.OnCourseRaised` on every peer as environment prisms (`SpawnablePrism`, `Domains.Blue`), plain or danger by a hash of (gate, wall, tile); regrown one tile per plate every 1.5 s |
+| Hop autopilot | `WaystationController` (`TryHopAim` / `TryHopBelly` / `TickHops`): flies the cruise line over the ring, rolls the belly onto its drop line, presses through the replicated path, releases at the window's centre (`WaystationTower.HoldForTravel`) |
+| Arena | Waystation's: the shared barren Skim Race cell |
+| Target | `EndConditionOverridesSO.waystationClusterTarget` = 5 CLUSTERS. The finish line is every ring the course lays, towers included (`RaceGateTurnMonitor` reads the laid course; the source answers the same count, so it does not warn) |
+
+### The vessel is not changed (LOCKED rule, Shombith 2026-10-31)
+
+No vessel code or asset is touched. A wall is an ordinary environment prism, so a hull meets it the way any hull meets
+that kind of prism.
+
+What a Tiger Moth takes when its colliders come back on inside a wall tile, read from the code
+(`VesselImpactor.cs:122-166`, `ButterflyImpactorDataContainer.asset`):
+- Prisms are trigger boxes and the hull is a non-trigger sphere of radius 6. Re-enabling the collider raises
+  `OnTriggerEnter` once, on the next physics step. Nothing guards against it and there is no `OnTriggerStay`.
+- **A plain neutral tile** explodes. The throttle drops by ×(1 − min(0.1·volume, 0.5)) and eases back over 1 s, and
+  boost is reset.
+- **A danger tile** explodes. The throttle drops to ×0 and recovers over 3 s, and all four elements take a **permanent**
+  burn, because Blue counts as a rival domain. Boost is reset.
+- Flying into a tile costs the same as landing in one.
+
+### Intensity ladder
+
+The course, not the arena, is what changes:
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Rings per cluster (Waystation's) | 3 | 4 | 5 | 6 |
+| Hop window (travel / hold) | 50..250 u / ±0.079 s | 66..234 u / ±0.065 s | 85..225 u / ±0.055 s | 102..218 u / ±0.047 s |
+| Tower ring radius | 48 | 42 | 36 | 32 |
+| Roll gates (share of free sideways hops) | 0 | 0 | 0.5 | 1 |
+| Danger share of wall tiles | 0.10 | 0.20 | 0.35 | 0.50 |
+
+### Gates
+
+Run these:
+
+```
+python3 Tools/Build/waystation_tower_course.py --check
+python3 Tools/Build/waystation_tower_course.py --self-test
+python3 Tools/Build/waystation_tower_course.py --compile
+python3 Tools/Build/author_waystation_assets.py --check
+```
+
+- `--check` sweeps 200 seeds × 4 intensities. It checks window, runway, path, edges, mouths, shell, towers, long gap,
+  stand-down, danger and radius.
+- `--self-test` runs six negative controls, each of which must fail the check it targets.
+- `--compile` builds and runs the shipped `WaystationTower.cs` and compares it with the model. On 2026-10-31 it agreed
+  on 2267 gates (worst disagreement 0.0013 u) and on every wall's tile and danger counts.
+
+### Known limitations
+
+- **Never flown.** The hop autopilot, the walls in a real cell, the network copy of the walls and the feel of the
+  hold are all unverified.
+- **A few gaps get no tower.** 2 to 48 of every 600 gaps, most at I4, where a tower would leave the cell or cut a
+  cluster. That gap is then flown or dropped the cluster-era way.
+- **Regrowth is per peer**, as in Serpent Time. After heavy contact, two peers can disagree by a few tiles for a moment.
+- **The preview** shows the tower rings but not their walls, which only the match controller lays.
+- **The danger hash** is the same function as Serpent Time's `SerpentTimeCluster.IsDangerSlab`, now also on
+  bleeding-edge, but written out again in `WaystationTower.Hash01`. Share one hash in a later cleanup; changing it
+  would change which tiles are danger, so the model and `--compile` must move with it.
+
+## The loop, in the Butterfly's own terms
+
+The Butterfly is the fleet's slowest hull by design — 67 u/s flat out, 45°/s of turn — and its
+**Time** ability is the **Fold**: hold LT, the vessel stops, a ghost appears, and releasing
+teleports you to it. Since the Fold collapsed to **one reach along the heading**
+(`R_VesselActions/BUTTERFLY_FOLD.md`, "One reach, everywhere") it has exactly one degree of
+freedom: *the direction you were already flying*.
+
+That single degree of freedom is the mode.
+
+1. **Weave the coil.** A cluster's first `n-1` rings sit on a coil about the cluster's centre,
+   threaded along the direction you arrived from. Each ring faces the coil's own tangent, so it
+   faces the way you are travelling when you reach it.
+2. **Line up on the exit gate.** The last ring of every cluster is a separate **exit gate**,
+   laid ahead of the coil and **FACING the next cluster**, offset by the intensity's own cone.
+3. **Fold the gap.** You leave along the gate's line, so threading it well makes the jump free.
+   Thread it badly and you pay for the turn on a 45°/s hull before you can commit.
+
+**A teleport threads nothing.** A fold crosses hundreds of units along its own heading and the
+next cluster's rings are on that heading *by construction*, so without a rule a pilot would be
+paid for every ring their jump passed through. The rule is the **platform's**, not this mode's:
+`VesselTransformer.TeleportCount` states the fact and `GateRaceController` declines any step that
+contains one. It is a **counter** rather than a distance because the step guard already there
+fails the other way round — `maxPlausibleSpeed` rejects a LONG jump by accident and credits a
+SHORT one, so a distance test can never be the answer.
+
+## The square exit gate (2026-10-29)
+
+1. **Weave the coil**, as before.
+2. **Thread the exit gate.** It sits one bounded turn (at most 45°) off the coil's last leg, toward the heading square
+   to the next cluster, and it FACES square to the line from itself to the next cluster's centre: of all the square
+   facings, the one nearest the line you arrive on, twisted about the drop line by up to the intensity's **twist**
+   (10° / 20° / 30° / 40°). The twist turns the ring off your approach without ever costing the drop its aim.
+3. **Roll and drop.** Through the gate the next cluster is abeam. Roll it under your belly and hold LT: the Drop falls
+   straight at it, and when you let go the hull pitches 90° nose-down into the line it fell, so you arrive flying
+   into the next coil. No turn is spent on the gap: the flow is kept.
+
+`WaystationCourseSettings.ExitTwistDegrees` replaced `ExitConeDegrees` (40 / 55 / 72 / 90, a cone round the direction
+TO the next cluster). The centre sphere came in from 0.68 to 0.66 of the shell, because the gate now moves up to 120 u
+sideways and one i2 mouth reached 1063.7 against the shell's 1060. The checks `square` and `twist` replaced `cone`
+(below), and a fourth negative control plants the Fold-era gate and fires `square`.
+
+**The AI rolls** (`WaystationController.TryOverrideAim` + `OverrideBellyTarget` -> `AIPilot.MarkBellyTarget`): a ring
+between 75° and 125° off the nose is abeam, so the autopilot holds the heading square to it and replaces the roll stick
+(otherwise the bank the yaw drags) with a roll that brings its belly round, then drops at 10° as before. In an offline
+model of the two-stick steering (pitch and yaw 45°/s, roll 70°/s, the ring abeam ±15° at 500-1300 u, 200 starts at
+random roll) every start lined up, in at most 2.61 s (mean 1.3 s) against the 6 s budget; with the coupled bank in place
+of the roll, 33 of 200 did. A ring within 75° of the nose is still lined up by the pitch (TIGER_MOTH.md §3.1).
+
+## What the mode does NOT add
+
+No metric, no turn monitor, no scoring class, no cell, no weapon, no vessel change. Two C# files
+and their assets. The gate-race platform supplies the course broadcast, the rings, crossing
+detection, the owner-detects/server-records round trip, AI steering and the final scores.
+
+## The course, and why every number in it is measured
+
+`Tools/Build/waystation_course.py` **mirrors** `WaystationCourse.cs` — the same xorshift, the
+same draw order, the same arithmetic — reads the tables and the hull's constants out of the
+repo, sweeps **200 seeds × 4 intensities** and **fails the build** on any of six checks. The
+tables were *derived* there, not chosen.
+
+| check | what it means | measured |
+|---|---|---|
+| `corner` | every corner clears the Butterfly's own minimum turning circle by 20% | **1.21×–1.70×** of 85.3 u |
+| `mouth` | every ring's whole MOUTH stays inside the cell's shell | `[500, 1056]` inside `[412, 1060]` |
+| `fold` | every fold gap is inside the fold's **RESTING** reach | up to **1332** of 1800 |
+| `worth` | every fold gap is LONGER than the cluster it leaves | 424 vs 316 … 626 vs 383 |
+| `gap` | no two consecutive clusters interpenetrate | 415–526 u vs two mouths |
+| `square` | the exit gate faces square to the next cluster (since 2026-10-29) | **0.00°** off at every rung |
+| `twist` | its facing is within the authored twist of the square heading nearest its approach | 10.0 / 20.0 / 30.0 / 40.0 |
+| ~~`cone`~~ | (Fold era) the exit gate's facing is within the authored cone **exactly** | 40.0 / 55.0 / 72.0 / 90.0 |
+
+The hull's numbers are **read off `Butterfly.prefab`** (`DefaultMinimumSpeed` 12 +
+`DefaultThrottleScaler` 55 = 67 u/s; `Pitch`/`YawScaler` 45; `RotationThrottleScaler` 0 → a
+minimum circle of **85.3 u**) and the fold's reach off `ButterflyFoldAction.asset`. Nothing is
+typed into the model: *a constant copied out of an asset is true only on the day it is copied*,
+and a vessel retune must move the course or fail it.
+
+**The resting reach is the ceiling on purpose.** `reachRange` is 1800 at rest and 3600 at
+Time 5, and the top rung's longest fold is 1332 — a mode whose hardest jump needed the upgrade
+would play differently depending on whether a pilot found a crystal, and the comeback system
+hands that upgrade to whoever is *losing*.
+
+## The intensity ladder
+
+**Intensity is how much coil there is between folds, how tight it is wound, and how hard the
+exit line is.**
+
+| | i1 | i2 | i3 | i4 |
+|---|---|---|---|---|
+| rings per cluster | 3 | 4 | 5 | 6 |
+| — of which coil | 2 | 3 | 4 | 5 |
+| coil radius | 160 | 150 | 135 | 120 |
+| coil step (deg/ring) | 70 | 75 | 80 | 85 |
+| coil pitch | 70 | 70 | 60 | 55 |
+| ring mouth radius | 56 | 50 | 44 | 40 |
+| hop (cluster to cluster) | 700–950 | 760–1000 | 820–1080 | 880–1150 |
+| exit twist (deg), since 2026-10-29 | 10 | 20 | 30 | 40 |
+| ~~exit cone (deg)~~, Fold era | 40 | 55 | 72 | 90 |
+| clusters at target 24 | 8 | 6 | 5 | 4 |
+| rings laid | 24 | 24 | 25 | 24 |
+
+**Three numbers are deliberately NOT tables, and that is the point.** The exit lead (120), the
+exit approach cap (45°) and the wander (80°) are one value each because each is pinned by
+something that does not vary with intensity — the lead by how far the structure may reach before
+it leaves the cell, the approach cap by the hull's turning circle, the wander by *a fold is never
+behind you*. A table there would be four copies of one constraint.
+
+## Findings — four of them outlive the mode
+
+### 1. A positional clamp is not a containment strategy for a walk
+
+The first course was a capped-turn WALK whose steps were clamped back into the cell's shell when
+they left it. Measured, that produced corners at **38 u** against a hull that needs 85: pulling a
+step's endpoint back **shortens the leg**, and a leg is exactly what the corner radius is measured
+on. The clamp that kept rings in the cell was silently making the course unflyable, and no
+per-corner tuning could have found it because the clamp only fires at the wall.
+
+Choose the **heading** and the **length** so the step lands inside; never move the point
+afterwards.
+
+### 2. A single capped re-aim cannot contain anything
+
+The second course steered its heading away from the wall inside the same turn cap instead of
+clamping. Corners were then fine and the chain reached **3,576 units** from the cell centre inside
+a 1,200 membrane: a bounded turn cannot undo an unbounded walk, because each hop adds a thousand
+units and the turn can only bend by 80°.
+
+**Containment is now a property of the construction.** Every cluster centre lies *exactly* on one
+sphere and a hop is a **geodesic step** on it, so the chain cannot leave however long it runs.
+There is no clamp, no rejection, no retry and no failure path — which is also why
+`WaystationCourseSource.Build` never backs off and always returns the ring count it promised.
+
+### 3. A coil ring cannot be an aiming device
+
+The exit gate was first the *last coil ring*, with the coil's **roll solved** so that ring's
+tangent pointed at the next cluster — one `atan2`, and it looked elegant. It cannot work: a coil
+ring faces its own tangent, whose tilt off the coil plane is fixed by
+`pitch / (CoilRadius · step)`, so it can be rolled in **azimuth** and never in **elevation**.
+Measured at up to **167°** off the fold against an authored 72° cone.
+
+The exit gate is its own gate, and it **faces the next cluster from ITS OWN POSITION** — a fold
+starts where the pilot is, so facing it from the cluster's centre would have been the wrong
+question. That is what makes the offset *exactly* the authored cone rather than approximately it.
+
+### 4. A corner is measured on CHORDS, so clamp the chord
+
+The exit gate's approach turn was clamped against the last ring's **tangent**. A corner is the
+angle between two **chords**, and the helix tangent at a ring is not the chord to it — so the cap
+bounded the wrong angle and the real corner ran **45% under** it. Clamp against what the check
+measures.
+
+## The offline authority's own negative controls
+
+`--self-test` reproduces all three design defects and asserts each fires the check that caught it:
+
+```
+a positional clamp instead of a geodesic hop        -> gap, mouth, worth
+a positional clamp on the exit gate (tight shell)   -> corner, twist      (shell 650-880 since 2026-10-29)
+a coil ring as the aiming device                    -> square, twist
+the Fold-era exit gate (facing the next cluster)    -> square, twist
+```
+
+The exit-gate control runs in a **deliberately tightened shell**, because on the shipped course
+the clamp never engages at all — which is itself evidence for the design (containment has margin
+to spare) and makes the control **vacuous** without it. *A control that cannot engage proves
+nothing.*
+
+## AI
+
+An AI **folds**, and it had to be given the verb explicitly. `AIPilot` writes a stick and a
+throttle and nothing else, so every held ability in the fleet is inert under autopilot — and here
+the held ability is the whole mode: a bot that only flew would cross each ~900-unit gap at 67 u/s
+against a human who crosses it instantly, which is not a competitor.
+
+The drive lives in the **controller** rather than on the vessel (the Broadside / Tollway / Hijack
+shape) because the decision is mode knowledge — how far the next ring is — while the **numbers stay
+in the ability's own asset**, asked through the new `R_VesselActionHandler.TryGetBoundAction<T>` so
+a retune of the Fold moves the bot with it. It presses through
+`PerformShipControllerActionsReplicated`, never a local `StartAction`: an AI is simulated
+server-only, so a local press would teleport the vessel on one machine and play the wither and the
+bloom for nobody. The hold IS the distance (`distance / ReachSpeed`), because the executor reaches
+`hold × ReachSpeed` along the heading.
+
+**It fails safe.** Three gates — far enough to be worth folding (`aiFoldMinDistance` 420; 700 since the Drop Towers, 2026-11-01), inside
+the fold's resolved reach, and lined up within `aiFoldAimDegrees` (12°) — each refuse by simply not
+pressing, and a bot that never presses flies the course exactly as it did before the drive existed.
+That is deliberate: pitch and yaw are dead for the fold's duration, so a bot that presses off-line
+lands off-line with no way to correct, and no amount of folding is worth one wrong jump.
+
+### The tower hop finishes (2026-11-17)
+
+The race judge (the real game code, headless) had the TigerMoth's AI finishing 0 of the 16 rungs (Easy to
+Legendary, I1-I4). The first tower hop never pressed. The trace showed two causes, both in this controller:
+
+- **The press was judged in two windows that never met.** It needed the belly within `aiHopBellyDegrees` (8) of
+  the drop line AND the hull over the ring within `aiHopLineShare` (0.45) of its radius. The bot's belly swung
+  through the line while the hull was 30-200 u off it, and the two were never true together. The press is now
+  judged where the FALL will cross the ring's plane: the line the belly points along, from where the hull is
+  (the drop follows the belly, `TigerMothDropMath.DropDirection`). It fires when that crossing is within 0.7 of
+  the radius, with the belly at most 20 degrees off as a cap. The hold is sized along the belly.
+- **The miss recovery turned back inside the turning circle.** `aiHopMissMargin` was 60 u past the press, which
+  is less than the hull's turn at 67 u/s. The bot reversed before it was round, so it looped over the ring
+  without ever flying the line level (I2 timed out at 16 of 27 rings). At 400 u it flies out, comes round and
+  returns on the line.
+
+After the change, all 16 rungs finish (seed 1). Legendary runs 160 / 188 / 414 / 345 s, Hard 177 / 259 / 289 /
+365 s, Medium 151 / 275 / 368 / 407 s and Easy 211 / 287 / 447 / 385 s. These are long against the other Time
+games (90-180 s), and that is the next problem for this game.
+
+### The trained AI (2026-11-17)
+
+`time_ai_search.py --hull TigerMoth` (run1, 2 generations of 6, seeds 1-2, I1-I4 plus I1 and I4 at a Time-10
+start) searched the hop and drop gates and the AI nose rate. The winner, now the defaults: `aiHopLineShare`
+0.85, `aiHopMissMargin` 600, `aiHopLookahead` 155, `aiDropAimDegrees` 6.6, and the TigerMoth's nose at 6.41/s
+(`aiNoseLead`, no lead). Confirmed on fresh seeds 3-4, the shipped AI against the trained one:
+
+| Rung | Before (s) | Trained (s) |
+|---|---|---|
+| I1 | 189 / 123 | 151 / 130 |
+| I2 | 232 / 213 | 191 / 159 |
+| I3 | 334 / 302 | 190 / 210 |
+| I4 | 389 / 493 | 259 / 323 |
+
+29% less time in all. I4 still runs past 200 s; that rung is the course's (the plates), not the drive's.
+
+### `OnServerTick` — a seam added so the drive could not break the platform
+
+`GateRaceController.Update` is a **Unity message, not a virtual**. A subclass that declared its own
+`void Update()` would HIDE it, Unity would call only the derived slot, and **crossing detection —
+the whole race — would silently stop working with nothing in the console**. No gate-race subclass
+had ever declared one, so the hazard was untested rather than absent. `OnServerTick` is the seam:
+called on the server every frame, unconditionally (a driver usually needs the turn-running test,
+and a driver *tearing down* what it started needs the frames after it).
+
+**General rule: a Unity message on a base class is a slot a subclass can take without being told,
+so a base that expects to be subclassed should expose a named hook rather than a message.**
+
+## Toasts
+
+**Two idle hints and the shared race beats.** The hints are the mode's two verbs, because a pilot
+who never finds the Fold simply orbits the first cluster forever; an idle hint needs no poster (the
+toast system fires it off `idleSeconds`). The mode shipped with the hints ONLY, deliberately: the
+gate-race platform had no gate-threaded hook, so a milestone situation would have had no poster,
+and an enum member nothing raises reads exactly like a feature. `DomainRaceToasts` (#976) is that
+hook - `GateRaceController` ticks it for every gate race - so the config now authors halfway /
+lead change / home stretch (`DomainRaceHalf` 129, `DomainRaceLeadChanged` 130,
+`DomainRaceHomeStretch` 131) in Skein's voice (`ring {1}/{2}`). Not the quarter (128, no gate race
+authors it) and not the final lap (132): one pass of clusters has no last lap, so it never fires.
+
+## Assets
+
+Every one is authored by `Tools/Build/author_waystation_assets.py`; none is hand-edited.
+
+- `_SO_Assets/Scoring Rules/WaystationScoringRule.asset`
+- `_SO_Assets/Games/ArcadeGameWaystation.asset`
+- `_SO_Assets/Game Toasts/GameToastConfig_Waystation.asset`
+- `_SO_Assets/Mode Previews/ModePreview_Waystation.asset`
+- `_Scenes/Multiplayer Scenes/MinigameWaystation.unity` — **cloned from Switchback**, the
+  platform's other OPEN chain. Four swaps and nothing else: the controller script, the scoring
+  rule, the four AI hulls (Dolphin → Butterfly), and the **removal** of Switchback's own
+  `firstGateDistance`, which Waystation deliberately does not declare.
+- registrations: the master roster, the Arcade grid, `alwaysUnlockedModes`, Build Settings (after
+  Skein), `waystationRingTarget`, the toast library, the preview library.
+
+## Verification status
+
+**Authored headless; nothing has been opened in the editor.** What is proved:
+
+- The course model against six checks over **200 seeds × 4 intensities**, with three negative
+  controls that each fire the check they were written for.
+- **The shipped C# IS the model.** `--compile` builds `Tools/Build/waystation_harness`, which
+  compiles `WaystationCourse.cs` and `RaceCourseGeometry.cs` **verbatim out of `Assets/`** against
+  a `Vector3`/`Mathf` shim, runs them, and compares **gate for gate**: 3,880 gates agree to
+  **0.0059 u** of position and **0.0005°** of axis — float32 against float64 on a course spanning
+  a thousand units. So the six checks above are statements about the game rather than about a
+  transcription of it.
+- The generator's `--check`, watched **failing** on a mutated asset and passing when restored.
+- The nine standing out-of-editor gates.
+
+What is not proved: that it plays. Also not proved by any of the above — the controller, the AI
+fold drive and the scene are **not** in the compile harness (they reach Netcode and the whole
+gameplay monolith), so they have had a syntax pass and an API-surface read and no type check.
+
+## Known limitations
+
+- **The AI fold lands IN the ring now, and the AI races at full throttle (2026-10-17).** An audit found the flat
+  12-degree aim cone landed a 420 u fold 87 u off a 40-56 u mouth (900 u: 187 u). The fold goes along the heading it
+  leaves on, so its aim is now also held under asin(0.5 R / d) (`aiFoldMouthShare`), and it lets go `aiFoldLandShort`
+  (30 u) before the ring's plane so the hull flies through the mouth. Widening the cone is therefore NOT safe; the
+  note below that suggests it predates this. `WaystationController.AIThrottleFloor` is now 1 (the Butterfly's authored
+  0.6 skill throttle cruised at ~45 u/s against a person's 67). The autopilot check uses `TryGetComponent`: it used
+  `VesselStatus.AIPilot`, whose getter ADDS an autopilot to every human's hull, every server tick.
+  `WaystationFoldTests`. Not editor-verified.
+- **The AI flies Regatta's gate steering (2026-10-26).** In both of Caleb's races (2026-10-20/21, I1) the AI Butterfly
+  threaded 0 of 24 rings: its approach point sat 300 u out against the 260 u commit, so on its 85 u turning circle
+  (45 deg/s at 67 u/s) it orbited the first ring 150-300 u off for the whole race. `WaystationController` now overrides
+  `AICommitFromApproachPoint` to true, which keeps the approach point inside the commit radius, aims through the ring's
+  centre and re-attacks after a miss (`GateRaceController.ApproachLeadFor`, the Switchback fix). Offline on those two
+  courses (`switchback_dolphin_sim.py --mode Waystation`, no fold): 0 and 5 rings before, 24 of 24 on both after, in
+  205 s and 213 s against Caleb's 245 s and 205 s. `SwitchbackAISteeringTests.Waystation_*`. Not editor-verified.
+- **An AI's fold is UNTUNED.** The drive is written and fails safe, but `aiFoldMinDistance`,
+  `aiFoldAimDegrees` and `aiFoldRetrySeconds` are reasoned numbers rather than measured ones: how
+  often a bot's heading actually falls inside a 12-degree cone on its next ring is a property of
+  `AIPilot`'s steering, which no offline model here covers. If bots fold rarely, that cone is the
+  dial — and widening it is safe in the direction that matters, because the reach gate still stops
+  a fold that would overshoot.
+- **The preview is shell-only.** The course is generated at match start and broadcast as geometry,
+  so there are no rings to stand in a preview arena. A `StructurePrefab` of one standing cluster
+  would fix it and is the recorded gap — the same gap Switchback, Regatta and Tollway have.
+- **`maxPlausibleSpeed` is inherited at 400** against a hull that tops out at 67. It is the step
+  guard for respawns and ejects, and the teleport counter is what declines a fold, so the
+  generosity costs nothing — but it is inherited rather than derived, and a tighter value would
+  describe this hull.
+
+## The scene registration, and why the card failed to launch once
+
+The card's first launch failed with
+
+```
+Scene 'MinigameWaystation' couldn't be loaded because it has not been added to the
+build settings scenes in build list.
+```
+
+while `ProjectSettings/EditorBuildSettings.asset` on disk carried the entry, enabled, with the
+scene's real guid, committed — and `check_gamelist_scenes.py` passed.
+
+**`ProjectSettings/EditorBuildSettings.asset` is not in the AssetDatabase.** Unity reads it once
+when the project opens and never re-reads it, so the generator's headless write (through
+`arcade_mode_lib.register_build_scene`) was invisible to the Editor that was already running. The
+same is true of every mode generator this repo has; it has never surfaced before only because
+nobody had generated a mode and tested it without restarting in between.
+
+It is worse than invisible in one direction: the next time Unity saves project settings it writes
+its own stale in-memory list back over the file, **deleting the registration from the working
+tree**. So the window between a generator run and an Editor restart is one in which the mode
+cannot be played *and* its registration can be lost with nothing in the diff to explain it.
+
+The fix is `BuildSceneListReconciler`, which compares every arcade card's `SceneName` against
+`EditorBuildSettings.scenes` — the LIVE list, which is what the game loads from — and adds the
+missing ones through the API, fixing the running Editor and persisting. It runs **automatically on
+every domain reload** (`[InitializeOnLoad]`), because the failure is one nobody knows to look for
+and a menu item you have to remember is no guard at all; **FrogletTools > Game Modes > Reconcile
+Build Scene List** is the same check run deliberately, with a report.
+
+**Two systems report the one fault, which is why it reads like two bugs.** Netcode's
+`NetworkSceneManager` builds its scene registry when the `NetworkManager` starts and never rebuilds
+it, so its `ValidateSceneEvent` complains first (`SceneLoader.cs:515`); Unity's own runtime scene
+registry, built from the same Editor list, complains second on the local fallback
+(`SceneLoader.cs:519`) and names Build Profiles. One stale list, two messages. Because the
+NetworkManager under the eager-Relay design persists for the whole session, the list has to be
+right **before** play starts — which is exactly where a domain-reload repair sits.
+
+General rule: **a settings file outside the AssetDatabase is one the Editor owns for the whole
+session — an external write to it is not a change, it is a change that has not happened yet.**

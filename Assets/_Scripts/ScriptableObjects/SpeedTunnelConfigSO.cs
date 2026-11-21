@@ -79,6 +79,12 @@ namespace CosmicShore.ScriptableObjects
         public const float MinFieldOfView = 1f;
 
         /// <summary>
+        /// The deepest effect the optics take: 1 is the law's full strength, and only an ability's ride scale
+        /// (<c>VesselSpeedTunnel.SetEffectScale</c>, the Meerkat's wormhole) reaches past it, to this.
+        /// </summary>
+        public const float MaxEffect = 5f;
+
+        /// <summary>
         /// The law itself: measured speed → effect strength in [0, 1]. Pure, absolute, and
         /// identical for every vessel — this is the single expression that makes "the same
         /// speed on any vessel looks the same" true.
@@ -91,10 +97,10 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>Field of view for a camera whose home FOV is <paramref name="homeFov"/>.</summary>
         public float FovFor(float homeFov, float effect01) =>
-            Mathf.Max(MinFieldOfView, homeFov - fovDrop * Mathf.Clamp01(effect01));
+            Mathf.Max(MinFieldOfView, homeFov - fovDrop * Mathf.Clamp(effect01, 0f, MaxEffect));
 
         /// <summary>Signed Panini offset from the profile's own baseline (always ≤ 0).</summary>
-        public float PaniniOffsetFor(float effect01) => -paniniDrop * Mathf.Clamp01(effect01);
+        public float PaniniOffsetFor(float effect01) => -paniniDrop * Mathf.Clamp(effect01, 0f, MaxEffect);
 
         /// <summary>
         /// One rule, three gates: the runtime, the FrogletTools validator and the edit-mode test

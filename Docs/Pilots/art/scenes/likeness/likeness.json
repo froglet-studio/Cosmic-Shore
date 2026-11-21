@@ -1,0 +1,11 @@
+{
+ "Flux": {
+  "box": [
+   512,
+   0,
+   960,
+   640
+  ],
+  "cut_from": "b69b760a716e6d939f96cbe7445c57c8ad5d9006:Docs/Pilots/art/scenes/Flux.jpg"
+ }
+}

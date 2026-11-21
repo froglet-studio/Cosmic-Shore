@@ -12,16 +12,16 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 
 | ID | Task | Status | Depends on | Branch | PR | Completed |
 |---|---|---|---|---|---|---|
-| T1 | Safe area component | IN PROGRESS | — | `claude/safe-area-fitter-component-wrmdva` | #777 | |
+| T1 | Safe area component | DONE | — | `claude/safe-area-fitter-component-wrmdva` + `claude/safeareafitter-canvas-audit-sj1cxp` | #777 | 2026-09-08 |
 | T2 | Finish canvas resolution migration | TODO | — | | | |
-| T3 | Unify GameCanvas fork | TODO | T2 | | | |
+| T3 | Unify GameCanvas fork | DONE | T2 | via the GameCanvas Unifier (`5a4a003a`, `7e7494ea`) | | 2026-09-08 |
 | T4 | UIThemeSO + literal inventory | DONE | — | `claude/uithemeso-style-foundation-00fll9` | #795 | 2026-08-25 |
-| T5 | Download & install TMP fonts | TODO | — | | | |
-| T6 | TMP Style Sheet + Aldrich audit | TODO | T5 | | | |
-| T7 | Component sprite kit | TODO | — | | | |
+| T5 | Download & install TMP fonts | IN PROGRESS | — | `claude/new-session-76hnyc` | | |
+| T6 | TMP Style Sheet + Aldrich audit | IN PROGRESS | T5 | `claude/new-session-76hnyc` | | |
+| T7 | Component sprite kit | IN PROGRESS | — | `claude/new-session-76hnyc` | | |
 | T8 | SO_ColorSet consumer audit | TODO | — | | | |
 
-**Critical path:** T2 → T3 is the long pole. T1, T4, T5, T7 are independent and can run in parallel. T6 needs T5's font assets to exist.
+**Critical path:** ~~T2 → T3 is the long pole.~~ **T3 is done and T2 is not** — the Unifier delivered T3's end state and T2's GameCanvas criterion with it, so what remains of T2 (SplashScreen, Loadout Container, three sign prefabs, PhotoBooth) no longer blocks anything and is independent work. T5 → T6 is now the only real chain. T1 and T4 are closed.
 
 ---
 
@@ -36,7 +36,7 @@ Acceptance criteria:
 - [x] Caches last-applied rect — no per-frame work when unchanged
 - [x] Full-screen safeArea (desktop) is a no-op
 - [x] `androidRenderOutsideSafeArea` confirmed still enabled
-- [x] Not yet applied to any shipping prefab
+- [x] ~~Not yet applied to any shipping prefab~~ — **superseded, see the apply note below**
 - [x] Test scene demonstrates the two-layer contract
 
 **Deliverables:**
@@ -109,13 +109,39 @@ Acceptance criteria:
 > **floor, authored as padding** — i.e. it ratifies this task's deviation. Status and criteria are
 > unchanged; re-check the verification-checklist aspect list before closing.
 
+> **Applied (branch `claude/safeareafitter-canvas-audit-sj1cxp`).** The "not yet applied to any
+> shipping prefab" criterion above is superseded: every canvas that carries player-facing UI now
+> carries the split. The per-layer decision table — which layers are content, which are deliberately
+> full-bleed, and why some host the component while others get a fitted parent — is
+> `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3, and Style Foundation §8 no longer says "ships dormant"
+> (v0.3.3). Run the `ui-redesign-tracker` skill to re-verify the criteria and move the status row;
+> this branch did not hand-edit it.
+
+> **Status moved to DONE by the `ui-redesign-tracker` skill, 2026-09-11** (doc-drift sweep, board
+> item R8). Verified against the working tree, not against the claim above: `SafeAreaFitter`'s guid
+> `2c1afdc693c3463281f69af27bf7461c` is carried by `_Prefabs/CORE/GameCanvas.prefab`,
+> `_Prefabs/UI Elements/In Game/ConnectingPanel.prefab`, `_Scenes/Menu_Main.unity`,
+> `_Scenes/Bootstrap.unity` and `_Scenes/Authentication.unity` — so the "not yet applied" criterion
+> is genuinely superseded rather than merely reported as such. `androidRenderOutsideSafeArea: 1` at
+> `ProjectSettings/ProjectSettings.asset:74`. The apply landed in `67e902bf` (2026-09-08), which is
+> the completion date recorded in the status table.
+>
+> **`[~]` still open, and it is the same one T4 carries:** no Unity compile has happened in any
+> session that touched this task. The edit-mode suite (`SafeAreaFitterTests.cs`, 8 tests over the
+> two pure statics) was executed out of editor; the component itself has never been compiled by
+> Unity. That is the one thing a human still owes this task.
+>
+> **Not a component, so do not look for it in prefabs:** `SafeAreaLayer` is a `static class`, and
+> its guid appears in no scene or prefab by design. It is called from three sites —
+> `EnvironmentLoadVeil.cs:101`, `VesselHUDController.cs:53`, `PrivacyConsentOverlay.cs:127`.
+
 ## T2 — Finish canvas resolution migration
 
 **Spec:** Style Foundation §5 · **Audit ref:** §1.3
 
 Acceptance criteria:
 - [ ] `_Prefabs/CORE/GameCanvas.prefab` at 1920×1080 / PPU 240
-- [ ] `_Prefabs/GameCanvas-HexRace.prefab` at 1920×1080 / PPU 240
+- [ ] `_Prefabs/GameCanvas-SkimRace.prefab` at 1920×1080 / PPU 240
 - [ ] `_Scenes/Singleplayer Scenes/SplashScreen.unity` migrated
 - [ ] `_Prefabs/UI Elements/Loadout Container.prefab` migrated
 - [ ] `CanvasUpgraderUpgradedPrefabs.txt` respected — no double pass (×5.76 check)
@@ -131,6 +157,29 @@ Acceptance criteria:
 > §8 defers mobile — so that criterion is currently unbacked and needs a design call before it is
 > actioned. Status and criteria are unchanged.
 
+> **Re-checked 2026-09-11 and deliberately left `TODO`** (doc-drift sweep, board item R8). The sweep
+> that closed T1 and T3 expected T2 to have been carried along with them, since T3 depends on it. It
+> has not been. Measured from the serialized files:
+>
+> | Criterion | State on 2026-09-11 |
+> |---|---|
+> | `CORE/GameCanvas.prefab` at 1920×1080 / PPU 240 | **met** — but delivered by **T3's** Unifier, which enforces the canvas contract as part of the re-point, not by this task |
+> | `GameCanvas-SkimRace.prefab` at 1920×1080 / PPU 240 | **moot** — T3 deleted the fork (`5a4a003a`) |
+> | `SplashScreen.unity` migrated | **not met** — still `m_ReferenceResolution: {x: 800, y: 450}` at line 249 |
+> | `Loadout Container.prefab` migrated | **not met** — still `{x: 800, y: 600}` at line 310 |
+> | Android max aspect 2.1 → 2.4 | **not met** — `androidMaxAspectRatio: 2.1` at `ProjectSettings.asset:172`, and per the v0.3 note above this criterion is currently unbacked |
+> | No reference resolution outside 1920×1080 project-wide | **not met** — 16 of 28 canvas scalers are off-spec |
+>
+> Of those 16, **six are first-party and in scope**: `SplashScreen.unity` (800×450),
+> `Loadout Container.prefab`, `_Scenes/Tools/PhotoBooth.unity`, and the three sign prefabs
+> `StarShapeSign` / `HeartShapeSign` / `LightningShapeSign` (all 800×600). The other ten are
+> third-party demo content — NiceVibrations, the TextMesh Pro examples, QuickScenePro — and are
+> **not** this task's to migrate.
+>
+> The trap in this skill's T2 note still applies to whoever picks it up: check
+> `CanvasUpgraderUpgradedPrefabs.txt` before running the upgrader, or a double pass compounds ×5.76
+> and reads as a layout bug rather than a migration bug.
+
 **Deliverables:**
 **Findings:**
 **Deviations from spec:**
@@ -142,21 +191,51 @@ Acceptance criteria:
 **Spec:** `Docs/GAMECANVAS.md` · **Audit ref:** §5.1
 
 Acceptance criteria:
-- [ ] Prefab Kit Validate run, output recorded
-- [ ] Prefab Kit Consolidate run
-- [ ] Identical overrides (~1,734) pushed into the prefab
-- [ ] **One scene only** re-placed, diff reported, explicit go-ahead received before the rest
-- [ ] Override count per canvas instance below 25 in each migrated scene
-- [ ] `statsToTrack` preserved per mode (the one real per-mode value)
-- [ ] Joust toast feed rect normalised from ~(-1416, -463)
-- [ ] 8 cross-asset dangling refs into the CORE prefab resolved
-- [ ] Dangling `CountdownDisplay` ref into never-instantiated `MiniGameHUD.prefab` resolved
-- [ ] All six modes launch and reach the Ready gate
-- [ ] End-game scoreboard renders in each mode
+- [~] Prefab Kit Validate run, output recorded — editor action; the out-of-editor gate below stands in for the end state
+- [~] Prefab Kit Consolidate run — editor action, same
+- [x] Identical overrides (~1,734) pushed into the prefab — gate reports no override walls on any of the 15 scenes
+- [~] **One scene only** re-placed, diff reported, explicit go-ahead received before the rest — a process criterion; not decidable from the tree
+- [x] Override count per canvas instance below 25 in each migrated scene — gate asserts *zero* non-default overrides, which is stricter
+- [x] `statsToTrack` preserved per mode (the one real per-mode value)
+- [x] Joust toast feed rect normalised from ~(-1416, -463)
+- [x] 8 cross-asset dangling refs into the CORE prefab resolved — no file references the fork guid
+- [x] Dangling `CountdownDisplay` ref into never-instantiated `MiniGameHUD.prefab` resolved
+- [~] All six modes launch and reach the Ready gate — play session
+- [~] End-game scoreboard renders in each mode — play session
 
 **Deliverables:**
+- `Assets/_Prefabs/CORE/GameCanvas.prefab` — the single source of truth for all 15 game-mode
+  canvases, authored at 1920×1080 / PPU 240 with `AdaptiveCanvasScaler` on the root.
+- **`Assets/_Prefabs/GameCanvas-SkimRace.prefab` deleted** (`5a4a003a`). No `.unity`, `.prefab` or
+  `.asset` file references its guid `abd30ad4cfca9ae4a8aecfde9f650cf3` any more.
+- `Assets/Resources/GameModeStatsProfile.asset` + `GameModeStatsProfileSO.cs` — the one genuine
+  per-mode value lifted out of the scenes. `defaultStats` plus `perMode` entries for Mode 33
+  (SkimRace) and Mode 34 (Joust). **Zero** `statsToTrack` overrides remain in any scene.
+- `Assets/_Scripts/Editor/FrogletTools/GameCanvasUnifier.cs` — the in-editor tool that performed it.
+- `Tools/Build/gamecanvas_unification_report.py` — the gate, `--check`.
+
 **Findings:**
+- **T3 shipped while its stated dependency T2 is still open, and that is not an ordering mistake.**
+  The Unifier enforces the canvas contract (1920×1080, Scale-With-Screen-Size, `AdaptiveCanvasScaler`)
+  on the CORE prefab itself as part of the re-point, so it delivered T2's *GameCanvas* criterion as a
+  side effect. The rest of T2's migration list is untouched — see T2's own note. The `Depends on`
+  cell is left as the historical record.
+- **The gate is stricter than the criterion it satisfies.** The criterion asked for "below 25"
+  overrides per canvas instance; `check()` fails on *any* non-default override, and additionally on
+  any removed GameObject, removed component or scene-added component — the structural edits that
+  `Docs/GAMECANVAS.md` §9 records as the real reason the fork existed.
+- **Verified 2026-09-11 by re-running the gate, not by reading the claim:**
+  `python3 Tools/Build/gamecanvas_unification_report.py --check` →
+  `GameCanvas unification gate: OK (15 scenes on Assets/_Prefabs/CORE/GameCanvas.prefab, fork gone, no override walls)`, exit 0.
+
 **Deviations from spec:**
+- **The go-ahead gate cannot be evidenced from the repository.** The criterion required one scene to
+  be re-placed, its diff reported, and explicit approval received before the remaining fourteen. The
+  end state is correct and the gate proves it, but whether that approval sequence happened is not
+  recoverable from the tree. Recorded here rather than ticked, per this skill's own T3 trap note.
+- **Four criteria remain `[~]`** (two editor actions, two play-session checks). This matches the bar
+  T4 was closed at — every remaining criterion `[~]` with an out-of-editor proof standing in — rather
+  than being a looser one invented for this task.
 
 ---
 
@@ -223,9 +302,10 @@ Acceptance criteria:
 - 16 literals need a token §11 does not have: local-player row highlight (6), positive/gain green
   (2), secondary text, tertiary text, input placeholder, hyperlink, toast surface, gauge normal,
   gauge threshold, locked-card tint. Queued as #10–#12 below.
-- **Three editor-inspector files sit outside an `Editor/` folder** — `LeaderboardConfigSOEditor.cs`,
-  `UniversalStatsProviderEditor.cs`, `Model/MinigameHUDInspector.cs`. A `CLAUDE.md`
-  conditional-compilation concern, not a style one. Flagged, not touched.
+- **Two editor-inspector files sit outside an `Editor/` folder** — `UniversalStatsProviderEditor.cs`,
+  `Model/MinigameHUDInspector.cs`. A `CLAUDE.md` conditional-compilation concern, not a style one.
+  Flagged, not touched. (`LeaderboardConfigSOEditor.cs` was the third; it was deleted with the
+  per-mode leaderboard path.)
 - **The audit tool's first version was blind to its own branch.** Its numeric-argument test was
   `^[0-9.]+f?$`, which rejects `0xE6`, so the 20 `new Color32(0x…)` literals *this task added* went
   uncounted and the total read a clean 167. Caught by running the cross-cutting "no new colour
@@ -258,19 +338,19 @@ Acceptance criteria:
 **Spec:** Style Foundation §4
 
 Acceptance criteria:
-- [ ] Chakra Petch (400/500/600/700) TTFs in `Assets/_Graphics/Fonts/ChakraPetch/`
-- [ ] Space Grotesk (300/400/500/600) in `Assets/_Graphics/Fonts/SpaceGrotesk/`
-- [ ] JetBrains Mono (400/500/700) in `Assets/_Graphics/Fonts/JetBrainsMono/`
-- [ ] **Not** placed in `Assets/Unity Assests/TextMesh Pro/`
-- [ ] `OFL.txt` shipped per family; credits attribution added
-- [ ] TMP font assets generated: SDFAA, sampling 90, padding 9, atlas 1024²
-- [ ] Charset: ASCII + Latin-1 Supplement + `× · — – ‑ … ← → ↑ ↓ ✕ + −`
-- [ ] Multi Atlas Textures on; dynamic overflow fallback set
-- [ ] Fallback chain: Space Grotesk → Chakra Petch → Liberation Sans
-- [ ] TMP Settings default font asset = Space Grotesk 400
-- [ ] Base material presets only — no outline, glow, or bevel
+- [ ] Chakra Petch (400/500/600/700) TTFs in `Assets/_Graphics/Fonts/ChakraPetch/` — **600 only** (the one v0.3 §4 uses); 400 already ships beside TMP; 500/700 unused by §4
+- [ ] Space Grotesk (300/400/500/600) in `Assets/_Graphics/Fonts/SpaceGrotesk/` — cancelled by v0.3 §0-C
+- [ ] JetBrains Mono (400/500/700) in `Assets/_Graphics/Fonts/JetBrainsMono/` — cancelled by v0.3 §0-C
+- [x] **Not** placed in `Assets/Unity Assests/TextMesh Pro/`
+- [ ] `OFL.txt` shipped per family; credits attribution added — `OFL.txt` ships beside the TTF; **no `CreditsManifest.asset` entry yet** (register row added)
+- [~] TMP font assets generated: SDFAA, sampling 90, padding 9, atlas 1024² — authored as a DYNAMIC asset with exactly these settings; renders only checkable in the editor
+- [~] Charset: ASCII + Latin-1 Supplement + `× · — – ‑ … ← → ↑ ↓ ✕ + −` — dynamic, so any glyph in the TTF; editor check
+- [ ] Multi Atlas Textures on; dynamic overflow fallback set — off; one 1024² atlas holds the menu's ASCII set
+- [ ] Fallback chain: Space Grotesk → Chakra Petch → Liberation Sans — cancelled by v0.3
+- [ ] TMP Settings default font asset = Space Grotesk 400 — cancelled by v0.3
+- [x] Base material presets only — no outline, glow, or bevel
 - [ ] Type-scale test scene screenshot captured at 1920×1080
-- [ ] Tabular figure check: `0123456789` over `1111111111` columns align
+- [ ] Tabular figure check: `0123456789` over `1111111111` columns align — `TabularText` built; check not run
 
 > **Re-scoped against Style Foundation v0.3.** §4 is still §4 but the family set changed
 > fundamentally: v0.3 §0-C **cancels JetBrains Mono and Space Grotesk**, retains **Aldrich** for
@@ -283,9 +363,26 @@ Acceptance criteria:
 > **both Aldrich and Chakra Petch SemiBold**, since v0.3.1 scopes `<mspace>` per face rather than
 > to Aldrich alone (queue #9). Status and criteria are left as written pending that pass.
 
-**Deliverables:**
+**Deliverables:** (style-B menu redesign, item 0 — `Docs/MENU_REDESIGN_B.md`)
+- `Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold.ttf` + `OFL.txt` (Google Fonts release,
+  "Version 1.000", the same build as the Regular beside TMP).
+- `Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset` — DYNAMIC, authored by
+  `Tools/Build/author_chakra_petch_semibold.py` (`--check`), donor-cloned from the shipped dynamic
+  `Bangers SDF.asset`.
+- **The T5 output v0.3.1 asked for — widest digit advance:** Aldrich **0.730 em** (`0`, 1495/2048),
+  Chakra Petch SemiBold **0.644 em** (`0`, 644/1000), measured from the TTFs.
+  `Assets/_Scripts/UI/Kit/TabularText.cs` reads the same value off the font asset at runtime.
+- `Docs/THIRD_PARTY_REGISTER.md` row.
+
 **Findings:**
+- Neither Chakra Petch Regular nor Aldrich has a `CreditsManifest.asset` entry or a register row; the
+  new register row names all three.
+- A dynamic font asset writes the glyphs it rasterises back into itself in the editor, so the asset
+  shows as modified after the first play session — a one-time fill (commit it, or flip it to Static).
+
 **Deviations from spec:**
+- Dynamic population instead of a baked static atlas: only TMP's Font Asset Creator can bake an SDF
+  atlas faithfully, and the session had no editor. Multi-atlas off.
 
 ---
 
@@ -294,11 +391,11 @@ Acceptance criteria:
 **Spec:** Style Foundation §4
 
 Acceptance criteria:
-- [ ] TMP Style Sheet with all 10 named styles from §4
-- [ ] Each style carries family, weight, size @1920, tracking
-- [ ] Aldrich migration cost report: reassignable vs per-component
+- [ ] TMP Style Sheet with all 10 named styles from §4 — delivered as a role table instead (deviation below)
+- [x] Each style carries family, weight, size @1920, tracking — `UITypeRolesSO` rows: face, size, tracking, case, tabular
+- [ ] Aldrich migration cost report: reassignable vs per-component — obsolete under v0.3 (Aldrich retained)
 - [ ] Liberation Sans leak list produced (~174 refs)
-- [ ] Migration **not** executed — estimate only
+- [x] Migration **not** executed — estimate only (no existing text component was touched)
 
 > **Re-scoped against Style Foundation v0.3.** §4 is still §4, but v0.3 makes **Aldrich the
 > retained brand font**, not a font to migrate off — which inverts this task's premise. The
@@ -308,9 +405,20 @@ Acceptance criteria:
 > The Liberation Sans leak list still stands. Status and criteria are left as written pending a
 > re-derive against v0.3 §4.
 
-**Deliverables:**
+**Deliverables:** (style-B menu redesign, item 0)
+- `Assets/_Scripts/UI/Kit/UITypeRolesSO.cs` + `Assets/_SO_Assets/UI/UITypeRoles.asset` — the 11 §4
+  roles plus `Label` (Chakra Petch SemiBold 14, 0.14 em tracking, caps; the style-B section label).
+- `Assets/_Scripts/UI/Kit/KitText.cs` — applies a role and a §11 colour token to a TMP text, and
+  `SetText` wraps live numerals with `TabularText` for the tabular roles.
+
 **Findings:**
+- §4 lists 11 roles, not 10 (v0.3 intake note above); the table carries 12 with `Label`.
+
 **Deviations from spec:**
+- **A role table + component, not a TMP Style Sheet.** A style sheet can only reach a font by NAME
+  through a Resources path, and its styles are opening tags invisible in the inspector; `KitText`
+  binds the font asset by reference and shows the role on every label it drives.
+- `Label` is a style-B addition with no §4 row (design queue #15).
 
 ---
 
@@ -319,19 +427,44 @@ Acceptance criteria:
 **Spec:** Style Foundation §5 (geometry) · §10 (components)
 
 Acceptance criteria:
-- [ ] 9-slice sprites authored for: button (two sliver sizes + flipped), panel/popup (border and
+- [x] 9-slice sprites authored for: button (two sliver sizes + flipped), panel/popup (border and
       fill variants), card, hexagon tile, hexagon slider handle, currency pill, end-game banner +
-      end caps
-- [ ] Corner sliver is a **diagonal cut on two opposite corners, flippable** — not a rounded rect,
-      not a single chamfer
-- [ ] Border insets correct — slivers hold their shape at any width
-- [ ] All sprites **white + alpha, no baked colour** — tinted from `UIThemeSO` at runtime
-- [ ] Test scene shows each sprite at three widths
-- [ ] **No shipping prefab touched**
+      end caps — the currency pill and the card reuse the sliver sets (deviation below)
+- [x] Corner sliver is a **diagonal cut on two opposite corners, flippable** — not a rounded rect,
+      not a single chamfer — asserted on the rendered alpha for all 12 sliver sprites
+- [x] Border insets correct — slivers hold their shape at any width — each cut sits inside its
+      corner tile and the stretch band is uniform (asserted; `--self-test` proves the asserts fire)
+- [x] All sprites **white + alpha, no baked colour** — tinted from `UIThemeSO` at runtime
+- [~] Test scene shows each sprite at three widths — `UIKitTestScene.unity` authored and its rects
+      solved offline (nothing off the 1920×1080 canvas); rendering is an editor check
+- [x] **No shipping prefab touched** — only new prefabs and a new test scene
 
-**Deliverables:**
+**Deliverables:** (style-B menu redesign, item 0 — `Docs/MENU_REDESIGN_B.md`)
+- `Tools/Build/author_ui_kit_sprites.py` (`--check`, `--self-test`) → 19 sprites (22 since item 2 added `kit_fade_v` and item 3 `kit_fade_h`, `kit_oct_fill`) in
+  `Assets/_Graphics/UI/Kit/`: `kit_sliver14_*` / `kit_sliver10_*` (fill, line1, line2, each normal and
+  `_flip`), `kit_hex_fill` / `_line1` / `_line2`, `kit_hex_handle`, `kit_banner_body` / `_cap_left` /
+  `_cap_right`. Two texels per canvas unit (PPU 480 against the canvas' 240).
+- `chrome_lock` and `chrome_crystal` added to `Tools/Build/author_ui_chrome_icons.py` (item 3 added
+  `chrome_plus`, `chrome_star`, `chrome_star_fill`).
+- Components and prefabs that consume the kit: `Assets/_Scripts/UI/Kit/`,
+  `Assets/_Prefabs/UI Elements/Kit/` (generated by `Tools/Build/author_ui_kit_prefabs.py`).
+- `Assets/_Scenes/Game_TestDesign/UIKitTestScene.unity` (not in Build Settings).
+- First shipping consumer: style-B item 1, the `Menu_Main` top nav (`KitTopNavTab`, `KitKeycap`, and
+  the `KitHoverTint` component it added). That is a separate redesign item; T7's own deliverable still
+  touches no shipping prefab.
+
 **Findings:**
+- The existing cut-corner frames (`_Graphics/UI/Frames/frame_cut_*`) have cut sizes fitted to vendor
+  art (25.75 / 24.38 px) and mixed PPU, so they are not the §5 14 / 10 sliver; the kit does not reuse
+  them. Their consumers are listed for retirement in `Docs/MENU_REDESIGN_B.md`.
+- A sliced border wider than half the rect is shrunk by Unity, so the slivers' corner tiles are kept
+  at cut + 2 units (a 24-unit keycap still gets its full 10-unit cut).
+
 **Deviations from spec:**
+- No separate currency-pill or card sprite: §10.4's pill is the 10-unit sliver pair and a card is the
+  14-unit pair. A dedicated sprite would only duplicate them.
+- The hexagons and the banner caps are SIMPLE sprites at a design size, not 9-sliced — a hexagon's
+  slanted sides run its full height, so no slice preserves them.
 
 ---
 
@@ -377,9 +510,16 @@ Anything found during implementation that needs a design decision. The implement
 | 7 | Typography art | T5/T6 | ~~Display, Body small and the three Data roles are spec-authored, not on the source page.~~ **RESOLVED — kept, and marked as such.** §4's table now daggers those five rows with a footnote stating they carry no guide backing and are open to revision in a way the transcribed six are not. | RESOLVED |
 | 8 | Typography art | — | ~~The button caps rule has a documented exception that v0.3 dropped.~~ **RESOLVED — caps is unconditional; the exception is retired with the Port screen** (already cut from the overhaul). §4 records the decision so it is not relitigated. | RESOLVED |
 | 9 | Typography art | T5 | ~~A live countdown renders in the button face, not a Data role.~~ **RESOLVED — `<mspace>` generalised.** It now applies to any live-updating numeric in **any** face, not just the Aldrich Data roles. `X` is per-face, `TabularText` takes the face as a parameter, and T5 reports the digit advance for **both** Aldrich and Chakra Petch SemiBold. | RESOLVED |
-| 10 | T4 impl | T8 | **Local-player leaderboard row highlight has no token.** `#1AB2B2` teal, 6 sites across `LeaderboardsMenu` and `DailyChallengeLeaderboardView`. §10.10 specifies only a `*` marker — the teal is undocumented. Is it CTA (§3 "focus, selection"), a new token, or should the `*` be the only marker? | OPEN |
+| 10 | T4 impl | T8 | **Local-player leaderboard row highlight has no token.** `#1AB2B2` teal — 3 sites in `LeaderboardsMenu`, since `DailyChallengeLeaderboardView` (the other 3) was deleted with the PlayFab-era daily challenge. §10.10 specifies only a `*` marker — the teal is undocumented. Is it CTA (§3 "focus, selection"), a new token, or should the `*` be the only marker? | OPEN |
 | 11 | T4 impl | T8 | **No positive/gain hue.** `#33FF66` in `ScoreNumberAnimator` / `HUDAnimationSettingsSO` for a score increase. §2's gap table proposes `danger` and reuses CTA for *attention*, but never names a **gain** green distinct from CTA. Does gain reuse CTA, or is CTA reserved for interactivity? | OPEN |
 | 12 | T4 impl | T8 | **§11 has one text colour and the UI uses four.** `PrivacyConsentOverlay` needs secondary (`#C2C7D4`), tertiary (`#99A1B2`), placeholder (`#737887`) and a hyperlink (`#59B8F2`); `ToastNotificationManager` needs a neutral toast surface (`#1A1A26`, where both §11 surfaces are blue-tinted); `ResourceDisplay` needs gauge normal + threshold; `GameCard` needs the locked-card tint §10.6 calls "grey" without a value. 16 literals total. Add tokens, or re-theme these onto the existing eight? | OPEN |
+| 13 | Menu B / T7 | T4 | **§11 has no token for Jade, Gold or Ruby's UI JOBS** (§3: active controls + Play; currency/purchase; tooltips). Approved for the style-B redesign (D2): `controlActive` 00D4FF, `purchase` FFAE00, `tooltip` A600FF on `UIThemeSO`, named for the role so they cannot read as team identity. This is a deviation from T4's "exactly the §11 fields" — please ratify into §11 or redirect. | OPEN |
+| 14 | Menu B / T7 | — | **§10.11 "selected tile takes a white border and light fill"** — built as `surfaceDark` 222645 (the approved mockup). Is "light" meant as `surfaceLight` 434C89? | OPEN |
+| 15 | Menu B / T6 | — | **A `Label` role** (Chakra Petch SemiBold 14, caps, 0.14 em tracking) for section and field labels — §4's smallest Chakra role is Button small 14 with no tracking given. Adopt as a §4 row? | OPEN |
+| 16 | Menu B / T7 | — | **§10.1 transparent fills have no values** ("dark teal / green / amber tint"). Built as the role colour at 12% alpha (Play 24%), §3's "Team (Dark) @ 12%" idiom. Confirm. | OPEN |
+| 17 | Menu B | — | **The primary (top) nav has no spec rule.** Built as the brief and mockup specify: active tab Jade text + 2 px Jade underline. §10.8's nearest analogue would make the label Light with a Jade underline. Confirm. Live in `Menu_Main` since item 1 (2026-10-14), so an answer now changes a shipped screen: two token values on `KitTopNavTab`. | OPEN |
+| 18 | Port Rev 32 D | — | **The Port's sea-lit look has no theme tokens.** The message cards, the message field and SEND (`Docs/MENU_REDESIGN_B.md` §91, approved by Shombith 2026-10-27, "Go with D") are drawn in the sea lines' periwinkle and violet (`#7F98FF` / `#9C8CFF`, SeaLines.shader) with lighter and darker steps of them, authored as colours on `FactionMessageRow`'s two Looks and on `KitTwoToneGradient`s in `author_menu_port.py`. `UIThemeSO` has no sea / periwinkle token, so none of it follows a theme change. Should the theme gain a sea pair (and a lit-surface pair), or stay authored per screen? | OPEN |
+| 19 | Frogma Rev 50 | — | **A chart with two or more series has no colour family.** Every family has a meaning (Lime act, Fire danger, Gold spend, Jade pick, Ruby commit, Blue neutral), so the Froglet Analytics boards (`Docs/MENU_REDESIGN_B.md` §137) draw one series per chart in blue-68 `#758FFB` with direct labels. A dashboard that needs to compare series on one chart (co-op vs versus over time) needs a rule: shades of Blue only, small multiples only, or a chart ramp of its own. | OPEN |
 
 ---
 
@@ -395,6 +535,18 @@ Anything found during implementation that needs a design decision. The implement
 
 ---
 
+## Refactor rows from the Codex ship (claude/new-session-76hnyc, 2026-10-26)
+
+Rows only; nothing here was changed on that branch (`/ship` section 3.6). Each row carries the measurement it rests on.
+
+| # | Kind | Row | Measurement |
+|---|---|---|---|
+| R1 | Debt created | `author_menu_codex.build_view` copies the Hangar's backdrop, sea, frame and 0.88 content block from `author_menu_hangar.build_view`. One `scaled_screen(root)` helper would serve both screens. | `grep -c WINDOW_BACKDROP_ALPHA`: hangar 4, codex 2. The two blocks are line-for-line the same. |
+| R2 | Inconsistency | Two RectTransform writers: `author_ui_kit_prefabs.emit_node` (:327) and `author_menu_arcade.emit_node` (:248). They already diverged once: the arcade one ignored `node.scale` until section 88. Unify them, or make the arcade one call the kit's. | Both functions are defined. `.claude/skills/ui-redesign-tracker` T10. |
+| R3 | Gate gap | `gates.sh` runs only `author_*_assets.py`, so the 21 `author_menu_*.py` generators that share `Menu_Main` are not gated. Add them to `gates.sh`. This is Shombith's tooling. | `ls Tools/Build/author_menu_*.py \| wc -l` = 21; `gates.sh` line 35 globs `author_*_assets.py`. T9. |
+| R4 | Incompleteness (a report, not debt) | Codex discovery (counts, silhouettes, NEW, the discovery toast) and artifact data are not built. Both are design and backend decisions. Discovery persistence would be cloud data, which is Shombith's. | `Docs/CODEX.md` section 5: nothing reads `UnlockedByDefault` / `DiscoveryKey`. `CodexCatalog.Build(Artifacts)` returns empty. |
+| R5 | Open asks (waiting on the owner) | From the 2026-10-27 review (`Docs/MENU_REDESIGN_B.md` section 97). Hangar: anti-aliasing, silver domain colour on the images Garrett flagged, flip the Mass element, merge the 2D and 3D elemental displays (RAS motion on the 2D side), the rainbow gradient, the notch / dashed outline / hard line stops, and elemental crystals held and spent. Match setup: preview switching, OmniCrystal signalling, the glyphs panel, heptagons. | Each needs a word on which screen, which art or which data. The held-and-spent counts are cloud data, which is Shombith's. |
+
 ## Deferred / out of scope
 
 Decisions taken during the redesign to explicitly not do something. Recorded so they don't get silently relitigated.
@@ -402,5 +554,5 @@ Decisions taken during the redesign to explicitly not do something. Recorded so 
 | Item | Decision | Rationale |
 |---|---|---|
 | UI Toolkit migration | Deferred past Steam EA | Framework migration on top of the fork debt risks the EA date |
-| Store / ARK screen | Cut from overhaul | Needs a product decision, not a visual one |
+| Store / ARK screen | Cut from overhaul | Needs a product decision, not a visual one. (2026-10-13: ARK reopened as the Elemental Converter; the store on it stays disabled.) |
 | Port / Leaderboards screen | Cut from overhaul | Same — 104 sprites feeding a disabled screen |

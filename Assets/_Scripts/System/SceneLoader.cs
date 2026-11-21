@@ -4,7 +4,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
@@ -29,9 +29,41 @@ namespace CosmicShore.Core
     /// Replay / restart is owned by MiniGameControllerBase.RequestReplay() - both
     /// the scoreboard and the pause menu call it directly.
     /// </summary>
-    public class SceneLoader : MonoBehaviour
+    public partial class SceneLoader : MonoBehaviour
     {
-        [SerializeField] float waitBeforeLoading = 0.5f;
+        [Tooltip("Seconds the opaque splash shows before the load starts - long enough for it to reach the screen " +
+                 "ahead of the blocking collect and load. Both callers make the splash opaque instantly " +
+                 "(SetFadeImmediate), so this covers no fade; it was 0.5 s of nothing on every launch " +
+                 "(Docs/MENU_REDESIGN_B.md section 99.1).")]
+        [SerializeField, Min(0f)] float waitBeforeLoading = 0.1f;
+
+        [Header("Scene exit drain")]
+        [Tooltip("Longest the host holds a scene load while the scene it is leaving is taken down in slices behind " +
+                 "the splash: plants destroyed a slice a frame, environment prisms parked in the pool, trail " +
+                 "returned to its pool. What is not done by then is destroyed inside the load's own frame, as " +
+                 "before. That frame also loads the next scene, and Relay drops a player silent for about 10 s " +
+                 "(Docs/PartySystem/BUGS.md B45). 0 turns the drain off.")]
+        [SerializeField, Min(0f)] float sceneExitDrainMaxSeconds = 8f;
+
+        [Tooltip("The most prisms' worth of plants and creatures the drain destroys in one frame, a whole plant at " +
+                 "a time. With a frame budget below, the slice starts at 1,000 and grows or shrinks to that budget, " +
+                 "never past this.")]
+        [SerializeField, Min(100)] int sceneExitDestroysPerFrame = 15000;
+
+        [Tooltip("How long one drain frame may take, in milliseconds: the slice is resized every frame to fit it, " +
+                 "so a phone takes smaller slices than a desktop. 0 = a fixed slice of the count above (1-2 s " +
+                 "frames on a desktop at 15,000, measured 2026-11-21). A destroy during play costs about 2.6 times " +
+                 "the scene unload's, so a slower drain leaves more for the load's own frame when it is cut short. " +
+                 "Off by default: at 200 ms a desktop return took 4-5 s longer with more 0.5 s hitches, because " +
+                 "those frames cost 0.3-0.5 s whatever the slice (measured 2026-11-21).")]
+        [SerializeField, Min(0f)] float sceneExitFrameBudgetMs = 0f;
+
+        /// <summary>Milliseconds of pool-return work a frame during the drain (the Maelstrom hub's own slice).</summary>
+        const double SceneExitSliceMs = 24.0;
+
+        [Tooltip("Frames rendered under the opaque splash between the covered garbage collection and the reveal, so " +
+                 "a long frame ends out of sight instead of being spent inside the fade.")]
+        [SerializeField, Min(0)] int revealSettleFrames = 2;
 
         [SerializeField, Tooltip("How long the opaque splash keeps covering the screen after the menu " +
             "vessel is ready when RETURNING from a game scene, so end-of-session cleanup (despawn " +
@@ -40,14 +72,34 @@ namespace CosmicShore.Core
             "are not delayed.")]
         float menuReturnSettleSeconds = 1.5f;
 
+        [SerializeField, Tooltip("How long a CLIENT waits for the host's networked scene load to " +
+            "arrive before giving up and bouncing to its own solo menu. The screen is already " +
+            "opaque by the time the wait starts, so without this the client sits on a black splash " +
+            "forever. Generous on purpose: a legitimate transition lands in seconds to tens of " +
+            "seconds (host-side scene load + Netcode synchronize), so this only ever fires on a " +
+            "transition that is never coming. Disarmed the moment the scene actually loads.")]
+        float clientSceneFollowTimeoutSeconds = 90f;
+
         // Load Time Insights span: LoadScene call → OnSceneLoaded (server / local path).
         int _sceneLoadSpan = -1;
+
+        // Generation counter for the client scene-follow watchdog. Bumped on every arm and on every
+        // completed scene load, so a watchdog whose transition DID arrive - or that a newer
+        // transition superseded - retires without doing anything. Comparing a captured generation is
+        // what makes the timeout safe to arm from three call sites that can interleave.
+        int _sceneFollowGeneration;
 
         // Name of the scene whose load most recently completed. Lets OnSceneLoaded tell a
         // game→menu RETURN (hold the veil while cleanup settles) apart from first boot /
         // auth→menu, which should fade in as fast as they always have.
         string _lastLoadedSceneName;
         bool _holdVeilForMenuSettle;
+
+        // True from the host's pre-load collect until the splash fades: on a GAME entry that collect already
+        // reset the heap, so the after-load one is skipped - it ran inside OnClientReady, in the very frame the
+        // connecting panel appeared (Docs/MENU_REDESIGN_B.md section 99.2). Clients never reach the pre-load
+        // collect and keep their one; a return to the menu keeps both.
+        bool _collectedBeforeLoad;
 
         [Header("SOAP Events (wired in Bootstrap inspector)")]
         [SerializeField] ScriptableEventNoParam _onClickToMainMenuButton;
@@ -70,7 +122,7 @@ namespace CosmicShore.Core
         {
             if (!gameData)
             {
-                Debug.LogError("[SceneLoader] gameData was not injected - check AppManager DI registration.");
+                CSDebug.LogError("[SceneLoader] gameData was not injected - check AppManager DI registration.");
                 return;
             }
 
@@ -103,6 +155,18 @@ namespace CosmicShore.Core
             LoadInsights.End(_sceneLoadSpan);
             _sceneLoadSpan = -1;
 
+            // A scene arrived, so any client scene-follow watchdog in flight has nothing left to
+            // rescue. Bumping the generation retires it without needing a handle on it.
+            //
+            // SINGLE loads only. An ADDITIVE load is not the transition anybody is waiting for
+            // (ServerAdditiveSceneLoader does them), and retiring the watchdog on one would
+            // disarm it silently - the generation check runs BEFORE the "did my scene arrive
+            // after all" check, so an additive load would make the watchdog return without ever
+            // testing the scene it was armed for. A fail-OPEN, and the kind that looks fine
+            // because nothing happens.
+            if (mode == LoadSceneMode.Single)
+                _sceneFollowGeneration++;
+
             if (!gameData) return;
             gameData.InvokeSceneTransition(true);
 
@@ -122,6 +186,7 @@ namespace CosmicShore.Core
                 _holdVeilForMenuSettle = IsGameplayScene(_lastLoadedSceneName);
 
                 ArmSplashFadeOnNextClientReady();
+                RevealBootMenuBeforeHostAsync(_holdVeilForMenuSettle).Forget();
             }
 
             _lastLoadedSceneName = scene.name;
@@ -185,12 +250,18 @@ namespace CosmicShore.Core
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame - Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-3] [SceneLoader] LaunchGame - Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
                       $"IsMultiplayer={gameData.IsMultiplayerMode}, Vessel={gameData.selectedVesselClass.Value}, " +
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +
-                      $"AIBackfill={gameData.RequestedAIBackfillCount}</color>");
+                      $"AIBackfill={gameData.RequestedAIBackfillCount}");
 
             _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
+
+            // Complete the PlayGame user action HERE, while the menu (and its listeners —
+            // CTA breadcrumbs, quest 'play the game' gates) is still alive. Nothing else in
+            // the arcade launch path fires it: the GameCard prefab carries no OnCardClicked
+            // wiring and the legacy MiniGame path never runs for networked modes.
+            UserActionSystem.Instance?.CompleteAction(UserActionType.PlayGame);
 
             // Show splash overlay during scene transition.
             _sceneTransitionManager?.SetFadeImmediate(1f);
@@ -205,10 +276,11 @@ namespace CosmicShore.Core
             // network load and destroys AI NetworkObjects before they can replicate.
             if (nm != null && nm.IsListening && !nm.IsServer)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame deferring scene load to server - " +
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-3] [SceneLoader] LaunchGame deferring scene load to server - " +
                           $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}. " +
-                          $"Server will replicate scene via Netcode.</color>");
+                          $"Server will replicate scene via Netcode.");
                 LoadInsights.Mark("SceneLoader deferred scene load to server (client waits for Netcode scene pull)");
+                ArmClientSceneFollowWatchdog(gameData.SceneName, "Game launch");
                 return;
             }
 
@@ -216,12 +288,12 @@ namespace CosmicShore.Core
             // MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()
             // in the game scene's OnNetworkSpawn, rather than here before scene load.
 
-            // Tournament (Maelstrom): hold the loading splash long enough to read the between-game running
+            // Maelstrom (Maelstrom): hold the loading splash long enough to read the between-game running
             // standings before the next game loads. Zero outside that window - normal launches, the first
             // game, and the load into the final results summary are not delayed. Host-only: clients returned
             // at the defer guard above and follow the host's held scene load, so their splash holds too.
-            float minSplashDwell = TournamentController.Instance != null
-                ? TournamentController.Instance.MinLoadSplashDwellSeconds
+            float minSplashDwell = MaelstromController.Instance != null
+                ? MaelstromController.Instance.MinLoadSplashDwellSeconds
                 : 0f;
 
             LoadSceneAsync(gameData.SceneName, minSplashDwell).Forget();
@@ -229,13 +301,20 @@ namespace CosmicShore.Core
 
         void FadeFromSplashOnReady()
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFFFFF><b>[FLOW-8] [SceneLoader] FadeFromSplashOnReady - OnClientReady fired!</b></color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-8] [SceneLoader] FadeFromSplashOnReady - OnClientReady fired!");
             gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
             FadeFromSplashWhenSettled().Forget();
         }
 
+        /// <summary>Longest the splash waits for the boot world's build before fading anyway.</summary>
+        const float MaxBootWorldHoldSeconds = 60f;
+
         async UniTaskVoid FadeFromSplashWhenSettled()
         {
+            // A return to the menu keeps its after-load collect: that one frees the finished match.
+            bool menuReturn = _holdVeilForMenuSettle;
+            // The boot menu may already be on screen, its input held, waiting for this vessel (SceneLoader.BootReveal).
+            bool shownEarly = TakeEarlyBootReveal();
             // Game→menu return only: hold the opaque veil for a short settle window so
             // the previous session's cleanup (late despawns, pooled-prism churn, painting
             // regrow snap) finishes out of sight instead of visibly clearing after the
@@ -248,15 +327,58 @@ namespace CosmicShore.Core
                     DelayType.UnscaledDeltaTime);
             }
 
+            // The boot world builds BEFORE the menu is revealed (Docs/MENU_REDESIGN_B.md sections
+            // 25-26): Cell.CoverBootWorld raised EnvironmentLoadVeil on the scene's first frame, and
+            // the build runs behind it once the vessel is ready - i.e. from now. Hold the splash (its
+            // LOADING bar reads the same build) until the veil lets go, so the player sees one screen
+            // and then the finished world, never the veil as a second screen. Capped: a build the
+            // veil itself has stopped waiting on never holds the splash for good.
+            // A scene that builds its opening after the client is ready (the voyage scene: its corridor and Ark) holds
+            // the splash itself until that opening stands (SceneRevealHold); each claim carries its own deadline.
+            float holdUntil = Time.unscaledTime + MaxBootWorldHoldSeconds;
+            while (SceneRevealHold.IsHeld
+                   || CosmicShore.Gameplay.EnvironmentLoadVeil.IsCovering && Time.unscaledTime < holdUntil)
+                await UniTask.Yield(PlayerLoopTiming.Update);
+
             // Runs on EVERY peer (clients never reach LoadSceneAsync's pre-load
             // collect — they defer scene loads to the server) with the splash still
             // fully opaque and the NEW scene loaded, so the old scene's managed heap
             // is unreachable here — the most effective covered moment to take the
             // full GC and reset the mid-gameplay collection clock. After the settle
             // window above so the settle churn is collected too.
-            GC.Collect();
+            if (menuReturn || !_collectedBeforeLoad) GC.Collect();
+            _collectedBeforeLoad = false;
 
-            _sceneTransitionManager?.FadeFromBlack().Forget();
+            // Let the frames that carried the collect (and the veil's release work) END while the splash is still
+            // opaque. The fade reads each frame's time, so starting it on the frame after a long one let that frame
+            // eat the fade, and the menu banged open instead of dissolving in.
+            for (int i = 0; i < revealSettleFrames && !shownEarly; i++)
+                await UniTask.NextFrame(PlayerLoopTiming.Update);
+
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+            bool intoMenu = SceneManager.GetActiveScene().name == menuScene;
+
+            // The menu becomes visible now: stamp it, so the load report keeps the true "shown" moment while its
+            // file is written after the reveal instead of on the reveal's first frame.
+            bool recordingMenu = LoadInsights.IsRecordingMenuLoad;
+            if (recordingMenu && !shownEarly) LoadInsights.MarkVisualReady();
+
+            // The lava lamp is up: from now on this player is listed online on every other machine
+            // (LavaLampPresence; before this they were still booting and could not be invited).
+            if (intoMenu)
+                LavaLampPresence.MarkShown();
+
+            if (_sceneTransitionManager != null && !shownEarly)
+            {
+                if (intoMenu) await _sceneTransitionManager.RevealAsync();
+                else await _sceneTransitionManager.FadeFromBlack();
+            }
+
+            // The menu is on screen: a return-to-menu or boot load recording (B36) ends here. A launch recording
+            // ends elsewhere (MiniGameHUD), so only the kinds that end at the menu are closed. Written after the
+            // reveal: it serialises and writes the report to disk on the main thread.
+            if (recordingMenu && LoadInsights.IsRecordingMenuLoad)
+                LoadInsights.CompleteLoad("Menu shown - the splash faded");
         }
 
         /// <summary>
@@ -271,18 +393,24 @@ namespace CosmicShore.Core
             // frame, so no un-paused gameplay is ever visible.
             PauseSystem.TogglePauseGame(false);
 
+            // A deliberate return (the pause menu, the match's end, the host ending the session): nothing to rejoin.
+            // A dropped link never comes through here - it bounces (PartyInviteController.HandleHostLossAsync).
+            MatchRejoin.Forget();
+
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
 
             // Clear stale return-to-screen/modal state so Menu_Main starts clean
             // on HOME with no modals open. These keys are set by ScreenSwitcher
             // during normal menu navigation but become stale when a scene
             // transition destroys modal GameObjects without proper ModalWindowOut().
+            // The card the match was launched from is not one of them: ScreenSwitcher
+            // re-opens it from MenuReturnCard once the menu is up.
             PlayerPrefs.DeleteKey("ReturnToScreen");
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
 
             // Show the loading splash immediately so the transition is covered ASAP - e.g. the
-            // Tournament summary's Main Menu button, which otherwise left the summary on-screen during
+            // Maelstrom summary's Main Menu button, which otherwise left the summary on-screen during
             // the async load (OnSceneLoaded only re-arms this once Menu_Main has finished loading). The
             // idempotent helper arms the fade-back on the next OnClientReady (the menu autopilot vessel).
             // Done before the client-defer guard so clients fade too.
@@ -295,8 +423,9 @@ namespace CosmicShore.Core
             // Clients rely on the server's Netcode scene management for transitions.
             if (nm != null && nm.IsListening && !nm.IsServer)
             {
-                Debug.Log($"<color=#FF8C00>[SceneLoader] ReturnToMainMenu deferring to server - " +
-                          $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[SceneLoader] ReturnToMainMenu deferring to server - " +
+                          $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.");
+                ArmClientSceneFollowWatchdog(menuScene, "Return to menu");
                 return;
             }
 
@@ -306,6 +435,10 @@ namespace CosmicShore.Core
             // own Menu_Main sceneLoaded finally sets the fade. The RPC and the despawn
             // messages share the reliable channel, so the veil always lands first.
             NotifyClientsOfMenuReturn();
+
+            // B36: the game -> menu load froze ~10 s on a slow machine and Unity Relay dropped the host. Record it
+            // (online play records by itself, LoadInsights.ShouldRecord); it ends when the menu shows.
+            LoadInsights.BeginLoad($"Return to menu — {SceneManager.GetActiveScene().name} → {menuScene}", menuReturn: true);
 
             LoadSceneAsync(menuScene).Forget();
         }
@@ -323,18 +456,137 @@ namespace CosmicShore.Core
                 controller.BroadcastReturnToMenuVeil();
         }
 
+        /// <summary>
+        /// Arms the CLIENT scene-follow watchdog. Every one of this class's three "defer to the
+        /// server" guards covers the screen and then returns, leaving the client waiting on a
+        /// networked scene load it does not drive. Nothing was watching that wait: if the host's
+        /// scene event never arrived - it was dropped, this client was mid-synchronize, the host
+        /// stalled - the client sat on an OPAQUE SPLASH with no timeout, no error and no way out
+        /// except killing the application. That is most of what "the game is bugged off the happy
+        /// path" looks like from a client, and Maelstrom multiplies it, because a tournament is a
+        /// chain of these transitions and each one is a fresh chance to hang.
+        ///
+        /// <para>
+        /// This was already a known hazard, fixed in exactly one direction:
+        /// <c>MultiplayerSetup.OnClientDisconnect</c> routes host-loss around
+        /// <see cref="HandleActiveSessionEnd"/> precisely because "the defer-to-server guard hangs
+        /// the client when the server is gone". That covers the case where the host is DEFINITIVELY
+        /// gone. It does nothing for a host that is alive and simply never got us into the scene -
+        /// which needs a timeout, because there is no event to react to. The whole failure is the
+        /// absence of one.
+        /// </para>
+        ///
+        /// <para>
+        /// On expiry it takes the same self-rescue as host loss
+        /// (<see cref="Gameplay.PartyInviteController.HandleHostLossAsync"/>): tear down, reload
+        /// Menu_Main locally, restart our own solo Relay, and surface a toast. A false positive
+        /// therefore costs a player their party and leaves them in a working menu they can rejoin
+        /// from; the black screen it replaces costs them the application. Those are not close, which
+        /// is why the timeout is generous rather than tight.
+        /// </para>
+        ///
+        /// <para>
+        /// PUBLIC because the call site that matters on real hardware is not in this class. The
+        /// three defer guards here are reached through SOAP events, and a SOAP raise is LOCAL - it
+        /// does not cross the wire - so on separate machines a client never runs
+        /// <see cref="LaunchGame"/> or <see cref="ReturnToMainMenu"/> at all; those guards fire for
+        /// MPPM virtual players, which share one GameDataSO in one process. What actually blacks out
+        /// a real client's screen is
+        /// <c>MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc</c>, and that is
+        /// where the unwatched wait really lives. It arms this too. Miss that and the watchdog looks
+        /// right in the editor and protects nobody in the build.
+        /// </para>
+        /// </summary>
+        public void ArmClientSceneFollowWatchdog(string expectedScene, string what)
+        {
+            int generation = ++_sceneFollowGeneration;
+            WatchClientSceneFollowAsync(generation, expectedScene, what).Forget();
+        }
+
+        /// <summary>
+        /// <see cref="ArmClientSceneFollowWatchdog"/> for the host-driven return to the menu, with
+        /// the menu scene resolved here rather than spelled out at the call site - the caller is a
+        /// ClientRpc in the arcade controller, which has no <c>SceneNameListSO</c> of its own and
+        /// should not have to carry a second copy of the menu's name to get one.
+        /// </summary>
+        public void ArmClientMenuReturnWatchdog(string what) =>
+            ArmClientSceneFollowWatchdog(
+                _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main", what);
+
+        async UniTaskVoid WatchClientSceneFollowAsync(int generation, string expectedScene, string what)
+        {
+            // Unscaled: the pause menu's Main Menu button leaves timeScale at 0 on the way in, and a
+            // watchdog that stops counting while the screen is black is not a watchdog.
+            await UniTask.Delay(
+                TimeSpan.FromSeconds(clientSceneFollowTimeoutSeconds),
+                DelayType.UnscaledDeltaTime);
+
+            // Superseded: the scene landed (OnSceneLoaded bumps the generation), or a newer
+            // transition armed its own watchdog. Either way this one has nothing to do.
+            if (generation != _sceneFollowGeneration) return;
+
+            // The transition arrived after all and we simply have not seen OnSceneLoaded for it -
+            // believe the loaded scene over our own bookkeeping before bouncing anybody.
+            if (!string.IsNullOrEmpty(expectedScene) &&
+                SceneManager.GetActiveScene().name == expectedScene)
+                return;
+
+            var nm = NetworkManager.Singleton;
+
+            // No longer a client waiting on a server: we were disconnected (host loss already has
+            // its own recovery in flight and must not be raced), or we became the server ourselves.
+            if (nm == null || !nm.IsListening || nm.IsServer || !nm.IsConnectedClient) return;
+
+            CSDebug.LogError(
+                $"[SceneLoader] {what}: the host's scene load never reached this client after " +
+                $"{clientSceneFollowTimeoutSeconds:0}s (expected '{expectedScene}', still in " +
+                $"'{SceneManager.GetActiveScene().name}'). Bouncing to the solo menu rather than " +
+                "holding an opaque splash indefinitely.");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                $"[SceneLoader] NetDiag: {NetworkDiagnostics.GetSnapshot()}");
+
+            var pic = Gameplay.PartyInviteController.Instance;
+            if (pic == null)
+            {
+                CSDebug.LogError(
+                    "[SceneLoader] PartyInviteController unavailable - cannot self-rescue. The " +
+                    "client stays on the splash; this is the state the watchdog exists to prevent.");
+                return;
+            }
+
+            pic.HandleHostLossAsync("Couldn't follow the party - returned to your menu.").Forget();
+        }
+
         async UniTaskVoid LoadSceneAsync(string sceneName, float minSplashDwell = 0f)
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync - sceneName={sceneName}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-3] [SceneLoader] LoadSceneAsync - sceneName={sceneName}");
             gameData.InvokeSceneTransition(false);
 
             var nm = NetworkManager.Singleton;
             bool isServer = nm != null && nm.IsServer;
 
             if (isServer)
-                ClearPlayerVesselReferences();
+            {
+                // Fail OPEN: the fade-to-black is already up. If a despawn throws here
+                // (stale player/vessel refs during teardown), the load below must still
+                // run or the player is stranded on a black screen.
+                try
+                {
+                    ClearPlayerVesselReferences();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    Debug.LogError("[SceneLoader] ClearPlayerVesselReferences threw — continuing the scene load anyway.");
+                }
+            }
 
             gameData.ResetRuntimeData();
+
+            // Take the old scene's world down in slices while the splash covers it, so the load's frame has
+            // less to destroy. Started here and awaited after the cover below, so the two run together.
+            // The trail stays with its pools here: InvokeSceneTransition above has already started their release.
+            var sceneExitDrain = DrainSceneForExitAsync(returnPooledTrail: false);
 
             // Normally a short cover for the fade; a between-game tournament transition extends it
             // (minSplashDwell) so the running standings on the splash are readable before the next scene
@@ -349,6 +601,12 @@ namespace CosmicShore.Core
                 );
             }
 
+            using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                       "Scene exit drain behind the splash", isWait: true))
+            {
+                await sceneExitDrain;
+            }
+
             _sceneLoadSpan = LoadInsights.Begin(LoadInsightCategory.SceneLoad,
                 $"Scene load → activation ({sceneName})");
 
@@ -359,23 +617,100 @@ namespace CosmicShore.Core
             // GC (enabled project-wide) spreads minor work but still blocks fully
             // when the heap must expand; this resets that clock at every transition.
             GC.Collect();
+            _collectedBeforeLoad = true;
 
             if (isServer && nm.SceneManager != null)
             {
-                nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+                // A refused Netcode load (e.g. a scene event still in progress) previously
+                // went unnoticed — nothing loaded and the screen stayed black. Fall back.
+                var status = nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+                if (status != SceneEventProgressStatus.Started)
+                {
+                    Debug.LogWarning($"[SceneLoader] Netcode scene load refused ({status}) — falling back to local load so the transition can't hang.");
+                    SceneManager.LoadScene(sceneName);
+                }
             }
             else
             {
                 // Defensive fallback: no active server (should not happen under the
                 // always-hosted model). Load locally so a scene transition never hangs.
-                Debug.LogWarning("[SceneLoader] No active server - falling back to local scene load.");
+                CSDebug.LogWarning("[SceneLoader] No active server - falling back to local scene load.");
                 SceneManager.LoadScene(sceneName);
             }
         }
 
+        /// <summary>
+        /// A guest's half of the scene exit drain: the host's veil RPC calls it
+        /// (<c>MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc</c>), because a SOAP raise is local
+        /// and a guest never runs <see cref="LoadSceneAsync"/>. A guest cannot hold the load: the host's own hold is
+        /// the time it gets, and what it has not drained when the load arrives dies in that frame as before.
+        /// </summary>
+        public void BeginSceneExitDrain() => DrainSceneForExitAsync(returnPooledTrail: true).Forget();
+
+        /// <summary>
+        /// Retire every cell's world in the scene being left, a slice a frame, and wait for it up to
+        /// <see cref="sceneExitDrainMaxSeconds"/>. Call only with the splash opaque: the world is not eased away.
+        ///
+        /// <para>Why: a Single scene load destroys the old scene and wakes the new one in ONE frame. Measured on a
+        /// return from a 90 s Bloomrush (73,500 prisms, 60,000 of them plants): 9.5 and 10.5 s, of which 3.4-3.7 s
+        /// was the destroy. Relay drops a player it has not heard from for about 10 s, and a frozen frame sends
+        /// nothing (B36 / B45). The work is the same; it is spread over frames that still answer the network.</para>
+        /// </summary>
+        /// <param name="returnPooledTrail">True on a guest: the cell hands the trail back to its pool in slices,
+        /// so the pool's own release at the scene change has little left to do in the load's frame. False on the
+        /// host, whose pools are already releasing (see <c>Cell.RetireWorldIntoPoolForSceneExit</c>).</param>
+        async UniTask DrainSceneForExitAsync(bool returnPooledTrail)
+        {
+            if (sceneExitDrainMaxSeconds <= 0f) return;
+
+            // Leaving the menu is not drained: a launch's frame is short while the menu's world is small
+            // (2.1-2.6 s), and holding every launch for it cost about 5 s (measured 2026-11-20).
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+            if (SceneManager.GetActiveScene().name == menuScene) return;
+
+            System.Collections.Generic.List<Cell> draining = null;
+            foreach (var cell in FindObjectsByType<Cell>(FindObjectsSortMode.None))
+            {
+                if (cell && cell.RetireWorldIntoPoolForSceneExit(SceneExitSliceMs, 0f, requireEnvironment: false,
+                        rootDestroyPrismsPerFrame: sceneExitDestroysPerFrame, returnPooledTrail: returnPooledTrail,
+                        rootDestroyFrameBudgetMs: sceneExitFrameBudgetMs))
+                    (draining ??= new System.Collections.Generic.List<Cell>()).Add(cell);
+            }
+            if (draining == null) return;
+
+            float startedAt = Time.unscaledTime;
+            float deadline = startedAt + sceneExitDrainMaxSeconds;
+            bool running = true, sceneLeft = false;
+            while (running && Time.unscaledTime < deadline)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                running = false;
+                foreach (var cell in draining)
+                {
+                    if (!cell) { sceneLeft = true; continue; }
+                    if (cell.IsRetiringForSceneExit) { running = true; break; }
+                }
+            }
+
+            int destroyed = 0, parked = 0;
+            foreach (var cell in draining)
+            {
+                if (!cell) continue;
+                destroyed += cell.LastSceneExitDestroyedCount;
+                parked += cell.LastSceneExitParkedCount;
+            }
+
+            // One mark per exit in the test log, so a run shows whether the drain finished before the load.
+            float took = Time.unscaledTime - startedAt;
+            NetSessionRecorder.Mark("sceneExitDrain",
+                running ? $"cut short at {sceneExitDrainMaxSeconds:0.0}s"
+                : sceneLeft ? $"the scene left first, after {took:0.0}s"
+                : $"{destroyed} destroyed, {parked} parked in {took:0.0}s");
+        }
+
         void ClearPlayerVesselReferences()
         {
-            Debug.Log($"<color=#00FFFF>[DESPAWN] ClearPlayerVesselReferences - Players={gameData.Players.Count}, Vessels={gameData.Vessels.Count}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[DESPAWN] ClearPlayerVesselReferences - Players={gameData.Players.Count}, Vessels={gameData.Vessels.Count}");
 
             foreach (var player in gameData.Players)
             {
@@ -424,8 +759,11 @@ namespace CosmicShore.Core
             var nm = NetworkManager.Singleton;
             if (nm != null && nm.IsListening && !nm.IsServer)
             {
-                Debug.Log($"<color=#FF8C00>[SceneLoader] HandleActiveSessionEnd deferring to server - " +
-                          $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[SceneLoader] HandleActiveSessionEnd deferring to server - " +
+                          $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.");
+                ArmClientSceneFollowWatchdog(
+                    _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main",
+                    "Session end");
                 return;
             }
 
@@ -434,7 +772,9 @@ namespace CosmicShore.Core
             // "Main Menu" return does NOT route here; it goes straight through
             // ReturnToMainMenu(), which keeps the live Relay so the whole party
             // reloads Menu_Main together. Here the session is already gone, so we
-            // return to the menu and fully reset local game state.
+            // return to the menu and fully reset local game state - on HOME: the
+            // party the card was launched with is gone, so it is not re-opened.
+            CosmicShore.UI.MenuReturnCard.Clear();
             ReturnToMainMenu();
             gameData.ResetAllData();
         }

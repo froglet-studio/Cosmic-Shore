@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// <see cref="IRoundStats.HostilePrismsDestroyed"/> reaches the target
     /// (<see cref="GameDataSO.PrismTargetCount"/>, authored via Tools &gt; Cosmic Shore &gt;
     /// End Game Conditions); the winning domain is the highest destruction sum. Golf-timed
-    /// like HexRace/Crystal Capture: winning-domain players score their FINISH TIME (the
+    /// like SkimRace/Crystal Capture: winning-domain players score their FINISH TIME (the
     /// end-game score they display); losing players a sentinel encoding their team's remaining
     /// prisms, so the scoreboard shows the winners' time and each losing team's prisms left
     /// (individual prisms smashed on the secondary line). Scoring mass = ALL environment
@@ -54,11 +54,11 @@ namespace CosmicShore.Gameplay
         public override void AssignScores(GameDataSO gameData, Domains winner, float finishTime)
         {
             // Same sentinel scheme as every time-based golf mode (GolfScoreSentinels is the
-            // single source of truth; the "HexRace" naming is legacy - the encoding is shared).
+            // single source of truth; the "SkimRace" naming is legacy - the encoding is shared).
             foreach (var stats in gameData.RoundStatsList)
                 stats.Score = stats.Domain == winner
                     ? finishTime
-                    : GolfScoreSentinels.EncodeHexRaceLoserScore(Remaining(gameData, stats.Domain));
+                    : GolfScoreSentinels.EncodeSkimRaceLoserScore(Remaining(gameData, stats.Domain));
         }
 
         public override List<ScoreResult> BuildResults(GameDataSO gameData)

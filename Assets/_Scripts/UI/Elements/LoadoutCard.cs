@@ -54,12 +54,9 @@ namespace CosmicShore.UI
 
         void UpdateCardView()
         {
-            CSDebug.Log($"LoadoutCard.UpdateCardView - loadout: {loadout}");
-
             if (!loadout.Initialized)
             {
                 // Show the + icon background
-                CSDebug.Log($"No loadout for card: {Index}");
                 BackgroundImage.sprite = PlusIconBackground;
                 GameTitle.gameObject.SetActive(false);
                 ShipImage.gameObject.SetActive(false);

@@ -1,8 +1,12 @@
+using System;
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,10 +18,18 @@ namespace CosmicShore.UI
     /// header slots - but as its own panel with a leave-party button and a
     /// live "X Players Online" counter.
     ///
-    /// Slot 0 is always the local player (avatar + display name).
-    /// Remaining slots render the other <see cref="HostConnectionDataSO.PartyMembers"/>
-    /// in order. Empty slots expose the "+" add button, which opens the
-    /// <see cref="FriendsListPanel"/> (pre-wired in the scene).
+    /// <para><b>Seating is SYNCED, not local.</b> The host holds the first slot and the
+    /// clients follow in join order, identically on every device - see
+    /// <see cref="PartyRoster"/> for why that order is read off Netcode's replicated
+    /// <c>OwnerClientId</c> rather than off the per-device <c>PartyMembers</c> list, which
+    /// seats whoever is looking at it first. Empty slots expose the "+" add button, which
+    /// opens the <see cref="FriendsListPanel"/> (pre-wired in the scene).</para>
+    ///
+    /// <para><b>Each occupied slot wears its pilot's domain</b> as an animated halo behind the
+    /// avatar (<see cref="PartySlotDomainGlow"/>, built by the slot itself). Domain is pushed
+    /// LIVE every frame rather than snapshotted at population time: a pilot re-picks their
+    /// domain from the same modal this panel lives in, and the platform rule is to read the
+    /// live mirror each time rather than cache one at component-creation time.</para>
     ///
     /// All data flows through SOAP events - no direct <see cref="HostConnectionService"/>
     /// references are needed beyond the Leave button callback.
@@ -28,13 +40,25 @@ namespace CosmicShore.UI
         [SerializeField] private HostConnectionDataSO connectionData;
         [SerializeField] private SO_ProfileIconList profileIcons;
 
+        // The live roster of network-spawned players, which is where BOTH synced facts come
+        // from: a member's replicated owner client id (the seat order) and their live domain
+        // (the halo colour). DI rather than a serialized reference so the four scene instances
+        // of this panel need no new wiring.
+        [Inject] private GameDataSO gameData;
+
         [Header("Slots (exactly 4, by design)")]
-        [Tooltip("Slot 0 is reserved for the local player. Slots 1..3 render remote party members.")]
+        [Tooltip("Drawn left-to-right in the SYNCED party order: the host takes slot 0 on every " +
+                 "device, then clients in the order they joined. The local player is NOT pinned " +
+                 "to slot 0 - a client sees itself wherever it joined.")]
         [SerializeField] private FriendInfoSlot[] slots = new FriendInfoSlot[4];
 
         [Header("UI")]
         [Tooltip("Text that reads \"N Players Online\" for the presence lobby.")]
         [SerializeField] private TMP_Text onlineStatusText;
+        [Tooltip("The online line while you are the only player online. Empty shows nothing.")]
+        [SerializeField] private string onlineAloneText = "1 Player Online";
+        [Tooltip("The online line otherwise; {count} is everyone online, you included. Empty shows nothing.")]
+        [SerializeField] private string onlineCountTemplate = "{count} Players Online";
 
         [Tooltip("Leave Party button - disconnects from the current party and returns to Menu_Main.")]
         [SerializeField] private Button leaveButton;
@@ -43,8 +67,121 @@ namespace CosmicShore.UI
                  "Should be the scene-wired FriendsListPanel.")]
         [SerializeField] private FriendsListPanel friendsListPanel;
 
-        /// <summary>Max slots rendered - matches <c>HostConnectionDataSO.MaxPartySlots</c> (4 by design).</summary>
+        [Header("Style-B (optional)")]
+        [Tooltip("\"n / 4\" beside the PARTY label: the seats drawn out of the slots shown.")]
+        [SerializeField] private KitText partyCountText;
+        [Tooltip("The Leave button's group. Hidden (and out of the layout) while there is nobody else " +
+                 "in the party, instead of showing a Leave that does nothing.")]
+        [SerializeField] private CanvasGroup leaveGroup;
+
+        [Header("Party card (Rev 40 E, Docs/MENU_REDESIGN_B.md section 107; optional)")]
+        [Tooltip("The seated pilots' names in seat order, joined by Names Separator (\"Kai, Vireo, Nova\").")]
+        [SerializeField] private KitText partyNamesText;
+        [Tooltip("Between two names on the names line.")]
+        [SerializeField] private string namesSeparator = ", ";
+        [Tooltip("Who hosts and how many seats are open (\"You host · 1 seat open\").")]
+        [SerializeField] private KitText partySummaryText;
+        [Tooltip("The summary line: {host} is the host phrase, {seats} the seats phrase. Empty shows nothing.")]
+        [SerializeField] private string summaryTemplate = "{host} · {seats}";
+        [Tooltip("The host phrase when you host.")]
+        [SerializeField] private string youHostText = "You host";
+        [Tooltip("The host phrase when someone else hosts; {name} is the host's name.")]
+        [SerializeField] private string otherHostsTemplate = "{name} hosts";
+        [Tooltip("The seats phrase with one seat open.")]
+        [SerializeField] private string oneSeatOpenText = "1 seat open";
+        [Tooltip("The seats phrase with several open; {count} is how many.")]
+        [SerializeField] private string seatsOpenTemplate = "{count} seats open";
+        [Tooltip("The seats phrase with every seat taken.")]
+        [SerializeField] private string partyFullText = "Party full";
+        [Tooltip("The card's Invite button: moves focus into the online list, as an open seat does.")]
+        [SerializeField] private Button inviteButton;
+        [Tooltip("The Invite button's group, hidden while every seat is taken.")]
+        [SerializeField] private CanvasGroup inviteGroup;
+
+        [Header("Party molecule (optional; section 45.4, made to grow in section 109)")]
+        [Tooltip("Rev 6 (Docs/MENU_REDESIGN_B.md §45.4): the bond drawn from the centre seat to each seat, index-aligned " +
+                 "with Slots (the centre seat's entry stays empty). A seated pilot's bond takes their domain colour, " +
+                 "Space while it is not known yet; an open seat's bond is Space, dimmed to Open Bond Alpha.")]
+        [SerializeField] private Graphic[] seatBonds = new Graphic[0];
+        [Tooltip("The open seats' bond alpha.")]
+        [SerializeField, Range(0f, 1f)] private float openBondAlpha = 0.35f;
+        [Tooltip("The chrome theme, for the bonds' Space colour.")]
+        [SerializeField] private UIThemeSO theme;
+        [Tooltip("The molecule grows with the party (Shombith, 2026-10-31: \"expandable with the host and its there\"): slot 0, " +
+                 "the host, stays where it is authored; the ring shows the members plus one open socket, evenly round the " +
+                 "host, and every other slot and its bond hide. Off: the slots stay where they are authored.")]
+        [SerializeField] private bool expandingMolecule;
+        [Tooltip("From the host's avatar to a ring seat's (canvas units). The bonds are this long.")]
+        [SerializeField] private float ringRadius = 120f;
+        [Tooltip("A seat's centre sits this far below its avatar's (the name under it).")]
+        [SerializeField] private float seatAvatarOffset = 20f;
+        [Tooltip("The ring's angles start here (degrees counter-clockwise from the right), half a step round.")]
+        [SerializeField] private float firstAngle = 90f;
+
+        /// <summary>Max slots rendered - the party size, <c>HostConnectionDataSO.MaxPartySlots</c> (4).</summary>
         const int MAX_SLOTS = 4;
+
+        /// <summary>
+        /// Raised after the drawn seating, a seat's live domain colour or the online count changes - never on a
+        /// frame where nothing moved - so a reader such as the presence orb (<see cref="KitPresenceOrb"/>) repaints
+        /// only then. Read the state back through <see cref="DrawnSeatCount"/>, <see cref="TryGetSeat"/> and
+        /// <see cref="RemoteOnlineCount"/>.
+        /// </summary>
+        public event Action PresenceChanged;
+
+        /// <summary>How many seats are drawn (the local player always holds one).</summary>
+        public int DrawnSeatCount => _drawnSeats;
+
+        /// <summary>Players online besides the local one (the presence lobby).</summary>
+        public int RemoteOnlineCount => connectionData && connectionData.OnlinePlayers != null ? connectionData.OnlinePlayers.Count : 0;
+
+        /// <summary>
+        /// A drawn seat, in the synced order: its pilot's avatar, their live domain colour (null while their
+        /// <c>Player</c> has not spawned here) and whether it is the local player's.
+        /// </summary>
+        public bool TryGetSeat(int index, out Sprite avatar, out Color? domainColour, out bool isLocal)
+        {
+            bool drawn = index >= 0 && index < _drawnSeats && index < _seats.Count;
+            avatar = drawn ? _seatAvatars[index] : null;
+            domainColour = drawn ? _seatGlows[index] : null;
+            isLocal = drawn && _seats[index].IsLocal;
+            return drawn;
+        }
+
+        readonly List<PartyRoster.Seat> _seats = new();
+        readonly Sprite[] _seatAvatars = new Sprite[MAX_SLOTS];
+        readonly Color?[] _seatGlows = new Color?[MAX_SLOTS];
+        int _drawnSeats;
+
+        // UgsPlayerId -> what the network says about that pilot. Rebuilt each tick from
+        // gameData.Players; a member with no entry has no live Player on this machine.
+        readonly Dictionary<string, NetFacts> _netFacts = new();
+
+        // Order-independent hash of the (ugs id, client id) pairs plus the host id - i.e. of
+        // everything the SEATING is a function of, and nothing the seating is not (domain is
+        // deliberately excluded; re-tinting must not redraw the row). Compared against the
+        // fingerprint the drawn seating was built from, so the panel re-seats itself the
+        // instant a member's Player spawns or despawns without subscribing every step of the
+        // spawn chain - and costs no sort on the frames where nothing moved.
+        ulong _netFingerprint;
+        ulong _seatedFingerprint;
+        bool  _hasSeated;
+
+        // How often the network facts are re-read. NOT a frame-rate concession in general -
+        // it is specifically because IPlayer.UgsPlayerId is `NetUgsPlayerId.Value.ToString()`,
+        // and FixedString64Bytes.ToString() ALLOCATES: re-reading four pilots every frame is
+        // ~240 throwaway strings a second for a panel that is just sitting open. At 5 Hz the
+        // worst-case lag is a fifth of a second on a tint that eases in over longer than that.
+        const float NET_FACTS_REFRESH_SECONDS = 0.2f;
+        float _nextNetFactsRefresh;
+
+        struct NetFacts
+        {
+            public ulong   ClientId;
+            public Domains Domain;
+        }
+
+        Func<string, ulong> _clientIdLookup;
 
         // ─────────────────────────────────────────────────────────────────────
         // Lifecycle
@@ -54,6 +191,8 @@ namespace CosmicShore.UI
         {
             if (leaveButton)
                 leaveButton.onClick.AddListener(OnLeaveButtonPressed);
+            if (inviteButton)
+                inviteButton.onClick.AddListener(OnAddSlotPressed);
 
             // Wire every empty slot's add button to open the FriendsListPanel.
             if (slots != null)
@@ -107,9 +246,53 @@ namespace CosmicShore.UI
             HostConnectionService.Instance?.ForceRefreshNow();
         }
 
+        void Start()
+        {
+            // [Inject] lands between Awake and Start, so OnEnable's first pass on a
+            // scene-loaded panel runs with a null GameDataSO - which resolves NO client ids
+            // and NO domains, i.e. a roster that is ordered but colourless. Re-seat now that
+            // the container has been read. (Update would heal it a frame later anyway; doing
+            // it here means the panel is never drawn wrong even once.)
+            PopulateSlots();
+        }
+
         void OnDisable()
         {
             UnsubscribeSoap();
+        }
+
+        /// <summary>
+        /// Two jobs, both of which have to be per-frame rather than event-driven.
+        ///
+        /// <para><b>Domain is pushed live.</b> A pilot re-picks their domain from the same
+        /// modal this panel sits in and there is no SOAP channel for "somebody's domain
+        /// changed" - the platform rule is to read the live <c>Player.Domain</c> mirror each
+        /// time rather than snapshot one. The push is four dictionary lookups a frame; the
+        /// underlying READ is throttled (see <see cref="NET_FACTS_REFRESH_SECONDS"/>).</para>
+        ///
+        /// <para><b>Seating heals itself.</b> A member's seat is decided by their replicated
+        /// owner client id, which only exists once their <c>Player</c> object network-spawns -
+        /// several hundred milliseconds after the party event that put them in the list, and on
+        /// no channel this panel could usefully subscribe to. So the network facts are re-read
+        /// on a slow tick and the roster is re-sorted only when their fingerprint moves.</para>
+        /// </summary>
+        void Update()
+        {
+            if (slots == null || slots.Length == 0 || !connectionData) return;
+
+            if (Time.unscaledTime >= _nextNetFactsRefresh)
+            {
+                RebuildNetFacts();
+
+                if (!_hasSeated || _netFingerprint != _seatedFingerprint)
+                {
+                    PopulateSlots();   // re-seats, redraws, and pushes the glows itself
+                    return;
+                }
+            }
+
+            if (PushDomainGlows())
+                PresenceChanged?.Invoke();
         }
 
         void SubscribeSoap()
@@ -203,66 +386,217 @@ namespace CosmicShore.UI
             UpdateLeaveButtonState();
         }
 
+        /// <summary>
+        /// Draws the party into the four slots in the SYNCED seating: host first, then clients
+        /// in join order, the same on every device.
+        ///
+        /// <para>Two-pass population (clear the unused slots first, seat everyone second) is
+        /// kept from the original: if scene wiring accidentally shares a TMP_Text or Image
+        /// GameObject between two slots, the occupied slot's activation then runs last and the
+        /// visible name/avatar survive. <see cref="WarnOnSharedSlotReferences"/> reports it.</para>
+        /// </summary>
         void PopulateSlots()
         {
             if (slots == null || slots.Length == 0 || !connectionData) return;
 
-            // Collect remote party members (excluding the local player) in
-            // insertion order so the layout stays stable across refreshes.
-            var remoteMembers = new List<PartyPlayerData>();
-            if (connectionData.PartyMembers != null)
-            {
-                string localId = connectionData.LocalPlayerId;
-                foreach (var m in connectionData.PartyMembers)
-                {
-                    if (m.PlayerId == localId) continue;
-                    remoteMembers.Add(m);
-                }
-            }
+            BuildSeats();
 
-            // Two-pass population: clear empty slots FIRST, then populate
-            // occupied slots. If the scene wiring accidentally shares a
-            // TMP_Text or Image GameObject between two slots, the occupied
-            // slot's SetPlayer / SetAsLocalPlayer activation runs last and
-            // wins over the empty slot's ClearSlot deactivation - so the
-            // visible name/avatar survive the shared-reference case.
             int slotCount = Mathf.Min(slots.Length, MAX_SLOTS);
-            for (int i = 0; i < slotCount; i++)
+            int seatCount = Mathf.Min(_seats.Count, slotCount);
+
+            for (int i = seatCount; i < slotCount; i++)
             {
-                var slot = slots[i];
-                if (slot == null) continue;
-
-                if (i == 0) continue; // local slot is always occupied
-
-                int remoteIdx = i - 1;
-                if (remoteIdx >= remoteMembers.Count)
-                    slot.ClearSlot();
+                // Unity's lifetime-aware null, not `?.` - a destroyed slot is not reference-null.
+                var empty = slots[i];
+                if (empty != null) empty.ClearSlot();
             }
 
-            for (int i = 0; i < slotCount; i++)
+            for (int i = 0; i < seatCount; i++)
             {
                 var slot = slots[i];
                 if (slot == null) continue;
 
-                if (i == 0)
+                var seat = _seats[i];
+
+                if (seat.IsLocal)
                 {
-                    PopulateLocalSlot(slot);
+                    _seatAvatars[i] = PopulateLocalSlot(slot);
+                    slot.SetRole(true, seat.IsHost);
                     continue;
                 }
 
-                int remoteIdx = i - 1;
-                if (remoteIdx < remoteMembers.Count)
+                // Only the party host can kick, and never itself - a non-local seat on a host's
+                // screen is therefore always kickable.
+                _seatAvatars[i] = ResolveAvatar(seat.Member.AvatarId);
+                slot.SetPlayer(
+                    seat.PlayerId,
+                    seat.Member.DisplayName,
+                    _seatAvatars[i],
+                    canKick: connectionData.IsPartyHost);
+                slot.SetRole(false, seat.IsHost);
+            }
+
+            if (partyCountText)
+                partyCountText.SetText($"{seatCount} / {slotCount}");
+            DrawPartyCard(seatCount, slotCount);
+
+            _drawnSeats = seatCount;
+            for (int i = seatCount; i < MAX_SLOTS; i++)
+            {
+                _seatAvatars[i] = null;
+                _seatGlows[i] = null;
+            }
+
+            _seatedFingerprint = _netFingerprint;
+            _hasSeated         = true;
+
+            LayoutMolecule(seatCount, slotCount);
+            PushDomainGlows();
+            TintBonds();
+            PresenceChanged?.Invoke();
+        }
+
+        Vector2 _hostAvatar;
+        bool _hostCaptured;
+
+        /// <summary>
+        /// Section 109: the molecule grows from the host. The ring holds every seated member and, while a seat is free, ONE
+        /// open socket, spread evenly round the host (<see cref="MoleculeAngle"/>); each shown seat's bond points at it,
+        /// and the slots and bonds beyond the ring hide. A party of one is the host and one socket; a full party has no
+        /// socket. Nothing here is fixed to four: the ring is computed from the slots the panel has.
+        /// </summary>
+        void LayoutMolecule(int seatCount, int slotCount)
+        {
+            if (!expandingMolecule || slots == null || slots.Length == 0 || !slots[0]) return;
+            if (!_hostCaptured && slots[0].transform is RectTransform hostRect)
+            {
+                // The host seat's REST pose: its entrance may be lifting it right now (KitEntrance.RestPosition).
+                var rest = hostRect.TryGetComponent(out KitEntrance rise) ? rise.RestPosition : hostRect.anchoredPosition;
+                _hostAvatar = rest + new Vector2(0f, seatAvatarOffset);
+                _hostCaptured = true;
+            }
+
+            int ring = RingSeats(seatCount, slotCount);
+            for (int i = 1; i < slots.Length; i++)
+            {
+                var slot = slots[i];
+                var bond = seatBonds != null && i < seatBonds.Length ? seatBonds[i] : null;
+                bool shown = i <= ring;
+                if (slot && slot.TryGetComponent(out CanvasGroup group)) KitVisibility.SetShown(group, shown);
+                if (bond) bond.enabled = shown;
+                if (!shown || !slot || !(slot.transform is RectTransform rect)) continue;
+
+                float a = MoleculeAngle(i - 1, ring, firstAngle) * Mathf.Deg2Rad;
+                var avatar = _hostAvatar + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * ringRadius;
+                rect.anchoredPosition = avatar - new Vector2(0f, seatAvatarOffset);
+                if (bond && bond.transform is RectTransform bondRect)
                 {
-                    var member = remoteMembers[remoteIdx];
-                    // Only the party host can kick, and never itself - these are remote
-                    // member slots (slot 0 is the local player), so host ⇒ kickable.
-                    slot.SetPlayer(member.PlayerId, member.DisplayName, ResolveAvatar(member.AvatarId),
-                        canKick: connectionData.IsPartyHost);
+                    bondRect.anchoredPosition = _hostAvatar;
+                    bondRect.localEulerAngles = new Vector3(0f, 0f, a * Mathf.Rad2Deg);
+                    bondRect.sizeDelta = new Vector2(ringRadius, bondRect.sizeDelta.y);
                 }
             }
         }
 
-        void PopulateLocalSlot(FriendInfoSlot slot)
+        /// <summary>How many seats the ring shows round the host: the other members and one open socket while a seat is free.</summary>
+        internal static int RingSeats(int seatCount, int slotCount)
+        {
+            int members = Mathf.Max(0, seatCount - 1);
+            int open = seatCount < slotCount ? 1 : 0;
+            return Mathf.Clamp(members + open, 0, Mathf.Max(0, slotCount - 1));
+        }
+
+        /// <summary>
+        /// Ring seat <paramref name="k"/> of <paramref name="n"/>, degrees counter-clockwise from the right: evenly spread,
+        /// half a step past <paramref name="first"/> (one seat sits straight below the host; three make the old triangle).
+        /// Mirrored by author_menu_arcade.ring_angle. Pure, so it is tested without a panel.
+        /// </summary>
+        internal static float MoleculeAngle(int k, int n, float first = 90f)
+        {
+            if (n <= 0) return first;
+            float a = (first + 360f * (k + 0.5f) / n) % 360f;
+            return a < 0f ? a + 360f : a;
+        }
+
+        /// <summary>
+        /// Builds the synced seating into <see cref="_seats"/>.
+        ///
+        /// <para>The panel draws at most <see cref="MAX_SLOTS"/> seats. The party session holds exactly
+        /// that many, but the synced seating is built from a polled roster that can briefly carry
+        /// one player twice on a join or leave. If that pushes the LOCAL player past the last drawn slot they are moved INTO it: a
+        /// panel that stops showing you your own party is a worse lie than a momentarily
+        /// imperfect ordering, and the condition clears itself on the next reconcile.</para>
+        /// </summary>
+        void BuildSeats()
+        {
+            RebuildNetFacts();
+
+            _clientIdLookup ??= ResolveClientId;
+
+            PartyRoster.Build(
+                connectionData.PartyMembers,
+                connectionData.LocalPlayerData,
+                ResolveHostClientId(),
+                _clientIdLookup,
+                _seats);
+
+            int drawable = Mathf.Min(slots.Length, MAX_SLOTS);
+            if (_seats.Count <= drawable || drawable <= 0) return;
+
+            int localIdx = -1;
+            for (int i = 0; i < _seats.Count; i++)
+                if (_seats[i].IsLocal) { localIdx = i; break; }
+
+            if (localIdx >= drawable)
+            {
+                var local = _seats[localIdx];
+                _seats.RemoveAt(localIdx);
+                _seats.Insert(drawable - 1, local);
+            }
+        }
+
+        /// <summary>
+        /// The Rev 40 E party card's words: the seated names in seat order, and who hosts with how many seats are open.
+        /// Every word is authored on this component; code supplies the facts (CLAUDE.md, player-facing text).
+        /// </summary>
+        void DrawPartyCard(int seatCount, int slotCount)
+        {
+            bool full = seatCount >= slotCount;
+            KitVisibility.SetShown(inviteGroup, !full);
+            if (inviteButton) inviteButton.interactable = !full;
+            if (!partyNamesText && !partySummaryText) return;
+
+            var names = new List<string>(seatCount);
+            string hostName = null;
+            bool localHosts = false;
+            for (int i = 0; i < seatCount && i < _seats.Count; i++)
+            {
+                var seat = _seats[i];
+                string name = seat.IsLocal ? connectionData.LocalDisplayName : seat.Member.DisplayName;
+                if (!string.IsNullOrEmpty(name)) names.Add(name);
+                if (!seat.IsHost) continue;
+                hostName = name;
+                localHosts = seat.IsLocal;
+            }
+
+            if (partyNamesText) partyNamesText.SetText(string.Join(namesSeparator ?? string.Empty, names));
+            if (partySummaryText)
+                partySummaryText.SetText(PartySummary(summaryTemplate, localHosts ? youHostText
+                        : TemplateText.Fill(otherHostsTemplate, "name", hostName ?? string.Empty),
+                    slotCount - seatCount, oneSeatOpenText, seatsOpenTemplate, partyFullText));
+        }
+
+        /// <summary>The summary line from its authored parts. Pure, so it is tested without a party.</summary>
+        internal static string PartySummary(string template, string hostPhrase, int openSeats,
+                                            string oneOpen, string manyOpenTemplate, string full)
+        {
+            string seats = openSeats <= 0 ? full
+                         : openSeats == 1 ? oneOpen
+                         : TemplateText.Fill(manyOpenTemplate, "count", openSeats.ToString());
+            return TemplateText.Fill(template, "host", hostPhrase ?? string.Empty, "seats", seats ?? string.Empty);
+        }
+
+        Sprite PopulateLocalSlot(FriendInfoSlot slot)
         {
             string localId = connectionData.LocalPlayerId;
             string displayName = string.IsNullOrEmpty(connectionData.LocalDisplayName)
@@ -271,27 +605,30 @@ namespace CosmicShore.UI
             var avatar = ResolveAvatar(connectionData.LocalAvatarId);
 
             slot.SetAsLocalPlayer(localId, displayName, avatar);
+            return avatar;
         }
 
         void UpdateOnlineStatus()
         {
-            if (!onlineStatusText || !connectionData) return;
+            if (!connectionData) return;
 
-            // OnlinePlayers excludes the local player by design - add 1 so
-            // the counter reflects the total player population, which is
-            // what players intuitively expect when they read "N Players Online".
-            // The Arcade header intentionally shows only the raw count here -
-            // "IN LOBBY X/N" / "LOBBY FULL" / "IN A MATCH" badges belong on the
-            // per-remote-player rows in FriendsListPanel (OnlineInfoEntry), not
-            // on the local player's count of everyone online.
-            int remoteCount = connectionData.OnlinePlayers != null
-                ? connectionData.OnlinePlayers.Count
-                : 0;
-            int total = remoteCount + (connectionData.IsConnected ? 1 : 0);
+            if (onlineStatusText)
+            {
+                // OnlinePlayers excludes the local player by design - add 1 so
+                // the counter reflects the total player population, which is
+                // what players intuitively expect when they read "N Players Online".
+                // The Arcade header intentionally shows only the raw count here -
+                // "IN LOBBY X/N" / "LOBBY FULL" / "IN A MATCH" badges belong on the
+                // per-remote-player rows in FriendsListPanel (OnlineInfoEntry), not
+                // on the local player's count of everyone online.
+                int total = RemoteOnlineCount + (connectionData.IsConnected ? 1 : 0);
 
-            onlineStatusText.text = total == 1
-                ? "1 Player Online"
-                : $"{total} Players Online";
+                onlineStatusText.text = total == 1
+                    ? onlineAloneText
+                    : onlineCountTemplate.Replace("{count}", total.ToString());
+            }
+
+            PresenceChanged?.Invoke();
         }
 
         void UpdateLeaveButtonState()
@@ -300,7 +637,9 @@ namespace CosmicShore.UI
 
             // Leaving only makes sense when we have at least one other party
             // member. A solo "leave" is a no-op from the user's perspective.
-            leaveButton.interactable = connectionData.RemotePartyMemberCount > 0;
+            bool canLeave = connectionData.RemotePartyMemberCount > 0;
+            leaveButton.interactable = canLeave;
+            KitVisibility.SetShown(leaveGroup, canLeave);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -330,10 +669,11 @@ namespace CosmicShore.UI
 
         void HandleProfileChanged(PlayerProfileData _)
         {
-            // Only slot 0 depends on local profile; other slots read from
-            // connectionData.PartyMembers which is owned by HostConnectionService.
-            if (slots == null || slots.Length == 0 || slots[0] == null) return;
-            PopulateLocalSlot(slots[0]);
+            // The local player is no longer pinned to slot 0 - on a client the host sits there
+            // and the local pilot is wherever they joined - so a resolved cloud profile has to
+            // repaint whichever seat is actually theirs. Repopulating is the only statement of
+            // that which cannot go out of step with the seating.
+            PopulateSlots();
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -342,7 +682,13 @@ namespace CosmicShore.UI
 
         void OnAddSlotPressed()
         {
-            if (friendsListPanel != null)
+            if (friendsListPanel == null) return;
+
+            // The style-B panel carries the list beside the slots, so "invite a friend below" moves
+            // focus down into it; the legacy overlay has to be opened first.
+            if (friendsListPanel.IsEmbedded)
+                friendsListPanel.FocusList();
+            else
                 friendsListPanel.Show();
         }
 
@@ -398,18 +744,141 @@ namespace CosmicShore.UI
         // Helpers
         // ─────────────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Rebuilds the UGS-id → (client id, domain) map from the live player roster.
+        ///
+        /// <para>AI are skipped: they carry the HOST's owner client id and an empty UGS id, so
+        /// admitting them would both fail to match any party member and, if one ever did, seat
+        /// a bot in a human's chair.</para>
+        /// </summary>
+        void RebuildNetFacts()
+        {
+            _netFacts.Clear();
+            _nextNetFactsRefresh = Time.unscaledTime + NET_FACTS_REFRESH_SECONDS;
+
+            ulong fingerprint = ResolveHostClientId();
+
+            if (gameData == null || gameData.Players == null)
+            {
+                _netFingerprint = fingerprint;
+                return;
+            }
+
+            for (int i = 0; i < gameData.Players.Count; i++)
+            {
+                var player = gameData.Players[i];
+                if (player == null) continue;
+
+                // GameDataSO.Players can hold destroyed Players between prunes; a destroyed
+                // UnityEngine.Object is not reference-null, so the interface check is not enough.
+                if (player is UnityEngine.Object obj && !obj) continue;
+                if (player.IsInitializedAsAI) continue;
+
+                var ugsId = player.UgsPlayerId;
+                if (string.IsNullOrEmpty(ugsId)) continue;
+
+                var clientId = player.OwnerClientNetId;
+
+                _netFacts[ugsId] = new NetFacts
+                {
+                    ClientId = clientId,
+                    Domain   = player.Domain,
+                };
+
+                // Summed, so the result does not depend on the order gameData.Players happens
+                // to be in - which changes on its own as players are added and pruned.
+                unchecked { fingerprint += (ulong)ugsId.GetHashCode() * 1099511628211UL + clientId + 1UL; }
+            }
+
+            _netFingerprint = fingerprint;
+        }
+
+        ulong ResolveClientId(string ugsPlayerId) =>
+            !string.IsNullOrEmpty(ugsPlayerId) && _netFacts.TryGetValue(ugsPlayerId, out var f)
+                ? f.ClientId
+                : PartyRoster.UnknownClientId;
+
+        /// <summary>
+        /// The client id that means "host". Netcode assigns it to whoever started the session,
+        /// which for a party IS the party host, and every peer reads the same value - so it is
+        /// the one host identity that needs nothing published to agree on.
+        /// </summary>
+        static ulong ResolveHostClientId()
+        {
+            var nm = NetworkManager.Singleton;
+            // NetworkManager.ServerClientId is STATIC - reaching it through the instance is CS0176,
+            // which is what the other seven sites in this repo already avoid by type-qualifying it.
+            return nm != null && nm.IsListening ? NetworkManager.ServerClientId : PartyRoster.UnknownClientId;
+        }
+
+        /// <summary>
+        /// Pushes each drawn seat's LIVE domain colour onto its slot's halo. A seat whose pilot
+        /// has no live <c>Player</c> yet gets no halo rather than a default-coloured one - an
+        /// unresolved pilot painted Jade is confident misinformation, where an absent halo
+        /// reads as "not known yet". Returns whether any seat's colour changed since the last push
+        /// (the bonds are re-tinted then, and <see cref="PresenceChanged"/> is raised by the caller).
+        /// </summary>
+        bool PushDomainGlows()
+        {
+            int seatCount = Mathf.Min(_seats.Count, Mathf.Min(slots.Length, MAX_SLOTS));
+            var colorSet = gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.ColorSet
+                : null;
+
+            bool changed = false;
+            for (int i = 0; i < seatCount; i++)
+            {
+                Color? colour = null;
+                if (colorSet != null && _netFacts.TryGetValue(_seats[i].PlayerId, out var facts))
+                    colour = colorSet.GetDomainSignalColor(facts.Domain);
+
+                if (_seatGlows[i] != colour)
+                {
+                    _seatGlows[i] = colour;
+                    changed = true;
+                }
+
+                var slot = slots[i];
+                if (slot == null) continue;
+                slot.SetDomainGlow(colour);
+            }
+
+            if (changed) TintBonds();
+            return changed;
+        }
+
+        /// <summary>
+        /// The molecule's bonds (<see cref="seatBonds"/>): a seated pilot's in their domain colour (the neutral blue while it
+        /// is not known), an open seat's in dim neutral blue. Graphic.color only dirties the canvas when the colour changes.
+        /// No element colour (Docs/UI_COLOR_RULES.md).
+        /// </summary>
+        void TintBonds()
+        {
+            if (seatBonds == null || seatBonds.Length == 0) return;
+            Color neutral = UITheme.Resolve(theme, UIColorToken.NeutralLightest);
+            for (int i = 0; i < seatBonds.Length; i++)
+            {
+                var bond = seatBonds[i];
+                if (!bond) continue;
+                bool seated = i < _drawnSeats;
+                Color colour = seated ? (_seatGlows[i] ?? neutral) : neutral;
+                colour.a = seated ? 1f : openBondAlpha;
+                bond.color = colour;
+            }
+        }
+
         Sprite ResolveAvatar(int avatarId)
         {
-            if (!profileIcons || profileIcons.profileIcons == null) return null;
+            if (!profileIcons || profileIcons.ProfileIcons == null) return null;
 
-            foreach (var icon in profileIcons.profileIcons)
+            foreach (var icon in profileIcons.ProfileIcons)
             {
                 if (icon.Id == avatarId)
                     return icon.IconSprite;
             }
 
-            return profileIcons.profileIcons.Count > 0
-                ? profileIcons.profileIcons[0].IconSprite
+            return profileIcons.ProfileIcons.Count > 0
+                ? profileIcons.ProfileIcons[0].IconSprite
                 : null;
         }
     }

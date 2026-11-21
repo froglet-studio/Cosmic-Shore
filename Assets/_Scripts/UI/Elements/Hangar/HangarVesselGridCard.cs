@@ -47,7 +47,7 @@ namespace CosmicShore.UI
                 vesselIcon.sprite = ship.IconActive;
 
             if (vesselName)
-                vesselName.text = ship.Name.ToUpperInvariant();
+                vesselName.text = ship.CardName.ToUpperInvariant();
 
             UpdateLockState();
 

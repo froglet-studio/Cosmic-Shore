@@ -1,0 +1,98 @@
+// Ported from Assets/_Scripts/UI/Screens/HomeScreen.cs (Arc F) — verbatim; TMPro →
+// CosmicShore.Engine.UI, UnityEngine → CosmicShore.Engine, Reflex.Attributes →
+// CosmicShore.Engine.Injection.
+using CosmicShore.Engine.UI;
+using CosmicShore.Engine;
+using CosmicShore.Utility;
+using CosmicShore.Engine.Injection;
+
+namespace CosmicShore.UI
+{
+    /// <summary>
+    /// Provides high level functionality to panels in the main menu scene.
+    /// Player name display driven by PlayerDataService.OnProfileChanged.
+    /// </summary>
+    public class HomeScreen : MonoBehaviour
+    {
+        [SerializeField] bool DebugFirstAppLaunch = false;
+        [SerializeField] GameObject FirstAppLaunchScreen;
+        [SerializeField] GameObject NavBar;
+        [SerializeField] TMP_Text userNameText;
+
+        [Inject] private PlayerDataService playerDataService;
+
+        enum PlayerPrefKeys
+        {
+            FirstAppLaunch
+        }
+
+        public void Start()
+        {
+            CSDebug.Log("MainMenu.cs start");
+
+            if (playerDataService != null)
+            {
+                playerDataService.OnProfileChanged += OnProfileChanged;
+
+                if (playerDataService.CurrentProfile != null)
+                    OnProfileChanged(playerDataService.CurrentProfile);
+            }
+
+            if (FirstAppLaunchExperience())
+            {
+                FirstAppLaunchScreen.SetActive(true);
+                NavBar.SetActive(false);
+            }
+        }
+
+        /// <summary>
+        /// Detect whether the app has been launched in the past by looking for a specific player pref key.
+        /// This enables the app to show a special initial app flow to new users.
+        ///
+        /// *Consider replacing this implementation with a quest progression.
+        /// </summary>
+        /// <returns>True if the app has never been launched before (player pref key doesn't exist). False otherwise.</returns>
+        bool FirstAppLaunchExperience()
+        {
+            if (DebugFirstAppLaunch)
+            {
+                PlayerPrefs.DeleteKey(PlayerPrefKeys.FirstAppLaunch.ToString());
+                CSDebug.Log("MainMenu.cs DebugFirstAppLaunch - delete first app launch key");
+            }
+
+            // Implementation commented out until an updated design is available
+            /*
+            CSDebug.Log("MainMenu.cs first app launch");
+            if (!PlayerPrefs.HasKey(PlayerPrefKeys.FirstAppLaunch.ToString()))
+            //if (PlayerPrefs.GetInt(PlayerPrefKeys.FirstAppLaunch.ToString(), -1234) == -1234)
+            {
+                CSDebug.Log("MainMenu.cs first app launch - did not have key");
+                CSDebug.Log("MainMenu.cs - " + PlayerPrefs.GetInt(PlayerPrefKeys.FirstAppLaunch.ToString()));
+                PlayerPrefs.SetInt(PlayerPrefKeys.FirstAppLaunch.ToString(), 1);
+                PlayerPrefs.Save();
+                CSDebug.Log("MainMenu.cs - " + PlayerPrefs.GetInt(PlayerPrefKeys.FirstAppLaunch.ToString()));
+                if (!PlayerPrefs.HasKey(PlayerPrefKeys.FirstAppLaunch.ToString()))
+                    CSDebug.Log("MainMenu.cs first app launch - still did not have fucking key");
+
+                return true;
+            }
+
+            return false;
+            */
+
+            return false;
+        }
+
+        void OnProfileChanged(PlayerProfileData profile)
+        {
+            if (userNameText != null && profile != null)
+                userNameText.text = profile.displayName;
+        }
+
+        void OnDisable()
+        {
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged -= OnProfileChanged;
+        }
+    }
+}

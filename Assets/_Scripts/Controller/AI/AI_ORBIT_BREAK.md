@@ -358,3 +358,43 @@ than enough for any bearing. Before, a 20-unit crystal gave it about 40°.
 5. Joust / Dog Fight (`seekPlayers`): confirm the AI still closes on a manoeuvring opponent and
    does not break off constantly — a moving target legitimately enters and leaves the turning
    circle, and the hysteresis is what keeps that from chattering.
+
+## 2026-10-10, third pass — "it circles four, five, six times before it gets out"
+
+Two defects, both of which let one orbit become several.
+
+### 1. The detector could not see an ECCENTRIC orbit at all
+
+`OrbitDetector`'s target-replaced guard compared the current range against the window's
+**closest** range (`_bestDistance`). An objective is almost never at the exact centre of the
+pursuer's circle; with it off-centre by `e`, the range swings from `R − e` to `R + e` every lap.
+Once `(R + e)/(R − e)` passes `orbitTargetJumpFraction` (1.6 — i.e. `e > 0.23R`), the far side of
+every lap read as "the objective was replaced" and **zeroed the sweep**. The detector never
+reached its threshold, and while the bearing kept the predictive test inside its closing cone or
+outside the circle, nothing else ended the orbit.
+
+Measured (the same frames fed to both versions, circle radius 100):
+
+| offset `e` | old: laps before firing | new |
+|---|---|---|
+| 0 | 1.0 | 1.0 |
+| 25 | 1.93 | 1.0 |
+| 50 | **never** | 1.0 |
+| 80 | **never** | 1.0 |
+
+A replaced objective is a jump between ONE FRAME AND THE NEXT, so the guard now compares against
+the **previous frame's** range. A real swap still trips it; a lap's far side no longer does.
+Pinned by `OrbitDetector_FiresWithinOneLapOfAnEccentricOrbit`, which fails on the old file.
+
+### 2. One lap is the limit, and a crystal it cannot reach is given up
+
+- `orbitSweepDegrees` **540 → 360** (C# default and the four prefabs that serialized it). A
+  genuine approach still closes, so the closing-spiral test stays quiet at 360.
+- A break-off used to be followed by a re-attack on the SAME crystal from the same side, which
+  re-entered the same orbit. Now, when the detector fires (a full lap was already flown) or the
+  pilot would break off the same crystal, in the same place, a second time, it **abandons** it for
+  `orbitAbandonSeconds` (5 s) and takes another. If it is the only eligible crystal it keeps it and
+  just re-attacks — loitering at the cell centre would be worse. Crystal seeking only: a mode's
+  external target, or a Joust rival, cannot be swapped out.
+- The detector is also reset explicitly whenever the objective changes, rather than relying on
+  the range jump to notice.

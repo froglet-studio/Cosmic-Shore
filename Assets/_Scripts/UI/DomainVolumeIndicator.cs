@@ -31,10 +31,18 @@ namespace CosmicShore.UI
     /// MiniGameHUD self-attach this to their pause button and hand over the injected
     /// GameDataSO.
     ///
-    /// Reads <see cref="Cell.GetDomainVolume"/>, <see cref="Cell.FrenzyEnterVolume"/>
-    /// and <see cref="Cell.ResolvedThresholds"/> - volume is the spine, so the gauge
-    /// shows exactly the measure that drives the phase ladder; resolves the cell via
-    /// the local player's vessel position, falling back to the nearest active cell.
+    /// Reads <see cref="Cell.GetControlVolume"/>, <see cref="Cell.FrenzyEnterVolume"/>
+    /// and <see cref="Cell.ResolvedThresholds"/> - volume is the spine, so the gauge shows
+    /// exactly the measure that decides the cell. In a cell with NO nucleus control zone that
+    /// is whole-cell volume against the phase ladder (every arcade arena today); in one WITH a
+    /// nucleus control zone it is each domain's share of the nucleus CLAIM, because that is
+    /// what <see cref="Cell.DominantDomain"/> is reading and a gauge must not be able to
+    /// disagree with the control it draws.
+    ///
+    /// The cell is re-resolved on every sample from the local player's vessel position — the one
+    /// whose visible MEMBRANE contains them, falling back to the nearest active cell when they
+    /// are between membranes. It is NOT latched, because the Arkway flies you from one cell into
+    /// the next and a latched gauge stays pinned to the one you started in.
     /// </summary>
     [DisallowMultipleComponent]
     public class DomainVolumeIndicator : MonoBehaviour
@@ -42,6 +50,22 @@ namespace CosmicShore.UI
         [Header("Gauge (optional - self-constructed when empty)")]
         [Tooltip("The procedural hexagon gauge. Leave null to auto-create a full-rect child graphic.")]
         [SerializeField] DomainVolumeHexGraphic hexGraphic;
+
+        [Header("Centre glyph (style B)")]
+        [Tooltip("What the button DOES, drawn in the middle of the hex: the pause bars in a match. " +
+                 "Created after the host face is hidden, so it survives the cleanup that hides " +
+                 "every other child graphic. Empty = no glyph (the menu's freestyle button).")]
+        [SerializeField] Sprite centreGlyph;
+        [Tooltip("Size of that glyph, in the button's own units.")]
+        [Min(1f)] [SerializeField] float centreGlyphSize = 44f;
+
+        [Header("Keycap under the hex (style B)")]
+        [Tooltip("The pad control that presses this button, drawn as a keycap under the hex - 'Start' " +
+                 "in a match. Empty = no keycap. The label follows the device the player is holding.")]
+        [SerializeField] string padKeycap;
+        [Tooltip("The same control on a keyboard ('Esc'). Empty = the keycap hides on a keyboard " +
+                 "rather than show a pad name to someone who has no pad.")]
+        [SerializeField] string keyboardKeycap;
 
         [Header("Theme")]
         [Tooltip("Optional override. By default colors are pulled from GameDataSO.ThemeManagerData.ColorSet, matching MultiplayerHUD and every other domain-tinted UI.")]
@@ -73,7 +97,7 @@ namespace CosmicShore.UI
         const float ConvergedEpsilon = 0.0005f;
         const float CyclePushEpsilon = 0.002f;
 
-        // Attribution split (PERFORMANCE_OPTIMIZATION.md TODO C2): Sample is the
+        // Attribution split (Docs/archive/PERFORMANCE_LOG_2026.md TODO C2): Sample is the
         // 0.25s cell read — its cost is really Cell.VolumeSum when this component
         // is the first volume reader of the recompute interval; Push is the
         // per-frame lerp + SetState residual.
@@ -119,6 +143,7 @@ namespace CosmicShore.UI
 
         void Update()
         {
+            if (_keycap && transform.localRotation != _keycapAlignedFor) AlignKeycap();
             if (Time.unscaledTime >= _nextSampleAt)
             {
                 _nextSampleAt = Time.unscaledTime + sampleIntervalSeconds;
@@ -159,6 +184,131 @@ namespace CosmicShore.UI
             hexGraphic.raycastTarget = false; // never intercept the button click
 
             HideHostButtonFace();
+            EnsureCentreGlyph();
+            EnsureKeycap();
+        }
+
+        TMP_Text _keycapLabel;
+        GameObject _keycap;
+        Quaternion _keycapAlignedFor = new(0f, 0f, 0f, 0f);
+
+        /// <summary>
+        /// The pause hex is ROTATED (30 degrees in GameCanvas), so a keycap anchored to its rect's
+        /// bottom edge sat off to one side and tilted. The cap undoes the hex's rotation and hangs
+        /// straight below its centre, upright, whatever the hex's own turn.
+        /// </summary>
+        void AlignKeycap()
+        {
+            var rt = (RectTransform)_keycap.transform;
+            var turn = transform.localRotation;
+            rt.localRotation = Quaternion.Inverse(turn);
+            float drop = ((RectTransform)transform).rect.height * 0.5f + 8f;
+            rt.anchoredPosition = Quaternion.Inverse(turn) * new Vector3(0f, -drop, 0f);
+            _keycapAlignedFor = turn;
+        }
+        InputDeviceIconSetSwitcher _switcher;
+
+        /// <summary>
+        /// The control that presses this button, as a style-B keycap under the hex. Built after
+        /// the host face is hidden, like the centre glyph, and relabelled whenever the device
+        /// changes - a pad name shown to a keyboard player is misinformation.
+        /// </summary>
+        void EnsureKeycap()
+        {
+            if (string.IsNullOrEmpty(padKeycap) || _keycap) return;
+
+            _keycap = new GameObject("Keycap (auto)", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rt = (RectTransform)_keycap.transform;
+            rt.SetParent(transform, false);
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.sizeDelta = new Vector2(64f, 28f);
+            AlignKeycap();
+            var plate = _keycap.GetComponent<Image>();
+            plate.color = UITheme.Resolve(null, UIColorToken.SurfaceVeryDark);
+            plate.raycastTarget = false;
+            var line = _keycap.AddComponent<Outline>();
+            line.effectColor = UITheme.Resolve(null, UIColorToken.SurfaceLight);
+            line.effectDistance = new Vector2(1f, -1f);
+
+            var labelGo = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            var lrt = (RectTransform)labelGo.transform;
+            lrt.SetParent(rt, false);
+            lrt.anchorMin = Vector2.zero;
+            lrt.anchorMax = Vector2.one;
+            lrt.offsetMin = lrt.offsetMax = Vector2.zero;
+            _keycapLabel = labelGo.GetComponent<TextMeshProUGUI>();
+            var face = Resources.Load<TMP_FontAsset>("Fonts & Materials/ChakraPetch-Regular SDF");
+            if (face) _keycapLabel.font = face;
+            _keycapLabel.fontSize = 14f;
+            _keycapLabel.fontStyle = FontStyles.UpperCase;
+            _keycapLabel.characterSpacing = 8f;
+            _keycapLabel.alignment = TextAlignmentOptions.Center;
+            _keycapLabel.color = UITheme.Resolve(null, UIColorToken.TextLight);
+            _keycapLabel.raycastTarget = false;
+
+            _switcher = GetComponentInParent<InputDeviceIconSetSwitcher>(true);
+            if (!_switcher) _switcher = gameObject.AddComponent<InputDeviceIconSetSwitcher>();
+            _switcher.OnSetChanged += HandleDeviceChanged;
+            KitInputDevice.Listen(RedrawKeycap);
+            RedrawKeycap();
+        }
+
+        void RedrawKeycap() => HandleDeviceChanged(_switcher ? _switcher.Current : InputDeviceIconSetSwitcher.IconSet.None);
+
+        // Touch (IconSet.None) and a phone with no pad name no control: the cap hides.
+        void HandleDeviceChanged(InputDeviceIconSetSwitcher.IconSet set)
+            => DrawKeycap(set == InputDeviceIconSetSwitcher.IconSet.KeyboardText,
+                          set != InputDeviceIconSetSwitcher.IconSet.None && KitInputDevice.ShowsControlHints);
+
+        void DrawKeycap(bool keyboard, bool allowed)
+        {
+            if (!_keycap) return;
+            string label = keyboard ? keyboardKeycap : padKeycap;
+            bool shown = allowed && !string.IsNullOrEmpty(label);
+            _keycap.GetComponent<Image>().enabled = shown;
+            _keycapLabel.enabled = shown;
+            if (!shown) return;
+            _keycapLabel.text = label;
+            var rt = (RectTransform)_keycap.transform;
+            rt.sizeDelta = new Vector2(Mathf.Max(36f, _keycapLabel.GetPreferredValues(label).x + 20f), 28f);
+        }
+
+        void OnDestroy()
+        {
+            if (_switcher) _switcher.OnSetChanged -= HandleDeviceChanged;
+            KitInputDevice.Unlisten(RedrawKeycap);
+        }
+
+        /// <summary>
+        /// Give a runtime-added indicator its centre glyph (MenuMiniGameHUD adds the component in
+        /// code, so it cannot carry the serialized one). Safe before or after the hex is built.
+        /// </summary>
+        public void SetCentreGlyph(Sprite glyph, float size = 44f)
+        {
+            centreGlyph = glyph;
+            centreGlyphSize = size;
+            if (hexGraphic) EnsureCentreGlyph();
+        }
+
+        void EnsureCentreGlyph()
+        {
+            if (!centreGlyph) return;
+            const string name = "CentreGlyph (auto)";
+            if (transform.Find(name)) return;
+
+            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(transform, false);
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(centreGlyphSize, centreGlyphSize);
+            rt.anchoredPosition = Vector2.zero;
+
+            var img = go.GetComponent<Image>();
+            img.sprite = centreGlyph;
+            img.preserveAspect = true;
+            img.raycastTarget = false;
+            img.color = UITheme.Resolve(null, UIColorToken.TextLight);
         }
 
         /// <summary>
@@ -205,16 +355,48 @@ namespace CosmicShore.UI
                 return;
             }
 
-            // Volume is the spine (locked invariant): the gauge reads per-domain live
-            // VOLUME - every prism contributes (trail, flora, fauna bodies) - against
-            // the volume phase ladder, mirroring exactly what drives the cell's phase.
-            float frenzy = cell.FrenzyEnterVolume;
-            float jade = cell.GetDomainVolume(Domains.Jade);
-            float ruby = cell.GetDomainVolume(Domains.Ruby);
-            float gold = cell.GetDomainVolume(Domains.Gold);
+            // Volume is the spine (locked invariant), and the gauge reads the volume that
+            // actually DECIDES this cell - Cell.GetControlVolume, the same source
+            // Cell.DominantDomain reads. That is one branch, not two gauges:
+            //
+            //   • NO nucleus control zone (every arcade arena today): whole-cell live VOLUME -
+            //     every prism contributes, trail, flora and fauna bodies alike - against the
+            //     volume phase ladder, so the wedges mirror exactly what drives the cell's
+            //     phase. Unchanged.
+            //   • WITH a nucleus control zone (Brood Rush, the Arkway's traversal cells): the
+            //     ENVIRONMENT volume laid INSIDE the nucleus - the territorial claim - as each
+            //     domain's SHARE of that claim. The phase ladder is a whole-cell measure and
+            //     says nothing about the claim, so its ring is hidden rather than drawn at a
+            //     scale it does not describe.
+            //
+            // Feeding the whole-cell read into a nucleus cell was the defect: the gauge could
+            // show one domain leading while DominantDomain held the cell for another, with
+            // nothing wrong on either side.
+            float jade = cell.GetControlVolume(Domains.Jade);
+            float ruby = cell.GetControlVolume(Domains.Ruby);
+            float gold = cell.GetControlVolume(Domains.Gold);
 
-            if (frenzy > 0f)
+            if (cell.HasNucleusControlZone)
             {
+                // Share of the claim. An almost-empty nucleus reading as one full wedge is
+                // honest: a single prism in there really does hold the whole cell.
+                float claim = jade + ruby + gold;
+                if (claim > 0f)
+                {
+                    _jadeTarget = jade / claim;
+                    _rubyTarget = ruby / claim;
+                    _goldTarget = gold / claim;
+                }
+                else
+                {
+                    _jadeTarget = _rubyTarget = _goldTarget = 0f;
+                }
+                _hasThresholds = false;
+            }
+            else if (cell.FrenzyEnterVolume > 0f)
+            {
+                float frenzy = cell.FrenzyEnterVolume;
+
                 // Per-domain radial fill = that domain's mass as a fraction of the
                 // frenzy threshold. A single domain reaching the full threshold (which
                 // alone trips frenzy) fills its sector all the way to the centre.
@@ -306,19 +488,51 @@ namespace CosmicShore.UI
         //  Cell + color resolution
         // ------------------------------------------------------------------
 
+        /// <summary>
+        /// The cell the player is in RIGHT NOW, re-resolved on every sample (4 Hz) rather than
+        /// latched.
+        ///
+        /// It used to cache the first answer forever, which is correct exactly while a scene has
+        /// one cell and the player never leaves it — true of every arcade mode, and false of the
+        /// Arkway, whose whole subject is flying from one cell into the next. There the gauge
+        /// stayed pinned to the home cell for the entire voyage: three domain wedges at zero and
+        /// a fauna-spawn ring that never moved, which reads as a broken gauge rather than as a
+        /// gauge reading somewhere else. Two live cell registries (<see cref="Cell.Active"/> via
+        /// the two finders) make the re-read a walk over a handful of cells, so the latch was
+        /// buying almost nothing.
+        ///
+        /// The last good answer is kept as the fallback so the gauge holds its reading through a
+        /// frame where nothing resolves (a cell mid-strike, the vessel mid-swap) instead of
+        /// blanking.
+        /// </summary>
         Cell ResolveCell()
         {
             if (explicitCell) return explicitCell;
-            if (_cachedCell) return _cachedCell;
 
-            Transform vesselT = gameData?.LocalPlayer?.Vessel?.Transform;
-            if (vesselT != null)
-            {
-                _cachedCell = Cell.FindCellContaining(vesselT.position);
-                if (_cachedCell) return _cachedCell;
-            }
+            // IsAlive, not `?.`: IVessel is an interface, so a null-conditional sails past a
+            // DESTROYED vessel and throws on its transform. A party guest's player holds exactly
+            // that for the whole of a vessel swap - the server despawns the old hull before
+            // ReplaceVesselForPlayer_ClientRpc binds the new one - and this samples at 4 Hz.
+            // Mid-swap the last answer is held, as the summary promises.
+            var vessel = gameData ? gameData.LocalPlayer?.Vessel : null;
+            bool alive = vessel.IsAlive();
+            if (!alive && _cachedCell) return _cachedCell;
+            Vector3 at = alive ? vessel.Transform.position : Vector3.zero;
 
-            _cachedCell = Cell.FindNearestActiveCell(vesselT != null ? vesselT.position : Vector3.zero);
+            // MEMBRANE first, not ContainsPosition. "Which cell am I in" is a question about
+            // the boundary the player can SEE, and ContainsPosition answers with the SENSING
+            // radius, which a config may widen well past the membrane so fauna can find mass
+            // across a big arena (SenseRadiusOverride). That is the right answer for prism
+            // registration and the wrong one for a HUD: a wide-sensing cell can swallow a
+            // neighbouring world and the gauge then reports a cell the player is nowhere near.
+            var inside = Cell.FindCellByMembrane(at);
+            if (inside) return _cachedCell = inside;
+
+            // Outside every membrane (the Arkway's open water between cells): the nearest is
+            // the one being left or approached, which beats blanking the gauge.
+            var nearest = Cell.FindNearestActiveCell(at);
+            if (nearest) return _cachedCell = nearest;
+
             return _cachedCell;
         }
 

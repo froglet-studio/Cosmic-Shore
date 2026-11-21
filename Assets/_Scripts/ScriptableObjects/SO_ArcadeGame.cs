@@ -19,8 +19,69 @@ namespace CosmicShore.ScriptableObjects
         [Range(1, 3)] public int MinDomainsAllowed = 1;
         [Tooltip("Maximum number of domains (teams) this mode allows. Modes with a fixed team shape (e.g. Astro League needs exactly two domains for its two goals) set this equal to MinDomainsAllowed to pin the count.")]
         [Range(1, 3)] public int MaxDomainsAllowed = 3;
+        [Tooltip("Lowest intensity the card offers. An ARENA card (ArenaRules) has no intensity row: it sets both " +
+                 "ends to ArenaIntensity, which ArenaCardTests holds.")]
         [Min(1)] public int MinIntensity = 1;
+        [Tooltip("Highest intensity the card offers. An ARENA card sets it to ArenaIntensity, like MinIntensity.")]
         [Range(1, 4)] public int MaxIntensity = 4;
+
+        /// <summary>
+        /// The one intensity every ARENA card (<see cref="ArenaRules"/>) plays at. Arena cards dropped the
+        /// intensity row for the vessel-selection row (Garrett, 2026-11-06); what intensity used to choose on them -
+        /// Astro League's arena scale, a starting-elements row, a score target - is frozen at intensity 2.
+        /// Arcade cards keep their I1-I4: every AI trains on them (Docs/AI_SYSTEM/AI_PLAN.md).
+        /// </summary>
+        public const int ArenaIntensity = 2;
+
+        [Header("Arena rules")]
+        [Tooltip("ARENA seating (Docs/HomeHub/ARCHITECTURE.md §3.9). On: every hull in this " +
+                 "match is flown by exactly ONE pilot - once a pilot or an AI has a vessel class " +
+                 "nobody else may take it - and a human may hand their ship to the AI and take " +
+                 "over an AI teammate's hull mid-match (D-pad left/right, the left/right arrow keys). Seats " +
+                 "are therefore capped at the number of hulls this card lists (MaxSeats). Set " +
+                 "on the cards in the ArenaGames roster; an arcade card that pins one hull " +
+                 "leaves it off.")]
+        public bool ArenaRules;
+
+        /// <summary>The most vessels one team fields (Garrett, 2026-11-17: nine vessels, at most three a team).
+        /// Multi-seat vessels raise the player count later without raising this.</summary>
+        public const int MaxPerTeam = 3;
+
+        /// <summary>The most vessels a match seats: three a team, <see cref="MaxPerTeam"/>.</summary>
+        public static int TeamSeatCap(int teams) => MaxPerTeam * Mathf.Max(1, teams);
+
+        /// <summary>
+        /// The most pilots (human + AI) this card can seat. <see cref="MaxPlayersAllowed"/> for
+        /// every card except an <see cref="ArenaRules"/> card, where every hull is flown by ONE
+        /// pilot in the whole match (Garrett, 2026-11-18), so a card listing N distinct hulls seats
+        /// at most N. No card seats more than <see cref="MaxPerTeam"/> a team (Garrett, 2026-11-17).
+        /// </summary>
+        public int MaxSeats
+        {
+            get
+            {
+                int teams = Mathf.Max(1, MaxDomainsAllowed);
+                int seats = Mathf.Min(MaxPlayersAllowed, MaxPerTeam * teams);
+                if (!ArenaRules) return seats;
+                int hulls = DistinctHullCount;
+                // Unique in the whole match (Garrett, 2026-11-18): every hull is flown once.
+                return hulls > 0 ? Mathf.Min(seats, hulls) : seats;
+            }
+        }
+
+        /// <summary>How many distinct vessel classes <see cref="Vessels"/> names.</summary>
+        public int DistinctHullCount
+        {
+            get
+            {
+                if (Vessels == null) return 0;
+                var seen = new HashSet<VesselClassType>();
+                for (int i = 0; i < Vessels.Count; i++)
+                    if (Vessels[i] != null) seen.Add(Vessels[i].Class);
+                return seen.Count;
+            }
+        }
+
         [Header("Briefing")]
         [Tooltip("Short play tips shown one at a time under the description on the launch panel. " +
                  "Empty is fine - the panel then shows the description alone rather than an " +
@@ -35,9 +96,21 @@ namespace CosmicShore.ScriptableObjects
                  "live (Docs/ModePreview/ARCHITECTURE.md) and must never fall back to a video.")]
         public VideoClip PreviewVideo;
 
-        public CallToActionTargetType CallToActionTargetType;
         public UserActionType ViewUserAction;
         public UserActionType PlayUserAction;
+
+        [Header("Starting elements (arena cards)")]
+        [Tooltip("Element levels each HULL starts this card's match at - the platform's " +
+                 "handicap dial for a card that seats several vessels. One row per hull " +
+                 "(Intensity 0 = every intensity; 1-4 = that intensity only, winning over the 0 " +
+                 "row). A card that authors ANY row owns the whole table: a hull or rung it does not " +
+                 "name starts at rest. A non-arena card that leaves this EMPTY gets the standard " +
+                 "element ladder (ElementLadder: I1 at rest, I2-I4 every hull at level 5 in the " +
+                 "game's element). Published to " +
+                 "every peer by the config sync and applied in VesselController.Initialize, so " +
+                 "a guest's own vessel is seeded exactly as the host's replica of it. Authored " +
+                 "by the card's generator from its balance model, never by hand.")]
+        public List<VesselStartingElements> StartingElements = new();
 
         [Header("Elemental Comeback (required for every party game)")]
         [Tooltip("Levels of ALL FOUR elements a trailing player/team gains per unit of score " +
@@ -46,5 +119,15 @@ namespace CosmicShore.ScriptableObjects
                  "ElementalComebackSystem; the comeback layer can never lift an element above " +
                  "level 10. 0 disables comeback for this game.")]
         [Min(0f)] public float ComebackRatePerScoreDeficit = 1f;
+
+        [Header("AI seating (arena cards)")]
+        [Tooltip("When set, every AI seated on a domain NO human flies - an opponent seat - " +
+                 "flies this hull, whatever the card's roster would otherwise draw. Exempt from " +
+                 "ArenaRules' one-hull-per-pilot rule (a grid of identical opponents is the " +
+                 "point), and it never blocks a human's or an ally's hull. Ally AI (a domain a " +
+                 "human flies) still draw from the card, or fly the hull a teammate picked for " +
+                 "them on the launch panel. Regatta pins the Squirrel here until the racing AI " +
+                 "can drive every hull; leave empty for the card's ordinary mixed draw.")]
+        public SO_Vessel OpponentAIVessel;
     }
 }

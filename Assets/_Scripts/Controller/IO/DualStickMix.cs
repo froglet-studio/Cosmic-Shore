@@ -47,19 +47,19 @@ namespace CosmicShore.Gameplay
             float xDiff = (right.x - left.x + 2f) / 4f;
             float yDiff = Ease(right.y - left.y);
 
-            if (invertY)
-            {
-                ySum *= -1f;
-                yDiff *= -1f;
-            }
+            // The fleet's one Invert Y rule (BaseInputStrategy.ApplyInvertSettings): the vertical axis
+            // turns over everywhere flight reads it, the eased sticks the one-thumb hulls steer by too.
+            float ySign = invertY ? -1f : 1f;
+            ySum *= ySign;
+            yDiff *= ySign;
 
             if (invertThrottle)
                 xDiff = 1f - xDiff;
 
             return new DualStickMixResult(
                 xSum, ySum, xDiff, yDiff,
-                new Vector2(Ease(2f * left.x), Ease(2f * left.y)),
-                new Vector2(Ease(2f * right.x), Ease(2f * right.y)));
+                new Vector2(Ease(2f * left.x), ySign * Ease(2f * left.y)),
+                new Vector2(Ease(2f * right.x), ySign * Ease(2f * right.y)));
         }
     }
 }

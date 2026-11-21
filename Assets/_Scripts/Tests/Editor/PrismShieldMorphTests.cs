@@ -454,8 +454,8 @@ namespace CosmicShore.Tests
             // per-prism morph mesh is a per-prism draw call, whatever else is true.
             foreach (var path in new[]
                      {
-                         "Assets/_Scripts/Utility/OctahedronMeshGenerator.cs",
-                         "Assets/_Scripts/Utility/StellatedOctahedronMeshGenerator.cs",
+                         "Assets/_Scripts/Utility/Foundation/OctahedronMeshGenerator.cs",
+                         "Assets/_Scripts/Utility/Foundation/StellatedOctahedronMeshGenerator.cs",
                      })
             {
                 string src = File.ReadAllText(path);

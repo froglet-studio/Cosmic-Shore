@@ -11,14 +11,14 @@ namespace CosmicShore.Gameplay
     {
         public enum LSystemPreset
         {
-            Custom,
-            BasicTree,
-            Tree3D,
-            HilbertCurve3D,
-            KochSnowflake3D,
-            SphericalSpiral,
-            FractalCoral,
-            CrystalStructure
+            Custom = 0,
+            BasicTree = 1,
+            Tree3D = 2,
+            HilbertCurve3D = 3,
+            KochSnowflake3D = 4,
+            SphericalSpiral = 5,
+            FractalCoral = 6,
+            CrystalStructure = 7
         }
 
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
@@ -124,11 +124,21 @@ namespace CosmicShore.Gameplay
             return BuildTrailData(sequence);
         }
 
+        /// <summary>The longest sequence an expansion may write. SphericalSpiral's rules (F -> F>!G, G -> F) grow like
+        /// the Fibonacci numbers, so its 200 iterations asked for about 10^41 characters and ran the process out of
+        /// memory; the expansion now stops before the step that would pass this length. Every other preset stays far
+        /// under it and is unchanged.</summary>
+        const int MaxSequenceLength = 200_000;
+
         private string GenerateSequence()
         {
             string result = axiom;
             for (int i = 0; i < iterations; i++)
             {
+                long next = 0;
+                foreach (char c in result)
+                    next += rulesDictionary.TryGetValue(c, out string r) ? r.Length : 1;
+                if (next > MaxSequenceLength) break;
                 StringBuilder sb = new StringBuilder();
                 foreach (char c in result)
                 {

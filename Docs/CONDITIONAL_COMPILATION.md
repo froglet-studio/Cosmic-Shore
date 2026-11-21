@@ -139,11 +139,64 @@ public class MyEditorWindow : EditorWindow { /* ... */ }
 #endif
 ```
 
-Reference implementations: `ActiveGameModesWindow.cs`, `LeaderboardConfigSOEditor.cs`.
+Reference implementation: `Assets/Resolvers/ObjectResolver.cs` — the only file in the
+project that needs this shape. It is the *last* resort, and the count says so: the two
+files this line used to name (`ActiveGameModesWindow.cs`, `LeaderboardConfigSOEditor.cs`)
+were deleted with the per-mode leaderboard path, and every other whole-file-guarded type
+in the tree also sits under an `Editor/` folder, where the guard is belt-and-braces rather
+than the thing doing the work.
 
 **Better still:** if the type is purely editor-side, put the file under an
 `Editor/` folder. Unity then compiles it into `Assembly-CSharp-Editor`, which
 never enters a player build, and no guard is needed at all.
+
+---
+
+## The Amoebius variant — `DEVELOPMENT_BUILD` without any player platform
+
+Amoebius (`Port/src/CosmicShore.Live`) compiles the real `Assets/_Scripts` as a DEBUG build, which defines
+`DEVELOPMENT_BUILD`, and defines **no** `UNITY_*` platform symbol. So `#if !UNITY_EDITOR && DEVELOPMENT_BUILD`
+is compiled by Amoebius as well as by every development player, against a `UnityEngine` shim that lacks some player
+APIs. `DevDiagnostics` called `Debug.developerConsoleEnabled` there and broke `dotnet build
+Port/src/CosmicShore.Live` with CS0117 (2026-10-19), while `unity_refcompile` (real Unity references) stayed green.
+
+What to do: a player-only Unity API inside a development guard also needs a player platform,
+`#if !UNITY_EDITOR && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE || UNITY_WEBGL)`. Every real player defines
+one; Amoebius defines none. Prove both halves: build Amoebius (.NET 10 SDK), and plant an error inside the block to
+see `unity_refcompile --config player-dev` still compile it.
+
+---
+
+## The platform-player variant — `#if UNITY_IOS && !UNITY_EDITOR`
+
+**Selecting a platform in the editor does NOT compile that platform's player code.** With iOS
+selected, the editor defines `UNITY_IOS` *and* `UNITY_EDITOR`, so a region guarded
+`UNITY_IOS && !UNITY_EDITOR` is compiled by nothing until somebody builds an iOS player. The
+same goes for Android. A Windows player build does not compile it either.
+
+This shipped. The project's first iOS build in 2026-10 failed with 31 × `CS0246`
+(`DllImport`, `In` not found) in Nice Vibrations' `LofeltHaptics.cs`. Its iOS branch used
+P/Invoke attributes but imported only `UnityEngine.iOS`; the Android branch beside it had the
+`System.Runtime.InteropServices` using and the iOS branch did not. It is the rule at the top of
+this file, *a guard must cover a self-consistent unit*, failing on a platform symbol instead of
+`UNITY_EDITOR`.
+
+What to do:
+
+- When you edit inside a platform-player guard, **check that region's usings yourself**. Every
+  type it names (`DllImport`, `[In]`, `Marshal`, `MonoPInvokeCallback`, `UnityEngine.iOS.Device`)
+  needs a using active under the *same* guard, or a fully qualified name.
+- **To list every region that compiles ONLY in an iOS player**, evaluate the preprocessor three
+  ways and keep the lines active in the first and in neither of the others:
+  1. iOS player: `UNITY_IOS` and `DEVELOPMENT_BUILD` defined, `UNITY_EDITOR` not.
+  2. iOS editor: `UNITY_IOS` and `UNITY_EDITOR` defined.
+  3. Windows player: `UNITY_STANDALONE` defined.
+
+  The 2026-10 measurement found Nice Vibrations' iOS bindings, NativeShare's `__Internal`
+  import, FMOD's interrupt callback and `PlatformIOS.cs`, and `PaintingShareExporter`'s share
+  path (`Docs/IOS_BUILD.md`, "Code that compiles ONLY in an iOS player build").
+- `check_conditional_compilation.py` does **not** cover this: it reasons only about editor
+  guards (see *Known limits* below). An iOS player build is the only real proof.
 
 ---
 

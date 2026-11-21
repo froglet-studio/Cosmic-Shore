@@ -61,7 +61,7 @@ public class ScoutTrailPrismScaler : MonoBehaviour
     {
         if (config == null) return;
 
-        currentDetectionRadius = config.startRadius;
+        currentDetectionRadius = config.StartRadius;
         currentNormalizedScale = 0.5f; // Start at middle scale
         targetNormalizedScale = currentNormalizedScale;
         scaleVelocity = 0f;
@@ -89,7 +89,7 @@ public class ScoutTrailPrismScaler : MonoBehaviour
 
         timeSinceLastUpdate += Time.deltaTime;
 
-        if (timeSinceLastUpdate >= config.updateInterval)
+        if (timeSinceLastUpdate >= config.UpdateInterval)
         {
             timeSinceLastUpdate = 0f;
             UpdateDetection();
@@ -101,7 +101,7 @@ public class ScoutTrailPrismScaler : MonoBehaviour
             currentNormalizedScale,
             targetNormalizedScale,
             ref scaleVelocity,
-            config.scaleSmoothTime
+            config.ScaleSmoothTime
         );
 
         // Only inject if scale actually changed (avoid unnecessary updates)
@@ -124,22 +124,22 @@ public class ScoutTrailPrismScaler : MonoBehaviour
         {
             // Shrink detection radius
             currentDetectionRadius = Mathf.Max(
-                config.minRadius,
-                currentDetectionRadius - config.radiusShrinkRate * config.updateInterval
+                config.MinRadius,
+                currentDetectionRadius - config.RadiusShrinkRate * config.UpdateInterval
             );
         }
         else
         {
             // Grow detection radius
             currentDetectionRadius = Mathf.Min(
-                config.maxRadius,
-                currentDetectionRadius + config.radiusGrowthRate * config.updateInterval
+                config.MaxRadius,
+                currentDetectionRadius + config.RadiusGrowthRate * config.UpdateInterval
             );
         }
 
         // Map radius to normalized scale [0-1]
-        float normalizedRadius = Mathf.InverseLerp(config.minRadius, config.maxRadius, currentDetectionRadius);
-        targetNormalizedScale = config.scaleByRadius.Evaluate(normalizedRadius);
+        float normalizedRadius = Mathf.InverseLerp(config.MinRadius, config.MaxRadius, currentDetectionRadius);
+        targetNormalizedScale = config.ScaleByRadius.Evaluate(normalizedRadius);
     }
 
     private void InjectScale()
@@ -164,10 +164,10 @@ public class ScoutTrailPrismScaler : MonoBehaviour
 
         // Draw min/max ranges
         Gizmos.color = new Color(1, 0, 0, 0.3f);
-        Gizmos.DrawWireSphere(transform.position, config.minRadius);
+        Gizmos.DrawWireSphere(transform.position, config.MinRadius);
 
         Gizmos.color = new Color(0, 1, 0, 0.3f);
-        Gizmos.DrawWireSphere(transform.position, config.maxRadius);
+        Gizmos.DrawWireSphere(transform.position, config.MaxRadius);
 
         // Draw scale indicator
         UnityEditor.Handles.Label(

@@ -15,46 +15,52 @@ MonoBehaviour:
   vesselClass: 1
   entries:
   - Element: 1
-    AbilityLabel: Overcharge Detonation
-    AbilityDescription: Charge widens the overcharge detonation blast.
+    AbilityLabel: Sting
+    AbilityDescription: Skimming a rival plants a bomb that costs one bomb of energy. Every
+      bomb shares ONE fuse, reset by each plant, so they all go off together. Charge sets how
+      long the fuse runs when a plant resets it (MantaStingConfig.asset fuseSeconds x fuseScale,
+      20 s at rest to 30 s at level 10).
     Input: 0
-    MultiplierAtFullLevel: 1.75
-    MinMultiplier: 0.25
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Contagion
+    UpgradeDescription: Anything caught in a bomb's detonation is itself bombed, free -
+      one good route cascades through a whole pack. Snapshotted per bomb at plant time.
   - Element: 2
-    AbilityLabel: Overcharge Harvest
-    AbilityDescription: Mass raises the overcharge harvest capacity.
+    AbilityLabel: Decoy
+    AbilityDescription: An elemental crystal the Manta collects leaves a decoy where it was,
+      with its own element's effect frozen as the tell. A rival who takes it gets a cluster of
+      danger prisms across their course. Mass lengthens how long a decoy stands
+      (MantaStingConfig.asset decoyLifetimeAtFullMass, 2x at level 10).
     Input: 0
-    MultiplierAtFullLevel: 1.75
-    MinMultiplier: 0.25
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Omni Decoy
+    UpgradeDescription: The omni crystal leaves a decoy too, an omni crystal with one of its
+      four effects frozen. One elemental and one omni decoy at a time; a new one pops the old.
   - Element: 3
-    AbilityLabel: Yawstery
-    AbilityDescription: Space raises the Yawstery turn rate.
+    AbilityLabel: Skim
+    AbilityDescription: Skimming gathers the energy that plants bombs, and turns rival prisms
+      explosive - destroyed, they take their prismscape neighbours with them. Hitting a prism
+      loses all the energy. Space widens the skimmer (Manta.prefab Skimmer scale, 20 to 40).
     Input: 0
-    MultiplierAtFullLevel: 1.6
-    MinMultiplier: 0.25
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Shield Breaker
+    UpgradeDescription: Skimming a shielded rival prism pops its shield and makes it explosive.
   - Element: 4
-    AbilityLabel: (open design slot)
-    AbilityDescription: Time mapping not yet designed for the Manta.
-    Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
+    AbilityLabel: Yawstery
+    AbilityDescription: 'Hard flat turns on the turn pair. Time makes the Manta faster:
+      cruise speed (VesselTransformer.ThrottleScalerMultiplier, x1.5 at level 10) and the
+      soaring speed (BoostSpeedMultiplier, x1.3 at level 10). Time also whips the flat turns round faster (YawsteryActionSO.turnRateMultiplier, x1.5 at level 10). Speed shapes the trail, never
+      an element: tall at a crawl, long and thin at Soar, and a Yawstery bends both rails.'
+    Input: 12
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Soar
+    UpgradeDescription: Boosting unlocks. The analog turn-boost and the boost button both stay
+      dark until Time 5 (MantaSoarBoostAction.asset, MantaAnalogTurnBoostExecutor.soarUnlockedBy).

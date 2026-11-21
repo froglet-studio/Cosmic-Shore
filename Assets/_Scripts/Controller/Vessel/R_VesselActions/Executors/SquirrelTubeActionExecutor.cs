@@ -4,7 +4,7 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -47,6 +47,12 @@ namespace CosmicShore.Gameplay
         // teardown. ReturnToPool self-unsubscribes, so it is safe on an already-returned prism.
         readonly List<Prism> _tubePrisms = new();
 
+        // The owner-id prefixes this executor has laid tubes under ("{pilot}::Tube::"). A tube
+        // prism that went back to the pool by another path (a cell swap's retire, a toy's own
+        // return) can be handed out again to someone else's lay site; Cleanup must not pull it
+        // out from under its new owner. Same job as UrchinTrack's trail-identity test.
+        readonly HashSet<string> _tubeOwnerPrefixes = new();
+
         /// <summary>
         /// Cooldown remaining as a 0-1 fraction: 1 right after a deploy (full cooldown left),
         /// 0 when ready again. Read by the Squirrel HUD to drive the tube cooldown icon fill.
@@ -78,7 +84,11 @@ namespace CosmicShore.Gameplay
         public void Begin(SquirrelTubeActionSO so, IVesselStatus status)
         {
             if (!so || status?.Vessel?.Transform == null) return;
-            if (Time.time < _cooldownEndTime) return;   // on cooldown → no-op
+            if (Time.time < _cooldownEndTime)   // on cooldown → no-op
+            {
+                ReportDiagnostic(status, $"cooldown {_cooldownEndTime - Time.time:F1}s");
+                return;
+            }
 
             var vessel = status.Vessel.Transform;
             // Lead the placement by the vessel's speed so the tube mouth appears ~LeadSeconds of
@@ -88,14 +98,25 @@ namespace CosmicShore.Gameplay
             float offset = Mathf.Max(so.ForwardOffset, status.Speed * so.LeadSeconds);
             Vector3 origin = vessel.position + vessel.forward * offset;
             SpawnTube(so, status, new Pose(origin, vessel.rotation));
+            ReportDiagnostic(status, $"laid {offset:F0}u ahead");
 
-            // TIME -> cooldown: the boost-ring recharge shortens as the vessel's live Time level
-            // rises (atFull authored on the SO; the generic map Time multiplier stays 1.0 because
-            // VesselTransformer consumes it for boost speed). Deficit Time lengthens it.
+            // MASS -> cooldown: the boost-ring recharge shortens as the vessel's live Mass level
+            // rises (atFull authored on the SO). Deficit Mass lengthens it. The ring is the
+            // Squirrel's mass-CREATION ability, which is why Mass owns how often it can be laid.
             float cooldown = so.Cooldown * ElementalScaling.Multiplier(
-                status, Element.Time, so.CooldownMultiplierAtFullTime, so.MinCooldownMultiplier);
+                status, Element.Mass, so.CooldownMultiplierAtFullMass, so.MinCooldownMultiplier);
             _activeCooldown = cooldown;
             _cooldownEndTime = Time.time + cooldown;
+        }
+
+        /// <summary>The ring's row on the on-screen DiagnosticsHUD, local pilot only - on a device a
+        /// press on cooldown and a press that never arrived look the same. Compiled out (arguments
+        /// included) outside the editor and development builds.</summary>
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        static void ReportDiagnostic(IVesselStatus status, string value)
+        {
+            if (status?.Player == null || (status.Player is UnityEngine.Object o && o == null) || !status.IsLocalUser) return;
+            CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat("Abilities", "boost ring", value);
         }
 
         /// <summary>Release: nothing - the tube is placed on press (no preview).</summary>
@@ -115,6 +136,10 @@ namespace CosmicShore.Gameplay
             _spawnCts?.Dispose();
             _spawnCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
 
+            // Freestyle has no turn end, so without pruning the list grew with every tube ever
+            // laid. Dead entries are dropped at each new lay.
+            _tubePrisms.RemoveAll(p => !p || p.destroyed);
+
             SpawnTubeAsync(so, status, pose, _spawnCts.Token).Forget();
         }
 
@@ -130,12 +155,13 @@ namespace CosmicShore.Gameplay
                 so.Danger ? PrismKind.Danger : PrismKind.Plain);
             string playerName = status.PlayerName;
             Domains domain = status.Domain;
+            _tubeOwnerPrefixes.Add($"{playerName}::Tube::");
             int ringsPerFrame = Mathf.Max(1, so.SpawnPerFrame / spec.Segments);
 
-            // TIME level-5 'Twin Rings': the deploy gains extra rings while the Time upgrade is
+            // MASS level-5 'Twin Rings': the deploy gains extra rings while the Mass upgrade is
             // active (per-deploy snapshot - an in-flight tube keeps the rings it was laid with).
             int rings = so.Rings;
-            if (status.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) == true)
+            if (status.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true)
                 rings += so.UpgradeExtraRings;
 
             for (int z = 0; z < rings; z++)
@@ -153,6 +179,15 @@ namespace CosmicShore.Gameplay
 
         // ---------------- Cleanup ----------------
 
+        bool IsStillOurTubePrism(Prism p)
+        {
+            var id = p.ownerID;
+            if (string.IsNullOrEmpty(id)) return false;
+            foreach (var prefix in _tubeOwnerPrefixes)
+                if (id.StartsWith(prefix, System.StringComparison.Ordinal)) return true;
+            return false;
+        }
+
         void Cleanup()
         {
             _spawnCts?.Cancel();
@@ -167,10 +202,12 @@ namespace CosmicShore.Gameplay
             {
                 var p = _tubePrisms[i];
                 if (!p || p.destroyed) continue;
+                if (!IsStillOurTubePrism(p)) continue;
                 PrismKinds.Clear(p);
                 p.ReturnToPool();
             }
             _tubePrisms.Clear();
+            _tubeOwnerPrefixes.Clear();
         }
     }
 }

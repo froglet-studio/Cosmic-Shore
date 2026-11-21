@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -119,7 +120,7 @@ namespace CosmicShore.UI
                 fuelLevelText.text = (normalizedLevel * 100f).ToString("F0");
 
             if (verboseLogging)
-                CSDebug.Log($"[ResourceDisplay] Legacy: idx={idx}, normalized={normalizedLevel}");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ResourceDisplay] Legacy: idx={idx}, normalized={normalizedLevel}");
         }
 
         private void UpdateSliderDisplay(float normalizedLevel, bool shouldChangeColor)
@@ -130,7 +131,7 @@ namespace CosmicShore.UI
                 sliderFillImage.fillAmount = normalizedLevel;
                 if (shouldChangeColor)
                 {
-                    sliderFillImage.color = (normalizedLevel >= 0.99f) ? sliderFullColor : sliderNormalColor;
+                    sliderFillImage.color = SliderColor(normalizedLevel);
                 }
             }
 
@@ -147,8 +148,12 @@ namespace CosmicShore.UI
             }
 
             if (verboseLogging)
-                CSDebug.Log($"[ResourceDisplay] SegmentedSlider: fill={normalizedLevel}");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ResourceDisplay] SegmentedSlider: fill={normalizedLevel}");
         }
+
+        /// <summary>The bar's colour at <paramref name="level"/> (full or normal), as the worn colour set paints it.</summary>
+        private Color SliderColor(float level) =>
+            ColorTrace.Retrace(ColorTrace.Ui, level >= 0.99f ? sliderFullColor : sliderNormalColor);
 
         private void UpdateSpriteSwapDisplay(float normalizedLevel)
         {
@@ -158,7 +163,7 @@ namespace CosmicShore.UI
             spriteSwapImage.sprite = spriteSwapSprites[Mathf.Clamp(idx, 0, maxIndex)];
 
             if (verboseLogging)
-                CSDebug.Log($"[ResourceDisplay] SpriteSwap: idx={idx}, normalized={normalizedLevel}");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ResourceDisplay] SpriteSwap: idx={idx}, normalized={normalizedLevel}");
         }
 
         #endregion
@@ -223,7 +228,7 @@ namespace CosmicShore.UI
                 {
                     sliderFillImage.fillAmount = val;
                     if (colorChangeOnFull)
-                        sliderFillImage.color = (val >= 0.99f) ? sliderFullColor : sliderNormalColor;
+                        sliderFillImage.color = SliderColor(val);
                 }
 
                 if (sliderFillSegments is { Count: > 0 })
@@ -244,7 +249,7 @@ namespace CosmicShore.UI
             {
                 sliderFillImage.fillAmount = to;
                 if (colorChangeOnFull)
-                    sliderFillImage.color = (to >= 0.99f) ? sliderFullColor : sliderNormalColor;
+                    sliderFillImage.color = SliderColor(to);
             }
 
             if (sliderFillSegments is not { Count: > 0 }) yield break;

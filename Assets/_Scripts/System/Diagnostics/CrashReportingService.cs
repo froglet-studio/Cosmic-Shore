@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.CrashReportHandler;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -16,9 +17,15 @@ namespace CosmicShore.Core
     /// <see cref="ApplyConsent"/>. Nothing else should touch <see cref="CrashReportHandler"/>.
     ///
     /// The service itself is enabled per-project in Project Settings > Services > Cloud Diagnostics
-    /// (ProjectSettings: <c>enableCrashReportAPI</c> + <c>CrashReportingSettings.m_Enabled</c>).
+    /// (ProjectSettings: <c>enableCrashReportAPI</c> + <c>CrashReportingSettings.m_EnableCloudDiagnosticsReporting</c>).
     /// With the service disabled these calls are harmless no-ops, so this code is safe to ship
     /// either way.
+    ///
+    /// Unity's separate Engine Diagnostics service (<c>UnityConnectSettings.asset</c>
+    /// <c>InsightsSettings.m_EngineDiagnosticsEnabled</c>) is NOT covered by this consent gate:
+    /// this class arms and disarms <see cref="CrashReportHandler"/> capture only. So that service is
+    /// turned off in the project settings. Turning it back on would let it report without the
+    /// player's consent.
     /// </summary>
     public static class CrashReportingService
     {
@@ -62,7 +69,7 @@ namespace CosmicShore.Core
 
                 if (granted) StampMetadataOnce();
 
-                Debug.Log($"[CrashReporting] Capture {(granted ? "ENABLED" : "disabled")} by consent.");
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[CrashReporting] Capture {(granted ? "ENABLED" : "disabled")} by consent.");
             }
             catch (Exception ex)
             {
@@ -71,8 +78,8 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Attaches the context that makes a crash report actionable: which build, which platform,
-        /// which graphics device. Deliberately excludes anything that identifies a person - the
+        /// Attaches the context that makes a crash report actionable: which build (version, build
+        /// number, commit, release channel, UGS environment), which platform, which graphics device. Deliberately excludes anything that identifies a person - the
         /// player id is NOT attached, so a crash report cannot be joined back to an individual.
         /// </summary>
         static void StampMetadataOnce()
@@ -82,7 +89,14 @@ namespace CosmicShore.Core
 
             try
             {
+                // Which build, exactly: the stamp the build pipeline wrote (BuildStamp).
+                var stamp = BuildStamp.Current;
                 CrashReportHandler.SetUserMetadata("build_version", Application.version);
+                CrashReportHandler.SetUserMetadata("build_number", stamp.buildNumber);
+                CrashReportHandler.SetUserMetadata("build_commit", stamp.commit);
+                CrashReportHandler.SetUserMetadata("release_channel", stamp.channel);
+                CrashReportHandler.SetUserMetadata("ugs_environment", stamp.ugsEnvironment);
+                CrashReportHandler.SetUserMetadata("development_build", stamp.development ? "true" : "false");
                 CrashReportHandler.SetUserMetadata("unity_version", Application.unityVersion);
                 CrashReportHandler.SetUserMetadata("platform", Application.platform.ToString());
                 CrashReportHandler.SetUserMetadata("gpu", SystemInfo.graphicsDeviceName);

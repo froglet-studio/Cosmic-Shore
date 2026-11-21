@@ -5,16 +5,16 @@ namespace CosmicShore.Core
 {
     public enum DialogueChannel
     {
-        MainMenu,
-        InGameRadio,
-        Reward
+        MainMenu = 0,
+        InGameRadio = 1,
+        Reward = 2
     }
 
     public enum DialogueSide
     {
-        Auto,
-        Left,
-        Right
+        Auto = 0,
+        Left = 1,
+        Right = 2
     }
     
     [CreateAssetMenu(menuName = "ScriptableObjects/Dialogue/Dialogue Set")]
@@ -22,12 +22,14 @@ namespace CosmicShore.Core
     {
         public string setId;
         public DialogueModeType mode = DialogueModeType.Monologue;
-        public DialogueChannel channel = DialogueChannel.MainMenu;
+        [SerializeField] DialogueChannel channel = DialogueChannel.MainMenu;
+        public DialogueChannel Channel => channel;
 
         public Sprite portraitSpeaker1;
         public Sprite portraitSpeaker2;
 
-        public List<DialogueLine> lines = new List<DialogueLine>();
+        [SerializeField] List<DialogueLine> lines = new List<DialogueLine>();
+        public List<DialogueLine> Lines => lines;
         public RewardData rewardData;
     }
 }

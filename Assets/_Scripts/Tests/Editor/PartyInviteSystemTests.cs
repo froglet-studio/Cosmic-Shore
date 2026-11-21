@@ -88,7 +88,7 @@ namespace CosmicShore.Tests
             _partyMembers.Add(new PartyPlayerData("p4", "Pilot4", 4));
 
             Assert.IsFalse(_data.HasOpenSlots,
-                "A party at max capacity (4/4) should have no open slots.");
+                "A party of four is full: the party size is four, and nothing above it exists.");
         }
 
         [Test]
@@ -104,7 +104,7 @@ namespace CosmicShore.Tests
             _partyMembers.RemoveAt(3);
 
             Assert.IsTrue(_data.HasOpenSlots,
-                "Party should have an open slot after removing a member.");
+                "Party should have an open seat after removing a member.");
         }
 
         #endregion
@@ -771,7 +771,7 @@ namespace CosmicShore.Tests
 
             _data.RemovePartyMember("p2");
 
-            Assert.IsTrue(_data.HasOpenSlots, "Kicking a member should open a slot.");
+            Assert.IsTrue(_data.HasOpenSlots, "Kicking a member should open a seat.");
             Assert.AreEqual(2, _data.RemotePartyMemberCount);
         }
 

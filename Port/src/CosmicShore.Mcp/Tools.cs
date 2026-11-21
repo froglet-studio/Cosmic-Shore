@@ -1,0 +1,705 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace CosmicShore.Mcp
+{
+    /// <summary>The engine's verbs as MCP tools. One player at a time, owned by this server (or attached by port).</summary>
+    public sealed partial class Tools : IDisposable
+    {
+        public const string Instructions =
+            "Amoebius (the Cosmic Shore .NET port). Read Port/CLAUDE.md first. Loop: edit code -> engine_build -> engine_smoke -> " +
+            "game_start -> game_state / game_screenshot / game_input / game_get ... -> game_stop. The port must not change " +
+            "Assets/, Packages/ or ProjectSettings/ (unity_isolation_check). Coordinates are screenshot pixels, top-left origin.";
+
+        readonly string _repo;
+        readonly HttpClient _http = new() { Timeout = TimeSpan.FromMinutes(16) };
+        Process? _game;
+        string? _gameLog;
+        int _port;
+
+        /// <summary>The parity harness (manifest, replays, tolerances) when it is not this checkout's own: a bisect judges old commits with today's harness.</summary>
+        readonly string? _parityRoot;
+
+        public Tools(string repo, string? parityRoot = null) { _repo = repo; _parityRoot = parityRoot; }
+
+        string PortSrc(string project) => Path.Combine(_repo, "Port", "src", project);
+
+        // ---- the catalogue ---------------------------------------------------------------
+
+        static JsonObject Tool(string name, string description, JsonObject? props = null, params string[] required)
+        {
+            var schema = new JsonObject { ["type"] = "object", ["properties"] = props ?? new JsonObject() };
+            if (required.Length > 0) schema["required"] = new JsonArray(required.Select(r => (JsonNode)r).ToArray());
+            // None of these tools edits a source file (they build into bin/, run the game, read it),
+            // so they are read-only for Claude Code's plan mode: an agent can test while it plans.
+            return new JsonObject
+            {
+                ["name"] = name, ["description"] = description, ["inputSchema"] = schema,
+                ["annotations"] = new JsonObject { ["readOnlyHint"] = true, ["destructiveHint"] = false, ["openWorldHint"] = false },
+            };
+        }
+
+        static JsonObject P(string type, string description) => new() { ["type"] = type, ["description"] = description };
+
+        public static JsonArray List() => new JsonArray
+        {
+            Tool("engine_build", "Compile part of the engine and report its errors. Run after every C# change (Port/src or Assets/_Scripts, which the player compiles live).",
+                new JsonObject { ["target"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("player", "launcher", "build-tool", "mcp", "all"), ["description"] = "default player (the game: engine + render + the live Assets/_Scripts compile)" } }),
+            Tool("engine_test", "Run the port's unit tests (dotnet test).",
+                new JsonObject
+                {
+                    ["filter"] = P("string", "dotnet test --filter expression, e.g. FullyQualifiedName~SceneModel"),
+                    ["suite"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("engine", "ported"), ["description"] = "engine = Port/tests/CosmicShore.Tests (default); ported = the game's own tests" },
+                }),
+            Tool("engine_smoke", "Automated smoke test: boot the real game headless for N frames and report PASS/FAIL - the scenes it reached, every distinct error, exception and warning with counts. Builds first.",
+                new JsonObject
+                {
+                    ["frames"] = P("integer", "frames to run at 60 Hz (default 1200 = 20 s of game time)"),
+                    ["scene"] = P("string", "start in this scene instead of Bootstrap"),
+                    ["expect"] = P("string", "scene that must be reached for a PASS (default: any)"),
+                    ["ignore"] = P("string", "'|'-separated substrings: errors and exceptions containing one are listed as ignored and do not fail the run (e.g. a scene entered without Bootstrap logs 'not found at injection time', as Unity's play-from-scene does)"),
+                    ["build"] = P("boolean", "compile first (default true)"),
+                }),
+            Tool("engine_parity", "Parity harness (ROADMAP C1): replay each case in Port/parity/manifest.json in the engine and diff it against the Unity goldens in Port/parity/goldens with the C9 tolerances (Port/parity/tolerances.json) - state and Random exact, events in order within a step, transforms within 1e-4/0.1 deg for 10 s, frames by SSIM. Per channel PASS / FAIL (first divergence) / MISSING (no golden yet). Writes Port/parity/results/latest.json for the scoreboard.",
+                new JsonObject
+                {
+                    ["case"] = P("string", "one case name, 'random', or 'all' (default)"),
+                    ["against"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("goldens", "self"), ["description"] = "goldens (default): Unity's captures; self: run each case twice in the engine and diff the runs (determinism check)" },
+                    ["golden_dir"] = P("string", "diff against this directory instead (same layout as Port/parity/goldens), e.g. a planted difference"),
+                    ["frames"] = P("boolean", "also capture frames (needs a window; xvfb-run on a display-less Linux). Default false: frames channel MISSING"),
+                    ["build"] = P("boolean", "compile first (default true)"),
+                }),
+            BisectTool(),
+            Tool("amoebius_tracks", "Amoebius's memory of play runs: the last runs, open problems (crashes, exceptions, errors, audio, performance) with how often and when they were seen, performance by scene over time. Read this first when asked about a problem in the game.",
+                new JsonObject
+                {
+                    ["section"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("memory", "issues", "runs"), ["description"] = "memory (default): the brief; issues: every problem as JSON; runs: every run as JSON" },
+                }),
+            Tool("amoebius_board", "Amoebius's task and bug tracker: every bug and task with its state (suggested, todo, doing, done), priority, source and notes.",
+                new JsonObject { ["state"] = P("string", "only this state (suggested, todo, doing, done); default: everything open") }),
+            Tool("amoebius_board_suggest", "Suggest a bug or task to the user. It appears on Amoebius's BOARD as SUGGESTED until the user accepts it. Use it for problems you find but are not fixing now. Every suggestion needs an acceptance criterion: the check that will prove it done.",
+                new JsonObject
+                {
+                    ["type"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("bug", "task") },
+                    ["title"] = P("string", "one line"),
+                    ["detail"] = P("string", "what, where (files, scene), evidence, and the suggested fix"),
+                    ["criterion"] = P("string", "done when: a check anyone can run - a test that passes, an engine_smoke with no such error, a scene that stays clean for 3 runs, a measured number"),
+                    ["priority"] = P("integer", "1 high, 2 normal, 3 low"),
+                }, "type", "title", "criterion"),
+            Tool("asset_froglet_tools", "The project's FrogletTools (Unity editor tools): menu path, category, importance, description, whether it writes assets, and its source file and method. Read a tool's source before doing its job without Unity.",
+                new JsonObject { ["filter"] = P("string", "only tools whose menu path, name or description contains this (case-insensitive)") }),
+            Tool("asset_datasets", "The project's ScriptableObject data files grouped by script type, with counts. Pass type to list that type's files.",
+                new JsonObject { ["type"] = P("string", "a script type name, e.g. SO_ArcadeGame, to list its files") }),
+            Tool("asset_dataset", "One ScriptableObject data file's fields: key, inspector label, kind (number, bool, text, enum, vector, color, ref, list, object), value, header, tooltip, range, and keys the script no longer has (stale). Edit a field with cs-asset set <file> &<fileId> <path> <value>.",
+                new JsonObject { ["path"] = P("string", "project-relative .asset path") }, "path"),
+            Tool("asset_model", "What Unity's importer makes of a model (FBX; .blend/.ma/.mb through Blender/Maya when installed): nodes, meshes with vertex/triangle counts, submeshes, materials, blend shapes, bones, takes, bounds, the .meta import settings, and the materials the game draws it with (usedBy: the prefabs that draw it; gameMaterials: per mesh, name, shader, colour).",
+                new JsonObject { ["path"] = P("string", "project-relative .fbx path") }, "path"),
+            Tool("asset_model_preview", "A shaded picture of a model (FBX; .blend/.ma/.mb when Blender/Maya is installed), drawn on the CPU (no GPU needed): every mesh at its pose, in the colours of the materials the game gives it (the prefabs that draw it; asset_model lists them as gameMaterials). yaw 180 looks at its front (Unity's +Z), 145 is a front three-quarter view.",
+                new JsonObject
+                {
+                    ["path"] = P("string", "project-relative .fbx path"),
+                    ["yaw"] = P("number", "degrees around the model, default 145"),
+                    ["pitch"] = P("number", "degrees above, default 20"),
+                    ["size"] = P("integer", "pixels, default 512"),
+                    ["colors"] = P("string", "game (default: the game's material colours) or submesh (one key colour per submesh)"),
+                }, "path"),
+            Tool("unity_isolation_check", "Fails if the branch changes anything outside Port/ that Unity would see. Run before committing.",
+                new JsonObject { ["base"] = P("string", "branch to diff against (default origin/bleeding-edge)") }),
+            Tool("game_start", "Build (unless build=false) and start the player with its control port, then wait until it answers. On a Linux server without a display it runs under xvfb-run. Stops a previous player first.",
+                new JsonObject
+                {
+                    ["scene"] = P("string", "start in this scene instead of build scene 0 (Bootstrap)"),
+                    ["size"] = P("string", "window size WxH (default 1280x720)"),
+                    ["headless"] = P("boolean", "no window: fast ticks, no screenshots"),
+                    ["online"] = P("boolean", "START ONLINE (default false: offline). Online, the game signs in to the game's live UGS project and plays through UGS Lobby and Relay: only with the owner's go-ahead"),
+                    ["audio"] = P("boolean", "FMOD audio (default false)"),
+                    ["profile"] = P("string", "save profile name (COSMIC_SHORE_PROFILE); a new name is a first-time user"),
+                    ["build"] = P("boolean", "compile first (default true)"),
+                    ["args"] = new JsonObject { ["type"] = "array", ["items"] = new JsonObject { ["type"] = "string" }, ["description"] = "extra player arguments (--msaa 8, --verbose, --do 300:click 10,10 ...)" },
+                }),
+            Tool("game_attach", "Use a player someone else started with --control-port N.",
+                new JsonObject { ["port"] = P("integer", "its control port") }, "port"),
+            Tool("game_stop", "Close the player (asks it to quit, then kills it)."),
+            Tool("game_state", "Active scene, frame, game time, window size, frame time, live behaviour count."),
+            Tool("game_screenshot", "PNG of the next presented frame, returned as an image.",
+                new JsonObject { ["path"] = P("string", "also keep it at this path") }),
+            Tool("game_input", "Run one input/diagnostic action now, the same verbs as --do: 'click X,Y', 'move X,Y', 'type TEXT', 'key Enter', 'hold W 30', 'pad buttonSouth', 'scroll X,Y -3' (wheel notches), 'drag X1,Y1 X2,Y2 8' (over 8 frames), 'inspect OBJ COMP', 'eval Type.Static.member', 'score', 'vessels', 'timescale 4'.",
+                new JsonObject { ["action"] = P("string", "the action") }, "action"),
+            Tool("game_wait", "Let the game run N frames, then return (input needs a few frames to land; scene loads need more).",
+                new JsonObject { ["frames"] = P("integer", "frames to wait (default 60)") }),
+            Tool("game_find", "Every object whose name contains the text: hierarchy path, active, components.",
+                new JsonObject { ["text"] = P("string", "part of a name") }, "text"),
+            Tool("game_hierarchy", "The live scene tree: the roots, or the subtree under one object.",
+                new JsonObject { ["root"] = P("string", "object name or path (default: all roots)"), ["depth"] = P("integer", "levels (default 2)") }),
+            Tool("game_get", "Read a field or property of a live component.",
+                new JsonObject { ["object"] = P("string", "object name or hierarchy path"), ["component"] = P("string", "component type name"), ["member"] = P("string", "field or property") },
+                "object", "component", "member"),
+            Tool("game_set", "Write a field or property of a live component (numbers, bools, enum names, 'x,y,z' vectors, 'r,g,b,a' colours, strings).",
+                new JsonObject { ["object"] = P("string", "object name or hierarchy path"), ["component"] = P("string", "component type name"), ["member"] = P("string", "field or property"), ["value"] = P("string", "new value") },
+                "object", "component", "member", "value"),
+            Tool("game_ui_at", "Which UI graphics cover a pixel (path, sprite, colour, alpha, rect) - 'what is that on screen?'.",
+                new JsonObject { ["x"] = P("number", "screenshot x"), ["y"] = P("number", "screenshot y (top-left origin)") }, "x", "y"),
+            Tool("game_dump_ui", "A UI subtree with world rects, anchors, pivots, sizes and components.",
+                new JsonObject { ["name"] = P("string", "object name"), ["depth"] = P("integer", "levels (default 4)") }, "name"),
+            Tool("game_resize", "Render (and screenshot) at WxH whatever the window's size is; 'off' returns to the window's size. Screenshot coordinates follow it.",
+                new JsonObject { ["size"] = P("string", "WxH, or off") }, "size"),
+            Tool("game_ui_sweep", "C5 UI parity: every screen of the loaded scene (Menu_Main: each MenuScreens value, then each modal; elsewhere the HUD) at each resolution - frames/ui/<view>_<WxH>.png plus ui/<view>_<WxH>.jsonl (every active RectTransform's screen rect, text overflow and size) under dir, the parity golden layout engine_parity diffs.",
+                new JsonObject
+                {
+                    ["dir"] = P("string", "output directory (default: a temp folder)"),
+                    ["sizes"] = P("string", "comma-separated WxH (default 1920x1080,2560x1080,1024x768)"),
+                    ["views"] = P("string", "comma-separated view names to keep (default: all)"),
+                }),
+            Tool("game_logs", "The player's recent console output.",
+                new JsonObject { ["lines"] = P("integer", "how many (default 200)"), ["grep"] = P("string", "only lines containing this") }),
+            Tool("game_load_scene", "Load a scene by name or build index.",
+                new JsonObject { ["scene"] = P("string", "scene name or build index") }, "scene"),
+        };
+
+        public static JsonObject Text(string s) => new() { ["type"] = "text", ["text"] = s };
+
+        static string Str(JsonObject a, string k, string def = "") => a[k] is JsonValue v && v.TryGetValue<string>(out var s) ? s : a[k]?.ToString() ?? def;
+        static int Int(JsonObject a, string k, int def) => a[k] is JsonValue v && (v.TryGetValue<int>(out var i) || (v.TryGetValue<string>(out var s) && int.TryParse(s, out i))) ? i : def;
+        static bool Bool(JsonObject a, string k, bool def) => a[k] is JsonValue v && v.TryGetValue<bool>(out var b) ? b : def;
+
+        static string Quote(string s) => s.Contains(' ') ? "\"" + s + "\"" : s;
+
+        public async Task<JsonArray> Call(string name, JsonObject a)
+        {
+            switch (name)
+            {
+                case "engine_build": return new JsonArray(Text(await Build(Str(a, "target", "player"))));
+                case "engine_test": return new JsonArray(Text(await Test(Str(a, "suite", "engine"), Str(a, "filter"))));
+                case "asset_froglet_tools":
+                {
+                    var json = await AssetCli("tools");
+                    var f = Str(a, "filter").ToLowerInvariant();
+                    var tools = JsonNode.Parse(json)!["tools"]!.AsArray()
+                        .Where(t => f.Length == 0 || $"{t!["menu"]} {t["name"]} {t["description"]}".ToLowerInvariant().Contains(f)).ToList();
+                    return new JsonArray(Text($"{tools.Count} tool(s)\n" + new JsonArray(tools.Select(t => t!.DeepClone()).ToArray()).ToJsonString()));
+                }
+                case "asset_datasets":
+                {
+                    var json = await AssetCli("datasets");
+                    var root = JsonNode.Parse(json)!;
+                    var type = Str(a, "type");
+                    if (type.Length > 0)
+                    {
+                        var t = root["types"]!.AsArray().FirstOrDefault(x => string.Equals(x!["type"]!.ToString(), type, StringComparison.OrdinalIgnoreCase));
+                        return new JsonArray(Text(t == null ? $"no data type '{type}'" : t.ToJsonString()));
+                    }
+                    var lines = root["types"]!.AsArray().Select(x => $"{x!["count"],5}  {x["type"]}  {x["script"]}");
+                    return new JsonArray(Text($"{root["files"]} data files\n" + string.Join('\n', lines)));
+                }
+                case "asset_dataset": return new JsonArray(Text(await AssetCli("dataset", Str(a, "path"))));
+                case "asset_model": return new JsonArray(Text(await AssetCli("model", Str(a, "path"))));
+                case "asset_model_preview":
+                {
+                    var png = Path.Combine(Path.GetTempPath(), "froglet-mcp", $"model-{DateTime.Now:HHmmss-fff}.png");
+                    var args = new List<string> { "model-preview", Str(a, "path"), "--out", png };
+                    foreach (var k in new[] { "yaw", "pitch", "size", "colors" }) if (Str(a, k).Length > 0) { args.Add("--" + k); args.Add(Str(a, k)); }
+                    await AssetCli(args.ToArray());
+                    var bytes = await File.ReadAllBytesAsync(png);
+                    File.Delete(png);
+                    return new JsonArray(new JsonObject { ["type"] = "image", ["data"] = Convert.ToBase64String(bytes), ["mimeType"] = "image/png" }, Text(Str(a, "path")));
+                }
+                case "unity_isolation_check":
+                {
+                    var args = new List<string> { Path.Combine(_repo, "Port", "tools", "check_unity_isolation.py") };
+                    if (Str(a, "base").Length > 0) { args.Add("--base"); args.Add(Str(a, "base")); }
+                    var r = await Run(OperatingSystem.IsWindows() ? "python" : "python3", args, _repo, TimeSpan.FromMinutes(2));
+                    return new JsonArray(Text(r.Output.Trim()));
+                }
+                case "amoebius_board":
+                {
+                    var b = Amoebius.AmoebiusBoard.Load();
+                    var want = Str(a, "state").ToLowerInvariant();
+                    var items = b.Items.Where(i => want.Length > 0 ? i.State.ToString().ToLowerInvariant() == want
+                                                                    : i.State is not (Amoebius.AmoebiusBoard.Status.Done or Amoebius.AmoebiusBoard.Status.Dismissed))
+                                       .OrderBy(i => i.State).ThenBy(i => i.Priority);
+                    var text = string.Join("\n", items.Select(i => $"{i.Id} [{i.State}] P{i.Priority} {i.Type} ({i.Source}): {i.Title}" +
+                        (i.Detail.Length > 0 ? "\n    " + i.Detail.Replace("\n", "\n    ") : "") +
+                        (i.Criterion.Length > 0 ? $"\n    done when: {i.Criterion}{(i.CriterionMet != null ? $" (MET {i.CriterionMet:yyyy-MM-dd})" : "")}" : "") +
+                        (i.Notes.Count > 0 ? "\n    notes: " + string.Join(" | ", i.Notes) : "")));
+                    return new JsonArray(Text(text.Length > 0 ? text : "The board is empty."));
+                }
+                case "amoebius_board_suggest":
+                {
+                    var b = Amoebius.AmoebiusBoard.Load();
+                    var type = Str(a, "type") == "bug" ? Amoebius.AmoebiusBoard.Kind.Bug : Amoebius.AmoebiusBoard.Kind.Task;
+                    if (Str(a, "criterion").Trim().Length == 0)
+                        return new JsonArray(Text("Not added: give a criterion - the check that will prove this done."));
+                    var item = b.Add(type, Str(a, "title"), Str(a, "detail"), "agent", Amoebius.AmoebiusBoard.Status.Suggested, Int(a, "priority", 2), criterion: Str(a, "criterion"));
+                    b.Save();
+                    return new JsonArray(Text($"Suggested {item.Id}: {item.Title}. The user accepts or dismisses it on Amoebius's BOARD."));
+                }
+                case "amoebius_tracks":
+                {
+                    var t = Amoebius.AmoebiusTracks.Load();
+                    var section = Str(a, "section", "memory");
+                    var text = section switch
+                    {
+                        "issues" => JsonSerializer.Serialize(t.Issues.Values.OrderByDescending(i => i.LastSeen), new JsonSerializerOptions { WriteIndented = true }),
+                        "runs" => JsonSerializer.Serialize(t.Runs.AsEnumerable().Reverse().Take(60), new JsonSerializerOptions { WriteIndented = true }),
+                        _ => t.Memory(20000),
+                    };
+                    return new JsonArray(Text(text));
+                }
+                case "engine_smoke": return new JsonArray(Text(await Smoke(a)));
+                case "engine_parity": return new JsonArray(Text(await Parity(a)));
+                case "amoebius_bisect": return new JsonArray(Text(await Bisect(a)));
+                case "game_start": return new JsonArray(Text(await Start(a)));
+                case "game_attach":
+                {
+                    _port = Int(a, "port", 0);
+                    return new JsonArray(Text(Format(await Command("state", ""))));
+                }
+                case "game_stop": return new JsonArray(Text(await Stop()));
+                case "game_state": return new JsonArray(Text(Format(await Command("state", ""))));
+                case "game_screenshot":
+                {
+                    var path = Str(a, "path");
+                    var keep = path.Length > 0;
+                    if (!keep) path = Path.Combine(Path.GetTempPath(), "froglet-mcp", $"shot-{DateTime.Now:HHmmss-fff}.png");
+                    var r = await Command("screenshot", path);
+                    if (!Ok(r)) return new JsonArray(Text(Format(r)));
+                    var png = await File.ReadAllBytesAsync(path);
+                    if (!keep) File.Delete(path);
+                    return new JsonArray(
+                        new JsonObject { ["type"] = "image", ["data"] = Convert.ToBase64String(png), ["mimeType"] = "image/png" },
+                        Text($"{r["width"]}x{r["height"]}" + (keep ? " saved to " + path : "")));
+                }
+                case "game_input": return new JsonArray(Text(Format(await Command("do", Str(a, "action")))));
+                case "game_wait": return new JsonArray(Text(Format(await Command("wait", Int(a, "frames", 60).ToString()))));
+                case "game_find": return new JsonArray(Text(Format(await Command("find", Str(a, "text")))));
+                case "game_hierarchy": return new JsonArray(Text(Format(await Command("hierarchy", Str(a, "root") + ":" + Int(a, "depth", 2)))));
+                case "game_get":
+                    return new JsonArray(Text(Format(await Command("get", $"{Quote(Str(a, "object"))} {Str(a, "component")} {Str(a, "member")}"))));
+                case "game_set":
+                    return new JsonArray(Text(Format(await Command("set", $"{Quote(Str(a, "object"))} {Str(a, "component")} {Str(a, "member")} {Str(a, "value")}"))));
+                case "game_ui_at": return new JsonArray(Text(Format(await Command("ui_at", $"{Str(a, "x")},{Str(a, "y")}"))));
+                case "game_dump_ui": return new JsonArray(Text(Format(await Command("dump_ui", Str(a, "name") + ":" + Int(a, "depth", 4)))));
+                case "game_resize": return new JsonArray(Text(Format(await Command("resize", Str(a, "size")))));
+                case "game_ui_sweep": return new JsonArray(Text(Format(await Command("ui_sweep", $"{Str(a, "dir")};{Str(a, "sizes")};{Str(a, "views")}"))));
+                case "game_logs":
+                {
+                    var r = await Command("logs", Int(a, "lines", 200).ToString());
+                    var grep = Str(a, "grep");
+                    var text = r["output"]?.ToString() ?? "";
+                    if (grep.Length > 0) text = string.Join('\n', text.Split('\n').Where(l => l.Contains(grep, StringComparison.OrdinalIgnoreCase)));
+                    return new JsonArray(Text(text.Length > 0 ? text : "(nothing)"));
+                }
+                case "game_load_scene": return new JsonArray(Text(Format(await Command("scene", Str(a, "scene")))));
+                default: throw new ToolException("unknown tool " + name);
+            }
+        }
+
+        // ---- the player --------------------------------------------------------------------
+
+        static bool Ok(JsonObject r) => r["ok"]?.GetValue<bool>() == true;
+
+        static string Format(JsonObject r)
+        {
+            var sb = new StringBuilder();
+            if (!Ok(r)) sb.Append("FAILED: ");
+            var output = r["output"]?.ToString() ?? "";
+            var rest = r.Where(kv => kv.Key is not ("ok" or "output")).Select(kv => $"{kv.Key}={kv.Value}").ToList();
+            if (rest.Count > 0) sb.AppendLine(string.Join("  ", rest));
+            sb.Append(output.Length > 0 ? output : rest.Count > 0 ? "" : "done");
+            var s = sb.ToString().Trim();
+            return s.Length > 60000 ? s[..60000] + "\n... (truncated)" : s;
+        }
+
+        async Task<JsonObject> Command(string cmd, string arg)
+        {
+            if (_port == 0) throw new ToolException("No player is running. Call game_start (or game_attach).");
+            var body = new StringContent(JsonSerializer.Serialize(new { cmd, arg }), Encoding.UTF8, "application/json");
+            HttpResponseMessage resp;
+            try { resp = await _http.PostAsync($"http://127.0.0.1:{_port}/", body); }
+            catch (HttpRequestException)
+            {
+                throw new ToolException("The player is not answering" + (_game is { HasExited: true } ? $" - it exited with code {_game.ExitCode}.\n" + LogTail(60) : "."));
+            }
+            return JsonNode.Parse(await resp.Content.ReadAsStringAsync())!.AsObject();
+        }
+
+        string LogTail(int lines)
+        {
+            if (_gameLog == null || !File.Exists(_gameLog)) return "";
+            using var f = new FileStream(_gameLog, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var all = new StreamReader(f).ReadToEnd().Split('\n');
+            return string.Join('\n', all.Skip(Math.Max(0, all.Length - lines)));
+        }
+
+        static int FreePort()
+        {
+            var l = new TcpListener(IPAddress.Loopback, 0);
+            l.Start();
+            int p = ((IPEndPoint)l.LocalEndpoint).Port;
+            l.Stop();
+            return p;
+        }
+
+        async Task<string> Start(JsonObject a)
+        {
+            await Stop();
+            var report = new StringBuilder();
+            if (Bool(a, "build", true))
+            {
+                var b = await Build("player");
+                if (!b.StartsWith("build ok")) return b;
+                report.AppendLine(b.Split('\n')[0]);
+            }
+            var exe = Path.Combine(PortSrc("CosmicShore.Player"), "bin", "Debug", "net10.0", OperatingSystem.IsWindows() ? "CosmicShore.exe" : "CosmicShore");
+            if (!File.Exists(exe)) throw new ToolException("The player is not built: " + exe);
+
+            _port = FreePort();
+            string size = Str(a, "size", "1280x720");
+            bool headless = Bool(a, "headless", false);
+            var args = new List<string> { "--size", size, "--control-port", _port.ToString() };
+            if (headless) args.Add("--headless");
+            if (Str(a, "scene").Length > 0) { args.Add("--scene"); args.Add(Str(a, "scene")); }
+            if (a["args"] is JsonArray extra) args.AddRange(extra.Select(x => x?.ToString() ?? "").Where(x => x.Length > 0));
+
+            string file = exe;
+            if (!headless && OperatingSystem.IsLinux() && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"))
+                && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
+            {
+                // A server with no display: a virtual one, a little larger than the window.
+                var wh = size.Split('x');
+                int w = int.TryParse(wh[0], out var pw) ? pw + 120 : 1400, h = wh.Length > 1 && int.TryParse(wh[1], out var ph) ? ph + 80 : 800;
+                args.InsertRange(0, new[] { "-a", "-s", $"-screen 0 {w}x{h}x24", exe });
+                file = "xvfb-run";
+                report.AppendLine("no display: running under xvfb-run (software GL, expect a few frames per second)");
+            }
+
+            var psi = new ProcessStartInfo(file)
+            {
+                WorkingDirectory = _repo,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+            };
+            foreach (var x in args) psi.ArgumentList.Add(x);
+            if (!Bool(a, "online", false)) psi.Environment["COSMIC_SHORE_NET"] = "off";
+            if (!Bool(a, "audio", false)) psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
+            if (Str(a, "profile").Length > 0) psi.Environment["COSMIC_SHORE_PROFILE"] = Str(a, "profile");
+
+            Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "froglet-mcp"));
+            _gameLog = Path.Combine(Path.GetTempPath(), "froglet-mcp", $"player-{_port}.log");
+            var log = new StreamWriter(new FileStream(_gameLog, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)) { AutoFlush = true };
+            _game = Process.Start(psi) ?? throw new ToolException("could not start " + file);
+            _game.OutputDataReceived += (_, e) => { if (e.Data != null) lock (log) log.WriteLine(e.Data); };
+            _game.ErrorDataReceived += (_, e) => { if (e.Data != null) lock (log) log.WriteLine(e.Data); };
+            _game.BeginOutputReadLine();
+            _game.BeginErrorReadLine();
+            _game.Exited += (_, _) => { lock (log) log.Dispose(); };
+            _game.EnableRaisingEvents = true;
+
+            var deadline = DateTime.UtcNow.AddMinutes(4);
+            while (DateTime.UtcNow < deadline)
+            {
+                if (_game.HasExited)
+                {
+                    _port = 0;
+                    return report + $"The player exited during boot (code {_game.ExitCode}):\n" + LogTail(80);
+                }
+                try
+                {
+                    var r = await Command("state", "");
+                    if (Ok(r)) return report + "player running (log: " + _gameLog + ")\n" + Format(r);
+                }
+                catch (ToolException) { }
+                await Task.Delay(1000);
+            }
+            return report + "The player started but its control port never answered:\n" + LogTail(60);
+        }
+
+        async Task<string> Stop()
+        {
+            if (_game == null) { if (_port != 0) { try { await Command("quit", ""); } catch { } _port = 0; return "asked the attached player to quit"; } return "no player running"; }
+            var g = _game;
+            _game = null;
+            if (!g.HasExited)
+            {
+                try { await Command("quit", ""); } catch { }
+                if (!g.WaitForExit(15000)) try { g.Kill(entireProcessTree: true); } catch { }
+            }
+            _port = 0;
+            return "player stopped";
+        }
+
+        async Task<string> Smoke(JsonObject a) => (await SmokeRun(a)).Text;
+
+        /// <summary>A smoke run's report, plus what amoebius_bisect judges: every error, exception, assert and crash text that was not ignored.</summary>
+        sealed record SmokeResult(string Text, bool Pass, bool BuildFailed, List<string> Problems);
+
+        async Task<SmokeResult> SmokeRun(JsonObject a)
+        {
+            var sb = new StringBuilder();
+            if (Bool(a, "build", true))
+            {
+                var b = await Build("player");
+                if (!b.StartsWith("build ok")) return new SmokeResult("FAIL (build)\n" + b, false, true, new List<string>());
+            }
+            var exe = Path.Combine(PortSrc("CosmicShore.Player"), "bin", "Debug", "net10.0", OperatingSystem.IsWindows() ? "CosmicShore.exe" : "CosmicShore");
+            var report = Path.Combine(Path.GetTempPath(), "froglet-mcp", $"smoke-{DateTime.Now:HHmmss}.json");
+            int frames = Int(a, "frames", 1200);
+            var args = new List<string> { "--headless", "--quiet", "--frames", frames.ToString(), "--session-report", report };
+            if (Str(a, "scene").Length > 0) { args.Add("--scene"); args.Add(Str(a, "scene")); }
+            var env = new Dictionary<string, string> { ["COSMIC_SHORE_NET"] = "off", ["COSMIC_SHORE_AUDIO"] = "off", ["COSMIC_SHORE_PROFILE"] = "smoke" };
+            var r = await Run(exe, args, _repo, TimeSpan.FromMinutes(20), env);
+            if (!File.Exists(report))
+            {
+                var tail = r.Output.Split('\n').TakeLast(40).ToList();
+                return new SmokeResult($"FAIL (the player wrote no report; exit {r.ExitCode})\n" + string.Join('\n', tail), false, false, tail);
+            }
+            using var doc = JsonDocument.Parse(await File.ReadAllTextAsync(report));
+            var d = doc.RootElement;
+            var scenes = d.GetProperty("scenes").EnumerateArray().Select(x => x.GetProperty("name").GetString() ?? "").ToList();
+            var ignore = Str(a, "ignore").Split('|', StringSplitOptions.RemoveEmptyEntries);
+            bool Ignored(JsonElement e) => ignore.Any(i => (e.GetProperty("message").GetString() ?? "").Contains(i, StringComparison.Ordinal));
+            // A scene entered without Bootstrap misses Bootstrap's singletons (as Unity's play-from-scene
+            // does): the caller names those known signatures, for errors and exceptions alike.
+            int ignoredErrors = d.GetProperty("errors").EnumerateArray().Where(Ignored).Sum(e => e.GetProperty("count").GetInt32());
+            int ignoredExceptions = d.GetProperty("exceptions").EnumerateArray().Where(Ignored).Sum(e => e.GetProperty("count").GetInt32());
+            int ignored = ignoredErrors + ignoredExceptions;
+            int errors = d.GetProperty("counts").GetProperty("errors").GetInt32() - ignoredErrors;
+            int exceptions = d.GetProperty("counts").GetProperty("exceptions").GetInt32() - ignoredExceptions;
+            int warnings = d.GetProperty("counts").GetProperty("warnings").GetInt32();
+            bool crashed = d.GetProperty("crash").ValueKind == JsonValueKind.String;
+            string expect = Str(a, "expect");
+            bool reached = expect.Length == 0 || scenes.Contains(expect, StringComparer.OrdinalIgnoreCase);
+            bool pass = !crashed && errors == 0 && exceptions == 0 && reached && r.ExitCode == 0;
+            var fr = d.GetProperty("frames");
+            double P(string k) => fr.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : 0;
+            sb.AppendLine((pass ? "PASS" : "FAIL") + (P("p50Ms") > 0 ? $"  -  tick p50 {P("p50Ms"):0.0} ms, p95 {P("p95Ms"):0.0} ms, worst {P("worstMs"):0.0} ms" : ""));
+            sb.AppendLine($"{frames} frames in {d.GetProperty("seconds").GetDouble():0} s; scenes: {string.Join(" -> ", scenes)}" + (reached ? "" : $" (expected {expect})"));
+            sb.AppendLine($"{exceptions} exception(s), {errors} error(s){(ignored > 0 ? $" (+{ignored} ignored)" : "")}, {warnings} warning(s)" + (crashed ? "; CRASHED" : ""));
+            if (crashed) sb.AppendLine(d.GetProperty("crash").GetString());
+            foreach (var kind in new[] { "exceptions", "errors", "asserts", "warnings" })
+                foreach (var e in d.GetProperty(kind).EnumerateArray().Take(kind == "warnings" ? 10 : 25))
+                    sb.AppendLine($"  [{(kind is "errors" or "exceptions" && Ignored(e) ? "ignored " + kind.TrimEnd('s') : kind.TrimEnd('s'))}] x{e.GetProperty("count").GetInt32()} {e.GetProperty("message").GetString()}");
+            sb.AppendLine("report: " + report);
+            var problems = new[] { "exceptions", "errors", "asserts" }
+                .SelectMany(k => d.GetProperty(k).EnumerateArray().Where(e => k == "asserts" || !Ignored(e)))
+                .Select(e => e.GetProperty("message").GetString() ?? "").ToList();
+            if (crashed) problems.Add(d.GetProperty("crash").GetString() ?? "");
+            return new SmokeResult(sb.ToString().TrimEnd(), pass, false, problems);
+        }
+
+        // ---- parity -------------------------------------------------------------------------------
+
+        string PlayerExe() => Path.Combine(PortSrc("CosmicShore.Player"), "bin", "Debug", "net10.0", OperatingSystem.IsWindows() ? "CosmicShore.exe" : "CosmicShore");
+
+        static readonly Dictionary<string, string> QuietEnv = new() { ["COSMIC_SHORE_NET"] = "off", ["COSMIC_SHORE_AUDIO"] = "nrt", ["COSMIC_SHORE_PROFILE"] = "parity" };
+
+        async Task<RunResult> RunCase(string replay, string outDir, bool frames)
+        {
+            if (Directory.Exists(outDir)) Directory.Delete(outDir, true);
+            Directory.CreateDirectory(outDir);
+            var args = new List<string> { "--quiet", "--replay", replay, "--parity-out", outDir };
+            string file = PlayerExe();
+            if (!frames) args.Insert(0, "--headless");
+            else if (OperatingSystem.IsLinux() && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY")))
+            {
+                args.InsertRange(0, new[] { "-a", "-s", "-screen 0 1400x800x24", file });
+                file = "xvfb-run";
+            }
+            return await Run(file, args, _repo, TimeSpan.FromMinutes(30), QuietEnv);
+        }
+
+        async Task<RunResult> RunRandom(string outDir, IEnumerable<int> seeds)
+            => await Run(PlayerExe(), new[] { "--random-golden", outDir, "--seeds", string.Join(',', seeds) }, _repo, TimeSpan.FromMinutes(5), QuietEnv);
+
+        async Task<string> Parity(JsonObject a) => (await ParityRun(a)).Text;
+
+        /// <summary>A replay diff's report, plus what amoebius_bisect judges: failed channels (a player that died counts as one) and the run's work folder.</summary>
+        sealed record ParityResult(string Text, int Fails, bool BuildFailed, string Work);
+
+        async Task<ParityResult> ParityRun(JsonObject a)
+        {
+            if (Bool(a, "build", true))
+            {
+                var b = await Build("player");
+                if (!b.StartsWith("build ok")) return new ParityResult("FAIL (build)\n" + b, 0, true, "");
+            }
+            var root = _parityRoot ?? Path.Combine(_repo, "Port", "parity");
+            var manifestPath = Path.Combine(root, "manifest.json");
+            if (!File.Exists(manifestPath)) return new ParityResult("FAIL: no " + manifestPath, 1, false, "");
+            var manifest = JsonNode.Parse(await File.ReadAllTextAsync(manifestPath))!.AsObject();
+            var tol = Amoebius.Parity.Tolerances.Load(Path.Combine(root, "tolerances.json"));
+            bool self = Str(a, "against", "goldens") == "self";
+            bool custom = Str(a, "golden_dir").Length > 0;
+            string goldenRoot = custom ? Path.GetFullPath(Str(a, "golden_dir"), _repo) : Path.Combine(root, "goldens");
+            bool frames = Bool(a, "frames", false);
+            string want = Str(a, "case", "all");
+            var work = Path.Combine(Path.GetTempPath(), "froglet-mcp", "parity", DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+            Directory.CreateDirectory(work);
+
+            var sb = new StringBuilder();
+            var results = new JsonObject();
+            int fails = 0, missing = 0, passes = 0;
+            void Add(string name, IEnumerable<Amoebius.Parity.ChannelResult> rs)
+            {
+                var o = new JsonObject();
+                sb.AppendLine(name);
+                foreach (var r in rs)
+                {
+                    sb.AppendLine("  " + r);
+                    o[r.Channel] = new JsonObject { ["status"] = r.Status.ToString().ToLowerInvariant(), ["detail"] = r.Detail };
+                    if (r.Status == Amoebius.Parity.ChannelStatus.Fail) fails++;
+                    else if (r.Status == Amoebius.Parity.ChannelStatus.Missing) missing++;
+                    else passes++;
+                }
+                results[name] = o;
+            }
+
+            // Random: one golden per seed, independent of any case.
+            var seeds = (manifest["seeds"] as JsonArray)?.Select(x => x!.GetValue<int>()).ToList() ?? new List<int>();
+            if (seeds.Count > 0 && (want == "all" || want == "random"))
+            {
+                var mine = Path.Combine(work, "random");
+                var r = await RunRandom(mine, seeds);
+                if (r.ExitCode != 0) return new ParityResult("FAIL: the random golden run exited " + r.ExitCode + "\n" + string.Join('\n', r.Output.Split('\n').TakeLast(30)), 1, false, work);
+                string gold = Path.Combine(goldenRoot, "random");
+                if (self) await RunRandom(gold = Path.Combine(work, "random-0"), seeds);
+                Add("random", new[] { Amoebius.Parity.ParityDiff.Random(gold, mine) });
+            }
+
+            foreach (var c in (manifest["cases"] as JsonArray ?? new JsonArray()).OfType<JsonObject>())
+            {
+                var name = c["name"]!.GetValue<string>();
+                if (want != "all" && want != name) continue;
+                var replay = Path.Combine(root, c["replay"]!.GetValue<string>());
+                var run = Path.Combine(work, name, "run");
+                var r = await RunCase(replay, run, frames);
+                if (r.ExitCode != 0)
+                {
+                    fails++;
+                    sb.AppendLine($"{name}\n  player exited {r.ExitCode}\n  " + string.Join("\n  ", r.Output.Split('\n').TakeLast(20)));
+                    results[name] = new JsonObject { ["run"] = new JsonObject { ["status"] = "fail", ["detail"] = "player exited " + r.ExitCode } };
+                    continue;
+                }
+                string gold = Path.Combine(goldenRoot, name);
+                if (self) await RunCase(replay, gold = Path.Combine(work, name, "run-0"), frames);
+                // Parity runs FMOD non-real-time with the banks; without the runtime the silent model
+                // answers every event description as a one-shot, so the FMOD channel is approximate.
+                if (File.Exists(Path.Combine(run, "run.json")) && (await File.ReadAllTextAsync(Path.Combine(run, "run.json"))).Contains("\"silent\""))
+                    sb.AppendLine($"{name}: audio silent (no FMOD runtime: python3 Port/tools/fetch_native.py) - FMOD descriptions approximate");
+                Add(name, new[]
+                {
+                    Amoebius.Parity.ParityDiff.State(gold, run),
+                    Amoebius.Parity.ParityDiff.Events(gold, run, tol),
+                    Amoebius.Parity.ParityDiff.Transforms(gold, run, tol),
+                    Amoebius.Parity.ParityDiff.Frames(gold, run, tol),
+                });
+            }
+            if (results.Count == 0) return new ParityResult($"FAIL: no case named '{want}'", 1, false, work);
+
+            // Only a full run against the real goldens feeds the scoreboard.
+            if (!self && !custom && want == "all")
+            {
+                Directory.CreateDirectory(Path.Combine(root, "results"));
+                var doc = new JsonObject { ["date"] = DateTime.UtcNow.ToString("yyyy-MM-dd"), ["cases"] = results };
+                await File.WriteAllTextAsync(Path.Combine(root, "results", "latest.json"), doc.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + "\n");
+            }
+            return new ParityResult($"{(fails > 0 ? "FAIL" : "PASS")}  -  {passes} channel(s) pass, {fails} fail, {missing} missing ({(self ? "engine vs engine" : "engine vs " + goldenRoot)})\n" + sb + "work: " + work, fails, false, work);
+        }
+
+        // ---- build & test ----------------------------------------------------------------------
+
+        bool _assetBuilt;
+
+        /// <summary>Runs cs-asset (built once per server run) from the repository root; its stdout, or a ToolException with its error.</summary>
+        async Task<string> AssetCli(params string[] args)
+        {
+            var proj = PortSrc("CosmicShore.AssetTool");
+            if (!_assetBuilt)
+            {
+                var b = await Run("dotnet", new[] { "build", proj, "-nologo", "-v", "q", "-clp:NoSummary" }, _repo, TimeSpan.FromMinutes(25));
+                if (b.ExitCode != 0) throw new ToolException("building cs-asset failed:\n" + string.Join('\n', b.Output.Split('\n').Where(l => l.Contains(": error ")).Distinct().Take(20)));
+                _assetBuilt = true;
+            }
+            var dll = Path.Combine(proj, "bin", "Debug", "net10.0", "cs-asset.dll");
+            var r = await Run("dotnet", new[] { dll }.Concat(args), _repo, TimeSpan.FromMinutes(5));
+            if (r.ExitCode != 0) throw new ToolException("cs-asset " + string.Join(' ', args) + ": " + r.Output.Trim());
+            // stdout and stderr arrive merged: the answer is the one JSON line; anything else is a note.
+            var lines = r.Output.Split('\n').Select(l => l.TrimEnd('\r'));
+            return lines.LastOrDefault(l => l.StartsWith('{')) ?? r.Output.Trim();
+        }
+
+        async Task<string> Build(string target)
+        {
+            string path = target switch
+            {
+                "launcher" => PortSrc("CosmicShore.Launcher"),
+                "build-tool" => PortSrc("CosmicShore.Build"),
+                "mcp" => PortSrc("CosmicShore.Mcp"),
+                "all" => Path.Combine(_repo, "Port", "CosmicShore.slnx"),
+                _ => PortSrc("CosmicShore.Player"),
+            };
+            var sw = Stopwatch.StartNew();
+            var r = await Run("dotnet", new[] { "build", path, "-nologo", "-v", "q", "-clp:NoSummary" }, _repo, TimeSpan.FromMinutes(25));
+            var lines = r.Output.Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
+            var errors = lines.Where(l => l.Contains(": error ")).Distinct().ToList();
+            int warnings = lines.Where(l => l.Contains(": warning ")).Distinct().Count();
+            if (r.ExitCode == 0) return $"build ok: {target} in {sw.Elapsed.TotalSeconds:F0} s ({warnings} warning(s))";
+            var shown = errors.Count > 0 ? errors : lines.TakeLast(40).ToList();
+            return $"build FAILED: {target}, {errors.Count} error(s)\n" + string.Join('\n', shown.Take(60).Select(e => e.Replace(_repo + Path.DirectorySeparatorChar, "")));
+        }
+
+        async Task<string> Test(string suite, string filter)
+        {
+            var proj = Path.Combine(_repo, "Port", "tests", suite == "ported" ? "CosmicShore.Tests.Ported" : "CosmicShore.Tests");
+            var args = new List<string> { "test", proj, "-nologo", "-v", "q" };
+            if (filter.Length > 0) { args.Add("--filter"); args.Add(filter); }
+            var r = await Run("dotnet", args, _repo, TimeSpan.FromMinutes(30));
+            var lines = r.Output.Split('\n').Select(l => l.TrimEnd()).Where(l => l.Length > 0).ToList();
+            var failed = lines.Where(l => l.Contains("Failed ") || l.Contains("error") || l.Contains("Assert")).Take(80);
+            var summary = lines.Where(l => l.Contains("Passed!") || l.Contains("Failed!") || l.Contains("Total tests") || l.Contains("Passed:") || l.Contains("Failed:")).ToList();
+            return (r.ExitCode == 0 ? "tests passed\n" : "tests FAILED\n") + string.Join('\n', summary.Count > 0 ? summary : lines.TakeLast(20))
+                   + (r.ExitCode == 0 ? "" : "\n" + string.Join('\n', failed));
+        }
+
+        sealed record RunResult(int ExitCode, string Output);
+
+        static async Task<RunResult> Run(string file, IEnumerable<string> args, string cwd, TimeSpan timeout, Dictionary<string, string>? env = null)
+        {
+            var psi = new ProcessStartInfo(file) { WorkingDirectory = cwd, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true };
+            foreach (var a in args) psi.ArgumentList.Add(a);
+            if (env != null) foreach (var kv in env) psi.Environment[kv.Key] = kv.Value;
+            psi.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
+            psi.Environment["DOTNET_NOLOGO"] = "1";
+            psi.Environment["MSBUILDTERMINALLOGGER"] = "off";
+            using var p = Process.Start(psi) ?? throw new ToolException("could not start " + file);
+            p.StandardInput.Close();
+            var output = new StringBuilder();
+            p.OutputDataReceived += (_, e) => { if (e.Data != null) lock (output) output.AppendLine(e.Data); };
+            p.ErrorDataReceived += (_, e) => { if (e.Data != null) lock (output) output.AppendLine(e.Data); };
+            p.BeginOutputReadLine();
+            p.BeginErrorReadLine();
+            using var cts = new CancellationTokenSource(timeout);
+            try { await p.WaitForExitAsync(cts.Token); }
+            catch (OperationCanceledException) { try { p.Kill(true); } catch { } return new RunResult(-1, output + "\n(timed out)"); }
+            lock (output) return new RunResult(p.ExitCode, output.ToString());
+        }
+
+        public void Dispose()
+        {
+            if (_game is { HasExited: false }) try { _game.Kill(entireProcessTree: true); } catch { }
+        }
+    }
+}

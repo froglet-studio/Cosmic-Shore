@@ -206,7 +206,7 @@ namespace CosmicShore.Editor.QA
             }
         }
 
-        [MenuItem("FrogletTools/QA/QA Session", false, 10)]
+        [MenuItem("FrogletTools/QA/QA Session", false, 180)]
         [FrogletTool(FrogletToolCategory.Qa, Importance = 5,
             DisplayName = "QA Session",
             Description = "Run the untested-development backlog and submit verdicts.",

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Toy configure</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.big>span{padding:14px 28px;font-size:18px}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.btn:disabled{cursor:default}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csDrop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes csGlow{0%,100%{box-shadow:0 0 18px rgba(153,255,128,.22)}50%{box-shadow:0 0 34px rgba(153,255,128,.5)}}
+@keyframes csShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes csSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes csSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes csDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes csCeremony{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile,.card{transition:filter 120ms ease-out}
+.tile:hover,.card:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+  <img src="/_blob/c480f7802bf9e34b00948517f6c3b602" alt="" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover">
+  <div style="position: absolute; left: 0; top: 84px; width: 1920px; height: 996px; background: rgba(0, 1, 10, 0.72)"></div>
+  <nav aria-label="Menu screens" style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 56px; background: rgba(0, 4, 31, 0.6); border-bottom: 1px solid rgba(67, 76, 137, 0.7)">
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">LT</span></span>
+    <span class="tab" style="color: #747BAD">HANGAR</span>
+    <span class="tab" style="color: #747BAD">ARK</span>
+    <span class="tab" style="color: #00D4FF; padding: 8px 0 6px; border-bottom: 2px solid #00D4FF">HOME</span>
+    <span class="tab" style="color: #5C5F70; display: flex; align-items: center; gap: 8px"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg>PORT</span>
+    <span class="tab" style="color: #747BAD">PROFILE</span>
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">RT</span></span>
+  </nav>
+  <div style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; background: rgba(0, 1, 10, 0.5)"></div>
+  <header style="position: absolute; left: 40px; top: 108px; width: 1840px; height: 64px; display: flex; align-items: flex-end; justify-content: space-between">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span class="lab">{{eyebrow}}</span>
+      <h1 style="margin: 0; font-weight: 400; font-size: 36px; line-height: 1.1">{{title}}</h1>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px"><button class="btn" type="button" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span><span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 1px 8px; color: #747BAD; font-size: 12px">B</span></span>Back</span></button></div>
+  </header>
+
+  <section aria-label="Preview" class="sl" style="position: absolute; left: 40px; top: 196px; width: 900px; height: 506px; background: #222645; padding: 1px; box-sizing: border-box">
+    <div class="sl grid" style="position: relative; height: 100%; overflow: hidden"><span aria-hidden="true" style="position: absolute; top: 10px; left: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; left: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; right: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span>
+      <span style="position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); width: 400px; height: 400px; animation: csFloat 4s ease-in-out infinite"><img src="{{art}}" alt="" style="width: 400px; height: 400px; object-fit: contain; animation: csSway 9s ease-in-out infinite"></span>
+      <span style="position: absolute; left: 0; right: 0; bottom: 0; height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: rgba(0, 1, 10, 0.72)">
+        <span class="lab" style="color: #E6E9FF">Live preview</span><span class="lab">{{previewTag}}</span>
+      </span>
+    </div>
+  </section>
+  <section aria-label="About" class="sl" style="position: absolute; left: 40px; top: 722px; width: 900px; height: 318px; background: #222645; padding: 1px; box-sizing: border-box">
+    <div class="sl" style="height: 100%; box-sizing: border-box; background: #00041F; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px">
+      <span class="lab" style="color: #E6E9FF">{{aboutTitle}}</span>
+      <span style="font-size: 18px; line-height: 1.5">{{about}}</span>
+    </div>
+  </section>
+
+  <section aria-label="Variations" class="sl" style="position: absolute; left: 980px; top: 196px; width: 900px; height: 844px; background: #222645; padding: 1px; box-sizing: border-box; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 40ms both">
+    <div class="sl grid" style="position: relative; height: 100%; box-sizing: border-box; padding: 26px 28px; display: flex; flex-direction: column; gap: 16px"><span aria-hidden="true" style="position: absolute; top: 10px; left: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; left: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; right: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span>
+      <div style="display: flex; align-items: center; justify-content: space-between; min-height: 40px">
+        <div style="display: flex; align-items: center; gap: 14px">
+          <sc-if value="{{inBranch}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" onClick="{{up}}" style="--bc: #747BAD; --bf: #0E1230; --bt: #E6E9FF"><span><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 2L4 7l5 5"></path></svg>Back</span></button></sc-if>
+          <span class="lab" style="color: #E6E9FF">{{crumb}}</span>
+        </div>
+        <span class="lab num">{{count}}</span>
+      </div>
+      <div class="scroll" style="flex: 1; min-height: 0; padding-right: 6px">
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
+            <button class="tile sls" type="button" aria-label="{{r.n}}" onClick="{{r.pick}}" style="display: block; width: 100%; background: {{r.border}}; padding: {{r.bw}}; cursor: {{r.cursor}}; animation: csRise 320ms cubic-bezier(.22,1,.36,1) {{r.d}}ms both">
+              <span class="sls" style="display: flex; align-items: center; gap: 12px; height: {{r.h}}px; box-sizing: border-box; padding: 0 14px; background: {{r.fill}}">
+                <sc-if value="{{r.hasIcon}}" hint-placeholder-val="{{ false }}"><img src="{{r.icon}}" alt="" style="width: 44px; height: 44px; object-fit: contain; flex: none"></sc-if>
+                <sc-if value="{{r.hasSwatch}}" hint-placeholder-val="{{ false }}"><span style="width: 8px; height: 40px; background: {{r.swatch}}; flex: none"></span></sc-if>
+                <span style="display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1">
+                  <span style="font-size: 17px; color: {{r.nameColor}}">{{r.n}}</span>
+                  <span style="font-size: 13px; color: {{r.dColor}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.d}}</span>
+                </span>
+                <sc-if value="{{r.branch}}" hint-placeholder-val="{{ false }}"><span style="color: #747BAD; display: flex"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 2l5 5-5 5"></path></svg></span></sc-if>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="height: 1px; background: #222645; flex: none"></div>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; flex: none">
+        <span style="font-size: 17px; color: #747BAD">{{status}}</span>
+        <div style="display: flex; gap: 14px">
+          <sc-if value="{{showCommit}}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{canCommit}}" hint-placeholder-val="{{ false }}"><button class="btn big" type="button" onClick="{{commit}}" style="--bc: #99FF80; --bf: #99FF80; --bt: #00010A"><span style="position: relative; overflow: hidden; padding: 14px 30px; font-size: 18px">{{verb}}<span aria-hidden="true" style="position: absolute; top: 0; left: -80px; width: 70px; height: 100%; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)); animation: csSweep 2.8s ease-in-out infinite"></span></span></button></sc-if>
+            <sc-if value="{{noCommit}}" hint-placeholder-val="{{ true }}"><button class="btn big" type="button" disabled="disabled" style="--bc: #5C5F70; --bf: #5C5F70; --bt: #25262D"><span>{{verb}}</span></button></sc-if>
+          </sc-if>
+          <button class="btn big" type="button" onClick="{{navigate}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Navigate</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 0; right: 0; top: 112px; display: flex; justify-content: center; z-index: 5; animation: csDrop 320ms cubic-bezier(.22,1,.36,1) both"><div class="sl" style="background: #434C89; padding: 1px">
+      <div class="sl" style="background: #00041F; padding: 12px 22px; font-size: 17px">{{toastText}}</div>
+    </div></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 1080}, "start": {"editor": null}}'>
+const DEFS = {"vessel": {"name": "Vessel Changer", "group": "Pilot", "art": "/_blob/e3021fea3ed132a9c31d1d339fc70cc9", "verb": "Switch", "desc": "Fly through to swap your ship.", "rows": [{"n": "Manta", "d": "", "icon": "/_blob/8c982fb3b1311931aa946a7f5337d47b", "fixed": false}, {"n": "Dolphin", "d": "", "icon": "/_blob/0fa7978ec882f85c851f541bb20b17bc", "fixed": false}, {"n": "Rhino", "d": "", "icon": "/_blob/1ce285176825995d5760aa32191fb823", "fixed": false}, {"n": "Squirrel", "d": "flying", "icon": "/_blob/1e9d1aac634b11e0c3bbe058a246f84e", "fixed": true}, {"n": "Serpent", "d": "", "icon": "/_blob/d60af9f6ab71865788f13a01fc914c77", "fixed": false}, {"n": "Sparrow", "d": "", "icon": "/_blob/61381b53669b7110e41be12509cbb817", "fixed": false}, {"n": "Urchin", "d": "", "icon": "/_blob/955585ad0ea3df6c91ff0328e8f7609e", "fixed": false}, {"n": "Scarab", "d": "", "icon": "/_blob/7398e80012e26922f395bd11fbaa95de", "fixed": false}, {"n": "Butterfly", "d": "", "icon": "/_blob/8280d6385d684da1ec7b9adbcc9138d0", "fixed": false}, {"n": "Grizzly", "d": "", "icon": "/_blob/563b02c48110179e7ce0b260d21f3ce6", "fixed": false}, {"n": "Thresher", "d": "", "icon": "/_blob/33b84497b25b0549ed888f18680543bd", "fixed": false}, {"n": "Stoat", "d": "", "icon": "/_blob/1e9d1aac634b11e0c3bbe058a246f84e", "fixed": false}]}, "paint": {"name": "Connect the Dots", "group": "Creation", "art": "/_blob/860998acebc7a0176136953b669b2185", "verb": "Start", "desc": "Connect the dots to paint 3D masterpieces with your trail.", "rows": [{"n": "Almighty Mountain", "d": "", "icon": "/_blob/ad50494a6ea37a24cda915693a51ff18", "verb": ""}, {"n": "Buckyball", "d": "", "icon": "", "verb": ""}, {"n": "Double Helix", "d": "", "icon": "/_blob/0d8140bc793f75698ec60f070f0ee4de", "verb": ""}, {"n": "Lion's Head", "d": "", "icon": "", "verb": ""}, {"n": "Lotus", "d": "64% - paused", "icon": "/_blob/9dc72e6d2c1798a01c201ca59e9bc40d", "verb": "Resume"}, {"n": "Nautilus", "d": "", "icon": "/_blob/434a1e1057192fbb2d0da0853ff58e83", "verb": ""}, {"n": "Peacock", "d": "", "icon": "/_blob/a57eab7cb50f0a628dee6084bc9269af", "verb": ""}, {"n": "Phoenix", "d": "", "icon": "/_blob/fa37895b21bd545ec97b14ee3b86568d", "verb": ""}, {"n": "Rainbow", "d": "", "icon": "/_blob/d2e00af5a1719afeb3881b1c1a04d814", "verb": ""}, {"n": "Rose", "d": "painted x2", "icon": "/_blob/e4a8809039485b8eb0bb562ab5f4a2e3", "verb": ""}, {"n": "Saturn", "d": "", "icon": "/_blob/4e33286940f8ea7fbfb0946141b1682b", "verb": ""}, {"n": "Spiral Galaxy", "d": "", "icon": "/_blob/bbc4e2f8dd1f946c30634902596821a5", "verb": ""}, {"n": "Star", "d": "", "icon": "/_blob/6a519ef1730d403b932b7d7666cf201f", "verb": ""}, {"n": "Starry Night", "d": "masterpiece", "icon": "/_blob/5df35d699fd8c04565101801438f732a", "verb": ""}, {"n": "Taj Mahal", "d": "", "icon": "/_blob/5d4632b73451618365292aa8b794a2f8", "verb": ""}, {"n": "Torus Knot", "d": "", "icon": "/_blob/c410b7152a6ff263347de9cb32039caf", "verb": ""}]}, "cell": {"name": "Cell Selector", "group": "World", "art": "/_blob/abe556c558151a94c49027df61f45aa0", "verb": "Switch", "desc": "The freestyle world picker - and the freestyle reset. Fly the one you are already in to reset it.", "rows": [{"n": "Lattice", "d": "you are here - choose it again to reset", "icon": ""}, {"n": "Yggdra", "d": "", "icon": ""}, {"n": "Daedala", "d": "", "icon": ""}, {"n": "Orrery", "d": "", "icon": ""}, {"n": "Zephyr", "d": "", "icon": ""}, {"n": "Caldera", "d": "", "icon": ""}, {"n": "Geode", "d": "", "icon": ""}, {"n": "Ourobor", "d": "", "icon": ""}, {"n": "Hesperides", "d": "", "icon": ""}, {"n": "Barren", "d": "", "icon": ""}, {"n": "Garland", "d": "", "icon": ""}, {"n": "Arboretum", "d": "", "icon": ""}, {"n": "Swarm", "d": "", "icon": ""}]}, "domain": {"name": "Domain Changer", "group": "Pilot", "art": "/_blob/7c6cae013251a3d627c8c8f043d2f4bb", "verb": "", "desc": "Fly through to change your team colour.", "rows": [{"n": "Jade", "d": "current", "icon": "", "swatch": "#00D4FF"}, {"n": "Ruby", "d": "", "icon": "", "swatch": "#A600FF"}, {"n": "Gold", "d": "", "icon": "", "swatch": "#FFAE00"}]}, "spawn": {"name": "Spawn Matrix", "group": "Creation", "art": "/_blob/fcc11a46f5aa7d95ca55a153db5aef22", "verb": "Spawn", "desc": "The release bench. Fly through for the three kingdoms - Fauna, Flora, Vessels. A kingdom opens its species row; a species opens its four elements; a variant spawns it live.", "rows": [{"n": "Fauna", "d": "23 species", "branch": true}, {"n": "Flora", "d": "27 species", "branch": true}, {"n": "Vessels", "d": "12 hulls", "branch": true}], "fauna": [{"n": "Tadpole", "d": "", "icon": "/_blob/bc37dda08a80192fb15efee2999cf53f", "branch": true, "desc": "A small flock of tiny fish that hunt the densest mass, eat any team's trail and breed a new tadpole every 20 bites. Starves in about 90s without trail."}, {"n": "Brittlestar", "d": "", "icon": "/_blob/d3c8549684f8f24d88ec6e7fbdd33b21", "branch": true, "desc": "A slow starfish with swaying, dangling arms that grazes loose mass. Easy prey for sharks; shoot its arms or joust it for its crystal. Starves in 30s without mass or trail."}, {"n": "Shark", "d": "", "icon": "/_blob/90c8aebc77d4efba0d2bd00eae7e0046", "branch": true, "desc": "An armoured hunter that ignores prisms and stalks other creatures in bursts, snapping its jaws. Drops a big crystal. Eats only grazers: release brittlestars or quadfish first."}, {"n": "QuadFish", "d": "", "icon": "/_blob/cfc46e3475b3a9596cfef8f1dfaac33a", "branch": true, "desc": "A bending fish body with four stroking fin prisms. Schools and grazes mass for a quick, mid-size crystal. Starves in 30s without mass or trail."}, {"n": "Clawfish", "d": "", "icon": "/_blob/06fbcfe5439d34f47ebdd1593be1cd53", "branch": true, "desc": "A hollow, open-mouthed horn with two tail flukes; its heart sits just inside the mouth. Grazes mass. Starves in 30s without mass or trail."}, {"n": "Worm Colony", "d": "", "icon": "/_blob/2a3fef619c37450f9ea4470cdf38d31e", "branch": true, "desc": "A segmented giant worm that hunts mass and lunges at ships with fanged jaws. Cut it in two and you get two worms; every segment drops a crystal. Sheds segments when starved."}, {"n": "Piranha", "d": "", "icon": "", "branch": true, "desc": "A fast pack of eight tiny, always-hungry fish that eat any team's trail and pull toward the middle of the cell. Charge crystals. Starves in 40s without trail."}, {"n": "Swarm", "d": "", "icon": "", "branch": true, "desc": "The SORT swarm: about 240 tadpoles that sort themselves into one animal per element (Charge pufferfish, Mass whale, Space jellyfish, Time dragonfly). Kill its main element and it molts into another. Eats flora only."}, {"n": "Swarm Field", "d": "", "icon": "", "branch": true, "desc": "The FIELD swarm model: designed attractor fields where every tadpole owns a slot, so the animal reads crisp and exact. Smaller bodies than the Sort swarm. Eats flora only."}, {"n": "Swarm Grid", "d": "", "icon": "", "branch": true, "desc": "The GRID swarm model: each tadpole reads only the morphogen at its own position, so the animal is looser and more organic than Field. Smaller bodies than Sort. Eats flora only."}, {"n": "Swarm EvoFate", "d": "", "icon": "", "branch": true, "desc": "The EVOFATE swarm model: a learned network moves every tadpole, with a light pull toward its chosen place. The most alive texture and the most expensive. Eats flora only."}, {"n": "Pack Hunter", "d": "", "icon": "", "branch": true, "desc": "Six long hunters that ring your ship, close in and strike together, then tire for 3s. They also hunt locusts by scent. Time crystals."}, {"n": "Locust", "d": "", "icon": "", "branch": true, "desc": "Lone, bobbing grazers that flip into a fast biting swarm when crowded and hungry, and breed from the plants they eat. Space crystals. Needs flora."}, {"n": "Lurker", "d": "", "icon": "", "branch": true, "desc": "Looks like a plant's crystal. It creeps toward you while you look away, freezes when you look, then gapes and snaps. Best among flora, which it mimics and eats."}, {"n": "Stampede", "d": "", "icon": "", "branch": true, "desc": "Grazing herds where every fourth animal is a bull that lowers its head and charges a nearby ship. Mass crystals. Needs flora."}, {"n": "Mobber", "d": "", "icon": "", "branch": true, "desc": "Roosting birds that mob a slow ship or one near their roost: they circle, dive and peck to drain you. Time crystals."}, {"n": "Leech", "d": "", "icon": "", "branch": true, "desc": "Drifting puddles that pounce on a ship within 140u, latch on and slowly drain it. Turn hard to fling them off. Charge crystals. Needs flora."}, {"n": "Leviathan", "d": "", "icon": "", "branch": true, "desc": "A shoal of grazers that assembles into a 120u manta when fed, opens its jaws and surges into a ship ahead of it. Space crystals. Falls apart unfed: needs flora."}, {"n": "Fortress Builders", "d": "", "icon": "", "branch": true, "desc": "48 workers that steal loose prisms and your trail to wall in their nest. A cut wall knits shut and defenders sting. Mass crystals. Fly a trail to feed them."}, {"n": "Thief Nest", "d": "", "icon": "", "branch": true, "desc": "Magpies that nest on a plant, tail your ship, snatch your fresh trail and fly it home to a visible hoard. Space crystals. Fly a trail near them."}, {"n": "Wearer Builders", "d": "", "icon": "", "branch": true, "desc": "Hearts that steal your trail and wear it as a body, fuse together, then rear and lunge. Ram one to strip the prisms back. Fly a trail to feed them."}, {"n": "Shoal", "d": "", "icon": "", "branch": true, "desc": "120 small fish that school as the lab's evolved herd: tight, aligned schools that swerve round a hunter or a ship. Harmless; ram them. Time crystals. Needs flora."}, {"n": "Harrier", "d": "", "icon": "", "branch": true, "desc": "8 sprinters that hunt the shoal as a pack. A hunter streaks out when it bursts and can burn only after 0.4 s of it. Charge crystals. Spawn with a Shoal or it scavenges flora."}], "elements": [{"n": "Charge", "d": "release a creature into this cell", "icon": "/_blob/146f0db34a0fb1fd240e6ec4b6ee3be3"}, {"n": "Mass", "d": "release a creature into this cell", "icon": "/_blob/6cbe6dea086cb1497b611aa43d345e92"}, {"n": "Space", "d": "release a creature into this cell", "icon": "/_blob/d1fa841ca6b542c08c18c935d9a28670"}, {"n": "Time", "d": "release a creature into this cell", "icon": "/_blob/c39bb9b2681dac53359d12c921a7bfc3"}]}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const s = Object.assign({ toy: 'vessel', path: [], sel: null }, props.start || {});
+    this.state = { toy: s.toy, path: s.path.slice(), sel: s.sel, toast: '' };
+    this.timer = null;
+  }
+  componentWillUnmount() { if (this.timer) clearTimeout(this.timer); }
+  say(text) {
+    if (this.timer) clearTimeout(this.timer);
+    this.setState({ toast: text });
+    this.timer = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+  renderVals() {
+    const st = this.state, t = DEFS[st.toy], path = st.path;
+    let list = t.rows;
+    if (st.toy === 'spawn' && path.length >= 1) list = path[0] === 'Fauna' ? t.fauna : [];
+    if (st.toy === 'spawn' && path.length >= 2) list = t.elements;
+    const leaf = !(st.toy === 'spawn' && path.length < 2);
+    const selRow = list.find((r) => r.n === st.sel);
+    const rows = list.map((r, i) => {
+      const on = r.n === st.sel, fixed = !!r.fixed;
+      return { d: 120 + Math.min(i, 8) * 40, n: r.n, d: r.d || '', icon: r.icon || '', hasIcon: !!r.icon, swatch: r.swatch || '', hasSwatch: !!r.swatch,
+               branch: !!r.branch, h: r.icon ? 72 : 64,
+               border: on ? '#E6E9FF' : '#222645', bw: on ? '2px' : '1px', fill: on ? '#222645' : '#00041F',
+               nameColor: fixed ? '#747BAD' : '#E6E9FF', dColor: r.d === 'flying' || r.d === 'current' ? '#99FF80' : '#747BAD',
+               cursor: fixed ? 'default' : 'pointer',
+               pick: () => {
+                 if (fixed) return;
+                 if (r.branch) { this.setState({ path: path.concat([r.n]), sel: null }); return; }
+                 if (st.toy === 'domain') { this.say('You fly ' + r.n + ' now.'); return; }
+                 this.setState({ sel: r.n });
+               } };
+    });
+    const crumb = [t.name].concat(path).join('  /  ');
+    const verb = (selRow && selRow.verb) || t.verb;
+    const about = selRow && selRow.desc ? selRow.desc : (st.toy === 'spawn' && path.length >= 2 ? (DEFS.spawn.fauna.find((f) => f.n === path[1]) || {}).desc || t.desc : t.desc);
+    return {
+      eyebrow: 'Toy Box - ' + t.group, title: t.name,
+      art: (st.toy === 'spawn' && path.length >= 2 && (DEFS.spawn.fauna.find((f) => f.n === path[1]) || {}).icon) || (st.toy === 'paint' && selRow && selRow.icon) || t.art,
+      previewTag: st.sel || (path.length ? path[path.length - 1] : ''),
+      aboutTitle: path.length >= 2 ? path[1] : 'About', about,
+      inBranch: path.length > 0, up: () => this.setState({ path: path.slice(0, -1), sel: null }),
+      crumb, count: list.length ? String(list.length) : '', rows,
+      status: st.toy === 'domain' ? 'Tap a domain to fly it at once.' : (st.sel ? st.sel + ' selected' : (leaf ? 'Pick a variation.' : 'Pick a branch.')),
+      showCommit: !!t.verb, canCommit: !!st.sel, noCommit: !st.sel, verb,
+      commit: () => this.say(verb + ': ' + st.sel + '. The window closes and you fly out.'),
+      navigate: () => this.say('Navigate flies you to the ' + t.name + ' station.'),
+      toast: !!st.toast, toastText: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

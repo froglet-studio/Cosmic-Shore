@@ -1,0 +1,94 @@
+// Minimal UnityEngine surface for the drill harness. Only what the SHIPPED drill files touch.
+using System;
+using System.Collections.Generic;
+namespace UnityEngine
+{
+    public partial class Object { public static implicit operator bool(Object o) => o != null && !o.Destroyed; public bool Destroyed; }
+    public class ScriptableObject : Object
+    {
+        public static T CreateInstance<T>() where T : ScriptableObject => (T)System.Activator.CreateInstance(typeof(T), true);
+    }
+    public class Sprite : Object { }
+    public class Component : Object { }
+    public class Behaviour : Component { }
+    public class MonoBehaviour : Behaviour { }
+    public static class Time { public static float unscaledDeltaTime = 0.1f; }
+    public static class Mathf
+    {
+        public static float Clamp01(float v) => v < 0 ? 0 : v > 1 ? 1 : v;
+        public static float Max(float a, float b) => a > b ? a : b;
+        public static int Clamp(int v, int lo, int hi) => v < lo ? lo : v > hi ? hi : v;
+    }
+    public struct Vector3
+    {
+        public float x, y, z;
+        public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
+        public static Vector3 forward => new(0, 0, 1);
+        public float sqrMagnitude => x * x + y * y + z * z;
+        public float magnitude => (float)System.Math.Sqrt(sqrMagnitude);
+        public static Vector3 operator -(Vector3 a, Vector3 b) => new(a.x - b.x, a.y - b.y, a.z - b.z);
+        public static float Angle(Vector3 a, Vector3 b)
+        {
+            double d = Math.Sqrt((double)a.sqrMagnitude * b.sqrMagnitude);
+            if (d < 1e-15) return 0f;
+            double c = Math.Clamp((a.x * b.x + a.y * b.y + a.z * b.z) / d, -1.0, 1.0);
+            return (float)(Math.Acos(c) * 180.0 / Math.PI);
+        }
+    }
+    public class Transform : Component { public Vector3 position; public Vector3 forward = Vector3.forward; }
+    public struct Vector2 { public float x, y; public Vector2(float x, float y) { this.x = x; this.y = y; } public float magnitude => (float)System.Math.Sqrt(x * x + y * y); }
+    public struct Color { public float r, g, b, a; public Color(float r, float g, float b, float a) { this.r = r; this.g = g; this.b = b; this.a = a; } public static Color white => new(1, 1, 1, 1); }
+    public static class Resources { public static Func<string, Object> Loader; public static T Load<T>(string path) where T : Object => Loader?.Invoke(path) as T; }
+    public static class PlayerPrefs
+    {
+        static readonly Dictionary<string, object> S = new();
+        public static int GetInt(string k, int d) => S.TryGetValue(k, out var v) ? (int)v : d;
+        public static void SetInt(string k, int v) => S[k] = v;
+        public static float GetFloat(string k, float d) => S.TryGetValue(k, out var v) ? (float)v : d;
+        public static void SetFloat(string k, float v) => S[k] = v;
+        public static string GetString(string k, string d) => S.TryGetValue(k, out var v) ? (string)v : d;
+        public static void SetString(string k, string v) => S[k] = v;
+        public static void DeleteKey(string k) => S.Remove(k);
+        public static void Save() { }
+    }
+    public enum RuntimeInitializeLoadType { SubsystemRegistration }
+    [AttributeUsage(AttributeTargets.All)] public class TooltipAttribute : Attribute { public TooltipAttribute(string s) { } }
+    [AttributeUsage(AttributeTargets.All)] public class HeaderAttribute : Attribute { public HeaderAttribute(string s) { } }
+    [AttributeUsage(AttributeTargets.All)] public class TextAreaAttribute : Attribute { public TextAreaAttribute() { } public TextAreaAttribute(int a, int b) { } }
+    [AttributeUsage(AttributeTargets.All)] public class MinAttribute : Attribute { public MinAttribute(float f) { } }
+    [AttributeUsage(AttributeTargets.All)] public class RangeAttribute : Attribute { public RangeAttribute(float a, float b) { } }
+    [AttributeUsage(AttributeTargets.All)] public class SerializeField : Attribute { }
+    [AttributeUsage(AttributeTargets.All)] public class SerializeReference : Attribute { }
+    [AttributeUsage(AttributeTargets.All)] public class CreateAssetMenuAttribute : Attribute { public string fileName, menuName; }
+    [AttributeUsage(AttributeTargets.All)] public class RuntimeInitializeOnLoadMethodAttribute : Attribute { public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType t) { } }
+}
+namespace CosmicShore.Utility
+{
+    public static class CSDebug
+    {
+        public static readonly List<string> Warnings = new();
+        public static void LogWarning(string s) => Warnings.Add(s);
+    }
+}
+namespace CosmicShore.UI
+{
+    // The real class is a MonoBehaviour; only its nested enum is read here. Copied VERBATIM by
+    // run.sh from InputDeviceIconSetSwitcher.cs so the values cannot drift.
+    public partial class InputDeviceIconSetSwitcher { }
+}
+namespace CosmicShore.Core
+{
+    public static class ProgressionBackendGate { public static bool CloudEnabled; }
+    public sealed class DrillProgressRepository
+    {
+        public bool IsLoaded = true;
+        public DrillProgressCloudData Data = new();
+        public int Dirty;
+        public void MarkDirty() => Dirty++;
+    }
+    public sealed class UGSDataService
+    {
+        public static UGSDataService Instance;
+        public DrillProgressRepository DrillRepo = new();
+    }
+}

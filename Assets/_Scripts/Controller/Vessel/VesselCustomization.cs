@@ -60,6 +60,7 @@ namespace CosmicShore.Gameplay
                 return;
 
             this.vesselStatus = vesselStatus;
+            ResolveModelGeometries();
 
             if (this.vesselStatus.ShipGeometries == null || this.vesselStatus.ShipGeometries.Count == 0)
                 this.vesselStatus.ShipGeometries = _shipGeometries;
@@ -95,6 +96,24 @@ namespace CosmicShore.Gameplay
 
             if (_domainSlots == null) ResolveDomainSlots();
             ShipHelper.ApplyShipMaterialToSlots(material, _shipGeometries, _domainSlots);
+        }
+
+        /// <summary>
+        /// A ship geometry with no Renderer of its own stands for the model nested under it: the
+        /// Butterfly's <c>Hull</c> holds Butterfly.fbx, whose SkinnedMeshRenderer cannot be wired
+        /// by fileID before Unity imports the model (asset-surgery: FBX sub-object ids are not
+        /// derivable offline). Every geometry that carries a renderer is left exactly as authored.
+        /// </summary>
+        void ResolveModelGeometries()
+        {
+            if (_shipGeometries == null) return;
+            for (int i = 0; i < _shipGeometries.Count; i++)
+            {
+                var geometry = _shipGeometries[i];
+                if (!geometry || geometry.GetComponent<Renderer>()) continue;
+                var model = geometry.GetComponentInChildren<SkinnedMeshRenderer>(true);
+                if (model) _shipGeometries[i] = model.gameObject;
+            }
         }
 
         bool HasDomainMaterialIdentities()

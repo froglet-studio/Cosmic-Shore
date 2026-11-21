@@ -18,6 +18,7 @@ the loop that keeps it honest.
 | `DEV_TASKS.md` | Failures, converted into handoff-ready development tasks. | The `/qa-backlog` skill |
 | `ARCHIVE.md` | Items that passed. Kept so a re-scan never resurrects them. | The `/qa-backlog` skill |
 | `Tools/QA/apply_results.py` | Deterministic part of the loop: applies submitted results to the three files above. | — |
+| `ANDREW_TEST_HANDOFF.md` | The tester's current assignment on `Ys-bleeding-edge`: the owner's multiplayer hand tests, in order, and where results go. | The owner / Claude |
 
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` is the older, hand-maintained version of
 this idea. It is now a **pointer** — new unverified work goes here.

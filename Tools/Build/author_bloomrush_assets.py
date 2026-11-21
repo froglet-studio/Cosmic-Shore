@@ -1,0 +1,351 @@
+#!/usr/bin/env python3
+"""Author the Bloomrush mode set (GameModes.Bloomrush = 52) — the Manta's party game.
+
+ONE-SHOT donor-clone migration in the author_salvo_assets.py family. It clones
+MinigameBends.unity (chosen for its ARENA: Bends already reuses Rampage's four
+cactus-forest cell configs verbatim, which are exactly Bloomrush's reef — dense
+forest, crystal-scarcity intensity ladder, wildlife climb) and swaps only the mode
+identity: the controller, the turn monitor (point-race → 90 s NetworkTimeBased),
+the scoring rule, and the crystal ladder. Then it registers the mode everywhere a
+mode must be registered (card, live game list, progression unlock, build settings).
+
+The clone asserts on the DONOR's exact field blocks, and it is a ONE-SHOT: it runs only
+while MinigameBloomrush.unity does not exist yet. Once the scene is committed the Editor
+owns it (its fileIDs, its Netcode GlobalObjectIdHash values, every later scene edit), so
+the committed scene is ADOPTED as-is (arcade_mode_lib.committed_scene) and the donor
+asserts STAND DOWN when Bends moves on - they print a note and every other check still
+runs (CLAUDE.md "a spent one-shot must STAND DOWN, not abort"). What the gate still
+enforces is that the blocks this script authors - the controller and monitor scripts,
+the controller's field block, the 90 s duration and the crystal ladder - appear
+verbatim in the committed scene, so retuning one here without the scene fails --check
+by name. Do not "fix" the donor asserts to chase Bends; the committed scene is the record.
+
+Deterministic guids (md5 of a stable name), idempotent, --check compares.
+"""
+import hashlib
+import os
+import re
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+CHECK = "--check" in sys.argv
+
+
+def guid_for(name: str) -> str:
+    return hashlib.md5(f"CosmicShore/Bloomrush/{name}".encode()).hexdigest()
+
+
+SCENE_GUID = guid_for("MinigameBloomrush.unity")
+CARD_GUID = guid_for("ArcadeGameBloomrush.asset")
+RULE_GUID = guid_for("BloomrushScoringRule.asset")
+TOAST_CONFIG_GUID = guid_for("GameToastConfig_Bloomrush.asset")
+
+BLOOMRUSH_CONTROLLER_SCRIPT = "69368ea7f6e0e391ec445493af126df4"
+BLOOMRUSH_RULE_SCRIPT = "a750b5dde5b98470d4e0cc9c58c16ae0"
+BENDS_CONTROLLER_SCRIPT = "94ec6e4a35948f20e999eb581c8637e4"
+BENDS_MONITOR_SCRIPT = "55e3116c4ada864354f5693a022364a9"
+NETWORK_TIME_MONITOR_SCRIPT = "30f5bd573bfc4a29891fc9a175083c37"
+SO_ARCADE_GAME_SCRIPT = "fe040efad3307fb449b6b72ad15362da"
+GAME_TOAST_CONFIG_SCRIPT = "86d1715b8f104fcc87cb60e015d4b563"
+MANTA_CLASS_GUID = "b0e6ec5495dbfb6419332830d585f364"
+
+
+def sub(t: str, old: str, new: str, label: str) -> str:
+    assert old in t, f"DONOR DRIFT ({label}): anchor missing — see the module docstring"
+    assert t.count(old) == 1, f"DONOR DRIFT ({label}): anchor ambiguous"
+    return t.replace(old, new)
+
+
+CONTROLLER_SCRIPT_LINE = "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % BLOOMRUSH_CONTROLLER_SCRIPT
+OLD_CONTROLLER_FIELDS = """  rule: {fileID: 11400000, guid: d17aa51522bc1bedc765900d767f71b5, type: 2}
+  arenaCell: {fileID: 1700000065}
+  firstMilestoneFraction: 0.25
+  secondMilestoneFraction: 0.5
+  progressSampleSeconds: 0.5
+  aiAimRetargetSeconds: 1.25
+  aiAimLeadSeconds: 0.35
+  aiAimBlastReach: 2400
+  aiAimBlastDuration: 2.7
+  aiAimHumanFocus: 3
+  aiAimMaxRange: 2400"""
+NEW_CONTROLLER_FIELDS = """  rule: {fileID: 11400000, guid: %s, type: 2}
+  arenaCell: {fileID: 1700000065}
+  fuseSecondsByIntensity:
+  - 30
+  - 25
+  - 20
+  - 20
+  elementalCrystalCount: 16
+  crystalScatterRadius: 850
+  crystalScatterSeed: 45""" % RULE_GUID
+MONITOR_SCRIPT_LINE = "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % NETWORK_TIME_MONITOR_SCRIPT
+MONITOR_DURATION = "  _updateInterval: 1\n  duration: 90\n"
+OLD_CRYSTAL_LADDER = """  - CrystalsPerPlayer: 2
+    ExtraCrystals: 0
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: 0
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: -1"""
+NEW_CRYSTAL_LADDER = """  - CrystalsPerPlayer: 3
+    ExtraCrystals: 2
+  - CrystalsPerPlayer: 2
+    ExtraCrystals: 1
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: 0"""
+SCENE_REL = "Assets/_Scenes/Multiplayer Scenes/MinigameBloomrush.unity"
+
+
+def clone_scene() -> str:
+    t = open(os.path.join(ROOT, "Assets/_Scenes/Multiplayer Scenes/MinigameBends.unity")).read()
+
+    # Controller identity: BendsController → BloomrushController, and its mode fields.
+    t = sub(t,
+        "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % BENDS_CONTROLLER_SCRIPT,
+        CONTROLLER_SCRIPT_LINE,
+        "controller script")
+    t = sub(t, OLD_CONTROLLER_FIELDS, NEW_CONTROLLER_FIELDS, "controller fields")
+
+    # Turn monitor: the Bends point race becomes the 90-second clock (120 until 2026-10-26). Same GameObject,
+    # same fileID, new class + one new key — the change-type-in-place technique.
+    t = sub(t,
+        "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % BENDS_MONITOR_SCRIPT,
+        MONITOR_SCRIPT_LINE,
+        "monitor script")
+    monitor = re.search(
+        r"(--- !u!114 &1628508337\nMonoBehaviour:\n.*?_updateInterval: 1\n)", t, re.S)
+    assert monitor, "DONOR DRIFT: monitor doc 1628508337 moved"
+    t = t[:monitor.end(1)] + "  duration: 90\n" + t[monitor.end(1):]
+
+    # Crystal ladder: plentiful at intensity 1 (crystals close and constant), contested by
+    # 4 — the Bloomrush spec's own axis, replacing Bends' inherited Rampage scarcity.
+    t = sub(t, OLD_CRYSTAL_LADDER, NEW_CRYSTAL_LADDER, "crystal ladder")
+    return t
+
+
+def build_scene() -> "tuple[str, list[str]]":
+    """The donor clone on first bring-up, the committed scene after - see the module docstring.
+    Returns (scene text, errors naming any authored block the committed scene no longer has)."""
+    return aml.committed_scene(
+        SCENE_REL, clone_scene,
+        authored_blocks=(CONTROLLER_SCRIPT_LINE, NEW_CONTROLLER_FIELDS, MONITOR_SCRIPT_LINE,
+                         MONITOR_DURATION, NEW_CRYSTAL_LADDER))
+
+
+SCENE_META = """fileFormatVersion: 2
+guid: {guid}
+DefaultImporter:
+  externalObjects: {{}}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+""".format(guid=SCENE_GUID)
+
+ASSET_META = """fileFormatVersion: 2
+guid: {guid}
+NativeFormatImporter:
+  externalObjects: {{}}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
+RULE_ASSET = """%%YAML 1.1
+%%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: %s, type: 3}
+  m_Name: BloomrushScoringRule
+  m_EditorClassIdentifier:
+  metric: 11
+  golfRules: 0
+""" % BLOOMRUSH_RULE_SCRIPT
+
+# Comeback rate derivation. The comeback reads VolumeDestroyed because it reads what the mode
+# SCORES (ElementalComebackSystem -> ScoringRuleSO.DomainValue; a count deficit against a volume
+# score is uncalibratable). First-pass expected winning VOLUME over a 120 s round: ~300 cactus
+# prisms x 75 volume each (5x5x3 leaf, Rampage's arena) = 22,500; the round is 90 s since
+# 2026-10-26, so three quarters of that, and the rate rises by 4/3 to keep the 2 levels it bought. A quarter-of-expected
+# deficit x rate must buy at least one whole element level (the trap recorded on Dog
+# Fight / Bends / Wildlife Liberation, where re-targeting silently killed the buff); the
+# assert below fails the build rather than trusting the number. Re-derive from the first
+# playtest's real volumes.
+EXPECTED_WINNING_VOLUME = 300 * 75 * 90 // 120
+COMEBACK_RATE = 0.00048
+assert EXPECTED_WINNING_VOLUME / 4 * COMEBACK_RATE >= 1.0, "a quarter-of-expected deficit must buy a whole element level"
+assert EXPECTED_WINNING_VOLUME / 4 * COMEBACK_RATE <= 3.0, "comeback rate overshoots the Dog Fight curve"
+
+CARD_ASSET = """%%YAML 1.1
+%%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: %(script)s, type: 3}
+  m_Name: ArcadeGameBloomrush
+  m_EditorClassIdentifier:
+  Mode: 52
+  IsMultiplayer: 1
+  DisplayName: Bloomrush
+  Description: Mantas only, and nobody has to learn a button. Soar through the reef
+    to arm your bombs, graze wildlife and rival rays to plant them - silently, one
+    bomb per target, first tag takes it - then reach a crystal before the fuses burn
+    down and set the whole board off at once. Biggest bloomed volume in 90 seconds
+    wins it for your domain.
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
+  CardBackground: {fileID: 21300000, guid: %(bg)s, type: 3}
+  GolfScoring: 0
+  SceneName: MinigameBloomrush
+  Vessels:
+  - {fileID: 11400000, guid: %(manta)s, type: 2}
+  MinPlayersAllowed: 2
+  MaxPlayersAllowed: 9
+  MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
+  MinIntensity: 1
+  MaxIntensity: 4
+  ViewUserAction: 0
+  PlayUserAction: 0
+  ComebackRatePerScoreDeficit: %(rate)s
+""" % {"script": SO_ARCADE_GAME_SCRIPT, "manta": MANTA_CLASS_GUID, "rate": COMEBACK_RATE,
+       # the /cardart render, never a literal - see aml.card_background
+       "bg": aml.card_background("Bloomrush")}
+
+
+TOAST_CONFIG = """%%YAML 1.1
+%%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: %s, type: 3}
+  m_Name: GameToastConfig_Bloomrush
+  m_EditorClassIdentifier:
+  gameMode: 52
+  toasts:
+  - situation: 90
+    messageTemplate: '<b>{0}</b> KABLOOM - {1} bombs'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 91
+    messageTemplate: 'Skim the reef to arm - graze anything to tag it - grab a crystal to set them all off'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 0.85
+    isIdleHint: 1
+    resetOnSituation: 90
+    idleSeconds: 25
+    repeatWhileIdle: 1
+""" % GAME_TOAST_CONFIG_SCRIPT
+# The mode is BUTTONLESS, so a pilot who has not been told has nothing to press and no
+# reason to guess. The hint resets on the cash-out toast: once you have Kabloomed, you know.
+
+
+def main() -> int:
+    scene, scene_errors = build_scene()
+    writes = {
+        "Assets/_SO_Assets/Game Toasts/GameToastConfig_Bloomrush.asset": TOAST_CONFIG,
+        "Assets/_SO_Assets/Game Toasts/GameToastConfig_Bloomrush.asset.meta":
+            ASSET_META.format(guid=TOAST_CONFIG_GUID),
+        SCENE_REL: scene,
+        "Assets/_Scenes/Multiplayer Scenes/MinigameBloomrush.unity.meta": SCENE_META,
+        "Assets/_SO_Assets/Scoring Rules/BloomrushScoringRule.asset": RULE_ASSET,
+        "Assets/_SO_Assets/Scoring Rules/BloomrushScoringRule.asset.meta": ASSET_META.format(guid=RULE_GUID),
+        "Assets/_SO_Assets/Games/ArcadeGameBloomrush.asset": CARD_ASSET,
+        "Assets/_SO_Assets/Games/ArcadeGameBloomrush.asset.meta": ASSET_META.format(guid=CARD_GUID),
+    }
+
+    # Registrations (append-if-absent, SET semantics on re-run).
+    # Both rosters (Docs/HomeHub/ARCHITECTURE.md §3.1): OrganicRematchGames is the MASTER
+    # the injected list resolves a guest's card through; ArcadeGames is the Arcade grid's
+    # rosterOverride, "the master minus the arena cards". Master-only = launchable but not
+    # visible in the arcade.
+    entry = "  - {fileID: 11400000, guid: %s, type: 2}\n" % CARD_GUID
+    for rel in ("Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset",
+                "Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset"):
+        gl = open(os.path.join(ROOT, rel)).read()
+        if entry not in gl:
+            assert gl.endswith("type: 2}\n"), "game list tail moved: " + rel
+            writes[rel] = gl + entry
+        assert (gl + entry).count(entry) <= 2 and gl.count(entry) <= 1, "card listed twice in " + rel
+
+    # Toast library: without this row the mode's situations resolve to nothing and the
+    # cash-out announces itself nowhere.
+    lib = os.path.join(ROOT, "Assets/_SO_Assets/Game Toasts/GameToastLibrary.asset")
+    lb = open(lib).read()
+    lib_entry = "  - {fileID: 11400000, guid: %s, type: 2}\n" % TOAST_CONFIG_GUID
+    if TOAST_CONFIG_GUID not in lb:
+        m = re.search(r"(  modeConfigs:\n(?:  - \{fileID: 11400000, guid: [0-9a-f]+, type: 2\}\n)+)", lb)
+        assert m, "GameToastLibrary.asset modeConfigs block moved"
+        lb = lb[:m.end(1)] + lib_entry + lb[m.end(1):]
+    writes["Assets/_SO_Assets/Game Toasts/GameToastLibrary.asset"] = lb
+
+    prog = os.path.join(ROOT, "Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset")
+    pg = open(prog).read()
+    if re.search(r"^  - 52$", pg, re.M) is None:
+        pg2 = sub(pg, "  - 51\n  firstQuestAlwaysUnlocked:", "  - 51\n  - 52\n  firstQuestAlwaysUnlocked:",
+                  "progression unlock")
+        writes["Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset"] = pg2
+
+    build = os.path.join(ROOT, "ProjectSettings/EditorBuildSettings.asset")
+    bs = open(build).read()
+    if "MinigameBloomrush.unity" not in bs:
+        anchor = ("  - enabled: 1\n"
+                  "    path: Assets/_Scenes/Multiplayer Scenes/MinigameSalvo.unity\n"
+                  "    guid: 313d5cf05253dc4d163a58dc415a07da\n")
+        new = anchor + ("  - enabled: 1\n"
+                        "    path: Assets/_Scenes/Multiplayer Scenes/MinigameBloomrush.unity\n"
+                        "    guid: %s\n" % SCENE_GUID)
+        bs2 = sub(bs, anchor, new, "build settings")
+        writes["ProjectSettings/EditorBuildSettings.asset"] = bs2
+
+    errors = scene_errors + aml.check_cards(writes)
+    if errors:
+        print("VALIDATION FAILED - nothing written:\n  " + "\n  ".join(errors))
+        return 1
+
+    drift = []
+    for rel, want in writes.items():
+        p = os.path.join(ROOT, rel)
+        have = open(p).read() if os.path.exists(p) else None
+        if have != want:
+            drift.append(rel)
+            if not CHECK:
+                open(p, "w").write(want)
+    if CHECK:
+        if drift:
+            print("DRIFT:\n  " + "\n  ".join(drift))
+            return 1
+        print("check clean")
+        return 0
+    print(f"wrote {len(drift)} file(s)" if drift else "idempotent: nothing to write")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

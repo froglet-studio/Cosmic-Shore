@@ -1,0 +1,144 @@
+{
+  "id": "flea",
+  "order": 2,
+  "name": "Flea",
+  "tagline": "the ricochet: time the bounce, bank the speed",
+  "round": "concept · round 1",
+  "accent": "#ffd23f",
+  "kind": "ricochet",
+  "chip": "concept · round 1",
+  "summary": "The ricochet. It crawls at 40 u/s on its own; speed comes from bouncing off mass. A hull contact reflects it instead of resetting it, and a press of RT inside the window round the contact is a perfect bounce: ×1.35 and a growing chain. Between bounces it coasts almost ballistically, so you aim the next bounce with the nose. Crouch with LT and release to hop when no mass is near.",
+  "spec": [
+    {
+      "k": "Mechanic",
+      "v": "RT at contact: perfect bounce · LT crouch, release to hop"
+    },
+    {
+      "k": "Window",
+      "v": "180 ms, ×1.35 perfect / ×0.85 dull"
+    },
+    {
+      "k": "Speed",
+      "v": "crawl 40, cap 260 u/s"
+    },
+    {
+      "k": "Why",
+      "v": "timing windows and earned speed: Haste, ULTRAKILL, Peglin, parry games"
+    }
+  ],
+  "fantasy": "A pinball that chose its own flippers. Every wall is a launch pad if you hit the button on the beat; miss it and you dribble.",
+  "why": "Earned, visibly protected speed is the #1 movement trend (ULTRAKILL 97% positive on 132k reviews, Haste boosts only on a perfect landing), and a tight timing window with an unmistakable tell is the industry's favourite verb right now (Expedition 33's parry). The Flea puts both into collision itself: the thing every other hull avoids is its engine.",
+  "flight": {
+    "cruise": 40,
+    "pitchYaw": 110,
+    "roll": 130,
+    "grip": 30,
+    "accel": 1.5,
+    "topSpeed": 260
+  },
+  "params": {},
+  "elements": {
+    "charge": {
+      "name": "Spring",
+      "param": "perfectGain",
+      "range": [
+        1,
+        1.15
+      ],
+      "l5": "Supercharge",
+      "tip": "Charge is the energy a perfect bounce returns."
+    },
+    "mass": {
+      "name": "Momentum",
+      "param": "topSpeed",
+      "range": [
+        1,
+        1.2
+      ],
+      "l5": "Shatter",
+      "tip": "Mass is how much momentum the hull can hold (the speed cap)."
+    },
+    "space": {
+      "name": "Big Hop",
+      "param": "hopMax",
+      "range": [
+        1,
+        1.5
+      ],
+      "l5": "Leap",
+      "tip": "Space is how far a charged hop reaches for the next surface."
+    },
+    "time": {
+      "name": "Wide Window",
+      "param": "window",
+      "range": [
+        1,
+        1.7
+      ],
+      "l5": "Slow Motion",
+      "tip": "Time widens the perfect-bounce window."
+    }
+  },
+  "styles": [
+    {
+      "name": "Balanced",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Every element at 0: the recipe's numbers."
+    },
+    {
+      "name": "Metronome",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 10
+      },
+      "info": "The widest window: forgiving, for learning the rhythm."
+    },
+    {
+      "name": "Cannonball",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Big gains and a high cap, the stock window: the expert's chain."
+    },
+    {
+      "name": "Maxed",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Every element at 10. A ceiling, not a match state."
+    }
+  ],
+  "players": [
+    {
+      "ai": false,
+      "domain": "jade",
+      "level": "Hard",
+      "style": "Balanced"
+    }
+  ],
+  "controls": {
+    "lt": "crouch (hold), release to hop",
+    "rt": "bounce press (time it to the contact)"
+  },
+  "notModelled": [
+    "Bounces reflect off the vector from the prism's centre, not its faces: a lab approximation of a box's normal.",
+    "Whether a perfect bounce should mark, shield or break the prism (Mass 5 'Shatter') is a design question; here it only flashes."
+  ],
+  "sources": [
+    "Design: Docs/Studios/CONCEPT_FLEET.md (Flea). The platform's hull contact (boost reset, 10% slow) is what a dull bounce replaces."
+  ],
+  "docs": "Docs/Studios/CONCEPT_FLEET.md"
+}

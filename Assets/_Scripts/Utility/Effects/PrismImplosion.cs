@@ -329,6 +329,22 @@ namespace CosmicShore.Utility
                     PrismEffectsManager.EnsureInstance()?.RegisterClockConvergence(this);
                 }
             }
+            else if (PrismMeshRendererStamps.Active && prismRenderer != null)
+            {
+                // No Entities Graphics on this device (a WebGL2 browser): ApplyInitialVisualState already
+                // turned this renderer on with _State/_Location/colours in its block, so the SAME stamp joins
+                // them there (Docs/PRISM_ANIMATION.md §4.11). The moving target is the §1 exception on this
+                // path too: one _Location write per frame (RefreshConvergenceForClock).
+                PrismMeshRendererStamps.NoteFirstUse();
+                prismRenderer.GetPropertyBlock(mpb);
+                PrismMeshRendererStamps.WriteSuctionClock(mpb, PrismClock.Now, EffectiveDuration, direction,
+                    delay, new Unity.Mathematics.float3(location.x, location.y, location.z));
+                prismRenderer.SetPropertyBlock(mpb);
+                PrismMeshRendererStamps.ResetBounds(prismRenderer);
+                PrismMeshRendererStamps.EncapsulateBoundsPoint(prismRenderer, ToObjectPoint(location),
+                    ConvergenceBoundsPadding);
+                PrismEffectsManager.EnsureInstance()?.RegisterClockConvergence(this);
+            }
             else
             {
                 PrismClockDiagnostics.WarnNoRenderEntity($"implosion:{name}", this,
@@ -336,8 +352,8 @@ namespace CosmicShore.Utility
             }
 
             var timers = PrismTimerManager.EnsureInstance();
-            timers.CancelScheduledActions(this);
-            timers.ScheduleAction(this, delay + EffectiveDuration, OnEffectComplete);
+            timers?.CancelScheduledActions(this);
+            timers?.ScheduleAction(this, delay + EffectiveDuration, OnEffectComplete);
             // Re-arm after Cancel — OnEnable's watchdog was cleared above. Must not
             // Cancel again here or the completion schedule above is lost.
             ArmWatchdog();
@@ -355,7 +371,7 @@ namespace CosmicShore.Utility
         {
             float window = Mathf.Max(0.01f, EffectiveDuration * WatchdogDurationMultiplier);
             PrismTimerManager.EnsureInstance()
-                .ScheduleAction(this, window, OnWatchdogFired);
+                ?.ScheduleAction(this, window, OnWatchdogFired);
         }
 
         void OnWatchdogFired()
@@ -377,8 +393,18 @@ namespace CosmicShore.Utility
         {
             if (!_convergenceTransform) return false;
             TargetPosition = _convergenceTransform.position;
-            PrismRenderService.SetImplosionLocation(in RenderHandle,
-                new Unity.Mathematics.float3(TargetPosition.x, TargetPosition.y, TargetPosition.z));
+            var location = new Unity.Mathematics.float3(TargetPosition.x, TargetPosition.y, TargetPosition.z);
+            if (!UsesEntityRenderPath && PrismMeshRendererStamps.Active && prismRenderer != null)
+            {
+                // §4.11: the same one float3, written to this carrier's own block.
+                prismRenderer.GetPropertyBlock(mpb);
+                PrismMeshRendererStamps.WriteSuctionLocation(mpb, in location);
+                prismRenderer.SetPropertyBlock(mpb);
+                PrismMeshRendererStamps.EncapsulateBoundsPoint(prismRenderer, ToObjectPoint(TargetPosition),
+                    ConvergenceBoundsPadding);
+                return true;
+            }
+            PrismRenderService.SetImplosionLocation(in RenderHandle, location);
             // Keep the culling envelope covering the moving sink — no-op while the
             // point stays inside the stamped bounds (the common case: the creature
             // approaches its meal), a minimal grow when it wanders outside.
@@ -438,6 +464,8 @@ namespace CosmicShore.Utility
                 mpb.Clear();
                 prismRenderer.SetPropertyBlock(mpb);
             }
+            // §4.11: give the suction envelope back (no-op where entities run).
+            PrismMeshRendererStamps.ResetBounds(prismRenderer);
         }
 
         /// <summary>

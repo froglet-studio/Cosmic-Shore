@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
     ///
     /// SCARAB-ONLY is enforced entirely by the arcade card's Vessels list, read by the three
     /// platform layers (GameDataSO.SyncFromArcadeGame, ResolveSpawnVesselType, the AI clamp) —
-    /// no mode-local vessel check, per the Astro League/Ribcage rule.
+    /// no mode-local vessel check, per the Astro League/Cleave rule.
     /// </summary>
     public class ScarabScrambleController : MultiplayerDomainGamesController
     {
@@ -63,6 +63,39 @@ namespace CosmicShore.Gameplay
                  "writes crystal slots into). The AI reads it to find the nearest crystal " +
                  "when its domain has no ball to escort.")]
         [SerializeField] CellRuntimeDataSO cellData;
+
+        // The AI's juke knobs are controller fields (Bends-style), not ScarabScrambleSettingsSO
+        // rows. The dash's own duration and speed are NOT knobs here: they are read live off the
+        // hull's ScarabJukeController (JukeDurationSeconds / JukeSpeed), so retuning the prefab
+        // retunes the AI's plan. The scene does not serialize these yet, so the defaults ARE the
+        // shipped values.
+        [Header("AI Jukes")]
+        [Tooltip("An AI with no ball of its own hunts the nearest RIVAL ball within this " +
+                 "distance (world units) to juke-steal it, when that ball is nearer than the " +
+                 "nearest forge crystal. 0 = never hunt; the AI still steals opportunistically.")]
+        [SerializeField, Min(0f)] float aiStealHuntRange = 260f;
+
+        [Tooltip("The AI never steal-dashes at a ball it would reach sooner than this " +
+                 "(seconds): a contact that close happens with or without the dash, and the " +
+                 "plate would throw the ball off the line first.")]
+        [SerializeField, Min(0f)] float aiStealMinLeadSeconds = 0.1f;
+
+        [Tooltip("Hull contact radius (world units) added to the ball's own live radius when " +
+                 "judging whether a dash makes contact. The shipped Scarab hull is one 4.5-unit sphere.")]
+        [SerializeField, Min(0f)] float aiStealHullRadius = 4.5f;
+
+        [Tooltip("The escort dash fires only on a LONG STRAIGHT: the escort point is at least " +
+                 "this far ahead (world units).")]
+        [SerializeField, Min(0f)] float aiEscortDashMinDistance = 150f;
+
+        [Tooltip("…and within this angle of the hull's course (degrees), so the AI is lined " +
+                 "up rather than mid-turn.")]
+        [SerializeField, Range(1f, 89f)] float aiEscortDashMaxAngleDegrees = 30f;
+
+        [Tooltip("…and its own ball is at least this far away (world units), so the plate " +
+                 "that rides the dash cannot throw that ball off its line. The shipped plate " +
+                 "is ~45 wide and ~54 long.")]
+        [SerializeField, Min(0f)] float aiEscortDashBallClearance = 70f;
 
         // ── Replicated match config (server → all; NVs so late joiners get the court) ──
         readonly NetworkVariable<float> n_CourtRadius =
@@ -121,6 +154,12 @@ namespace CosmicShore.Gameplay
                 InstallForgeHooks();
             }
 
+            // EVERY peer: the overload notice is raised from a ClientRpc and is the mode's one
+            // explanation of its live-ball rule. It used to be subscribed inside the server-only
+            // forge hooks, so no client ever saw the toast - only that every ball detonated.
+            AstroLeagueBall.OnCellOverload -= HandleCellOverload;
+            AstroLeagueBall.OnCellOverload += HandleCellOverload;
+
             n_CourtRadius.OnValueChanged += (_, _) => ApplyCourtConfig();
             n_HoopCount.OnValueChanged += (_, _) => ApplyCourtConfig();
             n_HoopMouthRadius.OnValueChanged += (_, _) => ApplyCourtConfig();
@@ -129,6 +168,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            AstroLeagueBall.OnCellOverload -= HandleCellOverload;
             RemoveForgeHooks();
             base.OnNetworkDespawn();
         }
@@ -209,15 +249,15 @@ namespace CosmicShore.Gameplay
                     // "drive it through a ring" needs no further explanation.
                     float angle = (Mathf.PI * 2f * i) / count;
                     Vector3 radial = new(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
-                    pos = centre + radial * (courtRadius * settings.hoopRingRadiusFraction);
+                    pos = centre + radial * (courtRadius * settings.HoopRingRadiusFraction);
                     axis = radial;
                 }
 
                 go.transform.position = pos;
 
                 var hoop = go.AddComponent<ScarabScrambleHoop>();
-                hoop.Configure(this, axis, mouthRadius, settings.hoopAccentColor,
-                               settings.hoopFlareSeconds, serverDetects: IsServer);
+                hoop.Configure(this, axis, mouthRadius, settings.HoopAccentColor,
+                               settings.HoopFlareSeconds, serverDetects: IsServer);
                 _hoops.Add(hoop);
             }
         }
@@ -231,7 +271,6 @@ namespace CosmicShore.Gameplay
             // any way in), so the mode installs no per-domain refusal. ScarabBallForge.ForgeGate
             // stays a live platform capability for a future mode — null means always allowed.
             ScarabBallForge.OnForged += HandleBallForged;
-            AstroLeagueBall.OnCellOverload += HandleCellOverload;
             _forgeHooksInstalled = true;
         }
 
@@ -239,7 +278,6 @@ namespace CosmicShore.Gameplay
         {
             if (!_forgeHooksInstalled) return;
             ScarabBallForge.OnForged -= HandleBallForged;
-            AstroLeagueBall.OnCellOverload -= HandleCellOverload;
             _forgeHooksInstalled = false;
             _forgerByBall.Clear();
         }
@@ -416,9 +454,29 @@ namespace CosmicShore.Gameplay
         /// the nearest crystal (forging happens by flying through it — the AI needs no
         /// ability call); team ball live → escort it, aiming BEHIND the predicted ball on the
         /// far side from the nearest hoop, so driving to the aim point pushes it hoopward.
-        /// Steering only — the provider drives AIPilot.SetExternalTargetProvider and nothing
-        /// else, so nothing leaks into other modes. Throttle needs no wiring: the Scarab's
-        /// transformer runs full throttle under autopilot.
+        /// Steering is AIPilot.SetExternalTargetProvider and nothing else, so nothing leaks into
+        /// other modes. Throttle needs no wiring: the Scarab's transformer runs full throttle
+        /// under autopilot.
+        ///
+        /// <para>THE JUKE is the second half, through
+        /// <see cref="ScarabJukeController.TryAutopilotDash"/> — the same committed dash a
+        /// human's perimeter push fires, so the steal window, the spin and the cavitation plate
+        /// all ride it unchanged, and it runs on the server where the AI is simulated (the steal
+        /// is resolved there too). Two triggers, both pure geometry
+        /// (<see cref="ScarabScrambleJukePlanner"/>):</para>
+        /// <list type="bullet">
+        /// <item><b>Steal</b> — a rival-domain ball whose closest approach lands inside the
+        /// steal window, at a miss distance the dash's own sideways travel closes. With no
+        /// ball of its own, the AI also STEERS at a rival ball nearer than the nearest
+        /// crystal (inside <see cref="aiStealHuntRange"/>), so stealing is a real way to get a
+        /// ball rather than a coincidence.</item>
+        /// <item><b>Escort</b> — escorting its own ball on a long straight (escort point far
+        /// ahead, nearly lined up, sideways offset at least one full dash, own ball clear of
+        /// the plate), the AI dashes to close the offset instead of turning for it.</item>
+        /// </list>
+        /// <para>No mode-side clock paces either. The juke refuses while its roll is live or it
+        /// is spent (<see cref="ScarabJukeController.IsJukeArmed"/>), so the AI can never dash
+        /// faster than a human can, and the plate keeps its own CHARGE-scaled cooldown.</para>
         /// </summary>
         void ArmRollers()
         {
@@ -432,8 +490,11 @@ namespace CosmicShore.Gameplay
 
                 var captured = p;
                 AstroLeagueBall targetBall = null;
+                AstroLeagueBall stealBall = null;
                 Crystal targetCrystal = null;
                 float nextSample = 0f;
+                Transform jukeHost = null;
+                ScarabJukeController juke = null;
 
                 pilot.SetExternalTargetProvider(() =>
                 {
@@ -441,44 +502,146 @@ namespace CosmicShore.Gameplay
                     if (selfTf == null) return centre;
                     Vector3 selfPos = selfTf.position;
 
+                    // The juke is resolved off the LIVE hull, not captured once, so a hook that
+                    // follows its bot onto another hull (AIPilot.TakeModeHooksFrom) dashes that one.
+                    if (selfTf != jukeHost)
+                    {
+                        jukeHost = selfTf;
+                        juke = selfTf.TryGetComponent(out ScarabJukeController j) ? j : null;
+                    }
+
                     // Resample on the pacing timer, or EARLY only when the held latch dies
-                    // (escorted ball spent/stolen, fetched crystal collected). The latch test
-                    // must cover BOTH states — gating on the ball alone made the crystal-fetch
-                    // state resample every frame, because IsBallEscortable(null, …) is false.
+                    // (escorted ball spent/stolen, hunted ball spent or already ours, fetched
+                    // crystal collected). The latch test must cover EVERY state — gating on the
+                    // ball alone made the crystal-fetch state resample every frame, because
+                    // IsBallEscortable(null, …) is false.
                     bool latchDied =
                         (targetBall != null && !IsBallEscortable(targetBall, captured.Domain))
-                        || (targetBall == null && targetCrystal != null
+                        || (stealBall != null && !IsRivalBall(stealBall, captured.Domain))
+                        || (targetBall == null && stealBall == null && targetCrystal != null
                             && (!targetCrystal.gameObject.activeInHierarchy
                                 || !IsForgeSource(targetCrystal)));
                     if (Time.time >= nextSample || latchDied)
                     {
-                        nextSample = Time.time + settings.aiRetargetSeconds;
+                        nextSample = Time.time + settings.AiRetargetSeconds;
                         targetBall = FindNearestDomainBall(captured.Domain, selfPos);
-                        targetCrystal = targetBall == null ? FindNearestCrystal(selfPos) : null;
+                        stealBall = null;
+                        targetCrystal = null;
+                        if (targetBall == null)
+                        {
+                            targetCrystal = FindNearestCrystal(selfPos);
+                            stealBall = FindNearestRivalBall(captured.Domain, selfPos, aiStealHuntRange);
+                            // Hunt the rival ball only when it is the nearer prize: a crystal
+                            // closer by is a ball of our own for less flying.
+                            if (stealBall != null && targetCrystal != null
+                                && (targetCrystal.transform.position - selfPos).sqrMagnitude
+                                   < (stealBall.transform.position - selfPos).sqrMagnitude)
+                                stealBall = null;
+                            if (stealBall != null) targetCrystal = null;
+                        }
                     }
 
+                    Vector3 aim = centre;
+                    bool escorting = false;
                     if (targetBall != null)
                     {
                         Vector3 predicted = targetBall.transform.position
-                                            + targetBall.Velocity * settings.aiInterceptLeadSeconds;
+                                            + targetBall.Velocity * settings.AiInterceptLeadSeconds;
                         Vector3 hoopPos = NearestHoopPosition(predicted, centre);
                         Vector3 toHoop = hoopPos - predicted;
                         Vector3 push = toHoop.sqrMagnitude > 1e-4f
                             ? toHoop.normalized
                             : (predicted - selfPos).normalized;
-                        return predicted - push * settings.aiApproachLead;
+                        aim = predicted - push * settings.AiApproachLead;
+                        escorting = true;
+                    }
+                    else if (stealBall != null)
+                    {
+                        // Fly THROUGH the rival ball: the dash below converts it on contact.
+                        aim = stealBall.transform.position
+                              + stealBall.Velocity * settings.AiInterceptLeadSeconds;
+                    }
+                    else if (targetCrystal != null && targetCrystal.gameObject.activeInHierarchy)
+                    {
+                        aim = targetCrystal.transform.position;
                     }
 
-                    if (targetCrystal != null && targetCrystal.gameObject.activeInHierarchy)
-                        return targetCrystal.transform.position;
+                    if (juke != null && juke.IsJukeArmed)
+                        TryAIJuke(juke, captured, selfPos, aim, escorting ? targetBall : null);
 
-                    return centre;
+                    return aim;
                 });
             }
         }
 
+        /// <summary>
+        /// SERVER (the AI's simulating machine): fire at most one committed dash this frame —
+        /// a steal at the first rival ball the dash would convert, else an escort dash on a
+        /// long straight. <see cref="ScarabJukeController.TryAutopilotDash"/> does the refusing
+        /// (roll live, juke spent, not the server), so calling it is always safe.
+        /// </summary>
+        void TryAIJuke(ScarabJukeController juke, IPlayer self, Vector3 selfPos, Vector3 aim,
+                       AstroLeagueBall escortedBall)
+        {
+            var status = self.Vessel?.VesselStatus;
+            if (status == null) return;
+            Vector3 course = status.Course;
+            Vector3 selfVel = course * status.Speed;
+            // The dash's own numbers, read off THIS hull's juke so the plan can never drift
+            // from what the dash actually does.
+            float window = juke.JukeDurationSeconds;
+            float dashSpeed = juke.JukeSpeed;
+
+            var live = AstroLeagueBall.Live;
+            for (int i = 0; i < live.Count; i++)
+            {
+                var ball = live[i];
+                if (!IsRivalBall(ball, self.Domain)) continue;
+                if (!ScarabScrambleJukePlanner.ShouldStealDash(
+                        selfPos, selfVel, ball.transform.position, ball.Velocity,
+                        window, aiStealMinLeadSeconds, dashSpeed,
+                        aiStealHullRadius + ball.BallWorldRadius(), out Vector3 stealShove))
+                    continue;
+                juke.TryAutopilotDash(stealShove);
+                return;
+            }
+
+            if (escortedBall == null) return;
+            float fullDash = ScarabScrambleJukePlanner.DashDisplacement(
+                window, dashSpeed, window);
+            if (ScarabScrambleJukePlanner.ShouldEscortDash(
+                    selfPos, course, aim, escortedBall.transform.position,
+                    aiEscortDashMinDistance, aiEscortDashMaxAngleDegrees, fullDash,
+                    aiEscortDashBallClearance, out Vector3 escortShove))
+                juke.TryAutopilotDash(escortShove);
+        }
+
         static bool IsBallEscortable(AstroLeagueBall ball, Domains domain) =>
             ball != null && !ball.IsHidden && !ball.IsFrozen && ball.LastHitDomain == domain;
+
+        /// <summary>A live, loose ball another domain owns — the only kind a juke can steal.
+        /// A ball studded in the nucleus wall is not in play yet, so it is not hunted.</summary>
+        static bool IsRivalBall(AstroLeagueBall ball, Domains domain) =>
+            ball != null && !ball.IsHidden && !ball.IsFrozen && !ball.IsEmbeddedOnNucleus
+            && ball.LastHitDomain != Domains.Blue && ball.LastHitDomain != domain;
+
+        static AstroLeagueBall FindNearestRivalBall(Domains domain, Vector3 from, float range)
+        {
+            if (range <= 0f) return null;
+            AstroLeagueBall best = null;
+            float bestSqr = range * range;
+            var live = AstroLeagueBall.Live;
+            for (int i = 0; i < live.Count; i++)
+            {
+                var ball = live[i];
+                if (!IsRivalBall(ball, domain)) continue;
+                float sqr = (ball.transform.position - from).sqrMagnitude;
+                if (sqr >= bestSqr) continue;
+                bestSqr = sqr;
+                best = ball;
+            }
+            return best;
+        }
 
         static AstroLeagueBall FindNearestDomainBall(Domains domain, Vector3 from)
         {
@@ -553,15 +716,15 @@ namespace CosmicShore.Gameplay
 
         void UpdateFaunaExclusion()
         {
-            if (arenaCell == null || settings == null || !settings.faunaWaitOutsideCourt) return;
+            if (arenaCell == null || settings == null || !settings.FaunaWaitOutsideCourt) return;
             if (_appliedCourtRadius <= 0f) return;   // court not published yet
 
             // "The pitch is crowded" is read from the cell's own volume ladder, never a
             // bespoke signal: Calm holds the swarm out; Restless+ lets it pour in to graze.
-            float closed = _appliedCourtRadius * settings.faunaExclusionCourtFraction;
+            float closed = _appliedCourtRadius * settings.FaunaExclusionCourtFraction;
             float target = arenaCell.Phase == CellPhase.Calm ? closed : 0f;
 
-            float rate = closed / Mathf.Max(0.1f, settings.faunaExclusionSweepSeconds);
+            float rate = closed / Mathf.Max(0.1f, settings.FaunaExclusionSweepSeconds);
             _faunaExclusionCurrent = Mathf.MoveTowards(_faunaExclusionCurrent, target,
                                                        rate * Time.deltaTime);
             arenaCell.FaunaExclusionRadius = _faunaExclusionCurrent;

@@ -18,13 +18,13 @@ namespace CosmicShore.Editor
     /// stats, per-phase means, and a time-binned FPS envelope (mean/min/max per
     /// 100 ms bin across all runs) written as <c>report.md</c> + <c>curves.csv</c>.
     /// Run each branch's series first (same scene, same grid), then this.
-    /// FrogletTools ▸ Performance ▸ Prism Grid Benchmark▸ Generate Comparison Report.
+    /// FrogletTools ▸ Performance ▸ Benchmarks ▸ Prism Grid▸ Generate Comparison Report.
     /// </summary>
     public static class PrismExplosionBenchmarkReport
     {
         const float BinSeconds = 0.1f;
 
-        [MenuItem("FrogletTools/Performance/Prism Grid Benchmark/Generate Comparison Report")]
+        [MenuItem("FrogletTools/Performance/Benchmarks/Prism Grid/Generate Comparison Report", false, 212)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 4,
             Description = "Diff prism-grid benchmark runs into a comparison report.")]
         public static void Generate()
@@ -228,7 +228,7 @@ namespace CosmicShore.Editor
             EditorUtility.RevealInFinder(reportPath);
         }
 
-        [MenuItem("FrogletTools/Performance/Prism Grid Benchmark/Open Results Folder")]
+        [MenuItem("FrogletTools/Performance/Benchmarks/Prism Grid/Open Results Folder", false, 213)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 2,
             Description = "Open the benchmark results directory.")]
         public static void OpenFolder()

@@ -155,6 +155,23 @@ namespace CosmicShore.Utility
                  "must be able to do that without forking the species' element assets.")]
         [Min(-1)] public int MaxTotalSpawnedObjectsOverride = -1;
 
+        [Tooltip("Round 11-10 (Docs/SWARM_FAUNA.md §27): a dispersed plant of this species roots at the best of several " +
+                 "random points of its planting band - the one farthest from every living plant of the same species in " +
+                 "the cell (Mitchell's best candidate) - so a forest of a few plants covers its band instead of clumping. " +
+                 "The Swarm cell pens grazers to sectors of a 6-10 plant shell: drawn at random, one sector in two held no " +
+                 "plant at all, and its herd starved. Off = one random point, as before. An offspring is unaffected (it " +
+                 "roots beside its parent).")]
+        public bool SpreadPlanting = false;
+
+        [Tooltip("Round 11-10 (Docs/SWARM_FAUNA.md §27): the PENS a dispersed plant of this species may root in. Empty = " +
+                 "anywhere in its planting band, as before. Non-empty: each new plant goes to the pen holding the FEWEST " +
+                 "living plants of the species (ties at random) and roots in it (best of several points when " +
+                 "SpreadPlanting is set), so every pen keeps a plant once the forest has as many plants as it has pens. " +
+                 "The Swarm cell pens the Middle forest to the three grazer sectors and the mobbers' roost gap: drawn over " +
+                 "the whole band, a sector or the gap still came up empty in one seed in four, and its population starved. " +
+                 "An offspring is unaffected (it roots beside its parent).")]
+        public List<FloraPlantingPen> PlantingPens = new();
+
         /// <summary>
         /// The cell-level override block, expressed as an ordinary <see cref="FloraVariantTuning"/>
         /// so it applies through the one existing path (<see cref="Flora.ApplyVariantTuning"/>) with
@@ -267,6 +284,28 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
+    /// One planting PEN of a <see cref="FloraConfigurationSO.PlantingPens"/> list: a shell about the cell centre between two
+    /// fractions of the membrane radius, optionally narrowed to a cone about an axis (a SECTOR, as a substrate species'
+    /// sector pen - SubstrateCore.SetSector).
+    /// </summary>
+    [System.Serializable]
+    public struct FloraPlantingPen
+    {
+        [Tooltip("Sector axis in the cell's frame (need not be normalised). Zero = the whole shell, no sector.")]
+        public Vector3 Axis;
+
+        [Tooltip("Sector half-angle in degrees about Axis. Ignored when Axis is zero.")]
+        [Range(0f, 180f)] public float HalfAngle;
+
+        [Tooltip("INNER edge of the pen, as a fraction of the cell's membrane radius (clamped outside a control-zone " +
+                 "nucleus, as the planting band is).")]
+        [Min(0f)] public float InnerFraction;
+
+        [Tooltip("OUTER edge of the pen, as a fraction of the cell's membrane radius.")]
+        [Min(0f)] public float OuterFraction;
+    }
+
+    /// <summary>
     /// The data that differs between per-element prefab VARIANTS of the same flora species,
     /// hoisted into config so ONE base prefab serves all of them. Sentinels keep the prefab's
     /// authored value: floats/ints -1, vectors zero. Captured from the real
@@ -296,8 +335,20 @@ namespace CosmicShore.Utility
                  "widened to match. -1 = keep prefab. See Docs/ECOSYSTEM.md 34.7.")]
         public float LatticeScale = -1f;
 
-        [Tooltip("Seconds between shield refreshes on the health prisms (the Charge gyroid " +
-                 "ships shielded leaves at 1). -1 = keep prefab.")]
+        [Tooltip("QUASICRYSTAL only: the clear radius, in ABSOLUTE world units, the struts touching a heart hold back " +
+                 "to (the prefab's heartSeatInset, 2.6). An armoured (Mass) plant's struts are drawn as octahedra 3x their " +
+                 "reach, so its seat is fitted until those clear the heart's full swing - authored by " +
+                 "Tools/Build/fit_quasicrystal_strut_sizes.py (Docs/ECOSYSTEM.md 65). -1 = keep prefab.")]
+        public float HeartSeatInset = -1f;
+
+        [Tooltip("PHYLLOTACTIC species only: scales the WHOLE plant uniformly - every segment, every whorl " +
+                 "and every prism's cross-section - so its shape and prism count are identical and its volume is " +
+                 "x PlantScale^3. It is how a cell grows more food without more plants or colliders (Docs/ECOSYSTEM.md " +
+                 "64.6; Borromean's LatticeScale means the same for that family). -1 = keep prefab.")]
+        public float PlantScale = -1f;
+
+        [Tooltip("Seconds between shield refreshes on the health prisms. Mass is floored at 1 and Charge is never " +
+                 "shielded whatever this says (ElementalArmour, Docs/ECOSYSTEM.md 65). -1 = keep prefab.")]
         public float ShieldPeriod = -1f;
 
         [Tooltip("Seconds between spindle rings on a JOUSTED death, where the structure unravels " +
@@ -343,19 +394,10 @@ namespace CosmicShore.Utility
                  "-1 = keep prefab.")]
         public int MaxSpawnsPerFrame = -1;
 
-        [Tooltip("WORLD scale this variant's heart (its elemental crystal) renders at - sized " +
-                 "to suit THIS plant, so a rosette's heart is a rosette's and a gyroid " +
-                 "octagon's is an octagon's. 0 = keep the platform default on " +
-                 "ElementalCrystalSet.\n\n" +
-                 "This is a GAMEPLAY number as well as a visual one: the collect reward and the " +
-                 "live domain fauna buff both read the heart's world scale, so a bigger plant's " +
-                 "heart is worth more to whoever takes it. The whole authored band must " +
-                 "therefore stay under ElementalCrystalSetSO.MaxSafeHeartWorldScale - past it " +
-                 "two visibly different hearts pay the same. Authored by " +
-                 "Tools/Build/author_lifeform_heart_sizes.py, which measures the plant and " +
-                 "fails the build on an overshoot; do not hand-edit one in isolation. A " +
-                 "LATTICE species is additionally bounded by its own authored heart alcove " +
-                 "(QuasicrystalAssembler.heartSeatInset).")]
+        [Tooltip("RETIRED, not read (2026-10-26). Every elemental crystal, a lifeform's heart " +
+                 "included, is one size (ElementalCrystalSetSO.CrystalWorldScale) and worth one " +
+                 "petal. Still written by Tools/Build/author_lifeform_heart_sizes.py; nothing in " +
+                 "the game reads it.")]
         [Min(0f)] public float HeartWorldScale = 0f;
 
         [Tooltip("OUTER edge of the planting band, as a fraction of the cell membrane radius. " +

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 39 - Notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#8C93C7}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.disp{font-family:'Aldrich',sans-serif;letter-spacing:.06em}
+.num{font-variant-numeric:tabular-nums}
+.abs{position:absolute}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0;border:0;cursor:pointer;
+     font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+.btnP{background:#E6E9FF;color:#00041F}
+.btnS{background:#2B3266;color:#E6E9FF}
+.btnG{background:transparent;color:#C9CDEA;box-shadow:inset 0 0 0 1px #434C89}
+.btn:focus-visible{outline:2px solid #3DB2FF;outline-offset:2px}
+.win,.tray,.handle{transition:transform .36s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.states label{cursor:pointer}
+#t0:checked~.stage .win{transform:translateX(230px)}
+#t0:checked~.stage .tray{transform:none}
+#t0:checked~.stage .handle{opacity:0;pointer-events:none}
+#t1:checked~.stage .win{transform:none}
+#t1:checked~.stage .tray{transform:translateX(-540px)}
+#t1:checked~.stage .handle{opacity:1}
+#t0:checked~.states .l0,#t1:checked~.states .l1{background:rgba(61,178,255,.22)!important;color:#fff!important;border-color:#3DB2FF!important}
+</style>
+</helmet>
+<div style="width:1920px;height:900px;position:relative;overflow:hidden;background:#00041F;color:#E6E9FF;font-family:'Aldrich','Chakra Petch',sans-serif"><div class="abs" style="inset:0;background:#00041F"></div><div class="abs disp" style="left:80px;top:40px;font-size:34px">Friends tray: the party and the rows</div><div class="abs" style="z-index:50;left:1540px;top:40px;padding:6px 12px;border:1px dashed #434C89;background:rgba(0,1,10,.75);font-family:Chakra Petch;font-size:12px;letter-spacing:.14em;color:#C9CDEA;text-transform:uppercase">Board · Rev 39 · Notes</div><div class="abs" style="left:80px;top:110px;width:860px"><div class="lab" style="color:#E6E9FF;margin-bottom:14px">Asked (Shombith, 2026-10-31)</div><ul style="margin:0;padding-left:18px;font-family:Aldrich;font-size:16px;line-height:1.55;color:#C9CDEA"><li style="margin-bottom:10px">&quot;Change the UI of friends: just the look and the center of the branch like animation.&quot;</li><li style="margin-bottom:10px">&quot;The invite and other buttons overlap.&quot;</li><li style="margin-bottom:10px">&quot;Keep the feature where it extends as a tray into game cards.&quot;</li></ul></div><div class="abs" style="left:80px;top:330px;width:860px"><div class="lab" style="color:#E6E9FF;margin-bottom:14px">What every option changes against the build</div><ul style="margin:0;padding-left:18px;font-family:Aldrich;font-size:16px;line-height:1.55;color:#C9CDEA"><li style="margin-bottom:10px">The party molecule (leader in the centre, three seats bonded at 155 / 25 / 270 degrees, flowing Bond dashes) is gone, and so is the orb's turning orbit. No idle motion: the only movement is the tray sliding.</li><li style="margin-bottom:10px">Each online row is a fixed grid: avatar, name and status (ellipsized), then fixed action slots. A button never takes its width from its label again, so INVITE and SPECTATE can no longer overflow the 202 strip.</li><li style="margin-bottom:10px">The tray keeps docking: open, it pushes the hub window's cards right (FriendsDrawerDock); closed, the cards centre again. Same anchoring under the nav, same 520 width.</li><li style="margin-bottom:10px">Kept: seating order (host first, PartyRoster), the domain colour per seat, Leave, the Invites list with Accept / Decline, the host-only remove.</li></ul></div><div class="abs" style="left:1000px;top:110px;width:840px"><div class="lab" style="color:#E6E9FF;margin-bottom:14px">Why A (recommended)</div><ul style="margin:0;padding-left:18px;font-family:Aldrich;font-size:16px;line-height:1.55;color:#C9CDEA"><li style="margin-bottom:10px">It answers both complaints with the least: one row of seats reads at a glance, and one verb per row is the only layout that cannot overlap at any label length or language.</li><li style="margin-bottom:10px">The row's state already decides the verb (Invite, Join, Spectate, Cancel), so a second button was only ever a second way to be wrong.</li><li style="margin-bottom:10px">B keeps two verbs where a pilot is in another party (Join or Invite), at the cost of a narrower name. C is the most visual, but shows four online pilots before scrolling, not five.</li></ul></div><div class="abs" style="left:1000px;top:480px;width:840px"><div class="lab" style="color:#E6E9FF;margin-bottom:14px">What the build would touch (after a pick)</div><ul style="margin:0;padding-left:18px;font-family:Aldrich;font-size:16px;line-height:1.55;color:#C9CDEA"><li style="margin-bottom:10px">author_menu_friends_drawer.py: the seats, the handle (replaces the orb), the rows' slot widths; its gates grow a no-overlap check per row state.</li><li style="margin-bottom:10px">ArcadeLobbyList / KitPartySlot: seat layout only; seating and presence facts unchanged. The Presence and Bond shaders leave the drawer.</li><li style="margin-bottom:10px">OnlineInfoEntry / KitOnlineRow: one action slot (A) chosen from the row's state; no logic change to invite, join, spectate or cancel.</li><li style="margin-bottom:10px">Board to check: press Tray open / Tray closed on A, B and C to see the cards move with the tray.</li></ul></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

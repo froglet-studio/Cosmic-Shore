@@ -39,6 +39,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f95d5e3154eabc5565af1bde585fa850, type: 2}
   - {fileID: 11400000, guid: 4e4d2aa57519f8c461f0955dd262a5ea, type: 2}
   - {fileID: 11400000, guid: b9e2c6e7516a215009922f1d6150a05c, type: 2}
+  - {fileID: 11400000, guid: 6f9ef20569f6babc195744081a2fbfb0, type: 2}
   SupportedFaunas:
   - {fileID: 11400000, guid: fb217959401746e1b09cac81ffce665b, type: 2}
   - {fileID: 11400000, guid: b3e5efaa5053ab748943e4c3433f72d1, type: 2}

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Froglet Analytics: notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:36px;color:#E6E9FF;margin:0}
+.h3{font-family:'Aldrich',sans-serif;font-size:22px;color:#E6E9FF;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:15px;line-height:1.45;color:#747BAD;margin:0}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.panel{background:#222645;box-shadow:inset 0 0 0 1px #434C89}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; box-sizing: border-box; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', sans-serif; padding: 56px 64px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+  <span class="lab">Rev 50 · notes</span>
+  <h1 class="h1">Froglet Analytics: what the boards show and what they do not</h1>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+  <div class="sl panel" style="padding: 24px 26px; display: flex; flex-direction: column; gap: 12px">
+    <h3 class="h3">Recommended: A</h3>
+    <p class="small" style="color: #E6E9FF">Ian reads this once a day to answer Garrett's retention question. A puts Claude's read of last night first and keeps every number on the same screen, so the read can be checked against the tiles under it.</p>
+    <p class="small">B's rail is the right shape once there are more pages to show. C's ask box is worth having inside A or B, but a blank box is a poor front page while the data is this small.</p>
+    <p class="small">A and C are interactive: press Build and Range on A, the questions on C.</p>
+  </div>
+  <div class="sl panel" style="padding: 24px 26px; display: flex; flex-direction: column; gap: 12px">
+    <h3 class="h3">Where the numbers come from</h3>
+    <p class="small" style="color: #E6E9FF">Real, from Ian's PostHog queries of 29 Oct: 25 players and 117 matches in 90 days (release), 1,284 editor matches (91%), 2.0 rows per play, rematch 64% solo vs AI and 50% solo, 2 multi-human matches, port 1 of 43 finished (2%) against 63% on Windows, Bloomrush 0 of 13, 21 of 241 double payouts.</p>
+    <p class="small">Examples: the daily series, matches per play type on B, the last-24-hour event counts, health times and query run times.</p>
+    <p class="small">The page reads our own server on the Oracle VM through a read key. No data sits on GitHub Pages.</p>
+  </div>
+  <div class="sl panel" style="padding: 24px 26px; display: flex; flex-direction: column; gap: 12px">
+    <h3 class="h3">Colour, and the open question</h3>
+    <p class="small" style="color: #E6E9FF">Data is one blue (blue-68). Fire marks a problem and only a problem. The Lime tick marks healthy. Jade (selection) marks the filter you picked and the focus ring. No domain colour is used, since a play type is not a domain.</p>
+    <p class="small">Open: a chart with two or more series has no family to draw from. Every family has a meaning, so these boards use one series per chart and labels instead. Logged in the design feedback queue.</p>
+    <p class="small">Not drawn yet: the Erasure page, sign-in, phone width.</p>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -67,7 +67,7 @@ namespace CosmicShore.ScriptableObjects
         public GameObject SourcePrefab;
 
         [Tooltip("Optional per-variant art. Empty is normal and is NOT a gap: an element-keyed " +
-                 "variant resolves to that element's own ethirion image (see " +
+                 "variant resolves to that element's own Etherion image (see " +
                  "CodexSO.VariantImage), and a variant whose identity is a colour draws its " +
                  "AccentColor instead. Only a variant that is a distinct OBJECT - a painting, a " +
                  "hull, a world - bakes art of its own.")]
@@ -81,7 +81,7 @@ namespace CosmicShore.ScriptableObjects
         public List<CodexStat> Stats = new();
 
         /// <summary>The accent to draw with, resolving the alpha-0 "unset" sentinel.</summary>
-        public Color ResolveAccent(Color fallback) => AccentColor.a <= 0f ? fallback : AccentColor;
+        public Color ResolveAccent(Color fallback) => AccentColor.a <= 0f ? fallback : ColorTrace.Retrace(ColorTrace.Ui, AccentColor);
     }
 
     /// <summary>
@@ -192,7 +192,7 @@ namespace CosmicShore.ScriptableObjects
         public List<CodexVariant> Variants = new();
 
         /// <summary>The accent to draw with, resolving the alpha-0 "unset" sentinel.</summary>
-        public Color ResolveAccent(Color fallback) => AccentColor.a <= 0f ? fallback : AccentColor;
+        public Color ResolveAccent(Color fallback) => AccentColor.a <= 0f ? fallback : ColorTrace.Retrace(ColorTrace.Ui, AccentColor);
 
         /// <summary>The variant matching <paramref name="element"/>, or null.</summary>
         public CodexVariant FindVariant(Element element)
@@ -220,7 +220,7 @@ namespace CosmicShore.ScriptableObjects
     /// because the codex is opened from more than one place (a menu screen, a toy, a pause panel)
     /// and a per-scene reference is a per-scene thing to forget.</para>
     ///
-    /// <para>Authored through <b>FrogletTools &gt; Interface &gt; Codex</b>,
+    /// <para>Authored through <b>FrogletTools &gt; UI &gt; Codex</b>,
     /// which harvests entries from the project's own assets and merges them in under the
     /// field-ownership contract on <see cref="CodexEntry"/>. Hand-editing this asset in the
     /// inspector is supported and survives a re-scan; that is the point of the contract.</para>

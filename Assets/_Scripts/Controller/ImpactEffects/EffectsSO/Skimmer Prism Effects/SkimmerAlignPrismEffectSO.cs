@@ -98,12 +98,14 @@ namespace CosmicShore.Gameplay
             if (minMatureBlock.Trail == null) return new List<Prism> { minMatureBlock };
             var minIndex = minMatureBlock.prismProperties.Index;
             List<Prism> nextBlocks;
+            // LookAheadShared: Execute reads the result and drops it within this call, so the trail's reused
+            // buffer is enough - this runs on every skim contact and used to allocate a list each time.
             if (direction < 0 && minIndex > 0)
-                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Backward, distance);
+                nextBlocks = minMatureBlock.Trail.LookAheadShared(minIndex, 0, TrailFollowerDirection.Backward, distance);
             else if (direction > 0 && minIndex < minMatureBlock.Trail.TrailList.Count - 1)
-                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, distance);
+                nextBlocks = minMatureBlock.Trail.LookAheadShared(minIndex, 0, TrailFollowerDirection.Forward, distance);
             else
-                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, distance);
+                nextBlocks = minMatureBlock.Trail.LookAheadShared(minIndex, 0, TrailFollowerDirection.Forward, distance);
             return nextBlocks;
         }
     }

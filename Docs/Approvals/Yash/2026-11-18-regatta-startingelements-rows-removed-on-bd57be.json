@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-18-regatta-startingelements-rows-removed-on-bd57be",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-18T14:54:35+00:00",
+  "area": "Regatta starting rows; Scarab and Sparrow Time levers",
+  "summary": "Regatta StartingElements rows removed on Garrett's no-cheat rule (Serpent/Sparrow/Scarab Time 10, Manta -5). Scarab throttle x0.625->x0.9375 reshaped to x0.95->x1.0; Sparrow afterburner x1->x2.25 reshaped to x2->x2.75. Five-hull 1.085x card, 1.054x L5 on the shuffle set. Scarab Rally and Breakwater rungs inside their bars. Serpent, Rhino, Swordfish, Manta (L5) and TigerMoth flagged for redesign (Docs/ElementalLoop/REDESIGN.md).",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "fb6b9f6ae"
+}

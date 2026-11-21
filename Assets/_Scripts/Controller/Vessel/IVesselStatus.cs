@@ -146,7 +146,7 @@ namespace CosmicShore.Gameplay
         VesselCustomization Customization { get; }
         R_VesselActionHandler ActionHandler { get; }
 
-        R_ShipElementStatsHandler ElementalStatsHandler { get; }
+        R_VesselElementStatsHandler ElementalStatsHandler { get; }
 
         /// <summary>
         /// Per-vessel elemental ability state: quantitative multipliers + level-threshold
@@ -154,6 +154,9 @@ namespace CosmicShore.Gameplay
         /// Lazily created and self-initializing (the ResourceSystem pattern).
         /// </summary>
         R_VesselElementalAbilityHandler ElementalAbilityHandler { get; }
+
+        /// <summary>The pilot in the seat and the slotted artifacts (Docs/Pilots/PILOTS_AND_ARTIFACTS.md).</summary>
+        VesselPilotLoadout PilotLoadout { get; }
 
         /// <summary>
         /// In multiplayer mode, true -> owner client, false -> other clients

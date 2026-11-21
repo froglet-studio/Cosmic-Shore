@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -24,6 +25,11 @@ namespace CosmicShore.Core
     ///
     /// Spending is local and immediate because it costs the player nothing to get wrong in their
     /// favour: the token was already paid for, and ownership is permanent once written.
+    ///
+    /// <b>With <see cref="ServerEntitlementGate"/> on</b> (Threat Board T3), the server holds the wallet: grants and
+    /// unlocks go through <see cref="GrantTokensAsync"/> and <see cref="UnlockEpisodeAsync"/>, the server verifies and
+    /// records them, and the profile's fields become a mirror of its answer. The synchronous calls refuse then, because
+    /// they cannot wait for the server.
     /// </summary>
     public static class EpisodeTokenService
     {
@@ -92,7 +98,7 @@ namespace CosmicShore.Core
             TokenBalance >= TokensPerEpisode(config);
 
         static int TokensPerEpisode(SO_EpisodeTokenConfig config) =>
-            Mathf.Max(1, config != null ? config.tokensPerEpisode : 1);
+            Mathf.Max(1, config != null ? config.TokensPerEpisode : 1);
 
         // ──────────────────────────────────────────────
         //  Grant (verified purchases only)
@@ -105,6 +111,13 @@ namespace CosmicShore.Core
         /// <returns>True when the receipt was accepted (granted now, or already granted before).</returns>
         public static bool GrantTokens(OrderReceipt receipt)
         {
+            if (ServerEntitlementGate.IsActive)
+            {
+                CSDebug.LogError($"[EpisodeToken] Order '{receipt.OrderId}' sent to the local wallet while the server owns it; " +
+                                 "use GrantTokensAsync.");
+                return false;
+            }
+
             if (!receipt.IsValid)
             {
                 CSDebug.LogError("[EpisodeToken] Rejected an invalid receipt (missing order id or zero tokens).");
@@ -112,7 +125,12 @@ namespace CosmicShore.Core
             }
 
             var economy = Economy;
-            if (economy == null)
+            // "Not loaded" is not "null": before the cloud profile merges, CurrentProfile is a
+            // local DEFAULT whose Economy is non-null. A grant applied to it reported success to
+            // the storefront and was then discarded by MergeCloudProfile, which replaces the
+            // profile and does not carry tokens or RedeemedOrderIds across - a paid grant lost.
+            var data = PlayerDataService.Instance;
+            if (economy == null || data == null || !data.IsInitialized)
             {
                 // Losing a paid grant is the worst outcome here, so refuse loudly rather than
                 // silently dropping it. The caller is expected to retry once the profile loads.
@@ -125,7 +143,7 @@ namespace CosmicShore.Core
 
             if (economy.RedeemedOrderIds.Contains(receipt.OrderId))
             {
-                CSDebug.Log($"[EpisodeToken] Order '{receipt.OrderId}' already redeemed - ignoring replay.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[EpisodeToken] Order '{receipt.OrderId}' already redeemed - ignoring replay.");
                 return true;
             }
 
@@ -135,7 +153,7 @@ namespace CosmicShore.Core
 
             PersistNow();
 
-            CSDebug.Log($"[EpisodeToken] Granted {receipt.TokenCount} token(s) from {receipt.Provider} " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[EpisodeToken] Granted {receipt.TokenCount} token(s) from {receipt.Provider} " +
                         $"order '{receipt.OrderId}'. Balance: {economy.EpisodeTokenBalance}");
 
             OnTokensGranted?.Invoke(receipt.TokenCount, economy.EpisodeTokenBalance);
@@ -153,6 +171,12 @@ namespace CosmicShore.Core
         /// </summary>
         public static bool TryUnlockEpisode(string episodeId, SO_EpisodeTokenConfig config)
         {
+            if (ServerEntitlementGate.IsActive)
+            {
+                CSDebug.LogError($"[EpisodeToken] Local unlock of '{episodeId}' while the server owns the wallet; use UnlockEpisodeAsync.");
+                return false;
+            }
+
             if (string.IsNullOrWhiteSpace(episodeId))
             {
                 CSDebug.LogWarning("[EpisodeToken] TryUnlockEpisode called with no episode id.");
@@ -166,14 +190,14 @@ namespace CosmicShore.Core
 
             if (economy.OwnedEpisodeIds.Contains(episodeId))
             {
-                CSDebug.Log($"[EpisodeToken] '{episodeId}' is already owned - nothing spent.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[EpisodeToken] '{episodeId}' is already owned - nothing spent.");
                 return false;
             }
 
             int cost = TokensPerEpisode(config);
             if (economy.EpisodeTokenBalance < cost)
             {
-                CSDebug.Log($"[EpisodeToken] Cannot unlock '{episodeId}': need {cost}, have {economy.EpisodeTokenBalance}.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[EpisodeToken] Cannot unlock '{episodeId}': need {cost}, have {economy.EpisodeTokenBalance}.");
                 return false;
             }
 
@@ -183,12 +207,75 @@ namespace CosmicShore.Core
 
             PersistNow();
 
-            CSDebug.Log($"[EpisodeToken] Unlocked '{episodeId}' for {cost} token(s). " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[EpisodeToken] Unlocked '{episodeId}' for {cost} token(s). " +
                         $"Balance: {economy.EpisodeTokenBalance}");
 
             OnEpisodeUnlocked?.Invoke(episodeId);
             OnTokenBalanceChanged?.Invoke(economy.EpisodeTokenBalance);
             return true;
+        }
+
+        // ──────────────────────────────────────────────
+        //  Server-owned wallet (ServerEntitlementGate)
+        // ──────────────────────────────────────────────
+
+        /// <summary>
+        /// Credits a verified order. With the server on, the server asks the storefront itself and counts the tokens from
+        /// its own table; the receipt's count is not sent. True when the order is credited (now or before).
+        /// </summary>
+        public static async UniTask<bool> GrantTokensAsync(OrderReceipt receipt)
+        {
+            if (!ServerEntitlementGate.IsActive) return GrantTokens(receipt);
+
+            var before = TokenBalance;
+            var result = await ServerEntitlements.RedeemOrderAsync(receipt.Provider, receipt.OrderId, receipt.ProductId);
+            if (result == null) return false;
+            Mirror(result);
+            if (result.ok && result.tokens > before) OnTokensGranted?.Invoke(result.tokens - before, result.tokens);
+            return result.ok;
+        }
+
+        /// <summary>Spends tokens on an episode. With the server on, the server decides and records it.</summary>
+        public static async UniTask<bool> UnlockEpisodeAsync(string episodeId, SO_EpisodeTokenConfig config)
+        {
+            if (!ServerEntitlementGate.IsActive) return TryUnlockEpisode(episodeId, config);
+
+            bool ownedBefore = OwnsEpisode(episodeId);
+            var result = await ServerEntitlements.UnlockEpisodeAsync(episodeId);
+            if (result == null) return false;
+            Mirror(result);
+            return result.ok && !ownedBefore && OwnsEpisode(episodeId);
+        }
+
+        /// <summary>Loads the server's record into the profile. Called once the profile is loaded at sign-in.</summary>
+        public static async UniTaskVoid RefreshFromServer()
+        {
+            if (!ServerEntitlementGate.IsActive) return;
+            var result = await ServerEntitlements.StateAsync();
+            if (result != null) Mirror(result);
+        }
+
+        /// <summary>The server's answer replaces the profile's token fields, which are only a display cache now.</summary>
+        static void Mirror(ServerEntitlementsResult result)
+        {
+            var economy = Economy;
+            if (economy == null) return;
+
+            var newlyOwned = new List<string>();
+            foreach (var id in result.episodes ?? new List<string>())
+                if (economy.OwnedEpisodeIds == null || !economy.OwnedEpisodeIds.Contains(id))
+                    newlyOwned.Add(id);
+            bool balanceChanged = economy.EpisodeTokenBalance != result.tokens;
+
+            economy.EpisodeTokenBalance = result.tokens;
+            economy.LifetimeEpisodeTokensPurchased = result.lifetimeTokensPurchased;
+            economy.LifetimeEpisodeTokensSpent = result.lifetimeTokensSpent;
+            economy.OwnedEpisodeIds = new List<string>(result.episodes ?? new List<string>());
+            economy.RedeemedOrderIds = new List<string>(result.orders ?? new List<string>());
+            PersistNow();
+
+            foreach (var id in newlyOwned) OnEpisodeUnlocked?.Invoke(id);
+            if (balanceChanged) OnTokenBalanceChanged?.Invoke(result.tokens);
         }
 
         // ──────────────────────────────────────────────

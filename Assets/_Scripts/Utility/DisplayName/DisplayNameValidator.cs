@@ -48,6 +48,39 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
+    /// The four live display-name rules (<see cref="DisplayNameValidator.EvaluateRules"/>), in
+    /// caption order: length, character set, letter-or-number at both ends, no doubled
+    /// separators.
+    /// </summary>
+    public readonly struct DisplayNameRuleState
+    {
+        public bool Length { get; }
+        public bool Characters { get; }
+        public bool Edges { get; }
+        public bool NoDoubles { get; }
+
+        public DisplayNameRuleState(bool length, bool characters, bool edges, bool noDoubles)
+        {
+            Length = length;
+            Characters = characters;
+            Edges = edges;
+            NoDoubles = noDoubles;
+        }
+
+        public const int Count = 4;
+
+        /// <summary>Rule <paramref name="index"/> in caption order.</summary>
+        public bool this[int index] => index switch
+        {
+            0 => Length,
+            1 => Characters,
+            2 => Edges,
+            3 => NoDoubles,
+            _ => false,
+        };
+    }
+
+    /// <summary>
     /// The one place display names are judged. Enforces length, allowed characters and
     /// format from <see cref="DisplayNameValidationConfigSO"/>, and rejects slurs and
     /// profanity via built-in deny lists that survive leetspeak (n1gg3r), separator
@@ -76,8 +109,67 @@ namespace CosmicShore.Utility
             }
         }
 
+        /// <summary>
+        /// The receiver-side check (fair play, Threat Board T7): true when a name another player sent breaks the
+        /// content filter or impersonates the team. Unlike <see cref="Validate"/> it ignores length and format, so a
+        /// name a modified game wrote past every format rule is still judged on its words.
+        /// </summary>
+        public static bool IsOffensive(string rawName)
+        {
+            var config = Config;
+            string sanitized = Sanitize(rawName);
+            if (string.IsNullOrEmpty(sanitized) || IsAllowlisted(sanitized, config))
+                return false;
+            return IsReserved(sanitized, config) ||
+                   (config.EnableProfanityFilter && ContainsBlockedTerm(sanitized, config));
+        }
+
+        static readonly Dictionary<string, string> s_shownNames = new();
+        const int ShownNamesCapacity = 512;
+
+        /// <summary>
+        /// The name to SHOW for a name received from another player: the name itself, or the authored
+        /// <see cref="DisplayNameValidationConfigSO.HiddenNameReplacement"/> when <see cref="IsOffensive"/>.
+        /// Every player's game applies the same rules, so every honest player sees the same replacement.
+        /// Cached, so a per-frame caller costs a dictionary lookup.
+        /// </summary>
+        public static string ForDisplay(string receivedName)
+        {
+            if (string.IsNullOrEmpty(receivedName))
+                return receivedName;
+            if (s_shownNames.TryGetValue(receivedName, out string shown))
+                return shown;
+
+            shown = IsOffensive(receivedName)
+                ? CosmicShore.UI.TemplateText.Fill(Config.HiddenNameReplacement, "tag", StableTag(receivedName))
+                : receivedName;
+            if (s_shownNames.Count >= ShownNamesCapacity) s_shownNames.Clear();
+            s_shownNames[receivedName] = shown;
+            return shown;
+        }
+
+        /// <summary>Four hex digits from an FNV-1a hash of the name: identical on every platform and process,
+        /// unlike <see cref="string.GetHashCode"/>.</summary>
+        static string StableTag(string name)
+        {
+            uint hash = 2166136261;
+            foreach (char c in name)
+            {
+                hash ^= c;
+                hash *= 16777619;
+            }
+            return (hash & 0xFFFF).ToString("X4");
+        }
+
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetShownNames() => s_shownNames.Clear();
+
         /// <summary>Test seam / hot-swap: pass null to fall back to the Resources asset.</summary>
-        public static void SetConfigOverride(DisplayNameValidationConfigSO config) => _config = config;
+        public static void SetConfigOverride(DisplayNameValidationConfigSO config)
+        {
+            _config = config;
+            s_shownNames.Clear();
+        }
 
         // ── Built-in deny lists ─────────────────────────────────────────────
         // These live in code, not the config asset, so the safety floor cannot be
@@ -193,6 +285,62 @@ namespace CosmicShore.Utility
                     "That name isn't allowed. Pick something respectful.");
 
             return DisplayNameValidationResult.Success(sanitized);
+        }
+
+        /// <summary>
+        /// The four rules the profile window ticks as the player types (Docs/MENU_REDESIGN_B.md
+        /// section 15.2), judged exactly as <see cref="Validate"/> judges them - on the sanitized
+        /// name, against the same config. Each is false for an empty name. The content filter,
+        /// reserved names and the letter requirement are not live rules: they answer only on
+        /// submit, in <see cref="Validate"/>'s message.
+        /// </summary>
+        public static DisplayNameRuleState EvaluateRules(string rawName)
+        {
+            var config = Config;
+            string s = Sanitize(rawName);
+            if (string.IsNullOrEmpty(s))
+                return default;
+
+            bool characters = true;
+            foreach (char c in s)
+            {
+                if (IsAsciiLetterOrDigit(c)) continue;
+                if (c == ' ' && config.AllowSpaces) continue;
+                if (c != ' ' && config.AllowedSpecialCharacters.IndexOf(c) >= 0) continue;
+                characters = false;
+                break;
+            }
+
+            bool noDoubles = true;
+            for (int i = 1; i < s.Length && noDoubles; i++)
+                noDoubles = IsAsciiLetterOrDigit(s[i]) || IsAsciiLetterOrDigit(s[i - 1]);
+
+            return new DisplayNameRuleState(
+                s.Length >= config.MinLength && s.Length <= config.MaxLength,
+                characters,
+                IsAsciiLetterOrDigit(s[0]) && IsAsciiLetterOrDigit(s[s.Length - 1]),
+                noDoubles);
+        }
+
+        /// <summary>The four live rules' captions, built from the config so they can never
+        /// promise a limit the validator does not enforce: "3 to 25 characters",
+        /// "Letters, numbers, spaces, _ - .", "Starts and ends with a letter or number",
+        /// "No doubled spaces or punctuation".</summary>
+        public static string[] RuleCaptions()
+        {
+            var config = Config;
+            var chars = new StringBuilder("Letters, numbers");
+            if (config.AllowSpaces)
+                chars.Append(", spaces");
+            if (config.AllowedSpecialCharacters.Length > 0)
+                chars.Append(", ").Append(string.Join(" ", config.AllowedSpecialCharacters.ToCharArray()));
+            return new[]
+            {
+                $"{config.MinLength} to {config.MaxLength} characters",
+                chars.ToString(),
+                "Starts and ends with a letter or number",
+                config.AllowSpaces ? "No doubled spaces or punctuation" : "No doubled punctuation",
+            };
         }
 
         /// <summary>

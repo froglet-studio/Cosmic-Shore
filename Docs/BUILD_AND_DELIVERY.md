@@ -1,7 +1,8 @@
 # Build & Delivery — Windows x64 / Steam
 
 Covers launch-checklist **Workstream B**. The Steam half is written and reviewable but **not armed**:
-nothing can upload until the Steamworks app exists (checklist **A2**).
+nothing can upload until the Steamworks apps exist (checklist **A2** for the base app, **A4** for the
+Playtest child app).
 
 Owner: Shombith. Related: `Docs/STEAM_EA_INVESTOR_CHECKPOINT.pdf`, `Tools/Steam/README.md`.
 
@@ -17,9 +18,9 @@ Owner: Shombith. Related: `Docs/STEAM_EA_INVESTOR_CHECKPOINT.pdf`, `Tools/Steam/
 | B4 | SteamPipe upload + branch convention | **Ready, not armed** — `Tools/Steam/`. Needs app id + depot id. |
 | B5 | Repeatable build checklist | **This document** + `Tools/Build/build_windows.sh`. |
 | B6 | Crash reporting behind consent | **Done** — `CrashReportingService`, gated by the existing analytics consent. |
-| B7 | Steam overlay verification | **Blocked** — needs a real Steam build on the beta branch. Do it during the closed playtest (E7). |
-| — | Nightly build verification (CI) | **Authored, not running** — `.github/workflows/unity-ci.yml`. Needs a runner, see §10. |
-| — | Bleeding-edge landing guard | **Authored, static half running** — `.github/workflows/bleeding-edge-guard.yml`. Checks every commit that lands on trunk and autofixes; the compile half needs the same runner, see §10.1. |
+| B7 | Steam overlay verification | **Blocked** — needs a real Steam build on the Playtest child app's `internal` branch (`Docs/STEAM_PLAYTEST_RUNBOOK.md` A4 step 6). Do it before Wave 0 (E7). |
+| — | Scheduled build verification (CI) | **Authored, static checks only** — `.github/workflows/unity-ci.yml`. Every Unity tier is skipped: there has been **no runner since 2026-10-13**, when the self-hosted one was removed. Stays skipped until a runner that meets §10 *Security* is attached. |
+| — | Bleeding-edge landing guard | **Running, both halves** — `.github/workflows/bleeding-edge-guard.yml`. Checks every commit that lands on trunk and autofixes. Since 2026-11-01 its compile half runs on GitHub-hosted runners (GameCI's Unity image), no self-hosted runner. **Until the `unity-ci` environment holds a Unity licence it runs the reference compile instead**, which catches `error CS` but is not a Unity compile; see §10.1. |
 | — | Test build promotion | **Authored** — `.github/workflows/sync-build-branches.yml`. Moves `development` into `build/android` and `build/windows` every 3 weeks, Wednesday 06:00 PT, see §11. |
 | — | Internal build tagging | **Authored** — `.github/workflows/tag-internal-build.yml`. Tags `bleeding-edge` every Friday 06:00 PT; UGS builds that branch directly. |
 
@@ -71,7 +72,10 @@ need and the failure only shows up at runtime in the player. Do not raise it wit
 ## 3. Building
 
 ### From the editor
-**Tools → Cosmic Shore → Build → Windows x64 (Release)**
+**FrogletTools → Build → Windows x64 (Release)**
+
+Android (a signed App Bundle for Google Play, checked before upload) is **FrogletTools → Build →
+Android App Bundle (Release)**; the whole Android path is in [`ANDROID_BUILD.md`](ANDROID_BUILD.md).
 
 ### From the command line
 ```bash
@@ -92,12 +96,22 @@ Unity -quit -batchmode -nographics \
 
 Exits **non-zero on failure**, so a build server fails the job instead of publishing a half-written
 depot. Output lands in `Builds/Windows64/` (git-ignored) alongside a `build_manifest.txt` recording
-version, Unity version, configuration, scripting backend, commit, and UTC timestamp.
+version, build number, Unity version, configuration, scripting backend, commit, ref, release channel,
+UGS environment and UTC timestamp (the player's build stamp, below).
 
 ### UGS Build Automation
 Point the existing automated build config at the same `-executeMethod` target. Nothing bespoke is
 needed — pass `-buildCommit` so the manifest stays traceable, and archive `Builds/Windows64/` as the
 artefact that `Tools/Steam/upload.sh` consumes.
+
+### Build stamp and UGS environment
+Every player carries a build stamp (version, build number, commit, ref, release channel, UGS
+environment), shown on the settings screen and attached to crash reports and analytics person
+properties. A **release build talks to UGS `production`**, a development build to `development`,
+unless `-ugsEnvironment` / `CS_UGS_ENVIRONMENT` says otherwise; any other name fails the build. Pass
+`-buildNumber` and `-releaseChannel` (or `--build-number` / `--channel` to `build_windows.sh`, or the
+`CS_*` environment variables). `bundleVersion` is put back after every build, and `WINDOWS_BUILD` is
+passed for the build only. Every argument and variable: [`Docs/LAUNCH/BUILD_STAMP.md`](LAUNCH/BUILD_STAMP.md).
 
 ---
 
@@ -106,13 +120,26 @@ artefact that `Tools/Steam/upload.sh` consumes.
 See **`Tools/Steam/README.md`** for the full procedure. Summary:
 
 ```bash
+# Playtest child app (ids from A4): the live invite channel
+export STEAM_PLAYTEST_APPID=<playtest-appid> STEAM_PLAYTEST_DEPOTID=<playtest-depotid> STEAM_USER=<builder-account>
+./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal --set-live
+
+# Base app (ids from A2): the future paid build; --target base is the default
 export STEAM_APPID=<appid> STEAM_DEPOTID=<depotid> STEAM_USER=<builder-account>
-./Tools/Steam/upload.sh --build-dir Builds/Windows64 --branch internal
+./Tools/Steam/upload.sh --target base --build-dir Builds/Windows64 --branch internal --set-live
 ```
 
-Branches: `internal` (team) → `beta` (playtesters, used for E7) → `default` (players).
-Publishing to `default` requires both `--set-live` and typing the app id back. Every other upload
-lands in Steamworks unpublished, which is the normal path.
+Under the Playtest model there are **two apps**, and the same branch name has a different audience
+on each; the table in `Docs/STEAM_PLAYTEST_RUNBOOK.md` § *Branch model under two apps* is the one
+statement of it and wins over this summary. Playtest child app: `internal` (team, password
+protected; B7 runs here) → `default` (every granted tester: the invite channel, E7 / E10). Base app:
+`internal` (team) → `default` (owners: the paid release); its `beta` has no audience under the
+Playtest model.
+`--set-live` with `internal` sets that branch live without a prompt; without `--set-live` every
+upload lands in Steamworks unassigned and `--branch` only labels the build description. `default`
+is set live from App Admin → Builds on either app: Valve does not let a build script set `default`
+live, and the script's demand to type the app id back before `--set-live default` is a guard, not
+the publishing mechanism.
 
 ---
 
@@ -132,7 +159,7 @@ panel already exposes:
   an individual.
 
 Project settings changed to enable it: `enableCrashReportAPI: 1` and
-`CrashReportingSettings.m_Enabled: 1`.
+`CrashReportingSettings.m_EnableCloudDiagnosticsReporting: 1`. Unity Engine Diagnostics (`InsightsSettings.m_EngineDiagnosticsEnabled`) is off since 2026-10-13: it is project-level and the consent gate cannot cover it.
 
 > **In-editor check required:** confirm Cloud Diagnostics is enabled for the project in the Unity
 > Dashboard, then verify a forced exception appears in the dashboard from a playtest build.
@@ -147,14 +174,18 @@ Project settings changed to enable it: `enableCrashReportAPI: 1` and
 |---|---|
 | **No quit path anywhere.** `Application.Quit` appeared nowhere in the project — a PC game that cannot be closed from its own UI. | `DesktopPlatformServices.Quit()`, surfaced as a quit button in the settings panel. Auto-hidden on mobile, where the OS owns app exit. |
 | **NativeShare dead-ends.** `ShareByEmail` and `SnsShare` called NativeShare unguarded; it has no desktop implementation and silently does nothing, so the support and share buttons looked broken on PC. | Desktop fallbacks: `mailto:` for support email, save-and-reveal into a `Shared/` folder for screenshots. Mobile path untouched. |
-| Mobile-shaped player settings on desktop. | Build script sets landscape, resizable window, fullscreen-window default, native resolution, run-in-background. |
+| Mobile-shaped player settings on desktop. | Build script sets landscape, resizable window, fullscreen-window default, native resolution, run-in-background. **As of 11 Sep 2026 the settings asset agrees with it** — `defaultScreenWidth/Height` are 1920 × 1080 (were 1024 × 768, a 4:3 mobile-era default on a project whose canvases are authored at 1920 × 1080) and `resizableWindow` is 1. The pipeline is still the authority CI runs, and it leaves these two alone. Because `defaultIsNativeResolution` is already 1, they are not the *initial fullscreen* resolution — they are the **windowed** size, so they are what a tester gets the moment they leave fullscreen or resize, plus the editor Game view default and the size of any build that does not go through `CosmicShoreBuildPipeline`. |
+
+The Standalone bundle identifier was `com.Froglet-Games.Tail-Glider` — the project's previous title — and is now `com.FrogletGames.CosmicShore`, matching the Android convention. It does **not** move any save data: on Windows both `Application.persistentDataPath` (`%userprofile%\AppData\LocalLow\<companyname>\<productname>`) and `PlayerPrefs` (`HKCU\Software\<companyname>\<productname>`) key off `companyName` / `productName`, which are already `Froglet Games` / `Cosmic Shore` and were not touched. The identifier is what `Application.identifier` returns, so it is the grouping key crash reports and Cloud Diagnostics file under — which is the reason to fix it before a build outsiders see.
+
+**2026-10-02:** Android followed (`com.FrogletGames.TailGlider` → `com.FrogletGames.CosmicShore`) and iOS moved to the **test** id `com.FrogletGames.CosmicShore.dev`. No platform carries the old title any more. iOS moved on to the production id on 2026-10-08, and the test id has been unused since the free-Apple-ID path was retired on 2026-10-13. Why, and what the change cost the existing TestFlight and itch.io installs, is in [`IOS_BUILD.md`](IOS_BUILD.md) §1.
 
 `PaintingShareExporter` already guarded itself (`#if UNITY_EDITOR || UNITY_STANDALONE`), and Ads /
 DailyRewardCard were already mobile-gated. Multi-mouse input already has a Windows raw-input path.
 
 ### Still requires a human on Windows
 
-- [ ] Wwise audio initialises and all beds play
+- [ ] FMOD audio initialises and all beds play — the middleware is **FMOD**, not Wwise, so run the checks in [`AudioSystem/FMOD_AUDIT.md` §0](AudioSystem/FMOD_AUDIT.md) (a pass written against Wwise tests nothing)
 - [ ] Keyboard + mouse, Xbox pad, and PlayStation pad each drive menu and flight
 - [ ] Alt-tab away and back: audio resumes, input recovers, no stuck modifier keys
 - [ ] Windowed ↔ fullscreen ↔ borderless via the settings panel, at several resolutions
@@ -189,24 +220,34 @@ Run top to bottom. Every step is either a command above or a box to tick.
 4. [ ] Bootstrap is scene index 0 in Build Settings
 5. [ ] Build: `./Tools/Build/build_windows.sh --version <x.y.z>`
 6. [ ] Build exited 0 and `build_manifest.txt` shows the right version and commit
-7. [ ] Launch the built player locally: reaches the main menu, plays one Tournament round
+7. [ ] Launch the built player locally: reaches the main menu, plays one Maelstrom round
 8. [ ] Offline smoke test (§7)
-9. [ ] Upload to `internal`: `./Tools/Steam/upload.sh --build-dir Builds/Windows64 --branch internal`
-10. [ ] Install from Steam on a clean machine; verify the overlay renders (**B7**)
-11. [ ] Promote to `beta` for playtesters, or `default` with `--set-live` for release
+9. [ ] Upload to the Playtest child app's `internal`: `./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal --set-live` (a paid-release build after the conversion uses `--target base`)
+10. [ ] Install the Playtest app's `internal` branch from Steam on a clean machine; smoke test and verify the overlay renders (**B7**)
+11. [ ] Set the build live on the Playtest app's `default` from App Admin → Builds, only as the signed wave policy allows (`Docs/STEAM_PLAYTEST_RUNBOOK.md` § A6). A paid release is the base app's `default`, also set live from App Admin
 12. [ ] Confirm crashes and funnel events appear in their dashboards
 
 ---
 
 ## 9. Known gaps
 
-- **B7 (overlay verification)** cannot be done until a build is on Steam. Fold it into the closed
-  playtest (E7).
+- **B7 (overlay verification)** cannot be done until a build is on Steam. It runs on the Playtest
+  child app's `internal` branch (`Docs/STEAM_PLAYTEST_RUNBOOK.md` A4 step 6), before Wave 0 (E7).
 - The build script has not been executed in this environment — there is no Unity install here. It
   needs one clean run on a Windows machine with the IL2CPP toolchain before it is trusted; expect
   the first IL2CPP build to take considerably longer than a Mono one.
 - Cloud Diagnostics must also be switched on in the Unity Dashboard; the project-side settings are
   set but the service is per-project on the web side.
+- **`-buildVersion` on a Windows build is not put back** (found 2026-10-14 while adding the
+  Android build).
+  - The fact: `CosmicShoreBuildPipeline.Run` sets `PlayerSettings.bundleVersion` (`:83`; re-grep
+    before trusting the number) and leaves it. That one field is also Android's `versionName` and
+    iOS's `CFBundleShortVersionString`, so a Windows build stamped `0.2.1` dirties
+    `ProjectSettings.asset` and the next phone build ships `0.2.1` too.
+  - The Android build restores every Player Setting it touches
+    (`CosmicShoreBuildPipeline.Android.cs`).
+  - Open question, to settle before changing it: is the stamp meant to persist and be committed
+    as the release version (then say so in §3), or to be build-only like Android's?
 
 
 ---
@@ -217,9 +258,14 @@ Run top to bottom. Every step is either a command above or a box to tick.
 
 ### Tiers
 
+Every tier except `static` runs on the Unity runner, and **there is none today** (see "No runner is
+attached" below), so those tiers resolve and then skip their `unity` job. The table is what each tier
+does once a runner is back.
+
 | Tier | Trigger | What runs | Catches | Rough time |
 |---|---|---|---|---|
-| `compile` | Every PR into `bleeding-edge` | Edit-mode tests (which force a full compile of runtime, editor, and test assemblies) | Non-compiling C#, broken tests | 5–15 min |
+| `static` | Every PR into `bleeding-edge` **except from a `claude/**` branch**; manual dispatch (the `/ship` commands dispatch it for `claude/**`) | The ubuntu static checks only (conditional compilation, console logging, prism shader wiring). Never takes the Unity runner | Release-preprocessor mistakes, raw `Debug.Log`, shader wiring drift | 1–2 min |
+| `compile` | **Manual dispatch only** (post-merge compiles are `bleeding-edge-guard.yml`'s job, §10.1) | Edit-mode tests (which force a full compile of runtime, editor, and test assemblies) | Non-compiling C#, broken tests | 5–15 min |
 | `il2cpp` | **Thursday 09:00 UTC**, against `bleeding-edge` | Full IL2CPP release build | Above, plus AOT/generic failures and native link errors — the ones that only appear in a shipping build | 60–150 min cold, far less warm |
 | `il2cpp` | **Tuesday 13:00 UTC**, against `development`, only when the next day is an on-cycle promotion Wednesday | Full IL2CPP release build | Same, on the branch UGS is about to build | as above |
 | `mono` | **Manual dispatch only** | Mono standalone player build | Produces a player in ~a third of the time, but is blind to AOT and native link errors — useful when iterating, never a gate | 20–40 min |
@@ -235,16 +281,48 @@ reason to verify something weaker than what ships.
 | Thursday 09:00 UTC (02:00 PT) | `bleeding-edge` | Friday 06:00 PT internal build (`tag-internal-build.yml`) |
 | Tuesday 13:00 UTC (06:00 PT) | `development` | Wednesday 06:00 PT test-build promotion (`sync-build-branches.yml`) |
 
-Every branch UGS builds is now player-built by CI first, with a day of slack to fix what it finds.
-The Tuesday tier is cycle-gated on the same `CYCLE_ANCHOR` / `CYCLE_DAYS` as the promotion, so it
-fires exactly one Tuesday in three rather than burning an IL2CPP build on a commit nothing will ship.
+With a runner attached, every branch UGS builds is player-built by CI first, with a day of slack to
+fix what it finds. **Without one — the state since 2026-10-13 — neither pre-flight builds anything:**
+the schedule still fires and the static checks still run, but the `unity` job skips, so the UGS
+build is again the first player build of that code. The Tuesday tier is cycle-gated on the same
+`CYCLE_ANCHOR` / `CYCLE_DAYS` as the promotion, so it fires exactly one Tuesday in three rather than
+burning an IL2CPP build on a commit nothing will ship.
 
-Any tier can also be run on demand from the Actions tab (**Run workflow** → pick a mode).
+Any tier can also be run on demand from the Actions tab (**Run workflow** → pick a mode). With no
+runner attached, only `static` does any work.
 
-### The runner is not chosen yet
+### `claude/**` branches do not trigger CI on their own
 
-The `unity` job is **skipped entirely until the repository variable `UNITY_RUNNER_LABEL` is set**,
-and then targets whatever runner label it names. Skipping rather than defaulting to a label is
+Agent sessions push often and open many pull requests, so a branch named `claude/**` fires CI in
+exactly two cases:
+
+1. **It lands on `bleeding-edge`.** The merge push runs `bleeding-edge-guard.yml` (§10.1) like any
+   other. `amoebius-parity-ci.yml` no longer runs per push (Shombith, 2026-11-13): it runs nightly at
+   11:17 UTC on `bleeding-edge` and by hand from the Actions tab (**Run workflow**), so a merge no
+   longer mails its author the port's standing failure.
+2. **A `/ship`, `/ship-quick`, `/ship-deep` or `/ship-tools` command runs on it.** The skill
+   dispatches `unity-ci.yml` with `mode=static` on the branch once, after its final push
+   (`.claude/skills/ship/SKILL.md` §5.5).
+
+Everything else is suppressed: `unity-ci.yml` skips every job for a `pull_request` event whose head
+is `claude/**` (a skipped check, never a pending one), and `amoebius-ios.yml` lists `claude/**` in
+`branches-ignore` (`ios-testflight.yml` has no push trigger at all), because an agent branch merging
+`bleeding-edge` in would otherwise "change" the request file and start a Mac build nobody asked for.
+A human can still run any of them on a `claude/**` branch from the Actions tab (**Run workflow**).
+
+### No runner is attached
+
+**This section is about `unity-ci.yml` and `build-branch-ci.yml`.** The bleeding-edge guard no longer
+needs a runner: its compile moved to GitHub-hosted runners on 2026-11-01 (§10.1).
+
+**State since 2026-10-13: no runner.** The self-hosted runner that served the Unity jobs was removed
+that day — unregistered, and the `UNITY_RUNNER_LABEL` variable deleted — because it ran as a
+persistent service on a developer's everyday PC, which a public repository cannot allow (see
+*Security* below). The Unity jobs in `unity-ci.yml` and `build-branch-ci.yml` stay skipped until a runner that
+meets that rule is attached (or they move to hosted runners the way the guard did).
+
+The `unity` job is **skipped entirely while the repository variable `UNITY_RUNNER_LABEL` is unset**,
+and when set it targets whatever runner label it names. Skipping rather than defaulting to a label is
 deliberate: a job queued against a runner that does not exist shows as a *permanently pending* check
 on every PR, and GitHub only reaps it after roughly 24 hours — `timeout-minutes` governs execution
 time, not queue time. Set the variable the day a runner is registered; nothing else needs editing.
@@ -252,7 +330,7 @@ Options:
 
 | Option | What it needs | Notes |
 |---|---|---|
-| **Self-hosted on the existing build box** | Register the machine as a repo runner; set `UNITY_PATH` | No license activation, no minute costs, and `Library/` stays warm so builds are incremental. Best fit given the build server already exists. |
+| **Self-hosted, on a dedicated isolated machine or VM** | A machine that meets every point under *Security* below; register it as a repo runner (§10.2); set `UNITY_PATH` | No license secrets in GitHub, no minute costs, and `Library/` stays warm so builds are incremental. Never anyone's everyday PC. |
 | **UGS Build Automation** | Replace the build step with an API call that triggers the existing build target | Least new machinery; logs and status live in UGS rather than on the PR. |
 | **GitHub-hosted** | `UNITY_EMAIL` / `UNITY_PASSWORD` / `UNITY_SERIAL` secrets, plus a larger runner | Standard `windows-latest` offers ~14 GB free disk. This project is a 2.8 GB checkout plus ~10 GB of Unity and Windows IL2CPP tooling, and `Library/` for a project this size lands well beyond that. Windows minutes also bill at 2×. Not viable for a player build; workable for `compile` only. |
 
@@ -266,8 +344,9 @@ Options:
 
 ### Two things to know before turning it on
 
-- **The edit-mode suite has not been run here.** If it is not currently green, the PR gate goes red
-  on day one. Either green it up first, or set `UNITY_TESTS_BLOCKING=false` for a grace period —
+- **Whether the edit-mode suite is green today is unknown** — nothing has run it in CI since the
+  runner was removed on 2026-10-13. If it is not currently green, the compile stage goes red on day
+  one. Either green it up first, or set `UNITY_TESTS_BLOCKING=false` for a grace period —
   but treat that as temporary, since a non-blocking gate is not a gate.
 - **Scheduled workflows run the default branch's copy of the file** and check out the default
   branch. The `resolve` job therefore pins scheduled runs to `bleeding-edge` explicitly, but the
@@ -277,17 +356,41 @@ Options:
 
 ### Security
 
-If `froglet-studio/Cosmic-Shore` is **public**, do not attach a self-hosted runner without first
-restricting who can trigger it: a fork PR would otherwise execute arbitrary code on the build
-machine. This workflow uses `pull_request` (never `pull_request_target`) and takes
-`permissions: contents: read`, but the safe configuration on a public repo is to require approval
-for outside-contributor runs, or drop the PR trigger and keep only `schedule` +
-`workflow_dispatch`. On a private repo this is a non-issue.
+`froglet-studio/Cosmic-Shore` is **public**, and that decides what a self-hosted runner may be.
+
+**Reachability belongs to the runner, not to a workflow file.** A runner takes jobs from any workflow
+that requests its label: a workflow in any branch a writer pushes, a workflow file a fork pull
+request brings with it, and any workflow with `workflow_dispatch`, which a writer can run on their
+own branch. So no trigger choice in these files — push-only, no `pull_request`,
+`permissions: contents: read` — keeps untrusted code off the runner; those limit what *these*
+workflows do, not what the runner will run. For fork pull requests the only control is the repository setting
+**Approval for running fork pull request workflows from contributors**.
+
+The rule for any self-hosted runner on this repository — all of it, before the runner goes live:
+
+- It is an **isolated machine or VM** that holds **no credentials, signing material, personal
+  accounts or browser sessions**, because anything a job can read on it must be assumed taken.
+- It is **never anyone's everyday PC.**
+- **Settings → Actions → General → Approval for running fork pull request workflows from
+  contributors** is set to **Require approval for all external contributors**, so no fork's workflow
+  reaches the runner until a maintainer has read it.
+- The default branches are **protected** — `bleeding-edge` and `development`, with `build/**`
+  restricted per `Docs/BUILD_PIPELINE_SETUP.md` §4 — because scheduled and push-triggered runs
+  execute whatever workflow file those branches hold.
+- Its service runs as a **dedicated low-privilege local account** created for it — never a person's
+  account, and not an administrator.
+
+The same list is the security checklist in the §10.2 runbook. A GitHub-hosted runner needs none of
+it: every job gets a fresh VM that is discarded afterwards.
 
 ### What it does not do
 
 - No player artefact upload. The build is multiple GB; only test results and the build manifest are
-  retained. SteamPipe uploads run from the build machine (§4), not from CI.
+  retained. SteamPipe uploads (§4) run by hand from a machine that holds the Steam builder login —
+  never from the CI runner, which must hold no credentials (*Security* above). This stays the rule unless you
+  decide otherwise: `release-builds.yml` carries an **opt-in** SteamPipe job on a GitHub-hosted runner that refuses
+  to run until a builder account's cached login (`STEAM_CONFIG_VDF`) is put in the `steam-prerelease` Environment.
+  The trade-off is in `Docs/LAUNCH/PIPELINES.md` § Windows / Steam.
 - No notifications beyond GitHub's own. Failures surface in the Actions tab and via GitHub's default
   email; wiring Discord is a later addition if the signal gets missed.
 
@@ -309,20 +412,61 @@ completely unverified, and the first thing to notice was a human running a Windo
 
 | # | Job | Runs on | Gate | Catches |
 |---|---|---|---|---|
-| 1 | `validate` | `ubuntu-latest`, seconds, free | always | Editor-only API in player code, guard mistakes, `MonoBehaviour` name/file mismatch, missing `.meta` |
-| 2 | `unity` | `UNITY_RUNNER_LABEL` | skipped while that variable is unset | **Everything a real compile sees** — package-level errors, asset import breakage, AOT/IL2CPP |
-| 3 | `autofix` | `ubuntu-latest` | on failure of 1 or 2, and only if `ANTHROPIC_API_KEY` is set | Repairs the mechanical failure classes and opens a PR |
+| 1 | `validate` | `ubuntu-latest`, seconds, free | always | Editor-only API in player code, guard mistakes, `MonoBehaviour` name/file mismatch, missing `.meta`, generator drift |
+| 2 | `unity` (**Unity compile**) | `ubuntu-latest`, in GameCI's Unity image | the push touched `Assets/`, `Packages/`, `ProjectSettings/`, `Tools/CI/`, `Tools/Build/` or a workflow; runs **even when stage 1 is red** | Any `error CS` in runtime, editor and test assemblies, then the edit-mode suite |
+| 3 | `report` | `ubuntu-latest` | always, **bleeding-edge and development only** | One self-closing `<branch> is broken` issue per branch |
+| 4 | `autofix` | `ubuntu-latest` | stage 1 failed or stage 2 was a compile break, a credential is set, **guarded branches only** | Repairs the mechanical failure classes and opens a PR |
 
-### The load-bearing caveat
+### How the compile runs (since 2026-11-01)
 
-**Stage 2 is the only stage that can see a build break, and it is skipped until `UNITY_RUNNER_LABEL`
-is set.** Until then this workflow catches the static classes only, and a red Windows build can still
-reach trunk. That is the same gate as §10 and it is the single configuration change that turns all
-three workflows on at once.
+No self-hosted runner. The job runs on a fresh GitHub-hosted VM, which is discarded afterwards.
 
-Verify the state at any time by opening a recent **Unity CI** run and reading the job list: if
-`unity` shows *skipped*, no Unity has compiled the project in CI and every green check on that run
-came from the Python checkers alone.
+1. **It chooses the compiler** from the secrets in the `unity-ci` GitHub Environment:
+   - **`unity`** when `UNITY_EMAIL` and `UNITY_PASSWORD` are set. It activates by **serial** when
+     `UNITY_SERIAL` is set, by the serial inside a Personal `Unity_lic.ulf` when `UNITY_LICENSE` is set,
+     and otherwise by **sign-in alone** (email and password: the account's own licence, GameCI's
+     current advice for Personal seats). The job log names the method (`activation: login`). It pulls `unityci/editor:ubuntu-6000.3.17f1-base-3.2.2`, **pinned by digest** in
+     the workflow's `UNITY_IMAGE`, frees runner disk, restores `Library/` from the Actions cache, and
+     runs `Tools/CI/unity_compile_in_container.sh` in the container. That script activates the
+     licence the GameCI way (a throwaway blank project, four tries with backoff), runs the edit-mode
+     suite (which compiles runtime, editor and test assemblies), and **returns the licence on
+     exit**, whatever happened. `Library/` is saved once a day per `packages-lock.json` hash, so
+     dozens of pushes a day do not churn the 10 GB cache budget.
+   - **`refcompile`** while the environment holds no licence: `Tools/Build/unity_refcompile`
+     (player config), compiled against real Unity reference assemblies. It catches `error CS` in
+     project code. **It is not a Unity compile**: no asset import, no editor assemblies, no tests.
+     The run says so in a warning, in the step summary and in the tracking issue
+     (`compiler: refcompile`).
+2. **It checks the pinned image matches `ProjectSettings/ProjectVersion.txt`**, and fails with a
+   re-pin message when the project's Unity version moves on.
+   - **A licence that does not activate falls back to `refcompile`** (2026-11-21): the container leaves
+     `unity-activation-failed`, and the run takes the reference-compile path with a "Not a Unity compile" warning
+     instead of going red as `infra` on every push. That happened on the first hosted run: the sign-in account has
+     no headless editor entitlement (`Docs/Reports/TRUNK_HEALTH.md`).
+3. **It classifies the result.** Any `error CS` line in the log is `compile`: it always blocks, and
+   the first 40 lines go to the log and the step summary. Exit 0 is `ok`. No results XML and no
+   compiler error is `infra` (licence, network, import or crash), which is not sent to autofix.
+   Anything else is `tests`, which blocks unless `UNITY_TESTS_BLOCKING=false`.
+4. **It attaches the log on every run** as the artifact `editmode-results-<run id>`
+   (`unity-editmode.log`, plus `editmode-results.xml` when Unity ran), kept 14 days.
+
+The first Unity run (and the first after a `packages-lock.json` change) imports the whole
+project, so it is slow; the job's timeout is 180 minutes. Later runs restore `Library/`.
+
+### When it is red: `/trunk-doctor`
+
+`python3 .claude/skills/trunk-doctor/trunk_doctor.py` says whether `bleeding-edge` is green from the guard's RUNS
+(never from the issue), names the first red push and every push since, and `diagnose` classifies the failing log
+(static, generator, compile, tests, infra) and names the PR that introduced each finding. `/ship` calls
+`trunk_doctor.py --gate` before every push and merge, so work stops piling onto a red trunk. Every incident is
+recorded in `Docs/Reports/TRUNK_HEALTH.md`.
+
+Two fixes it made to this workflow on 2026-11-12, both from its first incident:
+- **A cancelled run is no verdict.** The report job used to read a run cancelled by a newer push as green, comment
+  "Recovered" and close the issue while the trunk was red (#1867, #1872, #1889, #1897). It now leaves the issue alone.
+- **The checks' Python packages are installed.** `Tools/CI/requirements-checks.txt` (numpy, for the generators whose
+  `--check` mirrors the C# in float32) is installed before the checks in `validate`, the autofix prompt and
+  `unity-ci.yml`. Without it, three generators crashed on the runner and passed on every developer's machine.
 
 ### Autofix rules
 
@@ -335,20 +479,100 @@ came from the Python checkers alone.
 - With no `ANTHROPIC_API_KEY` configured the job warns and exits cleanly; verification still fails,
   it simply is not repaired automatically.
 
+
+### The options that were compared (2026-11-01)
+
+| Option | Cost | Licence needed | Security on a public repo | Verdict |
+|---|---|---|---|---|
+| **GameCI image on GitHub-hosted runners** | Standard hosted runners are free for public repositories; the `Library/` cache fits inside the free 10 GB | A Unity seat for a CI Unity ID: a Pro/Plus serial, or a Personal `.ulf` if Froglet is eligible for Personal. Activated per run and returned | Fresh VM per job, nothing persists. Secrets sit in an environment limited to the guarded branches; fork PRs never get secrets; the image is pinned by digest and actions by SHA | **Chosen.** The cold import is slow; the daily `Library/` cache covers it |
+| Unity Build Automation, triggered from Actions | UGS build minutes, billed by Unity (the team already uses it for the internal and test builds) | None in GitHub; a UGS service-account key in an Actions secret to start builds | Builds run on Unity's machines; the key can start and cancel builds, so it needs an environment too | A full player build per push (20-60 min), sharing the queue with the internal builds. The result lives in UGS, so `error CS` and the log must be fetched back through the API |
+| Isolated self-hosted runner | A dedicated machine or VM, on all the time, plus its upkeep | A Unity seat on that machine | A runner takes **any** job that asks for its label, from any branch or fork workflow, so every point in §10 *Security* must hold | Fastest (warm `Library/`), but the most risk and upkeep. It is what was removed on 2026-10-13 |
+
+### Secrets: what to add, and where
+
+**Settings → Environments → `unity-ci`** (the first run that referenced it created it, empty):
+
+1. **Deployment branches and tags → Selected branches and tags**: add `bleeding-edge` and
+   `development`. After this, a run on any other branch (a scratch-branch dispatch included) is
+   refused at the environment and cannot read the licence.
+2. **Environment secrets** for a **Unity ID made for CI** (not a person's account; activation cannot
+   answer a two-factor prompt headless). `UNITY_EMAIL` and `UNITY_PASSWORD` alone are enough for a
+   Personal licence (sign-in activation); add `UNITY_SERIAL` for a Pro/Plus seat. `UNITY_LICENSE` is
+   kept for the older `.ulf` route, which Unity may no longer accept for Personal seats:
+
+| Secret | When | Value |
+|---|---|---|
+| `UNITY_EMAIL` | always | the CI Unity ID's email |
+| `UNITY_PASSWORD` | always | its password |
+| `UNITY_SERIAL` | Pro / Plus seat (optional otherwise) | the seat's serial key (Unity ID → Subscriptions). Each run activates it and returns it |
+| `UNITY_LICENSE` | optional, Personal `.ulf` route; used only when `UNITY_SERIAL` is not set | the full contents of `Unity_lic.ulf` from a machine where that Unity ID activated a Personal licence (Windows `C:\ProgramData\Unity\Unity_lic.ulf`, macOS `/Library/Application Support/Unity/Unity_lic.ulf`, Linux `~/.local/share/unity3d/Unity/Unity_lic.ulf`) |
+
+Nothing else is needed: `UNITY_PATH` and `UNITY_RUNNER_LABEL` no longer affect this workflow.
+`UNITY_TESTS_BLOCKING` (a repository variable) works as before. **It is set to `false` today** (read from run 642), so once Unity runs, a red edit-mode test is a warning and only a compile break fails the job. Remove it once the suite is green.
+
+### Verify it took
+
+**Actions → Bleeding-edge guard → Run workflow** on `bleeding-edge`, then open the **Unity compile** job:
+
+- *Choose the compiler* prints `Compiler: Unity 6000.3.17f1 (... activation: login|serial|ulf)`
+  and *Compile with Unity* prints `Licence activated (...)`: the real compile is live.
+- *Compile with Unity* ends with `Unity licence activation ... failed after 4 attempts`: the
+  account, its two-factor setting, or the licence it holds is the problem; the error names which
+  method to try next.
+- It prints the **Not a Unity compile** warning: the environment's secrets are missing or misnamed.
+- The job is refused with a deployment-branch message: you ran it on a branch the environment does
+  not allow, which is the rule working.
+
+### Proof (2026-11-01)
+
+Before any licence was added, so every run used the reference compile. They were dispatched on
+branches outside the guarded pair, before the environment's branch rule was set.
+
+| Run | Branch | Unity compile job | What it showed |
+|---|---|---|---|
+| [#642](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/41359298510) | `claude/ci-hosted-unity-compile` | **success**, 3 min (cold cache) | `RESULT: OK - no errors in project code (92 assemblies)`; report and autofix skipped (not a guarded branch) |
+| [#644](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/41360054662) | `ci-scratch/unity-compile-negative-control` (one deliberately broken line in `TemplateText.cs`) | **failure**, `failure_kind=compile` | first error listed: `Assets/_Scripts/Data/TemplateText.cs(9,43): error CS0103: The name 'undefinedSymbolForCi' does not exist`; log attached as `editmode-results-41360054662` |
+
+The broken line was then reverted on the scratch branch (`ef11d94bf`); it never reached any other branch. The scratch branch can be deleted.
+**The `unity` path (licence, container, `Library/` cache) has not run yet**: it needs the secrets
+above. Its first run is the real proof, and a cold import will be slow.
+
 ### Security note
 
-This repository is **public**. The guard is push-triggered on a branch that requires write access,
-so a self-hosted runner attached to it is not reachable from fork pull requests. Do not add a
-`pull_request` trigger to this workflow without first requiring approval for outside-contributor
-runs.
+The guard uses **no self-hosted runner**. On a pull request into `bleeding-edge` it runs only the static checks: the compile is skipped on every PR (Shombith, 2026-11-21) and runs on the push when the PR lands; the licence is readable only by jobs that pass the `unity-ci`
+environment's branch rule. The self-hosted tiers of the other workflows still follow §10 *Security*.
 
 ---
 
 ## 10.2 Turning the compile stage on — self-hosted runner runbook
 
-**Decision (2026-08-07): self-hosted, on the existing Windows build box.** No license activation, no
-billed minutes, and `Library/` stays warm between runs so a compile is minutes rather than tens of
-minutes. Nothing in any workflow needs editing — all three already target `vars.UNITY_RUNNER_LABEL`.
+> **The bleeding-edge guard no longer uses this.** Since 2026-11-01 it compiles on GitHub-hosted
+> runners (§10.1). This runbook applies only to the self-hosted tiers of `unity-ci.yml` (`il2cpp`,
+> `mono`, `compile`) and `build-branch-ci.yml`, and setting `UNITY_RUNNER_LABEL` no longer changes
+> the guard.
+
+**Decision (2026-08-07, revised 2026-10-13): self-hosted, on a dedicated, isolated Windows machine
+or VM.** No license secrets in GitHub, no billed minutes, and `Library/` stays warm between runs so a
+compile is minutes rather than tens of minutes. Nothing in any workflow needs editing — all three
+already target `vars.UNITY_RUNNER_LABEL`.
+
+The first runner registered from this runbook was **removed on 2026-10-13**: it ran as a persistent
+service on a developer's everyday PC, which the rule in §10 *Security* forbids. There is no runner
+today and the compile stage is skipped. Do not register one until every box below is ticked.
+
+### Security prerequisites — all of them, before registering
+
+- [ ] The machine is an **isolated machine or VM used only as this runner** — **never anyone's
+      everyday PC**.
+- [ ] It holds **no credentials, signing material, personal accounts or browser sessions**. Treat
+      anything on it as readable by every job it runs. That includes Unity: the editor's license
+      must not rely on a person's Unity account staying signed in on it.
+- [ ] **Settings → Actions → General → Approval for running fork pull request workflows from
+      contributors** is set to **Require approval for all external contributors**.
+- [ ] The default branches are **protected** — `bleeding-edge` and `development`, with `build/**`
+      restricted per `Docs/BUILD_PIPELINE_SETUP.md` §4.
+- [ ] A **dedicated low-privilege local account** exists on the machine for the runner service —
+      not a person's account, not an administrator. Step 4 below installs the service under it.
 
 ### Prerequisites on the machine
 
@@ -364,7 +588,7 @@ minutes. Nothing in any workflow needs editing — all three already target `var
 
 1. **Settings → Actions → Runners → New self-hosted runner**, architecture **Windows x64**. GitHub
    shows a download-and-configure snippet containing a single-use registration token.
-2. Run it in an empty directory on the build box — **not** inside a checkout of this repository.
+2. Run it in an empty directory on the runner machine — **not** inside a checkout of this repository.
 3. When `config.cmd` asks for labels, add one memorable label, e.g. `cosmic-build-win`. Keep the
    default `self-hosted`, `Windows`, `X64` labels it adds for you.
 4. **Answer `Y` to "Would you like to run the runner as service?"** when `config.cmd` asks.
@@ -374,6 +598,9 @@ minutes. Nothing in any workflow needs editing — all three already target `var
    (`svc.sh`), and running it here just returns
    `The term '.\svc.cmd' is not recognized`. GitHub's own wording is *"Configuring the self-hosted
    runner application as a service on Windows is part of the application configuration process."*
+
+   When it then asks which user account the service should run as, give the **dedicated
+   low-privilege local account** from the security prerequisites — never your own account.
 
    If you already configured the runner and answered `N` (or were never asked), you do not need to
    start over — see "Converting an interactive runner to a service" below.
@@ -405,10 +632,11 @@ Get-Service "actions.runner.*"        # nothing listed = not a service
 ```
 
 Get the removal token from **Settings → Actions → Runners → the runner → Remove**. Re-register with
-the same label (`cosmic-build-win`) so no workflow needs editing.
+the same label so `UNITY_RUNNER_LABEL` needs no edit, and install the service under the dedicated
+account.
 
-To unblock a queued job *right now* without reconfiguring, just run `.\run.cmd` and leave the window
-open — the queued job starts within seconds. That is a stopgap, not the fix.
+Do **not** unblock a queued job by starting `.\run.cmd` from your own session: that runs every job
+as you, which §10 *Security* forbids. Fix the service instead.
 
 ### Set the two repository variables
 
@@ -417,15 +645,15 @@ open — the queued job starts within seconds. That is a stopgap, not the fix.
 | Variable | Value | Effect |
 |---|---|---|
 | `UNITY_PATH` | `C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity.exe` | Which editor the jobs invoke. Jobs fail fast with a clear message if unset. |
-| `UNITY_RUNNER_LABEL` | `cosmic-build-win` | **This is the switch.** Setting it un-skips the `unity` job in `bleeding-edge-guard.yml`, `unity-ci.yml`, and `build-branch-ci.yml` simultaneously. |
+| `UNITY_RUNNER_LABEL` | the label from step 3 | **This is the switch.** Setting it un-skips the `unity` job in `bleeding-edge-guard.yml`, `unity-ci.yml`, and `build-branch-ci.yml` simultaneously. |
 
 Set `UNITY_PATH` **first**. Setting the label first means the next push schedules a Unity job that
 immediately fails on the missing path.
 
 ### Expect day one to be red, and plan for it
 
-The edit-mode suite has never been run in CI, so it is unknown whether it is currently green. The
-guard already separates the two failure modes (§10.1) — a compile break always blocks, a red test is
+Nothing has run the edit-mode suite in CI since the runner was removed on 2026-10-13, so it is
+unknown whether it is currently green. The guard already separates the two failure modes (§10.1) — a compile break always blocks, a red test is
 reported separately — but if the suite turns out to be red you will still get a failing check on
 every push. Set a third variable during the grace period:
 
@@ -444,8 +672,8 @@ the run and read the job list:
   compiled and the guard is static-only.
 - `unity` shows **queued** and stays there → the label does not match any registered runner. Fix the
   label rather than waiting; GitHub only reaps such a job after roughly 24 hours.
-- `unity` shows **success** → the compile stage is live. This is the first commit in the repository's
-  history to have actually been compiled by CI.
+- `unity` shows **success** → the compile stage is live again — the first CI compile since the
+  runner was removed on 2026-10-13.
 
 ### Autofix prerequisite
 

@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-16-thornline-upgraded-in-place-round-5-the-886435",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-16T19:27:53+00:00",
+  "area": "the Shrike's Time game, Thornline",
+  "summary": "Thornline upgraded in place (round 5): the rim crystal moved inside the sling's 12 u anchor reach (at I2/I3 it anchored on nothing), equal start seats, a sight showing the part of a thorn that catches, rival glow, toasts 420-426, and an AI that aims at lanes with a nose lead by difficulty (offline every seat finishes every rung, ordered). No Shrike code or asset changed.",
+  "why": "Yash's round 5 ask: make every Time game super fun. Proposals for the vessel side (not built): dockQueryReach 12 vs its own tooltip, the autopilot detaching at 3 s whether aimed or not, Whipcrack out of reach in Thornline. Docs/Thornline/UPGRADE_SPEC.md section 6.",
+  "branch": "claude/shrike-time-upgrade-5c12f0",
+  "commit": "db8fd8c29",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/THORNLINE.md",
+    "Assets/_Scripts/Controller/Arcade/Thornline",
+    "Docs/Thornline/UPGRADE_SPEC.md"
+  ]
+}

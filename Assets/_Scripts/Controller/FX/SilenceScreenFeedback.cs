@@ -1,0 +1,432 @@
+using System.Collections.Generic;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// What the SILENCED pilot sees on their own screen (Docs/ElementalAbilitySystem/SILENCE.md §5):
+    /// a camera shake at the onset and a lighter one on every further hit, and, for the whole window, a
+    /// thin 3D PERIMETER over a thin danger EDGE on the screen's border that goes DEEPER with the seconds
+    /// of silence left and bleeds back out as they drain. Fleet-wide by construction - it listens to
+    /// <see cref="VesselSilence.VesselSilenced"/>, not to any vessel - so every hull, present and
+    /// future, signals silence the same way.
+    ///
+    /// <para><b>Only the local human pilot.</b> A silence recorded for anybody else (a rival, an AI,
+    /// a replica of another peer's hull) changes nothing on this screen. Which pilot is watched is
+    /// re-decided at every onset, so a vessel swap or a Hijack pilot swap follows the pilot.</para>
+    ///
+    /// <para><b>The perimeter</b> (Garrett, 2026-10-21, over four rounds in the Silence Vignette Lab,
+    /// <c>Docs/Studios/SilenceVignetteLab.html</c>): 160 half-buried, overlapping faceted shards whose
+    /// facets show the frame behind them bent and dragged toward a pull that wanders the screen. Where the
+    /// shards sit and how they are cut is <see cref="SilencePerimeter"/>; this component cuts their facets
+    /// once per arrangement, tracks the depth (seconds left / <c>depthFullSeconds</c>), and hands the frame
+    /// to <see cref="SilencePerimeterPass"/>, which draws on the local pilot's camera only.</para>
+    ///
+    /// <para><b>The edge is never URP's Vignette.</b> URP's Vignette multiplies the frame by its colour,
+    /// so a red one can only darken, and over the arena's near-black space it showed nothing (Garrett's
+    /// Dog Fight run, 2026-10-21). The edge is <see cref="SilenceVignetteMask"/> in the active palette's
+    /// DANGER signal colour - the rim every danger prism wears - ADDED over the frame. With the perimeter
+    /// on, the perimeter's own pass draws it into the frame before the shards copy it, so the pull drags
+    /// it and the facets refract it (the look Garrett approved in the lab). With the perimeter off, it is
+    /// a full-screen <c>RawImage</c> on its own Screen Space Overlay canvas under the HUD. URP's Vignette
+    /// is kept for one optional job, a black darkening (<see cref="PostProcessingManager.SetSilenceVignette"/>,
+    /// off by default). The shake is <see cref="CustomCameraController.Shake"/>, which keeps a stronger
+    /// shake already playing. Every number is on <see cref="VesselSilenceConfigSO"/>.</para>
+    ///
+    /// <para>Self-installs once per play session, like <c>HumanFlightRecorder</c>: a hidden,
+    /// scene-independent object with nothing to wire.</para>
+    /// </summary>
+    public sealed class SilenceScreenFeedback : MonoBehaviour
+    {
+        static SilenceScreenFeedback s_instance;
+
+        /// <summary>The console command (DiagnosticsHUD, dev builds and the editor):
+        /// <c>silence</c> reports what silence did this session, <c>silence test [seconds]</c>
+        /// silences your own pilot so the shake and vignette can be judged without a fight.</summary>
+        public const string CommandName = "silence";
+
+        string _watchedPilot;
+        float _weight;
+        float _depth;   // how much silence is left, 0 (the thin band) .. 1 (the deepest)
+        float _pulse;
+        bool _pushed;
+
+        // The overlay: built on first use, kept for the session, hidden while nobody is silenced.
+        Canvas _canvas;
+        RawImage _edge;
+        Texture2D _mask;
+        int _maskWidth, _maskHeight;
+        SilenceVignetteMask.Shape _maskShape;
+        float _maskAspect;
+
+        // The perimeter: each shard's facets, rebuilt when the arrangement changes; one material for the session.
+        SilencePerimeterPass.ShardGeometry[] _shards;
+        SilencePerimeter.Settings _shardSettings;
+        Material _perimeterMaterial;
+        bool _warnedNoShader;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Install()
+        {
+            DiagnosticsHUD.RegisterCommand(CommandName, Handle);
+            if (s_instance) return;
+            var go = new GameObject("[Silence Screen Feedback]") { hideFlags = HideFlags.HideInHierarchy };
+            DontDestroyOnLoad(go);
+            s_instance = go.AddComponent<SilenceScreenFeedback>();
+        }
+
+        void OnEnable() => VesselSilence.VesselSilenced += OnVesselSilenced;
+
+        void OnDisable()
+        {
+            VesselSilence.VesselSilenced -= OnVesselSilenced;
+            Release();
+        }
+
+        void OnDestroy()
+        {
+            if (_mask) Destroy(_mask);
+            if (_perimeterMaterial) Destroy(_perimeterMaterial);
+        }
+
+        void OnVesselSilenced(IVesselStatus status)
+        {
+            if (!IsLocalHumanPilot(status)) return;
+
+            // Onset = this screen was not already showing a silence: the stronger shake. Every
+            // further hit that extends the window (or lands while the last one is still draining)
+            // gets the lighter per-hit shake, so each hit is felt and not only the first - in a
+            // Dog Fight the AI's rounds keep one window open for the whole fight.
+            var config = VesselSilence.Settings;
+            bool onset = _weight <= 0.0001f;
+            _watchedPilot = status.PlayerName;
+            if (onset) ShakeCamera(config.OnsetShakeIntensity, config.OnsetShakeSeconds);
+            else
+            {
+                ShakeCamera(config.HitShakeIntensity, config.HitShakeSeconds);
+                _pulse = Mathf.Min(1f, _pulse + config.VignetteHitPulse);   // the edge flares, the shards jolt
+            }
+        }
+
+        void Update()
+        {
+            if (string.IsNullOrEmpty(_watchedPilot)) return;
+
+            var config = VesselSilence.Settings;
+            bool silenced = VesselSilence.IsSilenced(_watchedPilot);
+            float seconds = silenced ? config.VignetteFadeInSeconds : config.VignetteFadeOutSeconds;
+            float target = silenced ? 1f : 0f;
+            _weight = seconds > 0f
+                ? Mathf.MoveTowards(_weight, target, Time.unscaledDeltaTime / seconds)
+                : target;
+
+            // Depth follows the seconds left: deeper with every second a hit adds, bleeding back out as they drain.
+            float depthTarget = Mathf.Clamp01(VesselSilence.RemainingSeconds(_watchedPilot) / Mathf.Max(0.1f, config.DepthFullSeconds));
+            _depth = config.DepthFollowSeconds > 0f
+                ? Mathf.MoveTowards(_depth, depthTarget, Time.unscaledDeltaTime / config.DepthFollowSeconds)
+                : depthTarget;
+
+            float decay = config.VignetteHitPulseSeconds;
+            _pulse = decay > 0f ? _pulse * Mathf.Exp(-Time.unscaledDeltaTime / decay) : 0f;
+
+            if (_weight > 0.0001f)
+            {
+                // SmoothStep on the drive so the edge eases in and out rather than ramping linearly.
+                Push(Mathf.SmoothStep(0f, 1f, _weight), config);
+                return;
+            }
+
+            Release();
+            if (!silenced) _watchedPilot = null;
+        }
+
+        void Push(float weight, VesselSilenceConfigSO config)
+        {
+            // The 2D edge's colour and opacity this frame (Opacity with a mask of 1 - the shape multiplies in).
+            float breathe = SilenceVignetteMask.Breathe(Time.unscaledTime, config.VignetteBreatheDepth,
+                                                        config.VignetteBreatheHz);
+            var edgeColor = VignetteColor(config);
+            edgeColor.a = config.VignetteIntensity > 0f
+                ? SilenceVignetteMask.Opacity(1f, weight, config.VignetteIntensity, breathe, _pulse * weight)
+                : 0f;
+
+            // With the perimeter drawing, the edge goes into its pass (under the shards, before the copy);
+            // otherwise it is the overlay below. None at all at strength 0, not even the hit flare.
+            bool perimeter = PushPerimeter(weight, config, edgeColor);
+            if (!perimeter && config.VignetteIntensity > 0f)
+            {
+                EnsureOverlay(config);
+                var c = edgeColor;
+                if (_edge)
+                {
+                    _edge.color = c;
+                    if (!_edge.gameObject.activeSelf) _edge.gameObject.SetActive(true);
+                }
+            }
+            else if (_edge && _edge.gameObject.activeSelf) _edge.gameObject.SetActive(false);
+
+            var post = PostProcessingManager.Instance;
+            if (post && config.VignetteDarken > 0f)
+                post.SetSilenceVignette(weight, Color.black, config.VignetteDarken, config.VignetteSmoothness);
+            _pushed = true;
+        }
+
+        void Release()
+        {
+            if (!_pushed) return;
+            _pushed = false;
+            _weight = 0f;
+            _depth = 0f;
+            _pulse = 0f;
+            SilencePerimeterPass.Current = default;
+            if (_edge) _edge.gameObject.SetActive(false);
+            var post = PostProcessingManager.Instance;
+            if (post) post.SetSilenceVignette(0f, Color.black, 0f, 0f);
+        }
+
+        /// <summary>
+        /// Hands this frame's perimeter to <see cref="SilencePerimeterPass"/>: the local pilot's camera, the
+        /// shard facets (cut only when the arrangement changes), the silence's eased weight and depth, the hit
+        /// flare, the look and the 2D edge. With amount 0 or no shader, nothing is drawn and this returns false.
+        /// </summary>
+        bool PushPerimeter(float weight, VesselSilenceConfigSO config, Color edgeColor)
+        {
+            var settings = config.PerimeterSettings;
+            var camera = PilotCamera();
+            if (config.PerimeterAmount <= 0f || settings.Count <= 0 || !camera || !EnsurePerimeterMaterial(config))
+            {
+                SilencePerimeterPass.Current = default;
+                return false;
+            }
+            EnsureShards(settings);
+            SilencePerimeterPass.Current = new SilencePerimeterPass.Frame
+            {
+                Active = true,
+                Camera = camera,
+                Material = _perimeterMaterial,
+                Shards = _shards,
+                Settings = settings,
+                Drive = weight,
+                Depth = _depth,
+                Pulse = _pulse * weight,
+                Time = Time.unscaledTime,
+                Amount = config.PerimeterAmount,
+                Opacity = config.PerimeterOpacity,
+                Glitch = config.PerimeterGlitch,
+                Warp = config.PerimeterWarp,
+                Pull = config.PerimeterPull,
+                Streak = config.PerimeterStreak,
+                TipFade = config.PerimeterTipFade,
+                Look = new Vector4(config.PerimeterRefraction, config.PerimeterTwist, config.PerimeterAberration, config.PerimeterTint),
+                Look2 = new Vector4(config.PerimeterRimGlow, config.PerimeterEdgeGlow, config.PerimeterFill, config.PerimeterInvert),
+                Danger = DangerColor(config),
+                EdgeShape = config.VignetteShapeAt(_depth),
+                EdgeColor = edgeColor,
+            };
+            return true;
+        }
+
+        bool EnsurePerimeterMaterial(VesselSilenceConfigSO config)
+        {
+            if (_perimeterMaterial) return true;
+            var shader = config.PerimeterShader;
+            if (!shader || !shader.isSupported)
+            {
+                if (!_warnedNoShader)
+                    CSDebug.LogWarning("[Silence] The perimeter cannot draw: VesselSilenceConfig.perimeterShader is " +
+                                       (shader ? "not supported on this device" : "empty") + ". Silence shows no perimeter.");
+                _warnedNoShader = true;
+                return false;
+            }
+            _perimeterMaterial = new Material(shader) { name = "SilencePerimeter", hideFlags = HideFlags.DontSave };
+            return true;
+        }
+
+        void EnsureShards(in SilencePerimeter.Settings settings)
+        {
+            if (_shards != null && _shards.Length == settings.Count && _shardSettings.Shape == settings.Shape &&
+                _shardSettings.Seed == settings.Seed) return;
+            _shards = new SilencePerimeterPass.ShardGeometry[settings.Count];
+            var positions = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var barycentrics = new List<Vector3>();
+            for (int i = 0; i < settings.Count; i++)
+            {
+                positions.Clear(); normals.Clear(); barycentrics.Clear();
+                SilencePerimeter.Geometry(settings, i, positions, normals, barycentrics);
+                _shards[i] = new SilencePerimeterPass.ShardGeometry
+                {
+                    Positions = positions.ToArray(),
+                    Normals = normals.ToArray(),
+                    Barycentrics = barycentrics.ToArray(),
+                };
+            }
+            _shardSettings = settings;
+        }
+
+        static Camera PilotCamera()
+        {
+            if (CameraManager.Instance != null &&
+                CameraManager.Instance.GetActiveController() is CustomCameraController controller && controller.Camera)
+                return controller.Camera;
+            return Camera.main;
+        }
+
+        /// <summary>
+        /// Builds the overlay canvas and image on first use, and re-bakes the mask texture whenever
+        /// the screen's shape or the config's shape fields change (a few float compares a frame;
+        /// a bake is a 256-wide texture, once).
+        /// </summary>
+        void EnsureOverlay(VesselSilenceConfigSO config)
+        {
+            if (!_canvas)
+            {
+                var root = new GameObject("SilenceVignette");
+                root.transform.SetParent(transform, false);
+                _canvas = root.AddComponent<Canvas>();
+                _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+                var image = new GameObject("Edge");
+                image.transform.SetParent(root.transform, false);
+                _edge = image.AddComponent<RawImage>();
+                _edge.raycastTarget = false;
+                var rect = _edge.rectTransform;
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                image.SetActive(false);
+            }
+            _canvas.sortingOrder = config.VignetteSortingOrder;
+
+            float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
+            var shape = config.VignetteShapeAt(Mathf.Round(_depth * 48f) / 48f);
+            if (_mask && Mathf.Abs(aspect - _maskAspect) < 0.01f && SameShape(shape, _maskShape)) return;
+
+            const int width = 256;
+            int height = Mathf.Clamp(Mathf.RoundToInt(width / Mathf.Max(0.1f, aspect)), 16, 512);
+            if (!_mask || _maskWidth != width || _maskHeight != height)
+            {
+                if (_mask) Destroy(_mask);
+                _mask = new Texture2D(width, height, TextureFormat.RGBA32, false)
+                {
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = FilterMode.Bilinear,
+                    name = "SilenceVignetteMask",
+                };
+                _maskWidth = width;
+                _maskHeight = height;
+            }
+
+            var pixels = new Color32[width * height];
+            for (int y = 0; y < height; y++)
+            {
+                float v = (y + 0.5f) / height;
+                for (int x = 0; x < width; x++)
+                {
+                    float u = (x + 0.5f) / width;
+                    byte a = (byte)Mathf.RoundToInt(255f * SilenceVignetteMask.Alpha(u, v, aspect, shape));
+                    pixels[y * width + x] = new Color32(255, 255, 255, a);
+                }
+            }
+            _mask.SetPixels32(pixels);
+            _mask.Apply(false);
+            _edge.texture = _mask;
+            _maskAspect = aspect;
+            _maskShape = shape;
+        }
+
+        static bool SameShape(in SilenceVignetteMask.Shape a, in SilenceVignetteMask.Shape b) =>
+            a.Style == b.Style && a.Facets == b.Facets && a.Inner == b.Inner && a.Feather == b.Feather &&
+            a.Roundness == b.Roundness && a.Fill == b.Fill && a.RimStrength == b.RimStrength &&
+            a.RimWidth == b.RimWidth;
+
+        static Color DangerColor(VesselSilenceConfigSO config)
+        {
+            var palette = PrismLit.ColorSet;
+            var danger = palette ? palette.GetDangerSignalColor() : default;
+            if (danger.a <= 0f) danger = config.FallbackDangerColor;
+            danger.a = 1f;
+            return danger;
+        }
+
+        static Color VignetteColor(VesselSilenceConfigSO config)
+        {
+            var c = Color.Lerp(Color.black, DangerColor(config), config.VignetteColorStrength);
+            c.a = 1f;
+            return c;
+        }
+
+        static void ShakeCamera(float intensity, float seconds)
+        {
+            if (intensity <= 0f || seconds <= 0f) return;
+            if (CameraManager.Instance != null &&
+                CameraManager.Instance.GetActiveController() is CustomCameraController cam)
+                cam.Shake(intensity, seconds);
+        }
+
+        /// <summary>
+        /// <c>silence</c>: every pilot this machine has seen hit - the scored hits it decided against
+        /// them (each one silences), the silence windows that began, the takes it settled for them
+        /// and how many of those found nothing - and who is silenced now. <c>silence test [seconds]</c>: silence your own pilot for that long
+        /// (default 4), to look at the shake and vignette in isolation from the economy.
+        /// </summary>
+        static string Handle(string[] args)
+        {
+            if (args != null && args.Length > 0 && args[0] == "test")
+            {
+                float seconds = 4f;
+                if (args.Length > 1) float.TryParse(args[1], System.Globalization.NumberStyles.Float,
+                                                    System.Globalization.CultureInfo.InvariantCulture, out seconds);
+                var local = FindLocalPilot();
+                if (local == null) return "silence test: no local human pilot is flying.";
+                VesselSilence.Record(local, Mathf.Max(0.1f, seconds));
+                return $"silence test: {local.PlayerName} silenced for {Mathf.Max(0.1f, seconds):0.#} s (screen feedback only " +
+                       "on this machine; peers are not told).";
+            }
+
+            var sb = new System.Text.StringBuilder();
+            var post = PostProcessingManager.Instance;
+            sb.Append("silence: post-processing ").Append(post ? "found" : "missing (no darkening)")
+              .Append(" | edge weight ").Append(s_instance ? s_instance._weight.ToString("0.00") : "-")
+              .Append(", depth ").Append(s_instance ? s_instance._depth.ToString("0.00") : "-")
+              .Append(", perimeter ").Append(SilencePerimeterPass.Current.Active
+                  ? $"drawing {SilencePerimeterPass.Current.Settings.Count} shards on {SilencePerimeterPass.Current.Camera.name}"
+                  : s_instance && s_instance._warnedNoShader ? "cannot draw (no shader)" : "idle")
+              .Append(", 2D edge ").Append(s_instance && s_instance._edge && s_instance._edge.gameObject.activeSelf
+                  ? "showing, alpha " + s_instance._edge.color.a.ToString("0.00") : "hidden");
+            if (VesselSilence.Tallies.Count == 0)
+                sb.Append(" | no scored hit has landed on anybody on this machine yet");
+            foreach (var kv in VesselSilence.Tallies)
+            {
+                var t = kv.Value;
+                sb.Append("\n  ").Append(kv.Key).Append(": ").Append(t.Hits).Append(" scored hits decided here, ")
+                  .Append("silenced ").Append(t.Silences).Append("x | takes settled here ").Append(t.Takes)
+                  .Append(" (").Append(t.EmptyTakes).Append(" took nothing), ").Append(t.Petals).Append(" petals lost");
+                float left = VesselSilence.RemainingSeconds(kv.Key);
+                if (left > 0f) sb.Append(" - SILENCED, ").Append(left.ToString("0.0")).Append(" s left");
+            }
+            return sb.ToString();
+        }
+
+        static IVesselStatus FindLocalPilot()
+        {
+            foreach (var s in FindObjectsByType<VesselStatus>(FindObjectsSortMode.None))
+            {
+                IVesselStatus status = s;
+                if (IsLocalHumanPilot(status)) return status;
+            }
+            return null;
+        }
+
+        static bool IsLocalHumanPilot(IVesselStatus status)
+        {
+            if (status?.Player == null) return false;
+            return status.IsLocalUser && !status.AutoPilotEnabled;
+        }
+    }
+}

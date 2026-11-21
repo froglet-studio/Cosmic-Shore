@@ -15,46 +15,39 @@ MonoBehaviour:
   vesselClass: 3
   entries:
   - Element: 1
-    AbilityLabel: (open design slot)
-    AbilityDescription: Charge mapping not yet designed for the Rhino.
+    AbilityLabel: 'Gore'
+    AbilityDescription: 'Ram a rival vessel and its petals come loose: a gore is a scored Strike (8 points, Swordfish sword price) decided on the Rhino''s owner, landed only while the Rhino is moving faster than its victim, once per 1.4 s per victim (VesselCombatHitByGore). Charge lowers the least ram speed a gore needs, like the Squirrel joust: 150 u/s at rest (three times the 50 u/s cruise, a short ramp wind-up) down to 50 u/s at level 10 (a cruising Rhino gores), read at the replicated level (RhinoGoreSpeed); a slower contact is neither scored nor robbed. Charge also carries a thrown prism on to strike the next one in its line: 0 u at rest, 40 u at level 10 (RhinoPloughPrismEffect.carryDistance); a thrown prism that strikes another destroys both.'
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Gore Steal'
+    UpgradeDescription: 'The petals a gore knocks loose land on the Rhino instead of floating free as crystals (RhinoGoreBySkimmerEffectSO.stealUpgradeElement, gated on IsUpgradeActive(Charge); 2026-11-12, replacing Avalanche).'
   - Element: 2
-    AbilityLabel: Trail Slabs
-    AbilityDescription: Mass raises the grown trail slab maximum size.
-    Input: 0
-    MultiplierAtFullLevel: 1.5
-    MinMultiplier: 0.25
+    AbilityLabel: 'Heft'
+    AbilityDescription: 'A heavier plough throws further: Mass adds 0 u at rest to 60 u at level 10 to every throw, at any speed, on top of the speed-driven throw (speed x 0.12 s, at most 90 u) (RhinoPloughPrismEffect.furrowDistance, replicated level). Pull a trigger for a shove that way; HOLD it and everything the hull ploughs is thrown to that side, across the centreline (RhinoPloughSteerAction: LT left, RT right, the last one pulled wins). Let go and each prism goes to the side it already sat on.'
+    Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Berm'
+    UpgradeDescription: 'A ploughed prism LANDS SHIELDED, so the furrow banks into walls of armour; a prism that strikes another still breaks (RhinoPloughPrismEffectSO.bermUpgradeElement, gated on IsUpgradeActive(Mass); Garrett, 2026-11-07).'
   - Element: 3
-    AbilityLabel: (open design slot)
-    AbilityDescription: Space mapping not yet designed for the Rhino.
+    AbilityLabel: 'Blade'
+    AbilityDescription: 'A plough blade across the nose: one hull collider whose width follows Space - 14 u at rest (a little wider than the hull), 40 u at level 10, floored at 10, read at the replicated level (RhinoPloughBlade.width). A wider blade reaches more mass, and the plough throws what it catches clear of the whole blade. Nothing is immovable to it: the plough moves SUPER-shielded mass too (Unstoppable, the Space level-5 until 2026-11-19, now base: RhinoPloughPrismEffectSO.ploughSuperShielded), so arena linings and race tracks can be ploughed out of line.'
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Avalanche'
+    UpgradeDescription: 'The shove sets off a chain reaction: when a thrown prism strikes another, the next prism down the line (within 30 u, or the Charge carry when that is longer) is thrown on too, and its own strike throws the next - up to 5 more prisms from one shove; a shielded pair bounces and ends the chain (RhinoPloughPrismEffectSO.avalancheUpgradeElement, gated on IsUpgradeActive(Space); Garrett, 2026-11-19).'
   - Element: 4
-    AbilityLabel: (open design slot)
-    AbilityDescription: Time mapping not yet designed for the Rhino.
+    AbilityLabel: 'Momentum'
+    AbilityDescription: 'The Rhino is a freight train: its ramp builds speed slowly and keeps it. A very high top - cruise 50 x maxBoostMultiplier 28 = 1400 u/s - reached at 110 u/s per second at rest, 275 at level 10, 55 at the -5 floor (RampBoostActionSO.timeAccelerationMultiplier, x1 -> x2.5, floored x0.5, read live), and lost slowly too (90 u/s per second while steering, 60 once the ramp lets go). It flies with inertia: the nose turns a little sharper than the travel does, so a hard turn is a short oversteer slide (VesselTransformer inertial grip 16 -> 15 per second). Above 50% of top speed (700 u/s) danger prisms cannot drain its elements (the Time level-5 until 2026-11-19, now base: VesselElementalImmunity, WhileAboveTopSpeedFraction). The hull carries no prism slow, so ploughing costs it no speed.'
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Slingshot'
+    UpgradeDescription: 'Coming out of an oversteer slide flings the Rhino forward: once the nose has swung 12 degrees or more off the travel and settles back under 4, the hull gains speed by the slide''s depth - up to 30% of its speed (at most 350 u/s) for a 35 degree slide, never past top speed - and the slow-bleeding ramp holds it for seconds (RhinoSlingshot, gated on IsUpgradeActive(Time); Garrett, 2026-11-19).'
+  omniAbilityLabel: Stampede

@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
         {
             if (shapeDefinition == null) return;
             if (nameLabel)        nameLabel.text        = shapeDefinition.shapeName;
-            if (descriptionLabel) descriptionLabel.text  = shapeDefinition.description;
+            if (descriptionLabel) descriptionLabel.text  = shapeDefinition.Description;
         }
     }
 

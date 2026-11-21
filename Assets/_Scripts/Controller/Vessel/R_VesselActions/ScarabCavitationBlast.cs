@@ -6,8 +6,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Scarab's cavitation blast (design: R_VesselActions/SCARAB.md §3.4) — the mantis-shrimp
-    /// punch that rides the dash. Fires along the JUKE direction whenever the pilot dashes and the
+    /// The Scarab's SHOVE (design: R_VesselActions/SCARAB.md §3.4; the class keeps its old
+    /// "cavitation" name, a vestige of the mantis kit it came from, because modes and tools address
+    /// it by type) — the punch that rides the dash. Fires along the JUKE direction whenever the pilot dashes and the
     /// blast is off cooldown: it shreds prisms, kills fauna (a creature dies when its body prisms
     /// are destroyed — platform-wide since Wildlife Liberation, so this needs no fauna-specific
     /// code), debuffs opposing pilots caught in it through the explosion's vessel-effect container,
@@ -31,11 +32,34 @@ namespace CosmicShore.Gameplay
     /// declines to fire while it is recharging. That split is deliberate: dodging is mobility and
     /// should never be rationed, while the destructive punch is a resource.
     ///
-    /// CHARGE scales the cooldown (×<see cref="cooldownMultiplierAtFullCharge"/> at level 10, the
-    /// fleet's authored-cooldown idiom — the Squirrel's boost ring and the Dolphin's crystal seed
-    /// both work this way, with the map's generic multiplier pinned to 1 so nothing double-dips).
-    /// CHARGE 5 unlocks "Cavitation Shear": the blast destroys SHIELDED prisms outright instead of
-    /// merely shedding their shields.
+    /// CHARGE sets how often the shove fires (Garrett, 2026-11-11: "scarab charge parameter can switch to the
+    /// cooldown on its shove plate"): the wait is <see cref="cooldownSeconds"/> times <see cref="cooldownScale"/>, 4.25 s
+    /// at rest down to 2.125 s at Charge 10 as shipped on Scarab.prefab (2.5 s until 2026-11-19, when the Broadside judge put
+    /// the knee at 4.25 s; the field default below is the old value), read at the pilot's REPLICATED level when the plate is asked whether it is
+    /// ready, so every machine that runs the dash agrees. From 2026-10-29 to 2026-11-10 Charge scaled the shove's petal
+    /// bite instead (x1 -> x2.5), a dial in whole petals and too coarse to tune; the bite is the flat price again. The
+    /// retired Charge-5 "Cavitation Shear" (shielded prisms destroyed outright) stays retired.
+    ///
+    /// CHARGE 5 — "BACKDRAFT": THE PLATE CLAIMS ITS OWN MIRROR IMAGE (SCARAB.md §3.9). At rest the
+    /// shove only PUSHES: the volume runs from the hull forward. At Charge 5 it is reflected
+    /// through the start plane — the plane through the hull whose normal is the dash — so it reaches as far
+    /// BEHIND the pilot as in front, doubling what one punch claims. The velocity is untouched and
+    /// uniform across the whole doubled field, which is the entire point: the back half does not
+    /// throw mass backwards, it drags mass FORWARD through the ship. Mass behind a Scarab is no
+    /// longer safe from its own punch, and a ball behind one can be brought to the front of the
+    /// fight. The blast sets the mirror on each instance before it is initialized
+    /// (<c>AOECylindricalExplosion.SetMirrorAboutStartPlane</c>), and no input modifies it, so the punch is ONE shape whichever way the pilot is holding their
+    /// hands. (A held-button modifier over it was built twice and cut both times; SCARAB.md §3.8.)
+    ///
+    /// TWO EARLIER SHAPES ARE RETIRED HERE, and both were the held drift reaching for the punch.
+    /// It once SHEATHED (a juke under a full hold fired no plate at all), which the analog juke
+    /// already does better — a small deflection is a nudge and never fires the plate. It then
+    /// INVERTED (the plate spawned at the far end of the cylinder and swept back to the hull),
+    /// which worked and read well and was still the wrong lever: a pilot cannot hold a steering
+    /// control at its limit for free, so the modifier fought the drift for the same thumb. The
+    /// mirror gets the same reach behind the pilot without ever pointing the punch the other way,
+    /// and it costs no input at all. A PARTIAL juke still fires nothing: the punch belongs to the
+    /// committed dash.
     /// </summary>
     [RequireComponent(typeof(ScarabJukeController))]
     public class ScarabCavitationBlast : MonoBehaviour
@@ -57,21 +81,24 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float fallbackVesselRadius = 4.5f;
 
         [Header("Cooldown (CHARGE)")]
-        [Tooltip("Seconds between blasts at element level 0.")]
+        [Tooltip("Seconds between blasts at the RESTING Charge level. Charge scales it (cooldownScale).")]
         [SerializeField, Min(0f)] float cooldownSeconds = 2.5f;
 
-        [Tooltip("Cooldown multiplier at CHARGE 10 — 0.5 halves it. Read live at fire time.")]
-        [SerializeField, Range(0.1f, 1f)] float cooldownMultiplierAtFullCharge = 0.5f;
+        [Tooltip("CHARGE → the shove's pace: how many times cooldownSeconds the plate waits, by the pilot's replicated " +
+                 "Charge. x1 at rest, x0.5 at Charge 10 (2.5 s → 1.25 s), extrapolated through the deficit and " +
+                 "overcharge bands; the floor keeps an overcharged Scarab from firing every frame.")]
+        [SerializeField] ElementalFloat cooldownScale = ElementalFloat.Multiplier(1f, 0.5f, Element.Charge, 0.25f);
 
         IVesselStatus _status;
         ScarabJukeController _juke;
         VesselImpactor _vesselImpactor;
         float _lastFireTime = float.NegativeInfinity;
+        float _cooldownAtFire;   // the wait the last blast started, snapshotted when it fired (per use)
         bool _wasReady = true;
         bool _warnedUnmeasurableHull;
 
         /// <summary>True while the blast is ready — the HUD's Charge-row readout.</summary>
-        public bool IsBlastReady => Time.time - _lastFireTime >= CurrentCooldown();
+        public bool IsBlastReady => Time.time - _lastFireTime >= _cooldownAtFire;
 
         /// <summary>
         /// Raised on every ready↔recharging edge, carrying the cooldown length that edge was
@@ -105,21 +132,24 @@ namespace CosmicShore.Gameplay
             bool ready = IsBlastReady;
             if (ready == _wasReady) return;
             _wasReady = ready;
-            OnBlastReadyChanged?.Invoke(ready, CurrentCooldown());
+            OnBlastReadyChanged?.Invoke(ready, _cooldownAtFire);
         }
 
+        /// <summary>The wait between blasts: the resting cooldown times CHARGE's scale at the pilot's replicated level.
+        /// Snapshotted when a blast fires (<see cref="_cooldownAtFire"/>), so a Charge change mid-recharge moves the
+        /// NEXT wait, never the running one, and the HUD's sweep and the readiness always agree.</summary>
+        float CurrentCooldown() => cooldownSeconds * Mathf.Max(0f, cooldownScale.EvaluateReplicated(_status));
+
+        /// <summary>The same wait at a normalized Charge level (0 at rest, 1 at Charge 10, -0.5 to 1.5 at the band's
+        /// ends): the pure form, for tests and the numbers the docs quote.</summary>
+        public float CooldownSecondsAtLevel(float chargeLevel01) =>
+            cooldownSeconds * Mathf.Max(0f, cooldownScale.EvaluateAtNormalizedLevel(chargeLevel01));
+
         /// <summary>
-        /// CHARGE shortens the wait. The authored multiplier is what the cooldown reaches at
-        /// level 10, so this is the fleet's authored-cooldown idiom rather than the map's generic
-        /// scaler (which stays pinned to 1 for Charge — no double-dip). Clamped to [0, 1] because
-        /// the normalized band runs to 1.5 in overcharge and a maintained mechanism must not keep
-        /// paying past level 10.
+        /// CHARGE 5, "Backdraft": the plate also claims its mirror image behind the hull, so the
+        /// shove pushes AND pulls. Pure so a test can pin it: the upgrade is the only input.
         /// </summary>
-        float CurrentCooldown()
-        {
-            float t = Mathf.Clamp01(ElementalScaling.Level01(_status, Element.Charge));
-            return cooldownSeconds * Mathf.Lerp(1f, cooldownMultiplierAtFullCharge, t);
-        }
+        public static bool PlateMirrors(bool chargeUpgradeActive) => chargeUpgradeActive;
 
         /// <summary>
         /// The vessel's own collider radius in WORLD units, measured off
@@ -133,7 +163,28 @@ namespace CosmicShore.Gameplay
         /// </summary>
         float ResolveVesselColliderRadius()
         {
-            var colliders = _vesselImpactor != null ? _vesselImpactor.HullColliders : null;
+            float best = MeasureHullRadius(_vesselImpactor);
+            if (best > 0f) return best;
+
+            if (!_warnedUnmeasurableHull)
+            {
+                _warnedUnmeasurableHull = true;
+                CSDebug.LogError(
+                    $"[ScarabCavitation] Could not measure a hull collider on {name} - the blast " +
+                    $"is falling back to a fixed {fallbackVesselRadius} vessel radius. The hull " +
+                    "collider is the blast's only size input; check the prefab.");
+            }
+            return fallbackVesselRadius;
+        }
+
+        /// <summary>The vessel's circumscribing hull-collider radius in world units, or 0 when
+        /// nothing measurable is wired. Split out of <see cref="ResolveVesselColliderRadius"/> so
+        /// the MEASUREMENT and the fallback-plus-warning are separable; deliberately private —
+        /// it was briefly public for the retired grapple and nothing outside this class needs
+        /// it.</summary>
+        static float MeasureHullRadius(VesselImpactor impactor)
+        {
+            var colliders = impactor != null ? impactor.HullColliders : null;
             float best = 0f;
 
             if (colliders != null)
@@ -169,17 +220,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            if (best > 0f) return best;
-
-            if (!_warnedUnmeasurableHull)
-            {
-                _warnedUnmeasurableHull = true;
-                CSDebug.LogError(
-                    $"[ScarabCavitation] Could not measure a hull collider on {name} - the blast " +
-                    $"is falling back to a fixed {fallbackVesselRadius} vessel radius. The hull " +
-                    "collider is the blast's only size input; check the prefab.");
-            }
-            return fallbackVesselRadius;
+            return best;
         }
 
         void HandleJukeFired(Vector3 direction)
@@ -188,9 +229,23 @@ namespace CosmicShore.Gameplay
             if (!IsBlastReady) return;                       // the DASH already happened — only the punch waits
             if (direction.sqrMagnitude < 1e-4f) return;
 
+            // The fine-control gate, declining WITHOUT spending the cooldown: a nudge is not a
+            // punch. It is the ONLY gate: the drift no longer says anything about the plate at
+            // all, because the analog juke already gives a pilot a way to trim their line beside a
+            // ball without hitting it, and one job needs one mechanism.
+            if (_juke != null && !_juke.LastJukeCommitted)
+            {
+                if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
+                    CSDebug.LogVerbose(CSLogChannel.ScarabDash,
+                        $"[ScarabCavitation] Held back: partial juke " +
+                        $"(strength {_juke.LastJukeStrength01:F2}).");
+                return;
+            }
+
+            _cooldownAtFire = CurrentCooldown();
             _lastFireTime = Time.time;
             _wasReady = false;
-            OnBlastReadyChanged?.Invoke(false, CurrentCooldown());
+            OnBlastReadyChanged?.Invoke(false, _cooldownAtFire);
 
             var ship = _status.ShipTransform ? _status.ShipTransform : transform;
             Vector3 dir = direction.normalized;
@@ -215,7 +270,19 @@ namespace CosmicShore.Gameplay
 
             float radius = ResolveVesselColliderRadius() * radiusPerVesselRadius;
 
+            // Charge 5 (Backdraft) decides the mirror, per fire; the reach is the prefab's.
+            bool backdraft = PlateMirrors(_status.ElementalAbilityHandler != null
+                                          && _status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge));
+            var cylinder = blastPrefab as AOECylindricalExplosion;
+            float plateLength = cylinder ? radius * cylinder.LengthPerRadius : 0f;
+
+            if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
+                CSDebug.LogVerbose(CSLogChannel.ScarabDash,
+                    $"[ScarabCavitation] Plate fired radius {radius:F1}, reach {plateLength:F1}" +
+                    $"{(backdraft ? " (Backdraft: mirrored, same reach behind)" : "")}.");
+
             var blast = Instantiate(blastPrefab, at, rotation);
+            if (blast is AOECylindricalExplosion plate) plate.SetMirrorAboutStartPlane(backdraft);
 
             // INJECT BEFORE Initialize, or the blast has no turn-end kill switch. AOEExplosion's
             // gameData is [Inject], and it is the ONLY thing that wires OnMiniGameTurnEnd ->
@@ -245,10 +312,9 @@ namespace CosmicShore.Gameplay
                 // Domain-tinted like every other blast in the fleet. Without it the explosion
                 // renders with whatever the prefab shipped and reads as nobody's.
                 OverrideMaterial = _status.AOEExplosionMaterial,
-                // CHARGE 5 — "Cavitation Shear": devastate destroys SHIELDED prisms outright
-                // instead of only shedding the shield. Per-use snapshot at fire time.
-                DevastatingOverride = _status.ElementalAbilityHandler != null
-                                      && _status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge)
+                // A shielded prism sheds its shield rather than breaking: pinned here, not left to
+                // the prefab, now that no upgrade turns it on (Cavitation Shear is retired).
+                DevastatingOverride = false
             });
 
             // INITIALIZE ONLY ARMS IT. `Initialize` sets the blast up and deliberately leaves it
@@ -261,7 +327,7 @@ namespace CosmicShore.Gameplay
             if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
                 CSDebug.LogVerbose(CSLogChannel.ScarabDash,
                     $"[ScarabCavitation] Plate r={radius:F1} along {dir} " +
-                    $"(cooldown {CurrentCooldown():F2}s).");
+                    $"(cooldown {_cooldownAtFire:F2}s).");
         }
     }
 }

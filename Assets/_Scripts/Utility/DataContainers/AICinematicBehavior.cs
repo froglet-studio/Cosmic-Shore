@@ -12,13 +12,13 @@ namespace CosmicShore.Utility
     /// </summary>
     public enum AICinematicBehaviorType
     {
-        MoveForward,    // Simple forward flight (most common)
-        Loop,           // Perform loop maneuver
-        Drift,          // Drift while moving
-        Spiral,         // Spiral upward
-        BarrelRoll,     // Barrel roll (future)
-        FlyBy,          // Victory fly-by (future)
-        HoverSpin       // Hover and spin (future)
+        MoveForward = 0,    // Simple forward flight (most common)
+        Loop = 1,           // Perform loop maneuver
+        Drift = 2,          // Drift while moving
+        Spiral = 3,         // Spiral upward
+        BarrelRoll = 4,     // Barrel roll (future)
+        FlyBy = 5,          // Victory fly-by (future)
+        HoverSpin = 6       // Hover and spin (future)
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ namespace CosmicShore.Utility
             isActive = true;
             behaviorStartTime = Time.time;
             
-            CSDebug.Log($"[AICinematicBehavior] Starting behavior: {behaviorType}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[AICinematicBehavior] Starting behavior - {behaviorType}");
             
             // Setup behavior-specific initialization
             switch (behaviorType)
@@ -93,7 +93,7 @@ namespace CosmicShore.Utility
         public void StopCinematicBehavior()
         {
             isActive = false;
-            CSDebug.Log($"[AICinematicBehavior] Stopped behavior: {currentBehavior}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[AICinematicBehavior] Stopped behavior - {currentBehavior}");
         }
 
         private void Update()
@@ -256,7 +256,6 @@ namespace CosmicShore.Utility
         void ExecuteBarrelRoll()
         {
             // Will be implemented in future
-            CSDebug.Log("Barrel roll cinematic - To be implemented");
         }
 
         /// <summary>
@@ -265,7 +264,6 @@ namespace CosmicShore.Utility
         void ExecuteFlyBy()
         {
             // Will be implemented in future
-            CSDebug.Log("Fly-by cinematic - To be implemented");
         }
 
         /// <summary>
@@ -274,7 +272,6 @@ namespace CosmicShore.Utility
         void ExecuteHoverSpin()
         {
             // Will be implemented in future
-            CSDebug.Log("Hover spin cinematic - To be implemented");
         }
 
         #endregion

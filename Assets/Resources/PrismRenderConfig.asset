@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: PrismRenderConfig
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismRenderConfigSO
   useInstancedRendering: 1
+  meshRendererDebrisCap: 96

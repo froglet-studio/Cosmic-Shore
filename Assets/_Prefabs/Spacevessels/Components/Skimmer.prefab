@@ -141,6 +141,7 @@ MonoBehaviour:
   skimmerPrismEffectsSO: []
   skimmerElementalCrystalEffectsSO: []
   skimmerPrismStayEffectsSO: []
+  skimmerImpactorDataContainer: {fileID: 11400000, guid: 0ae2a0c5e2da4ac8885103089fc2ddce, type: 2}
   skimmer: {fileID: 7751815150560592197}
 --- !u!114 &546241298706549007
 MonoBehaviour:

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shape, space, layers and the safe area</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:36px;color:#E6E9FF;margin:0}
+.h2{font-family:'Aldrich',sans-serif;font-size:28px;color:#E6E9FF;margin:0}
+.h3{font-family:'Aldrich',sans-serif;font-size:22px;color:#E6E9FF;margin:0}
+.body{font-family:'Aldrich',sans-serif;font-size:18px;line-height:1.45;color:#E6E9FF;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:15px;line-height:1.4;color:#747BAD;margin:0}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.panel{background:#222645;box-shadow:inset 0 0 0 1px #434C89}
+.btn{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.1em;text-transform:uppercase;border:0;padding:0 28px;height:52px;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+.src{font-family:'Aldrich',sans-serif;font-size:14px;color:#747BAD;margin:0}
+.do{color:#99FF80}
+.dont{color:#FF4B3A}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', sans-serif; padding: 64px 72px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px"><span class="lab">4 · Shape and space</span><h1 class="h1">The corner sliver, an 8 grid, and the safe area</h1><p class="body" style="color: #747BAD; max-width: 1500px">Large surfaces cut 14, buttons and chips 10. Lines are 1, emphasis 2. Spacing comes only from the scale below. Backgrounds bleed to the edge; content stays inside the safe area, at least 24 in.</p></div><div style="display: grid; grid-template-columns: 520px 460px minmax(0, 1fr); gap: 36px"><div style="display: flex; flex-direction: column; gap: 18px"><span class="lab">The sliver</span><div class="sl panel" style="height: 150px; display: flex; align-items: center; justify-content: center"><span class="small">Panel · cut 14</span></div><div style="display: flex; gap: 14px"><span class="sls" style="padding: 14px 22px; background: #E6E9FF; color: #00041F; font-family: 'Chakra Petch'; font-weight: 600">BUTTON · CUT 10</span><span class="sls" style="padding: 14px 22px; box-shadow: inset 0 0 0 1px #434C89; color: #E6E9FF">Chip</span></div><p class="small"><span class="dont">Never</span> a rounded corner, a pill, a circle frame.</p></div><div style="display: flex; flex-direction: column; gap: 10px"><span class="lab">Layers (sort order)</span><div class="sls" style="display: flex; justify-content: space-between; padding: 10px 16px; background: #222645"><span class="lab" style="color: #E6E9FF">transition</span><span class="small num">32767</span></div><div class="sls" style="display: flex; justify-content: space-between; padding: 10px 16px; background: #222645"><span class="lab" style="color: #E6E9FF">consent</span><span class="small num">32766</span></div><div class="sls" style="display: flex; justify-content: space-between; padding: 10px 16px; background: #222645"><span class="lab" style="color: #E6E9FF">veil</span><span class="small num">30000</span></div><div class="sls" style="display: flex; justify-content: space-between; padding: 10px 16px; background: #222645"><span class="lab" style="color: #E6E9FF">overlay</span><span class="small num">10</span></div><div class="sls" style="display: flex; justify-content: space-between; padding: 10px 16px; background: #222645"><span class="lab" style="color: #E6E9FF">modal</span><span class="small num">5</span></div><div class="sls" style="display: flex; justify-content: space-between; padding: 10px 16px; background: #222645"><span class="lab" style="color: #E6E9FF">hud</span><span class="small num">1</span></div><div class="sls" style="display: flex; justify-content: space-between; padding: 10px 16px; background: #222645"><span class="lab" style="color: #E6E9FF">base</span><span class="small num">0</span></div><p class="small">Hide with CanvasGroup alpha, never SetActive.</p></div><div style="display: flex; flex-direction: column; gap: 14px"><span class="lab">Safe area: test every screen at these</span><div style="display: flex; gap: 28px; align-items: flex-end"><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><div style="width: 156px; height: 338px; background: #222645; box-shadow: inset 0 0 0 2px #434C89; position: relative"><div style="position: absolute; inset: 19px; box-shadow: inset 0 0 0 1px #99FF80"></div></div><span class="small">Phone 390x844</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><div style="width: 230px; height: 330px; background: #222645; box-shadow: inset 0 0 0 2px #434C89; position: relative"><div style="position: absolute; inset: 13px; box-shadow: inset 0 0 0 1px #99FF80"></div></div><span class="small">iPad 820x1180</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><div style="width: 288px; height: 162px; background: #222645; box-shadow: inset 0 0 0 2px #434C89; position: relative"><div style="position: absolute; inset: 7px; box-shadow: inset 0 0 0 1px #99FF80"></div></div><span class="small">PC 16:9 1920x1080</span></div></div><p class="small">The green line is the 24-unit floor inside Screen.safeArea (SafeAreaFitter).</p></div></div><div style="display: flex; flex-direction: column; gap: 12px"><span class="lab">Spacing scale</span><div style="display: flex; gap: 26px; align-items: flex-end"><div style="display: flex; flex-direction: column; align-items: center; gap: 8px"><span style="width: 4px; height: 4px; background: #00D4FF"></span><span class="small num">4</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 8px"><span style="width: 8px; height: 8px; background: #00D4FF"></span><span class="small num">8</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 8px"><span style="width: 12px; height: 12px; background: #00D4FF"></span><span class="small num">12</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 8px"><span style="width: 16px; height: 16px; background: #00D4FF"></span><span class="small num">16</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 8px"><span style="width: 24px; height: 24px; background: #00D4FF"></span><span class="small num">24</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 8px"><span style="width: 32px; height: 32px; background: #00D4FF"></span><span class="small num">32</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 8px"><span style="width: 48px; height: 48px; background: #00D4FF"></span><span class="small num">48</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 8px"><span style="width: 64px; height: 64px; background: #00D4FF"></span><span class="small num">64</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 8px"><span style="width: 96px; height: 96px; background: #00D4FF"></span><span class="small num">96</span></div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

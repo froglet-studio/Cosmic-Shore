@@ -1,6 +1,0 @@
-﻿[System.Serializable]
-public class #TYPE#
-{
-        
-}
-

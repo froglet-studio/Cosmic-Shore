@@ -6,24 +6,6 @@ using CosmicShore.Utility;
 using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
-    public enum PrismType
-    {
-        Dolphin = 0,
-        Serpent = 1,
-        Sparrow = 2,
-        Manta = 3,
-        Squirrel = 4,
-        Rhino = 5,
-        Interactive = 6,
-        Explosion = 7,
-        Implosion = 8,
-        Grow = 9,
-        // Fast-growing, collider-live-on-spawn prisms drawn from a dedicated pool: a
-        // surface a skimmer can boost off, but usually flown past without a body hit
-        // (Squirrel tube + joust danger-block formations). See PrismFactory.SpawnBoostPrism.
-        Boost = 10,
-    }
-    
     public class PrismFactory : MonoBehaviour
     {
         private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
@@ -105,6 +87,25 @@ namespace CosmicShore.Gameplay
                 _onPrismSpawnedEventChannel.OnEventReturn += OnPrismSpawnedEventRaised;
             
             mpb = new MaterialPropertyBlock();
+
+            // Configure the debris pipelines HERE rather than leaving it to the first
+            // death that needs one.
+            //
+            // The per-request calls in SpawnExplosion / SpawnImplosion are how the config
+            // TRACKS a pool swap, and they were also the only thing that ever established
+            // it — so until the first prism exploded, PrismDebris.TryGetExplosionConfig
+            // answered false. That is invisible on the death path itself (the first
+            // explosion configures and then proceeds) and NOT invisible to the OTHER
+            // producer of explosion debris: a shield disengaging before any prism has died
+            // was refused outright, and the strict-mode diagnostic is warn-once, so one
+            // early shatter could silence the report for the whole session.
+            //
+            // General shape: a lazily-established shared config is established by whichever
+            // consumer happens to run first, so a SECOND consumer inherits that ordering as
+            // a hidden precondition. Establish it where the thing that owns the pools comes
+            // up, and let the lazy calls go on tracking changes.
+            CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null);
+            CosmicShore.Utility.PrismDebris.ConfigureImplosion(implosionPool != null ? implosionPool.Prefab : null);
         }
 
         private void OnDisable()
@@ -255,11 +256,41 @@ namespace CosmicShore.Gameplay
         
         GameObject SpawnExplosion(PrismEventData data)
         {
+            bool configured = CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null);
+
+            // A CUT (the Rhino sword, Docs/PRISM_ANIMATION.md §4.10) is tried first and falls
+            // through to the ordinary explosion on any refusal — the slice budget is full, its
+            // config is off, the cut is degenerate — so a blade kill never loses its visual. It
+            // wears the same tier palette the explosion would have.
+            if (configured && data.SliceNormal.sqrMagnitude > 1e-8f &&
+                TryGetTeamColors(data.ownDomain, data.Kind, out var sliceBright, out var sliceDark) &&
+                CosmicShore.Utility.PrismSlice.TryRequest(
+                    data.SpawnPosition, data.Rotation, data.Scale,
+                    sliceBright, sliceDark, data.Velocity, data.SlicePoint, data.SliceNormal))
+            {
+                return null;
+            }
+
+            // The DETAIL LEVEL of the death (Docs/PRISM_ANIMATION.md §4.12), tried next on the same
+            // terms: close to the viewer and within the budget, the cut of the explosion's wedges at a depth;
+            // everywhere else (and for prism movement's collisions above level 1, which ask for plain)
+            // level 0, the same fragment law on the explosion's own 24 wedges — leaving on the explosion's
+            // own flight in its palette. Any refusal falls through to the explosion's graph, so a death
+            // never loses its visual.
+            if (configured &&
+                TryGetTeamColors(data.ownDomain, data.Kind, out var detailBright, out var detailDark) &&
+                CosmicShore.Utility.PrismInteractionLod.TryDestruction(
+                    data.SpawnPosition, data.Rotation, data.Scale,
+                    detailBright, detailDark, data.Velocity, data.DebrisSpeedLimit, data.Kind, data.PlainDeath))
+            {
+                return null;
+            }
+
             // Batched pure-entity debris is the ONLY death-explosion carrier (D4).
             // The pool prefab stays the authored CONFIG source (mesh / material /
             // layer / clamp / duration). The factory never Get()s explosionPool
             // for this type. Callers treat a null spawn as fire-and-forget.
-            if (CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null) &&
+            if (configured &&
                 TryGetTeamColors(data.ownDomain, data.Kind, out var bright, out var dark) &&
                 CosmicShore.Utility.PrismDebris.TryRequestExplosion(
                     data.SpawnPosition, data.Rotation, data.Scale,
@@ -278,7 +309,23 @@ namespace CosmicShore.Gameplay
             // (PrismType.Grow / SpawnGrow) still Get()s implosionPool because the
             // batched carrier has no completion callback — ReverseSuction needs
             // OnGrowCompleted to spawn the real prism.
-            if (CosmicShore.Utility.PrismDebris.ConfigureImplosion(implosionPool != null ? implosionPool.Prefab : null) &&
+            bool configured = CosmicShore.Utility.PrismDebris.ConfigureImplosion(implosionPool != null ? implosionPool.Prefab : null);
+
+            // The DETAIL LEVEL of the consumption (Docs/PRISM_ANIMATION.md §4.12, round 15), tried first: the
+            // destruction's silver gnomon cut at the depth the prism's size on screen and the budget allow — level 0,
+            // the explosion's own 24 wedges, everywhere else — every fragment drawn into the eater over the
+            // implosion's own life. Any refusal falls through to the SuctionGraph's implosion, so a consumption never
+            // loses its visual.
+            if (configured &&
+                TryGetTeamColors(data.ownDomain, data.Kind, out var detailBright, out var detailDark) &&
+                CosmicShore.Utility.PrismInteractionLod.TrySuction(
+                    data.SpawnPosition, data.Rotation, data.Scale,
+                    detailBright, detailDark, data.TargetTransform))
+            {
+                return null;
+            }
+
+            if (configured &&
                 TryGetTeamColors(data.ownDomain, data.Kind, out var bright, out var dark) &&
                 CosmicShore.Utility.PrismDebris.TryRequestImplosion(
                     data.SpawnPosition, data.Rotation, data.Scale,

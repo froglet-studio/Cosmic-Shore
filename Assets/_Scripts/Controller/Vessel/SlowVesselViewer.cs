@@ -6,7 +6,7 @@ using CosmicShore.Data;
 using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
-    public class SlowShipViewer : MonoBehaviour
+    public class SlowVesselViewer : MonoBehaviour
     {
         [Header("Visuals")]
         [SerializeField] private Material trailViewerMaterial;

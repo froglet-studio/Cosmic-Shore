@@ -1,0 +1,145 @@
+{
+  "id": "seaturtle",
+  "order": 12,
+  "name": "Sea Turtle",
+  "tagline": "the wayfinder: ride the tide, thread the Rapids",
+  "round": "calm · level 1 · round 1",
+  "accent": "#7fd6a8",
+  "kind": "tide",
+  "chip": "calm · level 1 · round 1",
+  "summary": "The wayfinder. It has no throttle: the course line is a tide, a current you can see, and steering into it carries you. Hold the one button to tuck in your flippers and ride the tide fast; let go to spread them, slow down and turn. Out of the tide it only crawls. Where blocks crowd the tide it runs faster: the Rapids. Get through without touching a block and you shoot out with a burst; a bump only slows you a little, because the shell takes it.",
+  "spec": [
+    {
+      "k": "Level",
+      "v": "1: one stick, one button"
+    },
+    {
+      "k": "Mechanic",
+      "v": "the course is a current; hold to tuck in and ride it, let go to turn"
+    },
+    {
+      "k": "Calm / intense",
+      "v": "gliding the tide / threading the Rapids"
+    },
+    {
+      "k": "Made from",
+      "v": "the Urchin (latch onto a trail and ride it) + the Squirrel (flow, no hard decisions)"
+    }
+  ],
+  "fantasy": "The Hypersea has tides: slow rivers of current that run between cells. Every Sea Turtle was born on the Shore, and every one swims the tides back home. Turtles never fight the current. They read it. Old turtles carry seeds from cell to cell, so wherever turtles go, life follows.",
+  "why": "No vessel is about reading a flow. The Sea Turtle never fights for speed: it finds the current and lets it carry it, and its one tense moment, the Rapids, asks for a clean line rather than quick fingers. Its wake is the Siphonophore's Slipstream, taught on its own.",
+  "flight": {
+    "cruise": 28,
+    "pitchYaw": 70,
+    "roll": 80,
+    "grip": 12,
+    "accel": 1.2,
+    "topSpeed": 240
+  },
+  "params": {},
+  "elements": {
+    "charge": {
+      "name": "Rapids Burst",
+      "param": "burst",
+      "range": [
+        1,
+        1.3
+      ],
+      "l5": "Whitewater",
+      "tip": "Charge is the burst after a clean run through the Rapids."
+    },
+    "mass": {
+      "name": "Shell",
+      "param": "shell",
+      "range": [
+        1,
+        1.067
+      ],
+      "l5": "Old Shell",
+      "tip": "Mass hardens the shell: a bump slows it less."
+    },
+    "space": {
+      "name": "Tide Sense",
+      "param": "tideR",
+      "range": [
+        1,
+        1.6
+      ],
+      "l5": "Moon Pull",
+      "tip": "Space widens the tide it can feel."
+    },
+    "time": {
+      "name": "Tuck",
+      "param": "tuck",
+      "range": [
+        1,
+        1.3
+      ],
+      "l5": "Streamline",
+      "tip": "Time makes a tucked turtle faster."
+    }
+  },
+  "styles": [
+    {
+      "name": "Balanced",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Every element at 0: the recipe's numbers."
+    },
+    {
+      "name": "Voyager",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 10,
+        "time": 10
+      },
+      "info": "A wide tide and a fast tuck: the long-haul turtle."
+    },
+    {
+      "name": "Rapids Runner",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 0,
+        "time": 0
+      },
+      "info": "A big burst and a hard shell."
+    },
+    {
+      "name": "Maxed",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Every element at 10. A ceiling, not a match state."
+    }
+  ],
+  "players": [
+    {
+      "ai": false,
+      "domain": "jade",
+      "level": "Hard",
+      "style": "Balanced"
+    }
+  ],
+  "controls": {
+    "lt": "tuck in (hold) to ride the tide fast; let go to spread and turn",
+    "rt": "nothing: one button"
+  },
+  "notModelled": [
+    "The tide is the course line here. In the game the Hypersea's tides would run between cells as their own visible streams.",
+    "Seeds (carry one from cell to cell and plant it) are the story, not modelled yet.",
+    "Its wake is not yet a current for anyone else (the Siphonophore's Slipstream is)."
+  ],
+  "sources": [
+    "Design: Docs/Studios/CONCEPT_FLEET.md section 12 (the calm three, Level 1), written for players who want about 20 minutes a day of calm with one tense moment. Nearest shipped relatives: the Urchin's Trail Rider, the Squirrel's flow; riding someone else's motion is the Remora and Albatross prototypes'."
+  ],
+  "docs": "Docs/Studios/CONCEPT_FLEET.md"
+}

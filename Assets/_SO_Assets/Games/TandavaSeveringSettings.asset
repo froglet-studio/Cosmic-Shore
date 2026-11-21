@@ -1,0 +1,423 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b7ce66067968ef5f16a18a6268dd744, type: 3}
+  m_Name: TandavaSeveringSettings
+  m_EditorClassIdentifier:
+  SwarmConfig: {fileID: 11400000, guid: 4ad4b0d715defece712ebf140ab75b06, type: 2}
+  HatchPoint: {x: -878.92, y: 0, z: 0}
+  HatchHeading: {x: 1, y: 0, z: 0}
+  Forms:
+  - DisplayName: Great Serpent
+    Role: 0
+    FillToEvolve: 0.9
+    BankShare: 0.15
+    MealVolume: 26483
+    Line: 'The {0} is hungry. Wherever it eats, its hood comes off its head to guard its mouth.'
+    Variants:
+    - DisplayName: Great Serpent
+      PlanIndex: 0
+      FeedPlanIndex: 1
+      CoilPlanIndices:
+      - 2
+      - 3
+      - 4
+      CoilMouths:
+      - {x: -8.638, y: -2.63, z: 2.966}
+      - {x: -1.775, y: -3.361, z: -8.732}
+      - {x: -16.963, y: -1.226, z: -5.99}
+      CoilRoamRadius: 1437.4
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
+      Mouth: {x: 280.156, y: -1.197, z: -0.165}
+      FeedMouth: {x: 278.435, y: 0, z: -0.041}
+      HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
+    - DisplayName: Great Serpent
+      PlanIndex: 5
+      FeedPlanIndex: 6
+      CoilPlanIndices:
+      - 7
+      - 8
+      - 9
+      CoilMouths:
+      - {x: -12.676, y: -1.987, z: -1.999}
+      - {x: 0.778, y: -3.196, z: -8.543}
+      - {x: -12.771, y: -0.354, z: -6.191}
+      CoilRoamRadius: 1429.6
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
+      Mouth: {x: 309.5, y: -1.22, z: -0.053}
+      FeedMouth: {x: 308.203, y: 0, z: -0.012}
+      HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
+    - DisplayName: Great Serpent
+      PlanIndex: 10
+      FeedPlanIndex: 11
+      CoilPlanIndices:
+      - 12
+      - 13
+      - 14
+      CoilMouths:
+      - {x: -4.345, y: -3.579, z: 4.369}
+      - {x: -2.541, y: -3.538, z: -7.623}
+      - {x: -23.472, y: -2.659, z: -5.66}
+      CoilRoamRadius: 1431
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
+      Mouth: {x: 257.351, y: -0.92, z: -0.672}
+      FeedMouth: {x: 254.981, y: 0, z: -0.189}
+      HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
+  - DisplayName: Many-Headed Serpent
+    Role: 0
+    FillToEvolve: 0.9
+    BankShare: 0.28
+    MealVolume: 26483
+    Line: 'Its coils split: a {0}. Every head dips to the food when it eats.'
+    Variants:
+    - DisplayName: Five-Headed Serpent
+      PlanIndex: 15
+      FeedPlanIndex: 16
+      CoilPlanIndices:
+      - 17
+      - 18
+      - 19
+      CoilMouths:
+      - {x: 160.935, y: 53.671, z: -63.888}
+      - {x: 147.581, y: 66.376, z: 37.115}
+      - {x: 169.614, y: 69.088, z: -19.84}
+      CoilRoamRadius: 1352.9
+      LungePlanIndex: 20
+      SnapPlanIndex: 21
+      LungeMouth: {x: 343.685, y: 5.984, z: 0.678}
+      Mouth: {x: 300.102, y: 20.677, z: 0.377}
+      FeedMouth: {x: 294, y: 24.639, z: 0.1}
+      HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 53
+      ChimeraAltPlanIndex: 54
+    - DisplayName: Seven-Headed Serpent
+      PlanIndex: 22
+      FeedPlanIndex: 23
+      CoilPlanIndices:
+      - 24
+      - 25
+      - 26
+      CoilMouths:
+      - {x: 157.191, y: 50.481, z: -57.78}
+      - {x: 141.685, y: 61.088, z: 34.857}
+      - {x: 164.443, y: 63.729, z: -21.373}
+      CoilRoamRadius: 1360.1
+      LungePlanIndex: 27
+      SnapPlanIndex: 28
+      LungeMouth: {x: 322.059, y: 2.541, z: 0.89}
+      Mouth: {x: 274.384, y: 17.912, z: 0.507}
+      FeedMouth: {x: 264.933, y: 24.226, z: 0.206}
+      HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 53
+      ChimeraAltPlanIndex: 54
+    - DisplayName: Ten-Headed Serpent
+      PlanIndex: 29
+      FeedPlanIndex: 30
+      CoilPlanIndices:
+      - 31
+      - 32
+      - 33
+      CoilMouths:
+      - {x: 156.094, y: 45.782, z: -44.567}
+      - {x: 137.917, y: 52.774, z: 30.889}
+      - {x: 159.084, y: 54.82, z: -21.691}
+      CoilRoamRadius: 1366.6
+      LungePlanIndex: 34
+      SnapPlanIndex: 35
+      LungeMouth: {x: 294.825, y: -3.148, z: 1.804}
+      Mouth: {x: 234.486, y: 15.347, z: 1.987}
+      FeedMouth: {x: 219.711, y: 24.727, z: 0.495}
+      HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 53
+      ChimeraAltPlanIndex: 54
+  - DisplayName: Lord of the Dance
+    Role: 1
+    FillToEvolve: 0.9
+    BankShare: 0
+    MealVolume: 1
+    Line: 
+    Variants:
+    - DisplayName: Lord of the Dance
+      PlanIndex: 36
+      FeedPlanIndex: -1
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
+      Mouth: {x: 0, y: 0, z: 0}
+      FeedMouth: {x: 0, y: 0, z: 0}
+      HaloCentre: {x: 0.024, y: 7.877, z: 2.299}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
+    - DisplayName: Lord of the Dance
+      PlanIndex: 37
+      FeedPlanIndex: -1
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
+      Mouth: {x: 0, y: 0, z: 0}
+      FeedMouth: {x: 0, y: 0, z: 0}
+      HaloCentre: {x: 0.024, y: 7.877, z: -2.299}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
+    - DisplayName: Lord of the Dance
+      PlanIndex: 38
+      FeedPlanIndex: -1
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
+      Mouth: {x: 0, y: 0, z: 0}
+      FeedMouth: {x: 0, y: 0, z: 0}
+      HaloCentre: {x: 0.024, y: 3.597, z: 1.916}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
+  - DisplayName: Antlion
+    Role: 2
+    FillToEvolve: 0.9
+    BankShare: 0.4
+    MealVolume: 26483
+    Line: 'The drum stops. The {0} drops out of the halo, jaws open. One last feast and the cycle is complete.'
+    Variants:
+    - DisplayName: Antlion
+      PlanIndex: 39
+      FeedPlanIndex: 40
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
+      LungePlanIndex: 41
+      SnapPlanIndex: 42
+      LungeMouth: {x: 155.11, y: 0.371, z: -0.519}
+      Mouth: {x: 176.789, y: -0.448, z: -0.531}
+      FeedMouth: {x: 152.474, y: 0.354, z: -0.519}
+      HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
+    - DisplayName: Antlion
+      PlanIndex: 43
+      FeedPlanIndex: 44
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
+      LungePlanIndex: 45
+      SnapPlanIndex: 46
+      LungeMouth: {x: 136.036, y: 0.254, z: -0.206}
+      Mouth: {x: 170.339, y: -2.052, z: -0.224}
+      FeedMouth: {x: 134.026, y: 0.236, z: -0.206}
+      HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
+    - DisplayName: Antlion
+      PlanIndex: 47
+      FeedPlanIndex: 48
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
+      LungePlanIndex: 49
+      SnapPlanIndex: 50
+      LungeMouth: {x: 170.28, y: 0.077, z: -0.619}
+      Mouth: {x: 190.933, y: -0.672, z: -0.637}
+      FeedMouth: {x: 167.556, y: 0.059, z: -0.619}
+      HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
+  SeveredForm:
+    DisplayName: the Severed
+    Role: 3
+    FillToEvolve: 0.9
+    BankShare: 0
+    MealVolume: 13241.5
+    Line: 
+    Variants:
+    - DisplayName: the Severed
+      PlanIndex: 51
+      FeedPlanIndex: 52
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
+      Mouth: {x: 186.836, y: -1.568, z: 0.024}
+      FeedMouth: {x: 184.89, y: 0, z: 0.024}
+      HaloCentre: {x: 0, y: 0, z: 0}
+      ChimeraPlanIndex: 0
+      ChimeraAltPlanIndex: 0
+  SwarmSpawn: {fileID: 11400000, guid: f0cf402847c1df38d7782cc0bd1dc337, type: 2}
+  Director:
+    RoamRadius: 1259.104
+    SenseRadius: 919.8
+    ApproachSpeed: 80
+    DamageRef: 0.04
+    ThreatRiseSeconds: 0.25
+    ThreatFallSeconds: 2.5
+    WaryEnter: 0.3
+    WaryExit: 0.2
+    FleeEnter: 0.65
+    FleeExit: 0.4
+    FleeMinSeconds: 8.176
+    FleeReach: 1022
+    LungeRadius: 776.7
+    LungeBodyMin: 0.7
+    LungeEnter: 0.25
+    LungeSeconds: 5.11
+    LungeCooldownSeconds: 12.26
+    LungeLead: 0.35
+    LungeReach: 81.76
+    SnapReach: 306.6
+    SnapLeadSeconds: 1.022
+    SnapHoldSeconds: 2.657
+    TurnSnap: 0.3
+    CruiseCalm: 1
+    CruiseWary: 1.5
+    CruiseFlee: 2.1
+    CruiseFeed: 0.5
+    CruiseLunge: 2.4
+    TurnCalm: 1
+    TurnWary: 1.6
+    TurnFlee: 2.5
+    TurnFeed: 1
+    TurnLunge: 3
+    SafeRadius: 715.4
+    FearCalm: 0.5
+    FearWary: 0.9
+    DistanceBias: 613.2
+    StickBonus: 1.3
+    MinFood: 1276
+    RestSeconds: 25
+    WanderReach: 715.4
+    ArriveMargin: 143.1
+    MealBreakFraction: 0.2
+    GiveUpSeconds: 6
+    FeedSettleSeconds: 8.176
+    MaxFeedSeconds: 30
+    LeaveWhenStomachFill: 0.98
+    ShatterFraction: 0.35
+    ArmFraction: 0.6
+    RiseSeconds: 10.22
+    ChimeraSeconds: 49.06
+    ChimeraFlipSeconds: 12.26
+    ChimeraTurnSeconds: 5.11
+    ChimeraShatterFraction: 0.5
+    CruiseChimera: 0.7
+    TurnChimera: 0.8
+    DrumSeconds: 61.32
+    HaloCount: 12
+    HaloToBreak: 9
+    DanceReach: 511
+    SeverLink: 32.7
+    SeverMinShare: 0.12
+    SeverMinMembers: 45
+    SeverMaxShare: 0.4
+    SeverCooldownSeconds: 8
+    RejoinFill: 0.75
+    RejoinBank: 6380
+    RejoinAfterSeconds: 81.76
+    RejoinReach: 183.96
+    ScarRef: 0.15
+    LearnedAt: 0.5
+    LearnMealBreak: 0.6
+    LearnSafeRadius: 1.5
+    LearnLungeBody: 0.25
+    LearnLungeCooldown: 2
+    LearnSense: 0.4
+    LearnFlee: 0.35
+    LearnRejoin: 0.6
+    MatchSeconds: 0
+  FoodPerPrism: 42.164
+  FoodCheckSeconds: 0.5
+  HaloRadius: 341.96
+  HaloMouthRadius: 24
+  GuardPostRadius: 412.71
+  GuardRadius: 81.76
+  GuardMembers: 6
+  GuardElement: 4
+  HaloGuardScale: 0.35
+  HaloBloomSeconds: 1.2
+  HaloBreakSeconds: 0.6
+  MaxPlausibleSpeed: 1500
+  FormBurstShards: 64
+  HaloBurstShards: 18
+  BurstSpeed: 70
+  BurstScale: 3
+  FlashSeconds: 0.6
+  FlashRadius: 531.44
+  FlashStrength: 0.8
+  AscensionPalette:
+    MembraneBright: {r: 1.4, g: 1.12, b: 0.42, a: 1}
+    MembraneDull: {r: 0.16, g: 0.11, b: 0.02, a: 1}
+    NucleusEdge: {r: 1, g: 0.8, b: 0.3, a: 0.45}
+    NucleusStraight: {r: 1.15, g: 0.96, b: 0.52, a: 0.45}
+    Cytoplasm: {r: 0.86, g: 0.72, b: 0.36, a: 1}
+  TransitionSeconds: 3
+  TransitionFlash: 1.2
+  RestoreSeconds: 5
+  StartLine: Something in the reef remembers the old shapes.
+  FeedingLine: 'It is feeding, rolled up round the plant - its guards circle it. Strike the body.'
+  MealBrokenLine: Its meal is broken. It bolts.
+  RisingLine: It has eaten enough. It rises into the Lord of the Dance.
+  HaloLitLine: The halo is lit. Break the rings before the drum stops.
+  FirstHaloLine: 'A ring is broken. Break {1} and the dance falls.'
+  LastHaloLine: '{0} of {1}. One more ring!'
+  CompletedLine: The Antlion has fed. The cycle is complete.
+  WonLine: Its body is broken. The reef keeps its turn.
+  DanceBrokenLine: The dance is broken. The reef keeps its turn.
+  HeldOffLine: Time. You held it off - the cycle is unfinished.
+  LungeLine: It turns on you - its guards are out round its jaws. Hurt it and it runs.
+  SeveredLine: You cut it in two. The severed half crawls off to feed - stop it getting home.
+  RejoinedLine: The severed half found its way home. It is whole again.
+  SuccessionLine: 'You cut the body away - but the severed half lives, and it remembers the shape.'
+  ChimeraLine: 'It is tearing between shapes - a whale, a jelly, neither. Strike it as it turns.'
+  LearnedFeedingLine: 'It remembers being struck at the table. It eats far from you now, and bolts sooner.'
+  LearnedLungingLine: It remembers what its lunges cost. It will not turn on you so readily.
+  LearnedChasedLine: It remembers being run down. It feels you coming from farther away.
+  LearnedSeveredLine: It remembers being cut in two. Its severed halves hurry home.
+  RoamingLabel: Roaming
+  WaryLabel: Wary
+  FleeingLabel: Fleeing
+  LungingLabel: Lunging - mind its guards
+  FeedingLabel: Feeding - strike the body
+  RisingLabel: Rising
+  DancingLabel: Dancing - break the halo
+  FeastLabel: the last feast
+  HaloLabel: Halo rings broken
+  DrumLabel: Drum
+  TimeLabel: Time left
+  BodyFormat: 'Body {0}%'
+  ChimeraName: Whale-Jelly Chimera
+  ChimeraLabel: Unstable
+  ChimeraTurningLabel: Turning - it cannot heal
+  SeveredLabel: The Severed
+  SeveredOutFormat: 'home in {0}'
+  SeveredHomeLabel: crawling home - cut it off
+  NudgeThreshold: 25
+  NudgeFraction: 0.2
+  MaxNudge: 8
+  AiFlankBack: 143.08

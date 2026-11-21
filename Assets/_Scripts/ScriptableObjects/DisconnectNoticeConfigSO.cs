@@ -1,0 +1,127 @@
+using UnityEngine;
+
+namespace CosmicShore.ScriptableObjects
+{
+    /// <summary>
+    /// Every string, colour and duration the disconnect notice uses.
+    ///
+    /// <para>It is a config asset rather than fields on the component for the reason
+    /// <c>Docs/UI_ARCHITECTURE_AUDIT.md</c> §5.4 records against the rest of the UI layer: this
+    /// project has no string table and no localization layer, so hard-coding user-facing copy in
+    /// C# means a copy change is a code change. The notice is built at runtime (it has to exist in
+    /// every scene, including game scenes, which no authored canvas does), and runtime-built UI is
+    /// listed in §5.7 as a structural risk precisely because it is "not editable by a designer
+    /// without touching C#". Putting the whole surface's text and palette in one asset is what
+    /// keeps that true of the LAYOUT only.</para>
+    /// </summary>
+    [CreateAssetMenu(fileName = "DisconnectNoticeConfig",
+                     menuName = "ScriptableObjects/System/Disconnect Notice Config", order = 40)]
+    public class DisconnectNoticeConfigSO : ScriptableObject
+    {
+        [Header("Copy")]
+        [Tooltip("Heading shown when the device loses its connection.")]
+        public string TitleConnectionLost = "Connection Lost";
+
+        [TextArea(2, 4)]
+        [Tooltip("Body shown when the device loses its connection. Kept factual: the player's " +
+                 "session keeps running locally, which is what the offline host provides.")]
+        public string BodyConnectionLost =
+            "You're offline. You can keep playing on your own — online features will return when " +
+            "the connection does.";
+
+        [Tooltip("Label of the control that re-runs the boot chain (ReconnectService).")]
+        public string ReconnectLabel = "Reconnect";
+
+        [Tooltip("Label while a reconnect attempt is in flight.")]
+        public string ReconnectingLabel = "Reconnecting…";
+
+        [Tooltip("Label of the control that leaves the notice and carries on offline.")]
+        public string DismissLabel = "Continue Offline";
+
+        [Tooltip("Shown briefly when the connection comes back on its own, then auto-hides.")]
+        public string TitleConnectionRestored = "Back Online";
+
+        [Header("Rejoin (section 103)")]
+        [Tooltip("Heading when the link broke mid-match and the match is still running. {mode} is the mode's name.")]
+        public string TitleDroppedOut = "You dropped out";
+        [TextArea(2, 4)]
+        [Tooltip("Line under it. {mode} is the mode's name.")]
+        public string BodyDroppedOut =
+            "Your connection to {mode} broke. An AI pilot took your vessel so your team keeps its seat.";
+        [Tooltip("Heading on boot when the match this player left is still running. {mode} is the mode's name.")]
+        public string TitleRejoin = "Rejoin {mode}?";
+        [TextArea(2, 4)]
+        [Tooltip("Line under it. {mode} is the mode's name.")]
+        public string BodyRejoin = "You left a match that is still going. An AI pilot has your vessel; rejoin and it is yours again.";
+        [Tooltip("The lime button that rejoins.")]
+        public string RejoinLabel = "Rejoin";
+        [Tooltip("The button that declines (the match is forgotten).")]
+        public string NotNowLabel = "Not now";
+        [Tooltip("Heading when the link broke and the match is gone: its host left (the host is a player).")]
+        public string TitleHostLeft = "The host left";
+        [TextArea(2, 4)]
+        [Tooltip("Line under it.")]
+        public string BodyHostLeft = "The match ended when its host disconnected. Nothing you earned in it is lost.";
+        [Tooltip("The one button on the host-left window.")]
+        public string BackHomeLabel = "Back to Home";
+        [Min(0.5f)]
+        [Tooltip("Seconds between looks at the party mates' presence for the remembered match.")]
+        public float RejoinCheckSeconds = 2f;
+        [Min(1f)]
+        [Tooltip("Seconds of online presence with nobody advertising the remembered match before it is given up " +
+                 "(and, after a drop, 'The host left' is shown).")]
+        public float RejoinGiveUpSeconds = 20f;
+        [Min(0f)]
+        [Tooltip("A drop younger than this says 'You dropped out'; an older one (a restart) asks 'Rejoin?'.")]
+        public float DroppedOutRecentSeconds = 180f;
+
+        [Header("Behaviour")]
+        [Min(0f)]
+        [Tooltip("Seconds the restored notice stays up before hiding itself. 0 hides immediately.")]
+        public float RestoredDwellSeconds = 2.5f;
+
+        [Min(0f)]
+        [Tooltip("Fade duration for the whole surface.")]
+        public float FadeSeconds = 0.2f;
+
+        [Tooltip("Suppress the notice while a game scene is loading. The launch splash is already " +
+                 "opaque there and owns its own failure copy (BootStatusBroadcaster deliberately " +
+                 "suppresses connection-lost inside that window rather than showing a misleading " +
+                 "'tap retry'); a second surface over it would say the same thing twice.")]
+        public bool SuppressDuringLaunch = true;
+
+        [Header("Look (style B)")]
+        [Tooltip("The style-B window (Docs/MENU_REDESIGN_B.md section 100.2, written by " +
+                 "Tools/Build/author_disconnect_notice.py). When set, the notice draws it and the palette and " +
+                 "layout below are unused; when empty, the notice builds the legacy panel from them.")]
+        public CosmicShore.UI.DisconnectNoticeView WindowPrefab;
+
+        [Header("Palette (legacy panel)")]
+        [Tooltip("Full-screen scrim behind the panel.")]
+        public Color ScrimColor = new(0f, 0f, 0f, 0.72f);
+
+        [Tooltip("Panel body.")]
+        public Color PanelColor = new(0.10f, 0.10f, 0.15f, 0.98f);
+
+        [Tooltip("Title text.")]
+        public Color TitleColor = Color.white;
+
+        [Tooltip("Body text.")]
+        public Color BodyColor = new(0.78f, 0.80f, 0.86f, 1f);
+
+        [Tooltip("The primary control (Reconnect).")]
+        public Color PrimaryButtonColor = new(0.05f, 0.75f, 0.71f, 1f);
+
+        [Tooltip("The secondary control (Continue Offline).")]
+        public Color SecondaryButtonColor = new(0.22f, 0.22f, 0.28f, 1f);
+
+        [Header("Layout (legacy panel)")]
+        [Tooltip("Panel size in reference pixels (the canvas matches the project's 1920x1080).")]
+        public Vector2 PanelSize = new(760f, 340f);
+
+        [Tooltip("Sorting order of the notice's own canvas. Above the gameplay HUD and the menu, " +
+                 "below nothing - a disconnect notice the player cannot see is the whole defect " +
+                 "this closes.")]
+        public int SortingOrder = 32000;
+    }
+}

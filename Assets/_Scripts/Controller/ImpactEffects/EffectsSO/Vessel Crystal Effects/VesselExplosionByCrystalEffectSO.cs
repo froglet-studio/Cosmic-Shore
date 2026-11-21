@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
                  "owns the cone's ANGLE, Space owns how far down-range it carries.")]
         [SerializeField] private float _heightMultiplierAtFullSpace = 1f;
         [Tooltip("Floor for the Space size multiplier so a deficit can never collapse the blast.")]
-        [SerializeField] private float _minHeightMultiplier = 0.35f;
+        [SerializeField] private float _minHeightMultiplier = 0.5f;
 
         [Header("Elemental (Charge) — blast thickness")]
         [Tooltip("CHARGE → the capsule's DIAMETER: multiplier on Core Explosion Scale at the " +
@@ -167,6 +167,10 @@ namespace CosmicShore.Gameplay
                 _coreMultiplierAtRestCharge, _coreMultiplierAtFullCharge, _minCoreMultiplier);
         }
 
+        /// <summary>A blast fired: the vessel and the index of the resource whose level set its size (read it for the
+        /// energy spent). The Ark escort's Dolphin role counts its blasts with it.</summary>
+        public static event System.Action<IVesselStatus, int> Fired;
+
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
             if (vesselImpactor == null || vesselImpactor.Vessel == null)
@@ -209,6 +213,7 @@ namespace CosmicShore.Gameplay
                 affectSelfOverride = !sparesAllies;
             }
 
+            Fired?.Invoke(status, _resourceIndex);
             ExplosionHelper.CreateExplosion(
                 _aoePrefabs,
                 vesselImpactor,
@@ -220,11 +225,15 @@ namespace CosmicShore.Gameplay
                 sizeMultiplier,
                 affectSelfOverride,
                 _coreExplosionScale,
-                ResolveCoreMultiplier(status));
+                // Switchback Blast Run: a KEY crystal's blast is wider (BlastRunKeyCrystals; a runtime multiplier,
+                // exactly 1 for every other crystal and whenever no Blast Run is live - the asset is untouched).
+                ResolveCoreMultiplier(status) *
+                (data.Origin.Valid ? BlastRunKeyCrystals.CoreMultiplierFor(data.Origin.Position) : 1f));
 
             switch (vesselImpactor.Vessel.VesselStatus.VesselType)
             {
                 case VesselClassType.Rhino:
+                case VesselClassType.Swordfish:   // the Rhino's crystal explosion, split off with the sword (2026-11-07)
                     rhinoCrystalExplosionEvent?.Raise(vesselImpactor);
                     break;
                 case VesselClassType.Manta:

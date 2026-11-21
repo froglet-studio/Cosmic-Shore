@@ -2,8 +2,6 @@ using System.Text;
 using CosmicShore.Core;
 using Reflex.Attributes;
 using UnityEngine;
-using Lofelt.NiceVibrations;
-using LofeltHaptics = Lofelt.NiceVibrations.HapticController;
 
 namespace CosmicShore.Gameplay
 {
@@ -24,6 +22,18 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// How hard the thing the hull hit was (Docs/HAPTICS.md, the hull-hit ladder). Read from the prism's own state, the
+    /// same facts the camera's impact weight reads (Docs/CAMERA_FEEL.md): a plain prism, a shielded one, and the two
+    /// that really hurt, danger and super-shielded.
+    /// </summary>
+    public enum PunishWeight
+    {
+        Plain = 0,
+        Shielded = 1,
+        Heavy = 2,
+    }
+
+    /// <summary>
     /// The whole game's haptic policy in one place.
     ///
     /// Cosmic Shore ships TWO everyday feels, both local-human-pilot-only:
@@ -40,8 +50,10 @@ namespace CosmicShore.Gameplay
     /// <see cref="PlayConstant"/> entry points (UI, drift, boost, jousts, explosions, overtake,
     /// elemental debuffs …) are no-ops.
     ///
-    /// NiceVibrations keeps only ONE loaded clip — every <c>Load()</c> evicts whatever is playing —
-    /// so a tiny priority/rate-limit gate arbitrates them. Priority, top to bottom:
+    /// The motors carry only ONE pattern at a time — every <see cref="GamepadRumblePlayer.Play"/>
+    /// replaces whatever is playing — so a tiny priority/rate-limit gate arbitrates them. That
+    /// single-pattern property is now a deliberate choice of ours rather than a vendor
+    /// limitation, and the gate below is written against it. Priority, top to bottom:
     /// <b>alert &gt; punish &gt; skim &gt; spray</b>. Punish always interrupts the skim train and
     /// the skim train never interrupts a thud; the spray is a texture, so it yields to all three
     /// and interrupts none of them.
@@ -72,7 +84,17 @@ namespace CosmicShore.Gameplay
         const float SkimMinIntervalSec = 0.030f;   // ≥30 ms between skim pulses
         // The punish thud is a punctuation mark, not a texture.
         const float PunishMinIntervalSec = 0.250f; // ≥250 ms between thuds
-        const float PunishDurationSec = 0.200f;    // ~200 ms clip — skim is suppressed for this long
+        // The thud's length per weight (each clip's segments sum to it): skim waits this long, and a lighter thud
+        // never cuts a heavier one short.
+        const float PunishPlainDurationSec = 0.240f;
+        const float PunishShieldedDurationSec = 0.300f;
+        const float PunishHeavyDurationSec = 0.420f;
+        // The shielded and heavy steps play at twice their authored strength (Caleb, 2026-11-12: "double the
+        // intensity all the way up the ladder"). The motors stop at 1, so a segment already authored at 1 cannot get
+        // stronger: what doubles is the high-motor grit and every tail. The PLAIN step was then taken 25% below what
+        // that doubling felt like (Caleb, same day), which is authored directly into its clip at gain 1: the doubled
+        // plain thud sat at the motors' cap, so a gain cut alone would not have reached what was felt.
+        const float PunishGain = 2f;
 
         // The alert is the loudest event the game has: a long, rattling shake that says
         // "something just changed". It outranks BOTH other feels for its whole duration.
@@ -83,15 +105,41 @@ namespace CosmicShore.Gameplay
         // held, so it sits at the BOTTOM of the priority order and never suppresses anything.
         const float SprayMinIntervalSec = 0.035f;  // backstop floor; the caller sets the real cadence
         const float SprayDurationSec = 0.050f;     // one short buzz per pulse
-        const float SkimDurationSec = 0.070f;      // the skim clip's length — read only by spray
+        const float SkimDurationSec = 0.070f;      // the skim clip's length — read only by spray/bind
+
+        // The bind grind is the second TEXTURE: it repeats while the Rhino's blade is held inside
+        // super-shielded mass it cannot cut. Bottom of the order beside the spray, same reasons.
+        const float BindMinIntervalSec = 0.060f;   // backstop floor; the caller sets the real cadence
+
+        // The drift rumble is the third TEXTURE: it repeats while a drift is held. Bottom of the
+        // order beside spray and bind, same reasons.
+        const float DriftMinIntervalSec = 0.060f;  // backstop floor; the caller sets the real cadence
+
+        // Drift press / let-go kicks are EVENTS: one each per trigger edge. They sit above the
+        // textures (a texture must not cut a kick short) and below skim/punish/alert.
+        const float DriftKickMinIntervalSec = 0.050f; // only stops a double-fire in one frame
+        const float DriftEngageDurationSec = 0.060f;
+        const float DriftReleaseDurationSec = 0.090f;
+
+        // The plant knock is an EVENT: one per bomb the Manta plants. It sits under alert and punish (a hull hit
+        // must still cut through) and above skim and the textures, which it suppresses for its own short length.
+        const float PlantMinIntervalSec = 0.150f;  // a graze that plants twice in a frame knocks once
+        const float PlantDurationSec = 0.130f;     // the knock's length: skim and textures wait this long
 
         static float s_lastSkimTime = -999f;
         static float s_skimBusyUntil = -999f;      // spray is suppressed until here (skim outranks it)
         static float s_lastPunishTime = -999f;
+        static PunishWeight s_punishBusyWeight = PunishWeight.Plain;
         static float s_punishBusyUntil = -999f;    // skim is suppressed until here (punish owns the motor)
         static float s_lastAlertTime = -999f;
         static float s_alertBusyUntil = -999f;     // skim AND punish are suppressed until here
         static float s_lastSprayTime = -999f;
+        static float s_lastBindTime = -999f;
+        static float s_lastDriftTime = -999f;
+        static float s_lastDriftKickTime = -999f;
+        static float s_driftKickBusyUntil = -999f; // textures are suppressed until here
+        static float s_lastPlantTime = -999f;
+        static float s_plantBusyUntil = -999f;     // skim is suppressed until here (textures via s_skimBusyUntil)
 
         // These are compared against Time.unscaledTime, which restarts at 0 every play session —
         // with domain reload disabled a leftover busy-until stamp from a long session would
@@ -102,10 +150,17 @@ namespace CosmicShore.Gameplay
             s_lastSkimTime = -999f;
             s_skimBusyUntil = -999f;
             s_lastPunishTime = -999f;
+            s_punishBusyWeight = PunishWeight.Plain;
             s_punishBusyUntil = -999f;
             s_lastAlertTime = -999f;
             s_alertBusyUntil = -999f;
             s_lastSprayTime = -999f;
+            s_lastBindTime = -999f;
+            s_lastDriftTime = -999f;
+            s_lastDriftKickTime = -999f;
+            s_driftKickBusyUntil = -999f;
+            s_lastPlantTime = -999f;
+            s_plantBusyUntil = -999f;
         }
 
         /// <summary>
@@ -120,36 +175,45 @@ namespace CosmicShore.Gameplay
             float now = Time.unscaledTime;
             if (now < s_alertBusyUntil) return;                  // alert outranks everything
             if (now < s_punishBusyUntil) return;                 // punish outranks skim — don't interrupt it
+            if (now < s_plantBusyUntil) return;                  // so does the plant knock
             if (now - s_lastSkimTime < SkimMinIntervalSec) return;
             s_lastSkimTime = now;
             s_skimBusyUntil = now + SkimDurationSec;   // spray must not cut the reward short
 
             EnsureClips();
-            LofeltHaptics.Load(s_skimJson, s_skimRumble);
-            LofeltHaptics.outputLevel = level;
-            LofeltHaptics.clipLevel = Mathf.Clamp01(strength01); // scales both the iOS clip and gamepad motors
-            LofeltHaptics.Play();
+            PlayPattern(s_skimJson, s_skimRumble, level * Mathf.Clamp01(strength01));
         }
 
         /// <summary>
         /// The mistake thud. Always interrupts the skim train (loads over it) and, once fired,
         /// suppresses skim pulses for the clip's duration so the train can never cut it short.
         /// </summary>
-        public static void PlayPunish()
+        public static void PlayPunish(PunishWeight weight = PunishWeight.Plain)
         {
             if (!TryBeginPlayback(out var level)) return;
 
             float now = Time.unscaledTime;
             if (now < s_alertBusyUntil) return;                  // alert outranks the thud too
-            if (now - s_lastPunishTime < PunishMinIntervalSec) return;
+            bool busy = now < s_punishBusyUntil;
+            if (busy && weight < s_punishBusyWeight) return;     // a lighter hit never cuts a heavier thud short
+            // Spaced out, except that a HEAVIER hit lands at once: a danger prism right after a plain one is news.
+            if (now - s_lastPunishTime < PunishMinIntervalSec && (!busy || weight <= s_punishBusyWeight)) return;
             s_lastPunishTime = now;
-            s_punishBusyUntil = now + PunishDurationSec;
+            s_punishBusyWeight = weight;
+            s_punishBusyUntil = now + weight switch
+            {
+                PunishWeight.Heavy => PunishHeavyDurationSec,
+                PunishWeight.Shielded => PunishShieldedDurationSec,
+                _ => PunishPlainDurationSec,
+            };
 
             EnsureClips();
-            LofeltHaptics.Load(s_punishJson, s_punishRumble); // evicts any skim clip mid-train
-            LofeltHaptics.outputLevel = level;
-            LofeltHaptics.clipLevel = 1f;
-            LofeltHaptics.Play();
+            switch (weight)
+            {
+                case PunishWeight.Heavy:    PlayPattern(s_punishHeavyJson, s_punishHeavyRumble, level * PunishGain); break;
+                case PunishWeight.Shielded: PlayPattern(s_punishShieldedJson, s_punishShieldedRumble, level * PunishGain); break;
+                default:                    PlayPattern(s_punishJson, s_punishRumble, level); break;
+            }
         }
 
         /// <summary>
@@ -159,7 +223,7 @@ namespace CosmicShore.Gameplay
         /// bright characters: unmistakably not a skim and not a thud, and long enough to read as
         /// "something just happened" rather than "you hit something".
         ///
-        /// Reserved for RARE, match-changing state changes — currently only Ribcage's fauna
+        /// Reserved for RARE, match-changing state changes — currently only Cleave's fauna
         /// release rungs. It outranks both other feels for its whole duration and is rate-limited
         /// so it can never stack into a drone. Do NOT hang it on anything frequent; the two-feel
         /// policy exists because haptics stop meaning anything once they are common.
@@ -174,10 +238,7 @@ namespace CosmicShore.Gameplay
             s_alertBusyUntil = now + AlertDurationSec;
 
             EnsureClips();
-            LofeltHaptics.Load(s_alertJson, s_alertRumble);  // evicts whatever was playing
-            LofeltHaptics.outputLevel = level;
-            LofeltHaptics.clipLevel = 1f;
-            LofeltHaptics.Play();
+            PlayPattern(s_alertJson, s_alertRumble, level);
         }
 
         /// <summary>
@@ -212,10 +273,126 @@ namespace CosmicShore.Gameplay
             // Deliberately sets NO busy window: the spray never suppresses another feel.
 
             EnsureClips();
-            LofeltHaptics.Load(s_sprayJson, s_sprayRumble);
-            LofeltHaptics.outputLevel = level;
-            LofeltHaptics.clipLevel = Mathf.Clamp01(strength01);
-            LofeltHaptics.Play();
+            PlayPattern(s_sprayJson, s_sprayRumble, level * Mathf.Clamp01(strength01));
+        }
+
+        /// <summary>
+        /// The BIND grind — the fifth feel, added deliberately (Docs/HAPTICS.md ▸ "Adding /
+        /// changing a feel"): a low, heavy, transient-free rumble that repeats while the Rhino's
+        /// NON-energized blade is held inside a super-shielded prism it cannot cut
+        /// (RHINO_ENERGY_SWORD.md § "Binding"). It answers the question the pilot is asking in
+        /// that moment — "am I still stuck in it?" — and stops the frame the blade comes free.
+        ///
+        /// Character sits between the thud and the spray: the LOW motor carries it (it is armour
+        /// resisting, heavy like the punish) but it is short and repeating (a texture, like the
+        /// spray), with a low frequency (0.15, against punish 0.0 and spray 0.45) so the two
+        /// textures stay separable if a future vessel ever had both.
+        ///
+        /// Priority: the bottom, beside the spray — alert, punish and skim all suppress it and it
+        /// suppresses nothing. The ENTRY into the armour is not this feel; the caller plays the
+        /// punish thud for that, and this grind cannot cut the thud short.
+        ///
+        /// Fenced to the Rhino's blade binding on the LOCAL HUMAN pilot's own vessel. Do not hang
+        /// it on anything else.
+        /// </summary>
+        public static void PlayBind(float strength01)
+        {
+            if (!TryBeginPlayback(out var level)) return;
+
+            float now = Time.unscaledTime;
+            if (now < s_alertBusyUntil) return;                  // alert outranks everything
+            if (now < s_punishBusyUntil) return;                 // the entry thud must land intact
+            if (now < s_skimBusyUntil) return;                   // so must a reward pulse
+            if (now - s_lastBindTime < BindMinIntervalSec) return;
+            s_lastBindTime = now;
+            // Deliberately sets NO busy window: a texture never suppresses another feel.
+
+            EnsureClips();
+            PlayPattern(s_bindJson, s_bindRumble, level * Mathf.Clamp01(strength01));
+        }
+
+        /// <summary>
+        /// The DRIFT rumble — the sixth feel, added deliberately (Docs/HAPTICS.md ▸ "Adding /
+        /// changing a feel"): a soft, smooth, low-mid rumble that repeats while the vessel is
+        /// drifting, so the pilot feels the slide under them. Strength is the drift depth
+        /// (DriftAudioController computes it from the trigger pull).
+        ///
+        /// Character: frequency 0.3 — between the bind grind (0.15) and the spray buzz (0.45) —
+        /// LOW-motor led but lighter than the bind, no transient (the skim's signature), and a
+        /// longer ~90 ms body so it reads as a continuous slide rather than a tick or a grind.
+        ///
+        /// Priority: the bottom, beside spray and bind — alert, punish and skim all suppress it
+        /// and it suppresses nothing, so skims landed mid-drift stay fully legible.
+        ///
+        /// Fenced to drifting on the LOCAL HUMAN pilot's own vessel. Do not hang it on anything else.
+        /// </summary>
+        public static void PlayDrift(float strength01)
+        {
+            if (!TryBeginPlayback(out var level)) return;
+
+            float now = Time.unscaledTime;
+            if (now < s_alertBusyUntil) return;                  // alert outranks everything
+            if (now < s_punishBusyUntil) return;                 // a thud must land intact
+            if (now < s_skimBusyUntil) return;                   // so must a reward pulse
+            if (now < s_driftKickBusyUntil) return;              // the press/let-go kick lands first
+            if (now - s_lastDriftTime < DriftMinIntervalSec) return;
+            s_lastDriftTime = now;
+            // Deliberately sets NO busy window: a texture never suppresses another feel.
+
+            EnsureClips();
+            PlayPattern(s_driftJson, s_driftRumble, level * Mathf.Clamp01(strength01));
+        }
+
+        /// <summary>
+        /// The PLANT knock (Caleb, 2026-11-11): the Manta planting a bomb on a vessel or a creature. Two quick knocks,
+        /// mid-low frequency on both motors - "it's on" - distinct from the skim's single bright tick and the punish's
+        /// one long thud. Under alert and punish, over skim and the textures. Fenced to the Manta's bomb plant
+        /// (<c>MantaStingActionExecutor.SpendBomb</c>); do not hang it on anything else (Docs/HAPTICS.md).
+        /// </summary>
+        public static void PlayPlant()
+        {
+            if (!TryBeginPlayback(out var level)) return;
+
+            float now = Time.unscaledTime;
+            if (now < s_alertBusyUntil) return;
+            if (now < s_punishBusyUntil) return;
+            if (now - s_lastPlantTime < PlantMinIntervalSec) return;
+            s_lastPlantTime = now;
+            s_plantBusyUntil = now + PlantDurationSec;
+            s_skimBusyUntil = Mathf.Max(s_skimBusyUntil, s_plantBusyUntil);   // the textures yield to it too
+
+            EnsureClips();
+            PlayPattern(s_plantJson, s_plantRumble, level);
+        }
+
+        /// <summary>
+        /// The drift PRESS kick: one crisp, firm tap the moment a drift engages. Mid frequency,
+        /// both motors, a soft attack (not the skim's sharp transient) — "you're in".
+        /// </summary>
+        public static void PlayDriftEngage() => PlayDriftKick(engage: true);
+
+        /// <summary>
+        /// The drift LET-GO kick: one softer, lower release bump the moment a drift ends —
+        /// "you're out". Low-motor led so it reads as the opposite of the press.
+        /// </summary>
+        public static void PlayDriftRelease() => PlayDriftKick(engage: false);
+
+        // Priority: alert > punish > skim > drift kicks > textures (spray / bind / drift rumble).
+        static void PlayDriftKick(bool engage)
+        {
+            if (!TryBeginPlayback(out var level)) return;
+
+            float now = Time.unscaledTime;
+            if (now < s_alertBusyUntil) return;
+            if (now < s_punishBusyUntil) return;
+            if (now < s_skimBusyUntil) return;
+            if (now - s_lastDriftKickTime < DriftKickMinIntervalSec) return;
+            s_lastDriftKickTime = now;
+            s_driftKickBusyUntil = now + (engage ? DriftEngageDurationSec : DriftReleaseDurationSec);
+
+            EnsureClips();
+            if (engage) PlayPattern(s_driftEngageJson, s_driftEngageRumble, level);
+            else        PlayPattern(s_driftReleaseJson, s_driftReleaseRumble, level);
         }
 
         // Shared gate on the player's setting. Returns the output level (haptics "volume") to use.
@@ -231,18 +408,32 @@ namespace CosmicShore.Gameplay
 
         // ---------------------------------------------------------------- runtime clip generation
 
-        // Both clips are generated once as .haptic JSON (iOS/Android) + a GamepadRumble (gamepads),
-        // then reloaded per pulse — exactly how NiceVibrations' own HapticPatterns work. The JSON
-        // matches the plugin's nv-*-template.txt schema; decimal points are hard-coded so the strings
-        // are locale-independent.
+        // Each feel is generated once as BOTH a .haptic JSON envelope (the portable, authored
+        // source — see PlayMobilePattern) and a GamepadRumblePattern (what actually plays today),
+        // then replayed per pulse. Decimal points are hard-coded so the strings are
+        // locale-independent.
         static byte[] s_skimJson;
         static byte[] s_punishJson;
+        static byte[] s_punishShieldedJson;
+        static byte[] s_punishHeavyJson;
         static byte[] s_alertJson;
         static byte[] s_sprayJson;
-        static GamepadRumble s_skimRumble;
-        static GamepadRumble s_punishRumble;
-        static GamepadRumble s_alertRumble;
-        static GamepadRumble s_sprayRumble;
+        static byte[] s_bindJson;
+        static byte[] s_driftJson;
+        static byte[] s_driftEngageJson;
+        static byte[] s_driftReleaseJson;
+        static byte[] s_plantJson;
+        static GamepadRumblePattern s_skimRumble;
+        static GamepadRumblePattern s_punishRumble;
+        static GamepadRumblePattern s_punishShieldedRumble;
+        static GamepadRumblePattern s_punishHeavyRumble;
+        static GamepadRumblePattern s_alertRumble;
+        static GamepadRumblePattern s_sprayRumble;
+        static GamepadRumblePattern s_bindRumble;
+        static GamepadRumblePattern s_driftRumble;
+        static GamepadRumblePattern s_driftEngageRumble;
+        static GamepadRumblePattern s_driftReleaseRumble;
+        static GamepadRumblePattern s_plantRumble;
         static bool s_clipsBuilt;
 
         static void EnsureClips()
@@ -266,14 +457,40 @@ namespace CosmicShore.Gameplay
             // Punish — heavy & dull: full amplitude held then decaying over ~200 ms, zero frequency
             // (the deepest/heaviest character, the opposite of the skim). No transient.
             s_punishJson = ClipJson(
-                "{\"time\":0.0,\"amplitude\":1.0}," +
-                "{\"time\":0.12,\"amplitude\":0.85}," +
-                "{\"time\":0.20,\"amplitude\":0.0}",
-                frequency: "0.0", durationSec: "0.20");
+                "{\"time\":0.0,\"amplitude\":0.75}," +
+                "{\"time\":0.14,\"amplitude\":0.75}," +
+                "{\"time\":0.24,\"amplitude\":0.0}",
+                frequency: "0.0", durationSec: "0.24");
+            // 75% of the doubled thud as felt (low 1, 1 / high 0.5, 0.3), played at gain 1.
             s_punishRumble = Rumble(
-                new[] { 120, 80 },
-                low: new[] { 1.0f, 0.6f },   // low-frequency motor = the heavy rumble
-                high: new[] { 0.15f, 0.1f });
+                new[] { 140, 100 },
+                low: new[] { 0.75f, 0.75f },   // low-frequency motor = the heavy rumble
+                high: new[] { 0.375f, 0.225f });
+
+            // Punish, shielded — the same thud, longer, with more grit on the high motor: you hit armour.
+            s_punishShieldedJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":1.0}," +
+                "{\"time\":0.18,\"amplitude\":0.9}," +
+                "{\"time\":0.30,\"amplitude\":0.0}",
+                frequency: "0.05", durationSec: "0.30");
+            s_punishShieldedRumble = Rumble(
+                new[] { 180, 120 },
+                low: new[] { 1.0f, 0.8f },
+                high: new[] { 0.40f, 0.25f });
+
+            // Punish, heavy (danger or super-shielded) — a CRUNCH: a full slam, a short dip, a second slam, a tail.
+            // Two hits read as "that really hurt", where the plain thud is one.
+            s_punishHeavyJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":1.0}," +
+                "{\"time\":0.15,\"amplitude\":0.4}," +
+                "{\"time\":0.21,\"amplitude\":1.0}," +
+                "{\"time\":0.34,\"amplitude\":0.5}," +
+                "{\"time\":0.42,\"amplitude\":0.0}",
+                frequency: "0.05", durationSec: "0.42");
+            s_punishHeavyRumble = Rumble(
+                new[] { 150, 60, 130, 80 },
+                low: new[] { 1.0f, 0.35f, 1.0f, 0.5f },
+                high: new[] { 0.55f, 0.15f, 0.45f, 0.15f });
 
             // Alert — a long RATTLE: full-amplitude sawtooth so the motors slam on and off
             // repeatedly instead of holding, plus a mid frequency so it reads as neither the
@@ -311,6 +528,69 @@ namespace CosmicShore.Gameplay
                 new[] { 30, 20 },
                 low:  new[] { 0.85f, 0.55f },
                 high: new[] { 0.70f, 0.45f });
+
+            // Bind — a low GRIND, ~80 ms. No transient (that is the skim's), low frequency
+            // (0.15 — heavier than the spray, lighter than the thud's 0.0), carried by the LOW
+            // motor with a little high-motor grit so it reads as friction rather than a hum. The
+            // caller repeats it with a small gap, so it pulses like a blade dragging on armour.
+            s_bindJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":0.8}," +
+                "{\"time\":0.05,\"amplitude\":1.0}," +
+                "{\"time\":0.08,\"amplitude\":0.0}",
+                frequency: "0.15", durationSec: "0.08");
+            s_bindRumble = Rumble(
+                new[] { 50, 30 },
+                low:  new[] { 0.95f, 0.55f },
+                high: new[] { 0.25f, 0.10f });
+
+            // Drift — a smooth SLIDE, ~90 ms. No transient, frequency 0.3 (between bind and
+            // spray), low motor leading but softer than the bind, a gentle swell then fade so
+            // back-to-back pulses blend into a continuous rumble rather than a grind.
+            s_driftJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":0.6}," +
+                "{\"time\":0.05,\"amplitude\":0.8}," +
+                "{\"time\":0.09,\"amplitude\":0.0}",
+                frequency: "0.3", durationSec: "0.09");
+            s_driftRumble = Rumble(
+                new[] { 50, 40 },
+                low:  new[] { 0.65f, 0.45f },
+                high: new[] { 0.30f, 0.20f });
+
+            // Drift press — a firm ~60 ms tap, mid frequency, both motors, quick fade.
+            s_driftEngageJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":1.0}," +
+                "{\"time\":0.03,\"amplitude\":0.7}," +
+                "{\"time\":0.06,\"amplitude\":0.0}",
+                frequency: "0.6", durationSec: "0.06");
+            s_driftEngageRumble = Rumble(
+                new[] { 30, 30 },
+                low:  new[] { 0.70f, 0.40f },
+                high: new[] { 0.80f, 0.45f });
+
+            // Drift let-go — a softer ~90 ms bump, low frequency, low motor led, longer fade.
+            s_driftReleaseJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":0.75}," +
+                "{\"time\":0.04,\"amplitude\":0.5}," +
+                "{\"time\":0.09,\"amplitude\":0.0}",
+                frequency: "0.2", durationSec: "0.09");
+            s_driftReleaseRumble = Rumble(
+                new[] { 40, 50 },
+                low:  new[] { 0.75f, 0.35f },
+                high: new[] { 0.25f, 0.10f });
+
+            // Plant — a double KNOCK, ~130 ms: two short firm hits with a gap, mid-low frequency (0.35), both motors
+            // with the low one leading. Two hits is the signature: the skim is one bright tick, the punish one long
+            // thud. The second knock is a little softer, so it reads as "clamped on" rather than a stutter.
+            s_plantJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":1.0}," +
+                "{\"time\":0.04,\"amplitude\":0.0}," +
+                "{\"time\":0.08,\"amplitude\":0.75}," +
+                "{\"time\":0.13,\"amplitude\":0.0}",
+                frequency: "0.35", durationSec: "0.13");
+            s_plantRumble = Rumble(
+                new[] { 40, 40, 50 },
+                low:  new[] { 0.90f, 0.0f, 0.65f },
+                high: new[] { 0.55f, 0.0f, 0.40f });
         }
 
         // Builds a continuous .haptic clip: the caller supplies the amplitude breakpoints; frequency
@@ -328,18 +608,41 @@ namespace CosmicShore.Gameplay
             return Encoding.UTF8.GetBytes(json);
         }
 
-        static GamepadRumble Rumble(int[] durationsMs, float[] low, float[] high)
+        static GamepadRumblePattern Rumble(int[] durationsMs, float[] low, float[] high) =>
+            new GamepadRumblePattern(durationsMs, low, high);
+
+        // ---------------------------------------------------------------- playback
+
+        /// <summary>
+        /// Hand one feel to every backend that can express it. <paramref name="gain"/> is the
+        /// player's haptics level already multiplied by this pulse's own strength — one number,
+        /// so a backend cannot apply half of the scaling.
+        /// </summary>
+        static void PlayPattern(byte[] clipJson, in GamepadRumblePattern rumble, float gain)
         {
-            var rumble = new GamepadRumble
-            {
-                durationsMs = durationsMs,
-                lowFrequencyMotorSpeeds = low,
-                highFrequencyMotorSpeeds = high,
-                totalDurationMs = 0
-            };
-            for (int i = 0; i < durationsMs.Length; i++)
-                rumble.totalDurationMs += durationsMs[i];
-            return rumble;
+            GamepadRumblePlayer.Play(rumble, gain);
+            PlayMobilePattern(clipJson, gain);
         }
+
+        /// <summary>
+        /// <b>Mobile device haptics are not implemented, and that is a stated position rather than
+        /// an oversight.</b>
+        ///
+        /// <para>Pattern haptics on a phone — iOS Core Haptics, Android <c>VibrationEffect</c> —
+        /// were the ONE thing the NiceVibrations plugin provided that a gamepad cannot, and the
+        /// launch platform is PC/Steam, where a pad is the only thing in the room with motors. So
+        /// this ships SILENT on a phone rather than reaching for <c>Handheld.Vibrate()</c>: that
+        /// call is a single fixed buzz of a few hundred milliseconds with no amplitude and no
+        /// envelope, so it cannot express any of the four feels, and firing one per skim would
+        /// make a phone strictly worse than silence. A pad connected to a phone still rumbles —
+        /// <see cref="GamepadRumblePlayer"/> is platform-agnostic, where the plugin's gamepad path
+        /// was compiled out on iOS and Android entirely.</para>
+        ///
+        /// <para>The <c>.haptic</c> JSON handed here is retained for exactly this reason: it is
+        /// the only portable record of the four envelopes, it costs four small strings built once,
+        /// and it is what a future backend consumes. Do not delete it to tidy up an unused
+        /// parameter — deleting it is deleting the authored source.</para>
+        /// </summary>
+        static void PlayMobilePattern(byte[] clipJson, float gain) { }
     }
 }

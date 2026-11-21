@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Item 8 - what changes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.big>span{padding:14px 28px;font-size:18px}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.btn:disabled{cursor:default}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csDrop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes csGlow{0%,100%{box-shadow:0 0 18px rgba(153,255,128,.22)}50%{box-shadow:0 0 34px rgba(153,255,128,.5)}}
+@keyframes csShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes csSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes csSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes csDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes csCeremony{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile,.card{transition:filter 120ms ease-out}
+.tile:hover,.card:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+</style>
+</helmet>
+<div style="width: 1100px; min-height: 1560px; box-sizing: border-box; padding: 48px 56px; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', sans-serif; display: flex; flex-direction: column; gap: 28px">
+  <h1 style="margin: 0; font-weight: 400; font-size: 36px">Item 8 - what changes</h1>
+    <section style="display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font-weight: 400; font-size: 22px; color: #E6E9FF">One shell, four windows</h2>
+      <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.5; color: #E6E9FF">
+        <li>Arena, Toy Box and Mission take the Arcade layout from item 3: the shared party panel on the left (party, invites, online list) and the content on the right, under the standard header with Back.</li>
+        <li>Back closes through the window like gamepad B (ModalWindowCloseButton), so the Window Out animation plays; it used to deactivate the window and navigate HOME.</li>
+      </ul>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font-weight: 400; font-size: 22px; color: #E6E9FF">Arena</h2>
+      <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.5; color: #E6E9FF">
+        <li>Four cards, so they draw large: art, name, the objective line, the pilot and domain counts, and EVERY hull the card seats as a strip of class tiles (the old card showed only the first hull, so a multi-hull card did not read as one).</li>
+        <li>Content found: Astro League's description says 'Rhino only' while the card lists three hulls.</li>
+      </ul>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font-weight: 400; font-size: 22px; color: #E6E9FF">Toy Box</h2>
+      <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.5; color: #E6E9FF">
+        <li>Today's activity and Shuffle become the two feature cards. The activity is drawn in the section 10.6 Free / CTA state (green glow, CTA 'Try it +10') until claimed, then owned (lavender Done, 'New activity in 7h 12m').</li>
+        <li>Toy cards carry the toy's accent as a 3 px strip, the codex portrait, the group (Pilot / World / Creation, which no label showed) and the description. Unavailable toys read Inactive, with a label - the overlay was unwired.</li>
+        <li>Four columns, so all seven toys fit without scrolling at 1920; the grid gets KitScrollIntoView anyway.</li>
+      </ul>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font-weight: 400; font-size: 22px; color: #E6E9FF">Toy configure</h2>
+      <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.5; color: #E6E9FF">
+        <li>Same frame as the game configure window: preview left, the toy's text under it, and the variations on the right as slivered tiles (selected: Light border, Neutral Dark fill). Branch rows end in a chevron; inside a branch a Back button and a breadcrumb replace the '<  Back' row.</li>
+        <li>The commit button is the opaque CTA with the toy's verb (Switch, Start, Resume, Spawn); it is inactive until a row is picked and hidden for Domain Changer, where a tap applies. Navigate keeps its place; its A glyph goes, because the binding fired on every A press.</li>
+        <li>B steps out of a branch before it closes the window. Today the close button's own B binding closes the whole window even inside a branch.</li>
+      </ul>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font-weight: 400; font-size: 22px; color: #E6E9FF">Revision 2 (motion and fill)</h2>
+      <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.5; color: #E6E9FF">
+        <li>Every window opens with the panels rising in and the cards following on the 40 ms stagger; the party panel sits on the blueprint grid with corner brackets and its online dot breathes.</li>
+        <li>Toy Box: today's activity glows (state glow: free reward) with a live 'Ends in 7h 12m 41s', the painting pans, 'Try it +10' carries the sweep; Shuffle spins its icon and cycles through candidate results before landing; toy portraits float on the grid.</li>
+        <li>Arena: card art pans slowly and each card's hull strip pops in tile by tile.</li>
+        <li>Toy configure: the toy portrait floats and sways (the game's preview orbits at 12 deg/s), the variation tiles rise in, the panel takes the grid and brackets, and the commit button carries the sweep.</li>
+      </ul>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font-weight: 400; font-size: 22px; color: #E6E9FF">Mission</h2>
+      <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.5; color: #E6E9FF">
+        <li>Restyled with its one card, 'Protect Mission'. The hub button is still Unavailable, so nothing reaches it; the card also cannot be wired as things stand (an SO_MissionList, not an SO_GameList).</li>
+      </ul>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font-weight: 400; font-size: 22px; color: #E6E9FF">For you to decide</h2>
+      <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.5; color: #E6E9FF">
+        <li>Portraits: Wander's codex art is the conveyor still; drawn with tool_arkway. Element Charger has none; drawn with ethirion_omni.</li>
+        <li>Buckyball and Lion's Head have no painting art yet (blank tiles).</li>
+      </ul>
+    </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1100,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

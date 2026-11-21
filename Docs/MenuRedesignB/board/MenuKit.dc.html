@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Menu B component kit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+a{color:#80EAFF}a:hover{color:#E6E9FF}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.slsf{clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--bf);color:var(--bt);padding:14px 28px;font-size:18px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left}
+</style>
+</helmet>
+<div style="width: 1920px; height: 2140px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+
+  <header style="width: 1920px; height: 84px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 56px; background: #00041F; border-bottom: 1px solid #222645; font-family: 'Chakra Petch', sans-serif; font-weight: 600; font-size: 18px; letter-spacing: .12em">
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 4px 12px; color: #747BAD; font-size: 14px">LT</span></span>
+    <span style="color: #00D4FF; padding-top: 8px; padding-bottom: 6px; border-bottom: 2px solid #00D4FF">HANGAR</span>
+    <span style="color: #747BAD">ARK</span>
+    <span style="color: #747BAD">HOME</span>
+    <span style="color: #5C5F70; display: flex; align-items: center; gap: 8px"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg>PORT</span>
+    <span style="color: #747BAD">PROFILE</span>
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 4px 12px; color: #747BAD; font-size: 14px">RT</span></span>
+  </header>
+
+  <div style="padding: 36px 64px 0; display: flex; flex-direction: column; gap: 6px">
+    <span class="lab">Menu redesign B / Item 0</span>
+    <h1 style="margin: 0; font-weight: 400; font-size: 36px; line-height: 1.1">Component kit</h1>
+  </div>
+
+  <div style="padding: 32px 64px 64px; display: flex; flex-direction: column; gap: 48px">
+
+    <div style="display: grid; grid-template-columns: 1040px minmax(0, 1fr); gap: 48px">
+
+      <section class="sl" style="background: #222645; padding: 1px">
+        <div class="sl" style="background: #00041F; padding: 24px 28px; display: flex; flex-direction: column; gap: 18px; height: 100%; box-sizing: border-box">
+          <div style="display: flex; justify-content: space-between"><span class="lab" style="color: #E6E9FF">Buttons</span><span class="lab">Transparent / Opaque / Focused</span></div>
+          <div style="display: grid; grid-template-columns: 130px repeat(3, minmax(0, 1fr)); gap: 16px 24px; align-items: center; justify-items: start">
+
+            <span class="lab">Default</span>
+            <button class="btn" type="button" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Confirm</span></button>
+            <button class="btn" type="button" style="--bc: #E6E9FF; --bf: #E6E9FF; --bt: #00010A"><span>Confirm</span></button>
+            <span class="sls" style="display: inline-flex; background: #99FF80; padding: 2px"><span class="sls" style="display: inline-flex; background: #00041F; padding: 3px"><button class="btn" type="button" style="--bc: #E6E9FF; --bf: #E6E9FF; --bt: #00010A"><span>Confirm</span></button></span></span>
+
+            <span class="lab">Inactive</span>
+            <button class="btn" type="button" disabled="disabled" style="--bc: #5C5F70; --bf: #0B0F29; --bt: #5C5F70; cursor: default"><span>Unlocked</span></button>
+            <button class="btn" type="button" disabled="disabled" style="--bc: #5C5F70; --bf: #5C5F70; --bt: #25262D; cursor: default"><span>Unlocked</span></button>
+            <span class="lab" style="color: #5C5F70">Not focusable</span>
+
+            <span class="lab">Cancel</span>
+            <button class="btn" type="button" style="--bc: #747BAD; --bf: #0E1230; --bt: #E6E9FF"><span>Cancel</span></button>
+            <button class="btn" type="button" style="--bc: #747BAD; --bf: #747BAD; --bt: #00010A"><span>Cancel</span></button>
+            <span class="sls" style="display: inline-flex; background: #99FF80; padding: 2px"><span class="sls" style="display: inline-flex; background: #00041F; padding: 3px"><button class="btn" type="button" style="--bc: #747BAD; --bf: #747BAD; --bt: #00010A"><span>Cancel</span></button></span></span>
+
+            <span class="lab">Purchase</span>
+            <button class="btn" type="button" style="--bc: #FFAE00; --bf: #1F181B; --bt: #FFAE00"><span><svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 1l6 6-6 10-6-10z"></path><path d="M2 7h12"></path></svg>Unlock - 4000</span></button>
+            <button class="btn" type="button" style="--bc: #FFAE00; --bf: #FFAE00; --bt: #00010A"><span><svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 1l6 6-6 10-6-10z"></path><path d="M2 7h12"></path></svg>Unlock - 4000</span></button>
+            <span class="sls" style="display: inline-flex; background: #99FF80; padding: 2px"><span class="sls" style="display: inline-flex; background: #00041F; padding: 3px"><button class="btn" type="button" style="--bc: #FFAE00; --bf: #FFAE00; --bt: #00010A"><span><svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 1l6 6-6 10-6-10z"></path><path d="M2 7h12"></path></svg>Unlock - 4000</span></button></span></span>
+
+            <span class="lab">CTA</span>
+            <button class="btn" type="button" style="--bc: #99FF80; --bf: #12222B; --bt: #99FF80"><span>Free</span></button>
+            <button class="btn" type="button" style="--bc: #99FF80; --bf: #99FF80; --bt: #00010A"><span>Free</span></button>
+            <span class="sls" style="display: inline-flex; background: #99FF80; padding: 2px"><span class="sls" style="display: inline-flex; background: #00041F; padding: 3px"><button class="btn" type="button" style="--bc: #99FF80; --bf: #99FF80; --bt: #00010A"><span>Free</span></button></span></span>
+
+            <span class="lab">Play</span>
+            <button class="btn" type="button" style="--bc: #00D4FF; --bf: #003655; --bt: #E6E9FF"><span>Tap to play</span></button>
+            <button class="btn" type="button" style="--bc: #80EAFF; --bf: linear-gradient(90deg, #00D4FF 0%, #80EAFF 100%); --bt: #00010A"><span>Tap to play</span></button>
+            <span class="sls" style="display: inline-flex; background: #99FF80; padding: 2px"><span class="sls" style="display: inline-flex; background: #00041F; padding: 3px"><button class="btn" type="button" style="--bc: #80EAFF; --bf: linear-gradient(90deg, #00D4FF 0%, #80EAFF 100%); --bt: #00010A"><span>Tap to play</span></button></span></span>
+
+            <span class="lab">Danger</span>
+            <span class="lab" style="color: #5C5F70">Full-bleed fill only</span>
+            <button class="btn" type="button" style="--bc: #FF4B3A; --bf: #FF4B3A; --bt: #00010A"><span>Delete my data</span></button>
+            <span class="sls" style="display: inline-flex; background: #99FF80; padding: 2px"><span class="sls" style="display: inline-flex; background: #00041F; padding: 3px"><button class="btn" type="button" style="--bc: #FF4B3A; --bf: #FF4B3A; --bt: #00010A"><span>Delete my data</span></button></span></span>
+
+            <span class="lab">Small</span>
+            <button class="btn" type="button" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span style="padding: 9px 18px; font-size: 14px">Back</span></button>
+            <button class="btn" type="button" style="--bc: #E6E9FF; --bf: #E6E9FF; --bt: #00010A"><span style="padding: 9px 18px; font-size: 14px">Add AI</span></button>
+            <span class="sls" style="display: inline-flex; background: #99FF80; padding: 2px"><span class="sls" style="display: inline-flex; background: #00041F; padding: 3px"><button class="btn" type="button" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span style="padding: 9px 18px; font-size: 14px">Back</span></button></span></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="sl" style="background: #222645; padding: 1px">
+        <div class="sl" style="background: #00041F; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; height: 100%; box-sizing: border-box">
+          <div style="display: flex; justify-content: space-between"><span class="lab" style="color: #E6E9FF">Type roles</span><span class="lab">At 1920</span></div>
+          <div style="display: grid; grid-template-columns: 120px minmax(0, 1fr) 150px; gap: 10px 16px; align-items: baseline">
+            <span class="lab">Display</span><span style="font-size: 48px; line-height: 1">MANTA</span><span class="lab" style="text-align: right">Aldrich 48</span>
+            <span class="lab">H1</span><span style="font-size: 36px; line-height: 1.1">Hangar</span><span class="lab" style="text-align: right">Aldrich 36</span>
+            <span class="lab">H2</span><span style="font-size: 28px; line-height: 1.15">Select a vessel</span><span class="lab" style="text-align: right">Aldrich 28</span>
+            <span class="lab">H3</span><span style="font-size: 22px; line-height: 1.2">Intensity Level</span><span class="lab" style="text-align: right">Aldrich 22</span>
+            <span class="lab">Body</span><span style="font-size: 18px; line-height: 1.45">Soar at high speed through open spaces to create the biggest blocks</span><span class="lab" style="text-align: right">Aldrich 18</span>
+            <span class="lab">Body small</span><span style="font-size: 15px; line-height: 1.45; color: #747BAD">Additional Players will be AI</span><span class="lab" style="text-align: right">Aldrich 15</span>
+            <span class="lab">Button</span><span style="font-family: 'Chakra Petch', sans-serif; font-weight: 600; font-size: 18px; letter-spacing: .08em">CONFIRM</span><span class="lab" style="text-align: right">Chakra SB 18</span>
+            <span class="lab">Label</span><span class="lab" style="color: #747BAD">Total player count</span><span class="lab" style="text-align: right">Chakra SB 14</span>
+            <span class="lab">Data large</span><span style="font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums">4000</span><span class="lab" style="text-align: right">Aldrich 44 mspace</span>
+            <span class="lab">Data</span><span style="font-size: 20px; font-variant-numeric: tabular-nums">00:13:37</span><span class="lab" style="text-align: right">Aldrich 20 mspace</span>
+            <span class="lab">Data small</span><span style="font-size: 15px; font-variant-numeric: tabular-nums">3rd</span><span class="lab" style="text-align: right">Aldrich 15 mspace</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 320px 140px 540px minmax(0, 1fr); gap: 48px">
+
+      <section style="display: flex; flex-direction: column; gap: 14px">
+        <span class="lab" style="color: #E6E9FF">List tiles</span>
+
+        <button class="tile sl" type="button" aria-pressed="true" style="background: #E6E9FF; padding: 2px">
+          <span class="sl" style="display: flex; align-items: center; gap: 14px; background: #222645; padding: 12px 16px">
+            <img src="/_blob/8b309e88bfc22249560c8e585c37999d" alt="" style="width: 72px; height: 72px; object-fit: contain">
+            <span style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 18px">Squirrel</span><span class="lab" style="color: #E6E9FF">Selected</span></span>
+          </span>
+        </button>
+
+        <button class="tile sl" type="button" aria-pressed="false" style="background: #222645; padding: 1px">
+          <span class="sl" style="display: flex; align-items: center; gap: 14px; background: #00041F; padding: 13px 17px">
+            <span class="sls" style="width: 72px; height: 72px; flex: none; background: #434C89; padding: 1px; box-sizing: border-box"><span class="sls" style="display: grid; place-items: center; width: 100%; height: 100%; background: #00041F; color: #747BAD"><svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 4h22v18l-8 8H4V12z"></path></svg></span></span>
+            <span style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 18px">Stoat</span><span class="lab">Art pending</span></span>
+          </span>
+        </button>
+
+        <span class="sl" style="display: block; background: #99FF80; padding: 2px"><span class="sl" style="display: block; background: #00010A; padding: 3px">
+          <button class="tile sl" type="button" aria-pressed="false" style="display: block; width: 100%; background: #222645; padding: 1px">
+            <span class="sl" style="display: flex; align-items: center; gap: 14px; background: #00041F; padding: 8px 12px">
+              <span style="position: relative; width: 72px; height: 72px; flex: none"><img src="/_blob/518d19d5146ca6c7f92d1f0406c1b0e1" alt="" style="width: 72px; height: 72px; object-fit: contain; opacity: 0.35"><svg width="22" height="24" viewBox="0 0 14 16" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true" style="position: absolute; left: 25px; top: 24px"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg></span>
+              <span style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 18px; color: #747BAD">Dolphin</span><span class="lab" style="color: #FFAE00">Locked / 4000</span></span>
+            </span>
+          </button>
+        </span></span>
+
+        <button class="tile sl" type="button" aria-pressed="false" style="background: #222645; padding: 1px">
+          <span class="sl" style="display: flex; align-items: center; gap: 14px; background: #00041F; padding: 13px 17px">
+            <span style="position: relative; width: 72px; height: 72px; flex: none"><img src="/_blob/f10b42ea1f9c6e747dff38576a18d4d8" alt="" style="width: 72px; height: 72px; object-fit: contain; opacity: 0.35"><svg width="22" height="24" viewBox="0 0 14 16" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true" style="position: absolute; left: 25px; top: 24px"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg></span>
+            <span style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 18px; color: #747BAD">Manta</span><span class="lab" style="color: #FFAE00">Locked / 4000</span></span>
+          </span>
+        </button>
+      </section>
+
+      <nav aria-label="Settings sections" style="display: flex; flex-direction: column; gap: 22px; align-items: center; padding-top: 32px">
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <span class="hex" style="width: 88px; height: 76px; background: #E6E9FF; display: grid; place-items: center"><span class="hex" style="width: 84px; height: 72px; background: #222645; display: grid; place-items: center; color: #E6E9FF"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 9h22"></path><path d="M5 16h22"></path><path d="M5 23h22"></path><path d="M11 6v6"></path><path d="M21 13v6"></path><path d="M14 20v6"></path></svg></span></span>
+          <span class="lab" style="color: #E6E9FF">General</span>
+        </span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <span class="hex" style="width: 88px; height: 76px; background: #222645; display: grid; place-items: center"><span class="hex" style="width: 84px; height: 72px; background: #00041F; display: grid; place-items: center; color: #747BAD"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h24v16H4z"></path><path d="M11 27h10"></path><path d="M16 22v5"></path></svg></span></span>
+          <span class="lab">Display</span>
+        </span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <span class="hex" style="width: 88px; height: 76px; background: #222645; display: grid; place-items: center"><span class="hex" style="width: 84px; height: 72px; background: #00041F; display: grid; place-items: center; color: #747BAD"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 26V18h5v8"></path><path d="M13.5 26V12h5v14"></path><path d="M22 26V6h5v20"></path></svg></span></span>
+          <span class="lab">Performance</span>
+        </span>
+        <span style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <span class="hex" style="width: 88px; height: 76px; background: #222645; display: grid; place-items: center"><span class="hex" style="width: 84px; height: 72px; background: #00041F; display: grid; place-items: center; color: #747BAD"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 14h4v4H6z"></path><path d="M14 14h4v4h-4z"></path><path d="M22 14h4v4h-4z"></path></svg></span></span>
+          <span class="lab">Other</span>
+        </span>
+      </nav>
+
+      <section class="sl" style="background: #222645; padding: 1px">
+        <div class="sl" style="background: #00041F; padding: 22px 26px; display: flex; flex-direction: column; gap: 16px; height: 100%; box-sizing: border-box">
+          <div style="display: flex; justify-content: space-between"><span class="lab" style="color: #E6E9FF">Other</span><span class="lab">Panel / section / divider</span></div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <span style="font-size: 18px">Invert Y</span>
+            <span style="display: flex; gap: 24px; font-family: 'Chakra Petch', sans-serif; font-weight: 600; font-size: 18px; letter-spacing: .08em">
+              <span style="color: #E6E9FF; padding-bottom: 4px; border-bottom: 2px solid #00D4FF">ON</span>
+              <span style="color: #5C5F70; padding-bottom: 4px; border-bottom: 2px solid transparent">OFF</span>
+            </span>
+          </div>
+          <div style="height: 1px; background: #222645"></div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <span style="font-size: 18px">Invert Throttle</span>
+            <span style="display: flex; gap: 24px; font-family: 'Chakra Petch', sans-serif; font-weight: 600; font-size: 18px; letter-spacing: .08em">
+              <span style="color: #5C5F70; padding-bottom: 4px; border-bottom: 2px solid transparent">ON</span>
+              <span style="color: #E6E9FF; padding-bottom: 4px; border-bottom: 2px solid #00D4FF">OFF</span>
+            </span>
+          </div>
+          <div style="height: 1px; background: #222645"></div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <span style="font-size: 18px">Music Volume</span>
+            <span role="img" aria-label="Slider at 70 percent" style="position: relative; width: 260px; height: 24px; display: block">
+              <span style="position: absolute; left: 0; top: 10px; width: 260px; height: 4px; background: rgba(0, 212, 255, 0.25)"></span>
+              <span style="position: absolute; left: 0; top: 10px; width: 182px; height: 4px; background: #00D4FF"></span>
+              <span class="hex" style="position: absolute; left: 168px; top: 0; width: 28px; height: 24px; background: #00D4FF"></span>
+            </span>
+          </div>
+          <div style="height: 1px; background: #222645"></div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <span style="font-size: 18px">SFX Volume</span>
+            <span role="img" aria-label="Focused slider at 40 percent" style="position: relative; width: 260px; height: 28px; display: block">
+              <span style="position: absolute; left: 0; top: 12px; width: 260px; height: 4px; background: rgba(0, 212, 255, 0.25)"></span>
+              <span style="position: absolute; left: 0; top: 12px; width: 104px; height: 4px; background: #00D4FF"></span>
+              <span class="hex" style="position: absolute; left: 88px; top: 0; width: 32px; height: 28px; background: #99FF80; display: grid; place-items: center"><span class="hex" style="width: 28px; height: 24px; background: #00D4FF"></span></span>
+            </span>
+          </div>
+          <div style="height: 1px; background: #222645"></div>
+
+          <span class="lab" style="color: #E6E9FF">Game mode</span>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 5px 12px; font-size: 15px">Solo</span></span>
+            <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 5px 12px; font-size: 15px">Social</span></span>
+            <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 5px 12px; font-size: 15px">Casual</span></span>
+          </div>
+
+          <div style="margin-top: auto; display: flex; gap: 12px">
+            <span style="width: 3px; height: 44px; background: #E6E9FF; flex: none"></span>
+            <span style="font-size: 15px; line-height: 1.45; align-self: center">Soar at high speed through open spaces to create the biggest blocks</span>
+          </div>
+        </div>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 28px">
+        <div style="display: flex; flex-direction: column; gap: 14px">
+          <span class="lab" style="color: #E6E9FF">Currency bar</span>
+          <span class="sls" style="align-self: flex-start; display: inline-flex; background: #E6E9FF; padding: 1px"><span class="sls" style="display: flex; align-items: center; gap: 10px; background: #00041F; padding: 8px 16px; font-size: 20px; font-variant-numeric: tabular-nums"><svg width="18" height="20" viewBox="0 0 16 18" fill="none" stroke="#FFAE00" stroke-width="1.8" aria-hidden="true"><path d="M8 1l6 6-6 10-6-10z"></path><path d="M2 7h12"></path></svg>4000</span></span>
+          <span class="sls" style="align-self: flex-start; display: inline-flex; background: #E6E9FF; padding: 1px"><span class="sls" style="display: flex; align-items: center; gap: 22px; background: #00041F; padding: 8px 18px; font-size: 20px; font-variant-numeric: tabular-nums">
+            <span style="display: flex; align-items: center; gap: 8px"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><path d="M10 1l8 9-8 9-8-9z"></path><path d="M2 10h16"></path><path d="M10 1v18"></path></svg>0</span>
+            <span style="display: flex; align-items: center; gap: 8px"><img src="/_blob/45c5e9c745034929597cf8672b055f7e" alt="Charge" style="width: 20px; height: 20px">0</span>
+            <span style="display: flex; align-items: center; gap: 8px"><img src="/_blob/78b9c1892afba79cb8aa7eda3822d656" alt="Mass" style="width: 20px; height: 20px">0</span>
+            <span style="display: flex; align-items: center; gap: 8px"><img src="/_blob/ff6251c9dc3b2289f3b00b5cf1bd4df5" alt="Space" style="width: 20px; height: 20px">0</span>
+            <span style="display: flex; align-items: center; gap: 8px"><img src="/_blob/3b975e757d81ee299e463848d6ce0048" alt="Time" style="width: 20px; height: 20px">0</span>
+          </span></span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px">
+          <span class="lab" style="color: #E6E9FF">Sprites / white + alpha</span>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: end">
+            <div style="display: flex; flex-direction: column; gap: 6px"><span class="sl" style="display: block; height: 64px; background: #E6E9FF"></span><span class="lab">Sliver 14</span></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span class="sl" style="display: block; height: 64px; background: #E6E9FF; padding: 1px; box-sizing: border-box"><span class="sl" style="display: block; height: 100%; background: #00010A"></span></span><span class="lab">14 / 1 px</span></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span class="sl" style="display: block; height: 64px; background: #E6E9FF; padding: 2px; box-sizing: border-box"><span class="sl" style="display: block; height: 100%; background: #00010A"></span></span><span class="lab">14 / 2 px</span></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span class="slf" style="display: block; height: 64px; background: #E6E9FF"></span><span class="lab">14 flipped</span></div>
+          </div>
+          <div style="display: flex; gap: 14px; align-items: end">
+            <div style="display: flex; flex-direction: column; gap: 6px"><span class="sls" style="display: block; width: 64px; height: 44px; background: #E6E9FF"></span><span class="lab">10 / 64</span></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span class="sls" style="display: block; width: 160px; height: 44px; background: #E6E9FF"></span><span class="lab">10 / 160</span></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span class="sls" style="display: block; width: 260px; height: 44px; background: #E6E9FF"></span><span class="lab">10 / 260</span></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span class="slsf" style="display: block; width: 64px; height: 44px; background: #E6E9FF"></span><span class="lab">10 flip</span></div>
+          </div>
+          <div style="display: flex; gap: 22px; align-items: end">
+            <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><span class="hex" style="display: block; width: 88px; height: 76px; background: #E6E9FF"></span><span class="lab">Hex</span></div>
+            <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><span class="hex" style="display: grid; place-items: center; width: 88px; height: 76px; background: #E6E9FF"><span class="hex" style="display: block; width: 86px; height: 74px; background: #00010A"></span></span><span class="lab">Hex 1 px</span></div>
+            <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><span class="hex" style="display: grid; place-items: center; width: 88px; height: 76px; background: #E6E9FF"><span class="hex" style="display: block; width: 84px; height: 72px; background: #00010A"></span></span><span class="lab">Hex 2 px</span></div>
+            <div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><span class="hex" style="display: block; width: 28px; height: 24px; background: #E6E9FF"></span><span class="lab">Handle</span></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="display: flex; align-items: center; height: 56px"><span style="width: 28px; height: 56px; background: rgba(230, 233, 255, 0.5); clip-path: polygon(100% 0, 100% 100%, 0 50%)"></span><span style="flex: 1; height: 56px; background: #E6E9FF; clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%)"></span><span style="width: 28px; height: 56px; background: rgba(230, 233, 255, 0.5); clip-path: polygon(0 0, 100% 50%, 0 100%)"></span></span>
+            <span class="lab">End-game banner + caps (T7 only; out of menu scope)</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1000px minmax(0, 1fr); gap: 48px">
+
+      <section style="display: flex; flex-direction: column; gap: 14px">
+        <span class="lab" style="color: #E6E9FF">Popup</span>
+        <div class="sl" style="position: relative; height: 420px; background: #222645; padding: 1px; box-sizing: border-box">
+          <div class="sl" style="position: relative; height: 100%; background: #00041F; overflow: hidden">
+            <div style="position: absolute; inset: 0; background: rgba(0, 1, 10, 0.8)"></div>
+            <div role="dialog" aria-modal="true" aria-labelledby="kit-popup-title" style="position: absolute; left: 180px; top: 56px; width: 640px">
+              <div class="sl" style="background: #E6E9FF; padding: 1px">
+                <div class="sl" style="background: #00010A; padding: 30px 36px 60px; display: flex; flex-direction: column; gap: 16px">
+                  <span class="lab">Spend</span>
+                  <h2 id="kit-popup-title" style="margin: 0; font-weight: 400; font-size: 28px; line-height: 1.2"><span style="font-variant-numeric: tabular-nums">4000</span> to unlock Manta</h2>
+                  <div style="display: flex; align-items: center; gap: 14px">
+                    <span class="lab">Balance</span>
+                    <span class="sls" style="display: inline-flex; background: #E6E9FF; padding: 1px"><span class="sls" style="display: flex; align-items: center; gap: 10px; background: #00041F; padding: 6px 14px; font-size: 20px; font-variant-numeric: tabular-nums"><svg width="18" height="20" viewBox="0 0 16 18" fill="none" stroke="#FFAE00" stroke-width="1.8" aria-hidden="true"><path d="M8 1l6 6-6 10-6-10z"></path><path d="M2 7h12"></path></svg>4000</span></span>
+                  </div>
+                </div>
+              </div>
+              <div style="position: absolute; left: 36px; bottom: -26px; display: flex; gap: 18px">
+                <button class="btn" type="button" style="--bc: #FFAE00; --bf: #FFAE00; --bt: #00010A"><span>Confirm<svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 1l6 6-6 10-6-10z"></path><path d="M2 7h12"></path></svg>4000</span></button>
+                <button class="btn" type="button" style="--bc: #747BAD; --bf: #747BAD; --bt: #00010A"><span>Cancel</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 14px">
+        <span class="lab" style="color: #E6E9FF">Colour tokens / UIThemeSO</span>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 18px">
+          <sc-for list="{{tokens}}" as="t" hint-placeholder-count="13">
+            <div style="display: flex; align-items: center; gap: 10px">
+              <span class="sls" style="width: 44px; height: 32px; flex: none; background: #434C89; padding: 1px; box-sizing: border-box"><span class="sls" style="display: block; width: 100%; height: 100%; background: {{t.hex}}"></span></span>
+              <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+                <span style="font-size: 15px">{{t.name}}</span>
+                <span class="lab" style="color: {{t.metaColor}}">{{t.meta}}</span>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px">
+          <span class="lab">Transparent fills: role at 12% over Very Dark</span>
+          <div style="display: flex; gap: 14px">
+            <span class="sls" style="width: 64px; height: 32px; background: #001D3A"></span>
+            <span class="sls" style="width: 64px; height: 32px; background: #0E1230"></span>
+            <span class="sls" style="width: 64px; height: 32px; background: #1F181B"></span>
+            <span class="sls" style="width: 64px; height: 32px; background: #12222B"></span>
+            <span class="sls" style="width: 64px; height: 32px; background: #0B0F29"></span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":2140}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const tok = (name, hex, isNew) => ({
+      name, hex,
+      meta: isNew ? hex.slice(1) + ' / new' : hex.slice(1),
+      metaColor: isNew ? '#99FF80' : '#747BAD'
+    });
+    return {
+      tokens: [
+        tok('textLight', '#E6E9FF'),
+        tok('textInactive', '#25262D'),
+        tok('inactiveLight', '#5C5F70'),
+        tok('neutralLightest', '#747BAD'),
+        tok('surfaceBlack', '#00010A'),
+        tok('surfaceVeryDark', '#00041F'),
+        tok('surfaceDark', '#222645'),
+        tok('surfaceLight', '#434C89'),
+        tok('cta', '#99FF80'),
+        tok('danger', '#FF4B3A'),
+        tok('controlActive', '#00D4FF', true),
+        tok('purchase', '#FFAE00', true),
+        tok('tooltip', '#A600FF', true)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

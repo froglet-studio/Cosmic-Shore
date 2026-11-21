@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>It touches nothing but photons.</b> No camera write of any kind — no pose, no field
     /// of view — no speed change, no input mute, and nothing it does can destroy, move or protect a
-    /// single prism. The whole ability is <see cref="PrismDestructionSight"/>'s global uniforms,
+    /// single prism. The whole ability is <see cref="PrismLit"/>'s global uniforms,
     /// published while the trigger is held. That is what keeps it clear of the speed tunnel
     /// (<c>Docs/SPEED_TUNNEL.md</c>), which owns the gameplay camera's FOV fleet-wide and admits
     /// exactly one hold. It does now put three floats on the wire (below), but they describe the
@@ -30,13 +30,13 @@ namespace CosmicShore.Gameplay
     /// costs the mode nothing to say, since the Dolphin already telegraphs its aim with its jaws.
     /// The two cases are deliberately different looks:
     /// <list type="bullet">
-    /// <item><b>Yours</b> goes to <see cref="PrismDestructionSight.PublishLocal"/> and is UNCHANGED
+    /// <item><b>Yours</b> goes to <see cref="PrismLit.PublishAimed"/> and is UNCHANGED
     /// — same pale cool cast, same gain, and (verified bit-for-bit by
     /// <c>Tools/Shaders/verify_prism_sight_composition.py</c>) the same value out of the shader,
     /// including when four rivals are aiming at the same prism. Your cone wins outright on every
     /// prism it covers: an instrument that changes colour because someone else swept past is an
     /// instrument you cannot read.</item>
-    /// <item><b>Theirs</b> goes to <see cref="PrismDestructionSight.PublishPeer"/> tinted with that
+    /// <item><b>Theirs</b> goes to <see cref="PrismLit.PublishLight"/> tinted with that
     /// pilot's DOMAIN colour, so a lit patch of mass says whose blast is coming for it.</item>
     /// </list>
     /// The trigger itself needed no new networking: <see cref="R_VesselActionHandler"/> already
@@ -236,7 +236,7 @@ namespace CosmicShore.Gameplay
             {
                 // Unchanged from before peers existed, deliberately: this is the pilot's own
                 // instrument and it must read identically in every match.
-                PrismDestructionSight.PublishLocal(volume, strength);
+                PrismLit.PublishAimed(volume.AsLitVolume(), strength);
                 _localPublished = true;
                 DriveVesselHighlight(volume, strength);
                 return;
@@ -252,7 +252,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            PrismDestructionSight.PublishPeer(_peerSlotId, volume, strength, tint);
+            PrismLit.PublishLight(_peerSlotId, volume.AsLitVolume(), strength, tint);
             _peerPublished = true;
 
             // Fed zero rather than skipped so a vessel that changed hands mid-hold - and so stopped
@@ -274,13 +274,13 @@ namespace CosmicShore.Gameplay
         {
             if (_localPublished)
             {
-                PrismDestructionSight.ClearLocal();
+                PrismLit.ClearAimed();
                 _localPublished = false;
             }
 
             if (_peerPublished)
             {
-                PrismDestructionSight.ClearPeer(_peerSlotId);
+                PrismLit.ClearLight(_peerSlotId);
                 _peerPublished = false;
             }
 
@@ -438,11 +438,11 @@ namespace CosmicShore.Gameplay
             // through the _localPublished flag: this also runs at the TOP of Initialize, where a
             // sight left over from the previous occupant of this component is exactly what needs
             // dropping and no flag on this instance can know about it.
-            PrismDestructionSight.ClearLocal();
+            PrismLit.ClearAimed();
             _localPublished = false;
             if (_peerPublished)
             {
-                PrismDestructionSight.ClearPeer(_peerSlotId);
+                PrismLit.ClearLight(_peerSlotId);
                 _peerPublished = false;
             }
             PublishShapeToPeers(default);

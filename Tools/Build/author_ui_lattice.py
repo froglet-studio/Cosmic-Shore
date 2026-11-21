@@ -1,0 +1,566 @@
+#!/usr/bin/env python3
+"""
+Author the style-B UI materials. The backgrounds are the SEA (Docs/MENU_REDESIGN_B.md §67, §70): SeaLines.shader on
+UISeaLines.cginc (hand-written; Tools/Build/lattice_preview.py compiles and renders the maths with clang).
+
+    Sea_Window.mat        the sea behind a whole window or screen (the hub windows, Profile, the friends drawer, the
+                          in-game scoreboard, sign-in and splash, the loading screen, the Hangar): lines over a wash
+    Card_ArtDrift.mat     a game card's art drifting slowly inside its overscan (CardDrift.shader on UICardDrift.cginc, §72)
+    Card_PortraitBob.mat  a toy card's portrait bobbing (the same shader)
+    Hull_Lit.mat          the hull icon on the cards, lifted and edged so it reads on navy (HullLit.shader, §73)
+    Sea_Panel.mat         the sea inside a panel (the Ark recipe, the leaderboard list, the pilot card, the avatar
+                          preview, the toy configure cards): finer, fainter lines and no wash
+
+The crystal lattice (Lattice.shader, UILattice.cginc, Lattice_Panel.mat, Lattice_Window.mat, §45.2) was RETIRED on
+2026-10-25 (Shombith: "Any part with grid bg should change to this new sea bg"); its files are deleted and the gate
+fails any screen that still names one of its materials.
+
+It also writes the rev 6 rims (ElementRim.shader, §45.3: ElementRim_<element>.mat) and the presence orb and party
+bonds (§45.4): Presence.shader / Bond.shader on UIPresence.cginc, Presence_Orb.mat (the friends orb in Menu_Main)
+and Bond_Party.mat (the party molecule's bonds in PartyPanel.prefab; Rev 40 E's card dropped them, section 107, and
+section 109 brought them back on the molecule that grows from the host).
+
+This writes the materials and the shader / include metas (deterministic guids), so every reference the menu
+generators emit (menu_b_motion.panel_sea_node / window_sea_node) resolves. The element colours are the theme's
+(UIThemeSO element fields, AbilityLockupStyleSO's colours).
+
+    python3 Tools/Build/author_ui_lattice.py              # write
+    python3 Tools/Build/author_ui_lattice.py --check      # fail if an output drifted
+    python3 Tools/Build/author_ui_lattice.py --self-test  # planted defects must all be caught
+"""
+import argparse
+import hashlib
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+REPO = os.path.dirname(os.path.dirname(HERE))
+DIR = "Assets/_Graphics/Materials/Shaders/UI"
+SHADER = f"{DIR}/Lattice.shader"
+CGINC = f"{DIR}/UILattice.cginc"
+RIM_SHADER = f"{DIR}/ElementRim.shader"
+RIM_CGINC = f"{DIR}/UIElementRim.cginc"
+PRESENCE_SHADER = f"{DIR}/Presence.shader"
+BOND_SHADER = f"{DIR}/Bond.shader"
+PRESENCE_CGINC = f"{DIR}/UIPresence.cginc"
+SEA_SHADER = f"{DIR}/SeaLines.shader"
+SEA_CGINC = f"{DIR}/UISeaLines.cginc"
+DRIFT_SHADER = f"{DIR}/CardDrift.shader"
+DRIFT_CGINC = f"{DIR}/UICardDrift.cginc"
+HULL_SHADER = f"{DIR}/HullLit.shader"
+HULL_CGINC = f"{DIR}/UIHullLit.cginc"
+
+
+def guid(key):
+    return hashlib.md5(f"CosmicShore/MenuB/lattice/{key}".encode()).hexdigest()
+
+
+SHADER_GUID = guid("shader")
+CGINC_GUID = guid("cginc")
+RIM_SHADER_GUID = guid("rim_shader")
+RIM_CGINC_GUID = guid("rim_cginc")
+PRESENCE_SHADER_GUID = guid("presence_shader")
+BOND_SHADER_GUID = guid("bond_shader")
+PRESENCE_CGINC_GUID = guid("presence_cginc")
+SEA_SHADER_GUID = guid("sea_shader")
+SEA_CGINC_GUID = guid("sea_cginc")
+DRIFT_SHADER_GUID = guid("drift_shader")
+DRIFT_CGINC_GUID = guid("drift_cginc")
+HULL_SHADER_GUID = guid("hull_lit_shader")
+HULL_CGINC_GUID = guid("hull_lit_cginc")
+SEA_GUID = guid("sea_window_mat")
+SEA_PANEL_GUID = guid("sea_panel_mat")
+ART_DRIFT_GUID = guid("card_art_drift_mat")
+PORTRAIT_BOB_GUID = guid("card_portrait_bob_mat")
+HULL_LIT_GUID = guid("hull_lit_mat")
+PRESENCE_GUID = guid("presence_mat")
+BOND_GUID = guid("bond_mat")
+# Rev 7 (§47.1): the selection's light - the rim shader in white (the vertex colour, the theme's Selection blue,
+# tints it), sweeping and breathing; the Bar runs along an underline.
+SELECTION_GUID = guid("selection_rim_mat")
+SELECTION_BAR_GUID = guid("selection_bar_mat")
+SELECTION = (0, 0.83137256, 1)                     # #00D4FF, UITheme.Selection: Jade (Docs/UI_STYLE_GUIDE.md D3)
+THEME = "Assets/_SO_Assets/UI/UITheme.asset"
+# The elemental rims (§45.3), RETIRED 2026-10-24 (Docs/UI_COLOR_RULES.md): elements carry no colour in the UI, and a
+# light running round a panel nobody selected read as the selection. Their five materials are deleted; the guids stay
+# so the screens can be checked for a stray reference. The shader stays - the selection's two materials run on it.
+RIMS = {"Charge": (1, 0.827451, 0.3019608), "Mass": (0.49803922, 0.65882355, 1), "Space": (0.6901961, 0.4862745, 1),
+        "Time": (0.37254903, 0.9411765, 0.78431374), "Omni": None}
+RIM_GUID = {e: guid(f"rim_{e.lower()}_mat") for e in RIMS}
+PANEL_GUID = guid("panel_mat")
+WINDOW_GUID = guid("window_mat")
+
+ELEMENTS = {"_ChargeColor": (1, 0.827451, 0.3019608), "_MassColor": (0.49803922, 0.65882355, 1),
+            "_SpaceColor": (0.6901961, 0.4862745, 1), "_TimeColor": (0.37254903, 0.9411765, 0.78431374)}
+# The retired crystal lattice (§45.2; retired 2026-10-25 for the sea, §70): its guids stay so the gate can catch a
+# screen that still names one.
+RETIRED_LATTICE_GUIDS = {"Lattice_Panel": PANEL_GUID, "Lattice_Window": WINDOW_GUID}
+# The sea lines behind a whole window (§67, Shombith 2026-10-25: the canvas's Rev 12 Sea lines board, "keep it a bit
+# slow"): three depth layers of thin wave lines in a lighter neutral blue, sliding sideways one 480-unit loop per
+# 90 / 68 / 45 s - half again slower than the board's 60 / 45 / 30. The one background motion the menu keeps
+# (Docs/UI_COLOR_RULES.md); SEA_SLOWEST_LOOP is the floor the gate holds every layer to.
+# Rev 13 (§69, Shombith 2026-10-25: "make the blue a little bit brighter and use gradients", the R13 boards): the lines
+# shade sky -> periwinkle across the window and every layer is about half again stronger; a wash lies over the veil -
+# deep blue at the top fading to clear at the bottom, with a soft glow up top.
+SEA_LINE = (0.28627452, 0.72156864, 1)              # #49B8FF, left
+SEA_LINE_MID = (0.49803922, 0.59607846, 1)          # #7F98FF
+SEA_LINE_END = (0.6117647, 0.54901963, 1)           # #9C8CFF, right
+SEA_WASH_TOP = (0.03137255, 0.08627451, 0.32941177, 0.75)    # #081654
+SEA_WASH_BOTTOM = (0, 0.007843138, 0.05490196, 0)            # #00020E, clear
+SEA_GLOW = (0.23921569, 0.54901963, 1, 0.16)                 # #3D8CFF
+SEA = dict(_Spacing=46, _Loop=480, _Amplitude=9, _FarAlpha=0.2, _FarWidth=0.9, _FarSeconds=90, _MidAlpha=0.3,
+           _MidWidth=1.1, _MidSeconds=68, _NearAlpha=0.42, _NearWidth=1.5, _NearSeconds=45, _FadeTop=0.2, _FadeBottom=0.2)
+SEA_SLOWEST_LOOP = 40
+# The sea inside a panel (§70, Shombith 2026-10-25: "Any part with grid bg should change to this new sea bg"): the same
+# three layers, closer together, lower and fainter, with no wash - the panel's own glass is the ground. Same speeds.
+SEA_PANEL = dict(SEA, _Spacing=30, _Amplitude=6, _FarAlpha=0.12, _FarWidth=0.8, _MidAlpha=0.18, _MidWidth=0.9,
+                 _NearAlpha=0.26, _NearWidth=1.1, _FadeTop=0.08, _FadeBottom=0.08)
+CLEAR = (0, 0, 0, 0)
+# The cards' pictures (§72, Shombith 2026-10-25: "Change the card background a little better make it have some
+# animation ... for all of the gamemode toy cards"): a game card's art drifts a few units on a slow Lissajous path inside
+# its overscan (KitCoverImage.overscan, author_menu_arcade.ART_OVERSCAN), a toy's portrait bobs. Both are slow; the
+# reach must stay inside the overscan margin or an edge shows (author_menu_arcade checks it).
+ART_DRIFT = dict(_DriftX=5, _DriftY=3, _Seconds=40)
+PORTRAIT_BOB = dict(_DriftX=0, _DriftY=4, _Seconds=8)
+ART_DRIFT_SLOWEST_LOOP, PORTRAIT_BOB_SLOWEST_LOOP = 30, 6
+# The hull icon on the cards (§73, Shombith 2026-10-25: "dont like the white bg"): no plate - the near-black render is
+# lifted toward a cool grey and edged thinly in white (the Rev 19 contact sheet's second row). Still.
+HULL_LIT = dict(_Gain=1.3, _RimWidth=4, _RimIntensity=0.6)
+HULL_LIFT = (0.14, 0.17, 0.30)
+# The presence orb (§45.4). Its member seats sit on the inner ring at these angles (degrees, counter-clockwise from
+# the right): the shader's bonds (_BondAngles, _MemberRadius) and the drawer generator's avatar positions
+# (author_menu_friends_drawer.py) both read them, so a bond always ends under its avatar.
+ORB_MEMBER_ANGLES = (135, 45, 270)
+ORB_MEMBER_RADIUS = 0.66
+# Still since 2026-10-24 (Garrett: the charged particles and orbiting elements round the connected circles were a
+# polish problem): the orbit does not turn and carries no dots (the count is the "N online" line), and every bond is
+# a solid, still line (period 0). The orb's own ring is the neutral blue, not an element's colour.
+PRESENCE = dict(_GlowAlpha=0.24, _InnerRadius=ORB_MEMBER_RADIUS, _InnerAlpha=0.34, _OuterRadius=0.92, _OuterAlpha=0.3,
+                _RingWidth=0.012, _Soft=0.03, _Dashes=28, _SpinSeconds=0, _Online=0, _DotSize=0,
+                _MemberRadius=ORB_MEMBER_RADIUS, _BondWidth=0.022, _BondPeriod=0, _BondSpeed=0)
+BOND = dict(_Width=1.4, _Soft=1, _Period=0, _Speed=0)
+NEUTRAL = (0.45490196, 0.48235294, 0.6784314)       # NeutralLightest #747BAD
+KIT_GRID = "21a4d02295ff993cb1746d4d792daa21"       # the retired blueprint grid sprite (kit_grid.png)
+SCREENS = "Assets/_Prefabs/UI Elements/Main Menu Screens"
+WINDOWS = [f"{SCREENS}/{p}" for p in ("Arcade/ArcadeView.prefab", "Arena/ArenaView.prefab", "Mission/MissionView.prefab",
+                                       "Toybox/ToyboxView.prefab", "Configure/ConfigureView.prefab")]
+UI_FLOATS = dict(_ColorMask=15, _Stencil=0, _StencilComp=8, _StencilOp=0, _StencilReadMask=255,
+                 _StencilWriteMask=255, _UseUIAlphaClip=0)
+
+
+def f(x):
+    x = float(x)
+    return str(int(x)) if x == int(x) else repr(round(x, 7)).rstrip("0").rstrip(".")
+
+
+def col(rgb, a=1):
+    return "{r: %s, g: %s, b: %s, a: %s}" % (f(rgb[0]), f(rgb[1]), f(rgb[2]), f(a))
+
+
+def material_yaml(name, shader_guid, floats, colors):
+    """A UI material on one of these shaders. `colors` values are (r, g, b) or (r, g, b, a) - Unity keeps Vector
+    properties among the colours too. Every property the shader declares is written, so Unity never re-serializes it."""
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!21 &2100000\nMaterial:\n  serializedVersion: 8\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+            f"  m_PrefabAsset: {{fileID: 0}}\n  m_Name: {name}\n"
+            f"  m_Shader: {{fileID: 4800000, guid: {shader_guid}, type: 3}}\n  m_Parent: {{fileID: 0}}\n"
+            "  m_ModifiedSerializedProperties: 0\n  m_ValidKeywords: []\n  m_InvalidKeywords: []\n"
+            "  m_LightmapFlags: 4\n  m_EnableInstancingVariants: 0\n  m_DoubleSidedGI: 0\n  m_CustomRenderQueue: -1\n"
+            "  stringTagMap: {}\n  disabledShaderPasses: []\n  m_LockedProperties: \n  m_SavedProperties:\n"
+            "    serializedVersion: 3\n    m_TexEnvs:\n    - _MainTex:\n        m_Texture: {fileID: 0}\n"
+            "        m_Scale: {x: 1, y: 1}\n        m_Offset: {x: 0, y: 0}\n    m_Ints: []\n    m_Floats:\n"
+            + "".join(f"    - {k}: {f(v)}\n" for k, v in sorted(dict(floats, **UI_FLOATS).items()))
+            + "    m_Colors:\n" + "".join(f"    - {k}: {col(v[:3], v[3] if len(v) > 3 else 1)}\n" for k, v in sorted(colors.items()))
+            + "  m_BuildTextureStacks: []\n  m_AllowLocking: 1\n")
+
+
+def mat_meta(g):
+    return (f"fileFormatVersion: 2\nguid: {g}\nNativeFormatImporter:\n  externalObjects: {{}}\n  mainObjectFileID: 2100000\n"
+            "  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
+
+
+def shader_material(name, shader_guid, floats, colors):
+    return material_yaml(name, shader_guid, floats, colors)
+
+
+def shader_meta(g):
+    return (f"fileFormatVersion: 2\nguid: {g}\nShaderImporter:\n  externalObjects: {{}}\n"
+            "  defaultTextures: []\n  nonModifiableTextures: []\n  preprocessorOverride: 0\n"
+            "  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
+
+
+def include_meta(g):
+    return (f"fileFormatVersion: 2\nguid: {g}\nShaderIncludeImporter:\n  externalObjects: {{}}\n"
+            "  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
+
+
+def rim_material(element):
+    omni = RIMS[element] is None
+    floats = dict(_Omni=1 if omni else 0, _Speed=0.08 if omni else 0.12, _Tail=0.3 if omni else 0.22,
+                  _BaseLevel=0.7 if omni else 0.45, _Linear=0, _Breathe=0, _BreatheSeconds=1.8)
+    colors = dict(_Color=(1, 1, 1), _ElementColor=RIMS[element] or (1, 1, 1),
+                  **{k: v for k, v in ELEMENTS.items()})
+    return shader_material(f"ElementRim_{element}", RIM_SHADER_GUID, floats, colors)
+
+
+def selection_material(bar):
+    floats = dict(_Omni=0, _Speed=0.6 if bar else 0.35, _Tail=0.45 if bar else 0.35, _BaseLevel=0.72,
+                  _Linear=1 if bar else 0, _Breathe=0.35, _BreatheSeconds=1.8)
+    colors = dict(_Color=(1, 1, 1), _ElementColor=(1, 1, 1), **ELEMENTS)
+    return shader_material("SelectionBar" if bar else "SelectionRim", RIM_SHADER_GUID, floats, colors)
+
+
+SHEEN_GUID = re.search(r"^guid: (\w+)$", open(os.path.join(REPO, "Assets/_Graphics/UI/Kit/kit_sheen.png.meta"),
+                                                 encoding="utf-8").read(), re.M).group(1)   # author_ui_kit_sprites.py
+HOVER_SHEEN = (0.52, 0.16, 0.45)             # Rev 35 C: seconds to cross, centre alpha, band width (fraction)
+
+
+def theme_asset():
+    """UITheme.asset with the selection colour and its two materials (the rest of the asset is untouched)."""
+    text = open(os.path.join(REPO, THEME), encoding="utf-8").read()
+    fields = dict(selection=col(SELECTION), selectionMaterial=f"{{fileID: 2100000, guid: {SELECTION_GUID}, type: 2}}",
+                  selectionBarMaterial=f"{{fileID: 2100000, guid: {SELECTION_BAR_GUID}, type: 2}}")
+    # Rev 35 C (section 101): the hover sheen, written after selectionBarMaterial in UIThemeSO's field order.
+    hover = dict(hoverSheenSprite=f"{{fileID: 21300000, guid: {SHEEN_GUID}, type: 3}}", hoverSheenSeconds=HOVER_SHEEN[0],
+                 hoverSheenAlpha=HOVER_SHEEN[1], hoverSheenWidth=HOVER_SHEEN[2])
+    missing = ""
+    for name, value in fields.items():               # field order: selection, selectionMaterial, selectionBarMaterial
+        line = f"  {name}: {value}\n"
+        if re.search(rf"^  {name}: .*$", text, re.M):
+            text = re.sub(rf"^  {name}: .*\n", line, text, count=1, flags=re.M)
+        else:
+            missing += line
+    if missing:
+        anchor = re.search(r"^  elementTime: .*\n", text, re.M)
+        assert anchor, "UITheme.asset has no elementTime to follow"
+        text = text[:anchor.end()] + missing + text[anchor.end():]
+    text = re.sub(r"^  hoverSheen\w+: .*\n", "", text, flags=re.M)
+    anchor = re.search(r"^  selectionBarMaterial: .*\n", text, re.M)
+    text = text[:anchor.end()] + "".join(f"  {k}: {v}\n" for k, v in hover.items()) + text[anchor.end():]
+    return text
+
+
+def presence_material():
+    clear = (0, 0, 0, 0)
+    return shader_material("Presence_Orb", PRESENCE_SHADER_GUID, PRESENCE,
+                           dict(_Color=(1, 1, 1), _SpaceColor=NEUTRAL, _Bond0=clear, _Bond1=clear,
+                                _Bond2=clear, _BondAngles=ORB_MEMBER_ANGLES + (0,)))
+
+
+def sea_material(panel=False):
+    lines = dict(_Color=(1, 1, 1), _LineColor=SEA_LINE, _LineColorMid=SEA_LINE_MID, _LineColorEnd=SEA_LINE_END)
+    if panel:
+        return shader_material("Sea_Panel", SEA_SHADER_GUID, SEA_PANEL, dict(lines, _WashTop=CLEAR, _WashBottom=CLEAR, _GlowColor=CLEAR))
+    return shader_material("Sea_Window", SEA_SHADER_GUID, SEA, dict(
+        lines, _WashTop=SEA_WASH_TOP, _WashBottom=SEA_WASH_BOTTOM, _GlowColor=SEA_GLOW))
+
+
+def drift_material(name, values):
+    return shader_material(name, DRIFT_SHADER_GUID, values, dict(_Color=(1, 1, 1)))
+
+
+def hull_material():
+    return shader_material("Hull_Lit", HULL_SHADER_GUID, HULL_LIT, dict(_Color=(1, 1, 1), _Lift=HULL_LIFT, _RimColor=(1, 1, 1)))
+
+
+def bond_material():
+    return shader_material("Bond_Party", BOND_SHADER_GUID, BOND, dict(_Color=(1, 1, 1)))
+
+
+def outputs():
+    out = {}
+    out[f"{RIM_SHADER}.meta"] = shader_meta(RIM_SHADER_GUID)
+    out[f"{RIM_CGINC}.meta"] = include_meta(RIM_CGINC_GUID)
+    out[f"{PRESENCE_SHADER}.meta"] = shader_meta(PRESENCE_SHADER_GUID)
+    out[f"{BOND_SHADER}.meta"] = shader_meta(BOND_SHADER_GUID)
+    out[f"{PRESENCE_CGINC}.meta"] = include_meta(PRESENCE_CGINC_GUID)
+    out[f"{DIR}/Presence_Orb.mat"] = presence_material()
+    out[f"{DIR}/Presence_Orb.mat.meta"] = mat_meta(PRESENCE_GUID)
+    out[f"{DIR}/Bond_Party.mat"] = bond_material()
+    out[f"{DIR}/Bond_Party.mat.meta"] = mat_meta(BOND_GUID)
+    out[f"{SEA_SHADER}.meta"] = shader_meta(SEA_SHADER_GUID)
+    out[f"{SEA_CGINC}.meta"] = include_meta(SEA_CGINC_GUID)
+    out[f"{DIR}/Sea_Window.mat"] = sea_material()
+    out[f"{DIR}/Sea_Window.mat.meta"] = mat_meta(SEA_GUID)
+    out[f"{DIR}/Sea_Panel.mat"] = sea_material(panel=True)
+    out[f"{DIR}/Sea_Panel.mat.meta"] = mat_meta(SEA_PANEL_GUID)
+    out[f"{DRIFT_SHADER}.meta"] = shader_meta(DRIFT_SHADER_GUID)
+    out[f"{DRIFT_CGINC}.meta"] = include_meta(DRIFT_CGINC_GUID)
+    out[f"{DIR}/Card_ArtDrift.mat"] = drift_material("Card_ArtDrift", ART_DRIFT)
+    out[f"{DIR}/Card_ArtDrift.mat.meta"] = mat_meta(ART_DRIFT_GUID)
+    out[f"{DIR}/Card_PortraitBob.mat"] = drift_material("Card_PortraitBob", PORTRAIT_BOB)
+    out[f"{DIR}/Card_PortraitBob.mat.meta"] = mat_meta(PORTRAIT_BOB_GUID)
+    out[f"{HULL_SHADER}.meta"] = shader_meta(HULL_SHADER_GUID)
+    out[f"{HULL_CGINC}.meta"] = include_meta(HULL_CGINC_GUID)
+    out[f"{DIR}/Hull_Lit.mat"] = hull_material()
+    out[f"{DIR}/Hull_Lit.mat.meta"] = mat_meta(HULL_LIT_GUID)
+    out[f"{DIR}/SelectionRim.mat"] = selection_material(False)
+    out[f"{DIR}/SelectionRim.mat.meta"] = mat_meta(SELECTION_GUID)
+    out[f"{DIR}/SelectionBar.mat"] = selection_material(True)
+    out[f"{DIR}/SelectionBar.mat.meta"] = mat_meta(SELECTION_BAR_GUID)
+    out[THEME] = theme_asset()
+    return out
+
+
+def shipped_prefabs():
+    """The style-B screen prefabs as committed (the menu generators own them; this reads them)."""
+    import glob
+    out = {os.path.relpath(p, REPO): open(p, encoding="utf-8").read()
+           for p in glob.glob(os.path.join(REPO, SCREENS, "**", "*.prefab"), recursive=True)}
+    for p in ("Assets/_Scenes/Menu_Main.unity",) + SEA_ELSEWHERE:
+        out[p] = open(os.path.join(REPO, p), encoding="utf-8").read()
+    return out
+
+
+RIM_SCRIPT = "b403ee3874d54f79d0f27e7013879c0f"      # KitRimMesh.cs
+PARTY_PANEL = f"{SCREENS}/Party/PartyPanel.prefab"
+RETIRED = (tuple(f"{DIR}/ElementRim_{e}.mat{x}" for e in RIMS for x in ("", ".meta"))
+           + tuple(f"{p}{x}" for p in (SHADER, CGINC, f"{DIR}/Lattice_Panel.mat", f"{DIR}/Lattice_Window.mat")
+                   for x in ("", ".meta")))
+# Outside the menu screens, the scenes and assets that drew the lattice before §70 (their generators now draw the sea).
+SEA_ELSEWHERE = ("Assets/_Scenes/Authentication.unity", "Assets/_Scenes/Bootstrap.unity",
+                 "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab", "Assets/Resources/UI/EnvironmentLoadVeilContent.asset")
+
+
+def lit_image_doc(material_guid):
+    """A planted Image drawn with `material_guid` and no KitRimMesh beside it (the self-test's synthetic defect: the party
+    panel lost its own bonds to Rev 40 E's card, section 107, so the defect is added rather than edited in)."""
+    return ("--- !u!114 &987654321\nMonoBehaviour:\n  m_GameObject: {fileID: 987654320}\n"
+            f"  m_Material: {{fileID: 2100000, guid: {material_guid}, type: 2}}\n")
+
+
+def rim_pairs(text):
+    """(gameObject, rim element) for every Image drawn with a material that reads KitRimMesh's UV1 (a rim, or "Bond" for
+    the party bonds), and the GameObjects that carry KitRimMesh."""
+    lit, meshed = [], set()
+    by_guid = dict({g: e for e, g in RIM_GUID.items()}, **{BOND_GUID: "Bond"})
+    for m in re.finditer(r"^--- !u!114 &-?\d+\nMonoBehaviour:\n((?:(?!--- ).*\n)*)", text, re.M):
+        body = m.group(1)
+        go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", body)
+        if not go:
+            continue
+        mat = re.search(r"m_Material: \{fileID: 2100000, guid: (\w+), type: 2\}", body)
+        if mat and mat.group(1) in by_guid:
+            lit.append((go.group(1), by_guid[mat.group(1)]))
+        if f"guid: {RIM_SCRIPT}" in body:
+            meshed.add(go.group(1))
+    return lit, meshed
+
+
+def validate_screens(prefabs):
+    """Rev 6: no style-B screen draws the blueprint grid any more, and every window's backdrop carries the lattice."""
+    gridded = sorted(p for p, t in prefabs.items() if f"guid: {KIT_GRID}" in t)
+    assert not gridded, f"the blueprint grid is still drawn in {gridded}"
+    # §70: the lattice is retired; every background is the sea.
+    for name, g in RETIRED_LATTICE_GUIDS.items():
+        latticed = sorted(p for p, t in prefabs.items() if f"guid: {g}" in t)
+        assert not latticed, f"the retired {name} lattice is still drawn in {latticed} (§70: the sea replaced it)"
+    for p in SEA_ELSEWHERE:
+        assert f"guid: {SEA_GUID}" in prefabs.get(p, ""), f"{p} has no sea behind it (§70)"
+    for w in WINDOWS:
+        assert f"m_Material: {{fileID: 2100000, guid: {SEA_GUID}, type: 2}}" in prefabs.get(w, ""), \
+            f"{w} has no sea lines behind it"
+    # Every bond Image has KitRimMesh beside it, and no screen is lit with a retired element rim.
+    for path, text in prefabs.items():
+        lit, meshed = rim_pairs(text)
+        bare = [go for go, _ in lit if go not in meshed]
+        assert not bare, f"{path}: a bond Image without KitRimMesh (the shader would not know where it is): {bare[:3]}"
+        rimmed = sorted({e for _, e in lit if e in RIMS})
+        assert not rimmed, f"{path} is lit with the retired element rim(s) {rimmed} (Docs/UI_COLOR_RULES.md)"
+
+
+def validate(files):
+    rim = open(os.path.join(REPO, RIM_SHADER), encoding="utf-8").read()
+    rim_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", rim, re.M)) - {"_MainTex"}
+    back = [p for p in RETIRED if p in files]
+    assert not back, f"a retired element rim material is written again: {back}"
+    # The presence orb and the bonds (§45.4).
+    for shader_path, mat, g in ((PRESENCE_SHADER, "Presence_Orb", PRESENCE_SHADER_GUID), (BOND_SHADER, "Bond_Party", BOND_SHADER_GUID)):
+        src = open(os.path.join(REPO, shader_path), encoding="utf-8").read()
+        assert '#include "UIPresence.cginc"' in src, f"{shader_path} does not include UIPresence.cginc"
+        declared_ = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", src, re.M)) - {"_MainTex"}
+        m = files[f"{DIR}/{mat}.mat"]
+        assert f"m_Shader: {{fileID: 4800000, guid: {g}, type: 3}}" in m, f"{mat} is not on {shader_path}"
+        written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
+        assert written == declared_, f"{mat}: properties drifted (missing {declared_ - written}, extra {written - declared_})"
+        assert f"guid: {g}" in files[f"{shader_path}.meta"], f"{shader_path}.meta has the wrong guid"
+    # The sea lines (§67): the material carries every property the shader declares, and every layer moves - slowly.
+    src = open(os.path.join(REPO, SEA_SHADER), encoding="utf-8").read()
+    assert '#include "UISeaLines.cginc"' in src, "SeaLines.shader does not include UISeaLines.cginc"
+    sea_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", src, re.M)) - {"_MainTex"}
+    for name, g in (("Sea_Window", SEA_GUID), ("Sea_Panel", SEA_PANEL_GUID)):
+        m = files[f"{DIR}/{name}.mat"]
+        assert f"m_Shader: {{fileID: 4800000, guid: {SEA_SHADER_GUID}, type: 3}}" in m, f"{name} is not on SeaLines.shader"
+        written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
+        assert written == sea_declared, f"{name}: properties drifted (missing {sea_declared - written}, extra {written - sea_declared})"
+        assert f"guid: {g}" in files[f"{DIR}/{name}.mat.meta"], f"{name}.mat.meta has the wrong guid"
+        assert f"- _LineColor: {col(SEA_LINE)}" in m and f"- _LineColorEnd: {col(SEA_LINE_END)}" in m and SEA_LINE != SEA_LINE_END, \
+            f"{name}: the lines do not shade across the window (Rev 13: gradients)"
+        for k in ("_FarSeconds", "_MidSeconds", "_NearSeconds"):
+            v = float(re.search(rf"^    - {k}: (.*)$", m, re.M).group(1))
+            assert v >= SEA_SLOWEST_LOOP, f"{name}: {k} is {v} s - the sea lines stay slow (at least {SEA_SLOWEST_LOOP} s a loop)"
+    assert f"guid: {SEA_SHADER_GUID}" in files[f"{SEA_SHADER}.meta"], "SeaLines.shader.meta has the wrong guid"
+    m = files[f"{DIR}/Sea_Window.mat"]
+    assert f"- _WashTop: {col(SEA_WASH_TOP[:3], SEA_WASH_TOP[3])}" in m, "Sea_Window: no wash at the top (Rev 13: the brighter blue)"
+    for k in ("_WashTop", "_WashBottom", "_GlowColor"):
+        assert f"- {k}: {col(CLEAR[:3], 0)}" in files[f"{DIR}/Sea_Panel.mat"], f"Sea_Panel: {k} must be clear - a panel's sea has no wash"
+    # §72: the card pictures - every property the drift shader declares, and slow.
+    src = open(os.path.join(REPO, DRIFT_SHADER), encoding="utf-8").read()
+    assert '#include "UICardDrift.cginc"' in src, "CardDrift.shader does not include UICardDrift.cginc"
+    drift_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", src, re.M)) - {"_MainTex"}
+    for name, g, floor in (("Card_ArtDrift", ART_DRIFT_GUID, ART_DRIFT_SLOWEST_LOOP), ("Card_PortraitBob", PORTRAIT_BOB_GUID, PORTRAIT_BOB_SLOWEST_LOOP)):
+        m = files[f"{DIR}/{name}.mat"]
+        assert f"m_Shader: {{fileID: 4800000, guid: {DRIFT_SHADER_GUID}, type: 3}}" in m, f"{name} is not on CardDrift.shader"
+        written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
+        assert written == drift_declared, f"{name}: properties drifted (missing {drift_declared - written}, extra {written - drift_declared})"
+        assert f"guid: {g}" in files[f"{DIR}/{name}.mat.meta"], f"{name}.mat.meta has the wrong guid"
+        v = float(re.search(r"^    - _Seconds: (.*)$", m, re.M).group(1))
+        assert v >= floor, f"{name}: _Seconds is {v} - the card pictures stay slow (at least {floor} s a loop)"
+    assert f"guid: {DRIFT_SHADER_GUID}" in files[f"{DRIFT_SHADER}.meta"], "CardDrift.shader.meta has the wrong guid"
+    # §73: the hull icon - lit, still.
+    src = open(os.path.join(REPO, HULL_SHADER), encoding="utf-8").read()
+    assert '#include "UIHullLit.cginc"' in src and "_Time." not in src, "HullLit.shader must include UIHullLit.cginc and hold still"
+    hull_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", src, re.M)) - {"_MainTex"}
+    m = files[f"{DIR}/Hull_Lit.mat"]
+    assert f"m_Shader: {{fileID: 4800000, guid: {HULL_SHADER_GUID}, type: 3}}" in m, "Hull_Lit is not on HullLit.shader"
+    written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
+    assert written == hull_declared, f"Hull_Lit: properties drifted (missing {hull_declared - written}, extra {written - hull_declared})"
+    assert f"- _Lift: {col(HULL_LIFT)}" in m and HULL_LIT["_Gain"] > 1, "Hull_Lit: the dark hull is not lifted - it would vanish on the card"
+    assert f"guid: {HULL_LIT_GUID}" in files[f"{DIR}/Hull_Lit.mat.meta"], "Hull_Lit.mat.meta has the wrong guid"
+    orb = files[f"{DIR}/Presence_Orb.mat"]
+    assert f"- _SpaceColor: {col(NEUTRAL)}" in orb, "the orb's ring must be the neutral blue, not an element's colour"
+    for k in ("_SpinSeconds", "_DotSize", "_BondPeriod", "_BondSpeed"):
+        assert f"    - {k}: 0\n" in orb, f"Presence_Orb: {k} must be 0 - the orb has no orbiting dots or flowing bonds"
+    for k in ("_Period", "_Speed"):
+        assert f"    - {k}: 0\n" in files[f"{DIR}/Bond_Party.mat"], f"Bond_Party: {k} must be 0 - the party bonds are solid and still"
+    assert f"- _BondAngles: {col(ORB_MEMBER_ANGLES, 0)}" in orb, \
+        f"the orb's bonds do not point at the member seats (ORB_MEMBER_ANGLES {ORB_MEMBER_ANGLES})"
+    radii = {k: re.search(rf"^    - {k}: (.*)$", orb, re.M).group(1) for k in ("_MemberRadius", "_InnerRadius")}
+    assert radii["_MemberRadius"] == radii["_InnerRadius"] == f(ORB_MEMBER_RADIUS), \
+        f"the member seats are off the inner ring ({radii}, want {ORB_MEMBER_RADIUS})"
+    # Rev 7: the selection's two materials are rims, white (the theme's blue is the vertex colour), breathing; the
+    # Bar runs along its line; the theme names both and carries the sky blue.
+    for name, bar, g in (("SelectionRim", False, SELECTION_GUID), ("SelectionBar", True, SELECTION_BAR_GUID)):
+        m = files[f"{DIR}/{name}.mat"]
+        assert f"m_Shader: {{fileID: 4800000, guid: {RIM_SHADER_GUID}, type: 3}}" in m, f"{name} is not on ElementRim.shader"
+        written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
+        assert written == rim_declared, f"{name}: properties drifted (missing {rim_declared - written}, extra {written - rim_declared})"
+        assert f"    - _Linear: {1 if bar else 0}\n" in m, f"{name} runs {'round its rect' if bar else 'along a line'}"
+        assert "    - _Breathe: 0\n" not in m, f"{name} does not breathe"
+        assert f"- _ElementColor: {col((1, 1, 1))}" in m, f"{name} is tinted: the theme's Selection colour must reach it unchanged"
+        assert f"guid: {g}" in files[f"{DIR}/{name}.mat.meta"], f"{name}.mat.meta has the wrong guid"
+    theme = files[THEME]
+    assert f"  selection: {col(SELECTION)}\n" in theme, "UITheme.asset's selection is not the sky blue (#3DB2FF)"
+    for field, g in (("selectionMaterial", SELECTION_GUID), ("selectionBarMaterial", SELECTION_BAR_GUID)):
+        assert f"  {field}: {{fileID: 2100000, guid: {g}, type: 2}}" in theme, f"UITheme.asset does not name its {field}"
+    assert f"  hoverSheenSprite: {{fileID: 21300000, guid: {SHEEN_GUID}, type: 3}}\n" in theme, \
+        "UITheme.asset does not name the hover sheen (kit_sheen, Rev 35 C)"
+    assert f"  hoverSheenSeconds: {HOVER_SHEEN[0]}\n" in theme and f"  hoverSheenAlpha: {HOVER_SHEEN[1]}\n" in theme, \
+        "UITheme.asset's hover sheen timing drifted from Rev 35 C (0.52 s, 16 %)"
+    validate_screens(files.get("__screens__") or shipped_prefabs())
+
+
+def drift(files):
+    bad = []
+    for p, t in files.items():
+        if p.startswith("__"):
+            continue
+        full = os.path.join(REPO, p)
+        if not os.path.exists(full) or open(full, encoding="utf-8").read() != t:
+            bad.append(p)
+    return bad + [p for p in RETIRED if os.path.exists(os.path.join(REPO, p))]
+
+
+def self_test(files):
+    f_ = f
+    cases = [
+        ("the panel sea on the wrong shader", lambda f: f.__setitem__(f"{DIR}/Sea_Panel.mat", f[f"{DIR}/Sea_Panel.mat"].replace(SEA_SHADER_GUID, "0" * 32))),
+        ("a property the sea shader no longer declares", lambda f: f.__setitem__(f"{DIR}/Sea_Panel.mat", f[f"{DIR}/Sea_Panel.mat"].replace(
+            "    - _FadeTop:", "    - _Retired: 1\n    - _FadeTop:", 1))),
+        ("the panel sea washed over", lambda f: f.__setitem__(f"{DIR}/Sea_Panel.mat", sea_material().replace("Sea_Window", "Sea_Panel"))),
+        ("the orb's dots orbiting again", lambda f: f.__setitem__(f"{DIR}/Presence_Orb.mat", f[f"{DIR}/Presence_Orb.mat"].replace(
+            "    - _SpinSeconds: 0\n", "    - _SpinSeconds: 24\n", 1))),
+        ("the Time rim material brought back", lambda f: f.__setitem__(f"{DIR}/ElementRim_Time.mat", rim_material("Time"))),
+        ("the sea shader meta on another guid", lambda f: f.__setitem__(f"{SEA_SHADER}.meta", f[f"{SEA_SHADER}.meta"].replace(SEA_SHADER_GUID, "1" * 32))),
+        ("the orb's bonds aimed away from the seats", lambda f: f.__setitem__(f"{DIR}/Presence_Orb.mat", f[f"{DIR}/Presence_Orb.mat"].replace(
+            f"- _BondAngles: {col(ORB_MEMBER_ANGLES, 0)}", f"- _BondAngles: {col((90, 45, 270), 0)}", 1))),
+        ("the orb's seats off the inner ring", lambda f: f.__setitem__(f"{DIR}/Presence_Orb.mat", f[f"{DIR}/Presence_Orb.mat"].replace(
+            f"    - _MemberRadius: {f_(ORB_MEMBER_RADIUS)}", "    - _MemberRadius: 0.8", 1))),
+        ("the bond material on the rim shader", lambda f: f.__setitem__(f"{DIR}/Bond_Party.mat", f[f"{DIR}/Bond_Party.mat"].replace(
+            BOND_SHADER_GUID, RIM_SHADER_GUID))),
+        ("the selection stops breathing", lambda f: f.__setitem__(f"{DIR}/SelectionRim.mat", re.sub(
+            r"    - _Breathe: [\d.]+\n", "    - _Breathe: 0\n", f[f"{DIR}/SelectionRim.mat"], count=1))),
+        ("the sea lines racing", lambda f: f.__setitem__(f"{DIR}/Sea_Window.mat", f[f"{DIR}/Sea_Window.mat"].replace(
+            "    - _NearSeconds: 45\n", "    - _NearSeconds: 12\n", 1))),
+        ("the sea lines one flat colour again", lambda f: f.__setitem__(f"{DIR}/Sea_Window.mat", f[f"{DIR}/Sea_Window.mat"].replace(
+            f"- _LineColorEnd: {col(SEA_LINE_END)}", f"- _LineColorEnd: {col(SEA_LINE)}", 1).replace(
+            f"- _LineColor: {col(SEA_LINE)}", f"- _LineColor: {col(SEA_LINE_MID)}", 1))),
+        ("the sea material on the retired lattice shader", lambda f: f.__setitem__(f"{DIR}/Sea_Window.mat", f[f"{DIR}/Sea_Window.mat"].replace(
+            SEA_SHADER_GUID, SHADER_GUID))),
+        ("the card art racing", lambda f: f.__setitem__(f"{DIR}/Card_ArtDrift.mat", f[f"{DIR}/Card_ArtDrift.mat"].replace(
+            "    - _Seconds: 40\n", "    - _Seconds: 6\n", 1))),
+        ("the portrait bob on the sea shader", lambda f: f.__setitem__(f"{DIR}/Card_PortraitBob.mat", f[f"{DIR}/Card_PortraitBob.mat"].replace(
+            DRIFT_SHADER_GUID, SEA_SHADER_GUID))),
+        ("the hull left dark", lambda f: f.__setitem__(f"{DIR}/Hull_Lit.mat", f[f"{DIR}/Hull_Lit.mat"].replace(
+            f"- _Lift: {col(HULL_LIFT)}", f"- _Lift: {col((0, 0, 0))}", 1))),
+        ("the theme loses the selection's material", lambda f: f.__setitem__(THEME, f[THEME].replace(SELECTION_GUID, "8" * 32, 1))),
+    ]
+    screens = shipped_prefabs()
+    cases += [
+        ("a screen still drawing the grid", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            WINDOWS[0]: screens[WINDOWS[0]] + f"  m_Sprite: {{fileID: 21300000, guid: {KIT_GRID}, type: 3}}\n"}))),
+        ("a screen lit with an element rim again", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            PARTY_PANEL: screens[PARTY_PANEL] + lit_image_doc(RIM_GUID['Space'])}))),
+        ("a window without its sea lines", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            WINDOWS[2]: screens[WINDOWS[2]].replace(SEA_GUID, "2" * 32)}))),
+        ("a panel back on the lattice", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            WINDOWS[0]: screens[WINDOWS[0]] + f"  m_Material: {{fileID: 2100000, guid: {PANEL_GUID}, type: 2}}\n"}))),
+        ("the sign-in without its sea", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            SEA_ELSEWHERE[0]: screens[SEA_ELSEWHERE[0]].replace(SEA_GUID, "3" * 32)}))),
+        ("a party bond without KitRimMesh", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            PARTY_PANEL: screens[PARTY_PANEL] + lit_image_doc(BOND_GUID)}))),
+    ]
+    ok = True
+    for label, mutate in cases:
+        bad = dict(files)
+        mutate(bad)
+        try:
+            validate(bad)
+            print(f"  MISSED: {label}")
+            ok = False
+        except AssertionError as e:
+            print(f"  caught: {label} ({e})")
+    assert ok, "a planted defect was not caught"
+    print("OK: every negative control fires")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--check", action="store_true")
+    ap.add_argument("--self-test", action="store_true")
+    args = ap.parse_args()
+    files = outputs()
+    validate(files)
+    if args.self_test:
+        self_test(files)
+        return
+    if args.check:
+        bad = drift(files)
+        for p in bad:
+            print(f"DRIFT: {p}")
+        if bad:
+            sys.exit("FAIL: re-run author_ui_lattice.py")
+        print("OK: no drift")
+        return
+    for p, t in files.items():
+        with open(os.path.join(REPO, p), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(t)
+    for p in RETIRED:
+        if os.path.exists(os.path.join(REPO, p)):
+            os.remove(os.path.join(REPO, p))
+    print(f"wrote {len(files)} files")
+
+
+if __name__ == "__main__":
+    main()

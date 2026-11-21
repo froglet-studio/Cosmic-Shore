@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
         private float MaxSize      => maxSize.Value;
         public float CurrentScale => target.transform.lossyScale.z;
 
-        private enum ScaleDir { None, Grow, Shrink }
+        private enum ScaleDir { None = 0, Grow = 1, Shrink = 2 }
 
         private ScaleDir _dir = ScaleDir.None;
 

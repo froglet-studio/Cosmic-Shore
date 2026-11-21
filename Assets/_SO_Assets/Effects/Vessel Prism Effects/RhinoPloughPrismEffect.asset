@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdd924652b4040c789ea60a5a20bf3b1, type: 3}
+  m_Name: RhinoPloughPrismEffect
+  m_EditorClassIdentifier: 
+  clearanceMargin: 1
+  throwSecondsOfSpeed: 0.12
+  maxThrowDistance: 90
+  furrowDistance:
+    Enabled: 1
+    Value: 20
+    Min: 20
+    Max: 60
+    element: 2
+    UseFloor: 1
+    Floor: 10
+  ploughSuperShielded: 1
+  unstoppableUpgradeElement: 0
+  carryDistance:
+    Enabled: 1
+    Value: 10
+    Min: 10
+    Max: 40
+    element: 1
+    UseFloor: 1
+    Floor: 5
+  avalancheUpgradeElement: 3
+  avalancheLinks: 5
+  avalancheReach: 30
+  bermUpgradeElement: 2
+  slideSeconds: 0.25
+  skipWhileAttached: 1

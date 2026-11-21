@@ -1,0 +1,197 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f0d5c908646cc7b3d28431cff49e6ff, type: 3}
+  m_Name: ShrikeConfig
+  m_EditorClassIdentifier: 
+  hullRadius: 3
+  dockBonus: 1.6
+  dockBonusShielded: 2.5
+  unscopedFieldOfView: 60
+  zoomFieldOfView: 22
+  zoomResponse: 12
+  zoomDeadzone: 0.08
+  dockedCameraPullBack: 5
+  cameraEaseRate: 4
+  dockQueryReach: 12
+  dockGraceSeconds: 0.5
+  undockPush: 8
+  ownTrailGraceSeconds: 1
+  lanceRange: 2400
+  lanceCooldown: 1.2
+  lanceRadius:
+    Enabled: 1
+    Value: 1.5
+    Min: 1.5
+    Max: 5
+    element: 1
+    UseFloor: 1
+    Floor: 0.75
+  lanceDebrisSpeed: 60
+  lanceBeamSeconds: 0.3
+  slingRange: 1600
+  tetherSpeed: 2400
+  slingSeconds: 1
+  slingCooldown:
+    Enabled: 1
+    Value: 4.4
+    Min: 4.4
+    Max: 4.1
+    element: 4
+    UseFloor: 1
+    Floor: 1
+  slingTurnRate: 6
+  lockRange: 1500
+  lockCone:
+    Enabled: 1
+    Value: 5
+    Min: 5
+    Max: 14
+    element: 3
+    UseFloor: 1
+    Floor: 2.5
+  missileSpeed: 220
+  missileTurn: 140
+  missileBlast: 18
+  missileEvery: 0.8
+  missileLife: 8
+  lockKeepScale: 1.6
+  massLockRadius: 35
+  nestBlocks:
+    Enabled: 1
+    Value: 12
+    Min: 12
+    Max: 32
+    element: 2
+    UseFloor: 1
+    Floor: 6
+  nestBlockSize: 4.5
+  nestClearance: 1.1
+  nestShellThickness: 0.7
+  nestHoops: 3
+  nestTwigWidth: 1
+  nestTwigLength: 4
+  nestTwigTilt: 15
+  nestLining: 7
+  nestLiningSize: 1.2
+  nestCooldown: 8
+  detachNestMissiles: 1
+  leaveNestSeconds: 2
+  maxNests: 3
+  salvoUpgradeElement: 1
+  salvoLaunchScale: 2
+  armedNestsUpgradeElement: 2
+  armedNestMissiles: 2
+  whipcrackUpgradeElement: 4
+  whipcrackSeconds: 0.6
+  turretRegen: 6
+  floraMissileMax: 4
+  maxFlora: 8
+  missileLength: 4
+  missileTrailSeconds: 0.9
+  missileTrailWidth: 1.8
+  trailWavelength:
+    Enabled: 1
+    Value: 8
+    Min: 8
+    Max: 4
+    element: 2
+    UseFloor: 1
+    Floor: 2
+  trailThin: 0.6
+  trailThick: 0.5
+  trailLength: 7
+  slingMaxBlocksPerFrame: 6
+  lanceHitClass: 0
+  missileHitClass: 3
+  hitCooldown: 0.05
+  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  aiLanceMinTargets: 2
+  aiDockSeconds: 3
+  aiSlingMinDistance: 300
+  aiSlingDegrees: 20
+  modeEvent:
+    Guid:
+      Data1: -922617308
+      Data2: 1092038894
+      Data3: -167764571
+      Data4: -698904471
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Activate
+  lanceEvent:
+    Guid:
+      Data1: 1870893843
+      Data2: 1090302803
+      Data3: -531107708
+      Data4: -1787684942
+    Path: event:/SFX/Oneshots/Gameplay sfx/Projectile Launch
+  tetherEvent:
+    Guid:
+      Data1: 310883003
+      Data2: 1266496358
+      Data3: -193662310
+      Data4: -709421328
+    Path: event:/SFX/Oneshots/Gameplay sfx/Track collide
+  slingEvent:
+    Guid:
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
+  dockEvent:
+    Guid:
+      Data1: -1058858236
+      Data2: 1166390557
+      Data3: -939827049
+      Data4: 1519737688
+    Path: event:/SFX/Oneshots/Gameplay sfx/Vessel impact
+  undockEvent:
+    Guid:
+      Data1: -1103610945
+      Data2: 1108376032
+      Data3: -1187393100
+      Data4: -416318210
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate
+  nestEvent:
+    Guid:
+      Data1: -2144686006
+      Data2: 1203677490
+      Data3: 1188687745
+      Data4: -1802949205
+    Path: event:/SFX/Oneshots/Gameplay sfx/Massshark spawn
+  lockEvent:
+    Guid:
+      Data1: 724249746
+      Data2: 1213064519
+      Data3: 1634220168
+      Data4: -897979471
+    Path: event:/SFX/Oneshots/Menu/Option Click
+  missileLaunchEvent:
+    Guid:
+      Data1: 1870893843
+      Data2: 1090302803
+      Data3: -531107708
+      Data4: -1787684942
+    Path: event:/SFX/Oneshots/Gameplay sfx/Projectile Launch
+  missileBlastEvent:
+    Guid:
+      Data1: -159591309
+      Data2: 1318821736
+      Data3: -1568531009
+      Data4: 870809827
+    Path: event:/SFX/Oneshots/Gameplay sfx/Mine Explode
+  crystalEvent:
+    Guid:
+      Data1: 1401307610
+      Data2: 1312586406
+      Data3: 1271773619
+      Data4: -1226988235
+    Path: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect

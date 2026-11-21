@@ -33,6 +33,11 @@ Three properties are load-bearing. Do not relitigate them.
   every speed source that exists or will exist — trigger boosts, constant-acceleration ramps,
   skim charges, throttle modifiers, crystal buffs — with nothing to bind and nothing to keep
   in step. An ability that makes you fast gets the visual for free and cannot forget to.
+  **Inside a warp field it is the FELT speed, `VesselStatus.Speed / s`** (`VesselSpeedTunnel.Tick`,
+  `Docs/WARP_FIELD.md` §2): a field multiplies world speed by `s` while shrinking hull, camera
+  and trail by the same `s`, so dividing it back out is the pilot's own frame. `s` is a
+  function of position, the same for every vessel there, and exactly 1 with no field, so the
+  mapping stays absolute. It is the one divisor the §2 gate admits.
 - **Home values are whatever the game is actually running with.** FOV home is captured from the
   live camera the frame the effect takes over, and Panini home is the profile's own state; the
   effect only ever moves DOWN from there and returns exactly. Never anchor either to a constant
@@ -47,7 +52,7 @@ Four structural properties, mirroring the occlusion corridor's four layers:
 | 1 | **Binding** | `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel must call to become a player's vessel, on every spawn path (single-player, multiplayer, menu autopilot, runtime swap). Nothing per-vessel, nothing per-scene, therefore nothing to forget. `IsLocalPilot` (not `IsLocalUser`) so the legacy non-networked single-player path is covered — that gap is exactly the escape hatch the law must not have. `ChangePlayer` re-evaluates too (for BOTH platform laws), so the Cellular Duel ownership swap can't strand either of them on the hull the AI inherited. |
 | 2 | **One driver** | `VesselSpeedTunnel` is a **static class** with a single hidden `DontDestroyOnLoad` `LateUpdate` publisher installed by `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`. Not tidiness: `PostProcessingManager.SetSpeedTunnelPanini` is one global override with **no ref-counting**, so N per-vessel writers race it and an outgoing vessel's teardown stomps the incoming vessel's value mid-swap. One driver cannot race itself. |
 | 3 | **Fail loud** | Missing `PostProcessingManager` (Panini half inert) and an unexpected camera-controller type (FOV half inert) each warn **once per session**, naming the fix. A null controller — Cinemachine driving the menu — is a designed state and is deliberately silent. |
-| 4 | **Gates** | `SpeedTunnelLawTests` (edit-mode, asset-only) + **FrogletTools > Vessels > Validate Speed Tunnel Law**. Both assert that no vessel prefab carries its own driver *or a missing-script residue of the retired one*, that **every** bind site sits under an `IsLocalPilot` guard, that the drive site passes **raw** speed, and that the config is sane. Every one of those predicates lives once — `SpeedTunnelConfigSO.IsSane` and `SpeedTunnelLawSource` — and all three gates call it, so they cannot drift. Two of these checks are written the way they are because the obvious version is *vacuous*: prefab YAML records a script by GUID and never by class name, and a whole-file `Contains("IsLocalPilot")` stopped being a gate the moment `ChangePlayer` grew a second occurrence. |
+| 4 | **Gates** | `SpeedTunnelLawTests` (edit-mode, asset-only) + **FrogletTools > Vessels > Audits > Validate Speed Tunnel Law**. Both assert that no vessel prefab carries its own driver *or a missing-script residue of the retired one*, that **every** bind site sits under an `IsLocalPilot` guard, that **every** drive site passes **raw** speed (the warp field's scale divided back out, `Speed / warp`, is the one divisor admitted: it is a function of position, the same for every vessel, and exactly 1 with no field — `Docs/WARP_FIELD.md` §2), and that the config is sane. Every one of those predicates lives once — `SpeedTunnelConfigSO.IsSane` and `SpeedTunnelLawSource` — and all three gates call it, so they cannot drift. Two of these checks are written the way they are because the obvious version is *vacuous*: prefab YAML records a script by GUID and never by class name, and a whole-file `Contains("IsLocalPilot")` stopped being a gate the moment `ChangePlayer` grew a second occurrence. |
 
 The sanctioned hold is `VesselSpeedTunnel.SetSuppressed`, and it has exactly one shape: **a
 vantage posed independently of the pilot's vessel**. It is a **hold, not an opt-out** — the vessel
@@ -80,6 +85,56 @@ early return: a replay can finish a frame after its scene tore down, and returni
 lift would latch both platform laws off for the rest of the session (these statics are otherwise
 reset only by their `RuntimeInitializeOnLoadMethod` installers, once per app launch).
 
+## §2.1 The one sanctioned way an ability may MAGNIFY the view
+
+Suppression above is how a camera opts OUT of the law. There is a second surface, added
+2026-09-16, for an ability whose whole mechanic is magnification — and it does the opposite: it
+keeps the law engaged and moves the value it narrows **from**.
+
+```csharp
+VesselSpeedTunnel.SetHomeFieldOfViewOverride(float fov, Transform key);
+VesselSpeedTunnel.ClearHomeFieldOfViewOverride(Transform key);   // swap-guarded, like ClearTarget
+VesselSpeedTunnel.HasHomeFieldOfViewOverride;
+VesselSpeedTunnel.HomeFieldOfView;                               // the PLAYER's own value
+```
+
+**There is NO caller today, and the surface is kept anyway**, because it is a GUARD rather than a
+feature: it is the one sanctioned way to magnify the gameplay camera, and deleting it re-opens the
+direct `Camera.fieldOfView` write this law exists to prevent.
+
+Its first caller was `VesselFirstPersonView` (the Serpent's scope,
+`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md`), which no longer magnifies
+the gameplay camera at all — a magnified flight view read as **nauseating** on playtest, so that
+scope's magnification moved into a window of its own. **Read that finding before reaching for this
+surface**: a magnified view is a lever on every motion that reaches it, so magnifying what the
+pilot FLIES with multiplies the camera's settle, the vessel's roll and this law's own speed
+narrowing by exactly the factor it multiplies the target. An ability earns this surface only when
+magnifying the FLIGHT VIEW is the mechanic — not merely when magnification is. Prefer a second,
+magnified picture (`Docs/REAR_VIEW.md §3.1.1`).
+
+**Why an ability may not just write `Camera.fieldOfView`.** It fails two ways, both silent: while
+the tunnel is engaged the write is overwritten every frame, and when the tunnel *engages* it
+captures whatever FOV it finds as `_homeFov` — so a live zoom is **baked in permanently** and the
+player never gets their setting back.
+
+Four properties make the override safe, and each is a test:
+
+1. **One writer survives.** The tunnel still narrows for speed, it just narrows from the scoped
+   base (`Apply` reads `EffectiveHomeFov`), so a scoped pilot who accelerates reads their speed in
+   the optics instead of two effects fighting over one number.
+2. **`RestoreFov` deliberately does NOT read the override.** Releasing always hands the camera back
+   the player's own value, so a dropped scope can never leave a zoom behind.
+3. **An active override ENGAGES the law on its own.** `Tick`'s condition is
+   `_effect01 > 0.001f || _homeFovOverrideActive`, because a scope has to hold at a standstill —
+   where the speed term is zero and nothing else would be writing FOV at all.
+4. **It is keyed on the owning `Transform`**, exactly like `ClearTarget(Transform)`, so a late
+   release from an outgoing vessel cannot cancel the incoming one's zoom during a swap.
+
+**The bar for adding a second caller is the one §2 already sets, plus one more:** the ability must
+still be worth shipping *without* the zoom before it may have it. The Dolphin's Echo Sight wanted a
+zoom, was measured to work without one, and its surface was reverted (`/vessel` rule 21). A scope
+without magnification is not a scope, which is why the Serpent's earns it.
+
 ## §3 Tuning
 
 `Assets/Resources/SpeedTunnelConfig.asset` (`SpeedTunnelConfigSO`) is the **only** tuning
@@ -100,27 +155,32 @@ zero authoring.
 Cruise = full throttle, unboosted (`DefaultThrottleScaler + DefaultMinimumSpeed`). Top applies
 the vessel's **real** boost source to the *scaler only* and then adds the minimum
 (`DefaultThrottleScaler × boost + DefaultMinimumSpeed` — the minimum is added AFTER the multiply,
-per `VesselTransformer.ComputeThrottleTarget`; that is why the Rhino's ×6 gives 310 and not 360).
+per `VesselTransformer.ComputeThrottleTarget`). *(This sentence used to illustrate that with "the
+Rhino's ×6 gives 310 and not 360"; the Rhino now authors `DefaultMinimumSpeed` **0**, so its ramp is
+the plain product 50 × 16.8 = 840 and no longer shows the ordering. The Dolphin, also minimum 0, is
+the same.)*
 
-**FrogletTools > Vessels > Validate Speed Tunnel Law** prints the **cruise** column live and is
+**FrogletTools > Vessels > Audits > Validate Speed Tunnel Law** prints the **cruise** column live and is
 the gate for it. Its `top(rest)` column is NOT this table's top: the tool reads only the prefab's
-resting `VesselStatus.boostMultiplier`, while three vessels get their real top from elsewhere —
-the Rhino's ×6 from `RhinoRampBoostAction.asset`, the Squirrel's ×5 from the skim-boost clamp, the
-Serpent's from its consume-boost — none of which a prefab sweep can resolve. Teaching the tool to
+resting `VesselStatus.boostMultiplier`, while four vessels get their real top from elsewhere —
+the Rhino's ×16.8 from `RhinoRampBoostAction.asset` (`maxBoostMultiplier`), the Squirrel's ×5 from the skim-boost clamp, the
+Serpent's from its consume-boost, and the Scarab's from a C# field initializer its prefab does not
+serialize at all (`SCARAB.md` §13) — none of which a prefab sweep can resolve. Teaching the tool to
 chase them is a much larger change for a column that is explicitly a report, not a check, so the
 boosted numbers below are maintained by hand.
 
 | Vessel | cruise | effect | top speed | effect | notes |
 |---|---|---|---|---|---|
 | **Manta** | 180 | **0.52** | 720 | 1.00 | `DefaultThrottleScaler` 180 — 3.6× the fleet norm |
-| Rhino | 60 | 0.00 | 310 | 1.00 | ramp boost SO sets ×6 |
+| Rhino | 50 | 0.00 | 840 | 1.00 | ramp boost SO sets ×16.8 (`DefaultThrottleScaler` 50, `DefaultMinimumSpeed` 0; retuned 2026-09-25 from ×24 / 1200). Time scales only how fast the ramp winds up (220 → 550 u/s²), never this ceiling. *(Row corrected 2026-10-16; it read 60 / 310 / ×6.)* |
 | Squirrel | 60 | 0.00 | 300 | 1.00 | skim boost clamps to ×5 |
 | Serpent | 60 | 0.00 | 210 → 330 | 0.67 → 1.00 | Time elemental up to ×1.6 |
 | Dolphin | 68 | 0.00 | 347 | 1.00 | `DefaultMinimumSpeed` **0** — throttle-off is a real stop; boost multiplier is squared in use (2.259² = ×5.103) |
 | Falcon / Shrike | 60 | 0.00 | 210 | 0.67 | |
 | Urchin | 50 | 0.00 | 200 | 0.62 | `Speed` is 0 while trail-attached |
 | Grizzly | 50 | 0.00 | 200 | 0.62 | |
-| Sparrow | 35 | 0.00 | 110 | 0.19 | |
+| Sparrow | 35 | 0.00 | 135 → 198 | 0.31 → 0.61 | boost ×5 (2026-09-03; the fleet default is ×4), Time elemental up to ×1.5 on top |
+| Scarab | — | — | 216 → 324 | 0.70 → 1.00 | no cruise: `ScarabVesselTransformer` replaces the throttle TARGET with an integrator, so the prefab's `DefaultThrottleScaler` 25 is inert and the only ceiling is `baseTopSpeed` × the Time `ThrottleScalerMultiplier` (1 → 1.5). Saturates the tunnel at 280, i.e. from Time ~6 up |
 | Termite | — | — | — | — | `CommandVesselTransformer` never writes `Speed`, so the Termite structurally cannot tunnel. The validator prints "—" for it rather than its inert throttle fields. |
 
 **Read the Manta row before tuning.** It is not a bug and the fix is not a Manta-specific
@@ -164,7 +224,7 @@ throttle change, which is a flight-feel decision that belongs to whoever tuned i
 6. **MPPM, two clients**: a remote or AI vessel boosting must not move YOUR camera or post stack.
 7. **Astro League goal replay**: during the replay the tunnel is held closed and the replay
    framing is unaffected; it resumes on return to play.
-8. **Gates**: run **FrogletTools > Vessels > Validate Speed Tunnel Law** (expect PASS + the fleet
+8. **Gates**: run **FrogletTools > Vessels > Audits > Validate Speed Tunnel Law** (expect PASS + the fleet
    table) and the `SpeedTunnelLawTests` fixture in the Test Runner (expect all green).
 
 ## §5.1 Verification matrix
@@ -203,3 +263,18 @@ compiler and no Unity ran on this branch**; every runtime claim below is the hum
   the rest of that engagement. Not reachable today (those calls happen at spawn, before speed
   builds); the fix if it ever is would be to read home from
   `DisplayGraphicsSettings.Current.FieldOfView` when available.
+
+## The ride scale (2026-10-27, the Meerkat's wormhole)
+
+The one sanctioned way to make the push-in DEEPER, in the same shape as the scope's home-FOV override: while a tunnel flies
+the Meerkat (`MeerkatSolitonExecutor`), `VesselSpeedTunnel.SetEffectScale(rideSpeedTunnelScale, hull)` multiplies the
+effect, 5x by default (Yash: "use 5x the normal value when going through the wormhole"):
+- The drive is still `config.Effect01(_target.Speed / warp)`, the absolute law, so the same speed on any vessel still
+  looks the same outside a ride. The scale only says how far the optics go for the seconds a tunnel flies the hull.
+- `FovFor` / `PaniniOffsetFor` take the effect up to `SpeedTunnelConfigSO.MaxEffect` (5) instead of 1. The field of view
+  never goes under `MinFieldOfView`, and the post volume clamps the Panini distance at 0.
+- It is keyed on the owning vessel's Transform and applies only while that vessel is the law's target, so it can only
+  reach the local pilot's own camera.
+- Measured in the studio's preview (FOV only, straight 600 u tunnel at a 60 u/s entry, 150 u/s at the throat): 68 deg at
+  the mouth, 23.8 deg at the throat, back to 68 deg on the way out.
+

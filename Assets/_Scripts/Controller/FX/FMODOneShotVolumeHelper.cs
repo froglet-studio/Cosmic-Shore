@@ -65,7 +65,7 @@ namespace CosmicShore.Gameplay.Audio
         /// Undeterminable (banks still loading) counts as SAFE, so a query failure can never
         /// silently mute audio - only a definite "this loops" refuses.
         /// </summary>
-        static bool IsFireAndForgetSafe(EventReference reference, EventInstance instance)
+        public static bool IsFireAndForgetSafe(EventReference reference, EventInstance instance)
         {
             var key = KeyOf(reference);
             if (_fireAndForgetSafe.TryGetValue(key, out bool cached)) return cached;
@@ -97,8 +97,9 @@ namespace CosmicShore.Gameplay.Audio
                 "but is being played as a fire-and-forget one-shot. A looping instance never " +
                 "stops, so release() never frees it and one immortal voice leaks PER CALL - " +
                 "which shows up as RuntimeManager.Update() eating the frame. NOT PLAYED. " +
-                "Fix by removing the loop region in FMOD Studio, or give the ability its own " +
-                "EventReference and own the instance (start on begin, stop on end).");
+                "Fix by removing the loop region in FMOD Studio, or own the instance (start on " +
+                "begin, stop on end) - for a gameplay category use AudioSystem.StartHeldGameplaySFX / " +
+                "StopHeldGameplaySFX.");
         }
 
         /// <summary>
@@ -113,17 +114,9 @@ namespace CosmicShore.Gameplay.Audio
             if (reference.IsNull) return;
             if (volume <= 0f) return;
 
-            EventInstance instance;
-            try
-            {
-                instance = RuntimeManager.CreateInstance(reference);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"[FMODOneShotVolumeHelper] CreateInstance failed for '{reference}': {ex.Message}");
-                return;
-            }
-            if (!instance.isValid()) return;
+            // FmodSafe: no throw on a missing event / dead system, reported once per event, and
+            // nothing is created while the application is quitting.
+            if (!FmodSafe.TryCreateInstance(reference, out EventInstance instance)) return;
 
             if (!IsFireAndForgetSafe(reference, instance)) { RejectLoopingOneShot(reference, instance); return; }
 
@@ -147,17 +140,7 @@ namespace CosmicShore.Gameplay.Audio
             if (attachTo == null) return;
             if (volume <= 0f) return;
 
-            EventInstance instance;
-            try
-            {
-                instance = RuntimeManager.CreateInstance(reference);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"[FMODOneShotVolumeHelper] CreateInstance failed for '{reference}': {ex.Message}");
-                return;
-            }
-            if (!instance.isValid()) return;
+            if (!FmodSafe.TryCreateInstance(reference, out EventInstance instance)) return;
 
             // Doubly important on the attached path: a leaked instance ALSO sits in
             // RuntimeManager's attachedInstances list, which it walks every frame.

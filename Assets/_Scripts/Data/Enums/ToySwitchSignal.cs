@@ -4,9 +4,10 @@ namespace CosmicShore.Data
     /// What a <b>switch</b>'s shader says it will do.
     ///
     /// <para>A switch is a ring you thread, and threading it activates something
-    /// (CLAUDE.md, "Switch"). Every switch is drawn in the <b>prism shader</b> - the same
-    /// material family the painted trail wears - so the one channel left to carry meaning is
-    /// WHICH prism it is painted as. That channel is this enum.</para>
+    /// (CLAUDE.md, "Switch"). Every switch wears a <b>prism's colour</b> - the material family
+    /// the painted trail wears - so the one channel left to carry meaning is WHICH prism's colour
+    /// it wears. That channel is this enum. (The ring itself is a synthetic wire in that colour,
+    /// <c>SwitchRingLod</c>, Docs/SPINDLE_LOD.md §9.)</para>
     ///
     /// <para><b>The reservation:</b> a switch wearing a playable DOMAIN's colour is reserved -
     /// inside the freestyle toybox it means <i>threading me makes your trail that domain</i>, and
@@ -15,9 +16,9 @@ namespace CosmicShore.Data
     /// neutral switch cannot be painted a playable domain even by mistake: the signal, not the
     /// caller, picks the colour.</para>
     ///
-    /// <para>Two members is the whole vocabulary today, deliberately. Adding a verb is adding a
-    /// member here plus its row in <c>ToyFactory.SwitchMaterial</c> - one place, so the language
-    /// can grow without any switch builder learning about it.</para>
+    /// <para>Adding a verb is adding a member here plus its row in
+    /// <c>ToyFactory.SwitchMaterial</c> - one place, so the language can grow without any switch
+    /// builder learning about it.</para>
     /// </summary>
     public enum ToySwitchSignal
     {
@@ -32,11 +33,46 @@ namespace CosmicShore.Data
         /// things that hand you one - the Domain Changer's slots and the painting's stroke-start
         /// gates (both route through <c>Player.RequestSetDomain_ServerRpc</c>).
         ///
-        /// <para>The one wearer outside the toybox is the Scarab's placed switch, where the
-        /// colour names the domain the switch BELONGS to rather than one it grants. Nothing in
-        /// that mode changes your domain, so the two readings never share a screen - but do not
-        /// add a third toybox wearer without settling which reading wins.</para>
+        /// <para>The wearers outside the toybox are the Scarab's placed switch and Skim Race's
+        /// race-ring crystals (<c>CrystalRaceRing</c>), where the colour names the domain the
+        /// switch BELONGS to rather than one it grants. Nothing in either mode changes your domain,
+        /// so the two readings never share a screen - but do not add a third toybox wearer without
+        /// settling which reading wins.</para>
         /// </summary>
         Domain = 1,
+
+        /// <summary>
+        /// <i>This is the switch YOU are meant to thread next.</i> Painted in the free-pickup
+        /// LIME - <c>SO_ColorSet.DarkCTA</c>, the platform's existing "this one is available to
+        /// you" colour, worn by a crystal anyone may collect.
+        ///
+        /// <para><b>Per-viewer, and that is what makes it legal.</b> Every other signal describes
+        /// the switch itself and reads the same on every screen; this one describes the RELATIONSHIP
+        /// between the switch and whoever is looking at it, so it is set locally and no two peers
+        /// need agree. Switchback's course is built independently on every machine, so a gate
+        /// object already belongs to one viewer - nothing is replicated and no shared world
+        /// geometry is repainted.</para>
+        ///
+        /// <para>It makes no domain claim, so <c>ToyFactory.SwitchDomain</c> keeps it on
+        /// <c>Domains.Blue</c> and the reservation above is untouched: lime is not a playable
+        /// domain's colour and never can be.</para>
+        /// </summary>
+        Next = 2,
+
+        /// <summary>
+        /// <i>This switch is a HALO ring: thread it to break it.</i> Painted a fixed PEARL (<c>ToyFactory.HaloPearl</c>) on
+        /// the prism shader - the light of a halo, and the one colour no playable domain, no danger rim and no free pickup
+        /// wears, so a pilot cannot mistake it for any other verb (ToySwitchVocabularyTests holds every pair apart).
+        ///
+        /// <para>Describes the switch, not the viewer, so it reads the same on every screen. Its one wearer is Tandava's
+        /// halo (TandavaHaloRing): twelve rings round the Lord of the Dance that the pilots break by threading them. A ring
+        /// its attendants are guarding does not change colour - its drawn ring dims SMALLER while the crossing test is off,
+        /// so the ring never advertises a mouth that is not open (the switch law, read in the strict direction).</para>
+        ///
+        /// <para>No domain claim: <c>ToyFactory.SwitchDomain</c> keeps it on <c>Domains.Blue</c>, and the reservation is
+        /// untouched. (It was <c>Flame</c>, a danger-red ring of fire, until the prompter took fire out of the mode: the
+        /// value is kept so nothing serialized against it moves.)</para>
+        /// </summary>
+        Halo = 3,
     }
 }

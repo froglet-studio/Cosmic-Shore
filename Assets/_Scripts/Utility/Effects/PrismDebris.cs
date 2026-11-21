@@ -131,6 +131,12 @@ namespace CosmicShore.Utility
 
         static TickHost s_host;
 
+        // Play-mode exit / quit: death cascades still running from OnDisable/OnDestroy must not
+        // re-create the host after it was destroyed ("Some objects were not cleaned up when
+        // closing the scene" listing [PrismDebris]). Application.quitting also fires on editor
+        // play-mode exit; ResetStatics clears it for the next session.
+        static bool s_quitting;
+
         // After a failed batch spawn (world vanished between request and drain),
         // hold new requests for a few seconds instead of accepting and silently
         // dropping them again. There is no pooled death fallback (D4). Time-based
@@ -165,6 +171,9 @@ namespace CosmicShore.Utility
             s_sourcePrefab = null;
             s_host = null;
             s_suspendedUntil = 0f;
+            s_quitting = false;
+            Application.quitting -= HandleQuitting;
+            Application.quitting += HandleQuitting;
 
             s_pendingImplosions.Clear();
             s_pendingImplosionTargets.Clear();
@@ -179,6 +188,8 @@ namespace CosmicShore.Utility
             s_impSourcePrefab = null;
             s_implosionSuspendedUntil = 0f;
         }
+
+        static void HandleQuitting() => s_quitting = true;
 
         /// <summary>
         /// Points the debris system at the pooled effect prefab it must match.
@@ -225,6 +236,30 @@ namespace CosmicShore.Utility
             return s_configured;
         }
 
+        /// <summary>
+        /// The explosion debris' render layer, for the one other death visual that stands in for
+        /// an explosion: the Rhino sword's slice (<see cref="PrismSlice"/>), whose halves must be
+        /// culled and camera-masked exactly as the debris they replace would have been. False while
+        /// unconfigured — the slice then refuses and the factory explodes the prism.
+        /// </summary>
+        internal static bool TryGetExplosionLayer(out int layer)
+        {
+            layer = s_layer;
+            return s_configured;
+        }
+
+        /// <summary>
+        /// The implosion's authored life (the pool prefab's <c>implosionDuration</c>), for the one other consumption
+        /// visual: the suction drawn as the destruction's cut (<c>PrismInteractionLod.TrySuction</c>), which must be
+        /// over exactly when the implosion it stands in for would have been. False while unconfigured — the suction
+        /// then refuses and the factory draws the implosion.
+        /// </summary>
+        internal static bool TryGetImplosionDuration(out float duration)
+        {
+            duration = s_impDuration;
+            return s_impConfigured;
+        }
+
         /// <summary>Implosion counterpart of <see cref="Configure"/> — same contract,
         /// reading the mesh/material/timings off the pooled implosion prefab so the
         /// batched suction is visually identical to the pooled one.</summary>
@@ -261,6 +296,28 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// The explosion's FLIGHT for an impact: the debris velocity after the tier's detonation gain
+        /// and the configured (or overridden) speed clamp, and the speed the face spin reads. The one
+        /// place it is computed, so anything that must leave like the explosion — a collision burst
+        /// (<c>PrismCollisionBurst</c>, Docs/PRISM_ANIMATION.md §4.12) — leaves EXACTLY like it.
+        /// </summary>
+        internal static Vector3 ResolveExplosionFlight(Vector3 velocity, float speedLimitOverride, PrismKind kind,
+            out float speed)
+        {
+            if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
+                velocity = Vector3.up * s_minSpeed;
+
+            float gain = PrismExplosion.DetonationGain(kind, s_dangerDetonation);
+            velocity *= gain;
+
+            bool hasOverride = speedLimitOverride > 0f;
+            float ceiling = (hasOverride ? speedLimitOverride : s_maxSpeed) * gain;
+            velocity = GeometryUtils.ClampMagnitude(velocity, s_minSpeed * gain, ceiling, out speed);
+            if (hasOverride) speed = velocity.magnitude;
+            return velocity;
+        }
+
+        /// <summary>
         /// Queues one death's debris for this frame's batch. Velocity semantics are
         /// EXACTLY PrismExplosion.TriggerExplosion's: apply the tier detonation gain, clamp
         /// to the (likewise scaled) [min, ceiling] where a positive
@@ -276,19 +333,19 @@ namespace CosmicShore.Utility
             Color bright, Color dark, Vector3 velocity, float speedLimitOverride,
             PrismKind kind = PrismKind.Plain)
         {
-            if (!s_configured || !PrismRenderService.Enabled) return false;
-            if (Time.unscaledTime < s_suspendedUntil) return false;
+            // A rotation that drifted off unit length (1.00001 after many prism-to-prism
+            // multiplications) makes Matrix4x4.TRS log "Quaternion To Matrix conversion failed"
+            // (Bug Ledger E-16d65ffecb and three more, Garrett and Shombith). Normalize once here.
+            rotation = Quaternion.Normalize(rotation);
 
-            if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
-                velocity = Vector3.up * s_minSpeed;
+            // No Entities Graphics on this device (a WebGL2 browser): the same piece, computed below with the
+            // same arithmetic, is drawn by the capped MeshRenderer carrier (Docs/PRISM_ANIMATION.md §4.11)
+            // instead of being queued for a batch that could never spawn. False everywhere else.
+            bool meshRendererPath = PrismMeshRendererStamps.Active;
+            if (!s_configured || (!meshRendererPath && !PrismRenderService.Enabled) || s_quitting) return false;
+            if (!meshRendererPath && Time.unscaledTime < s_suspendedUntil) return false;
 
-            float gain = PrismExplosion.DetonationGain(kind, s_dangerDetonation);
-            velocity *= gain;
-
-            bool hasOverride = speedLimitOverride > 0f;
-            float ceiling = (hasOverride ? speedLimitOverride : s_maxSpeed) * gain;
-            velocity = GeometryUtils.ClampMagnitude(velocity, s_minSpeed * gain, ceiling, out float speed);
-            if (hasOverride) speed = velocity.magnitude;
+            velocity = ResolveExplosionFlight(velocity, speedLimitOverride, kind, out float speed);
 
             // Full length, always: on the entity path a live effect costs zero
             // per-frame CPU, so the retired pooled path's pressure model (which
@@ -304,6 +361,11 @@ namespace CosmicShore.Utility
                 flight.y / Mathf.Max(1e-4f, Mathf.Abs(scale.y)),
                 flight.z / Mathf.Max(1e-4f, Mathf.Abs(scale.z)));
             float pad = 4f + 0.25f * math.length(objDisp);
+
+            if (meshRendererPath)
+                return PrismMeshRendererDebris.TrySpawnExplosion(s_mesh, s_material, s_layer,
+                    position, rotation, scale, bright, dark, velocity, speed, duration, in objDisp, pad,
+                    facePivotFromCentroid: 0f);
 
             s_pending.Add(new PrismRenderService.ExplosionDebrisSpawn
             {
@@ -336,12 +398,20 @@ namespace CosmicShore.Utility
         public static bool TryRequestImplosion(Vector3 position, Quaternion rotation, Vector3 scale,
             Color bright, Color dark, Transform target)
         {
-            if (!s_impConfigured || !PrismRenderService.Enabled) return false;
-            if (Time.unscaledTime < s_implosionSuspendedUntil) return false;
+            rotation = Quaternion.Normalize(rotation);   // see TryRequestExplosion
+
+            // §4.11: on a device without Entities Graphics the capped MeshRenderer carrier draws it instead.
+            bool meshRendererPath = PrismMeshRendererStamps.Active;
+            if (!s_impConfigured || (!meshRendererPath && !PrismRenderService.Enabled) || s_quitting) return false;
+            if (!meshRendererPath && Time.unscaledTime < s_implosionSuspendedUntil) return false;
             // A suction with nothing to converge on is not an implosion. StartImplosion
             // (and the retired factory deferred drain) guarded the same way — drop
             // rather than inventing a point.
             if (target == null) return false;
+
+            if (meshRendererPath)
+                return PrismMeshRendererDebris.TrySpawnImplosion(s_impMesh, s_impMaterial, s_impLayer,
+                    position, rotation, scale, bright, dark, target, s_impDuration);
 
             var localToWorld = Matrix4x4.TRS(position, rotation, scale);
             Vector3 location = target.position;
@@ -396,6 +466,7 @@ namespace CosmicShore.Utility
         static void EnsureHost()
         {
             if (s_host != null) return;
+            if (s_quitting || !Application.isPlaying) return;
             // HideInHierarchy, NOT HideAndDontSave — same reasoning as the render
             // service's visibility flush host (play-mode-exit cleanup applies).
             var go = new GameObject("[PrismDebris]") { hideFlags = HideFlags.HideInHierarchy };

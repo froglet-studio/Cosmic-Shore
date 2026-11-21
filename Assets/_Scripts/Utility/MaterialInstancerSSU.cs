@@ -9,15 +9,13 @@ namespace CosmicShore.Utility
     {
         void Awake()
         {
-            Graphic graphic = GetComponent<Graphic>();
-            if(graphic != null)
+            if (TryGetComponent(out Graphic graphic))
             {
                 graphic.material = Instantiate(graphic.material);
                 runtimeMaterial = graphic.materialForRendering;
             }
 
-            Renderer renderer = GetComponent<Renderer>();
-            if(renderer != null)
+            if (TryGetComponent(out Renderer renderer))
             {
                 Material[] materials = renderer.sharedMaterials;
                 for(int n = 0; n < materials.Length; n++)

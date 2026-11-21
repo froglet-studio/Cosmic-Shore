@@ -25,6 +25,8 @@ namespace CosmicShore.Core
 
         // ── Graphics ──
         public QualityPresetSetting QualityPreset = QualityPresetSetting.High;
+        // The last preset picked; while QualityPreset is Custom, its GPU cuts stay in force.
+        public QualityPresetSetting BasePreset = QualityPresetSetting.High;
         public AntiAliasingSetting AntiAliasing = AntiAliasingSetting.SMAA;
         public int RenderScalePercent = 100;   // 25..200
         public UpscalingSetting Upscaling = UpscalingSetting.Auto;
@@ -49,6 +51,13 @@ namespace CosmicShore.Core
         /// player actually chose. Do not read it for anything else.
         /// </summary>
         public const float LegacyDefaultFieldOfView = 60f;
+
+        /// <summary>
+        /// The preset whose GPU cuts (<c>QualityPresetCutsSO</c>) are in force: the picked preset, or
+        /// the one a hand change started from when <see cref="QualityPreset"/> is Custom.
+        /// </summary>
+        public QualityPresetSetting EffectivePreset =>
+            QualityPreset == QualityPresetSetting.Custom ? BasePreset : QualityPreset;
 
         public GraphicsSettingsData Clone() => (GraphicsSettingsData)MemberwiseClone();
     }

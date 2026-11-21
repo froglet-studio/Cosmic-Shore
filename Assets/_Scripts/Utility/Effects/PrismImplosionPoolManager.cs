@@ -43,8 +43,19 @@ namespace CosmicShore.Utility
             // null-check the result — guard the subscribe so we fail soft instead of
             // throwing an NRE per implosion.
             if (implosion != null)
+                // -= first: exactly one handler per life, whatever a previous life left behind.
+                implosion.OnReturnToPool -= Release;
                 implosion.OnReturnToPool += Release; // auto return when done
             return implosion;
+        }
+
+        // Detach EVERYTHING on the way back, not just our own Release: PrismFactory's Grow path
+        // hangs a one-shot growCallback on the same delegate, and a bulk release (scene change)
+        // used to leave it attached - so the NEXT life's return fired the PREVIOUS Grow's
+        // completion. Runs on every path back into the pool (GenericPoolManager.OnReturnedToPool).
+        protected override void OnReturnedToPool(PrismImplosion instance)
+        {
+            if (instance) instance.OnReturnToPool = null;
         }
 
         public override void Release(PrismImplosion instance)

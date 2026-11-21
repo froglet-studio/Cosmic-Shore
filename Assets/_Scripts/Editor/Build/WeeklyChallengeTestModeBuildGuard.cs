@@ -31,9 +31,8 @@ namespace CosmicShore.Editor
 
         public void OnPreprocessBuild(BuildReport report)
         {
-            bool development = EditorUserBuildSettings.development ||
-                               (report.summary.options & BuildOptions.Development) != 0;
-            if (development) return;
+            // The build's own options decide, never the Build Settings checkbox (ReleaseBuildKind).
+            if (ReleaseBuildKind.IsDevelopment(report)) return;
 
             var catalog = Resources.Load<WeeklyChallengeCatalogSO>(WeeklyChallengeCatalogSO.ResourcePath);
             if (catalog == null || catalog.test == null || !catalog.test.enabled) return;

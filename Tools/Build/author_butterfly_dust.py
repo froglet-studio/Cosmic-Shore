@@ -1,0 +1,780 @@
+#!/usr/bin/env python3
+"""Author every asset the Butterfly's Mass-mode / Dust-mode redesign needs.
+
+WHAT CHANGED (design record: Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md)
+
+The hull used to carry TWO sphere skimmers -- a near-field and a far-field "wing" -- each with the
+fleet's forcefield crackle overlay, so a pilot saw two bubbles around the ship. It now carries ONE
+skimmer: a trigger CAPSULE hanging below the hull, live only in Dust mode, drawn only as particle
+dust. The right trigger switches Mass mode (a wide wake) and Dust mode (the capsule).
+
+What this script writes, and why each piece is an asset rather than a hand edit:
+
+  ButterflyDustSkimmer.prefab   The capsule. It keeps Skimmer.prefab's fileIDs for the five
+                                objects the two share (GameObject, Transform, Rigidbody, Skimmer,
+                                SkimmerImpactor, ImpactCollider), which is what lets the Butterfly's
+                                existing nested instance be RE-POINTED at it with every override
+                                and every stripped reference still resolving -- the
+                                _nearFieldSkimmer wire and the prism controller's clearance
+                                skimmer survive the swap untouched.
+  AOEButterflyBloom.prefab      The omni-crystal bloom: a copy of AOEMissileWarhead.prefab (a
+                                one-object, non-destructive AOE), pointed at its own container.
+  effect assets + containers    the dust's prism roll, the ally refresh, the opposing wither
+                                (now flora AND fauna, own domain spared), the Charge-scaled pilot
+                                drain, the bloom's heart-kill and its container, the crystal
+                                effect that fires it.
+  the bloom's payload           (2026-10-08) the bloom shipped with ONLY the heart-kill, so a
+                                900-unit blast visibly did nothing. It now also (a) STRIPS opposing
+                                pilots' elements -- a VesselElementalDebuffByExplosionEffect on all
+                                four, whose petals are ejected as collectable crystals -- and (b)
+                                DUSTS every prism it engulfs with the capsule's own one-of-three
+                                roll, applied by ButterflyBloomDust on the bloom prefab, which holds
+                                the dust asset rather than restating its table. (Round 1-3 routed it
+                                through a separate ExplosionScaleDustPrismEffect container asset;
+                                in the playtester's editor that asset loaded as NULL three times
+                                running with clean branch data, so it is retired and deleted below.)
+  bloom scoring + look          (2026-10-08, round 2) a strip SCORES: the bloom container also
+                                carries the Dolphin cone's shared VesselCombatHitByCrystalBlast
+                                reporter (Debuff class, owning machine only). And the bloom is
+                                DRAWN as the capsule's dust: ButterflyBloomDust on the prefab fills
+                                the sphere with the same motes and puffs on every prism it changed.
+  ButterflyCrystalSkimmer.prefab (2026-10-09) the CRYSTAL CATCHER. An elemental crystal is
+                                collected ONLY by a SkimmerImpactor contact
+                                (ElementalCrystalImpactor.AcceptImpactee), and the dust capsule --
+                                once the hull's only skimmer -- is switched off outside Dust mode, the
+                                mode the Butterfly spawns in. So in Mass mode it collected NOTHING. The
+                                catcher is an always-on sphere in the FAR-field slot (VesselController
+                                initialises near + far only) whose container is EMPTY on purpose: it
+                                skims no prism, touches no pilot, withers no heart -- it only gives
+                                the crystal a skimmer with a vessel to credit.
+  Butterfly.prefab surgery      re-point the near instance, replace the far one with the crystal
+                                catcher, wire the dust field onto the mode executor.
+  retirements                   the far-wing container and both wing-dissolve effects, which
+                                existed only for the retired wings.
+
+Deterministic and idempotent: every minted GUID is md5 of a stable label, and --check diffs every
+file this script owns against disk without writing.
+
+Run:  python3 Tools/Build/author_butterfly_dust.py [--check]
+"""
+import hashlib
+import os
+import re
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+assert os.path.isdir(os.path.join(ROOT, "Assets")), f"ROOT is wrong: {ROOT}"
+CHECK = "--check" in sys.argv
+
+A = "Assets"
+SKIMMER_BASE = f"{A}/_Prefabs/Spacevessels/Components/Skimmer.prefab"
+DUST_PREFAB = f"{A}/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab"
+CRYSTAL_PREFAB = f"{A}/_Prefabs/Spacevessels/Components/ButterflyCrystalSkimmer.prefab"
+WARHEAD = f"{A}/_Prefabs/Projectile/AOEMissileWarhead.prefab"
+BLOOM_PREFAB = f"{A}/_Prefabs/Projectile/AOEButterflyBloom.prefab"
+BUTTERFLY = f"{A}/_Prefabs/Spacevessels/TigerMoth.prefab"   # the Butterfly was retired 2026-10-29; the Tiger Moth carries its dust
+FX = f"{A}/_SO_Assets/Effects"
+SKIM_CONT = f"{FX}/Effect Containers/SkimmerContainers"
+OLD_NEAR = f"{SKIM_CONT}/ButterflyNearWingSkimmerImpactorDataContainer.asset"
+OLD_FAR = f"{SKIM_CONT}/ButterflyFarWingSkimmerImpactorDataContainer.asset"
+DUST_CONT = f"{SKIM_CONT}/ButterflyDustSkimmerImpactorDataContainer.asset"
+CRYSTAL_CONT = f"{SKIM_CONT}/ButterflyCrystalSkimmerImpactorDataContainer.asset"
+# Every Skimmer raises this on a vessel contact (Skimmer.ExecuteImpactOnShip, unguarded by policy).
+SKIMMER_SHIP_EVENT = f"{A}/_SO_Assets/Event Channels/EventOnSkimmerVesselCollision.asset"
+OLD_DISSOLVES = [f"{FX}/Skimmer Prism Effects/ButterflyWingDissolvePrismEffect.asset",
+                 f"{FX}/Skimmer Prism Effects/ButterflyBroadwingDissolvePrismEffect.asset"]
+DUST_PRISM = f"{FX}/Skimmer Prism Effects/ButterflyScaleDustPrismEffect.asset"
+DUST_NOURISH = f"{FX}/Skimmer Crystal Effects/ButterflyDustNourishLifeformEffect.asset"
+DUST_WITHER = f"{FX}/Skimmer Crystal Effects/ButterflyScaleDustWitherLifeformEffect.asset"
+DUST_DEBUFF = f"{FX}/Vessel Skimmer Effects/ButterflyScaleDustDebuffBySkimmerEffect.asset"
+DUST_COMBAT = f"{FX}/Vessel Skimmer Effects/ButterflyCombatHitBySkimmerEffect.asset"
+DUST_CLEANSE = f"{FX}/Vessel Skimmer Effects/TigerMothDustCleanseAllyBySkimmerEffect.asset"
+BLOOM_WITHER = f"{FX}/Explosion Crystal Effects/ButterflyBloomWitherLifeformEffect.asset"
+BLOOM_CONT = f"{FX}/Effect Containers/Explosion Containers/ButterflyBloomExplosionImpactorDataContainer.asset"
+# Retired 2026-10-08 (loaded as null in the editor; the bloom's prism dust now lives on
+# ButterflyBloomDust). Deleted here so a stale checkout converges.
+RETIRED_BLOOM_DUST = [
+    f"{FX}/Explosion Prism Effects/ButterflyBloomScaleDustPrismEffect.asset",
+    f"{FX}/Explosion Prism Effects/ButterflyBloomScaleDustPrismEffect.asset.meta",
+    f"{FX}/Explosion Prism Effects.meta",
+    f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Explosion Prism Effects/ExplosionScaleDustPrismEffectSO.cs",
+    f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Explosion Prism Effects/ExplosionScaleDustPrismEffectSO.cs.meta",
+    f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Explosion Prism Effects.meta",
+]
+BLOOM_DEBUFF = f"{FX}/Vessel Explosion Effects/ButterflyBloomDebuffByExplosionEffect.asset"
+# Shared with the Dolphin's crystal cone (authored by author_bends_assets.py): Debuff class,
+# requireOwningMachine -- the bloom is replayed on server AND owner too.
+CRYSTAL_BLAST_HIT = f"{FX}/Vessel Explosion Effects/VesselCombatHitByCrystalBlast.asset"
+BLOOM_EFFECT = f"{FX}/Vessel Crystal Effects/ButterflyVesselExplosionByCrystalEffect.asset"
+VESSEL_CONT = f"{FX}/Effect Containers/VesselContainers/ButterflyImpactorDataContainer.asset"
+SQUIRREL_BLAST = f"{FX}/Vessel Crystal Effects/SquirrelVesselExplosionByCrystalEffect.asset"
+
+SCRIPTS = {
+    "ButterflyDustField": f"{A}/_Scripts/Controller/Vessel/R_VesselActions/ButterflyDustField.cs",
+    "SkimmerScaleDustPrismEffectSO":
+        f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerScaleDustPrismEffectSO.cs",
+    "SkimmerNourishLifeformByCrystalEffectSO":
+        f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Crystal Effects/SkimmerNourishLifeformByCrystalEffectSO.cs",
+    "ButterflyBloomDust": f"{A}/_Scripts/Controller/Vessel/R_VesselActions/ButterflyBloomDust.cs",
+}
+EXISTING_SCRIPTS = {
+    "SkimmerImpactorDataContainerSO": f"{A}/_Scripts/Controller/ImpactEffects/Containers/SkimmerImpactorDataContainerSO.cs",
+    "ExplosionImpactorDataContainerSO": f"{A}/_Scripts/Controller/ImpactEffects/Containers/ExplosionImpactorDataContainerSO.cs",
+    "ExplosionWitherLifeformByCrystalEffectSO":
+        f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Explosion Crystal Effects/ExplosionWitherLifeformByCrystalEffectSO.cs",
+    "VesselExplosionByCrystalEffectSO":
+        f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/VesselExplosionByCrystalEffectSO.cs",
+    "VesselElementalDebuffByExplosionEffectSO":
+        f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Explosion Effects/VesselElementalDebuffByExplosionEffectSO.cs",
+}
+
+PARTICLE_MAT = f"{A}/_Graphics/Design Assests/FX/fx_spark_oval.mat"
+
+# ── the numbers ─────────────────────────────────────────────────────────────────
+CAPSULE_WIDTH = 24.0          # world diameter of the dust column (radius 12)
+CAPSULE_LEN_REST = 60.0       # Space 0: 60 u below the hull ...
+CAPSULE_LEN_FULL = 150.0      # ... Space 10: 150 u (Space 15: 195 u), Space's ONE parameter
+CAPSULE_LEN_FLOOR = 20.0      # the deficit band cannot collapse it
+BLOOM_SCALE = 900.0           # AOE diameter: a 450 u radius heart-kill -- "large"
+BLOOM_SECONDS = 0.6           # a large bloom is allowed to be seen
+# Charge is the dust's SHRED RATE (2026-10-31, Garrett: "shred a random element petal every second and
+# decrease the cooldown to .1 seconds at charge 10"): one petal of one random held element per interval.
+SHRED_INTERVAL_REST = 1.0     # Charge 0: one petal a second ...
+SHRED_INTERVAL_FULL = 0.1     # ... Charge 10: ten a second
+SHRED_INTERVAL_FLOOR = 0.1    # and never faster above Charge 10
+SHRED_PETALS = 1
+BLOOM_STRIP_COOLDOWN = 1.0    # one bloom pays a victim once anyway (ExplosionImpactor._vesselsHit)
+# The crystal catcher: an always-on sphere around the hull whose ONLY job is to be the skimmer an
+# ElementalCrystalImpactor collects against. Fixed size (no element owns it -- Space is the dust's
+# length), sized like the fleet's resting skimmers (Dolphin/Grizzly 20, Scarab 30) and wide enough
+# to cover the 21.35 u span at rest.
+CRYSTAL_DIAMETER = 30.0
+
+# Skimmer.prefab's objects, reused verbatim by the dust prefab (see the module doc).
+F_GO, F_TR, F_RB = "4816621673548213744", "7231566422788689087", "7751815150560592194"
+F_SKIM, F_IMP, F_ICOL = "7751815150560592197", "7603142481619829103", "546241298706549007"
+F_CAPS, F_DUST = "9103907316180665781", "1958240267839501301"   # new: capsule + dust field
+
+NEAR_INSTANCE = "7526780584530545883"
+FAR_INSTANCE = "4602949842258188811"
+FAR_STRIPPED = ("6085221473828117326", "6609974900747343540")
+DUST_FIELD_STRIPPED = "7700000000000002001"
+F_SPHERE = "9103907316180665772"     # Skimmer.prefab's SphereCollider fileID, reused by the catcher
+CRYSTAL_INSTANCE = "7700000000000003001"
+# Unity's own rule for an object stripped out of a nested instance: instance fileID XOR source fileID.
+CRYSTAL_TR_STRIPPED = str(int(CRYSTAL_INSTANCE) ^ int(F_TR))
+CRYSTAL_SKIM_STRIPPED = str(int(CRYSTAL_INSTANCE) ^ int(F_SKIM))
+
+
+def g(label: str) -> str:
+    return hashlib.md5(f"CosmicShore/{label}".encode()).hexdigest()
+
+
+def rd(rel):
+    with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
+        return fh.read()
+
+
+def exists(rel):
+    return os.path.exists(os.path.join(ROOT, rel))
+
+
+def meta_guid(rel):
+    m = re.search(r"^guid: ([0-9a-f]{32})", rd(rel + ".meta"), re.M)
+    assert m, rel
+    return m.group(1)
+
+
+def script_meta(gd):
+    return (f"fileFormatVersion: 2\nguid: {gd}\nMonoImporter:\n  externalObjects: {{}}\n"
+            f"  serializedVersion: 2\n  defaultReferences: []\n  executionOrder: 0\n"
+            f"  icon: {{instanceID: 0}}\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
+
+
+def asset_meta(gd):
+    return (f"fileFormatVersion: 2\nguid: {gd}\nNativeFormatImporter:\n  externalObjects: {{}}\n"
+            f"  mainObjectFileID: 11400000\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
+
+
+def prefab_meta(gd):
+    return (f"fileFormatVersion: 2\nguid: {gd}\nPrefabImporter:\n  externalObjects: {{}}\n"
+            f"  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
+
+
+def so(script_guid, name, body, class_id=""):
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
+            "  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
+            "  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
+            f"  m_Name: {name}\n  m_EditorClassIdentifier: {class_id}\n" + body)
+
+
+def ref(gd):
+    return f"{{fileID: 11400000, guid: {gd}, type: 2}}"
+
+
+def elemental(indent, enabled, value, lo, hi, element, floor):
+    p = " " * indent
+    return (f"{p}Enabled: {enabled}\n{p}Value: {value:g}\n{p}Min: {lo:g}\n{p}Max: {hi:g}\n"
+            f"{p}element: {element}\n{p}UseFloor: 1\n{p}Floor: {floor:g}\n")
+
+
+out = {}          # rel path -> text
+deletions = []    # rel paths this script removes
+errors = []
+
+# ── script metas ────────────────────────────────────────────────────────────────
+sg = {}
+for name, rel in SCRIPTS.items():
+    assert exists(rel), f"missing {rel}"
+    sg[name] = meta_guid(rel) if exists(rel + ".meta") else g(f"script/{name}")
+    out[rel + ".meta"] = script_meta(sg[name])
+for name, rel in EXISTING_SCRIPTS.items():
+    sg[name] = meta_guid(rel)
+SKIMMER_SCRIPT = "f35ad70dcbb4e3b47af654e91d9387f8"
+IMPACTOR_SCRIPT = "c1731f6481c2493aa107099246bb1af8"
+ICOL_SCRIPT = "fafcc767febd41ccbad67c5457dc432d"
+
+# ── containers + effects ────────────────────────────────────────────────────────
+near_g = meta_guid(OLD_NEAR) if exists(OLD_NEAR + ".meta") else meta_guid(DUST_CONT)
+dust_prism_g = g("asset/ButterflyScaleDustPrismEffect")
+nourish_g = g("asset/ButterflyDustNourishLifeformEffect")
+bloom_wither_g = g("asset/ButterflyBloomWitherLifeformEffect")
+bloom_cont_g = g("asset/ButterflyBloomExplosionImpactorDataContainer")
+bloom_effect_g = g("asset/ButterflyVesselExplosionByCrystalEffect")
+dust_prefab_g = g("prefab/ButterflyDustSkimmer")
+bloom_prefab_g = g("prefab/AOEButterflyBloom")
+debuff_g, wither_g, combat_g = meta_guid(DUST_DEBUFF), meta_guid(DUST_WITHER), meta_guid(DUST_COMBAT)
+
+out[DUST_PRISM] = so(sg["SkimmerScaleDustPrismEffectSO"], "ButterflyScaleDustPrismEffect",
+    "  growWeight: 0.4\n  dangerWeight: 0.3\n  shieldWeight: 0.3\n  growFraction: 0.35\n"
+    "  superShieldChance: 0.06\n  superShieldUpgradeElement: 3\n"
+    "  destroyWeight: 1\n  shrinkWeight: 1\n  stealWeight: 1\n  shrinkFraction: 0.35\n"
+    "  restitution: 0.33333334\n  debrisSpeedLimit: 120\n")
+out[DUST_PRISM + ".meta"] = asset_meta(dust_prism_g)
+
+out[DUST_NOURISH] = so(sg["SkimmerNourishLifeformByCrystalEffectSO"], "ButterflyDustNourishLifeformEffect",
+    "  refreshCooldownSeconds: 5\n  onLifeformRefreshed: {fileID: 0}\n")
+out[DUST_NOURISH + ".meta"] = asset_meta(nourish_g)
+
+# The wither now takes flora AND fauna, and spares the pilot's own domain -- the ally half is the
+# refresh above, and the two partition every lifeform by colour.
+wither = rd(DUST_WITHER)
+wither = re.sub(r"(?m)^  faunaOnly: \d$", "  faunaOnly: 0", wither)
+wither = re.sub(r"(?m)^  sparesOwnDomain: \d$", "  sparesOwnDomain: 1", wither)
+out[DUST_WITHER] = wither
+
+# The shred (VesselElementalDebuffBySkimmerEffectSO): the retired bite's keys (a slice of every element,
+# Charge-scaled, and Monarch's deeper-bite upgrade) are stripped, and the shred's keys written before the
+# sound's anti-spam cooldown.
+debuff = rd(DUST_DEBUFF)
+for retired in ("biteScale", "shredInterval"):
+    debuff = re.sub(rf"(?m)^  {retired}:\n(?:    [^\n]*\n)+", "", debuff)
+for retired in ("debuffMagnitude", "debuffDuration", "upgradeElement", "upgradeBiteMultiplier", "petalsPerShred"):
+    debuff = re.sub(rf"(?m)^  {retired}: [^\n]*\n", "", debuff)
+debuff = debuff.replace("  cooldown:",
+    f"  petalsPerShred: {SHRED_PETALS}\n  shredInterval:\n"
+    + elemental(4, 1, SHRED_INTERVAL_REST, SHRED_INTERVAL_REST, SHRED_INTERVAL_FULL, 1, SHRED_INTERVAL_FLOOR)
+    + "  cooldown:", 1)
+out[DUST_DEBUFF] = debuff
+
+# The dust's reporter re-runs every frame a rival stays inside (the shred's standing contact).
+combat = rd(DUST_COMBAT)
+combat = re.sub(r"(?m)^  repeatWhileInside: \d\n", "", combat)
+combat = combat.replace("  requireFasterThanVictim: 0\n", "  requireFasterThanVictim: 0\n  repeatWhileInside: 1\n", 1)
+out[DUST_COMBAT] = combat
+
+# The ally half of a vessel contact (2026-10-29, Garrett: "have the dust clear silence and debuffs of allies"):
+# TigerMothDustCleanseAllyBySkimmerEffect.asset, authored by hand and held by author_tigermoth_assets.py --check.
+cleanse_g = meta_guid(DUST_CLEANSE)
+out[DUST_CONT] = so(sg["SkimmerImpactorDataContainerSO"], "ButterflyDustSkimmerImpactorDataContainer",
+    f"  vesselSkimmerEffectsSO:\n  - {ref(debuff_g)}\n  - {ref(combat_g)}\n  - {ref(cleanse_g)}\n"
+    f"  skimmerPrismEffectsSO:\n  - {ref(dust_prism_g)}\n"
+    f"  skimmerCrystalEffectsSO: []\n"
+    f"  skimmerLifeformCrystalEffectsSO:\n  - {ref(wither_g)}\n  - {ref(nourish_g)}\n")
+out[DUST_CONT + ".meta"] = asset_meta(near_g)
+for rel in (OLD_NEAR, OLD_NEAR + ".meta"):
+    if exists(rel): deletions.append(rel)
+for rel in [OLD_FAR, *OLD_DISSOLVES]:
+    for r in (rel, rel + ".meta"):
+        if exists(r): deletions.append(r)
+
+out[BLOOM_WITHER] = so(sg["ExplosionWitherLifeformByCrystalEffectSO"], "ButterflyBloomWitherLifeformEffect",
+    "  faunaOnly: 0\n  sparesOwnDomain: 1\n  onLifeformJousted: {fileID: 0}\n")
+out[BLOOM_WITHER + ".meta"] = asset_meta(bloom_wither_g)
+
+# The bloom on MASS is NOT a container entry: ButterflyBloomDust (an IExplosionPrismPayload on the
+# prefab, below) holds the dust asset and applies the capsule's own roll. Retire the old asset.
+for rel in RETIRED_BLOOM_DUST:
+    if exists(rel): deletions.append(rel)
+
+# The bloom on PILOTS: strip all four elements. The MAGNITUDE belongs to
+# author_combat_debuff_magnitudes.py (priced as the Debuff verb, ten points to the petal), so it is
+# READ BACK here rather than restated -- two generators owning one field means whichever ran last
+# wins. The initializer below is that script's Debuff price, used only on first authoring.
+bloom_debuff_g = g("asset/ButterflyBloomDebuffByExplosionEffect")
+bloom_strip = "-0.12"
+if exists(BLOOM_DEBUFF):
+    m_strip = re.search(r"(?m)^  debuffMagnitude: (\S+)$", rd(BLOOM_DEBUFF))
+    if m_strip: bloom_strip = m_strip.group(1)
+out[BLOOM_DEBUFF] = so(sg["VesselElementalDebuffByExplosionEffectSO"], "ButterflyBloomDebuffByExplosionEffect",
+    f"  debuffMagnitude: {bloom_strip}\n  debuffDuration: 4\n"
+    "  elements:\n  - 1\n  - 2\n  - 3\n  - 4\n"
+    f"  cooldown: {BLOOM_STRIP_COOLDOWN:g}\n")
+out[BLOOM_DEBUFF + ".meta"] = asset_meta(bloom_debuff_g)
+
+crystal_blast_hit_g = meta_guid(CRYSTAL_BLAST_HIT)
+out[BLOOM_CONT] = so(sg["ExplosionImpactorDataContainerSO"], "ButterflyBloomExplosionImpactorDataContainer",
+    f"  vesselExplosionEffects:\n  - {ref(bloom_debuff_g)}\n  - {ref(crystal_blast_hit_g)}\n"
+    "  explosionPrismEffects: []\n  explosionCrystalEffects: []\n"
+    f"  explosionLifeformCrystalEffects:\n  - {ref(bloom_wither_g)}\n")
+out[BLOOM_CONT + ".meta"] = asset_meta(bloom_cont_g)
+
+# The crystal effect that fires the bloom: the Squirrel's asset, re-pointed at the bloom prefab and
+# resized. Forked rather than edited -- the Squirrel's shielded ring is the Squirrel's.
+blast = rd(SQUIRREL_BLAST)
+blast = blast.replace("m_Name: SquirrelVesselExplosionByCrystalEffect",
+                      "m_Name: ButterflyVesselExplosionByCrystalEffect")
+blast = re.sub(r"(?m)^  squirrelCrystalExplosionEvent: \{[^}]*\}\n(    type: 2\}\n)?",
+               "  squirrelCrystalExplosionEvent: {fileID: 0}\n", blast)
+blast = re.sub(r"(?m)^  _aoePrefabs:\n(?:  - [^\n]*\n)+",
+               f"  _aoePrefabs:\n  - {{fileID: 0, guid: {bloom_prefab_g}, type: 3}}\n", blast)
+blast = re.sub(r"(?m)^  _minExplosionScale: .*$", f"  _minExplosionScale: {BLOOM_SCALE:g}", blast)
+blast = re.sub(r"(?m)^  _maxExplosionScale: .*$", f"  _maxExplosionScale: {BLOOM_SCALE:g}", blast)
+out[BLOOM_EFFECT] = blast
+out[BLOOM_EFFECT + ".meta"] = asset_meta(bloom_effect_g)
+
+vc = rd(VESSEL_CONT)
+squirrel_blast_g = meta_guid(SQUIRREL_BLAST)
+vc = vc.replace(ref(squirrel_blast_g), ref(bloom_effect_g))
+out[VESSEL_CONT] = vc
+
+# ── the bloom prefab: the warhead, re-identified ────────────────────────────────
+warhead = rd(WARHEAD)
+warhead_cont_g = re.search(r"explosionImpactorDataContainer: \{fileID: 11400000, guid: (\w+)", warhead).group(1)
+bloom = warhead.replace("67128045173902331", "85076661060900822")
+bloom = bloom.replace("m_Name: AOEMissileWarhead", "m_Name: AOEButterflyBloom")
+bloom = bloom.replace(warhead_cont_g, bloom_cont_g)
+bloom = re.sub(r"(?m)^  ExplosionDuration: .*$", f"  ExplosionDuration: {BLOOM_SECONDS:g}", bloom)
+# The bloom drawn as the capsule's dust: one more component on the root, same material as the capsule.
+BLOOM_GO, BLOOM_DUST_FID = "8507666106090082200", "8507666106090082209"
+bloom = bloom.replace(f"  - component: {{fileID: 8507666106090082208}}\n",
+                      f"  - component: {{fileID: 8507666106090082208}}\n  - component: {{fileID: {BLOOM_DUST_FID}}}\n", 1)
+bloom = bloom.rstrip("\n") + "\n" + (
+    f"--- !u!114 &{BLOOM_DUST_FID}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n"
+    "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+    f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {BLOOM_GO}}}\n  m_Enabled: 1\n"
+    f"  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {sg['ButterflyBloomDust']}, type: 3}}\n"
+    "  m_Name: \n  m_EditorClassIdentifier: \n"
+    f"  dust: {ref(dust_prism_g)}\n"
+    f"  particleMaterial: {{fileID: 2100000, guid: {meta_guid(PARTICLE_MAT)}, type: 2}}\n"
+    "  dustColor: {r: 1, g: 0.86, b: 0.52, a: 0.9}\n  bloomMotes: 2400\n"
+    "  moteSize: {x: 6, y: 14}\n  moteLifetime: 2.2\n  fallSpeed: 6\n"
+    "  motesPerDustedPrism: 5\n  puffSpeed: 10\n  puffSizeScale: 1.4\n  maxMotes: 12000\n")
+# the GameObject's fileID is what the crystal effect points at
+BLOOM_ROOT = re.search(r"--- !u!114 &(\d+)\nMonoBehaviour:(?:(?!--- !u!).)*?ExplosionDuration", bloom, re.S).group(1)
+out[BLOOM_PREFAB] = bloom
+out[BLOOM_PREFAB + ".meta"] = prefab_meta(bloom_prefab_g)
+out[BLOOM_EFFECT] = out[BLOOM_EFFECT].replace(f"fileID: 0, guid: {bloom_prefab_g}", f"fileID: {BLOOM_ROOT}, guid: {bloom_prefab_g}")
+
+# ── the dust skimmer prefab ─────────────────────────────────────────────────────
+particle_mat_g = meta_guid(PARTICLE_MAT)
+# Skimmer.ExecuteImpactOnShip raises this with no guard (fail-loud SOAP), after the container's
+# vessel effects ran -- left null, every dust bite on a pilot threw from inside OnTriggerEnter.
+skimmer_ship_event_g = meta_guid(SKIMMER_SHIP_EVENT)
+dust = f"""%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &{F_GO}
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  serializedVersion: 6
+  m_Component:
+  - component: {{fileID: {F_TR}}}
+  - component: {{fileID: {F_CAPS}}}
+  - component: {{fileID: {F_RB}}}
+  - component: {{fileID: {F_SKIM}}}
+  - component: {{fileID: {F_IMP}}}
+  - component: {{fileID: {F_ICOL}}}
+  - component: {{fileID: {F_DUST}}}
+  m_Layer: 7
+  m_Name: ButterflyDustSkimmer
+  m_TagString: Untagged
+  m_Icon: {{fileID: 0}}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &{F_TR}
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {F_GO}}}
+  serializedVersion: 2
+  m_LocalRotation: {{x: 0, y: 0, z: 0, w: 1}}
+  m_LocalPosition: {{x: 0, y: 0, z: 0}}
+  m_LocalScale: {{x: {CAPSULE_WIDTH:g}, y: {CAPSULE_LEN_REST:g}, z: {CAPSULE_WIDTH:g}}}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {{fileID: 0}}
+  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}
+--- !u!136 &{F_CAPS}
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {F_GO}}}
+  m_Material: {{fileID: 0}}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 1
+  m_Direction: 1
+  m_Center: {{x: 0, y: -0.5, z: 0}}
+--- !u!54 &{F_RB}
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {F_GO}}}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.08
+  m_CenterOfMass: {{x: 0, y: 0, z: 0}}
+  m_InertiaTensor: {{x: 1, y: 1, z: 1}}
+  m_InertiaRotation: {{x: 0, y: 0, z: 0, w: 1}}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &{F_SKIM}
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {F_GO}}}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {{fileID: 11500000, guid: {SKIMMER_SCRIPT}, type: 3}}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  onSkimmerShipImpact: {ref(skimmer_ship_event_g)}
+  vaccumAmount: 80
+  vacuumCrystal: 1
+  affectSelf: 0
+  visible: 0
+  Scale:
+{elemental(4, 1, CAPSULE_LEN_REST, CAPSULE_LEN_REST, CAPSULE_LEN_FULL, 3, CAPSULE_LEN_FLOOR)}  elongateYOnly: 1
+  markerDistance: 70
+  AOEPrefab: {{fileID: 0}}
+  AOEPeriod: 0
+  lineMaterial: {{fileID: 0}}
+--- !u!114 &{F_IMP}
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {F_GO}}}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {{fileID: 11500000, guid: {IMPACTOR_SCRIPT}, type: 3}}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skimmerImpactorDataContainer: {ref(near_g)}
+  skimmer: {{fileID: {F_SKIM}}}
+--- !u!114 &{F_ICOL}
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {F_GO}}}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {{fileID: 11500000, guid: {ICOL_SCRIPT}, type: 3}}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {{fileID: {F_IMP}}}
+--- !u!114 &{F_DUST}
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {F_GO}}}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {{fileID: 11500000, guid: {sg["ButterflyDustField"]}, type: 3}}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  particleMaterial: {{fileID: 2100000, guid: {particle_mat_g}, type: 2}}
+  dustColor: {{r: 1, g: 0.86, b: 0.52, a: 0.9}}
+  motesPer100Volume: 3.5
+  maxMotesPerSecond: 260
+  moteLifetime: 1.1
+  moteSize: {{x: 2.5, y: 6}}
+  fallSpeed: 6
+"""
+out[DUST_PREFAB] = dust
+out[DUST_PREFAB + ".meta"] = prefab_meta(dust_prefab_g)
+
+# ── the crystal catcher ─────────────────────────────────────────────────────────
+# An EMPTY container, and that is the design: crystal collection is the CRYSTAL's side
+# (ElementalCrystalImpactor.CollectBy runs the crystal's own collection effects and credits
+# skimmer.VesselStatus), so the catcher needs no effect of its own. Empty vessel/prism/lifeform
+# lists mean SkimmerImpactor.AcceptImpactee returns before doing anything for those contacts, so an
+# always-on sphere cannot dust in Mass mode, bite a pilot or wither a heart.
+crystal_cont_g = g("asset/ButterflyCrystalSkimmerImpactorDataContainer")
+crystal_prefab_g = g("prefab/ButterflyCrystalSkimmer")
+out[CRYSTAL_CONT] = so(sg["SkimmerImpactorDataContainerSO"], "ButterflyCrystalSkimmerImpactorDataContainer",
+    "  vesselSkimmerEffectsSO: []\n  skimmerPrismEffectsSO: []\n"
+    "  skimmerCrystalEffectsSO: []\n  skimmerLifeformCrystalEffectsSO: []\n")
+out[CRYSTAL_CONT + ".meta"] = asset_meta(crystal_cont_g)
+
+catcher = dust
+catcher = catcher.replace(f"  - component: {{fileID: {F_CAPS}}}\n", f"  - component: {{fileID: {F_SPHERE}}}\n", 1)
+catcher = catcher.replace(f"  - component: {{fileID: {F_DUST}}}\n", "", 1)
+catcher = catcher.replace("  m_Name: ButterflyDustSkimmer\n", "  m_Name: ButterflyCrystalSkimmer\n", 1)
+catcher = re.sub(r"(?m)^  m_LocalScale: \{x: [^}]*\}$",
+                 f"  m_LocalScale: {{x: {CRYSTAL_DIAMETER:g}, y: {CRYSTAL_DIAMETER:g}, z: {CRYSTAL_DIAMETER:g}}}",
+                 catcher, count=1)
+catcher = re.sub(rf"--- !u!136 &{F_CAPS}\nCapsuleCollider:.*?(?=--- !u!)",
+                 f"--- !u!135 &{F_SPHERE}\nSphereCollider:\n  m_ObjectHideFlags: 0\n"
+                 "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+                 f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {F_GO}}}\n"
+                 "  m_Material: {fileID: 0}\n  m_IncludeLayers:\n    serializedVersion: 2\n    m_Bits: 0\n"
+                 "  m_ExcludeLayers:\n    serializedVersion: 2\n    m_Bits: 0\n"
+                 "  m_LayerOverridePriority: 0\n  m_IsTrigger: 1\n  m_ProvidesContacts: 0\n"
+                 "  m_Enabled: 1\n  serializedVersion: 3\n  m_Radius: 0.5\n  m_Center: {x: 0, y: 0, z: 0}\n",
+                 catcher, count=1, flags=re.S)
+# Scale DISABLED: a fixed sphere (Skimmer.ApplyScaleIfChanged writes Value uniformly).
+catcher = re.sub(r"(?m)^  Scale:\n(?:    [^\n]*\n)+  elongateYOnly: 1\n",
+                 "  Scale:\n" + elemental(4, 0, CRYSTAL_DIAMETER, CRYSTAL_DIAMETER, CRYSTAL_DIAMETER, 0, 0)
+                 + "  elongateYOnly: 0\n", catcher, count=1)
+catcher = catcher.replace(f"  skimmerImpactorDataContainer: {ref(near_g)}\n",
+                          f"  skimmerImpactorDataContainer: {ref(crystal_cont_g)}\n", 1)
+catcher = re.sub(rf"--- !u!114 &{F_DUST}\n.*\Z", "", catcher, flags=re.S)
+out[CRYSTAL_PREFAB] = catcher
+out[CRYSTAL_PREFAB + ".meta"] = prefab_meta(crystal_prefab_g)
+
+# ── Butterfly.prefab surgery ────────────────────────────────────────────────────
+bp = rd(BUTTERFLY)
+docs = re.split(r"\n(?=--- !u!)", bp)
+SKIM_BASE_G = meta_guid(SKIMMER_BASE)
+
+
+def instance_doc(instance, parent, source_g, mods):
+    lines = ["--- !u!1001 &" + instance, "PrefabInstance:", "  m_ObjectHideFlags: 0",
+             "  serializedVersion: 2", "  m_Modification:", "    serializedVersion: 3",
+             f"    m_TransformParent: {{fileID: {parent}}}", "    m_Modifications:"]
+    for target, path, value, obj in mods:
+        lines += [f"    - target: {{fileID: {target}, guid: {source_g},",
+                  "        type: 3}", f"      propertyPath: {path}", f"      value: {value}",
+                  f"      objectReference: {obj}"]
+    lines += ["    m_RemovedComponents: []", "    m_RemovedGameObjects: []",
+              "    m_AddedGameObjects: []", "    m_AddedComponents: []",
+              f"  m_SourcePrefab: {{fileID: 100100000, guid: {source_g}, type: 3}}"]
+    return "\n".join(lines)
+
+
+new_docs = []
+near_parent = None
+for d in docs:
+    head = d.split("\n", 1)[0]
+    if head == f"--- !u!1001 &{FAR_INSTANCE}":
+        continue
+    if any(head.startswith(f"--- !u!{c} &{fid} stripped") for fid in FAR_STRIPPED for c in ("4", "114")):
+        continue
+    if head == f"--- !u!1001 &{NEAR_INSTANCE}":
+        near_parent = re.search(r"m_TransformParent: \{fileID: (\d+)\}", d).group(1)
+        z = "{fileID: 0}"
+        mods = [(F_GO, "m_Name", "ButterflyDustSkimmer", z)]
+        for axis, v in (("x", CAPSULE_WIDTH), ("y", CAPSULE_LEN_REST), ("z", CAPSULE_WIDTH)):
+            mods.append((F_TR, f"m_LocalScale.{axis}", f"{v:g}", z))
+        for axis in "xyz":
+            mods.append((F_TR, f"m_LocalPosition.{axis}", "0", z))
+        mods += [(F_TR, "m_LocalRotation.w", "1", z)]
+        for axis in "xyz":
+            mods.append((F_TR, f"m_LocalRotation.{axis}", "0", z))
+        for axis in "xyz":
+            mods.append((F_TR, f"m_LocalEulerAnglesHint.{axis}", "0", z))
+        mods.append((F_IMP, "skimmerImpactorDataContainer", "", ref(near_g)))
+        new_docs.append(instance_doc(NEAR_INSTANCE, near_parent, dust_prefab_g, mods))
+        continue
+    if f"m_PrefabInstance: {{fileID: {NEAR_INSTANCE}}}" in d:
+        d = d.replace(SKIM_BASE_G, dust_prefab_g)
+    if head.startswith(f"--- !u!114 &{DUST_FIELD_STRIPPED}"):
+        continue   # re-emitted below, so a re-run is idempotent
+    if head in (f"--- !u!1001 &{CRYSTAL_INSTANCE}", f"--- !u!4 &{CRYSTAL_TR_STRIPPED} stripped",
+                f"--- !u!114 &{CRYSTAL_SKIM_STRIPPED} stripped"):
+        continue   # the crystal catcher, likewise re-emitted below
+    new_docs.append(d)
+
+bp = "\n".join(new_docs)
+assert near_parent, "near-wing instance not found (and the dust instance was not either)" \
+    if f"&{NEAR_INSTANCE}" not in bp else "near parent unresolved"
+bp = bp.replace(f"  - {{fileID: {FAR_STRIPPED[1]}}}\n", "")
+# The far-field slot is the crystal catcher: VesselController.Initialize initialises ONLY the near
+# and far skimmers, and an uninitialised skimmer credits nobody (rule 11, vessel skill).
+bp = re.sub(r"(?m)^  _farFieldSkimmer: \{fileID: \d+\}$",
+            f"  _farFieldSkimmer: {{fileID: {CRYSTAL_SKIM_STRIPPED}}}", bp)
+bp = bp.replace(f"  - {{fileID: {CRYSTAL_TR_STRIPPED}}}\n", "")
+dust_tr = re.search(rf"--- !u!4 &(\d+) stripped\nTransform:\n  m_CorrespondingSourceObject: \{{fileID: {F_TR}, "
+                    rf"guid: {dust_prefab_g},\n    type: 3\}}\n  m_PrefabInstance: \{{fileID: {NEAR_INSTANCE}\}}", bp)
+assert dust_tr, "the dust instance's stripped Transform was not found"
+dust_child = f"  - {{fileID: {dust_tr.group(1)}}}\n"
+assert bp.count(dust_child) == 1, "the dust skimmer is not exactly one child of the root"
+bp = bp.replace(dust_child, dust_child + f"  - {{fileID: {CRYSTAL_TR_STRIPPED}}}\n", 1)
+z = "{fileID: 0}"
+crystal_mods = [(F_GO, "m_Name", "ButterflyCrystalSkimmer", z)]
+for axis in "xyz":
+    crystal_mods.append((F_TR, f"m_LocalPosition.{axis}", "0", z))
+crystal_mods += [(F_TR, "m_LocalRotation.w", "1", z)]
+for axis in "xyz":
+    crystal_mods.append((F_TR, f"m_LocalRotation.{axis}", "0", z))
+for axis in "xyz":
+    crystal_mods.append((F_TR, f"m_LocalEulerAnglesHint.{axis}", "0", z))
+bp = bp.rstrip("\n") + "\n" + instance_doc(CRYSTAL_INSTANCE, near_parent, crystal_prefab_g, crystal_mods) + "\n" + (
+    f"--- !u!4 &{CRYSTAL_TR_STRIPPED} stripped\nTransform:\n"
+    f"  m_CorrespondingSourceObject: {{fileID: {F_TR}, guid: {crystal_prefab_g},\n    type: 3}}\n"
+    f"  m_PrefabInstance: {{fileID: {CRYSTAL_INSTANCE}}}\n  m_PrefabAsset: {{fileID: 0}}\n"
+    f"--- !u!114 &{CRYSTAL_SKIM_STRIPPED} stripped\nMonoBehaviour:\n"
+    f"  m_CorrespondingSourceObject: {{fileID: {F_SKIM}, guid: {crystal_prefab_g},\n    type: 3}}\n"
+    f"  m_PrefabInstance: {{fileID: {CRYSTAL_INSTANCE}}}\n  m_PrefabAsset: {{fileID: 0}}\n"
+    f"  m_GameObject: {{fileID: 0}}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+    f"  m_Script: {{fileID: 11500000, guid: {SKIMMER_SCRIPT}, type: 3}}\n"
+    f"  m_Name: \n  m_EditorClassIdentifier: \n")
+
+# The mode executor's dust field: a stripped reference into the dust instance.
+stripped = (f"--- !u!114 &{DUST_FIELD_STRIPPED} stripped\nMonoBehaviour:\n"
+            f"  m_CorrespondingSourceObject: {{fileID: {F_DUST}, guid: {dust_prefab_g},\n    type: 3}}\n"
+            f"  m_PrefabInstance: {{fileID: {NEAR_INSTANCE}}}\n  m_PrefabAsset: {{fileID: 0}}\n"
+            f"  m_GameObject: {{fileID: 0}}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {sg['ButterflyDustField']}, type: 3}}\n"
+            f"  m_Name: \n  m_EditorClassIdentifier: ")
+bp = bp.rstrip("\n") + "\n" + stripped + "\n"
+exec_hdr = "  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.SpreadWingsActionExecutor\n"
+assert bp.count(exec_hdr) == 1, "mode executor not found"
+exec_start = bp.index(exec_hdr)
+exec_end = bp.index("\n--- !u!", exec_start)
+block = bp[exec_start:exec_end]
+block = re.sub(r"\n  dustField: \{fileID: \d+\}", "", block)
+block = re.sub(r"(  config: \{[^}]*\})", r"\1" + f"\n  dustField: {{fileID: {DUST_FIELD_STRIPPED}}}", block, 1)
+bp = bp[:exec_start] + block + bp[exec_end:]
+out[BUTTERFLY] = bp
+
+# ── validation ──────────────────────────────────────────────────────────────────
+if "6540c78597c2dcc468123b270169fc44" in bp:
+    errors.append("Butterfly.prefab still references the sphere Skimmer.prefab")
+if FAR_INSTANCE in bp:
+    errors.append("the far-wing instance survived")
+for fid in FAR_STRIPPED:
+    if fid in bp:
+        errors.append(f"a far-wing stripped reference survived: {fid}")
+if f"_nearFieldSkimmer: {{fileID: 281340694002912670}}" not in bp:
+    errors.append("the near-field skimmer wire moved -- it must keep pointing at the stripped Skimmer")
+if CAPSULE_LEN_FULL <= CAPSULE_WIDTH:
+    errors.append("a capsule shorter than its width is a sphere -- Space would grow nothing")
+if not (0 < SHRED_INTERVAL_FLOOR <= SHRED_INTERVAL_FULL < SHRED_INTERVAL_REST):
+    errors.append("the shred must quicken with Charge and never reach a zero interval")
+if "  repeatWhileInside: 1\n" not in out[DUST_COMBAT]:
+    errors.append("the dust reporter does not repeat while a rival stays inside -- the shred would take once per pass")
+# The bloom's prism dust only runs through ExplosionImpactor.SweepPrismEffects, which sweeps ONLY a
+# blast that does not touch mass itself -- on an affectsPrisms blast the dust would never fire.
+if not re.search(r"(?m)^  affectsPrisms: 0$", out[BLOOM_PREFAB]):
+    errors.append("AOEButterflyBloom must author affectsPrisms: 0 -- the prism-effect sweep skips "
+                  "a blast that damages mass itself, so the bloom's dust would never run")
+if ref(bloom_debuff_g) not in out[BLOOM_CONT]:
+    errors.append("the bloom container lost its strip")
+if f"  dust: {ref(dust_prism_g)}" not in out[BLOOM_PREFAB]:
+    errors.append("ButterflyBloomDust lost its dust asset -- the bloom would change no prism")
+if ref(crystal_blast_hit_g) not in out[BLOOM_CONT]:
+    errors.append("the bloom container lost its combat-hit reporter -- a strip would score nothing")
+if f"guid: {sg['ButterflyBloomDust']}" not in out[BLOOM_PREFAB] or \
+        f"- component: {{fileID: {BLOOM_DUST_FID}}}" not in out[BLOOM_PREFAB]:
+    errors.append("AOEButterflyBloom lost its ButterflyBloomDust component -- the bloom would not read as dust")
+if f"_farFieldSkimmer: {{fileID: {CRYSTAL_SKIM_STRIPPED}}}" not in bp:
+    errors.append("the far-field slot is not the crystal catcher -- in Mass mode the Butterfly would "
+                  "have NO initialised skimmer and collect no elemental crystal")
+if bp.count(f"  - {{fileID: {CRYSTAL_TR_STRIPPED}}}\n") != 1:
+    errors.append("the crystal catcher is not exactly one child of the Butterfly root")
+if not re.search(r"(?m)^  m_IsActive: 1$", out[CRYSTAL_PREFAB]) or "m_Enabled: 0" in out[CRYSTAL_PREFAB]:
+    errors.append("the crystal catcher must be active and enabled -- it is the always-on pickup")
+if "SphereCollider:" not in out[CRYSTAL_PREFAB] or "CapsuleCollider:" in out[CRYSTAL_PREFAB] \
+        or "ButterflyDustField" in out[CRYSTAL_PREFAB] or sg["ButterflyDustField"] in out[CRYSTAL_PREFAB]:
+    errors.append("the crystal catcher must be a plain sphere -- a dust field would switch it off in Mass mode")
+if any(f"  {k}: []" not in out[CRYSTAL_CONT] for k in
+       ("vesselSkimmerEffectsSO", "skimmerPrismEffectsSO", "skimmerCrystalEffectsSO", "skimmerLifeformCrystalEffectsSO")):
+    errors.append("the crystal catcher's container must stay EMPTY -- it is always on, so any effect "
+                  "in it would fire in Mass mode too")
+if ref(crystal_cont_g) not in out[CRYSTAL_PREFAB]:
+    errors.append("the crystal catcher lost its container")
+for rel in (DUST_PREFAB, CRYSTAL_PREFAB):
+    if ref(skimmer_ship_event_g) not in out[rel]:
+        errors.append(f"{rel}: onSkimmerShipImpact is unwired -- Skimmer.ExecuteImpactOnShip raises it unguarded")
+for rel in [DUST_PREFAB, BLOOM_PREFAB, CRYSTAL_PREFAB]:
+    txt = out[rel]
+    ids = re.findall(r"^--- !u!\d+ &(\d+)", txt, re.M)
+    if len(ids) != len(set(ids)):
+        errors.append(f"{rel}: duplicate fileIDs")
+    for m in re.finditer(r"\{fileID: (\d{6,})\}", txt):
+        if m.group(1) not in ids:
+            errors.append(f"{rel}: dangling local fileID {m.group(1)}")
+
+if errors:
+    print("FAILED:")
+    for e in errors: print("  " + e)
+    sys.exit(1)
+
+# ── write / check ───────────────────────────────────────────────────────────────
+drift = []
+for rel, text in sorted(out.items()):
+    path = os.path.join(ROOT, rel)
+    cur = open(path, encoding="utf-8").read() if os.path.exists(path) else None
+    if cur != text:
+        drift.append(rel)
+        if not CHECK:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write(text)
+for rel in deletions:
+    drift.append("(delete) " + rel)
+    if not CHECK:
+        os.remove(os.path.join(ROOT, rel))
+
+if CHECK:
+    if drift:
+        print(f"--check: {len(drift)} file(s) differ from what this script authors:")
+        for d in drift: print("  " + d)
+        sys.exit(1)
+    print(f"--check: OK, {len(out)} file(s) match.")
+else:
+    print(f"wrote {len([d for d in drift if not d.startswith('(delete)')])} file(s), "
+          f"deleted {len(deletions)}; {len(out) - len(drift) + len(deletions)} already current.")

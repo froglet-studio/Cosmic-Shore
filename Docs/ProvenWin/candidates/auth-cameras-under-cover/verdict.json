@@ -1,0 +1,7 @@
+{
+ "verdict": "HOLD",
+ "reasons": [
+  "editor: the bench reported an error: ERROR: the scene loaded 'Menu_Main' by itself during the bench, so nothing measured here describes it. Bench it where it stays (its real boot path, or a prefab in an empty scene)."
+ ],
+ "rows": {}
+}

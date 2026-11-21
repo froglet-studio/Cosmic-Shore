@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     /// the middle room, the biggest and toughest in the core). Break in and shoot; the first
     /// PLAYER to the kill target wins.
     ///
-    /// Structurally a sibling of <see cref="RampageController"/> / <see cref="RibcageController"/>
+    /// Structurally a sibling of <see cref="RampageController"/> / <see cref="CleaveController"/>
     /// (1 round / 1 turn, HasEndGame=false, server winner detection in OnTurnEndedCustom,
     /// snapshot SyncFinalScores_ClientRpc), with three deliberate differences:
     ///
@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     ///   2. THE SCORE COMES FROM THE ECOLOGY. The stat is
     ///      <see cref="IRoundStats.LifeformsKilled"/>, fed by the platform kill path
     ///      (<c>Fauna.OnBodyPrismExploded</c> → sealed <c>Die</c> → <c>CellRuntimeDataSO.OnFaunaKilled</c>
-    ///      → <c>StatsManager</c>), so like Rampage and Ribcage there is no per-event listener
+    ///      → <c>StatsManager</c>), so like Rampage and Cleave there is no per-event listener
     ///      here at all. Only PLAYER-attributed kills count - the swarm starving or a shark
     ///      eating a tadpole credits nobody.
     ///   3. AI HUNTERS WORK THE ROOMS. <see cref="ArmHunters"/> walks each AI Sparrow through the
@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
     ///      INSIDE a room and not on a wall.
     ///
     /// SPARROW-ONLY is enforced entirely by platform machinery and deliberately not re-implemented
-    /// here - three independent layers, because in Ribcage one was not enough and a client walked
+    /// here - three independent layers, because in Cleave one was not enough and a client walked
     /// in flying a Dolphin:
     ///   (a) <c>GameDataSO.SyncFromArcadeGame</c> clamps the launching machine's selection;
     ///   (b) <c>ServerPlayerVesselInitializer.ResolveSpawnVesselType</c> re-clamps SERVER-SIDE at
@@ -98,6 +98,10 @@ namespace CosmicShore.Gameplay
         int _milestone = MilestoneNone;
         Domains _leader = Domains.Blue;
 
+        // Latched once the first pilot flies into the core cage's room, so the breach is
+        // announced once a match. Server-side; reset with the rest of the progress state.
+        bool _coreBreached;
+
         // Golf: the winning DOMAIN's players carry their finish time, everyone else a
         // DnfThreshold+remaining sentinel - lower is better, like every race here.
         protected override bool UseGolfRules => true;
@@ -117,8 +121,9 @@ namespace CosmicShore.Gameplay
             _finalResultsSent = false;
             _milestone = MilestoneNone;
             _leader = Domains.Blue;
+            _coreBreached = false;
 
-            // Belt-and-braces against the Ribcage regression where players started a match on a
+            // Belt-and-braces against the Cleave regression where players started a match on a
             // non-zero score. The authoritative reset is
             // ServerPlayerVesselInitializer.PrepareForNewScene (unconditional, once per player,
             // on the processing path) - this is a second, cheap sweep at the one moment every
@@ -194,6 +199,8 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer || rule == null) return;
 
+            SampleCoreBreach();
+
             int target = gameData.LifeformTargetCount;
             if (target <= 0) return; // monitor hasn't resolved the target yet
 
@@ -257,6 +264,42 @@ namespace CosmicShore.Gameplay
             HapticController.PlayAlert();
         }
 
+        /// <summary>
+        /// Server-side: the first pilot inside the CORE cage's room - the innermost shell, where
+        /// the 50-99 danger traps live - is the hunt's set-piece moment, so it is announced once.
+        /// Read off the vessels' positions on the server (the host simulates its own pilot and
+        /// every AI; a client's vessel is its replicated transform, which is ample for a 200u
+        /// sphere sampled twice a second). Feedback only - nothing about the core changes.
+        /// </summary>
+        void SampleCoreBreach()
+        {
+            if (_coreBreached || !arenaCell) return;
+
+            Vector3 centre = arenaCell.transform.position;
+            float core = SpawnableWildlifeCage.ShellRadii[SpawnableWildlifeCage.ShellCount - 1];
+            float coreSqr = core * core;
+
+            foreach (var p in gameData.Players)
+            {
+                if (p == null || string.IsNullOrEmpty(p.Name)) continue;
+                var vessel = p.Vessel;
+                if (vessel == null || vessel is Object uo && !uo) continue;
+                var t = vessel.Transform;
+                if (!t || (t.position - centre).sqrMagnitude > coreSqr) continue;
+
+                _coreBreached = true;
+                AnnounceCoreBreached_ClientRpc(new FixedString64Bytes(p.Name), (int)p.Domain);
+                return;
+            }
+        }
+
+        [ClientRpc]
+        void AnnounceCoreBreached_ClientRpc(FixedString64Bytes pilot, int domain)
+        {
+            var d = (Domains)domain;
+            GameToastAPI.Post(GameToastSituation.WildlifeCoreBreached, d, pilot.ToString(), d.ToString());
+        }
+
         [ClientRpc]
         void AnnounceLeadChanged_ClientRpc(int domain, int kills, int target)
         {
@@ -270,10 +313,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Drives every AI Sparrow as a hunter that works the ROOMS.
         ///
-        /// The waypoint rule here is the exact inverse of Ribcage's, and for the same underlying
+        /// The waypoint rule here is the exact inverse of Cleave's, and for the same underlying
         /// reason. <c>AIPilot</c> has no arrive-and-stop behaviour - it steers at its target
         /// forever and flies through on arrival - so a target's placement decides where the AI
-        /// LIVES. Ribcage wants its AI outside the bone (damage happens on the transit), so its
+        /// LIVES. Cleave wants its AI outside the bone (damage happens on the transit), so its
         /// stations sit beyond the shell. Here the prey is spread through the arena's whole
         /// volume, so a station on a wall would make the AI orbit the wall and never hunt: every
         /// waypoint is placed at the MIDDLE of a room's radial band, in open water between the
@@ -367,7 +410,7 @@ namespace CosmicShore.Gameplay
             if (winningDomain == Domains.Blue) return;
 
             // The winner is the DOMAIN; this only picks whose name the banner carries - the
-            // biggest contributor on the winning team, same as Ribcage.
+            // biggest contributor on the winning team, same as Cleave.
             var winnerRep = gameData.RoundStatsList
                 .Where(s => s != null && s.Domain == winningDomain)
                 .OrderByDescending(s => s.LifeformsKilled)
@@ -462,6 +505,7 @@ namespace CosmicShore.Gameplay
             _finalResultsSent = false;
             _milestone = MilestoneNone;
             _leader = Domains.Blue;
+            _coreBreached = false;
 
             StopProgressSampler();
 

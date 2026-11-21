@@ -82,6 +82,23 @@ being correct. Every *other* ship is still marked from such a camera, which is w
 **no `SetSuppressed` hold** — the corridor and the speed tunnel are effects for the pilot at the
 controls, and this one is most useful precisely where they are suppressed.
 
+**There is one scoped override, and it is the opposite of a suppression.**
+`VesselVisionShading.BeginCapturePass` / `EndCapturePass` collapse the band onto a single distance
+THRESHOLD (marked past it, unmarked inside it, with the centre break-up closed at the same point)
+and lift the local exclusion for ONE hand-stepped render — the screenshot director's, which renders into a
+RenderTexture by calling `Camera.Render()` itself (`Docs/SCREENSHOT_DIRECTOR.md`). The distinction
+that keeps the law intact is that a suppression hold can switch the aid OFF, which is what makes an
+aid authorable-away; this can only ever mark MORE, on a camera nobody is looking through. It is
+released unconditionally in a `finally`, and it would self-heal within a frame regardless, since the
+publisher re-writes all four globals every `LateUpdate`. The local exclusion lifts because a
+photograph OF the pilot's own hull is the one case the exclusion's reasoning — *do not clutter a
+pilot's own cockpit view* — does not cover.
+
+The director's own capture concepts may individually **decline** that override, and that stays
+outside this law: declining is a decision not to open the pass at all, so it is a caller choosing
+not to call. Nothing on the far side of `BeginCapturePass` knows a concept exists, and no shot can
+ask the band for a threshold of its own.
+
 > **The general trap, and it is the reason this survived review once:** a number read off a
 > `ScriptableObject`'s **field initializer** is not the number the game runs on. `IsSane` encoded
 > the false premise, a test asserted it, and three documents repeated it — all self-consistently,
@@ -241,7 +258,7 @@ One trap worth knowing: `StampDisplayModel`'s name *starts with* `Stamp`'s, so t
 trailing parenthesis is the only thing keeping the two apart — `DisplayStamp_IsNotCountedAsAVessel
 StampSite` fails loudly if that ever stops being true.
 
-Consumers today are the vessel-changer matrix and the Lifeform Matrix's hangar row
+Consumers today are the vessel-changer matrix and the Spawn Matrix's hangar row
 (`Docs/ToySystem/ARCHITECTURE.md` § "Vessel Changer"). The geometry is a happy accident worth
 recording: a vessel matrix blooms 360 units out, just past `nearFullStart`, so a station **arrives
 at full mark** and **resolves into its real hull as you close on it**.
@@ -321,7 +338,7 @@ with zero authoring.
 |---|---|---|
 | The shipped HLSL behaves | `python3 Tools/Shaders/verify_vessel_vision_band.py` | An inert off sentinel, a plateau that never reaches 1, a non-monotone or popping edge, a quantizer that overshoots its top tone, a stamped-but-near vessel being modified, an unstamped object being modified. **And for the break-up:** that it is bit-identical to off when any of its three switches is 0, that the centre really is broken up, that the silhouette is never dithered, that it has closed by `breakupEndDistance`, that it produces no NaN, and that no fragment lands outside the segment between the hull colour and the undithered mark. Compiles and **runs** the shipped file with clang++ — no Unity needed. |
 | The graph is still spliced | `python3 Tools/Shaders/wire_vessel_vision_shading.py --check` | A reverted or hand-edited graph. Exits non-zero; re-run without `--check` to repair. |
-| Guards + assets | **FrogletTools > Vessels > Validate Vessel Vision Band** | A severed tint channel, a lost cutoff, a second stamp site, a local-pilot exclusion that lost a bind site or drifted off `IsLocalPilot`, an insane config, a vessel prefab with no hull material on the wired shader. It also **re-measures the fleet's widest gameplay camera from the assets** and reports it. |
+| Guards + assets | **FrogletTools > Vessels > Audits > Validate Vessel Vision Band** | A severed tint channel, a lost cutoff, a second stamp site, a local-pilot exclusion that lost a bind site or drifted off `IsLocalPilot`, an insane config, a vessel prefab with no hull material on the wired shader. It also **re-measures the fleet's widest gameplay camera from the assets** and reports it. |
 | Guards + assets, in CI | `VesselVisionLawTests` (edit mode) | The same, from the test runner. |
 | Conditional compilation | `python3 Tools/Build/check_conditional_compilation.py` | The `#if UNITY_EDITOR` trap in `VesselVisionLawSource`. |
 
@@ -334,7 +351,7 @@ in order:
 1. **Open the project and let it import.** `VesselGraph` recompiles and its 13 materials pick up
    `_VesselVisionTint`. Watch the console for shader-compile errors on `VesselVisionShading.hlsl` —
    the HLSL is proven by clang++, but Unity's compiler is the one that ships.
-2. **Run FrogletTools > Vessels > Validate Vessel Vision Band.** Expect all six checks green and a
+2. **Run FrogletTools > Vessels > Audits > Validate Vessel Vision Band.** Expect all six checks green and a
    `note` line naming the Serpent at 250 units.
 3. **Run the edit-mode suite** (`VesselVisionLawTests`).
 4. **In play, two domains in one arena, then back away.** The far ship should *arrive* as a coloured

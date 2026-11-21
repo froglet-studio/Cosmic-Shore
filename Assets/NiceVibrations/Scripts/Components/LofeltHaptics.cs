@@ -5,6 +5,10 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 #elif (UNITY_IOS && !UNITY_EDITOR)
+// DllImport and [In] below live in InteropServices. This branch only compiles in an iOS
+// PLAYER build (the editor defines UNITY_EDITOR even with iOS selected), so a missing using
+// here is invisible until an iOS build fails with CS0246 - which is how it was found.
+using System.Runtime.InteropServices;
 using UnityEngine.iOS;
 #endif
 

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f8c1a6e9b2d4c7a8e1f05b6d4c3a291, type: 3}
+  m_Name: Schedule
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Utility.AITraining.TrainingScheduleSO
+  Slots:
+  - Scenario: {fileID: 11400000, guid: cdc05f267f4c3f38b741c12be72ab4ce, type: 2}
+    TargetEpisodes: 0
+    WallClockHours: 4
+    MaxAttempts: 2
+  - Scenario: {fileID: 11400000, guid: 6954dfdb2a7163a5e7b4adeb245f0620, type: 2}
+    TargetEpisodes: 0
+    WallClockHours: 2
+    MaxAttempts: 2

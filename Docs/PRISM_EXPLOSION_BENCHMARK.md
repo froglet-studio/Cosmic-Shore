@@ -1,5 +1,12 @@
 # Prism Explosion A/B Benchmark — legacy-cpu vs gpu-clock
 
+> **Status (2026-09-22).** The A/B framing is **historical**: the legacy-cpu arm no longer exists
+> (the clock-material law deleted the CPU animation path, `Docs/PRISM_ANIMATION.md`), so only the
+> gpu-clock variant can be run. The rig is still live and is now simply **the prism-death
+> benchmark**: console `bench` in `PrismGridExplosionTest.unity`. Its last result is the
+> 2026-08-25 row below — **6.87 µs per death**, dominated by `Prism.Destroy.Setup` self time.
+> Current state and plan: `Docs/PERFORMANCE_OPTIMIZATION.md`.
+
 The pre-merge performance comparison for the clock-material migration: FPS as a
 function of time across the FULL explosion interval, repeated runs per variant,
 one report comparing the envelopes. Built on Yash's prism-grid explosion rig
@@ -162,13 +169,13 @@ else `gpu-clock`) along with the git branch.
 ### NEW — gpu-clock (this branch)
 
 1. Check out `claude/prism-animation-audit-95mlpu`, open the project.
-2. `FrogletTools > Scene Setup > Setup Prism Grid Explosion Scene` (idempotent —
+2. `FrogletTools > Scenes > Setup Prism Grid Explosion Scene` (idempotent —
    authors the config, scene, managers, harness + benchmark component; it is
    also SELF-HEALING: a scene that somehow carries duplicate PrismManagers
    instances — the Singleton<T> managers must exist exactly once — gets the
    extras deleted, with inactive instances counted too).
 3. Disable Bootstrap auto-load
-   (`FrogletTools > Scene Setup > Testing Multiplayer> Do not load Bootstrap Scene on Play`),
+   (`FrogletTools > Scenes > Testing Multiplayer> Do not load Bootstrap Scene on Play`),
    press Play.
 4. The setup tool authors the spec'd 47³ grid — leave the X/Y/Z/gap fields
    alone so both experiments run the identical workload. Press **Bench** (or
@@ -229,7 +236,7 @@ branch-specific API.)
 
 ### Report
 
-On either branch: `FrogletTools > Performance > Prism Grid Benchmark>
+On either branch: `FrogletTools > Performance > Benchmarks > Prism Grid>
 Generate Comparison Report`. Reads every run JSON in the folder and writes:
 
 - **`report.md`** — per-variant summary (mean / p50 / 1% low / min FPS +

@@ -79,6 +79,11 @@ namespace CosmicShore.Editor
         public string LastSeenUtc = "";
         public string FixedBy = "";
         public string FixedUtc = "";
+        /// <summary>The commit that carries the fix (set by whoever fixed it — usually a Claude
+        /// session's <c>bug_ledger.py mark-fixed --commit</c>). A machine only starts validating
+        /// the fix once this commit is in its own HEAD, so "fixed" never gets credited for play
+        /// runs on code that does not have the fix yet.</summary>
+        public string FixCommit = "";
         /// <summary>Stamped only on the archived copy under <c>BugLedger/resolved/</c>.</summary>
         public string ResolvedUtc = "";
         /// <summary>Why the issue closed ("validated", "resolved by hand", …) — archive copy only.</summary>
@@ -118,6 +123,7 @@ namespace CosmicShore.Editor
             AppendString(sb, "lastSeenUtc", LastSeenUtc);
             AppendString(sb, "fixedBy", FixedBy);
             AppendString(sb, "fixedUtc", FixedUtc);
+            AppendString(sb, "fixCommit", FixCommit);
             AppendString(sb, "resolvedUtc", ResolvedUtc);
             AppendString(sb, "resolution", Resolution);
             AppendInt(sb, "timesSeen", TimesSeen);
@@ -226,6 +232,7 @@ namespace CosmicShore.Editor
                 case "lastSeenUtc": issue.LastSeenUtc = value; break;
                 case "fixedBy": issue.FixedBy = value; break;
                 case "fixedUtc": issue.FixedUtc = value; break;
+                case "fixCommit": issue.FixCommit = value; break;
                 case "resolvedUtc": issue.ResolvedUtc = value; break;
                 case "resolution": issue.Resolution = value; break;
                 case "timesSeen": TryInt(value, ref issue.TimesSeen); break;

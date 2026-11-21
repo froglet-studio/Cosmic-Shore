@@ -8,16 +8,34 @@ namespace CosmicShore.Gameplay
 {
     public class GamepadInputStrategy : BaseInputStrategy
     {
-        private const float TriggerDeadzone = 0.05f;
-
         private bool fullSpeedStraightEffectsStarted;
         private bool minimumSpeedStraightEffectsStarted;
 
         private Vector2 leftStickRaw;
         private Vector2 rightStickRaw;
 
-        private bool prevLeftTriggerActive;
-        private bool prevRightTriggerActive;
+        // Face-button held state, edge-detected from isPressed rather than the frame flags
+        // (SingleStickMouseInputStrategy's shape). wasReleasedThisFrame is only seen while this
+        // strategy runs: a button held as the player switched devices, or released while the
+        // window was unfocused (InputController skips unfocused frames), never sent its release,
+        // so the ability (the Sparrow's boost on B / R, any held face-button ability) stayed on.
+        private bool prevButton1, prevButton2, prevButton3, prevButton4, prevPayload;
+
+        private void EdgeFire(bool isPressed, ref bool prev, InputEvents evt)
+        {
+            if (isPressed && !prev) inputStatus.OnButtonPressed.Raise(evt);
+            if (!isPressed && prev) inputStatus.OnButtonReleased.Raise(evt);
+            prev = isPressed;
+        }
+
+        private void ReleaseHeldButtons()
+        {
+            EdgeFire(false, ref prevButton1, InputEvents.Button1Action);
+            EdgeFire(false, ref prevButton2, InputEvents.Button2Action);
+            EdgeFire(false, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(false, ref prevButton4, InputEvents.Button4Action);
+            EdgeFire(false, ref prevPayload, InputEvents.PayloadAction);
+        }
 
         public override void Initialize(IInputStatus inputStatus)
         {
@@ -29,6 +47,59 @@ namespace CosmicShore.Gameplay
         {
             base.OnStrategyActivated();
             inputStatus.ActiveInputDevice = InputDeviceType.Gamepad;
+        }
+
+        // A trigger or speed gesture held at the moment the pad stops being the live strategy (the
+        // player touches the keyboard or mouse) or the game pauses never sees its release edge:
+        // ProcessInput stops running, so the vessel keeps the ability held. Mirrors
+        // KeyboardInputStrategy, which releases the same state in the same two places.
+        public override void OnStrategyDeactivated()
+        {
+            ReleaseHeldButtons();
+            ReleaseHeldTriggers();
+            ReleaseSpeedEffects();
+            ResetInput();
+            ResetStrategyState();
+        }
+
+        public override void OnPaused()
+        {
+            ReleaseHeldTriggers();
+            leftStickRaw = Vector2.zero;
+            rightStickRaw = Vector2.zero;
+            inputStatus.LeftTriggerAnalog = 0f;
+            inputStatus.RightTriggerAnalog = 0f;
+        }
+
+        // Raises the same release events a real let-go would, then forgets the held state.
+        private void ReleaseHeldTriggers()
+        {
+            if (prevLeftTriggerActive || prevRightTriggerActive)
+                DispatchTriggers(0f, 0f);
+        }
+
+        private void ReleaseSpeedEffects()
+        {
+            if (fullSpeedStraightEffectsStarted)
+            {
+                fullSpeedStraightEffectsStarted = false;
+                inputStatus.OnButtonReleased.Raise(InputEvents.FullSpeedStraightAction);
+            }
+            if (minimumSpeedStraightEffectsStarted)
+            {
+                minimumSpeedStraightEffectsStarted = false;
+                inputStatus.OnButtonReleased.Raise(InputEvents.MinimumSpeedStraightAction);
+            }
+        }
+
+        private void ResetStrategyState()
+        {
+            leftStickRaw = Vector2.zero;
+            rightStickRaw = Vector2.zero;
+            prevLeftTriggerActive = false;
+            prevRightTriggerActive = false;
+            fullSpeedStraightEffectsStarted = false;
+            minimumSpeedStraightEffectsStarted = false;
         }
 
         public override void ProcessInput()
@@ -53,114 +124,19 @@ namespace CosmicShore.Gameplay
 
         private void ProcessButtonInput()
         {
-            // Primary action buttons
-            if (Gamepad.current.buttonSouth.wasPressedThisFrame)
-                inputStatus.OnButtonPressed.Raise(InputEvents.Button1Action);
-                //vessel.PerformShipControllerActions(InputEvents.Button1Action);
-            if (Gamepad.current.buttonSouth.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.Button1Action);
-                // vessel.StopShipControllerActions(InputEvents.Button1Action);
-
-            if (Gamepad.current.buttonEast.wasPressedThisFrame)
-                inputStatus.OnButtonPressed.Raise(InputEvents.Button2Action);
-                // vessel.PerformShipControllerActions(InputEvents.Button2Action);
-            if (Gamepad.current.buttonEast.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.Button2Action);
-                // vessel.StopShipControllerActions(InputEvents.Button2Action);
-
-            if (Gamepad.current.buttonWest.wasPressedThisFrame)
-                inputStatus.OnButtonPressed.Raise(InputEvents.Button3Action);
-                // vessel.PerformShipControllerActions(InputEvents.Button3Action);
-            if (Gamepad.current.buttonWest.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.Button3Action);
-                // vessel.StopShipControllerActions(InputEvents.Button3Action);
-
-            // Shoulder buttons and triggers
-            if (Gamepad.current.leftShoulder.wasPressedThisFrame)
-            {
-                //inputStatus.Idle = true;
-                //inputStatus.OnButtonPressed.Raise(InputEvents.IdleAction);;
-                // vessel.PerformShipControllerActions(InputEvents.IdleAction);
-            }
-            if (Gamepad.current.leftShoulder.wasReleasedThisFrame)
-            {
-                //inputStatus.Idle = false;
-                //inputStatus.OnButtonReleased.Raise(InputEvents.IdleAction);;
-                // vessel.StopShipControllerActions(InputEvents.IdleAction);
-            }
-
-            // Right shoulder for flip action
-            if (Gamepad.current.rightShoulder.wasPressedThisFrame)
-                inputStatus.OnButtonPressed.Raise(InputEvents.FlipAction);
-                // vessel.PerformShipControllerActions(InputEvents.FlipAction);
-            if (Gamepad.current.rightShoulder.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
-            // vessel.StopShipControllerActions(InputEvents.FlipAction);
+            // Primary action buttons, then the right shoulder for flip.
+            EdgeFire(Gamepad.current.buttonSouth.isPressed, ref prevButton1, InputEvents.Button1Action);
+            EdgeFire(Gamepad.current.buttonEast.isPressed, ref prevButton2, InputEvents.Button2Action);
+            EdgeFire(Gamepad.current.buttonWest.isPressed, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(Gamepad.current.buttonNorth.isPressed, ref prevButton4, InputEvents.Button4Action);
+            EdgeFire(Gamepad.current.rightShoulder.isPressed, ref prevPayload, InputEvents.PayloadAction);
 
             // Triggers - read analog values and use custom deadzone for edge detection.
             // This gives full analog range (0-1) for drift scaling while keeping
             // binary event compatibility for button-style triggers (which snap 0/1).
             float leftTriggerValue = Gamepad.current.leftTrigger.ReadValue();
             float rightTriggerValue = Gamepad.current.rightTrigger.ReadValue();
-
-            inputStatus.LeftTriggerAnalog = leftTriggerValue;
-            inputStatus.RightTriggerAnalog = rightTriggerValue;
-
-            bool leftActive = leftTriggerValue > TriggerDeadzone;
-            bool rightActive = rightTriggerValue > TriggerDeadzone;
-
-            bool leftJustPressed = leftActive && !prevLeftTriggerActive;
-            bool leftJustReleased = !leftActive && prevLeftTriggerActive;
-            bool leftHeld = leftActive;
-
-            bool rightJustPressed = rightActive && !prevRightTriggerActive;
-            bool rightJustReleased = !rightActive && prevRightTriggerActive;
-            bool rightHeld = rightActive;
-
-            prevLeftTriggerActive = leftActive;
-            prevRightTriggerActive = rightActive;
-
-            // Individual trigger events
-            if (leftJustPressed)
-                inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
-            if (leftJustReleased)
-                inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
-            if (rightJustPressed)
-                inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
-            if (rightJustReleased)
-                inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
-
-            // BothSticksAction Released
-            if ((leftJustReleased && rightJustReleased)
-                || (leftJustReleased && rightHeld)
-                || (rightJustReleased && leftHeld))
-                inputStatus.OnButtonReleased.Raise(InputEvents.BothSticksAction);
-
-            // OnlyLeftStickAction Released
-            if ((leftJustReleased && !rightHeld)
-                || (rightJustPressed && leftHeld))
-                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyLeftStickAction);
-
-            // OnlyRightStickAction Released
-            if ((rightJustReleased && !leftHeld)
-                || (leftJustPressed && rightHeld))
-                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyRightStickAction);
-
-            // OnlyLeftStickAction Pressed
-            if ((leftJustPressed && !rightHeld)
-                || (rightJustReleased && leftHeld))
-                inputStatus.OnButtonPressed.Raise(InputEvents.OnlyLeftStickAction);
-
-            // OnlyRightStickAction Pressed
-            if ((rightJustPressed && !leftHeld)
-                || (leftJustReleased && rightHeld))
-                inputStatus.OnButtonPressed.Raise(InputEvents.OnlyRightStickAction);
-
-            // BothSticksAction Pressed
-            if ((leftJustPressed && rightJustPressed)
-                || (leftJustPressed && rightHeld)
-                || (rightJustPressed && leftHeld))
-                inputStatus.OnButtonPressed.Raise(InputEvents.BothSticksAction);
+            DispatchTriggers(leftTriggerValue, rightTriggerValue);
         }
 
         private void Reparameterize()
@@ -189,38 +165,29 @@ namespace CosmicShore.Gameplay
             float yDiffBefore = inputStatus.YDiff;
             float xDiffBefore = inputStatus.XDiff;
             
-            // Apply inversions AFTER calculations
-            if (inputStatus.InvertYEnabled)
-            {
-                inputStatus.YSum *= -1f;   // Invert pitch
-                inputStatus.YDiff *= -1f;  // Invert roll
-            }
-            
-            if (inputStatus.InvertThrottleEnabled)
-            {
-                inputStatus.XDiff = 1f - inputStatus.XDiff;  // Invert throttle/speed
-            }
+            // Apply inversions AFTER calculations - the fleet's one rule (BaseInputStrategy).
+            ApplyInvertSettings();
             
             // DEBUG: Uncomment to see inversion working (press Tab key to log)
             #if UNITY_EDITOR
-            if (UnityEngine.InputSystem.Keyboard.current != null && 
+            if (CSDebug.IsVerbose(CSLogChannel.Input) &&
+                UnityEngine.InputSystem.Keyboard.current != null &&
                 UnityEngine.InputSystem.Keyboard.current.tabKey.wasPressedThisFrame)
             {
-                CSDebug.Log($"[GamepadInput] Reparameterize Debug:\n" +
+                CSDebug.LogVerbose(CSLogChannel.Input, $"[GamepadInput] Reparameterize:\n" +
                           $"  Raw Sticks - L: {leftStickRaw}, R: {rightStickRaw}\n" +
-                          $"  YSum: {ySumBefore:F2} → {inputStatus.YSum:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
-                          $"  YDiff: {yDiffBefore:F2} → {inputStatus.YDiff:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
-                          $"  XDiff: {xDiffBefore:F2} → {inputStatus.XDiff:F2} (InvertThrottle: {inputStatus.InvertThrottleEnabled})");
+                          $"  YSum: {ySumBefore:F2} -> {inputStatus.YSum:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
+                          $"  YDiff: {yDiffBefore:F2} -> {inputStatus.YDiff:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
+                          $"  XDiff: {xDiffBefore:F2} -> {inputStatus.XDiff:F2} (InvertThrottle: {inputStatus.InvertThrottleEnabled})");
             }
             #endif
         }
 
         private void PerformSpeedAndDirectionalEffects()
         {
-            float threshold = .3f;
-            float sumOfRotations = Mathf.Abs(inputStatus.YDiff) + Mathf.Abs(inputStatus.YSum) + Mathf.Abs(inputStatus.XSum);
-            float DeviationFromFullSpeedStraight = (1 - inputStatus.XDiff) + sumOfRotations;
-            float DeviationFromMinimumSpeedStraight = inputStatus.XDiff + sumOfRotations;
+            const float threshold = StraightLineGesture.EngageThreshold;
+            float DeviationFromFullSpeedStraight = StraightLineGesture.DeviationFromFullSpeedStraight(inputStatus);
+            float DeviationFromMinimumSpeedStraight = StraightLineGesture.DeviationFromMinimumSpeedStraight(inputStatus);
 
             if (DeviationFromFullSpeedStraight < threshold && !fullSpeedStraightEffectsStarted)
             {

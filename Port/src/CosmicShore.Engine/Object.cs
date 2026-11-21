@@ -1,0 +1,192 @@
+using System;
+
+namespace CosmicShore.Engine
+{
+    /// <summary>
+    /// Root of the engine object model. Preserves the destroyed-object equality contract
+    /// the ported code relies on everywhere: after destruction completes, an instance
+    /// compares equal to null and converts to <c>false</c>, even though the managed
+    /// reference still exists.
+    /// </summary>
+    public abstract partial class Object
+    {
+        public virtual string name { get; set; }
+
+        internal bool destroyedFlag;
+
+        /// <summary>True once destruction has completed (end of the Destroy frame).</summary>
+        public bool IsDestroyed => destroyedFlag;
+
+        public static implicit operator bool(Object o) => o is not null && !o.destroyedFlag;
+
+        public static bool operator ==(Object a, Object b)
+        {
+            bool aNull = a is null || a.destroyedFlag;
+            bool bNull = b is null || b.destroyedFlag;
+            if (aNull && bNull) return true;
+            if (aNull || bNull) return false;
+            return ReferenceEquals(a, b);
+        }
+
+        public static bool operator !=(Object a, Object b) => !(a == b);
+
+        public override bool Equals(object other)
+        {
+            if (other is null) return destroyedFlag;
+            return other is Object o && this == o;
+        }
+
+        public override int GetHashCode() => base.GetHashCode();
+
+        public override string ToString() => destroyedFlag ? "null" : $"{name} ({GetType().Name})";
+
+        // Session-unique instance IDs, assigned at construction. Deterministic within a
+        // run (single-threaded construction order), unique across GameLoop lifetimes —
+        // matching the original engine's per-session uniqueness. Never reset: two objects
+        // alive in the same process must never share an ID, even across fresh worlds.
+        static int s_nextInstanceId;
+        readonly int instanceId = ++s_nextInstanceId;
+
+        public int GetInstanceID() => instanceId;
+
+        /// <summary>
+        /// Schedule destruction at the end of the current frame (GameObjects/Components),
+        /// matching the original engine's deferred-destroy contract. ScriptableObjects are
+        /// destroyed immediately.
+        /// </summary>
+        public static void Destroy(Object obj)
+        {
+            switch (obj)
+            {
+                case null:
+                    return;
+                case ScriptableObject so:
+                    so.destroyedFlag = true;
+                    return;
+                default:
+                    if (GameLoop.Current == null)
+                        throw new InvalidOperationException(
+                            $"Object.Destroy({obj.GetType().Name}) requires an active GameLoop.");
+                    GameLoop.Current.QueueDestroy(obj);
+                    return;
+            }
+        }
+
+        /// <summary>
+        /// Marks the target's ROOT GameObject to survive Single scene loads (original
+        /// contract). Arc E: real scene transitions now unload every unmarked root.
+        /// </summary>
+        public static void DontDestroyOnLoad(Object target)
+        {
+            var go = target as GameObject ?? (target as Component)?.gameObject;
+            if (go is null) return;
+            var root = go.transform;
+            while (root.parent is not null) root = root.parent;
+            root.gameObject.dontDestroyOnLoad = true;
+        }
+
+        public static T FindFirstObjectByType<T>() where T : class
+            => GameLoop.Current?.Scene.FindObjectOfType<T>(includeInactive: false);
+
+        /// <summary>
+        /// Original API: "any" relaxes the ordering guarantee of "first". The headless
+        /// scene walk is deterministic anyway, so both resolve identically here.
+        /// </summary>
+        /// <summary>Pre-2023 alias of <see cref="FindAnyObjectByType{T}"/> (original contract:
+        /// UnityEngine.Object.FindObjectOfType). Ported #else branches compile against it.</summary>
+        public static T FindObjectOfType<T>() where T : class => FindAnyObjectByType<T>();
+
+        public static T FindAnyObjectByType<T>() where T : class
+            => FindFirstObjectByType<T>();
+
+        /// <summary>
+        /// All live components of type T in the scene (original contract:
+        /// UnityEngine.Object.FindObjectsByType). The headless scene walk is deterministic,
+        /// so <paramref name="sortMode"/> is accepted for signature parity but not applied.
+        /// </summary>
+        public static T[] FindObjectsByType<T>(FindObjectsSortMode sortMode) where T : class
+            => GameLoop.Current?.Scene.FindObjectsOfType<T>(includeInactive: false).ToArray()
+               ?? System.Array.Empty<T>();
+
+        /// <summary>Clone an asset or object graph (see ObjectUtilities for semantics).</summary>
+        public static T Instantiate<T>(T original) where T : Object
+            => ObjectUtilities.InstantiateObject(original);
+
+        /// <summary>Clone and place at a world pose in one step (cell visuals and spawners use this shape).
+        /// Activation is deferred until after placement (original contract: Awake sees the final pose).</summary>
+        public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation) where T : Object
+        {
+            var clone = ObjectUtilities.InstantiateDeferred(original, out var pendingActivation);
+            var transform = clone switch
+            {
+                GameObject go => go.transform,
+                Component component => component.transform,
+                _ => null,
+            };
+            if (transform is not null)
+            {
+                transform.position = position;
+                transform.rotation = rotation;
+            }
+            pendingActivation?.SetActive(true);
+            return clone;
+        }
+
+        /// <summary>Clone, place at a world pose, and parent in one step (original engine's 4-arg shape).</summary>
+        public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation, Transform parent) where T : Object
+        {
+            var clone = ObjectUtilities.InstantiateDeferred(original, out var pendingActivation);
+            var transform = clone switch
+            {
+                GameObject go => go.transform,
+                Component component => component.transform,
+                _ => null,
+            };
+            if (transform is not null)
+            {
+                transform.position = position;
+                transform.rotation = rotation;
+                transform.SetParent(parent, worldPositionStays: true);
+            }
+            pendingActivation?.SetActive(true);
+            return clone;
+        }
+
+        /// <summary>Clone and parent in one step (pool managers and spawners use this shape).</summary>
+        public static T Instantiate<T>(T original, Transform parent, bool instantiateInWorldSpace = false) where T : Object
+        {
+            var clone = ObjectUtilities.InstantiateDeferred(original, out var pendingActivation);
+            var transform = clone switch
+            {
+                GameObject go => go.transform,
+                Component component => component.transform,
+                _ => null,
+            };
+            transform?.SetParent(parent, instantiateInWorldSpace);
+            pendingActivation?.SetActive(true);
+            return clone;
+        }
+
+        /// <summary>Destroy synchronously, right now. Prefer <see cref="Destroy"/> in gameplay code.</summary>
+        public static void DestroyImmediate(Object obj)
+        {
+            switch (obj)
+            {
+                case null:
+                    return;
+                case ScriptableObject so:
+                    so.destroyedFlag = true;
+                    return;
+                case GameObject go:
+                    go.DestroyNow();
+                    return;
+                case Component c:
+                    c.DestroyComponentNow();
+                    return;
+                default:
+                    obj.destroyedFlag = true;
+                    return;
+            }
+        }
+    }
+}

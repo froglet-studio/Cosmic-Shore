@@ -1,20 +1,41 @@
 # Unity CI - tiered build verification.
 #
 # Tiers (chosen deliberately for cost-to-coverage):
-#   compile  - edit-mode tests, which force a full script compile. Runs on every PR. ~5-15 min.
-#   mono     - Mono standalone player build. Nightly. Proves scenes, assets, and build settings
-#              actually produce a player. ~20-40 min.
-#   il2cpp   - Full IL2CPP release build. Weekly. The only tier that catches AOT/generic failures
-#              and native link errors, i.e. the ones that only appear in a shipping build.
+#   compile  - edit-mode tests, which force a full script compile. Manual dispatch only; post-merge
+#              compiles are bleeding-edge-guard.yml's job. ~5-15 min.
+#   mono     - Mono standalone player build. Manual dispatch only, never a gate. Proves scenes,
+#              assets, and build settings actually produce a player. ~20-40 min.
+#   il2cpp   - Full IL2CPP release build. Thursday against bleeding-edge, and the Tuesday before a
+#              promotion Wednesday against development. The only tier that catches AOT/generic
+#              failures and native link errors, i.e. the ones that only appear in a shipping build.
+#   static   - The ubuntu static checks alone (no Unity runner). What a pull request gets, and what
+#              the /ship commands dispatch for a claude/** branch.
+# compile, mono and il2cpp need the Unity runner; static never does.
 #
-# RUNNER IS NOT DECIDED YET. The `unity` job is SKIPPED until the repository variable
-# UNITY_RUNNER_LABEL is set, and then targets whatever label it names. Skipping (rather than
-# defaulting to a label that may not exist) matters: a job queued for a non-existent runner shows as
-# a permanently pending check on every PR and is only reaped by GitHub after ~24h - `timeout-minutes`
-# does not apply to queue time. Set the variable the day a runner is registered; no other edit is
-# needed. See Docs/BUILD_AND_DELIVERY.md section 10 for what each hosting option requires (a
-# GitHub-hosted runner additionally needs Unity license secrets and almost certainly more disk than
-# the standard image provides).
+# claude/** BRANCHES DO NOT TRIGGER CI ON THEIR OWN. Agent sessions push often and open many
+# pull requests, so a pull_request event whose head is claude/** skips every job here. CI for such
+# a branch fires only when (a) it lands on bleeding-edge (bleeding-edge-guard.yml runs on that
+# push; amoebius-parity-ci.yml runs nightly on bleeding-edge, not per push, since 2026-11-13) or
+# (b) a /ship, /ship-quick, /ship-deep or /ship-tools command dispatches this workflow on it with mode=static (.claude/skills/ship/SKILL.md, section 5.5).
+#
+# NO RUNNER IS ATTACHED (since 2026-10-13). The `unity` job is SKIPPED while the repository variable
+# UNITY_RUNNER_LABEL is unset, and when set it targets whatever label it names. The self-hosted
+# runner that served it was removed on 2026-10-13 and the variable deleted, so today only the
+# ubuntu jobs run and nothing here compiles Unity. Skipping (rather than defaulting to a label that
+# may not exist) matters: a job queued for a non-existent runner shows as a permanently pending
+# check on every PR and is only reaped by GitHub after ~24h - `timeout-minutes` does not apply to
+# queue time. Set the variable the day a runner is registered; no other edit is needed. See
+# Docs/BUILD_AND_DELIVERY.md section 10 for what each hosting option requires (a GitHub-hosted
+# runner additionally needs Unity license secrets and almost certainly more disk than the standard
+# image provides).
+#
+# SECURITY: this repository is public, and any workflow that names the runner's label reaches the
+# runner - from any branch a writer pushes or any fork pull request - whatever the triggers in this
+# file say. So a self-hosted runner may only be an isolated machine or VM holding no credentials,
+# signing material, personal accounts or browser sessions - never anyone's everyday PC - with its
+# service on a dedicated low-privilege local account, and only after fork pull request approval is
+# set to "Require approval for all external contributors" and the default branches are protected.
+# Docs/BUILD_AND_DELIVERY.md section 10 (Security) and the section 10.2 checklist.
 #
 # The runner is expected to have Unity 6000.3.17f1 installed and activated, with UNITY_PATH set
 # as an environment variable or repository variable pointing at the editor executable.
@@ -54,7 +75,7 @@ on:
       mode:
         description: 'Tier to run'
         type: choice
-        options: [compile, mono, il2cpp]
+        options: [static, compile, mono, il2cpp]
         default: compile
 
 # Read-only by default. Nothing here writes to the repo.
@@ -71,6 +92,10 @@ jobs:
   #  Decide which tier this invocation is
   # ──────────────────────────────────────────────
   resolve:
+    # claude/** heads never run CI from a pull_request event (push/synchronize/open alike); the
+    # /ship commands dispatch it instead. Every other job needs this one, so they skip with it -
+    # a skipped check, not a pending one.
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'claude/')
     runs-on: ubuntu-latest
     outputs:
       mode: ${{ steps.pick.outputs.mode }}
@@ -90,7 +115,11 @@ jobs:
           SCHEDULE="${{ github.event.schedule }}"
           PROCEED=true
 
-          if   [[ "$EVENT" == "workflow_dispatch" ]]; then MODE="${{ inputs.mode }}"; REF=""
+          if   [[ "$EVENT" == "workflow_dispatch" ]]; then
+            MODE="${{ inputs.mode }}"; REF=""
+            # static = the ubuntu checks only; the Unity runner is not taken. This is the tier
+            # the /ship commands dispatch for a claude/** branch.
+            if [[ "$MODE" == "static" ]]; then PROCEED=false; fi
 
           # A pull request keeps the FREE static checks (the conditional-
           # compilation job, ubuntu, seconds) but does NOT take the Unity runner.
@@ -156,8 +185,8 @@ jobs:
   #  Release-build static checks (no Unity, no license)
   #
   #  Deliberately on ubuntu-latest, NOT the Unity runner: this must actually run
-  #  on every PR, including while the Unity tiers sit queued waiting for a
-  #  self-hosted runner to exist. It reproduces the Release preprocessor in
+  #  on every PR, including while there is no self-hosted runner at all and the
+  #  Unity tiers skip. It reproduces the Release preprocessor in
   #  Python and catches the guard mistakes that are invisible in the Editor and
   #  only ever surface as a red automated build.
   #
@@ -185,11 +214,18 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve.outputs.ref }}
           lfs: false          # source-only check; binary assets are not needed
           fetch-depth: 1
+
+      # The generator --check loop below imports numpy (Tools/CI/requirements-checks.txt says
+      # which and why); the hosted image does not ship it. Same step as bleeding-edge-guard.yml.
+      - name: Install the Python packages the checks import
+        run: |
+          python3 -m pip install --user --quiet --break-system-packages --only-binary :all: -r Tools/CI/requirements-checks.txt
+          python3 -c "import numpy; print('numpy', numpy.__version__)"
 
       # The checker has no-opped before while still reporting "OK". Prove it can
       # still detect its own fixtures BEFORE trusting a clean scan.
@@ -199,7 +235,63 @@ jobs:
       - name: Check conditional compilation
         run: python3 Tools/Build/check_conditional_compilation.py --root Assets
 
+      # Info-level logging must go through CSDebug (a raw Debug.Log bypasses the runtime log
+      # level and the release strip) and never carry rich text; the 2026-09 sweep took the
+      # console from 999+ lines at boot to near-silent and this is what keeps it there.
+      - name: Check console logging
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_console_logging.py --self-test
+          python3 Tools/Build/check_console_logging.py
+
+      # A keystore selected in Publishing Settings is one machine's file (Docs/ANDROID_BUILD.md §1).
+      - name: Check no Android keystore path is committed
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_android_signing_settings.py --self-test
+          python3 Tools/Build/check_android_signing_settings.py
+
+      # .junie/skills must stay a symlink to .claude/skills (see AGENTS.md).
+      - name: Check .junie/skills is a link, not a copy
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_junie_skills.py --self-test
+          python3 Tools/Build/check_junie_skills.py
+
+      # Offline twin of the editor's vessel skimmer audit (DT-002): self-test gates, report prints.
+      - name: Audit vessel skimmers (offline)
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/audit_vessel_skimmers.py --self-test
+          python3 Tools/Build/audit_vessel_skimmers.py
+          # Same shape for Validate Lifeform Crystals (DT-002's 34): self-test gates, report prints.
+          python3 Tools/Build/audit_lifeform_crystals.py --self-test
+          python3 Tools/Build/audit_lifeform_crystals.py
+
+      # The input-only contract for every AI pilot and the parity replay (LOCKED: a pilot or a
+      # replay that writes pose, course, speed, crystal or score records a result the vessel never
+      # flew). check_ai_no_state_writes.py --self-test gates; --check scans the four trees.
+      - name: Check the AI and replay trees never write vessel state
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_ai_no_state_writes.py --self-test
+          python3 Tools/Build/check_ai_no_state_writes.py --check
+
+      # Every asset generator must still match what it authored. CLAUDE.md records the failure
+      # class this closes: a generator that owns an asset's content is a second place every schema
+      # change has to land, and it fails months later on somebody else's branch; on 2026-09-09 six
+      # of eight mode generators were red and nobody was reading them. The whole family runs in
+      # about a minute. A generator that cannot --check is a bug in the generator.
+      # Tools/CI/check_generators.sh runs EVERY generator and names every red one (log, annotations,
+      # step summary, the `red` output); it no longer stops at the first, which hid three of the four
+      # red generators on 2026-11-01 (Docs/Reports/CI.md).
+      - name: Check every asset generator against disk
+        id: generators
+        run: bash Tools/CI/check_generators.sh
+
       - name: Check prism shader wiring
+        # Runs even after an earlier check failed, so one run reports every failure.
+        if: ${{ !cancelled() }}
         run: |
           set -euo pipefail
           python3 Tools/Shaders/wire_prism_backface_fade.py --check
@@ -234,7 +326,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve.outputs.ref }}
           lfs: true          # the project stores binary assets in Git LFS
@@ -394,12 +486,13 @@ jobs:
 
       # ── artifacts ───────────────────────────────
       # Test results and the manifest only. The player itself is multiple GB and is not worth
-      # pushing through artifact storage nightly; SteamPipe uploads come from the build machine.
+      # pushing through artifact storage nightly. SteamPipe uploads never run on this runner, which
+      # must hold no credentials (Docs/BUILD_AND_DELIVERY.md sections 4 and 10).
       # The full editor log, on failure only. This is the artifact that makes a
       # red player build diagnosable without anyone copying lines out of a web page.
       - name: Upload build log
         if: failure() && env.MODE != 'compile'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-log-${{ env.MODE }}-${{ github.run_id }}
           path: ${{ env.UNITY_BUILD_LOG }}
@@ -408,7 +501,7 @@ jobs:
 
       - name: Upload test results
         if: always() && env.MODE == 'compile'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: editmode-results
           path: Artifacts/
@@ -417,7 +510,7 @@ jobs:
 
       - name: Upload build manifest
         if: always() && env.MODE != 'compile'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-manifest-${{ env.MODE }}
           path: ${{ env.BUILD_OUTPUT }}/build_manifest.txt

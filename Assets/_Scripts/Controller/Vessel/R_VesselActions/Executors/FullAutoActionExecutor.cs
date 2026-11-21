@@ -4,7 +4,7 @@ using UnityEngine;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.Utility;
 using System.Linq;
 
@@ -101,7 +101,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         }
 
         // The trigger is down. Idempotent: if the Turret Stance handed the hold over mid-press
-        // this only refreshes the profile, so the accumulated cone survives the mode switch.
+        // this only refreshes the profile; the gun's heat is never reset by the trigger anyway.
         if (_spray) _spray.BeginHold(so.Spread);
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeToken);
@@ -112,8 +112,9 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
     public void End()
     {
-        // Arms the accuracy reset; GunSprayAccuracy applies it in LateUpdate unless a
-        // BeginHold lands first in the same frame (which is what a stance flip does).
+        // The trigger is up: the gun starts COOLING. Accuracy is not reset - heat drains at the
+        // profile's cooling rate (GunSprayAccuracy), so a stance flip's same-frame Stop/Start
+        // costs nothing either way.
         if (_spray) _spray.ReleaseHold();
 
         if (_cts == null)
@@ -135,13 +136,15 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
     private void OnTurnEndOfMiniGame()
     {
-        // Optional debug:
-        // CSDebug.Log("[FullAutoActionExecutor] Turn end received. Stopping full-auto.");
         End();
     }
     #endregion
 
     #region Core Loop
+    // Named so a Profiler capture can separate the gun from the flight of what it fired: a
+    // round's first flight step runs synchronously inside FireGun, so its own markers nest here.
+    static readonly Unity.Profiling.ProfilerMarker s_FireMarker = new("FullAuto.Fire");
+
     private async UniTaskVoid FireLoopAsync(FullAutoActionSO so, CancellationToken token)
     {
         if (muzzles == null || muzzles.Length == 0)
@@ -193,14 +196,15 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                         ? _status.Course * _status.Speed
                         : Vector3.zero;
 
-                    // SPACE → gun range (range = speed × lifetime): read the LIVE element level
-                    // per tick through the vessel's ElementalAbilityMapSO. Never cache across
-                    // the hold and never bind ElementalFloats on the shared SO asset — per-vessel
-                    // state lives in the handler (multiplayer: last-initializer-wins otherwise).
-                    // The resolve lives on the SO so the Turret Stance can adopt the SAME number
-                    // instead of authoring a second copy of it.
+                    // Gun range (range = speed × 2T/π, T fixed): the FIXED authored muzzle speed
+                    // — no element scales it any more — shortened by HEAT. The range factor falls
+                    // linearly with the cone (1 cold → rangeAtFullSpread at the final cap), and
+                    // is applied to SPEED so flight time, and with it rounds-in-flight, is
+                    // unchanged. The resolve lives on the SO so the Turret Stance adopts the SAME
+                    // number, and the factor lives on the shared GunSprayAccuracy so both fire
+                    // modes lose range together.
                     var abilities  = _status?.ElementalAbilityHandler;
-                    var speedValue = so.ResolveSpeed(_status);
+                    var speedValue = so.ResolveSpeed(_status) * (_spray ? _spray.RangeFactor : 1f);
 
                     // SPACE level-5 'Piercing Bullets': below the threshold, bullets are
                     // destroyed on their first prism impact; at 5+ they pierce through.
@@ -211,62 +215,65 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                     // size that hits. Resolved per tick off the LIVE Mass level.
                     var growth = so.ResolveGrowthFactor(_status);
 
-                    for (int v = 0; v < volleys && !token.IsCancellationRequested; v++)
+                    using (s_FireMarker.Auto())
                     {
-                        // Re-read per volley — several can be paid off in one tick and each one
-                        // spends ammo, so a hoisted copy would let the last ones fire for free.
-                        if (_resources.Resources[ammoIndex].CurrentAmount < ammoCost)
-                            break;
-
-                        for (int i = 0, count = muzzles.Length; i < count; i++)
+                        for (int v = 0; v < volleys && !token.IsCancellationRequested; v++)
                         {
-                            if (token.IsCancellationRequested)
+                            // Re-read per volley — several can be paid off in one tick and each one
+                            // spends ammo, so a hoisted copy would let the last ones fire for free.
+                            if (_resources.Resources[ammoIndex].CurrentAmount < ammoCost)
                                 break;
 
-                            if (!gun || !gun.gameObject)
+                            for (int i = 0, count = muzzles.Length; i < count; i++)
                             {
-                                CSDebug.LogError("[FullAutoActionExecutor] Gun destroyed or missing during loop.");
-                                return;
+                                if (token.IsCancellationRequested)
+                                    break;
+
+                                if (!gun || !gun.gameObject)
+                                {
+                                    CSDebug.LogError("[FullAutoActionExecutor] Gun destroyed or missing during loop.");
+                                    return;
+                                }
+
+                                if (!gun.isActiveAndEnabled)
+                                {
+                                    // No gun to fire, but don't hard-crash the loop
+                                    continue;
+                                }
+
+                                var muzzle = muzzles[i];
+                                if (!muzzle)
+                                    continue;
+
+                                // Accuracy decay: every round is deflected somewhere inside the cone
+                                // the held trigger has opened. One roll PER ROUND — two muzzles in
+                                // the same frame scatter independently, which is what turns the
+                                // stream into a widening danger zone instead of two widening lines.
+                                var aim = _spray ? _spray.PerturbAim(muzzle.forward) : muzzle.forward;
+
+                                // detachAfterSpawn: bullets fly in world space instead of staying
+                                // parented to the moving muzzle (which made them swerve with the
+                                // shooter's maneuvers and die with the ship hierarchy mid-flight).
+                                gun.FireGun(
+                                    muzzle,
+                                    speedValue,
+                                    inheritVel,
+                                    projectileScale,
+                                    true,
+                                    projectileTime,
+                                    0,
+                                    firingPattern,
+                                    energy,
+                                    detachAfterSpawn: true,
+                                    stopOnFirstPrismImpact: !piercing,
+                                    aimDirection: aim,
+                                    flightGrowthFactor: growth
+                                );
                             }
 
-                            if (!gun.isActiveAndEnabled)
-                            {
-                                // No gun to fire, but don't hard-crash the loop
-                                continue;
-                            }
-
-                            var muzzle = muzzles[i];
-                            if (!muzzle)
-                                continue;
-
-                            // Accuracy decay: every round is deflected somewhere inside the cone
-                            // the held trigger has opened. One roll PER ROUND — two muzzles in
-                            // the same frame scatter independently, which is what turns the
-                            // stream into a widening danger zone instead of two widening lines.
-                            var aim = _spray ? _spray.PerturbAim(muzzle.forward) : muzzle.forward;
-
-                            // detachAfterSpawn: bullets fly in world space instead of staying
-                            // parented to the moving muzzle (which made them swerve with the
-                            // shooter's maneuvers and die with the ship hierarchy mid-flight).
-                            gun.FireGun(
-                                muzzle,
-                                speedValue,
-                                inheritVel,
-                                projectileScale,
-                                true,
-                                projectileTime,
-                                0,
-                                firingPattern,
-                                energy,
-                                detachAfterSpawn: true,
-                                stopOnFirstPrismImpact: !piercing,
-                                aimDirection: aim,
-                                flightGrowthFactor: growth
-                            );
+                            _resources.ChangeResourceAmount(ammoIndex, -ammoCost);
+                            OnVolleyFired?.Invoke(_status?.PlayerName);
                         }
-
-                        _resources.ChangeResourceAmount(ammoIndex, -ammoCost);
-                        OnVolleyFired?.Invoke(_status?.PlayerName);
                     }
                 }
 

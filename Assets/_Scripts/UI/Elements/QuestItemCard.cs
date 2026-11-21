@@ -11,6 +11,10 @@ namespace CosmicShore.UI
 {
     public class QuestItemCard : MonoBehaviour
     {
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The description once the quest is claimed.")]
+        [SerializeField] string completedLine = "Completed";
+
         [Header("Text")]
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text descriptionText;
@@ -25,6 +29,10 @@ namespace CosmicShore.UI
         [SerializeField] private GameObject completedOverlay;
         [Tooltip("Button shown when the quest target is met but not yet claimed")]
         [SerializeField] private Button claimButton;
+
+        [Tooltip("The card's own action button (the style-B card's Play button). Left empty, a " +
+                 "Button is added to the card root with the background as its target.")]
+        [SerializeField] private Button cardButton;
 
         [Header("Card Background")]
         [SerializeField] private Image cardBackground;
@@ -41,13 +49,19 @@ namespace CosmicShore.UI
         private Image _glowImage;
         private Color _originalBgColor = Color.white;
         private GameModes _gameMode;
-        private SO_GameModeQuestData _questData;
+        private SO_UnlockData _questData;
         private QuestItemState _currentState = QuestItemState.Locked;
         private bool _initialStateSet;
         private Tween _pulseTween;
         private Tween _stateTween;
 
         public GameModes GameMode => _gameMode;
+
+        /// <summary>The quest this card draws (null until Configure).</summary>
+        protected SO_UnlockData Quest => _questData;
+
+        /// <summary>The state last set by the track.</summary>
+        protected QuestItemState State => _currentState;
         public bool IsAnimating { get; private set; }
 
         void Awake() => ResolveReferences();
@@ -104,7 +118,7 @@ namespace CosmicShore.UI
             return t != null && t.TryGetComponent<TMP_Text>(out var tmp) ? tmp : null;
         }
 
-        public void Configure(SO_GameModeQuestData quest)
+        public void Configure(SO_UnlockData quest)
         {
             _questData = quest;
             _gameMode = quest.GameMode;
@@ -112,7 +126,19 @@ namespace CosmicShore.UI
             if (descriptionText != null) descriptionText.text = quest.IsPlaceholder ? "Coming Soon" : quest.Description;
             if (iconImage != null && quest.Icon != null) iconImage.sprite = quest.Icon;
             if (cardBackground != null) _originalBgColor = cardBackground.color;
+            OnConfigured(quest);
         }
+
+        /// <summary>
+        /// Where the card sits on the track and how far its mode has come: its 0-based
+        /// <paramref name="index"/>, the highest intensity the player has unlocked on its mode
+        /// (0 when locked), and the quest whose claim unlocks it ("Unlocks after JOUST"; null for
+        /// the first). Called by the track on every redraw; the legacy card ignores it.
+        /// </summary>
+        public virtual void SetContext(int index, int maxUnlockedIntensity, string unlocksAfter) { }
+
+        /// <summary>Hook: the quest was bound (Configure).</summary>
+        protected virtual void OnConfigured(SO_UnlockData quest) { }
 
         public void SetState(QuestItemState state)
         {
@@ -126,11 +152,8 @@ namespace CosmicShore.UI
                                   (state == QuestItemState.Unlocked && _questData != null && _questData.IsCompleted);
             bool isClaimed = state == QuestItemState.Claimed;
 
-            if (lockedOverlay != null) lockedOverlay.SetActive(isLocked);
-            if (completedOverlay != null) completedOverlay.SetActive(isClaimed);
             if (claimButton != null) claimButton.interactable = isReadyToClaim;
-            if (cardBackground != null) cardBackground.color = isLocked ? lockedTint : _originalBgColor;
-            if (descriptionText != null && isClaimed) descriptionText.text = "Completed";
+            DrawState(state, isReadyToClaim);
 
             // Animate unlock transition (Locked → anything visible), skip on initial spawn
             if (!isFirstSet && prevState == QuestItemState.Locked && !isLocked)
@@ -138,10 +161,24 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// Draw <paramref name="state"/>. The legacy card toggles its overlays and tints its
+        /// background; the style-B card (KitQuestCard) overrides this and SetActiveFrontier.
+        /// </summary>
+        protected virtual void DrawState(QuestItemState state, bool readyToClaim)
+        {
+            bool isLocked = state == QuestItemState.Locked;
+            bool isClaimed = state == QuestItemState.Claimed;
+            if (lockedOverlay != null) lockedOverlay.SetActive(isLocked);
+            if (completedOverlay != null) completedOverlay.SetActive(isClaimed);
+            if (cardBackground != null) cardBackground.color = isLocked ? lockedTint : _originalBgColor;
+            if (descriptionText != null && isClaimed) descriptionText.text = completedLine;
+        }
+
+        /// <summary>
         /// Starts or stops the pulsing glow border on the active frontier card.
         /// Glow color changes based on quest state: blue when in progress, green when ready to claim.
         /// </summary>
-        public void SetActiveFrontier(bool isActive, QuestItemState state = QuestItemState.Unlocked)
+        public virtual void SetActiveFrontier(bool isActive, QuestItemState state = QuestItemState.Unlocked)
         {
             if (glowBorder == null) return;
 
@@ -174,7 +211,7 @@ namespace CosmicShore.UI
         /// <summary>
         /// Scale-bounce claim animation. Calls onComplete when done.
         /// </summary>
-        public void PlayClaimAnimation(Action onComplete)
+        public virtual void PlayClaimAnimation(Action onComplete)
         {
             _stateTween?.Kill();
             IsAnimating = true;
@@ -202,6 +239,24 @@ namespace CosmicShore.UI
             if (claimButton != null) claimButton.interactable = interactable;
         }
 
+        /// <summary>
+        /// Wires a whole-card tap, distinct from the claim button (a child Button that
+        /// consumes its own clicks first). A Button is added to the card root on demand,
+        /// with the background Image as its raycast surface.
+        /// </summary>
+        public void BindCardAction(UnityEngine.Events.UnityAction action)
+        {
+            var button = cardButton;
+            if (!button && !TryGetComponent(out button))
+            {
+                button = gameObject.AddComponent<Button>();
+                button.transition = Selectable.Transition.None;
+                if (cardBackground != null) button.targetGraphic = cardBackground;
+            }
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(action);
+        }
+
         public void BindClaimAction(UnityEngine.Events.UnityAction action)
         {
             if (claimButton == null) return;
@@ -212,9 +267,9 @@ namespace CosmicShore.UI
 
     public enum QuestItemState
     {
-        Locked,
-        Unlocked,
-        ReadyToClaim,
-        Claimed,
+        Locked = 0,
+        Unlocked = 1,
+        ReadyToClaim = 2,
+        Claimed = 3,
     }
 }

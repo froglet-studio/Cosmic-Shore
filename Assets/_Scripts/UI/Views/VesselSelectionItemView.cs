@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
-    public class ShipSelectionItemView : MonoBehaviour
+    public class VesselSelectionItemView : MonoBehaviour
     {
         [Header("UI")]
         [SerializeField] private Image iconImage;

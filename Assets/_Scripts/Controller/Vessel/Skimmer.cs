@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -53,6 +53,34 @@ namespace CosmicShore.Gameplay
         /// <summary>Live elemental scale in world units — the resting size an external scale driver should grow from.</summary>
         public float LiveElementalScale => Scale.EvaluateLive(VesselStatus);
 
+        /// <summary>The elemental scale at element level 0, world units - the yardstick an external scale driver
+        /// measures growth against (the Rhino's camera pulls back by the blade's length over this).</summary>
+        public float RestElementalScale => Scale.EvaluateAtNormalizedLevel(0f);
+
+        /// <summary>
+        /// The live reach as a 0..1 fraction of THIS skimmer's own authored range - 0 at the
+        /// resting size, 1 at integer element level 10. A HUD readout of "how far does my skimmer
+        /// reach right now" needs the fraction rather than the world units, because the units mean
+        /// nothing without the two endpoints beside them, and those are authored per vessel (the
+        /// Squirrel: Space, 15 -> 30).
+        ///
+        /// <para>Clamped, so the overcharge band above level 10 reads as full rather than as more
+        /// than full; a readout with no top is not a readout. Returns 0 for a skimmer whose scale
+        /// does not vary at all, which is the honest answer - there is nothing to report.</para>
+        /// </summary>
+        public float ElementalScale01
+        {
+            get
+            {
+                float rest = Scale.EvaluateAtNormalizedLevel(0f);
+                float full = Scale.EvaluateAtNormalizedLevel(1f);
+                float span = full - rest;
+                return Mathf.Abs(span) < 0.0001f
+                    ? 0f
+                    : Mathf.Clamp01((LiveElementalScale - rest) / span);
+            }
+        }
+
         /// <summary>Set by an external per-frame scale driver (ShieldSkimmerScaleDriver) while it owns this transform's scale.</summary>
         public bool HasExternalScaleDriver { get; set; }
 
@@ -63,7 +91,7 @@ namespace CosmicShore.Gameplay
         /// trigger the crystal burst — none of which they could hold themselves (effect SOs are
         /// singletons). See <c>RHINO_ENERGY_SWORD.md</c>.
         /// </summary>
-        public IRhinoSwordState SwordState { get; set; }
+        public ISwordfishSwordState SwordState { get; set; }
 
         SkimmerSwingKinematics _swingKinematics;
         bool _swingLookedUp;
@@ -110,8 +138,13 @@ namespace CosmicShore.Gameplay
             
             _sweetSpot = transform.localScale.x / 4f;
 
+            // Deliberately NOT BindElementalFloats: `Scale` is the only ElementalFloat on this
+            // component and both of its readers (ApplyScaleIfChanged, LiveElementalScale) go
+            // through EvaluateLive. Binding would subscribe ScaleValueWithLevel to keep a
+            // `.Value` nobody reads in step, and register a row in the vessel's ElementStats
+            // list that only a human looking at the inspector would ever see -- which
+            // `/element-ability-table` answers properly, off the authored data.
             ApplyScaleIfChanged();
-            BindElementalFloats(VesselStatus.Vessel);
 
             if (nudgeShardPoolManager) nudgeShardPoolManager.transform.parent = VesselStatus?.Player?.Transform;
         }
@@ -167,7 +200,7 @@ namespace CosmicShore.Gameplay
             if (Time.time - _boosterTimer < cooldown) return;
             _boosterTimer = Time.time;
 
-            var nextBlocks = FindNextBlocks(prism, markerCount * markerDistance);
+            var nextBlocks = FindNextBlocks(prism, markerCount * markerDistance, shared: true);   // read here and dropped
             if (nextBlocks.Count == 0) return;
 
             // last element
@@ -182,7 +215,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        List<Prism> FindNextBlocks(Prism block, float distance = 100f)
+        /// <param name="shared">True for a caller that reads the result and drops it this frame: the trail's reused
+        /// buffer, no allocation. False (the marker path, which keeps its list for seconds) allocates.</param>
+        List<Prism> FindNextBlocks(Prism block, float distance = 100f, bool shared = false)
         {
             if (block == null || block.Trail == null)
                 return new List<Prism> { block };
@@ -192,10 +227,10 @@ namespace CosmicShore.Gameplay
             var backward = TrailFollowerDirection.Backward;
 
             // simple: prefer forward unless at start and direction negative; adjust if you track direction elsewhere
-            if (idx > 0)
-                return block.Trail.LookAhead(idx, 0, forward, distance);
-
-            return block.Trail.LookAhead(idx, 0, backward, distance);
+            var direction = idx > 0 ? forward : backward;
+            return shared
+                ? block.Trail.LookAheadShared(idx, 0, direction, distance)
+                : block.Trail.LookAhead(idx, 0, direction, distance);
         }
 
         public static float ComputeGaussian(float x, float b, float c)

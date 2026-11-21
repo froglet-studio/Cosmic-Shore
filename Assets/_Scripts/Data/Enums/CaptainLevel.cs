@@ -1,7 +1,7 @@
 namespace CosmicShore.Data
 {
     /// <summary>
-    /// Enum that tracks the product ContentTypes of upgrades defined in Playfab.
+    /// Enum that tracks a captain's upgrade level.
     /// Using this, we can see the highest upgrade level purchased
     /// The same enum is associated with each locally saved instance of a captain in case the player is playing offline.
     /// </summary>

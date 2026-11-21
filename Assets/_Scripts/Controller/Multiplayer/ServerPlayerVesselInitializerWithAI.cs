@@ -39,22 +39,22 @@ namespace CosmicShore.Gameplay
         [Tooltip("Optional AI profile list for assigning unique names to AI opponents.")]
         [SerializeField] SO_AIProfileList aiProfileList;
 
-        // Tournament standings are keyed by player name, but AI Player NetworkObjects are
+        // Maelstrom standings are keyed by player name, but AI Player NetworkObjects are
         // destroyed and re-spawned every minigame scene - so the AI roster must stay stable
-        // across the lineup. The names are seeded once (first game) into TournamentDataSO and
+        // across the lineup. The names are seeded once (first game) into MaelstromDataSO and
         // reused for every subsequent game.
-        [Inject] TournamentDataSO tournamentData;
+        [Inject] MaelstromDataSO tournamentData;
 
         protected override void OnNetworkSpawn()
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - NOT server, disabling</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - NOT server, disabling");
                 enabled = false;
                 return;
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}");
 
             // Set scene-specific spawn positions before AI spawning.
             // base.OnNetworkSpawn() also sets them, but AI spawns happen first
@@ -136,13 +136,13 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()");
                     SpawnAIs(totalCounts, humanCounts);
-                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}");
                 }
                 catch (System.Exception e)
                 {
-                    CSDebug.LogError($"<color=#FF0000>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs FAILED: {e.Message}\n{e.StackTrace}</color>");
+                    CSDebug.LogError($"[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs FAILED: {e.Message}\n{e.StackTrace}");
                     CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] SpawnAIs failed: {e.Message}");
                 }
             }
@@ -157,7 +157,7 @@ namespace CosmicShore.Gameplay
                     aiMarked++;
                 }
             }
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Marked {aiMarked} AI players as processed. Calling base.OnNetworkSpawn()</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] Marked {aiMarked} AI players as processed. Calling base.OnNetworkSpawn()");
 
             // Now subscribe (via base) and handle human players going forward
             base.OnNetworkSpawn();
@@ -167,16 +167,16 @@ namespace CosmicShore.Gameplay
         {
             if (!aiPlayerPrefab)
             {
-                CSDebug.LogError("<color=#FF0000>[FLOW-5AI] [ServerVesselInitWithAI] aiPlayerPrefab is NOT assigned!</color>");
+                CSDebug.LogError("[FLOW-5AI] [ServerVesselInitWithAI] aiPlayerPrefab is NOT assigned!");
                 CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] aiPlayerPrefab is not assigned.");
                 return;
             }
 
             int aiCount = gameData.RequestedAIBackfillCount;
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs - aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs - aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}");
             if (aiCount <= 0)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)");
                 return;
             }
 
@@ -185,15 +185,31 @@ namespace CosmicShore.Gameplay
             if (aiProfileList != null)
                 profiles = aiProfileList.PickRandom(aiCount);
 
-            // Tournament: seed the AI roster once (first game) and reuse it for every later
-            // game, so name-keyed bot standings attribute correctly across the lineup. The
-            // names match profile names, so downstream avatar resolution still works.
-            bool tournament = gameData.IsTournamentMode && tournamentData != null;
-            if (tournament && tournamentData.TournamentAINames.Count == 0 && profiles != null)
-            {
-                for (int p = 0; p < profiles.Count; p++)
-                    tournamentData.TournamentAINames.Add(profiles[p].Name);
-            }
+            // Maelstrom: the AI roster is dealt ONCE and replayed into every later round, so the
+            // party races the same named, same-coloured opponents all tournament instead of a
+            // fresh anonymous set each time. The deal itself happens in the HUB
+            // (MaelstromController.ApplyRoster), before any game scene exists - a party readying
+            // up should know who it is about to race - so in practice the loop below always finds
+            // a seat already dealt. The fallback deal is kept for the degraded case where a round
+            // launches without a hub tick, and uses the same GetBalancedDomain against the same
+            // two dictionaries, so it cannot disagree with the hub's answer.
+            bool tournament = gameData.IsMaelstromMode && tournamentData != null;
+
+            // ARENA: every hull is flown by exactly one pilot (SO_ArcadeGame.ArenaRules). The
+            // humans' hulls are taken first - each human already picked and confirmed theirs in the
+            // lobby (a server-arbitrated claim, Player.NetArenaHullClaim) - and each AI is dealt a
+            // hull nobody has yet. Humans are resolved through the same clamp their own spawn will
+            // apply (ResolveSpawnVesselType), so a bot can never be dealt the hull a human is about
+            // to be clamped INTO. Outside an arena this set is still filled but never consulted.
+            var hullsInUse = new HashSet<VesselClassType>();
+            foreach (var human in GatherHumanPlayers())
+                if (human) hullsInUse.Add(gameData.ClampVesselToGame(human.NetDefaultVesselType.Value));
+
+            // Domains a human flies - after NormalizeUnassignedHumans, so a re-seated human
+            // counts where they will actually fly. An AI elsewhere is an OPPONENT seat.
+            var humanDomains = new HashSet<Domains>();
+            foreach (var kv in humanCounts)
+                if (kv.Value > 0) humanDomains.Add(kv.Key);
 
             // The whole loop runs synchronously in ONE frame — the dominant launch spike at
             // high player counts. The span makes that cost (and its scaling) visible.
@@ -226,45 +242,46 @@ namespace CosmicShore.Gameplay
                 // Use template data if available, otherwise derive values dynamically
                 var hasTemplate = aiInitializeDatas != null && i < aiInitializeDatas.Length;
 
-                var aiVesselType = hasTemplate ? aiInitializeDatas[i].vesselClass : VesselClassType.Random;
-                if (aiVesselType is VesselClassType.Any or VesselClassType.Random)
-                    aiVesselType = PickAIVesselType();
+                // A seat already dealt this tournament is replayed verbatim - same bot, same team,
+                // every round. It still bumps the placement counts, so any bot WITHOUT a seat yet
+                // is balanced against the ones already placed rather than against an empty board.
+                var seat = tournament && i < tournamentData.MaelstromAISeats.Count
+                    ? tournamentData.MaelstromAISeats[i]
+                    : null;
 
-                // A restricted-vessel mode restricts the AI too. The AI's class comes from the
-                // scene's aiInitializeDatas (or the captain roll), neither of which knows the
-                // mode's rules - so a scene authored with the wrong template, or a captain roll
-                // in a single-vessel mode, would field opponents in an illegal hull. Same clamp
-                // and same authority as the human path (ResolveSpawnVesselType); no-op when the
-                // game authors no Vessels list.
-                aiVesselType = gameData.ClampVesselToGame(aiVesselType);
-
-                var aiName = tournament && i < tournamentData.TournamentAINames.Count
-                    ? tournamentData.TournamentAINames[i]
-                    : profiles != null && i < profiles.Count
-                        ? profiles[i].Name
-                        : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
-
-                // A domain the host PLACED (the launch panel's Add AI mode) wins - ALWAYS, even
-                // past the DomainCount prefix: placing on Gold in a two-domain lobby is the host
-                // widening the match, and re-balancing it away silently is exactly the "cannot
-                // add to gold" playtest defect. Only Blue (unset) falls back to the balanced pick.
-                // A placed domain is never written into a count dict that lacks its key:
-                // GetBalancedDomain requires a domain in BOTH dicts, and a half-known key sets a
-                // minTotal no listed domain can then match, starving the pick to its error path.
+                string aiName;
                 Domains aiDomain;
-                var placed = i < gameData.RequestedAIDomains.Count
-                    ? gameData.RequestedAIDomains[i]
-                    : Domains.Blue;
-                if (placed != Domains.Blue)
+
+                if (seat != null)
                 {
-                    aiDomain = placed;
+                    aiName = seat.Name;
+                    aiDomain = seat.Domain;
                     if (totalCounts.ContainsKey(aiDomain)) totalCounts[aiDomain]++;
                 }
                 else
                 {
-                    aiDomain = GetBalancedDomain(totalCounts, humanCounts);
-                    totalCounts[aiDomain]++;
+                    aiName = profiles != null && i < profiles.Count
+                        ? profiles[i].Name
+                        : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
+
+                    // A domain the host PLACED (the launch panel's Add AI mode) wins - ALWAYS, even
+                    // past the DomainCount prefix: placing on Gold in a two-domain lobby is the host
+                    // widening the match, and re-balancing it away silently is exactly the "cannot
+                    // add to gold" playtest defect. Only Blue (unset) falls back to the balanced pick.
+                    // A placed domain is never written into a count dict that lacks its key:
+                    // GetBalancedDomain requires a domain in BOTH dicts, and a half-known key sets a
+                    // minTotal no listed domain can then match, starving the pick to its error path.
+                    aiDomain = PlacedOrBalancedDomain(i, gameData.RequestedAIDomains, totalCounts, humanCounts);
+
+                    // Deal the seat so every later round of this tournament replays it. Appended
+                    // in loop order, which is the order it is read back in.
+                    if (tournament)
+                        tournamentData.MaelstromAISeats.Add(new MaelstromAISeat { Name = aiName, Domain = aiDomain });
                 }
+
+                // The HULL is decided after the DOMAIN, because which kind of seat this is
+                // (opponent or ally) is a question about the domain - see AIHullSeating.
+                var aiVesselType = ResolveAIVesselType(i, hasTemplate, aiDomain, humanDomains, hullsInUse);
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = aiName;
@@ -285,8 +302,33 @@ namespace CosmicShore.Gameplay
                 }
 
                 clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
-                ConfigureAIPilot(aiVesselNO);
+
+                // This seat's level: its own pick on the launch panel, else the match's. Stamped on the pilot so
+                // every handicap installed later (a gate race arming its racers) reads the same one.
+                var difficulty = gameData.RequestedAIDifficultyAt(i);
+                gameData.SetAIPilotDifficulty(aiPlayer.PlayerNetId, difficulty);
+                ConfigureAIPilot(aiVesselNO, difficulty);
             }
+        }
+
+        /// <summary>
+        /// The domain AI seat <paramref name="ordinal"/> flies, counted into <paramref name="totalCounts"/>: the one
+        /// the host PLACED for it on the launch panel (<c>GameDataSO.RequestedAIDomains</c>, entry i is bot i), else
+        /// the balanced pick. Blue, and anything past the end of the list, means not placed.
+        ///
+        /// <para>ONE rule for every dealer of AI seats. The Maelstrom deals its seats in the hub
+        /// (<c>MaelstromController.DealAISeats</c>) and had only the balanced half: a host who put both AI on Ruby
+        /// got one on Ruby and one on Gold in every round (Garrett and Yash, 2026-11-19).</para>
+        /// </summary>
+        public static Domains PlacedOrBalancedDomain(int ordinal, IReadOnlyList<Domains> placedDomains,
+            Dictionary<Domains, int> totalCounts, Dictionary<Domains, int> humanCounts)
+        {
+            var placed = placedDomains != null && ordinal >= 0 && ordinal < placedDomains.Count
+                ? placedDomains[ordinal]
+                : Domains.Blue;
+            var domain = placed != Domains.Blue ? placed : GetBalancedDomain(totalCounts, humanCounts);
+            if (totalCounts.ContainsKey(domain)) totalCounts[domain]++;
+            return domain;
         }
 
         /// <summary>
@@ -346,7 +388,7 @@ namespace CosmicShore.Gameplay
                 humans.Add(player);
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] GatherHumanPlayers: found {humans.Count} humans</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] GatherHumanPlayers: found {humans.Count} humans");
             return humans;
         }
 
@@ -387,26 +429,140 @@ namespace CosmicShore.Gameplay
                 humanCounts[assigned]++;
                 h.NetDomain.Value = assigned;
                 reassigned++;
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: assigned {h.NetName.Value} ({d}) → {assigned}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] NormalizeUnassignedHumans: assigned {h.NetName.Value} ({d}) → {assigned}");
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}");
         }
 
-        VesselClassType PickAIVesselType()
+        /// <summary>
+        /// The hull AI seat <paramref name="seat"/> flies, once its domain is known.
+        ///
+        /// <para><b>A pick first</b>: the hull picked for this seat on the launch panel
+        /// (<see cref="GameDataSO.RequestedAIVessels"/>; a teammate's for an ally, the host's for
+        /// any seat) when that hull is legal, built, and - under arena seating - still free.</para>
+        ///
+        /// <para><b>Opponent seat</b> (a domain no human flies) with no usable pick, on a card that
+        /// pins an opponent hull (<c>SO_ArcadeGame.OpponentAIVessel</c>): that hull. It is NOT added to
+        /// <paramref name="hullsInUse"/> - a pinned opponent grid is exempt from arena seating
+        /// and must not narrow the allies' draw.</para>
+        ///
+        /// <para>Otherwise the scene template, otherwise the card's draw. Every route ends in the
+        /// same clamp the human path uses.</para>
+        /// </summary>
+        VesselClassType ResolveAIVesselType(int seat, bool hasTemplate, Domains aiDomain,
+                                            ICollection<Domains> humanDomains,
+                                            HashSet<VesselClassType> hullsInUse)
         {
+            var picked = seat < gameData.RequestedAIVessels.Count
+                ? gameData.RequestedAIVessels[seat]
+                : VesselClassType.Random;
+            if (AIHullSeating.IsConcrete(picked))
+            {
+                bool legal = gameData.ClampVesselToGame(picked) == picked;
+                bool free = !gameData.IsArenaMatch || !hullsInUse.Contains(picked);
+                if (legal && free && vesselPrefabContainer.TryGetShipPrefab(picked, out _, reportMissing: false))
+                {
+                    hullsInUse.Add(picked);
+                    return picked;
+                }
+
+                CSDebug.LogWarning($"[ServerPlayerVesselInitializerWithAI] AI {seat} was picked " +
+                                   $"{picked}, which is {(legal ? free ? "not built" : "already flown" : "not on this card")}; " +
+                                   "seating it as if nobody had picked.");
+            }
+
+            var opponentHull = gameData.OpponentAIVesselClass;
+            if (AIHullSeating.IsOpponentSeat(opponentHull, aiDomain, humanDomains) &&
+                vesselPrefabContainer.TryGetShipPrefab(opponentHull, out _, reportMissing: false))
+                return opponentHull;
+
+            var aiVesselType = hasTemplate ? aiInitializeDatas[seat].vesselClass : VesselClassType.Random;
+            // ARENA: a hull is flown by ONE pilot, so an authored template that names a hull
+            // somebody already has is re-drawn like an unset one.
+            if (!AIHullSeating.IsConcrete(aiVesselType) ||
+                (gameData.IsArenaMatch && hullsInUse.Contains(aiVesselType)))
+                aiVesselType = PickAIVesselType(hullsInUse);
+
+            // A restricted-vessel mode restricts the AI too. The AI's class comes from the
+            // scene's aiInitializeDatas (or the captain roll), neither of which knows the
+            // mode's rules - so a scene authored with the wrong template, or a captain roll
+            // in a single-vessel mode, would field opponents in an illegal hull. Same clamp
+            // and same authority as the human path (ResolveSpawnVesselType); no-op when the
+            // game authors no Vessels list.
+            aiVesselType = gameData.ClampVesselToGame(aiVesselType);
+            hullsInUse.Add(aiVesselType);
+            return aiVesselType;
+        }
+
+        /// <summary>
+        /// Draws an AI's hull from the card's own roster.
+        ///
+        /// <para><b>The card is read through <see cref="GameDataSO.AllowedVesselClasses"/>, not
+        /// through <c>gameList</c>.</b> That list is published by
+        /// <see cref="GameDataSO.SyncFromArcadeGame"/> at launch and is deliberately NOT cleared
+        /// by <c>ResetRuntimeData()</c>, so it is the one representation of "which hulls does
+        /// this mode admit" that survives the scene load and is already the authority every other
+        /// server-side spawn check reads (<see cref="GameDataSO.ClampVesselToGame"/>). The
+        /// <c>gameList</c> lookup below is the fallback and was the only path until 2026-09 -
+        /// which is why every AI in Broadside, Regatta and Dog Fight was a Sparrow: that field is
+        /// a per-scene <c>[SerializeField]</c> and those three scenes leave it null, so the
+        /// lookup fell straight through to the hardcoded default and an ARENA card - whose whole
+        /// premise is a mixed grid - fielded eight identical hulls.</para>
+        ///
+        /// <para>A single-hull card publishes a one-entry list, so the draw is that hull and
+        /// nothing changes for the arcade modes. Classes with no prefab (Termite / Falcon /
+        /// Shrike) are skipped rather than drawn and failed, so a roster may name a planned hull
+        /// without breaking the backfill.</para>
+        /// </summary>
+        VesselClassType PickAIVesselType(ICollection<VesselClassType> hullsInUse = null)
+        {
+            var allowed = gameData?.AllowedVesselClasses;
+            if (allowed != null && allowed.Count > 0)
+            {
+                // Draw from the flyable subset rather than rejecting a draw and falling through:
+                // one unbuilt hull on a roster must not bias the rest toward the fallback.
+                _aiVesselDrawBuffer.Clear();
+                for (int i = 0; i < allowed.Count; i++)
+                    if (vesselPrefabContainer.TryGetShipPrefab(allowed[i], out _, reportMissing: false))
+                        _aiVesselDrawBuffer.Add(allowed[i]);
+
+                // ARENA: only hulls nobody flies yet. If that leaves nothing (more seats than hulls,
+                // which SO_ArcadeGame.MaxSeats exists to prevent at the launch modal), say so and
+                // fall back to a duplicate rather than spawn no opponent at all.
+                if (gameData.IsArenaMatch && hullsInUse != null && hullsInUse.Count > 0)
+                {
+                    int before = _aiVesselDrawBuffer.Count;
+                    _aiVesselDrawBuffer.RemoveAll(hullsInUse.Contains);
+                    if (_aiVesselDrawBuffer.Count == 0 && before > 0)
+                    {
+                        CSDebug.LogWarning($"[ServerPlayerVesselInitializerWithAI] Arena match has more seats " +
+                                           $"than free hulls ({hullsInUse.Count} taken of {before}); this AI " +
+                                           "shares a hull. The launch modal's MaxSeats should have prevented it.");
+                        for (int i = 0; i < allowed.Count; i++)
+                            if (vesselPrefabContainer.TryGetShipPrefab(allowed[i], out _))
+                                _aiVesselDrawBuffer.Add(allowed[i]);
+                    }
+                }
+
+                if (_aiVesselDrawBuffer.Count > 0)
+                    return _aiVesselDrawBuffer[Random.Range(0, _aiVesselDrawBuffer.Count)];
+            }
+
             if (gameList != null)
             {
                 var game = FindGameByMode(gameData.GameMode);
                 if (game != null && game.Vessels is { Count: > 0 })
                 {
                     var vessel = game.Vessels[Random.Range(0, game.Vessels.Count)];
-                    if (vessel != null && vesselPrefabContainer.TryGetShipPrefab(vessel.Class, out _))
+                    if (vessel != null && vesselPrefabContainer.TryGetShipPrefab(vessel.Class, out _, reportMissing: false))
                         return vessel.Class;
                 }
             }
             return VesselClassType.Sparrow;
         }
+
+        readonly List<VesselClassType> _aiVesselDrawBuffer = new();
 
         SO_ArcadeGame FindGameByMode(GameModes mode)
         {
@@ -447,10 +603,39 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void ConfigureAIPilot(NetworkObject aiVesselNO)
+        /// <summary>
+        /// An adopted pilot is configured exactly like a backfill bot - same mode-aware seeking,
+        /// same skill-from-intensity - so a ship that changes hands mid-match flies to the same
+        /// standard as the AI that was already in it, rather than sitting on prefab defaults.
+        /// </summary>
+        protected override void ConfigureDepartedPilotAI(IVessel vessel)
+        {
+            if (vessel is not VesselController vc) return;
+            ConfigureAIPilot(vc.NetworkObject);
+        }
+
+        void ConfigureAIPilot(NetworkObject aiVesselNO, AIDifficulty? difficulty = null)
         {
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
             if (aiPilot == null) return;
+            ConfigureAIPilotForMode(aiPilot, gameData, difficulty);
+
+            // Skim Race seats fly the dedicated racing pilot (input-only; it stands AIPilot down).
+            if (aiVesselNO.TryGetComponent(out IVessel vessel))
+                SkimRaceAIDeployment.TryInstall(aiVesselNO.gameObject, vessel, gameData);
+        }
+
+        /// <summary>
+        /// Configure an autopilot for the CURRENT mode exactly as a backfill bot is configured.
+        /// Static and public because a pilot can inherit a hull mid-match from two directions - a
+        /// departed human (<see cref="ConfigureDepartedPilotAI"/>) and an arena pilot swap
+        /// (<see cref="PilotSwap"/>) - and all three must fly to the same standard.
+        /// </summary>
+        /// <param name="difficulty">The level this pilot flies (its seat's own, stamped at spawn); null for the
+        /// match's (a hull handed to the AI mid-match, an adopted hull).</param>
+        public static void ConfigureAIPilotForMode(AIPilot aiPilot, GameDataSO gameData, AIDifficulty? difficulty = null)
+        {
+            if (aiPilot == null || gameData == null) return;
 
             // Player-seek is for the modes whose OBJECTIVE is another pilot. Joust wants to
             // sweep its skimmer past you; Dog Fight wants you in its gunsight - the steering
@@ -458,11 +643,31 @@ namespace CosmicShore.Gameplay
             // reuses AIPilot's existing opponent lock rather than growing a bespoke one. Dog
             // Fight then layers a stand-off distance on top via its own external target
             // provider, because a gun duel is not a ramming contest.
+            // Broadside joins them for the same reason and needs nothing else: most of its
+            // roster lands a hit by ARRIVING (a Rhino's sword, a Squirrel's joust, a Manta's
+            // bomb), so the shared opponent lock IS the AI for those hulls. Its controller adds
+            // only the two triggers that are stick gestures and therefore inert under autopilot.
             bool shouldSeekPlayers =
-                gameData.GameMode == GameModes.MultiplayerJoust ||
-                gameData.GameMode == GameModes.DogFight;
-            float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
+                gameData.GameMode == GameModes.Joust ||
+                gameData.GameMode == GameModes.DogFight ||
+                gameData.GameMode == GameModes.Broadside;
+            // An arena card has no intensity row (it always plays SO_ArcadeGame.ArenaIntensity), so its autopilot skill
+            // follows the AI difficulty the host picked instead; every other card keeps intensity x 0.25.
+            float skill = gameData.IsArenaMatch
+                ? VesselSelectionRules.ArenaAutopilotSkill(AIDifficultyRules.Resolve(difficulty ?? gameData.RequestedAIDifficulty))
+                : Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
+
+            // The lobby AI difficulty, on every mode whose AI is this autopilot (all but the Skim Race and the
+            // gate races, which carry their own handicap): Easy, Medium and Hard fly on a belief with the Skim
+            // Race's mistakes (late notice, a misjudged target), Legendary on the truth. Every other mode clears
+            // it, so a pilot that changes modes or hands never carries a stale one.
+            var level = AIDifficultyRules.UsesPilotBelief(gameData.GameMode)
+                ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(difficulty ?? gameData.RequestedAIDifficulty))
+                : default;
+            aiPilot.SetTargetBelief(level.IsNone
+                ? null
+                : new AIPilotBelief(level, unchecked(System.Environment.TickCount * 31 + aiPilot.GetInstanceID())));
         }
     }
 }

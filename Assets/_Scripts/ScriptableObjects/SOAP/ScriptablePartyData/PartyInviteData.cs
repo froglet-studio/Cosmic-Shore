@@ -28,7 +28,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>The sender's current party session id - the join target.</summary>
         public string PartySessionId => partySessionId;
         /// <summary>The invite SENDER's display name (shown as "X invited you").</summary>
-        public string HostDisplayName => hostDisplayName;
+        public string HostDisplayName => CosmicShore.Utility.DisplayNameValidator.ForDisplay(hostDisplayName); // fair play T7
         /// <summary>The invite SENDER's avatar id.</summary>
         public int HostAvatarId => hostAvatarId;
 

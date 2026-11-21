@@ -147,7 +147,7 @@ namespace CosmicShore.Editor
                             float propertyValue = mat.GetFloat(propertyName);
 
                             bool foundProperty = false;
-                            foreach (FloatFaderSSU propertyFader in sf.floatProperties)
+                            foreach (FloatFaderSSU propertyFader in sf.FloatProperties)
                             {
                                 if (propertyFader.propertyName == shader.GetPropertyName(i))
                                 {
@@ -159,7 +159,7 @@ namespace CosmicShore.Editor
 
                             if (!foundProperty)
                             {
-                                sf.floatProperties.Add(new FloatFaderSSU(propertyName, propertyValue, propertyValue));
+                                sf.FloatProperties.Add(new FloatFaderSSU(propertyName, propertyValue, propertyValue));
                             }
                         }
                         else if (propertyType == ShaderPropertyType.Vector)
@@ -168,7 +168,7 @@ namespace CosmicShore.Editor
                             Vector4 propertyValue = mat.GetVector(propertyName);
 
                             bool foundProperty = false;
-                            foreach (VectorFaderSSU propertyFader in sf.vectorProperties)
+                            foreach (VectorFaderSSU propertyFader in sf.VectorProperties)
                             {
                                 if (propertyFader.propertyName == shader.GetPropertyName(i))
                                 {
@@ -180,7 +180,7 @@ namespace CosmicShore.Editor
 
                             if (!foundProperty)
                             {
-                                sf.vectorProperties.Add(new VectorFaderSSU(propertyName, propertyValue, propertyValue));
+                                sf.VectorProperties.Add(new VectorFaderSSU(propertyName, propertyValue, propertyValue));
                             }
                         }
                         else if (propertyType == ShaderPropertyType.Color)
@@ -189,7 +189,7 @@ namespace CosmicShore.Editor
                             Color propertyValue = mat.GetColor(propertyName);
 
                             bool foundProperty = false;
-                            foreach (ColorFaderSSU propertyFader in sf.colorProperties)
+                            foreach (ColorFaderSSU propertyFader in sf.ColorProperties)
                             {
                                 if (propertyFader.propertyName == shader.GetPropertyName(i))
                                 {
@@ -201,7 +201,7 @@ namespace CosmicShore.Editor
 
                             if (!foundProperty)
                             {
-                                sf.colorProperties.Add(new ColorFaderSSU(propertyName, propertyValue, propertyValue));
+                                sf.ColorProperties.Add(new ColorFaderSSU(propertyName, propertyValue, propertyValue));
                             }
                         }
                     }
@@ -230,7 +230,7 @@ namespace CosmicShore.Editor
                             float propertyValue = mat.GetFloat(propertyName);
 
                             bool foundProperty = false;
-                            foreach (FloatFaderSSU propertyFader in sf.floatProperties)
+                            foreach (FloatFaderSSU propertyFader in sf.FloatProperties)
                             {
                                 if (propertyFader.propertyName == shader.GetPropertyName(i))
                                 {
@@ -242,7 +242,7 @@ namespace CosmicShore.Editor
 
                             if (!foundProperty)
                             {
-                                sf.floatProperties.Add(new FloatFaderSSU(propertyName, propertyValue, propertyValue));
+                                sf.FloatProperties.Add(new FloatFaderSSU(propertyName, propertyValue, propertyValue));
                             }
                         }
                         else if (propertyType == ShaderPropertyType.Vector)
@@ -251,7 +251,7 @@ namespace CosmicShore.Editor
                             Vector4 propertyValue = mat.GetVector(propertyName);
 
                             bool foundProperty = false;
-                            foreach (VectorFaderSSU propertyFader in sf.vectorProperties)
+                            foreach (VectorFaderSSU propertyFader in sf.VectorProperties)
                             {
                                 if (propertyFader.propertyName == shader.GetPropertyName(i))
                                 {
@@ -263,7 +263,7 @@ namespace CosmicShore.Editor
 
                             if (!foundProperty)
                             {
-                                sf.vectorProperties.Add(new VectorFaderSSU(propertyName, propertyValue, propertyValue));
+                                sf.VectorProperties.Add(new VectorFaderSSU(propertyName, propertyValue, propertyValue));
                             }
                         }
                         else if (propertyType == ShaderPropertyType.Color)
@@ -272,7 +272,7 @@ namespace CosmicShore.Editor
                             Color propertyValue = mat.GetColor(propertyName);
 
                             bool foundProperty = false;
-                            foreach (ColorFaderSSU propertyFader in sf.colorProperties)
+                            foreach (ColorFaderSSU propertyFader in sf.ColorProperties)
                             {
                                 if (propertyFader.propertyName == shader.GetPropertyName(i))
                                 {
@@ -284,7 +284,7 @@ namespace CosmicShore.Editor
 
                             if (!foundProperty)
                             {
-                                sf.colorProperties.Add(new ColorFaderSSU(propertyName, propertyValue, propertyValue));
+                                sf.ColorProperties.Add(new ColorFaderSSU(propertyName, propertyValue, propertyValue));
                             }
                         }
                     }
@@ -296,7 +296,7 @@ namespace CosmicShore.Editor
 
                 //Float:
                 List<FloatFaderSSU> removedFloatProperties = new List<FloatFaderSSU>();
-                foreach (FloatFaderSSU propertyFader in sf.floatProperties)
+                foreach (FloatFaderSSU propertyFader in sf.FloatProperties)
                 {
                     if(propertyFader.fromValue == propertyFader.toValue)
                     {
@@ -305,12 +305,12 @@ namespace CosmicShore.Editor
                 }
                 foreach (FloatFaderSSU propertyFader in removedFloatProperties)
                 {
-                    sf.floatProperties.Remove(propertyFader);
+                    sf.FloatProperties.Remove(propertyFader);
                 }
 
                 //Vector:
                 List<VectorFaderSSU> removedVectorProperties = new List<VectorFaderSSU>();
-                foreach (VectorFaderSSU propertyFader in sf.vectorProperties)
+                foreach (VectorFaderSSU propertyFader in sf.VectorProperties)
                 {
                     if (propertyFader.fromValue == propertyFader.toValue)
                     {
@@ -319,12 +319,12 @@ namespace CosmicShore.Editor
                 }
                 foreach (VectorFaderSSU propertyFader in removedVectorProperties)
                 {
-                    sf.vectorProperties.Remove(propertyFader);
+                    sf.VectorProperties.Remove(propertyFader);
                 }
 
                 //Color:
                 List<ColorFaderSSU> removedColorProperties = new List<ColorFaderSSU>();
-                foreach (ColorFaderSSU propertyFader in sf.colorProperties)
+                foreach (ColorFaderSSU propertyFader in sf.ColorProperties)
                 {
                     if (propertyFader.fromValue == propertyFader.toValue)
                     {
@@ -333,7 +333,7 @@ namespace CosmicShore.Editor
                 }
                 foreach (ColorFaderSSU propertyFader in removedColorProperties)
                 {
-                    sf.colorProperties.Remove(propertyFader);
+                    sf.ColorProperties.Remove(propertyFader);
                 }
             }
             #endregion
@@ -346,7 +346,7 @@ namespace CosmicShore.Editor
             if (previewValue != lastPreview)
             {
                 ShaderFaderSSU sf = (ShaderFaderSSU)target;
-                float fadeFactor = sf.fadeCurve.Evaluate(previewValue);
+                float fadeFactor = sf.FadeCurve.Evaluate(previewValue);
                 foreach (Material mat in GetMaterials())
                 {
                     sf.UpdateSingleMaterial(mat, fadeFactor);
@@ -390,7 +390,7 @@ namespace CosmicShore.Editor
             HashSet<Material> materials = new HashSet<Material>();
             ShaderFaderSSU sf = (ShaderFaderSSU)target;
 
-            if (sf.getChildObjects)
+            if (sf.GetChildObjects)
             {
                 //Auto Renderers:
                 foreach (Renderer renderer in sf.gameObject.GetComponentsInChildren<Renderer>(true))

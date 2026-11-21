@@ -14,7 +14,7 @@ namespace CosmicShore.Editor
         private List<KeyValuePair<Texture2D, long>> sortedTextures;
         private int topN = 10;
 
-        [MenuItem("FrogletTools/Performance/Runtime Texture Memory Usage")]
+        [MenuItem("FrogletTools/Performance/Runtime Texture Memory Usage", false, 191)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 3,
             Description = "Live texture memory while playing.")]
         public static void ShowWindow()

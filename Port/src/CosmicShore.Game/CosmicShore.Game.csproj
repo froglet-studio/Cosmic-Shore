@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
+    <ProjectReference Include="../CosmicShore.Data/CosmicShore.Data.csproj" />
+  </ItemGroup>
+
+  <!-- Upstream `internal` members are same-assembly-visible to Unity's default
+       assembly; the port splits tests out, so internals used by behavior tests
+       (e.g. ArcadeGameConfigureModal.ShouldLocalPlayerLaunch) need this grant. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="CosmicShore.Tests" />
+    <InternalsVisibleTo Include="CosmicShore.Tests.Ported" />
+    <!-- The windowed host authors deterministic fixtures through internal seams
+         (e.g. DataAccessor-cached leaderboards) exactly like the tests do. -->
+    <InternalsVisibleTo Include="CosmicShore.Client" />
+  </ItemGroup>
+
+</Project>

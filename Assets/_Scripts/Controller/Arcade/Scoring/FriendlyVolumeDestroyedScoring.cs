@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
         void UpdateScore(IRoundStats roundStats)
         {
             // Penalty: destroying your own / friendly volume
-            Score = -roundStats.FriendlyVolumeDestroyed * scoreMultiplier;
+            SetScore(roundStats, -roundStats.FriendlyVolumeDestroyed * scoreMultiplier);
             ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }

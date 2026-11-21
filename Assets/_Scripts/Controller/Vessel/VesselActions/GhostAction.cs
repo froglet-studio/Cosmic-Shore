@@ -30,19 +30,26 @@ namespace CosmicShore.Gameplay
                 intangibilityCoroutine = null;
             }
 
-            foreach (var geometry in shipGeometries)
-                geometry.GetComponent<Collider>().enabled = true;
+            SetCollidersEnabled(true);
         }
 
         IEnumerator TemporaryIntangibilityCoroutine()
         {
-            foreach (var geometry in shipGeometries)
-                geometry.GetComponent<Collider>().enabled = false;
+            SetCollidersEnabled(false);
 
             yield return new WaitForSeconds(maxDuration);
 
+            SetCollidersEnabled(true);
+        }
+
+        // A ship geometry need not carry a collider: a rigged model's SkinnedMeshRenderer is
+        // listed for its domain paint (the Urchin since its 2026-10-18 rig swap) beside the
+        // collider-bearing parts.
+        void SetCollidersEnabled(bool enabled)
+        {
             foreach (var geometry in shipGeometries)
-                geometry.GetComponent<Collider>().enabled = true;
+                if (geometry && geometry.TryGetComponent(out Collider collider))
+                    collider.enabled = enabled;
         }
     }
 }

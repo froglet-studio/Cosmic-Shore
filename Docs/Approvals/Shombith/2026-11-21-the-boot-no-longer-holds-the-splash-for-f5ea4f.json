@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-21-the-boot-no-longer-holds-the-splash-for-f5ea4f",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-21T07:50:05+00:00",
+  "area": "the boot reveal into the menu (Docs/MENU_REDESIGN_B.md sections 25-26)",
+  "summary": "The boot no longer holds the splash for the Relay host: the Garland lays during the party create, and the menu is revealed once it stands with UI input held until the vessel spawns; a host missing 12 s later covers the menu again.",
+  "why": "Yash: the boot sat at 41% Creating session; the menu now shows about 3.5 s sooner (6.8-7.5 s after Menu_Main loads, against about 10.5 s).",
+  "branch": "Ys-bleeding-edge",
+  "commit": "936e98257",
+  "paths": [
+    "Assets/_Scripts/Controller/Environment/Cell.BootBuild.cs",
+    "Assets/_Scripts/System/Bootstrap/SceneTransitionManager.cs",
+    "Assets/_Scripts/System/SceneLoader.BootReveal.cs",
+    "Assets/_Scripts/System/SceneLoader.cs"
+  ]
+}

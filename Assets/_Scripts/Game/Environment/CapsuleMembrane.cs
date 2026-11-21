@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.Utility;
 using Unity.Profiling;
 using UnityEngine;
@@ -30,7 +31,19 @@ namespace CosmicShore.Game
         [Tooltip("Radius of the membrane sphere.")]
         [SerializeField] float radius = 500f;
 
-        public float Radius => radius;
+        public float Radius => radius * _runtimeScale;
+
+        // A runtime size over the authored one (a voyage's bigger cells): offsets, capsules and bounds all grow with it,
+        // and the baked wobble plays back unchanged. Not serialized: the authored radius stays the bake's signature.
+        float _runtimeScale = 1f;
+
+        /// <summary>Draw this membrane at <paramref name="factor"/> times its authored size (1 = as authored).</summary>
+        public void SetRuntimeScale(float factor)
+        {
+            _runtimeScale = Mathf.Max(0.01f, factor);
+            renderParams.worldBounds = new Bounds(transform.position, Vector3.one * (Radius * 2.5f));
+            if (matrices != null) UpdateMatrices();
+        }
 
         [Header("Capsule Shape")]
         [Tooltip("Mesh to instance. Leave null to use Unity's built-in capsule.")]
@@ -89,6 +102,17 @@ namespace CosmicShore.Game
         [SerializeField] int bakeFps = 5;
 
         Matrix4x4[] matrices;
+
+        /// <summary>
+        /// Capsules actually drawn: all of them, unless the device tier or quality preset caps the
+        /// subdivision level (<c>GraphicsCuts.MembraneMaxSubdivisions</c>). The icosphere generator only ever
+        /// APPENDS midpoint vertices, and the jitter is drawn per vertex in index order, so the
+        /// first 10*4^s+2 capsules are exactly the layout a membrane authored at level s would have,
+        /// and the baked animation indexes them the same way. Drawing a prefix is therefore a
+        /// lower-subdivision membrane with no re-bake, at the same radius.
+        /// </summary>
+        int _drawCount;
+
         RenderParams renderParams;
         Mesh meshToRender;
         bool playbackMode;
@@ -108,6 +132,37 @@ namespace CosmicShore.Game
         Vector3[] perpendiculars;
         // Noise sampling coordinates (one per capsule, derived from jittered position)
         Vector3[] noiseCoords;
+
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int DullColorId = Shader.PropertyToID("_DullColor");
+        MaterialPropertyBlock _colourBlock;
+
+        /// <summary>The membrane's own colours as its material authors them (SpindleGraph's <c>_BrightColor</c> /
+        /// <c>_DullColor</c>) - what a mode's tint eases away from and back to. False without a material.</summary>
+        public bool TryGetMaterialColours(out Color bright, out Color dull)
+        {
+            bright = dull = Color.white;
+            if (!membraneMaterial) return false;
+            if (membraneMaterial.HasProperty(BrightColorId)) bright = membraneMaterial.GetColor(BrightColorId);
+            if (membraneMaterial.HasProperty(DullColorId)) dull = membraneMaterial.GetColor(DullColorId);
+            return true;
+        }
+
+        /// <summary>
+        /// Recolour THIS membrane's draw (a property block on its instanced draw) - never the material, which is
+        /// <c>SpindleMaterial</c>, shared with every spindle, worm segment and two fauna prefabs. A mode-side visual
+        /// (<see cref="CosmicShore.Gameplay.CellVisualTint"/>); the membrane's boundary and gameplay are untouched.
+        /// </summary>
+        public void SetColourOverride(Color bright, Color dull)
+        {
+            _colourBlock ??= new MaterialPropertyBlock();
+            _colourBlock.SetColor(BrightColorId, bright);
+            _colourBlock.SetColor(DullColorId, dull);
+            renderParams.matProps = _colourBlock;
+        }
+
+        /// <summary>Back to the material's own colours.</summary>
+        public void ClearColourOverride() => renderParams.matProps = null;
 
         /// <summary>The baked preset currently assigned, if any. Used by the editor bake tooling.</summary>
         public CapsuleMembraneAnimationSO AnimationPreset => animationPreset;
@@ -157,9 +212,11 @@ namespace CosmicShore.Game
                 matrices = new Matrix4x4[baseDirections.Length];
             }
 
+            _drawCount = TierCappedCount(matrices.Length);
+
             renderParams = new RenderParams(membraneMaterial)
             {
-                worldBounds = new Bounds(transform.position, Vector3.one * (radius * 2.5f)),
+                worldBounds = new Bounds(transform.position, Vector3.one * (Radius * 2.5f)),
                 shadowCastingMode = ShadowCastingMode.Off,
                 receiveShadows = false,
                 renderingLayerMask = renderingLayerMask,
@@ -191,10 +248,25 @@ namespace CosmicShore.Game
                 _lastCenter = center;
                 using (s_updateMatrices.Auto())
                     UpdateMatrices();
-                renderParams.worldBounds = new Bounds(center, Vector3.one * (radius * 2.5f));
+                renderParams.worldBounds = new Bounds(center, Vector3.one * (Radius * 2.5f));
             }
             using (s_submit.Auto())
-                Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices);
+                Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices, _drawCount);
+        }
+
+        /// <summary>Vertices of an icosphere at <paramref name="level"/> subdivisions: 12, 42, 162, 642, 2562.</summary>
+        public static int IcosphereVertexCount(int level) => 10 * (1 << (2 * level)) + 2;
+
+        /// <summary>
+        /// <paramref name="total"/> capsules, or the prefix the device tier and quality preset allow
+        /// (<see cref="GraphicsCuts.MembraneMaxSubdivisions"/>). A cap at or above this membrane's own
+        /// level changes nothing.
+        /// </summary>
+        int TierCappedCount(int total)
+        {
+            int cap = GraphicsCuts.MembraneMaxSubdivisions;
+            if (cap < 0 || cap >= subdivisions) return total;
+            return Mathf.Min(total, IcosphereVertexCount(cap));
         }
 
         void UpdateMatrices()
@@ -209,7 +281,7 @@ namespace CosmicShore.Game
         /// </summary>
         void UpdateMatricesFromPreset()
         {
-            int count = presetCount;
+            int count = presetCount;   // the bake's stride: frame-major, every capsule per frame
             int frames = presetFrameCount;
             float dur = presetLoopDuration;
 
@@ -224,10 +296,10 @@ namespace CosmicShore.Game
             int baseA = f0 * count;
             int baseB = f1 * count;
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < _drawCount; i++)
             {
                 Quaternion rot = Quaternion.Lerp(presetRotations[baseA + i], presetRotations[baseB + i], blend);
-                matrices[i] = Matrix4x4.TRS(center + presetOffsets[i], rot, capsuleScale);
+                matrices[i] = Matrix4x4.TRS(center + presetOffsets[i] * _runtimeScale, rot, capsuleScale * _runtimeScale);
             }
         }
 
@@ -240,9 +312,8 @@ namespace CosmicShore.Game
         {
             Vector3 center = transform.position;
             float time = Time.time * pulseSpeed;
-            int count = baseDirections.Length;
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < _drawCount; i++)
             {
                 Vector3 nc = noiseCoords[i];
                 // Sample Perlin noise at the capsule's sphere-surface coordinate + animated
@@ -255,7 +326,7 @@ namespace CosmicShore.Game
                 Quaternion eulerNoise = Quaternion.Euler(noiseAmplitude * noiseVec);
                 Quaternion rot = Quaternion.LookRotation(
                     eulerNoise * baseDirections[i], eulerNoise * perpendiculars[i]);
-                matrices[i] = Matrix4x4.TRS(center + baseOffsets[i], rot, capsuleScale);
+                matrices[i] = Matrix4x4.TRS(center + baseOffsets[i] * _runtimeScale, rot, capsuleScale * _runtimeScale);
             }
         }
 

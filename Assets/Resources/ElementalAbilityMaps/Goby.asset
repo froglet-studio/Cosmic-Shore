@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Goby
+  m_EditorClassIdentifier:
+  vesselClass: 18
+  entries:
+  - Element: 1
+    AbilityLabel: 'Vortex Sting'
+    AbilityDescription: 'A vortex ring from the Pistol''s Snap that hits a rival hull takes a petal from each of its elements. While the Goby holds a lock on a rival that is on the Pistol''s screen, the ring flies at it, and Charge sets how hard it homes (GobyPistolConfig ringHomingScale, x1 at rest -> x2.5 at level 10).'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Vortex Steal'
+    UpgradeDescription: 'A ring''s hit steals the petals it takes: they land on the pair instead of being knocked loose (GobyPistolDuo.ScoreRingHit, IsUpgradeActive(Charge)).'
+  - Element: 2
+    AbilityLabel: 'Dens'
+    AbilityDescription: 'At each perch the Pistol rests and builds a den of prisms and shielded prisms, as many as the distance it travelled since its last den and Mass make (denMassScale, x1 at rest -> x2.5 at level 10). It can ride back to an old den to add to it.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Fortress'
+    UpgradeDescription: 'Dens also grow danger prisms and super-shielded prisms.'
+  - Element: 3
+    AbilityLabel: 'Undertow'
+    AbilityDescription: 'Mass either side of the Pistol''s plane is pulled into it, from further with Space (pullReach, 40 u at rest -> 200 u at level 10). Danger, super-shielded and the pair''s own prisms never move.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Deep Undertow'
+    UpgradeDescription: 'Shielded prisms are pulled in too.'
+  - Element: 4
+    AbilityLabel: 'Dart'
+    AbilityDescription: 'Time is the Goby''s dart: how fast it flies and how soon the next is ready (dartPace, x1 at rest -> x2.2 at level 10 - a full dart takes 1 s at rest, under half a second at level 10). Darts lay the Pistol''s ground, so a quick Goby keeps the Pistol fed.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Phase Dart'
+    UpgradeDescription: 'The Goby''s darts pass through prisms.'
+  omniAbilityLabel: restocks the pair

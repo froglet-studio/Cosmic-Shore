@@ -37,6 +37,7 @@ namespace CosmicShore.Gameplay
     public sealed class ModePreviewRunner : MonoBehaviour
     {
         IRoundStats _stats;
+        Func<int> _metricOverride;
         ScoringMetric _metric;
         int _baseline;
         int _target;
@@ -70,9 +71,15 @@ namespace CosmicShore.Gameplay
         /// one is legal and simply produces a flight with no counter (a mode whose stat channel
         /// does not fire outside a real match still gets a flyable arena, which is most of the
         /// value).
+        ///
+        /// <para><paramref name="metricOverride"/> replaces the stat read with a LOCAL count, for
+        /// an objective whose real stat must not be written outside a match - a gate race's
+        /// <c>SwitchesThreaded</c> is the replicated scoring token on the persistent Player, so the
+        /// preview counts its own crossings (<see cref="ModePreviewGateCourse.Threaded"/>) and
+        /// hands the count in here. Read relative to the baseline, like the stat.</para>
         /// </summary>
         public void Begin(IRoundStats stats, ModePreviewDefinitionSO definition,
-                          Action<ModePreviewOutcome> onFinished)
+                          Action<ModePreviewOutcome> onFinished, Func<int> metricOverride = null)
         {
             if (!definition)
             {
@@ -81,6 +88,7 @@ namespace CosmicShore.Gameplay
             }
 
             _stats = stats;
+            _metricOverride = metricOverride;
             _metric = definition.ObjectiveMetric;
             _target = Mathf.Max(0, definition.ObjectiveTarget);
             _duration = Mathf.Max(0f, definition.DurationSeconds);
@@ -108,6 +116,7 @@ namespace CosmicShore.Gameplay
             IsRunning = false;
             _onFinished = null;
             _stats = null;
+            _metricOverride = null;
         }
 
         void Update()
@@ -142,9 +151,12 @@ namespace CosmicShore.Gameplay
             var callback = _onFinished;
             _onFinished = null;
             _stats = null;
+            _metricOverride = null;
             callback?.Invoke(outcome);
         }
 
-        int ReadMetric() => _stats != null ? ScoringMetrics.Read(_stats, _metric) : 0;
+        int ReadMetric() =>
+            _metricOverride != null ? _metricOverride()
+            : _stats != null ? ScoringMetrics.Read(_stats, _metric) : 0;
     }
 }

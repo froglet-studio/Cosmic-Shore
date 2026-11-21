@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6b97bb7cdcf023020943d0b3be05d08, type: 3}
+  m_Name: UITypeRoles
+  m_EditorClassIdentifier: 
+  aldrich: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
+  chakraPetchSemiBold: {fileID: 11400000, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
+  roles:
+  - role: 0
+    face: 0
+    size: 48
+    characterSpacing: 0
+    upperCase: 0
+    tabular: 0
+  - role: 1
+    face: 0
+    size: 36
+    characterSpacing: 0
+    upperCase: 0
+    tabular: 0
+  - role: 2
+    face: 0
+    size: 28
+    characterSpacing: 0
+    upperCase: 0
+    tabular: 0
+  - role: 3
+    face: 0
+    size: 22
+    characterSpacing: 0
+    upperCase: 0
+    tabular: 0
+  - role: 4
+    face: 0
+    size: 18
+    characterSpacing: 0
+    upperCase: 0
+    tabular: 0
+  - role: 5
+    face: 0
+    size: 15
+    characterSpacing: 0
+    upperCase: 0
+    tabular: 0
+  - role: 6
+    face: 1
+    size: 18
+    characterSpacing: 8
+    upperCase: 1
+    tabular: 1
+  - role: 7
+    face: 1
+    size: 14
+    characterSpacing: 8
+    upperCase: 1
+    tabular: 1
+  - role: 8
+    face: 1
+    size: 14
+    characterSpacing: 14
+    upperCase: 1
+    tabular: 1
+  - role: 9
+    face: 0
+    size: 44
+    characterSpacing: 0
+    upperCase: 0
+    tabular: 1
+  - role: 10
+    face: 0
+    size: 20
+    characterSpacing: 0
+    upperCase: 0
+    tabular: 1
+  - role: 11
+    face: 0
+    size: 15
+    characterSpacing: 0
+    upperCase: 0
+    tabular: 1

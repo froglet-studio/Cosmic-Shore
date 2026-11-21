@@ -123,8 +123,11 @@ MonoBehaviour:
   impactFlashIntensity: 14
   impactParticleBurst: 28
   goalParticleBurst: 120
-  minTrailWidth: 0.6
-  maxTrailWidth: 5
+  trailWidthAtRest: 0.7
+  trailWidthAtSpeed: 1.25
+  trailTimeAtRest: 0.3
+  trailTimeAtSpeed: 1.1
+  wakeDustPerUnit: 0.28
   minEmissionIntensity: 2.5
   maxEmissionIntensity: 11
   minLightRange: 25

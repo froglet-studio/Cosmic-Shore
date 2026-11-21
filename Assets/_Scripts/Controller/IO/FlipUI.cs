@@ -7,6 +7,9 @@ namespace CosmicShore.Gameplay
         void OnEnable()
         {
             PhoneFlipDetector.onPhoneFlip += OnPhoneFlip;
+            // A flip that happened while this was inactive (a menu screen switched off during
+            // freestyle on MobileLow, a modal opened after the flip) would otherwise be missed.
+            if (PhoneFlipDetector.HasFlipState) OnPhoneFlip(PhoneFlipDetector.LastFlipState);
         }
 
         void OnDisable()

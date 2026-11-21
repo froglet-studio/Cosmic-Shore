@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -20,8 +21,8 @@ namespace CosmicShore.UI
     /// </list>
     ///
     /// <para><b>Focus, not full screen.</b> Tapping the live window moves input from the UI to the
-    /// vessel (the AI hands over); tapping outside, Escape, or gamepad Start hands it back and the
-    /// AI resumes. Gamepad <b>B is deliberately NOT a release</b> — while flying, the pad belongs
+    /// vessel (the AI hands over); tapping outside (unless the mouse flies the vessel or a flight scheme has locked the cursor),
+    /// Escape, or gamepad Start hands it back and the AI resumes. Gamepad <b>B is deliberately NOT a release</b> — while flying, the pad belongs
     /// to the vessel, and B doubling as "close the modal" is exactly the input double-driving this
     /// platform's focus gating exists to prevent (see <see cref="AnyHasFocus"/>).</para>
     ///
@@ -30,6 +31,10 @@ namespace CosmicShore.UI
     /// </summary>
     public class ModePreviewWindow : MonoBehaviour
     {
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("Shown when there is no preview, or the build failed.")]
+        [SerializeField] string unavailableLine = "LEVEL PREVIEW\nNOT AVAILABLE";
+
         [Header("Surface")]
         [SerializeField, Tooltip("The RawImage inside the modal's preview frame the live camera " +
                                  "renders into.")]
@@ -57,6 +62,27 @@ namespace CosmicShore.UI
                                  "hand a card's small window a needlessly large surface.")]
         [Min(64)] int maxRenderHeight = 1080;
 
+        [SerializeField, Min(1f), Tooltip("The texture is this many times WIDER than the frame it starts in, and the " +
+                                          "surface shows its centre. A frame that later grows sideways (the configure " +
+                                          "window's FULL SCREEN, which extends the preview as a tray over the settings " +
+                                          "column) then shows more of the world instead of stretching the picture: a " +
+                                          "live texture cannot be swapped mid-session. 1 = the frame's own size.")]
+        float textureWidthScale = 1f;
+
+        [Header("Tap to fly")]
+        [SerializeField, Tooltip("Take focus only on a DOUBLE tap of the surface. For a surface that fills the window " +
+                                 "behind its settings, where a single stray tap would otherwise launch the player " +
+                                 "into the game. A FLY control (RequestFocus) still goes in on one press.")]
+        bool doubleTapToFocus;
+        [SerializeField, Min(0.1f), Tooltip("Seconds between the two taps of a double tap.")]
+        float doubleTapSeconds = 0.4f;
+
+        [Header("Guided path")]
+        [SerializeField, Tooltip("What a guided path spotlights to say 'fly here' (optional; empty = the surface). " +
+                                 "A window whose surface fills the screen points this at its FLY control: a " +
+                                 "full-screen spotlight hole dims nothing and leaves its caption nowhere to sit.")]
+        RectTransform guideTarget;
+
         RenderTexture _renderTexture;
         RectTransform _surfaceRect;
         int _textureHeight;
@@ -72,6 +98,20 @@ namespace CosmicShore.UI
         /// </summary>
         public static bool AnyHasFocus { get; private set; }
 
+        static ModePreviewWindow s_focused;
+
+        /// <summary>
+        /// Hand the stick back from whichever preview window holds it (no-op when none does). For a deliberate move
+        /// elsewhere in the menu - a window opened over a flying preview - which must end the flight rather than be
+        /// refused: the screens hide by alpha, so a preview on a screen the player leaves is never disabled and would
+        /// otherwise hold the pad, and every modal behind it, forever (2026-10-19 play test).
+        /// </summary>
+        public static void ReleaseAnyFocus()
+        {
+            if (s_focused) s_focused.ReleaseFocus();
+            else AnyHasFocus = false;
+        }
+
         /// <summary>Raised when the player taps the live window to take control.</summary>
         public event Action OnFocusRequested;
 
@@ -80,6 +120,10 @@ namespace CosmicShore.UI
 
         /// <summary>True while input belongs to this window rather than the UI.</summary>
         public bool HasFocus { get; private set; }
+
+        /// <summary>True while the focused vessel flies on the mouse (a one-thumb hull), so a
+        /// mouse button is a flight control and never "tapped outside".</summary>
+        bool _mouseFlies;
 
         /// <summary>True while the live gameplay camera is drawing here.</summary>
         public bool IsLive => _state == State.Live;
@@ -126,9 +170,26 @@ namespace CosmicShore.UI
 
         void Update()
         {
-            if (HasFocus && WantsRelease())
+            if (HasFocus && !HoldRelease && WantsRelease())
                 ReleaseFocus();
         }
+
+        /// <summary>
+        /// While true, the player's own release gestures (Escape, gamepad Start, a tap outside)
+        /// do nothing: the microgame's first Lesson is forced (Docs/ModePreview/TRAINING_PLAN.md
+        /// D2). It holds ONLY those gestures - every other route out (the card changing, the modal
+        /// closing, a launch, a scene change) still releases through <see cref="ReleaseFocus"/>,
+        /// so the hold can delay a player and never trap them. Set by the session from
+        /// <c>DrillRunner.HoldsExit</c>.
+        /// </summary>
+        public bool HoldRelease { get; set; }
+
+        /// <summary>The live picture's rect - what an overlay drawn on the picture parents to.</summary>
+        public RectTransform SurfaceRect => _surfaceRect ? _surfaceRect : transform as RectTransform;
+
+        /// <summary>What a guided path spotlights to send the player into this preview: the authored
+        /// <see cref="guideTarget"/> while it is on screen, otherwise the surface.</summary>
+        public RectTransform GuideRect => guideTarget && guideTarget.gameObject.activeInHierarchy ? guideTarget : SurfaceRect;
 
         // ── States (driven by the session) ───────────────────────────────────
 
@@ -155,10 +216,88 @@ namespace CosmicShore.UI
 
         bool _focusEnabled = true;
 
+        /// <summary>
+        /// Build whatever this window needs and does not have: the render surface, the button
+        /// that asks for focus, and the status label.
+        ///
+        /// <para>For a window AUTHORED in a prefab (the arcade modal's) every field is already set
+        /// and this is a no-op - it only ever fills gaps. It exists for the Maelstrom hub, whose
+        /// preview panel is a plain rect in a scene that is re-laid regularly: a window that
+        /// silently renders nothing because one of three references was not dragged in is the
+        /// failure mode this whole screen has already shipped once (its countdown component was
+        /// never placed at all). Structural beats authored wherever the authored version has no
+        /// art to preserve, and a render surface has none.</para>
+        ///
+        /// <para>Safe to call repeatedly.</para>
+        /// </summary>
+        public void EnsureSurface()
+        {
+            var host = transform as RectTransform;
+            if (!host)
+            {
+                CSDebug.LogError("[ModePreviewWindow] EnsureSurface needs a RectTransform - this " +
+                                 "window is not on a UI object, so it cannot build its surface.");
+                return;
+            }
+
+            if (!surface)
+            {
+                var go = new GameObject("PreviewSurface", typeof(RectTransform), typeof(RawImage));
+                var rect = (RectTransform)go.transform;
+                rect.SetParent(host, false);
+                Stretch(rect);
+
+                surface = go.GetComponent<RawImage>();
+                surface.color = Color.white;
+                surface.enabled = false;   // nothing to draw until a camera says so
+            }
+
+            _surfaceRect = surface.rectTransform;
+
+            if (!focusButton)
+            {
+                // On the surface itself, so the whole frame is the target. A RawImage is a
+                // Graphic, so it raycasts - no extra transparent Image is needed.
+                focusButton = surface.gameObject.GetComponent<Button>();
+                if (!focusButton) focusButton = surface.gameObject.AddComponent<Button>();
+                focusButton.targetGraphic = surface;
+                focusButton.transition = Selectable.Transition.None;
+                focusButton.onClick.RemoveListener(HandleFocusButton);
+                focusButton.onClick.AddListener(HandleFocusButton);
+            }
+
+            if (!statusLabel)
+            {
+                var go = new GameObject("PreviewStatus", typeof(RectTransform));
+                var rect = (RectTransform)go.transform;
+                rect.SetParent(host, false);
+                Stretch(rect);
+
+                var label = go.AddComponent<TextMeshProUGUI>();
+                label.alignment = TextAlignmentOptions.Center;
+                label.raycastTarget = false;
+                label.fontSize = 28f;
+                label.color = new Color(1f, 1f, 1f, 0.65f);
+                statusLabel = label;
+            }
+
+            // Re-assert whatever state the window is in, now that it has the pieces to show it.
+            Apply(_state);
+        }
+
+        static void Stretch(RectTransform rect)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.localScale = Vector3.one;
+        }
+
         /// <summary>"LEVEL PREVIEW NOT AVAILABLE" — no definition, or the build failed.</summary>
         public void ShowUnavailable()
         {
-            if (statusLabel) statusLabel.text = "LEVEL PREVIEW\nNOT AVAILABLE";
+            if (statusLabel) statusLabel.text = unavailableLine;
             Apply(State.Unavailable);
         }
 
@@ -205,21 +344,46 @@ namespace CosmicShore.UI
 
         // ── Focus ────────────────────────────────────────────────────────────
 
+        float _lastTap = -10f;
+
         void HandleFocusButton()
+        {
+            if (doubleTapToFocus)
+            {
+                float now = Time.unscaledTime;
+                bool second = now - _lastTap <= doubleTapSeconds;
+                _lastTap = second ? -10f : now;
+                if (!second) return;
+            }
+            Request();
+        }
+
+        void Request()
         {
             if (!_focusEnabled || _state != State.Live || HasFocus) return;
             OnFocusRequested?.Invoke();
         }
 
         /// <summary>
+        /// Ask for focus exactly as a tap on the surface does. For a separate "fly" control the pad
+        /// can reach: the rev-3 configure window draws this surface full-bleed BEHIND its settings,
+        /// where it cannot also be the first control in focus order.
+        /// </summary>
+        public void RequestFocus() => Request();
+
+        /// <summary>
         /// Grant focus. Called by the session once it has actually handed input to the vessel —
         /// the window never grants its own focus.
         /// </summary>
-        public void GrantFocus()
+        /// <param name="mouseFlies">The vessel flies on the mouse (a one-thumb hull). Its mouse
+        /// buttons then never release focus, whichever input scheme holds the frame.</param>
+        public void GrantFocus(bool mouseFlies = false)
         {
             if (HasFocus) return;
             HasFocus = true;
+            _mouseFlies = mouseFlies;
             AnyHasFocus = true;
+            s_focused = this;
             RefreshHint();
         }
 
@@ -229,30 +393,38 @@ namespace CosmicShore.UI
             if (!HasFocus) return;
             HasFocus = false;
             AnyHasFocus = false;
+            if (s_focused == this) s_focused = null;
             RefreshHint();
             OnFocusReleased?.Invoke();
         }
 
         /// <summary>
-        /// Focus is given up by Escape, gamepad Start, or a tap outside the window. Read from
+        /// Focus is given up by Escape, gamepad Select / View, or a tap outside the window. Read from
         /// the devices directly rather than through the EventSystem, because a focused window has
         /// navigation events switched off — that is the point of focus.
         ///
         /// Deliberately NOT gamepad B / East: while flying, every face button belongs to the
-        /// vessel. Start mirrors the freestyle exit button and is the one pad button flight
-        /// never uses.
+        /// vessel. Select mirrors the freestyle exit (OverviewGesture) and flight never uses it;
+        /// it was Start until Start became Settings on the app shell (2026-10-21).
         /// </summary>
         bool WantsRelease()
         {
             var pad = Gamepad.current;
-            if (pad != null && pad.startButton.wasPressedThisFrame)
+            if (pad != null && pad.selectButton.wasPressedThisFrame)
                 return true;
 
             var keyboard = Keyboard.current;
             if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
                 return true;
 
-            if (PressedOutsideWindow(Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame,
+            // Not while the mouse flies the ship. On a one-thumb hull the LEFT BUTTON is a flight
+            // control (the Sparrow's guns) and a locked cursor sits mid-screen, so testing it here
+            // read shots as "pressed outside the window" whenever the window sat off centre, and
+            // ended the flight. The cursor lock alone was not enough: it lapses for a frame
+            // whenever another scheme takes over (a connected pad's stick, a pause), and the click
+            // that hands flight back to the mouse lands in that frame. Escape still releases.
+            if (!_mouseFlies && Cursor.lockState == CursorLockMode.None &&
+                PressedOutsideWindow(Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame,
                     Mouse.current?.position.ReadValue() ?? default))
                 return true;
 
@@ -317,7 +489,10 @@ namespace CosmicShore.UI
 
             float aspect = 16f / 9f;
             if (_surfaceRect && _surfaceRect.rect.height > 1f)
-                aspect = Mathf.Clamp(_surfaceRect.rect.width / _surfaceRect.rect.height, 0.25f, 4f);
+                // 8:1, not 4:1: the configure window's preview is a wide banner (~6.3:1); a 4:1 texture
+                // drawn into it stretched the arena sideways by 1.6x.
+                aspect = Mathf.Clamp(_surfaceRect.rect.width / _surfaceRect.rect.height * Mathf.Max(1f, textureWidthScale),
+                                     0.25f, 8f);
 
             _textureHeight = height;
             _renderTexture = new RenderTexture(Mathf.Max(64, Mathf.RoundToInt(height * aspect)), height, 24)
@@ -327,6 +502,32 @@ namespace CosmicShore.UI
                 filterMode = FilterMode.Bilinear,
                 useMipMap = false,
             };
+            _textureAspect = aspect;
+            FitTextureToSurface();
+        }
+
+        float _textureAspect;
+
+        /// <summary>The surface's frame changed size (the configure window's tray): show the matching part of the texture.</summary>
+        void OnRectTransformDimensionsChange() => FitTextureToSurface();
+
+        /// <summary>
+        /// Shows the centre of a texture wider than the surface, never stretched: the visible width is the surface's aspect
+        /// over the texture's (<see cref="VisibleWidth"/>). With <see cref="textureWidthScale"/> at 1 it is the whole texture.
+        /// </summary>
+        void FitTextureToSurface()
+        {
+            if (!surface || !_surfaceRect || _textureAspect <= 0f) return;
+            var r = _surfaceRect.rect;
+            float w = VisibleWidth(r.width, r.height, _textureAspect);
+            surface.uvRect = new Rect(0.5f - w / 2f, 0f, w, 1f);
+        }
+
+        /// <summary>The share of the texture's width a surface of this size shows undistorted (0..1). Pure, for tests.</summary>
+        internal static float VisibleWidth(float surfaceWidth, float surfaceHeight, float textureAspect)
+        {
+            if (surfaceHeight <= 1f || textureAspect <= 0f) return 1f;
+            return Mathf.Clamp01(surfaceWidth / surfaceHeight / textureAspect);
         }
 
         /// <summary>The surface's height in real screen pixels, clamped to the authored ceiling.</summary>

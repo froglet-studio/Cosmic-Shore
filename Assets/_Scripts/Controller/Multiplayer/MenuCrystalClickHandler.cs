@@ -3,6 +3,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
+using System.Collections.Generic;
 using System.Threading;
 using Unity.Netcode;
 using UnityEngine;
@@ -13,9 +14,11 @@ namespace CosmicShore.Gameplay
     /// Toggles between menu state (autopilot + menu UI) and freestyle state
     /// (player control + freestyle UI) on Menu_Main.
     ///
-    /// Operates exclusively on <see cref="GameDataSO.LocalPlayer"/> - in multiplayer,
-    /// each client has its own instance controlling only the locally-owned vessel.
-    /// Other clients' vessels are unaffected by this toggle.
+    /// The toggle operates exclusively on <see cref="GameDataSO.LocalPlayer"/> - in multiplayer,
+    /// each client has its own instance controlling only the locally-owned vessel, and other
+    /// clients' vessels are unaffected by it. (The device-tier trail policy below is the one
+    /// exception: it holds trail creation on EVERY vessel in this device's scene, because a party
+    /// member's vessel lays its trail on this device too.)
     ///
     /// Raises SOAP transition bracket events via <see cref="MenuFreestyleEventsContainerSO"/>
     /// so decoupled systems (<see cref="Core.MainMenuController"/>, ScreenSwitcher,
@@ -69,8 +72,25 @@ namespace CosmicShore.Gameplay
         // (e.g. ArcadeScreen at 0 stays at 0, not forced to 1).
         float[] _savedMenuAlphas;
 
+        // Device-tier trail policy (see ApplyTierTrailPolicy).
+        const float TierTrailPolicySeconds = 1f;
+        float _nextTierTrailPolicyAt;
+        readonly HashSet<VesselPrismController> _tierHeld = new();
+        readonly Dictionary<Cell, bool> _cellTrailWaiting = new();
+        readonly List<Cell> _deadCells = new();
+        bool _wanderSeen;
+        bool _previewSeen;
+
         /// <summary>Whether the menu is currently in freestyle state.</summary>
         public bool IsInFreestyle => _isInFreestyle;
+
+        /// <summary>
+        /// True while a menu&lt;-&gt;freestyle blend is still running. Not the same question as
+        /// <see cref="IsInFreestyle"/>, which flips at the START of a transition (deliberately -
+        /// see the comment in TransitionToMenu), so anything that needs "the appshell has actually
+        /// settled" has to ask this instead of inferring it from the flag.
+        /// </summary>
+        public bool IsTransitioning => _isTransitioning;
 
         void OnEnable()
         {
@@ -94,6 +114,8 @@ namespace CosmicShore.Gameplay
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
+
+            ReleaseTierTrailHolds();
         }
 
         /// <summary>
@@ -115,6 +137,20 @@ namespace CosmicShore.Gameplay
             ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
         }
 
+        void Update()
+        {
+            // The two exemptions apply the frame they start or stop, not up to a second later: a
+            // Wanderway tether begun under a held pen would start with no trail to ride.
+            bool wander = WanderwayRun.AnyRunning, preview = ModePreviewSession.AnyActive;
+            bool edge = wander != _wanderSeen || preview != _previewSeen;
+            _wanderSeen = wander;
+            _previewSeen = preview;
+
+            if (!edge && Time.unscaledTime < _nextTierTrailPolicyAt) return;
+            _nextTierTrailPolicyAt = Time.unscaledTime + TierTrailPolicySeconds;
+            ApplyTierTrailPolicy();
+        }
+
         /// <summary>
         /// Toggles between menu and freestyle states.
         /// Safe to call from a UI Button - silently ignored while transitioning,
@@ -124,6 +160,14 @@ namespace CosmicShore.Gameplay
         public void ToggleTransition()
         {
             if (_isTransitioning) return;
+
+            // Entering is refused while the boot veil still covers the menu; leaving never is.
+            if (!_isInFreestyle && !EntryAllowed(EnvironmentLoadVeil.IsCovering))
+            {
+                CSDebug.LogVerbose(CSLogChannel.MenuUI,
+                    "[MenuCrystalClickHandler] Enter freestyle ignored: the boot veil is still up.");
+                return;
+            }
 
             var localPlayer = gameData.LocalPlayer;
             if (localPlayer?.Vessel == null) return;
@@ -138,6 +182,15 @@ namespace CosmicShore.Gameplay
             else
                 TransitionToFreestyle().Forget();
         }
+
+        /// <summary>
+        /// Whether freestyle may be ENTERED now. The boot world builds behind
+        /// <see cref="EnvironmentLoadVeil"/>'s opaque cover before the menu is revealed, and Home's full-screen
+        /// surface flies only on a double tap (<c>DoubleTapRelay</c>); this closes the routes that bypass both
+        /// (the pad's Select, Submit, the toybox modals), so a press during the Garland intro cannot launch the
+        /// player into the HyperSea before the menu has appeared. Nothing is gated once the menu is revealed.
+        /// </summary>
+        internal static bool EntryAllowed(bool bootVeilCovering) => !bootVeilCovering;
 
         #region Transitions
 
@@ -166,6 +219,7 @@ namespace CosmicShore.Gameplay
             }
 
             _isInFreestyle = true;
+            ApplyTierTrailPolicy();
 
             // Save current menu alphas so we can restore them exactly when exiting freestyle.
             // This preserves hidden panels (e.g. ArcadeScreen at alpha 0).
@@ -201,12 +255,28 @@ namespace CosmicShore.Gameplay
             var ct = _cts.Token;
             var player = gameData.LocalPlayer;
 
+            // a crew seat (the Wrasse, the Ratel, a gunner, the Pistol, the jacks) gives its human back first, or it keeps
+            // reading the touchscreen and pad under the menu (it took the hull itself, so this park looks like its own)
+            CrewSeat.ReturnHumansToHull(player.Vessel);
             player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 
             // Control is gone as of the line above, so the segment closes here - not after the
             // blend. Banking it now also means the vessel it is attributed to is still current.
             FlightClock.OnFreestyleExited();
+
+            // Freestyle is OVER as of the two lines above - what remains is a camera blend, not
+            // flight. Clearing here mirrors the enter path (which sets the flag before raising
+            // its own start event) and is what makes this flag safe to read from the event below:
+            // every subscriber that asks "are we still flying?" while handling
+            // OnMenuStateTransitionStart used to be told YES, because the clear sat after the
+            // await. ScreenSwitcher.HandleExitFreestyle is the one that paid for it - it
+            // recomputes the home hub's visibility from that answer, found freestyle still
+            // "live", and left the hub row faded out and non-interactable with nothing
+            // scheduled to recompute it. ToyboxController already treated
+            // OnMenuStateTransitionStart as the end of freestyle; this brings the flag into line.
+            _isInFreestyle = false;
+            ApplyTierTrailPolicy();
 
             // Raise SOAP event early so the camera blend starts immediately.
             // The camera controller freezes the CM PlayerCam framing in the vessel's local
@@ -223,7 +293,6 @@ namespace CosmicShore.Gameplay
                               ignoreTimeScale: true, cancellationToken: ct));
 
             freestyleEvents.OnMenuStateTransitionEnd.Raise();
-            _isInFreestyle = false;
             _isTransitioning = false;
         }
 
@@ -233,12 +302,116 @@ namespace CosmicShore.Gameplay
         /// Blend duration to use for this transition. When a MainMenuCameraController is
         /// wired, its ActiveTransitionDuration (per-mode) wins - so CrystalOrbit reads long
         /// while vessel-follow modes read short. Otherwise falls back to the serialized value.
+        ///
+        /// <para>Public because it is not only a camera number: with
+        /// <see cref="lockInputDuringEnterTransition"/> set, it is also exactly how long the
+        /// vessel COASTS before the pilot gets the stick. Anything that places the vessel for
+        /// the arrival (the Toy Box's Navigate) has to know that, or it aims at where the ship
+        /// starts instead of where it ends up.</para>
         /// </summary>
-        float CurrentTransitionDuration()
+        public float TransitionDuration =>
+            cameraController ? cameraController.ActiveTransitionDuration : cameraTransitionDuration;
+
+        float CurrentTransitionDuration() => TransitionDuration;
+
+        #region Device-tier trail policy
+
+        /// <summary>
+        /// The menu's trail on a device tier that asks for less (MobileLow; Docs/PLATFORM_UNIFICATION.md
+        /// §3.6): the lava lamp behind the menu lays NO trail, and freestyle trail WAITS while the
+        /// pilot's cell holds more than <see cref="PlatformProfileSO.FreestyleCellPrismBudget"/> live
+        /// prisms, resuming at <see cref="PlatformProfileSO.FreestyleCellPrismResume"/> once the food
+        /// web has grazed room. Both are creation-side (<see cref="VesselPrismController.SetTierHold"/>):
+        /// a spawner that waits, never a cap - nothing already laid is touched. A live Wanderway run
+        /// is exempt, because its tether and the way home riding it need the trail, and so is a
+        /// mode preview, which shows a mode as it plays (<see cref="ModePreviewSession.AnyActive"/>).
+        ///
+        /// On a tier that lays a lava-lamp trail (Desktop, MobileHigh), that trail waits at the same
+        /// budget as freestyle (B45, 2026-11-21): unbounded, it made every load out of the menu freeze
+        /// longer the longer the player had idled there.
+        ///
+        /// Applies to every vessel in the scene, not just the local one: a party member's vessel
+        /// lays its trail on this device too. A tier that sets neither field returns before touching
+        /// anything.
+        /// </summary>
+        void ApplyTierTrailPolicy()
         {
-            if (cameraController) return cameraController.ActiveTransitionDuration;
-            return cameraTransitionDuration;
+            var profile = PlatformProfile.Current;
+            if (!profile || (!profile.MenuAutopilotLaysNoTrail && profile.FreestyleCellPrismBudget <= 0)) return;
+
+            var players = gameData ? gameData.Players : null;
+            if (players == null) return;
+
+            PruneDeadCells();
+
+            foreach (var player in players)
+            {
+                var controller = TrailControllerOf(player);
+                if (!controller) continue;
+
+                // The lava lamp waits at the same budget as freestyle (B45): its trail grew about 2,500 prisms a
+                // minute with no ceiling, and every scene load out of the menu froze for longer the longer the
+                // player had sat there (13.4 s after 17 minutes; Relay drops a host at 10 s).
+                bool hold = !ModePreviewSession.AnyActive
+                            && (_isInFreestyle
+                                ? CellTrailWaits(profile, controller.transform.position)
+                                : profile.MenuAutopilotLaysNoTrail || CellTrailWaits(profile, controller.transform.position));
+
+                controller.SetTierHold(hold);
+                if (hold) _tierHeld.Add(controller);
+                else _tierHeld.Remove(controller);
+            }
         }
+
+        /// <summary>The cell's freestyle trail budget, with hysteresis: waiting starts at the
+        /// budget and ends at the (lower) resume count, so the pen does not flicker at the line.</summary>
+        bool CellTrailWaits(PlatformProfileSO profile, Vector3 at)
+        {
+            int budget = profile.FreestyleCellPrismBudget;
+            if (budget <= 0 || WanderwayRun.AnyRunning) return false;
+
+            var cell = Cell.FindCellContaining(at) ?? Cell.FindNearestActiveCell(at);
+            if (!cell) return false;
+
+            int live = cell.LiveBlockCount;
+            _cellTrailWaiting.TryGetValue(cell, out bool waiting);
+            waiting = waiting ? live >= profile.FreestyleCellPrismResume : live >= budget;
+            _cellTrailWaiting[cell] = waiting;
+            return waiting;
+        }
+
+        void PruneDeadCells()
+        {
+            foreach (var cell in _cellTrailWaiting.Keys)
+                if (!cell) _deadCells.Add(cell);
+            foreach (var cell in _deadCells)
+                _cellTrailWaiting.Remove(cell);
+            _deadCells.Clear();
+        }
+
+        void ReleaseTierTrailHolds()
+        {
+            foreach (var controller in _tierHeld)
+                if (controller) controller.SetTierHold(false);
+            _tierHeld.Clear();
+            _cellTrailWaiting.Clear();
+        }
+
+        /// <summary>The player's trail controller, or null. Each hop is checked for a destroyed
+        /// object: the accessors resolve lazily (GetComponent / GetOrAdd), which a vessel torn
+        /// down by a vessel swap would throw on.</summary>
+        static VesselPrismController TrailControllerOf(IPlayer player)
+        {
+            if (!Alive(player)) return null;
+            var vessel = player.Vessel;
+            if (!Alive(vessel)) return null;
+            var status = vessel.VesselStatus;
+            return Alive(status) ? status.VesselPrismController : null;
+        }
+
+        static bool Alive(object o) => o is Object unityObject ? (bool)unityObject : o != null;
+
+        #endregion
 
         #region Multiplayer Helpers
 

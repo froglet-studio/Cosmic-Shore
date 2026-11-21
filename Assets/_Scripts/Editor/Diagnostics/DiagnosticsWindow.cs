@@ -10,20 +10,14 @@ using UnityEngine;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// FrogletTools ▸ Diagnostics — one window, four tabs:
+    /// FrogletTools ▸ Diagnostics — one window, two tabs:
     ///
     /// <para><b>Crash Detector</b> — the UI over <see cref="CrashDetectorMonitor"/>: whether the
     /// watchdog is running, the previous session's verdict, the crash reports on disk, and the
     /// machine-local settings.</para>
     ///
-    /// <para><b>Bug Ledger</b> — the UI over <see cref="BugLedger"/>: the team's live issue list
-    /// with auto-capture, fix-then-validate lifecycle, and manual filing
-    /// (<see cref="BugLedgerView"/>).</para>
-    ///
-    /// <para><b>Stage &amp; Push</b> — the ledger's own version-control surface
-    /// (<see cref="BugLedgerStageView"/> over <see cref="BugLedgerPublisher"/>): the live store is
-    /// gitignored, and this tab is the ONLY route by which ledger data reaches git — staged
-    /// per-issue, committed and pushed with a pathspec limited to BugLedger/.</para>
+    /// <para>The Bug Ledger has NO tab (removed 2026-10-15): it runs unseen, and its only UI is the
+    /// automatic after-play send (<see cref="BugHuntAutoSend"/>).</para>
     ///
     /// <para><b>Compile Timing</b> — opt-in recorder of compile + domain-reload seconds per edit
     /// (the measurement behind Docs/ASSEMBLY_SPLIT.md).</para>
@@ -32,9 +26,9 @@ namespace CosmicShore.Editor
     /// </summary>
     public sealed class DiagnosticsWindow : EditorWindow
     {
+        // 1 and 2 were the retired Bug Ledger and Stage & Push tabs; a saved _tab of either falls
+        // through to the crash tab.
         const int CrashTab = 0;
-        const int BugsTab = 1;
-        const int StageTab = 2;
         const int TimingTab = 3;
 
         [SerializeField] int _tab = CrashTab;
@@ -42,25 +36,17 @@ namespace CosmicShore.Editor
         Vector2 _scroll;
         string[] _reports = Array.Empty<string>();
         long _journalBytes;
-        BugLedgerView _bugView;
-        BugLedgerStageView _stageView;
 
         /// <summary>Set by a button, run after the GUI pass — mutating state mid-layout throws.</summary>
         Action _deferred;
 
-        [MenuItem("FrogletTools/Diagnostics/Crash Detector", false, 10)]
+        [MenuItem("FrogletTools/Diagnostics/Crash Detector", false, 130)]
         [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 4,
             Description = "Editor crash watchdog — journals errors off-thread, reports abnormal exits on the next launch.",
             DocPath = "Docs/DIAGNOSTICS.md#the-crash-detector")]
         public static void OpenCrashDetector() => Open(CrashTab);
 
-        [MenuItem("FrogletTools/Diagnostics/Bug Ledger", false, 11)]
-        [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 4,
-            Description = "Shared committable bug list — red errors file themselves, and a fix only closes once the game validates it.",
-            DocPath = "Docs/DIAGNOSTICS.md#the-bug-ledger")]
-        public static void OpenBugLedger() => Open(BugsTab);
-
-        [MenuItem("FrogletTools/Diagnostics/Compile Timing", false, 12)]
+        [MenuItem("FrogletTools/Diagnostics/Compile Timing", false, 132)]
         [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 2,
             Description = "Record compile + domain-reload seconds per edit, and which assemblies rebuilt.",
             DocPath = "Docs/ASSEMBLY_SPLIT.md#measuring")]
@@ -77,21 +63,7 @@ namespace CosmicShore.Editor
 
         void OnEnable() => Refresh();
 
-        void OnFocus()
-        {
-            // A pull or a teammate's push may have changed the issue store while we were away.
-            BugLedger.RefreshFromDisk();
-            Refresh();
-        }
-
-        void OnInspectorUpdate()
-        {
-            // The ledger mutates from a background worker; poll its stamp instead of marshaling
-            // events across threads. OnInspectorUpdate is ~10 Hz — cheap and plenty (and it is
-            // what animates the publisher's progress bar).
-            if (_tab == BugsTab && _bugView is { NeedsRepaint: true }) Repaint();
-            else if (_tab == StageTab && _stageView is { NeedsRepaint: true }) Repaint();
-        }
+        void OnFocus() => Refresh();
 
         void Refresh()
         {
@@ -110,8 +82,6 @@ namespace CosmicShore.Editor
                 "Diagnostics",
                 _tab switch
                 {
-                    BugsTab => "The team's live bug list — errors file themselves into the local ledger, and a fix is only believed once the game stays clean.",
-                    StageTab => "The ledger's own version control — pick what to publish, comment it, and push. Only BugLedger/ files ever move.",
                     TimingTab => "Records what an edit costs — compile seconds, domain-reload seconds, and which assemblies Unity rebuilt.",
                     _ => "Watches this editor for abnormal exits — even hangs and hard kills — and writes a report to Logs/CrashDetector/ on the next launch.",
                 },
@@ -119,17 +89,7 @@ namespace CosmicShore.Editor
 
             DrawTabBar();
 
-            if (_tab == BugsTab)
-            {
-                _bugView ??= new BugLedgerView();
-                _bugView.Draw(action => _deferred = action, () => _tab = StageTab);
-            }
-            else if (_tab == StageTab)
-            {
-                _stageView ??= new BugLedgerStageView();
-                _stageView.Draw(action => _deferred = action);
-            }
-            else if (_tab == TimingTab)
+            if (_tab == TimingTab)
             {
                 DrawTimingTab();
             }
@@ -161,22 +121,6 @@ namespace CosmicShore.Editor
                     Refresh();
                 }
                 GUILayout.Space(4f);
-                if (FrogletEditorPalette.ColorButton("Bug Ledger",
-                        FrogletEditorPalette.ColorFor(FrogletToolCategory.Diagnostics), 96f, 22f,
-                        outline: _tab != BugsTab) && _tab != BugsTab)
-                {
-                    _tab = BugsTab;
-                    GUI.FocusControl(null);
-                }
-                GUILayout.Space(4f);
-                if (FrogletEditorPalette.ColorButton("Stage & Push",
-                        FrogletEditorPalette.ColorFor(FrogletToolCategory.Diagnostics), 104f, 22f,
-                        outline: _tab != StageTab) && _tab != StageTab)
-                {
-                    _tab = StageTab;
-                    GUI.FocusControl(null);
-                }
-                GUILayout.Space(4f);
                 if (FrogletEditorPalette.ColorButton("Compile Timing",
                         FrogletEditorPalette.ColorFor(FrogletToolCategory.Diagnostics), 116f, 22f,
                         outline: _tab != TimingTab) && _tab != TimingTab)
@@ -190,8 +134,6 @@ namespace CosmicShore.Editor
                         outline: true))
                     _deferred = () => FrogletDocLinks.Open(_tab switch
                     {
-                        BugsTab => "Docs/DIAGNOSTICS.md#the-bug-ledger",
-                        StageTab => "Docs/DIAGNOSTICS.md#staging-and-pushing",
                         TimingTab => "Docs/ASSEMBLY_SPLIT.md#measuring",
                         _ => "Docs/DIAGNOSTICS.md#the-crash-detector",
                     });
@@ -374,8 +316,8 @@ namespace CosmicShore.Editor
                         "Reveal in the file browser.", outline: true))
                     _deferred = () => EditorUtility.RevealInFinder(reportPath);
                 if (FrogletEditorPalette.ColorButton(file, "File Bug", FrogletEditorPalette.Warn,
-                        "Track this crash as a Bug Ledger issue (committable, so the team sees it). " +
-                        "Filing the same report twice updates one issue.", outline: true))
+                        "Track this crash as a bug. It goes to Claude with your next \"Send to Claude\" " +
+                        "after a play test. Filing the same report twice updates one issue.", outline: true))
                     _deferred = () =>
                     {
                         // Tool-id dedupe: the report filename is the stable key, so a second click
@@ -387,7 +329,6 @@ namespace CosmicShore.Editor
                             $"Filed from the crash detector. Local report: {reportPath}\n" +
                             "Paste the relevant journal/log tail here so the issue travels with the evidence.",
                             BugLedgerIssueSeverity.Blocker);
-                        _tab = BugsTab;
                         Repaint();
                     };
                 if (FrogletEditorPalette.ColorButton(delete, "✕", FrogletEditorPalette.Error,

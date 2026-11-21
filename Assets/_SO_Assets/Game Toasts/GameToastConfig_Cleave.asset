@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86d1715b8f104fcc87cb60e015d4b563, type: 3}
+  m_Name: GameToastConfig_Cleave
+  m_EditorClassIdentifier:
+  gameMode: 39
+  toasts:
+  - situation: 83
+    messageTemplate: '<b>{0}</b> has cut {1} prisms'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 200
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 50
+    messageTemplate: '{0} has cut a quarter of the way to {2}'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 51
+    messageTemplate: '{0} is halfway through - {1}/{2}'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 52
+    messageTemplate: '{0} takes the lead - {1}/{2}'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 30
+    messageTemplate: 'Comeback system is on'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 0.9
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1

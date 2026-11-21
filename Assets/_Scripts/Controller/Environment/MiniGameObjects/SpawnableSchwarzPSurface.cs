@@ -55,11 +55,20 @@ namespace CosmicShore.Gameplay
         {
             public Vector3 Position;
             public Quaternion Rotation;
+            public Vector3 Scale;
             public Domains BlockDomain;
         }
 
         // Cache nodes for per-block domain assignment in SpawnLeafObjects
         private List<SurfaceNode> _cachedNodes;
+
+        /// <summary>Blocks are sized to this fraction of their exact flush size, so float noise
+        /// never turns two faces that touch into a clip.</summary>
+        const float FlushMargin = 0.995f;
+
+        /// <summary>The smallest axis the prism prefab lays (its PrismScaleAnimator window grows
+        /// anything thinner back to this), so a flush block is never sized under it.</summary>
+        const float MinPrismAxis = 0.5f;
 
         protected override SpawnTrailData[] GenerateTrailData()
         {
@@ -69,7 +78,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < nodes.Count; i++)
             {
                 var node = nodes[i];
-                points[i] = new SpawnPoint(node.Position, node.Rotation, blockScale);
+                points[i] = new SpawnPoint(node.Position, node.Rotation, node.Scale);
             }
 
             // Store node data for SpawnLeafObjects to use for per-block domain coloring
@@ -78,12 +87,28 @@ namespace CosmicShore.Gameplay
             return new[] { new SpawnTrailData(points, false, domain) };
         }
 
+        // Per grid index along an axis: the sample's angle, its cosine (f's term) and sine (the
+        // gradient's), computed once per generation instead of three times per grid point.
+        float[] _angle, _cos, _sin;
+        int _samples;
+
         List<SurfaceNode> ComputeSurfacePositions()
         {
             var result = new List<SurfaceNode>();
 
             int totalSamples = periods * samplesPerPeriod;
-            float halfExtent = periods * Mathf.PI; // f uses raw radians; one period = 2π
+            _samples = totalSamples;
+            _angle = new float[totalSamples];
+            _cos = new float[totalSamples];
+            _sin = new float[totalSamples];
+            for (int i = 0; i < totalSamples; i++)
+            {
+                // Map grid index to [0, periods*2π)
+                _angle[i] = 2f * Mathf.PI * i / samplesPerPeriod;
+                _cos[i] = Mathf.Cos(_angle[i]);
+                _sin[i] = Mathf.Sin(_angle[i]);
+            }
+            float spacing = periodScale / samplesPerPeriod;
 
             for (int ix = 0; ix < totalSamples; ix++)
             {
@@ -91,36 +116,11 @@ namespace CosmicShore.Gameplay
                 {
                     for (int iz = 0; iz < totalSamples; iz++)
                     {
-                        // Map grid index to [0, periods*2π)
-                        float u = 2f * Mathf.PI * ix / samplesPerPeriod;
-                        float v = 2f * Mathf.PI * iy / samplesPerPeriod;
-                        float w = 2f * Mathf.PI * iz / samplesPerPeriod;
-
-                        float f = Mathf.Cos(u) + Mathf.Cos(v) + Mathf.Cos(w);
+                        float f = _cos[ix] + _cos[iy] + _cos[iz];
 
                         if (Mathf.Abs(f) > surfaceThreshold) continue;
 
-                        // Map to world coordinates centered at origin
-                        float worldScale = periodScale / (2f * Mathf.PI);
-                        Vector3 position = new Vector3(
-                            (u - halfExtent) * worldScale,
-                            (v - halfExtent) * worldScale,
-                            (w - halfExtent) * worldScale
-                        );
-
-                        // Gradient of f gives surface normal - use it for block orientation
-                        Vector3 gradient = new Vector3(
-                            -Mathf.Sin(u),
-                            -Mathf.Sin(v),
-                            -Mathf.Sin(w)
-                        );
-
-                        Vector3 lookTarget = gradient.sqrMagnitude > 0.001f
-                            ? position + gradient.normalized
-                            : position + Vector3.forward;
-
-                        // CreateBlock used flip=true (default), so forward = position - lookTarget
-                        var rotation = SpawnPoint.LookRotation(lookTarget, position, Vector3.up);
+                        var (position, rotation) = NodePose(ix, iy, iz);
 
                         Domains blockDomain = colorBySide
                             ? (f >= 0 ? positiveDomain : negativeDomain)
@@ -130,6 +130,7 @@ namespace CosmicShore.Gameplay
                         {
                             Position = position,
                             Rotation = rotation,
+                            Scale = FlushScale(ix, iy, iz, rotation, spacing),
                             BlockDomain = blockDomain
                         });
                     }
@@ -137,6 +138,125 @@ namespace CosmicShore.Gameplay
             }
 
             return result;
+        }
+
+        /// <summary>A grid point's block pose: centred on the sample, its forward along the
+        /// surface normal (the gradient of f).</summary>
+        (Vector3 position, Quaternion rotation) NodePose(int ix, int iy, int iz)
+        {
+            float halfExtent = periods * Mathf.PI; // f uses raw radians; one period = 2π
+
+            // Map to world coordinates centered at origin
+            float worldScale = periodScale / (2f * Mathf.PI);
+            Vector3 position = new Vector3(
+                (_angle[ix] - halfExtent) * worldScale,
+                (_angle[iy] - halfExtent) * worldScale,
+                (_angle[iz] - halfExtent) * worldScale
+            );
+
+            // Gradient of f gives surface normal - use it for block orientation
+            Vector3 gradient = new Vector3(-_sin[ix], -_sin[iy], -_sin[iz]);
+
+            Vector3 lookTarget = gradient.sqrMagnitude > 0.001f
+                ? position + gradient.normalized
+                : position + Vector3.forward;
+
+            // CreateBlock used flip=true (default), so forward = position - lookTarget
+            return (position, SpawnPoint.LookRotation(lookTarget, position, Vector3.up));
+        }
+
+        /// <summary>
+        /// The block's scale, at most blockScale, at which it is FLUSH with the blocks of its six
+        /// grid neighbours (Docs/ECOSYSTEM.md §49.10). Blocks sit on a cubic grid of the given
+        /// spacing, each turned to the surface normal; where the shell is thick enough to hold two
+        /// grid points along a normal, a block long on that normal ran through the next one -
+        /// the shipped SpawnableSchwarzP (12 long on its normal, spacing 10) clipped in 288 pairs
+        /// and the SchwarzP cubes of SpawnableLinkedRings (2 on a side, spacing 3) in 864, every
+        /// one of them face neighbours. Only a face neighbour can reach: one an edge or a corner
+        /// away is at least spacing x sqrt 2 off, further than two blocks reach while a block's
+        /// diagonal is under that. For each face neighbour in the shell that is not already parted
+        /// on the grid axis, both blocks shrink, by the common factor that makes them flush (closed
+        /// form, SharedFlushFactor), the one axis that reaches furthest along the grid axis - for
+        /// the long blocks their length on the normal. The pair is computed alike from either side,
+        /// so the two agree without either knowing the other's result. The block's centre and
+        /// rotation never move.
+        /// </summary>
+        Vector3 FlushScale(int ix, int iy, int iz, Quaternion rotation, float spacing)
+        {
+            var frame = new Frame(rotation);
+            Vector3 half = 0.5f * new Vector3(Mathf.Abs(blockScale.x), Mathf.Abs(blockScale.y), Mathf.Abs(blockScale.z));
+            Vector3 factor = Vector3.one;
+            for (int n = 0; n < 6; n++)
+            {
+                int axis = n >> 1, step = (n & 1) == 0 ? 1 : -1;
+                int jx = ix + (axis == 0 ? step : 0), jy = iy + (axis == 1 ? step : 0), jz = iz + (axis == 2 ? step : 0);
+                if (jx < 0 || jy < 0 || jz < 0 || jx >= _samples || jy >= _samples || jz >= _samples) continue;
+                if (Mathf.Abs(_cos[jx] + _cos[jy] + _cos[jz]) > surfaceThreshold) continue;   // no block there
+
+                // Parted on the grid axis already (each reaches less than half way): nothing to do.
+                if (frame.Reach(axis, half) * 2f <= spacing) continue;
+                var (_, otherRotation) = NodePose(jx, jy, jz);
+                var other = new Frame(otherRotation);
+                if (frame.Reach(axis, half) + other.Reach(axis, half) <= spacing) continue;
+
+                Vector3 d = Vector3.zero;
+                d[axis] = step * spacing;
+                int mine = frame.Furthest(axis, half), theirs = other.Furthest(axis, half);
+                float k = SharedFlushFactor(d, frame, other, half, mine, theirs);
+                factor[mine] = Mathf.Min(factor[mine], k);
+            }
+
+            var scale = blockScale;
+            for (int i = 0; i < 3; i++)
+                if (factor[i] < 1f)
+                    scale[i] = Mathf.Sign(blockScale[i]) * Mathf.Max(Mathf.Abs(blockScale[i]) * factor[i], Mathf.Min(MinPrismAxis, Mathf.Abs(blockScale[i])));
+            return scale;
+        }
+
+        /// <summary>A block's three axes.</summary>
+        readonly struct Frame
+        {
+            readonly Vector3 _x, _y, _z;
+            public Frame(Quaternion r) { _x = r * Vector3.right; _y = r * Vector3.up; _z = r * Vector3.forward; }
+            public Vector3 this[int i] => i == 0 ? _x : i == 1 ? _y : _z;
+
+            /// <summary>How far the block reaches along a world axis.</summary>
+            public float Reach(int worldAxis, Vector3 half) =>
+                Mathf.Abs(_x[worldAxis]) * half.x + Mathf.Abs(_y[worldAxis]) * half.y + Mathf.Abs(_z[worldAxis]) * half.z;
+
+            /// <summary>The block's own axis that reaches furthest along a world axis.</summary>
+            public int Furthest(int worldAxis, Vector3 half)
+            {
+                float rx = Mathf.Abs(_x[worldAxis]) * half.x, ry = Mathf.Abs(_y[worldAxis]) * half.y, rz = Mathf.Abs(_z[worldAxis]) * half.z;
+                return rx >= ry && rx >= rz ? 0 : ry >= rz ? 1 : 2;
+            }
+        }
+
+        /// <summary>
+        /// The largest common factor k in (0, 1] on axis ia of box A and axis ib of box B (both of
+        /// half extents half) at which the two are flush - closed form, no search. On each of the
+        /// 15 separating axes L the clearance is linear in k, gap_L - k * reach_L, so L separates
+        /// for k up to gap_L / reach_L, and the pair is flush for the best of the 15.
+        /// </summary>
+        static float SharedFlushFactor(Vector3 d, in Frame a, in Frame b, Vector3 half, int ia, int ib)
+        {
+            float best = 0f;
+            for (int i = 0; i < 15; i++)
+            {
+                Vector3 l = i < 3 ? a[i] : i < 6 ? b[i - 3] : Vector3.Cross(a[(i - 6) / 3], b[(i - 6) % 3]);
+                if (l.sqrMagnitude < 1e-10f) continue;
+                float gap = Mathf.Abs(Vector3.Dot(d, l)), reach = 0f;
+                for (int j = 0; j < 3; j++)
+                {
+                    float ra = half[j] * Mathf.Abs(Vector3.Dot(a[j], l)), rb = half[j] * Mathf.Abs(Vector3.Dot(b[j], l));
+                    if (j == ia) reach += ra; else gap -= ra;
+                    if (j == ib) reach += rb; else gap -= rb;
+                }
+                if (gap < 0f) continue;
+                if (reach <= gap) return 1f;
+                best = Mathf.Max(best, gap / reach);
+            }
+            return Mathf.Min(1f, best * FlushMargin);
         }
 
         protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
@@ -158,7 +278,7 @@ namespace CosmicShore.Gameplay
             {
                 var node = nodes[i];
                 elems[i] = new PrismLay(
-                    new SpawnPoint(node.Position, node.Rotation, blockScale), node.BlockDomain);
+                    new SpawnPoint(node.Position, node.Rotation, node.Scale), node.BlockDomain);
             }
 
             // Streamed + batched at play time (this surface is Joust intensity 3 — the heaviest

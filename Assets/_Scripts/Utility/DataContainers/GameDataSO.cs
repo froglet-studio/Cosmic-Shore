@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
@@ -74,6 +74,13 @@ namespace CosmicShore.Utility
         public IntVariable VesselClassSelectedIndex;
         public IntVariable SelectedPlayerCount;
         public IntVariable SelectedIntensity;
+
+        /// <summary>
+        /// Switchback testing: fly each intensity's fixed Blast Run seed (45_501-45_504, <c>SwitchbackBlastRun.FixedSeed</c>)
+        /// instead of a random course, so runs can be compared. Set by the launch panel's SEED: RANDOM / FIXED button
+        /// (ArcadeGameConfigureModal.SwitchbackSeedPicker.cs).
+        /// </summary>
+        [NonSerialized] public bool SwitchbackFixedSeed;
         public ResourceCollection ResourceCollection;
         public ThemeManagerDataContainerSO ThemeManagerData;
         
@@ -82,6 +89,12 @@ namespace CosmicShore.Utility
         public string SceneName;
         public GameModes GameMode;
         public string LocalPlayerDisplayName;
+
+        [Tooltip("How a pilot is named when an earlier pilot in the same match already has the same display name. " +
+                 "Tokens: {name} the display name, {number} the pilot's place among the namesakes (2, 3, ...). " +
+                 "Keep {number} in it: the roster keys pilots by name, so two pilots must never read the same.")]
+        [SerializeField] string duplicatePlayerNameTemplate = "{name} ({number})";
+        public string DuplicatePlayerNameTemplate => duplicatePlayerNameTemplate;
         public int LocalPlayerAvatarId;
         public bool IsWeeklyChallenge;
         public bool IsTraining;
@@ -108,8 +121,18 @@ namespace CosmicShore.Utility
         [NonSerialized] public bool GameConfigSynced;
 
         /// <summary>
-        /// True while a Tournament session is in progress (set by
-        /// <see cref="CosmicShore.Gameplay.TournamentController"/> at tournament start,
+        /// Which entry of the mode's course POOL this match lays (0-based), or -1 when none has been drawn - a mode
+        /// with no pool keeps -1 for good. SERVER authority: the host draws it once per match
+        /// (<c>MultiplayerMiniGameControllerBase.DrawCourseVariant</c>, Regatta's <c>RegattaCoursePoolSO</c>) and
+        /// <c>SyncGameConfigToClients_ClientRpc</c> carries it, so a Cell choosing by it
+        /// (<c>CellTypeChoiceOptions.CourseVariantWise</c>) builds the same circuit on every machine. Cleared on every
+        /// runtime reset, like <see cref="GameConfigSynced"/>, so each match draws afresh.
+        /// </summary>
+        [NonSerialized] public int CourseVariant = -1;
+
+        /// <summary>
+        /// True while a Maelstrom session is in progress (set by
+        /// <see cref="CosmicShore.Gameplay.MaelstromController"/> at tournament start,
         /// cleared on tournament end / exit). A peer of the other game-context flags
         /// above. Read by the <see cref="CosmicShore.UI.Scoreboard"/> to swap the
         /// per-game lobby buttons for the tournament Continue flow, and synced to
@@ -119,7 +142,7 @@ namespace CosmicShore.Utility
         /// (it must survive the per-game scene loads); it is cleared in
         /// <see cref="ResetAllData"/> as a quit/session-end safety net.
         /// </summary>
-        public bool IsTournamentMode;
+        public bool IsMaelstromMode;
 
         /// <summary>
         /// True while this session is running as an OFFLINE LOCAL HOST - NetworkManager started
@@ -161,6 +184,101 @@ namespace CosmicShore.Utility
         {
             RequestedAIDomains.Clear();
             if (domains != null) RequestedAIDomains.AddRange(domains);
+        }
+
+        /// <summary>
+        /// How well the AI flies this match - the host's pick on the launch panel, written by the
+        /// launch pipeline beside <see cref="RequestedAIDomains"/> and read on the server where the
+        /// AI is installed (the Skim Race pilot first; <see cref="AIDifficultyRules.IsOfferedFor"/>
+        /// lists the modes that read it). Independent of intensity: intensity is the map,
+        /// difficulty is the opponent. Pre-launch config like the AI domains, so it survives
+        /// <see cref="ResetRuntimeData"/> into the game scene (and its replay reloads) and is
+        /// reset only by <see cref="ResetAllData"/>. [NonSerialized] for the same reason the
+        /// domain list is: a play-mode session must never bake a setting into the asset.
+        /// </summary>
+        [NonSerialized] public AIDifficulty RequestedAIDifficulty = AIDifficultyRules.Default;
+
+        /// <summary>
+        /// The HULLS picked for the AI seats on the launch panel (a teammate's for an ally, the
+        /// host's for any seat), parallel to <see cref="RequestedAIDomains"/> (entry i is bot i).
+        /// <see cref="VesselClassType.Random"/> - and anything past the end of the list - means "no
+        /// pick": an opponent seat then flies <see cref="OpponentAIVesselClass"/> when the card pins
+        /// one, any other seat draws from the card (<see cref="AIHullSeating.SeatHull"/>). Host-side, [NonSerialized], same
+        /// lifetime as the domain list.
+        /// </summary>
+        [NonSerialized] public List<VesselClassType> RequestedAIVessels = new();
+
+        /// <summary>
+        /// Each AI seat's OWN difficulty, picked on the launch panel with that AI's pedestal selected, parallel to
+        /// <see cref="RequestedAIDomains"/> (entry i is bot i). 0 - and anything past the end - means none of its own:
+        /// the seat flies <see cref="RequestedAIDifficulty"/>. Host-side, [NonSerialized], same lifetime as the
+        /// domain list.
+        /// </summary>
+        [NonSerialized] public List<AIDifficulty> RequestedAIDifficulties = new();
+
+        /// <summary>Replace the per-seat difficulties (cleared when <paramref name="difficulties"/> is null).</summary>
+        public void SetRequestedAIDifficulties(IReadOnlyList<AIDifficulty> difficulties)
+        {
+            RequestedAIDifficulties.Clear();
+            if (difficulties != null) RequestedAIDifficulties.AddRange(difficulties);
+        }
+
+        /// <summary>The difficulty AI seat <paramref name="seat"/> flies: its own pick, else the match's.</summary>
+        public AIDifficulty RequestedAIDifficultyAt(int seat) => AIDifficultyRules.ForSeat(
+            seat >= 0 && seat < RequestedAIDifficulties.Count ? RequestedAIDifficulties[seat] : 0, RequestedAIDifficulty);
+
+        // The level each spawned AI PILOT flies, by its Player's network id: stamped by the server when it seats
+        // the bot, read by every AI that installs a handicap later (a gate race arming its racers, the Skim Race
+        // pilot), so per-seat difficulty reaches them without each re-deriving the seat order. Server-side.
+        [NonSerialized] readonly Dictionary<ulong, AIDifficulty> _aiPilotDifficulty = new();
+
+        /// <summary>Record the level AI pilot <paramref name="playerNetId"/> flies (server, when it is seated).</summary>
+        public void SetAIPilotDifficulty(ulong playerNetId, AIDifficulty difficulty) =>
+            _aiPilotDifficulty[playerNetId] = AIDifficultyRules.Resolve(difficulty);
+
+        /// <summary>The level <paramref name="player"/> flies: the one stamped when it was seated, else the
+        /// match's (a human's hull handed to the AI, a seat nobody stamped).</summary>
+        public AIDifficulty AIDifficultyFor(IPlayer player) =>
+            player != null && _aiPilotDifficulty.TryGetValue(player.PlayerNetId, out var d)
+                ? d : AIDifficultyRules.Resolve(RequestedAIDifficulty);
+
+        /// <summary>Replace the ally-hull picks (cleared when <paramref name="vessels"/> is null).</summary>
+        public void SetRequestedAIVessels(IReadOnlyList<VesselClassType> vessels)
+        {
+            RequestedAIVessels.Clear();
+            if (vessels != null) RequestedAIVessels.AddRange(vessels);
+        }
+
+        /// <summary>
+        /// The hull every OPPONENT AI flies this match (<see cref="SO_ArcadeGame.OpponentAIVessel"/>),
+        /// or <see cref="VesselClassType.Random"/> when the card pins none. Published by
+        /// <see cref="SyncFromArcadeGame"/> on the host - only the server spawns AI and settles
+        /// arena hulls, so no client ever needs it. Pre-launch config like
+        /// <see cref="AllowedVesselClasses"/>: deliberately NOT cleared by ResetRuntimeData().
+        /// </summary>
+        [NonSerialized] public VesselClassType OpponentAIVesselClass = VesselClassType.Random;
+
+        /// <summary>
+        /// Whether <paramref name="player"/> is an AI flying the card's pinned opponent hull on a
+        /// domain no human flies. Such a hull sits OUTSIDE arena seating: a grid of identical
+        /// opponents is the card's choice, and it must never bump a human or an ally off a hull.
+        /// </summary>
+        public bool IsPinnedOpponent(IPlayer player, VesselClassType hull)
+        {
+            if (!AIHullSeating.IsConcrete(OpponentAIVesselClass) || hull != OpponentAIVesselClass) return false;
+            if (player is not Player p || !p || !p.NetIsAI.Value) return false;
+            return AIHullSeating.IsOpponentSeat(OpponentAIVesselClass, p.NetDomain.Value, CollectHumanDomains());
+        }
+
+        /// <summary>Every domain at least one human in <see cref="Players"/> flies.</summary>
+        public HashSet<Domains> CollectHumanDomains()
+        {
+            var domains = new HashSet<Domains>();
+            if (Players == null) return domains;
+            foreach (var ip in Players)
+                if (ip is Player p && p && !p.NetIsAI.Value)
+                    domains.Add(p.NetDomain.Value);
+            return domains;
         }
 
         /// <summary>
@@ -213,11 +331,6 @@ namespace CosmicShore.Utility
             OnDomainMetricSumsChanged?.Invoke();
         }
 
-        /// <summary>
-        /// Server-authoritative winner name, written by game controllers in their
-        /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
-        /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
-        /// </summary>
         // ── Match envelope (SERVER authority; replicated by SyncGameConfigToClients_ClientRpc) ──
         // Stamped once by the host so every client emits an IDENTICAL identifier set on
         // game_started. See Docs/Analytics/DATA_ARCHITECTURE.md §6.
@@ -236,6 +349,11 @@ namespace CosmicShore.Utility
         /// <summary>Whether this party was formed through a formal invite rather than presence.</summary>
         [NonSerialized] public bool InviteTriggered;
 
+        /// <summary>
+        /// Server-authoritative winner name, written by game controllers in their
+        /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
+        /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
         [NonSerialized] public string WinnerName = "";
 
         /// <summary>
@@ -258,6 +376,13 @@ namespace CosmicShore.Utility
         /// See Docs/ScoringSystem/REFACTOR.md R10.
         /// </summary>
         [NonSerialized] public List<ScoreResult> Results = new();
+
+        /// <summary>
+        /// The match's volume books (created / destroyed per pilot, Garrett 2026-11-18). The server writes them as
+        /// prisms change hands; a mode that shows them sends the lines to its clients at the end. Cleared with the
+        /// round stats.
+        /// </summary>
+        [NonSerialized] public readonly VolumeLedger VolumeLedger = new();
 
         /// <summary>
         /// Sets <see cref="Results"/> (reusing the same list instance so existing references
@@ -295,7 +420,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// The resolved joust-collision target for the current session - the per-domain
-        /// joust sum that ends a Joust turn. Published by <see cref="JoustCollisionTurnMonitor"/>
+        /// joust sum that ends a Joust turn. Published by <see cref="NetworkJoustCollisionTurnMonitor"/>
         /// in StartMonitor on every peer (a scene constant, identical across clients). Read by
         /// the Joust controller to format the "N Jousts Left" loser line into
         /// <see cref="ScoreResult.ScoreText"/>. Reset in <see cref="ResetRuntimeData"/> and
@@ -351,12 +476,27 @@ namespace CosmicShore.Utility
         [NonSerialized] public int CombatPointTargetCount;
 
         /// <summary>
+        /// How many gates the Switchback course has - the number a pilot must thread to finish
+        /// it. Published by <c>RaceGateTurnMonitor</c> in StartMonitor (server), synced to
+        /// clients via NetworkVariable.OnValueChanged, and read by
+        /// <see cref="CosmicShore.Gameplay.GateRaceScoringRuleSO"/> for the end condition and
+        /// the "remaining" readout.
+        ///
+        /// Unlike every other target here it is compared against ONE PILOT's count rather than a
+        /// domain sum: all pilots fly the same course, so a domain finishes when its lead runner
+        /// does (GateRaceScoringRuleSO.DomainValue folds by max).
+        /// </summary>
+        [NonSerialized] public int SwitchTargetCount;
+
+        /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
         /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
         /// asset onto the controller). Read by the network turn monitors for the end condition
         /// and the "remaining" readout (and, in later commits, the scoreboard + end-game
-        /// cinematic). Transient - re-published on every (re)spawn, so it is intentionally NOT
-        /// cleared by the reset methods.
+        /// cinematic), and by ElementalComebackSystem, whose deficit IS this rule's DomainValue.
+        /// Transient - re-published on every (re)spawn, so it is intentionally NOT cleared by the
+        /// reset methods; MultiplayerMiniGameControllerBase.OnNetworkSpawn nulls it just before
+        /// the subclass publishes, so a rule-less mode can never inherit the previous mode's.
         /// </summary>
         [NonSerialized] public ScoringRuleSO ScoringRule;
 
@@ -369,7 +509,7 @@ namespace CosmicShore.Utility
         {
             if (game == null)
             {
-                Debug.LogError("<color=#FF0000>[GameDataSO] SyncFromArcadeGame - game is NULL!</color>");
+                CSDebug.LogError("[GameDataSO] SyncFromArcadeGame - game is null.");
                 return;
             }
 
@@ -395,7 +535,75 @@ namespace CosmicShore.Utility
             // has exactly two goals" (a rule). Astro League and Brood Rush pin it to 2.
             MaxDomainsForGame = Mathf.Clamp(game.MaxDomainsAllowed, 1, ActiveDomains.Length);
 
+            // Arena seating (unique hulls + mid-match pilot swap), published for the same reason:
+            // the rule is authored on the card and ENFORCED by the server-side spawner and the
+            // pilot-swap RPC, neither of which can see the card. Shipped to clients by the config
+            // sync RPC so a guest's swap gesture knows whether it means anything here.
+            IsArenaMatch = game.ArenaRules;
+
+            // The card's pinned opponent hull (Regatta: the Squirrel), host-side only.
+            OpponentAIVesselClass = game.OpponentAIVessel ? game.OpponentAIVessel.Class : VesselClassType.Random;
+
+            // The card's per-hull starting element levels, published for the same reason as the
+            // hull list and shipped to every client by the config sync RPC: element levels are
+            // simulated on the machine that OWNS a vessel and never replicate, so the guest's own
+            // vessel has to be seeded from the same table the host seeds its replica from.
+            // A card that authors no table gets the standard element ladder's (ElementLadder): I1 at rest, I2-I4
+            // at level 5 in the game's element. Resolved HERE, on the launching machine, so it rides the same
+            // config-sync arrays and a guest can never derive a different answer.
+            PublishStartingElements(ResolveStartingElements(game));
+
             ClampSelectedVesselToGame(game);
+        }
+
+        /// <summary>
+        /// The CURRENT card's per-hull starting element levels
+        /// (<see cref="SO_ArcadeGame.StartingElements"/>), published by
+        /// <see cref="SyncFromArcadeGame"/> on the host and by the config sync RPC on a client.
+        /// Empty means every hull starts at rest (the menu, an arena card with no table, a card at I1). A card that
+        /// authors no table publishes the standard element ladder's (<see cref="ElementLadder"/>).
+        /// Pre-launch config like <see cref="AllowedVesselClasses"/>: deliberately NOT cleared by
+        /// ResetRuntimeData(), because it has to survive the scene load into the game scene where
+        /// the vessels that read it spawn.
+        /// </summary>
+        public readonly List<VesselStartingElements> StartingElements = new();
+
+        readonly List<VesselStartingElements> _ladderScratch = new();
+
+        /// <summary>
+        /// The table this card launches with: its own when it authors any row (it then owns every hull and rung),
+        /// none for an arena card (Regatta and Broadside solve their handicaps from balance models, and arena cards
+        /// play at one intensity), and otherwise the standard element ladder's default
+        /// (<see cref="ElementLadder.AppendDefaultStartingElements"/>) over the card's hulls.
+        /// </summary>
+        IList<VesselStartingElements> ResolveStartingElements(SO_ArcadeGame game)
+        {
+            if (game.StartingElements is { Count: > 0 } || game.ArenaRules) return game.StartingElements;
+            _ladderScratch.Clear();
+            if (ModePreviewLibrarySO.TryGenres(game.Mode, out var primary, out var secondary))
+                ElementLadder.AppendDefaultStartingElements(AllowedVesselClasses, primary, secondary, _ladderScratch);
+            return _ladderScratch;
+        }
+
+        /// <summary>Replace the published starting-element table. Single writers: the card sync
+        /// on the host, the config RPC on a client, the menu's reset.</summary>
+        public void PublishStartingElements(IList<VesselStartingElements> table)
+        {
+            StartingElements.Clear();
+            if (table == null) return;
+            for (int i = 0; i < table.Count; i++)
+                StartingElements.Add(table[i]);
+        }
+
+        /// <summary>
+        /// The element levels a hull of <paramref name="vesselClass"/> starts THIS match at, at
+        /// the selected intensity. False when the card authors no row for it - the caller then
+        /// leaves the vessel at rest rather than writing zeros over a seed some other path made.
+        /// </summary>
+        public bool TryGetStartingElements(VesselClassType vesselClass, out ResourceCollection levels)
+        {
+            int intensity = SelectedIntensity != null ? SelectedIntensity.Value : 1;
+            return VesselStartingElements.TryResolve(StartingElements, vesselClass, intensity, out levels);
         }
 
         /// <summary>
@@ -410,6 +618,50 @@ namespace CosmicShore.Utility
         /// the game scene, where the spawner reads it.
         /// </summary>
         [NonSerialized] public int MaxDomainsForGame = 3;
+
+        /// <summary>
+        /// True when the CURRENT card plays by <see cref="SO_ArcadeGame.ArenaRules"/>: every hull
+        /// is flown by exactly one pilot, and a human may swap into an AI teammate's hull mid-match
+        /// (<c>PilotSwap</c>). Published by <see cref="SyncFromArcadeGame"/> on the host and by the
+        /// config sync RPC on a client. Pre-launch config like <see cref="AllowedVesselClasses"/>:
+        /// deliberately NOT cleared by ResetRuntimeData(), because the spawner that enforces it
+        /// runs in the game scene.
+        /// </summary>
+        [NonSerialized] public bool IsArenaMatch;
+
+        /// <summary>
+        /// The first hull this game permits that is NOT in <paramref name="inUse"/>, preferring
+        /// <paramref name="preferred"/> when it is itself free - the one answer to "which hull
+        /// may this pilot have" under <see cref="IsArenaMatch"/>. Order is the card's own list
+        /// order, so identical inputs give identical answers on every machine. False when every
+        /// permitted hull is taken (more seats than hulls, which the launch modal's
+        /// <see cref="SO_ArcadeGame.MaxSeats"/> exists to prevent).
+        /// </summary>
+        public bool TryPickFreeHull(VesselClassType preferred, ICollection<VesselClassType> inUse,
+                                    out VesselClassType hull) =>
+            TryPickFreeHull(AllowedVesselClasses, preferred, inUse, out hull);
+
+        /// <summary>Pure core of <see cref="TryPickFreeHull(VesselClassType, ICollection{VesselClassType}, out VesselClassType)"/>,
+        /// separated so it can be tested without a GameDataSO.</summary>
+        public static bool TryPickFreeHull(IList<VesselClassType> allowed, VesselClassType preferred,
+                                           ICollection<VesselClassType> inUse, out VesselClassType hull)
+        {
+            hull = preferred;
+            bool IsFree(VesselClassType t) => inUse == null || !inUse.Contains(t);
+
+            bool preferredLegal = preferred != VesselClassType.Any && preferred != VesselClassType.Random &&
+                                  (allowed == null || allowed.Count == 0 || allowed.Contains(preferred));
+            if (preferredLegal && IsFree(preferred)) return true;
+
+            if (allowed == null) return false;
+            for (int i = 0; i < allowed.Count; i++)
+            {
+                if (!IsFree(allowed[i])) continue;
+                hull = allowed[i];
+                return true;
+            }
+            return false;
+        }
 
         /// <summary>
         /// The vessel classes the CURRENT game permits (<see cref="SO_ArcadeGame.Vessels"/>),
@@ -444,13 +696,13 @@ namespace CosmicShore.Utility
         /// Forces <see cref="selectedVesselClass"/> into the set this game actually allows
         /// (<see cref="SO_ArcadeGame.Vessels"/>). `Vessels` was previously only the UI's list of
         /// CHOICES: nothing validated the selection at launch, so a vessel picked in an earlier
-        /// game persisted into a mode that does not permit it - a Dolphin flew Ribcage, which is
+        /// game persisted into a mode that does not permit it - a Dolphin flew Cleave, which is
         /// Rhino-only, while its AI opponents correctly spawned Rhinos (their class comes from
         /// the scene's own aiInitializeDatas).
         ///
         /// Enforced HERE, at the one call every launch path funnels through, rather than in the
         /// configure modal: the modal's ship picker is only one entry point (rematch, the
-        /// Tournament chain, and a launch whose vessel screen was never opened all bypass it),
+        /// Maelstrom chain, and a launch whose vessel screen was never opened all bypass it),
         /// and a per-mode fork would have to be repeated for every restricted-vessel game.
         /// A single-vessel game therefore cannot be entered in the wrong hull by any route.
         /// </summary>
@@ -462,8 +714,8 @@ namespace CosmicShore.Utility
             var clamped = ClampVesselToGame(current);
             if (clamped == current) return;
 
-            Debug.Log($"<color=#FFD700>[GameDataSO] {game.Mode} does not allow {current}; " +
-                      $"clamping selected vessel to {clamped}.</color>");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[GameDataSO] {game.Mode} does not allow {current}; " +
+                      $"clamping selected vessel to {clamped}.");
             selectedVesselClass.Value = clamped;
             if (VesselClassSelectedIndex != null)
                 VesselClassSelectedIndex.Value = (int)clamped;
@@ -483,7 +735,7 @@ namespace CosmicShore.Utility
             SelectedPlayerCount.Value = totalDesired;
             RequestedAIBackfillCount = aiBackfill;
 
-            Debug.Log($"<color=#FFD700>[GameDataSO] ConfigurePlayerCounts - total={totalDesired}, humans={humanCount}, AI={aiBackfill}</color>");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[GameDataSO] ConfigurePlayerCounts - total={totalDesired}, humans={humanCount}, AI={aiBackfill}");
         }
 
 
@@ -496,9 +748,97 @@ namespace CosmicShore.Utility
         public bool IsTurnRunning { get; private set; }
         public Pose[] SpawnPoses { get; private set; }
         List<Pose> _playerSpawnPoseList = new ();
-        public IPlayer LocalPlayer { get; private set; }
-        public IRoundStats LocalRoundStats { get; private set; }
+        IPlayer _localPlayer;
+        IRoundStats _localRoundStats;
+
+        /// <summary>
+        /// The local pilot's Player, or null once it has been DESTROYED.
+        ///
+        /// <para>Self-healing on purpose. <see cref="IPlayer"/> is an interface, so `?.` and
+        /// `!= null` at a reader never reach <c>UnityEngine.Object</c>'s overloaded null test
+        /// and a destroyed Player reads as alive — then throws <c>MissingReferenceException</c>
+        /// on the first member access. This asset is also a ScriptableObject, so in the Editor
+        /// the field survives play-mode exit and the NEXT session starts holding the LAST
+        /// session's corpse.</para>
+        ///
+        /// <para>Roughly sixty runtime sites read this handle, most of them with `?.` and many
+        /// of them per frame (every turn monitor's display path, every objective provider
+        /// through <c>ObjectiveIndicator.LateUpdate</c>, <c>MiniGameHUD.Update</c>, the toys).
+        /// Each was individually reasonable and all of them were wrong the same way, turning
+        /// one destroyed Player into an unbounded per-frame exception storm that ate the frame
+        /// rate. Fixing the HANDLE fixes every reader at once and covers the next one for free;
+        /// <c>PruneDestroyedRosterEntries</c> already did exactly this for the LISTS and simply
+        /// never covered these two singletons.</para>
+        /// </summary>
+        public IPlayer LocalPlayer
+        {
+            get => UnityLiveness.Alive(_localPlayer) ? _localPlayer : (_localPlayer = null);
+            private set => _localPlayer = value;
+        }
+
+        /// <summary>The local pilot's RoundStats, or null once destroyed — the sibling of
+        /// <see cref="LocalPlayer"/> and null for exactly the same reasons (a destroyed
+        /// <c>RoundStats</c> is a MonoBehaviour behind an interface).</summary>
+        public IRoundStats LocalRoundStats
+        {
+            get => UnityLiveness.Alive(_localRoundStats) ? _localRoundStats : (_localRoundStats = null);
+            private set => _localRoundStats = value;
+        }
         public ISession ActiveSession { get; set; }
+
+        // ── One Play is one session (B33, Docs/PartySystem/BUGS.md) ─────────────────────
+        // The project enters Play WITHOUT a domain reload (EditorSettings: Enter Play Mode Options),
+        // and this asset outlives Play in the Editor, so ActiveSession and IsOfflineSession carried
+        // the previous Play's values into the next one. A second Play then started "in" a party
+        // session whose lobby was already gone: PartySessionService.CreateAsync returned early on the
+        // non-null reference, the party went InParty with nothing hosted, and the boot's Relay wait
+        // retried for ~30 s until a refresh noticed the dead session (Caleb's log, 2026-10-16). Both
+        // are reset when Play starts - the point a player build's process starts - as the other
+        // runtime-only state in this project is (SpectatorSession.ResetStatics and friends).
+
+        static readonly List<GameDataSO> s_loaded = new();
+
+        void OnEnable()
+        {
+            if (!s_loaded.Contains(this)) s_loaded.Add(this);
+        }
+
+        void OnDisable() => s_loaded.Remove(this);
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ClearSessionStateFromLastPlay()
+        {
+            foreach (var data in s_loaded.ToArray())
+                data.ClearPlaySessionState();
+        }
+
+        /// <summary>
+        /// Forgets the session state a previous Play left behind and leaves that session in the
+        /// background, so its lobby stops advertising a party nobody can join. Returns the session it
+        /// dropped (null when there was none). In a player build there never is one at startup.
+        /// </summary>
+        internal ISession ClearPlaySessionState()
+        {
+            var carried = ActiveSession;
+            ActiveSession = null;
+            IsOfflineSession = false;
+            if (carried != null) LeaveCarriedSessionAsync(carried);
+            return carried;
+        }
+
+        static async void LeaveCarriedSessionAsync(ISession carried)
+        {
+            try
+            {
+                if (carried.IsHost) await carried.AsHost().DeleteAsync();
+                else await carried.LeaveAsync();
+            }
+            catch (Exception e)
+            {
+                // Usually already gone server-side; either way nothing here can use it any more.
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[GameDataSO] Leaving the session carried from the last Play failed: {e.Message}");
+            }
+        }
         public int TurnsTakenThisRound { get; set; }
         public int RoundsPlayed { get; set; }
 
@@ -540,6 +880,23 @@ namespace CosmicShore.Utility
             // This is the start point for flight_time_seconds.
             FlightClock.OnTurnStarted();
 
+            InvokeTurnStarted();
+        }
+
+        /// <summary>
+        /// Joins a turn that is already running: a pilot who rejoined the match (<c>MatchRejoin</c>,
+        /// Docs/MENU_REDESIGN_B.md section 103) loaded the scene after the countdown's <see cref="StartTurn"/> had
+        /// gone out to everybody else. The turn clock is set back by the time the turn has run, so race timers read
+        /// the same here as on the other peers. Nothing is zeroed - the scores carried on through the drop - and
+        /// the flight clock starts now, because this pilot has flown only since they came back.
+        /// No-op when a turn is already running here.
+        /// </summary>
+        public void JoinRunningTurn(float elapsedSeconds)
+        {
+            if (IsTurnRunning) return;
+            IsTurnRunning = true;
+            TurnStartTime = Time.time - Mathf.Max(0f, elapsedSeconds);
+            FlightClock.OnTurnStarted();
             InvokeTurnStarted();
         }
 
@@ -623,6 +980,7 @@ namespace CosmicShore.Utility
         {
             IsTurnRunning = false;
             GameConfigSynced = false;
+            CourseVariant = -1;
 
             // Scene teardown / mid-game exit: abandon the flight clock without publishing a
             // time, so an abandoned game cannot leak its seconds into the next one.
@@ -647,9 +1005,10 @@ namespace CosmicShore.Utility
             PrismTargetCount = 0;
             LifeformTargetCount = 0;
             CombatPointTargetCount = 0;
+            SwitchTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
-            // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
-            // NOT reset here. They are pre-launch config values set by
+            // Note: RequestedAIBackfillCount, RequestedDomainCount and RequestedAIDifficulty
+            // are intentionally NOT reset here. They are pre-launch config values set by
             // ArcadeGameConfigureModal and must survive the ResetRuntimeData() call
             // in SceneLoader.LoadSceneAsync() so the game scene can read them.
             // They are reset in ResetAllData() instead.
@@ -682,6 +1041,7 @@ namespace CosmicShore.Utility
         {
             IsTurnRunning = false;
             GameConfigSynced = false;
+            CourseVariant = -1;
             FlightClock.AbortGame();
             TurnStartTime = 0f;
             RoundsPlayed = 0;
@@ -696,6 +1056,7 @@ namespace CosmicShore.Utility
             PrismTargetCount = 0;
             LifeformTargetCount = 0;
             CombatPointTargetCount = 0;
+            SwitchTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 
@@ -716,7 +1077,7 @@ namespace CosmicShore.Utility
         ///
         /// This is needed because scoring is live from the moment the scene's StatsManager
         /// network-spawns - there is no turn gate on <c>StatsManager</c> - while the window
-        /// between that and the first turn is long: the arena builds (Ribcage lays 10-20k prisms),
+        /// between that and the first turn is long: the arena builds (Cleave lays 10-20k prisms),
         /// vessels spawn, and the countdown runs. Anything destroyed in that window used to land
         /// in a player's score, so a match could visibly start with someone above zero.
         ///
@@ -733,10 +1094,15 @@ namespace CosmicShore.Utility
 
         void CleanupAllRoundStats()
         {
+            VolumeLedger.Clear();
             if (RoundStatsList == null) return;
 
             for (int i = 0, count = RoundStatsList.Count; i < count; i++)
+            {
                 RoundStatsList[i]?.Cleanup();
+                // The scoreboard's per-pilot telemetry (Docs/ScoringSystem/BUGS.md B21) starts the game empty too.
+                if (RoundStatsList[i] is RoundStats rs && rs) rs.ClearVesselStats();
+            }
         }
         
         public void ResetAllData()
@@ -754,15 +1120,32 @@ namespace CosmicShore.Utility
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
+            SwitchbackFixedSeed = false;
             RequestedAIBackfillCount = 0;
             RequestedAIDomains.Clear();
+            RequestedAIDifficulty = AIDifficultyRules.Default;
+            RequestedAIVessels.Clear();
+            RequestedAIDifficulties.Clear();
+            _aiPilotDifficulty.Clear();
             RequestedDomainCount = 3;
-            IsTournamentMode = false;
+            IsMaelstromMode = false;
 
             IsReplayReload = false;
 
             ResetRuntimeData();
             DestroyPlayerAndVessel();
+        }
+
+        /// <summary>
+        /// Make <paramref name="p"/> this machine's player WITHOUT re-adding it: a pilot who rejoined a match takes back a
+        /// Player that is already in <see cref="Players"/> (it was being flown by the AI), so <see cref="AddPlayer"/>'s
+        /// reset and re-pose would undo the match it is rejoining (section 103).
+        /// </summary>
+        public void ClaimLocalPlayer(IPlayer p)
+        {
+            if (p == null) return;
+            LocalPlayer = p;
+            LocalRoundStats = p.RoundStats;
         }
 
         public void AddPlayer(IPlayer p)
@@ -866,14 +1249,27 @@ namespace CosmicShore.Utility
         public bool IsLocalDomain(Domains domain) =>
             LocalPlayer != null && domain == LocalPlayer.Domain;
 
+        /// <summary>
+        /// True when the local player's domain tops <see cref="DomainStatsList"/>, which
+        /// <see cref="CalculateDomainStats"/> leaves sorted best-first - the same entry the
+        /// scoreboard banner names. <paramref name="stats"/> is the local domain's entry.
+        ///
+        /// It used to compare the local domain against its OWN entry, which is true whenever the
+        /// local domain fielded anyone: both Duel pilots got VICTORY and the WinMatch quest.
+        /// </summary>
         public bool IsLocalDomainWinner(out DomainStats stats)
         {
             stats = default;
-            foreach (var stat in DomainStatsList.Where(stat => stat.Domain == LocalPlayer.Domain))
+            if (LocalPlayer == null || DomainStatsList == null || DomainStatsList.Count == 0)
+                return false;
+
+            foreach (var stat in DomainStatsList)
             {
+                if (stat.Domain != LocalPlayer.Domain) continue;
                 stats = stat;
+                break;
             }
-            return stats.Domain == LocalPlayer.Domain;
+            return DomainStatsList[0].Domain == LocalPlayer.Domain;
         }
 
         // ----- Domain aggregation helpers (per-domain sums for team-based scoring) -----
@@ -926,15 +1322,32 @@ namespace CosmicShore.Utility
         /// dedup and lookups. Plain C# stats (edit-mode test fakes) are not
         /// UnityEngine.Objects and pass through untouched.
         /// </summary>
-        void PruneDestroyedRosterEntries()
+        public void PruneDestroyedRosterEntries()
         {
             for (int i = Players.Count - 1; i >= 0; i--)
-                if (Players[i] is UnityEngine.Object obj && !obj)
+                if (!UnityLiveness.Alive(Players[i]))
                     Players.RemoveAt(i);
 
             for (int i = RoundStatsList.Count - 1; i >= 0; i--)
-                if (RoundStatsList[i] is UnityEngine.Object obj && !obj)
+                if (!UnityLiveness.Alive(RoundStatsList[i]))
                     RoundStatsList.RemoveAt(i);
+
+            for (int i = Vessels.Count - 1; i >= 0; i--)
+                if (!UnityLiveness.Alive(Vessels[i]))
+                    Vessels.RemoveAt(i);
+        }
+
+        /// <summary>
+        /// Drop the local handles if the objects behind them are gone. The getters already
+        /// self-heal on READ, so this exists for the one thing a lazy getter cannot do: let a
+        /// dying <c>Player</c> hand the reference back at the moment of death rather than
+        /// leaving it for whoever reads next. Cheap and idempotent — reading the two properties
+        /// IS the check.
+        /// </summary>
+        public void ForgetLocalPlayerIfDestroyed()
+        {
+            _ = LocalPlayer;
+            _ = LocalRoundStats;
         }
 
         /// <summary>

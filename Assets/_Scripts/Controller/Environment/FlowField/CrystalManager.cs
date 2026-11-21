@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
@@ -56,6 +56,33 @@ namespace CosmicShore.Gameplay
             IntensityScaled = 2,
         }
 
+        /// <summary>
+        /// WHERE a crystal spawns and respawns, as opposed to <see cref="CrystalCountMode"/>'s
+        /// HOW MANY.
+        /// </summary>
+        public enum CrystalPlacementMode
+        {
+            /// <summary>
+            /// The platform default: the authored per-intensity anchor list when a scene has one,
+            /// otherwise a random point in the cell's nucleus. Every shipping mode uses this.
+            /// </summary>
+            AnchorsOrNucleus = 0,
+
+            /// <summary>
+            /// One straight FIRING LANE per player, each a line of evenly spaced crystals that
+            /// runs from that player's own spawn slot past the cell centre and out the far side.
+            /// The lane geometry is derived from <see cref="CellSpawnFormation"/> - the same
+            /// function that places the players - so a lane and the pilot who flies it can never
+            /// drift apart, and the arrangement re-derives itself for any roster size instead of
+            /// being authored per scene. A collected crystal reloads at its OWN slot, so the lane
+            /// stays a lane for the whole match. Written for Drumfire's rhythm track and kept when
+            /// that mode was removed (2026-09); NO shipping mode selects it today, so a scene that
+            /// turns it on is the first - see <see cref="ApproachLaneGeometry"/> for the contract
+            /// and the ring-radius/formation pair it obliges the scene to keep in step.
+            /// </summary>
+            ApproachLanes = 1,
+        }
+
         // IMPORTANT:
         // We compare Vector3.SqrMagnitude(...) <= MIN_SQR_DISTANCE.
         // So this constant is "distance squared".
@@ -96,6 +123,41 @@ namespace CosmicShore.Gameplay
                  "reuses the last entry.")]
         [SerializeField] private List<IntensityCrystalCount> crystalCountByIntensity = new();
 
+        [Header("Approach Lanes (CrystalPlacementMode.ApproachLanes)")]
+        [Tooltip("WHERE crystals go. AnchorsOrNucleus is the platform default; ApproachLanes " +
+                 "lays one straight firing lane per player through their own spawn slot.")]
+        [SerializeField] private CrystalPlacementMode placementMode = CrystalPlacementMode.AnchorsOrNucleus;
+
+        [Tooltip("Lane mode: the spawn-ring radius the lanes are struck from. MUST match the " +
+                 "radius ServerPlayerVesselInitializer resolves (nucleus radius + spawn distance, " +
+                 "floored by Spawn Ring Radius Floor) or the lanes will not pass through the " +
+                 "players' spawn points.")]
+        [SerializeField, Min(1f)] private float laneRingRadius = 1120f;
+
+        [Tooltip("Lane mode: how close the lane passes to the cell CENTRE. This is what makes the " +
+                 "lane a fly-PAST rather than a dive - it must clear whatever is in the middle of " +
+                 "the arena, and the clearance it leaves is the margin a pilot has to lean in and " +
+                 "graze that structure.")]
+        [SerializeField, Min(0f)] private float laneOffsetFromCenter = 420f;
+
+        [Tooltip("Lane mode: distance from a player's spawn point to the FIRST crystal of their lane. "
+                 + "Together with Lane Length this CENTRES the crystals on the lane's closest "
+                 + "approach, which is what keeps every shot in the run at a similar range. A "
+                 + "conic blast's yield falls as the SQUARE of the range it is fired from, so a "
+                 + "band running OUTWARD from the closest approach makes the first shot worth many "
+                 + "times the last - measured at 7x before this was centred.")]
+        [SerializeField, Min(0f)] private float laneLeadDistance = 640f;
+
+        [Tooltip("Lane mode: distance from the first crystal to the LAST. The spacing between " +
+                 "beats is this divided by (slots - 1), so raising the crystal count tightens the " +
+                 "rhythm without moving either end of the run.")]
+        [SerializeField, Min(1f)] private float laneLength = 800f;
+
+        [Tooltip("Lane mode: MUST match ServerPlayerVesselInitializer's spawnFormation, or lane k " +
+                 "will not pass through spawn slot k.")]
+        [SerializeField] private CellSpawnFormation.Formation laneFormation =
+            CellSpawnFormation.Formation.Symmetric;
+
         [Header("Crystal Domain")]
         [SerializeField] protected bool spawnCrystalWithPlayerDomain;
         
@@ -122,6 +184,61 @@ namespace CosmicShore.Gameplay
         private Vector3[] _cachedAnchors;
         private List<Vector3> _cachedAnchorSource;
         
+        // ------------------------------------------------------------
+        // Course keys (Switchback Blast Run)
+        // ------------------------------------------------------------
+
+        // Positions a mode placed on its course, one crystal per entry (crystal id = index + 1). While set they
+        // REPLACE the authored count and placement: every crystal is laid at its key and respawns in place there.
+        private readonly List<Vector3> _courseKeys = new();
+        private readonly Dictionary<int, int> _courseKeyRespawns = new();
+
+        /// <summary>u a respawned key crystal is nudged off its key, alternating sides, so a respawn in place is
+        /// still a CHANGE of slot value (a NetworkList write of an equal value replicates nothing).</summary>
+        public const float CourseKeyRespawnNudge = 1.5f;
+
+        /// <summary>True while a mode's course keys own this manager's placement.</summary>
+        protected bool UsesCourseKeys => _courseKeys.Count > 0;
+
+        /// <summary>The course keys in force (empty when none).</summary>
+        public IReadOnlyList<Vector3> CourseKeys => _courseKeys;
+
+        /// <summary>
+        /// Hand this manager a mode's course keys (Switchback Blast Run's key crystals, SWITCHBACK.md "Blast Run").
+        /// The crystal count becomes <c>keys.Count</c>, crystal <c>id</c> is laid at <c>keys[id - 1]</c>, and a
+        /// collected one respawns at its own key. Call it on the server; clients follow the slot list. Survives
+        /// <see cref="ResetSpawnState"/> (a replay keeps its course); <see cref="ClearCourseKeys"/> ends it.
+        /// </summary>
+        public void SetCourseKeys(IReadOnlyList<Vector3> keys)
+        {
+            _courseKeys.Clear();
+            _courseKeyRespawns.Clear();
+            if (keys != null)
+                for (int i = 0; i < keys.Count; i++) _courseKeys.Add(keys[i]);
+            OnCourseKeysChanged();
+        }
+
+        /// <summary>Give placement back to the authored count and anchors.</summary>
+        public void ClearCourseKeys()
+        {
+            if (_courseKeys.Count == 0) return;
+            _courseKeys.Clear();
+            _courseKeyRespawns.Clear();
+            OnCourseKeysChanged();
+        }
+
+        /// <summary>A subclass whose crystals are already out re-lays them here (the keys arrived late).</summary>
+        protected virtual void OnCourseKeysChanged() { }
+
+        /// <summary>The key a course-key crystal lives at, or false.</summary>
+        protected bool TryCourseKey(int crystalId, out Vector3 key)
+        {
+            int i = crystalId - 1;
+            if (i >= 0 && i < _courseKeys.Count) { key = _courseKeys[i]; return true; }
+            key = default;
+            return false;
+        }
+
         protected virtual void Awake()
         {
             // Ensure runtime lists exist
@@ -142,6 +259,53 @@ namespace CosmicShore.Gameplay
         /// level all happened on a machine that pilot was not looking at.
         /// </summary>
         public virtual void ReplayVesselCrystalEffects(int crystalId, ulong vesselNetworkObjectId, ulong ownerClientId) { }
+
+        /// <summary>The match's game data, for a crystal that needs the roster (a
+        /// <see cref="CrystalRaceRing"/> testing the pilots it simulates). Crystals are minted with
+        /// <c>Instantiate</c> and never injected, so they reach it through their manager.</summary>
+        public GameDataSO GameData => gameData;
+
+        /// <summary>The intensity this manager places crystals for (see <see cref="CurrentIntensity"/>).
+        /// Read by a <see cref="CrystalRaceRing"/> to size its mouth for the level.</summary>
+        public int Intensity => CurrentIntensity;
+
+        /// <summary>
+        /// A pilot threaded the race ring crystal <paramref name="crystalId"/>, which was standing
+        /// at <paramref name="ringPosition"/> when it was threaded: run the crystal's half of the
+        /// pickup (credit, explode, respawn) on the machine that decides collection.
+        ///
+        /// <para>This is the authority's entry point. A non-networked session IS the authority;
+        /// <see cref="NetworkCrystalManager"/> forwards a client's report to the server. Either way
+        /// the pickup goes through the crystal's own impactor, so the domain rule, the impact
+        /// latch and the stats credit are the physics path's, not a second copy of them.</para>
+        /// </summary>
+        public virtual void ReportRingThreaded(int crystalId, Vector3 ringPosition, VesselImpactor collector) =>
+            CreditRingThreaded(crystalId, ringPosition, collector);
+
+        /// <summary>
+        /// Positional tolerance between where a pilot saw the ring and where the authority has it.
+        /// The ring is the crystal redrawn, so the two only differ when the crystal has MOVED - a
+        /// teammate took it first - and then by hundreds of units. A unit of slack absorbs float
+        /// round-trips over the wire and nothing else.
+        /// </summary>
+        const float RingReportToleranceSqr = 1f;
+
+        /// <summary>
+        /// The authority's half of a ring pickup. Refuses a report against a ring that has since
+        /// moved: without that check a pilot who threaded a ring a moment after a teammate took
+        /// it would be credited for the crystal at its NEXT anchor, which they never reached.
+        /// </summary>
+        protected bool CreditRingThreaded(int crystalId, Vector3 ringPosition, VesselImpactor collector)
+        {
+            if (collector == null) return false;
+            if (!cellData.TryGetCrystalById(crystalId, out var crystal) || crystal == null) return false;
+            if (crystal.IsExploding) return false;
+            if ((crystal.transform.position - ringPosition).sqrMagnitude > RingReportToleranceSqr) return false;
+            if (!crystal.TryGetComponent(out OmniCrystalImpactor impactor)) return false;
+
+            impactor.AcceptImpacteeFromSweep(collector);
+            return true;
+        }
 
         // ------------------------------------------------------------
         // CellItem management (unchanged conceptually)
@@ -175,10 +339,7 @@ namespace CosmicShore.Gameplay
         {
             if (cellData.TryGetCrystalById(crystalId, out Crystal existing))
             {
-                DebugExtensions.LogErrorColored(
-                    $"Crystal with id {crystalId} already exists, skipping spawn.",
-                    Color.magenta
-                );
+                CSDebug.LogError($"[CrystalManager] Crystal with id {crystalId} already exists, skipping spawn.");
                 return existing;
             }
 
@@ -235,9 +396,7 @@ namespace CosmicShore.Gameplay
                 {
                     // With no authored anchors the batch anchor is a placeholder, so the
                     // initial batch draws from the SAME volume every respawn draws from.
-                    Vector3 spawnPos = hasAnchors
-                        ? GetSpawnPointAroundAnchor(batchAnchor)
-                        : GetAnchorlessSpawnPoint();
+                    Vector3 spawnPos = InitialSpawnPointFor(id, batchAnchor, hasAnchors);
                     var crystal = Spawn(id, spawnPos);
                     cellData.AddCrystalToList(crystal);
 
@@ -259,6 +418,29 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected Vector3 CalculateNewSpawnPos(int crystalId)
         {
+            // Course keys: a collected key reloads AT ITS KEY (nudged alternately either side of it, see
+            // CourseKeyRespawnNudge), so the next pilot through finds it where the course put it.
+            if (TryCourseKey(crystalId, out var keyPos))
+            {
+                int n = _courseKeyRespawns.TryGetValue(crystalId, out var c) ? c + 1 : 1;
+                _courseKeyRespawns[crystalId] = n;
+                Vector3 nudged = keyPos + Vector3.up * ((n % 2 == 1 ? 1f : -1f) * CourseKeyRespawnNudge);
+                lastSpawnPosById[crystalId] = nudged;
+                return nudged;
+            }
+
+            // Lane mode: a collected crystal RELOADS AT ITS OWN SLOT. Deliberately bypasses the
+            // move-away-from-last rule below - here "it came back where it was" is the point, and
+            // that rule exists to stop an anchored crystal respawning on top of the pilot who just
+            // took it. Camping one slot is self-defeating anyway: a blast fired twice from the
+            // same place sweeps mass that is already gone.
+            if (UsesApproachLanes)
+            {
+                Vector3 lanePos = LaneSlotPosition(crystalId);
+                lastSpawnPosById[crystalId] = lanePos;
+                return lanePos;
+            }
+
             // Last position this crystal spawned at (for distance check)
             Vector3 last = lastSpawnPosById.TryGetValue(crystalId, out var lastPos)
                 ? lastPos
@@ -290,6 +472,9 @@ namespace CosmicShore.Gameplay
             return spawnPos;
         }
 
+        // a crystal this close to its new place is already there (the float round trip over the wire)
+        const float RelocatedInPlaceSqr = 1f;
+
         /// <summary>
         /// Update an existing crystal's position locally.
         /// </summary>
@@ -298,7 +483,8 @@ namespace CosmicShore.Gameplay
             if (!cellData.TryGetCrystalById(crystalId, out var crystal))
                 return;
 
-            crystal.DeactivateModels();
+            // already there (a carrier moved its own copy, CrystalManager.RelocateCrystal): no second bloom
+            if ((crystal.transform.position - newPos).sqrMagnitude > RelocatedInPlaceSqr) crystal.DeactivateModels();
             crystal.MoveToNewPos(newPos);
 
             cellData.OnCellItemsUpdated.Raise();
@@ -318,8 +504,7 @@ namespace CosmicShore.Gameplay
             if (listOfCrystalPositions == null || listOfCrystalPositions.Count == 0)
                 return false;
 
-            int intensity = Mathf.Clamp(CurrentIntensity, 1, listOfCrystalPositions.Count);
-            var set = listOfCrystalPositions[intensity - 1];
+            var set = listOfCrystalPositions[AnchorSetIndex(CurrentIntensity)];
 
             if (set == null || set.positions == null || set.positions.Count == 0)
             {
@@ -338,6 +523,23 @@ namespace CosmicShore.Gameplay
             positions = _cachedAnchors;
             return true;
         }
+
+        /// <summary>
+        /// The authored anchors the given 1-based intensity spawns its crystals at - the set
+        /// <see cref="TryGetCrystalPositionListByIntensity"/> picks for that intensity (clamped into
+        /// the list) - or an empty list when none are authored. Read-only; the Skim Race AI's map
+        /// fingerprint reads it.
+        /// </summary>
+        public IReadOnlyList<Vector3> AnchorsForIntensity(int intensity)
+        {
+            if (listOfCrystalPositions == null || listOfCrystalPositions.Count == 0) return Array.Empty<Vector3>();
+            var set = listOfCrystalPositions[AnchorSetIndex(intensity)];
+            return set?.positions != null ? (IReadOnlyList<Vector3>)set.positions : Array.Empty<Vector3>();
+        }
+
+        /// <summary>The anchor set an intensity reads: clamped into the authored list, so an intensity
+        /// beyond the last set reuses the last one. Callers check the list is non-empty first.</summary>
+        int AnchorSetIndex(int intensity) => Mathf.Clamp(intensity, 1, listOfCrystalPositions.Count) - 1;
 
         /// <summary>
         /// The intensity this manager authors against: the serialized SOAP variable when a scene
@@ -364,12 +566,91 @@ namespace CosmicShore.Gameplay
 
         protected int GetCrystalCountToSpawn()
         {
+            if (UsesCourseKeys) return _courseKeys.Count;
+
+            int authored = ResolveAuthoredCrystalCount();
+
+            // In lane mode the authored count is the number of crystals in ONE lane, and the
+            // total is that times the number of lanes. Keeping the two apart is what lets the
+            // existing per-intensity table author the RHYTHM (crystals per lane) while the
+            // roster decides how many lanes there are.
+            return placementMode == CrystalPlacementMode.ApproachLanes
+                ? Mathf.Max(1, LaneCount * Mathf.Max(1, authored))
+                : authored;
+        }
+
+        /// <summary>Crystals as authored - per lane in lane mode, total otherwise.</summary>
+        private int ResolveAuthoredCrystalCount()
+        {
             return crystalCountMode switch
             {
                 CrystalCountMode.FixedCount => fixedCrystalCount,
                 CrystalCountMode.IntensityScaled => IntensityScaledCrystalCount(),
                 _ => Mathf.Max(1, gameData.Players.Count + extraCrystalsToSpawnBeyondPlayerCount),
             };
+        }
+
+        // ------------------------------------------------------------
+        // Approach lanes
+        // ------------------------------------------------------------
+
+        /// <summary>True when this manager lays per-player firing lanes rather than anchors.</summary>
+        protected bool UsesApproachLanes => placementMode == CrystalPlacementMode.ApproachLanes;
+
+        /// <summary>
+        /// How many lanes to strike: the TOTAL players in the match (humans + AI backfill), read
+        /// from the same source <c>ServerPlayerVesselInitializer.EnsureSpawnPosesReady</c> reads
+        /// so the lane set and the spawn ring are always the same arrangement. Falls back to the
+        /// live roster if the launcher never published a count.
+        /// </summary>
+        private int LaneCount => gameData != null && gameData.SelectedPlayerCount != null
+            ? Mathf.Max(1, gameData.SelectedPlayerCount.Value)
+            : Mathf.Max(1, gameData != null && gameData.Players != null ? gameData.Players.Count : 1);
+
+        /// <summary>Crystals in one lane (the authored count), floored at 1.</summary>
+        private int SlotsPerLane => Mathf.Max(1, ResolveAuthoredCrystalCount());
+
+        /// <summary>
+        /// Where crystal <paramref name="crystalId"/> lives on its lane.
+        ///
+        /// <para>Lane-MAJOR (<c>lane = idx / slots</c>), not slot-major, and that is load-bearing:
+        /// <c>NetworkCrystalManager</c> grows the slot list as players arrive and only fills the
+        /// entries that are still empty, so a mapping where a new player changed which lane the
+        /// EXISTING crystals belong to would strand every one of them on the wrong line until it
+        /// was next collected. Appending whole lanes cannot disturb the lanes already laid.</para>
+        ///
+        /// <para>The lane is the straight line through spawn slot <c>lane</c> whose closest
+        /// approach to the cell centre is <see cref="laneOffsetFromCenter"/> - so a pilot who
+        /// flies their crystals flies PAST whatever is in the middle rather than into it, and
+        /// every shot needs a deliberate turn off the flight vector.</para>
+        /// </summary>
+        protected Vector3 LaneSlotPosition(int crystalId)
+        {
+            int idx = Mathf.Max(0, crystalId - 1);
+            int slots = SlotsPerLane;
+            int lanes = LaneCount;
+
+            Vector3 center = cellData != null && cellData.CellTransform != null
+                ? cellData.CellTransform.position
+                : transform.position;
+
+            return ApproachLaneGeometry.SlotPosition(
+                center,
+                ApproachLaneGeometry.LaneOf(idx, slots, lanes), lanes,
+                ApproachLaneGeometry.SlotOf(idx, slots), slots,
+                laneRingRadius, laneOffsetFromCenter, laneLeadDistance, laneLength,
+                laneFormation);
+        }
+
+        /// <summary>
+        /// The position a crystal is FIRST laid at. One seam for both placement modes, so the
+        /// initial batch and every respawn cannot disagree about where a crystal belongs.
+        /// </summary>
+        protected Vector3 InitialSpawnPointFor(int crystalId, Vector3 batchAnchor, bool hasAnchors)
+        {
+            if (TryCourseKey(crystalId, out var key)) return key;
+            if (UsesApproachLanes) return LaneSlotPosition(crystalId);
+            return hasAnchors ? GetSpawnPointAroundAnchor(batchAnchor) : GetAnchorlessSpawnPoint();
         }
 
         /// <summary>
@@ -550,6 +831,8 @@ namespace CosmicShore.Gameplay
             lastAnchorIndexByCrystalId.Clear();
             batchAnchorIndex = 0;
             itemsAdded = 0;
+            // The course keys are NOT cleared: a replay flies the same course.
+            _courseKeyRespawns.Clear();
         }
 
         // ------------------------------------------------------------
@@ -557,6 +840,14 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------
 
         public abstract void RespawnCrystal(int crystalId);
+
+        /// <summary>
+        /// Put crystal <paramref name="crystalId"/> at <paramref name="position"/> on every machine (the Jacks' net lets go
+        /// of the crystal it carried, Garrett, 2026-10-24: "all five crystals can be relocated using the net"). Unlike
+        /// <see cref="RespawnCrystal"/> the place is the caller's, not a spawn point. A crystal that is already there (the
+        /// carrier's own copy) just stays; one elsewhere blooms in at the new place.
+        /// </summary>
+        public abstract void RelocateCrystal(int crystalId, Vector3 position);
         public abstract void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams);
     }
 }

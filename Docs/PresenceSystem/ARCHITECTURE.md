@@ -19,7 +19,7 @@ which delegates to `PresenceLobbyService.JoinOrCreateAsync`.
 | Max players | 100 |
 | Relay transport | None — coexists safely with a NetworkManager |
 | Session-property game mode tag | `PRESENCE_LOBBY` |
-| Discovery model | Query for existing lobby with the `PRESENCE_LOBBY` tag; if found, join; else create. Re-query after a 1500 ms settle to detect simultaneous-creation races. |
+| Discovery model | Query for existing lobby with the `PRESENCE_LOBBY` tag; if found, join; else create. A simultaneous-creation split is healed by the refresh loop's converge (about 2 s and 7 s after the join, then every safety poll); the 1500 ms settle and converge inside the join were removed on 2026-11-17 (they repeated that check and cost about 2 s of every boot). |
 
 ## Why it's separate from the party session
 
@@ -54,8 +54,9 @@ not as session properties. This is intentional:
 | `invite_payloads` | Sender | Recipients (refresh-loop scan) | Composite: one line per outgoing invite, `targetId\|senderId\|sessionId\|senderName\|senderAvatarId`. `sessionId` is the sender's CURRENT party session — a party MEMBER's invite carries the actual host's session (invite chain, `../PartySystem/INVITE_ENHANCEMENTS.md` Task 4) |
 | `accepted_invite` | Recipient | Sender (refresh-loop scan) | "I'm coming to join your session" handshake signal |
 | `joined_party` | Recipient | Everyone (host admit-scan) | "I'm now in this party session" — cross-checked against the session's authoritative player list (B8) |
+| `partySession` | Self | Everyone | The local player's LIVE party session id, so a friend can **Join** it or **Spectate** the match running in it with no invite. Deliberately EMPTY while spectating, offline, or with no live session — nobody can chain-join through a spectator (`../PartySystem/SPECTATOR.md` §1) |
 
-All 8 keys are seeded on every lobby (re)join by
+All 9 keys are seeded on every lobby (re)join by
 `PresenceLobbyService.BuildLocalPlayerProperties` so no key is ever
 absent on first refresh (absent looks identical to empty in UGS).
 
@@ -85,11 +86,27 @@ the inviter also gets from the session member sync, and carrying it
 across rejoins would make stale signals permanent.
 
 With the rejoin state-safe, the convergence pause is **removed** —
-`ConvergeToCanonicalAsync` runs on its normal throttle
-(`PRESENCE_CONVERGE_INTERVAL_SECONDS`) even mid-invite / mid-party, so
+`ConvergeToCanonicalAsync` runs on every safety-poll fetch tick
+(`LobbyRefreshScheduler`; the old `PRESENCE_CONVERGE_INTERVAL_SECONDS` timer
+is gone since Block 5 step 8) even mid-invite / mid-party, so
 splits self-heal in every phase. Single-writer is preserved: HCS
 remains the sole author of the values; `PresenceLobbyService` only
 carries them.
+
+**A converge never destroys a lobby somebody else is in (2026-09-11).**
+The migration releases the lobby we were holding through
+`DeleteOwnLobbyQuietlyAsync`, which DELETES when we are its host — right
+for the case it was written for (the simultaneous-create race: a lobby
+made milliseconds ago that we are alone in), destructive when the
+periodic converge applies it to a populated one. A deleted lobby leaves
+its occupants with a dead `ISession`: refreshes throw, the online list
+freezes, and three errors later they take the `ForceReset` path this
+doc calls the main historical failure surface. So the converge now
+**defers** while the lobby we host still holds other players. It costs
+one interval and no eviction: every occupant runs the same converge
+against the same query, so they migrate themselves, and the host — alone
+by then — converges normally. Terminating by construction, since only a
+host ever waits and members always move. See `BUGS.md` B4.
 
 ## Identity propagation (display name / avatar) — how a rename reaches every surface
 
@@ -131,7 +148,8 @@ the push missed goes out on the next refresh tick, always.
 | In-game names / scoreboards | Owner writes `Player.NetName` on profile change (`HandleProfileLoadedAfterSpawn`); replication lands in `OnNetNameValueChanged` on every peer, which mirrors into `Player.Name` AND `RoundStats.Name` (server write replicates `RoundStats.n_Name`) — scoreboard identity follows without waiting for the next scene's pair-init re-sync |
 
 **Latency:** the sender's push is immediate; each remote picks it up on
-its own refresh tick (base 1.5 s / 0.75 s boosted) — so end-to-end
+its own refresh tick (base 1.5 s / 1.1 s boosted; it was 0.75 s until B31, which put the
+presence reads alone over UGS's 1 GET/s/player) — so end-to-end
 ≈ 1-2 s. True sub-second push is the roadmap "push-based presence"
 item (deferred; it rides the same SDK path as the B1/B6 churn).
 
@@ -177,6 +195,22 @@ no-op). Called only by `HostConnectionService.RefreshAsync` when the
 consecutive-error counter exceeds the reconnect threshold (and the
 catch-guard at the top of `RefreshAsync` did not fire).
 
+**If the rejoin after a ForceReset fails** (still offline, rate limited, UGS error) the
+lobby reference stays null. `HostConnectionService` then sets `_presenceRejoinPending` and
+`Update` retries `JoinOrCreateAsync` with backoff (3s, 6s, 12s ... capped at 60s) until a lobby
+is back, the service shuts down, or the session goes offline (BH-2.2). Before this the single
+failed attempt left `IsInPresenceLobby` false forever and the online list stayed empty until a
+restart.
+
+**The same backoff covers the FIRST join (2026-10-08).** `EnsureInitializedAsync` calls
+`JoinOrCreateAsync`, which swallows its own failures and leaves the lobby null, then moves to
+`InPresenceLobby` and creates the Relay session, so the menu looks normal. The refresh watchdog
+never runs without a lobby, so a boot-time failure used to leave the online list empty for the
+whole session. It now calls `SchedulePresenceRejoin()` right after the transition when no lobby
+came back (not in an offline session) - after, because `TryPresenceRejoin` stands down while
+`!IsInitialized`. Every retry and settle wait in this layer is `DelayType.UnscaledDeltaTime`:
+non-HOME menu screens run at `Time.timeScale = 0`.
+
 **False ForceReset is the main historical failure surface** — the YS2
 bug (commit `a1a8eb9`) was an in-flight refresh that fired ForceReset
 during a successful party transition, leaving the joiner in a private
@@ -190,17 +224,30 @@ block (companion to the existing entry guard at the top of
 |---|---|
 | Service implementation | `Assets/_Scripts/Controller/Party/Services/PresenceLobbyService.cs` |
 | Interface | `Assets/_Scripts/Controller/Party/Interfaces/IPresenceLobbyService.cs` |
-| Property writer (mutex + retry) | `Assets/_Scripts/Controller/Party/Services/LobbyPropertyWriter.cs` |
+| Property writer (mutex; save under the request policy) | `Assets/_Scripts/Controller/Party/Services/LobbyPropertyWriter.cs` |
+| UGS failure classifier + retry executor | `Assets/_Scripts/Utility/UgsRequestPolicy.cs` |
 | Refresh cadence | `Assets/_Scripts/Controller/Party/Services/LobbyRefreshScheduler.cs` |
 | Invite-receive detection | `Assets/_Scripts/Controller/Party/Services/InviteService.cs` |
-| Acceptance signal | `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` |
 | Benign log filter | `Assets/_Scripts/Utility/BenignLobbyLogFilter.cs` |
 
 ## Related docs
 
 - `REFACTOR.md` — `PresenceLobbyService` refactor backlog
-- `BUGS.md` — open presence-side bugs (B1, B4, B6)
+- `BUGS.md` — open presence-side bugs (B1, B4, B6 — all 🟡, all awaiting a retest)
 - `TESTS.md` — presence-specific manual test procedures
 - `TODOS.md` — minor parking-lot items
 - `../PartySystem/ARCHITECTURE.md` — party (Relay) layer
 - `../NetworkDiagnostics/ARCHITECTURE.md` — NetDiag overlay used by presence catches
+
+## Freshness fixes (2026-10-31 / 11-01, "friends panel shows stale players")
+
+These are the current timings. They supersede any older poll numbers in this folder:
+
+- **Safety poll:** `LobbyRefreshScheduler.SAFETY_POLL_SECONDS = 20` under the push events. It drops to `WATCHED_POLL_SECONDS = 8` while an online list is on screen (`PresenceWatchDemand`), with ±10 % jitter. Two absent server reads remove a row (absence strikes).
+- **Join converge:** after joining the presence lobby, converge runs at **+2 s** (`FIRST_POLL_AFTER_JOIN_SECONDS`) and again at **+7 s** (+`FOLLOW_UP_POLL_AFTER_JOIN_SECONDS` 5). A simultaneous-create split heals in about 7 s instead of a whole safety poll.
+- **Leaving promptly:** in the editor, `HostConnectionService` leaves the presence lobby on `ExitingPlayMode`, so a stopped MPPM player's row goes at once. Quitting also sets UGS Friends availability to **Offline** (`FriendsInitializer`).
+- **Friends panel:** `FriendsListPanel` re-reads UGS Friends every 15 s while open (`FRIENDS_REFRESH_SECONDS`).
+- **Diagnostics:** the multiplayer debug overlay (Ctrl+Shift+M, `Utility/Diagnostics/MultiplayerDebugOverlay.cs`) shows lobby id, converge outcome, lobbies visible, strikes, the poll timer and watchers, Friends presence, the arcade `LobbySnapshot`, and per-player RTT.
+- **Tests:** `Tests/Editor/MultiplayerBugHuntTests.cs`. Manual: [TEST_CHECKLIST.md](../Multiplayer/TEST_CHECKLIST.md).
+
+Guest arcade AI rosters (game config) are drawn from the host's replicated `ArcadeConfigSyncManager.LobbySnapshot`, not from local edits. `ArcadeGameConfigureModal.ClientRosterDrifted` redraws a guest whose roster drifts from the snapshot. See [Docs/Multiplayer/README.md](../Multiplayer/README.md).

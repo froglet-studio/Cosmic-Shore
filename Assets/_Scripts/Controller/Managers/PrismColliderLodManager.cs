@@ -18,10 +18,13 @@ namespace CosmicShore.Gameplay
     /// by the LOD radius instead of the population.
     ///
     /// Focus points self-register: <see cref="VesselStatus"/> (every vessel, human,
-    /// AI, and menu autopilot alike) and <see cref="Projectile"/> (per flight, so
-    /// shots fired at distant structures wake the colliders they are about to hit)
-    /// call <see cref="RegisterFocus"/>/<see cref="UnregisterFocus"/> from their
-    /// enable/disable lifecycle.
+    /// AI, and menu autopilot alike) and every TRIGGER <see cref="Projectile"/> (per
+    /// flight, so shots fired at distant structures wake the colliders they are about
+    /// to hit) call <see cref="RegisterFocus"/>/<see cref="UnregisterFocus"/> from their
+    /// enable/disable lifecycle. A SWEPT projectile (sweptPrismDetection) reads prisms
+    /// from <see cref="PrismSpatialIndex"/> and does not register: every focus costs
+    /// this manager work per prism, and a held full-auto keeps tens to thousands of
+    /// rounds in the air (2026-11-02).
     ///
     /// Classification runs in ONE Burst pass per tick
     /// (<see cref="PrismSpatialIndex.RunLodClassification"/>) that emits only
@@ -71,7 +74,8 @@ namespace CosmicShore.Gameplay
                  "urgent, so they drain at this rate without ever blocking classification.")]
         [Min(64)] [SerializeField] int maxColliderTogglesPerFrame = 512;
 
-        // Focus registry: vessels + in-flight projectiles. Main-thread only, tiny.
+        // Focus registry: vessels + in-flight TRIGGER projectiles (swept rounds never
+        // register - see the class summary). Main-thread only, tiny.
         static readonly List<Transform> s_foci = new(16);
 
         /// <summary>Active colliders after the last pass (telemetry - EcosystemPerfProbe).</summary>
@@ -111,7 +115,7 @@ namespace CosmicShore.Gameplay
         int _cullCursor;
         readonly List<Prism> _liveScratch = new(4096);
 
-        // Attribution split (Docs/PERFORMANCE_OPTIMIZATION.md): Sweep is the 0.25s
+        // Attribution split (Docs/archive/PERFORMANCE_LOG_2026.md): Sweep is the 0.25s
         // tick (Burst classify + restore/enqueue transitions); Drain is the
         // every-frame budgeted cull application.
         static readonly ProfilerMarker s_sweepMarker = new("LOD.Sweep");

@@ -102,7 +102,7 @@ namespace CosmicShore.Gameplay
 
                 if (v >= maxNormalizedCharge - 1e-4f) break;
 
-                yield return new WaitForSeconds(tickSeconds);
+                yield return CosmicShore.Utility.WaitCache.Seconds(tickSeconds);
             }
 
             _charging = false;
@@ -127,7 +127,7 @@ namespace CosmicShore.Gameplay
 
                 AddUnits(-perTick);
 
-                yield return new WaitForSeconds(tickSeconds);
+                yield return CosmicShore.Utility.WaitCache.Seconds(tickSeconds);
             }
 
             SetUnits(0f);

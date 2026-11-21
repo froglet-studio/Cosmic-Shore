@@ -70,15 +70,31 @@ namespace CosmicShore.Gameplay
             if (!_isRunning)
                 return;
 
-            if (!monitors.Any(m => m.CheckForEndOfTurn()))
+            // A plain loop, not LINQ Any: this runs every frame of every mode, and Any boxed the list's enumerator
+            // each frame (the first shared Unity capture, Grizzly Charge, 2026-10-16). Same short-circuit order.
+            bool ended = false;
+            for (int i = 0; i < monitors.Count; i++)
+                if (monitors[i].CheckForEndOfTurn()) { ended = true; break; }
+            if (!ended)
                 return;
 
             _isRunning = false;
-            // If this raise throws (a subscriber in the turn-end chain failing), the end
-            // is lost permanently - _isRunning is already latched false. Log the trigger
-            // first so any exception printed right after this line pinpoints the culprit.
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-10] [TurnMonitorController] End-of-turn condition met - raising OnMiniGameTurnEnd</color>");
-            gameData.InvokeGameTurnConditionsMet();
+            // The ENTIRE end-game pipeline (winner calc → score sync → reveal) runs
+            // synchronously inside this one raise, and the latch above means it fires
+            // exactly once — so a throwing subscriber must not go quiet. Catch, name the
+            // culprit loudly, and let the downstream fail-open guards (EndGameSequencer /
+            // Scoreboard) still surface an exit path.
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-10] [TurnMonitorController] End-of-turn condition met - raising OnMiniGameTurnEnd");
+            try
+            {
+                gameData.InvokeGameTurnConditionsMet();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogException(e);
+                Debug.LogError("[TurnMonitorController] A turn-end subscriber THREW — the stack above names the culprit. " +
+                               "The game-end chain was cut short at that subscriber; later subscribers never ran.");
+            }
         }
 
         // ── Event handlers ───────────────────────────────────────────────

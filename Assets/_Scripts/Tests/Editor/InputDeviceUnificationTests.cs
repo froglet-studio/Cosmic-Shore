@@ -121,7 +121,7 @@ namespace CosmicShore.Tests
 
             string overview = Code(OverviewPath);
             Assert.IsTrue(overview.Contains("escapeKey"), "Escape must be an overview gesture.");
-            Assert.IsTrue(overview.Contains("startButton"), "Pad Start must be an overview gesture.");
+            Assert.IsTrue(overview.Contains("selectButton"), "Pad Select must be an overview gesture.");
         }
 
         // ==================================================================
@@ -210,7 +210,8 @@ namespace CosmicShore.Tests
             // InputDeviceActuation was extracted to end.
             foreach (var path in new[] { ControllerPath, SwitcherPath })
                 Assert.IsTrue(Regex.IsMatch(Code(path),
-                        @"DetectActuatedThisFrame\(\s*?
+                        @"DetectActuatedThisFrame\(\s*
+?
 ?\s*ref \w+, [^,]+, \w+"),
                     $"{Path.GetFileName(path)} does not pass its CURRENT family to the detector, " +
                     "so it cannot apply the claim threshold.");

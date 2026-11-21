@@ -55,6 +55,17 @@ namespace CosmicShore.Utility
         static Camera _appliedCamera;
         static float _homeFov;
 
+        // The scope override (see SetHomeFieldOfViewOverride). Keyed on the owning Transform for
+        // the same reason _targetKey is: a late release from an outgoing vessel must not cancel
+        // the incoming one's zoom during a swap.
+        static Transform _homeFovOverrideKey;
+        static float _homeFovOverride;
+        static bool _homeFovOverrideActive;
+
+        // The ride scale (see SetEffectScale), keyed on the owning Transform like the scope override.
+        static Transform _effectScaleKey;
+        static float _effectScale = 1f;
+
         static SpeedTunnelConfigSO _config;
         static bool _configResolved;
 
@@ -65,7 +76,8 @@ namespace CosmicShore.Utility
         /// <summary>The vessel the tunnel is currently driven by, or null when it is off.</summary>
         public static IVesselStatus Target => _target;
 
-        /// <summary>Current effect strength in [0, 1] — 0 while the law is idle.</summary>
+        /// <summary>Current effect strength: [0, 1] by the law, up to <see cref="SpeedTunnelConfigSO.MaxEffect"/> under a
+        /// ride scale (<see cref="SetEffectScale"/>) — 0 while the law is idle.</summary>
         public static float Effect01 => _effect01;
 
         /// <summary>True while the tunnel is holding a camera and/or the Panini override.</summary>
@@ -141,6 +153,115 @@ namespace CosmicShore.Utility
         /// </summary>
         public static void SetSuppressed(bool suppressed) => _suppressed = suppressed;
 
+        /// <summary>
+        /// Replace the field of view this law treats as HOME — the value it narrows down FROM and
+        /// restores TO — for as long as an ability is magnifying the view.
+        ///
+        /// <para><b>It has NO caller today</b>, and is kept anyway because it is a GUARD rather
+        /// than a feature: it is the one sanctioned way to magnify the gameplay camera, and
+        /// deleting it re-opens the direct <c>Camera.fieldOfView</c> write the law exists to
+        /// prevent. Its first caller was the Serpent's scope, which no longer magnifies the
+        /// gameplay camera at all — a magnified flight view read as nauseating, so that scope's
+        /// magnification moved into a window of its own
+        /// (<c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 4). The finding that leaves
+        /// behind is worth having before reaching for this: <i>a magnified view is a lever on
+        /// every motion that reaches it</i>, so magnifying what the pilot FLIES with multiplies
+        /// the camera's settle, the vessel's roll and this law's own speed narrowing by exactly
+        /// the factor it multiplies the target. Prefer a second, magnified picture.</para>
+        ///
+        /// <para><b>Why this exists rather than an ability writing the camera.</b> This law is the
+        /// only writer of the gameplay camera's FOV, and a direct write fails two ways, both
+        /// silent: while the tunnel is engaged it is overwritten every frame, and when the tunnel
+        /// ENGAGES it captures whatever FOV it finds as the home to restore later — so a live zoom
+        /// is baked in permanently and the player never gets their FOV back. Routing the zoom
+        /// through the home is what keeps ONE writer: the tunnel still narrows for speed, it just
+        /// narrows from the scoped base, so a scoped pilot who accelerates still reads their speed
+        /// in the optics instead of the two effects fighting over one number.</para>
+        ///
+        /// <para>An ability earns this surface only when magnifying the FLIGHT VIEW is the
+        /// mechanic — not merely when magnification is. The Dolphin's Echo Sight wanted a zoom,
+        /// worked without one, and the surface was reverted; the Serpent's scope needed the
+        /// magnification and did not need it on the flight view.</para>
+        ///
+        /// <para>The override does NOT itself engage the effect — <see cref="Tick"/> engages
+        /// whenever one is active, so the zoom applies at a standstill, where the speed effect is
+        /// zero and nothing would otherwise be writing the camera at all.</para>
+        /// </summary>
+        public static void SetHomeFieldOfViewOverride(float fov, Transform key)
+        {
+            if (fov <= 0f) return;
+            _homeFovOverrideKey = key;
+            _homeFovOverride = fov;
+            _homeFovOverrideActive = true;
+        }
+
+        /// <summary>
+        /// Drop the scope override and hand the camera back to the player's own field of view,
+        /// but only if <paramref name="key"/> still owns it — the swap guard
+        /// <see cref="ClearTarget(Transform)"/> has, for the same reason.
+        /// </summary>
+        public static void ClearHomeFieldOfViewOverride(Transform key)
+        {
+            if (_homeFovOverrideKey == key)
+                ClearHomeFieldOfViewOverride();
+        }
+
+        /// <summary>Unconditional off (scene teardown, a despawned vessel).</summary>
+        public static void ClearHomeFieldOfViewOverride()
+        {
+            _homeFovOverrideKey = null;
+            _homeFovOverrideActive = false;
+        }
+
+        /// <summary>True while an ability is holding the view magnified.</summary>
+        public static bool HasHomeFieldOfViewOverride => _homeFovOverrideActive;
+
+        /// <summary>
+        /// Scale the law's effect while an ability RIDES the vessel (2026-10-27, the Meerkat's wormhole: "use 5x the normal
+        /// value when going through the wormhole"). The speed is still the measured speed and the law still the one
+        /// absolute function of it — the same speed on any vessel still looks the same outside the ride — this only says
+        /// how deep the push-in goes for the moments a tunnel flies the hull, up to <see cref="SpeedTunnelConfigSO.MaxEffect"/>.
+        /// Keyed on the owning vessel's Transform, the scope override's guard: it applies only while that vessel is the one
+        /// the law is driven by, and a late release from an outgoing vessel cannot cancel the incoming one's.
+        /// </summary>
+        public static void SetEffectScale(float scale, Transform key)
+        {
+            _effectScaleKey = key;
+            _effectScale = Mathf.Clamp(scale, 0f, SpeedTunnelConfigSO.MaxEffect);
+        }
+
+        /// <summary>Drop the ride scale, but only if <paramref name="key"/> still owns it.</summary>
+        public static void ClearEffectScale(Transform key)
+        {
+            if (_effectScaleKey == key)
+                ClearEffectScale();
+        }
+
+        /// <summary>Unconditional off.</summary>
+        public static void ClearEffectScale()
+        {
+            _effectScaleKey = null;
+            _effectScale = 1f;
+        }
+
+        /// <summary>The scale in force: the ride's while the vessel holding it is the law's target, else 1.</summary>
+        public static float EffectScale => _effectScaleKey && _effectScaleKey == _targetKey ? _effectScale : 1f;
+
+        /// <summary>
+        /// The PLAYER's own field of view — what the camera runs at with neither the speed effect
+        /// nor a scope applied, and what <see cref="RestoreFov"/> hands back. An ability holding
+        /// an override reads this to find its unscoped endpoint, because the camera's live value
+        /// is by then the override's own output and lerping from it would ratchet.
+        /// </summary>
+        public static float HomeFieldOfView => _homeFov;
+
+        /// <summary>
+        /// The field of view the effect narrows from this frame: the scope's while it holds one,
+        /// else the camera's own captured home. <see cref="RestoreFov"/> deliberately does NOT
+        /// read this — releasing always hands back the PLAYER's value, never the scope's.
+        /// </summary>
+        static float EffectiveHomeFov => _homeFovOverrideActive ? _homeFovOverride : _homeFov;
+
         /// <summary>Drop the cached config so the next frame re-reads the asset (editor tooling).</summary>
         public static void InvalidateConfig()
         {
@@ -156,6 +277,10 @@ namespace CosmicShore.Utility
             _target = null;
             _targetKey = null;
             _suppressed = false;
+            _homeFovOverrideKey = null;
+            _homeFovOverrideActive = false;
+            _effectScaleKey = null;
+            _effectScale = 1f;
             _effect01 = 0f;
             _applied = false;
             _appliedCamera = null;
@@ -183,7 +308,14 @@ namespace CosmicShore.Utility
 
             float target01 = 0f;
             if (!_suppressed && config.Enabled && IsTargetLive())
-                target01 = config.Effect01(_target.Speed);
+            {
+                // The speed the PILOT feels: a warp field (Docs/WARP_FIELD.md) multiplies the world
+                // speed by the vessel's local scale, and a shrunken vessel cruising at its normal
+                // pace must not read as one crawling. Exactly the raw speed with no field.
+                var hull = _target.ShipTransform;
+                float warp = hull ? WarpFieldRuntime.ScaleAt(hull.position) : 1f;
+                target01 = config.Effect01(_target.Speed / warp) * EffectScale;
+            }
 
             _effect01 = Mathf.Lerp(_effect01, target01,
                                    1f - Mathf.Exp(-config.Responsiveness * Mathf.Max(0f, deltaTime)));
@@ -195,7 +327,10 @@ namespace CosmicShore.Utility
             // suppresses also CUTS to the replay camera, so those writes would land on the
             // hand-posed broadcast camera whose field of view the replay just read to fit its
             // shot — precisely the outcome the hold exists to prevent.
-            if (!_suppressed && _effect01 > 0.001f)
+            // An active scope override engages the law on its own: the zoom has to hold at a
+            // standstill, where the speed term is zero and nothing else would be writing the
+            // camera's field of view at all.
+            if (!_suppressed && (_effect01 > 0.001f || _homeFovOverrideActive))
                 Apply(config, _effect01);
             else if (_applied)
                 Release();
@@ -231,7 +366,7 @@ namespace CosmicShore.Utility
                 if (cam != _appliedCamera)
                     _homeFov = cam.fieldOfView;
 
-                cam.fieldOfView = config.FovFor(_homeFov, t);
+                cam.fieldOfView = config.FovFor(EffectiveHomeFov, t);
                 _appliedCamera = cam;
             }
             else
@@ -279,7 +414,7 @@ namespace CosmicShore.Utility
             _homeFov = fov;
             // Re-apply immediately so the frame the slider moves shows the new home, not the old.
             if (_applied && _appliedCamera != null && !_appliedCamera.orthographic)
-                _appliedCamera.fieldOfView = Config.FovFor(_homeFov, _effect01);
+                _appliedCamera.fieldOfView = Config.FovFor(EffectiveHomeFov, _effect01);
         }
 
         static PostProcessingManager PostProcessing => PostProcessingManager.Instance;
@@ -358,7 +493,14 @@ namespace CosmicShore.Utility
         {
             void OnEnable() => DisplayGraphicsSettings.OnFieldOfViewChanged += OnHomeFieldOfViewChanged;
 
-            void LateUpdate() => Tick(Time.deltaTime);
+            // Named so the Profiler can tell the ten nested "Driver" classes apart (they all read as
+            // "::Driver.LateUpdate"; the 2026-10-17 menu capture had an 88 ms spike there and no way to say whose).
+            static readonly Unity.Profiling.ProfilerMarker s_lateUpdate = new("VesselSpeedTunnel.LateUpdate");
+
+            void LateUpdate()
+            {
+                using (s_lateUpdate.Auto()) Tick(Time.deltaTime);
+            }
 
             void OnDisable()
             {

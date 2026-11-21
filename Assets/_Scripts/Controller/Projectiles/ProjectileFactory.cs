@@ -7,9 +7,9 @@ namespace CosmicShore.Gameplay
 {
     public enum ProjectileType
     {
-        Normal,
-        Energized,
-        SuperEnergized
+        Normal = 0,
+        Energized = 1,
+        SuperEnergized = 2
     }
     
     public class ProjectileFactory : MonoBehaviour

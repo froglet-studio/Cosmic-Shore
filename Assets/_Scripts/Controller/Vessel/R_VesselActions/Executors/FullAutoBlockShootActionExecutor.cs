@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.Core;
 using CosmicShore.ECS;
 using CosmicShore.Gameplay;
@@ -183,9 +183,11 @@ namespace CosmicShore.Gameplay
                     {
                         var abilities = _status?.ElementalAbilityHandler;
 
-                        // Muzzle speed is resolved per volley, not per hold: the SPACE level
-                        // that scales the guns can move mid-press (crystals, comeback buffs).
-                        var shotSpeed = so.ResolveSpeed(_status);
+                        // Muzzle speed is resolved per volley, not per hold: the gun's HEAT —
+                        // which shortens range in proportion to the cone — moves every frame
+                        // of fire. The factor is the bullets' own (one shared GunSprayAccuracy),
+                        // so a turret shot still goes exactly as far as a bullet would.
+                        var shotSpeed = so.ResolveSpeed(_status) * (_spray ? _spray.RangeFactor : 1f);
 
                         // SPACE level-5 'Piercing Bullets' — the SAME gate the cannons use.
                         // Below it the shot is stopped by the first prism it hits and leaves
@@ -212,7 +214,7 @@ namespace CosmicShore.Gameplay
                         // live Mass level. Volume = x·y·z of lossyScale, so the stretch feeds
                         // Cell.LiveVolume — "volume is the spine".
                         var blockScale = so.BlockScale;
-                        blockScale.z *= abilities ? abilities.Multiplier(Element.Mass) : 1f;
+                        blockScale.z *= so.MassPrismStretchMultiplier(_status);
 
                         // Distance the shot covers before its lifetime ends. The bullets' mover
                         // eases each step by cos(t·π/2T), so the range is that integral —
@@ -513,6 +515,12 @@ namespace CosmicShore.Gameplay
             if (!stamped && prism.TryEnsureRenderEntityForStamp())
                 stamped = PrismRenderService.StampFlight(in prism.RenderHandle, now, flightTime, in v);
 
+            // No Entities Graphics on this device (a WebGL2 browser): the same stamp rides the
+            // MeshRenderer's property block (Docs/PRISM_ANIMATION.md §4.11). False everywhere else.
+            bool meshRendererPath = false;
+            if (!stamped)
+                stamped = meshRendererPath = PrismMeshRendererStamps.StampFlight(prism.StampRenderer, now, flightTime, in v);
+
             if (!stamped)
             {
                 // STRICT MODE: no CPU fallback. The prism simply appears at its anchor
@@ -537,7 +545,7 @@ namespace CosmicShore.Gameplay
             // muzzle offset (minus the whole flight vector) in object space. Reset first:
             // pooled reuse must not compound envelopes run over run.
             var mesh = prism.EffectiveRenderMesh();
-            if (mesh) PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, mesh);
+            if (mesh && !meshRendererPath) PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, mesh);
 
             // Object-space muzzle offset. NOT Transform.InverseTransformVector: a
             // just-pulled prism sits at localScale ZERO until its creation coroutine
@@ -552,8 +560,11 @@ namespace CosmicShore.Gameplay
                 local.x / Mathf.Max(1e-4f, Mathf.Abs(finalScale.x)),
                 local.y / Mathf.Max(1e-4f, Mathf.Abs(finalScale.y)),
                 local.z / Mathf.Max(1e-4f, Mathf.Abs(finalScale.z)));
-            PrismRenderService.ExpandBoundsForClockAnimation(in prism.RenderHandle, in objDisp,
-                4f + 0.25f * math.length(objDisp));
+            float pad = 4f + 0.25f * math.length(objDisp);
+            if (meshRendererPath)
+                PrismMeshRendererStamps.ExpandBounds(prism.StampRenderer, mesh, in objDisp, pad);
+            else
+                PrismRenderService.ExpandBoundsForClockAnimation(in prism.RenderHandle, in objDisp, pad);
         }
 
         /// <summary>
@@ -670,6 +681,7 @@ namespace CosmicShore.Gameplay
                     // The visual snaps to the transform, which is exactly where the shader
                     // had already drawn it — the stamp reaches zero offset at t = flightTime.
                     PrismRenderService.ClearFlightStamp(in prism.RenderHandle);
+                    PrismMeshRendererStamps.ClearFlightStamp(prism.StampRenderer); // §4.11 twin
 
                     // Give the culling envelope back. StampFlight inflated RenderBounds to
                     // cover the whole muzzle-to-anchor sweep; anchored turret prisms are
@@ -677,6 +689,7 @@ namespace CosmicShore.Gameplay
                     // them would be un-cullable for the rest of the session.
                     var mesh = prism.EffectiveRenderMesh();
                     if (mesh) PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, mesh);
+                    PrismMeshRendererStamps.ResetBounds(prism.StampRenderer);
                 }
                 else if (suctionShot != null)
                 {
@@ -700,7 +713,7 @@ namespace CosmicShore.Gameplay
                             suctionShot.EffectDuration - suctionShot.FlightTime - RevealOverlapSeconds);
                         var shot = suctionShot;
                         PrismTimerManager.EnsureInstance()
-                            .ScheduleAction(this, delay, () => CreateSuctionPrism(shot));
+                            ?.ScheduleAction(this, delay, () => CreateSuctionPrism(shot));
                     }
                 }
             }

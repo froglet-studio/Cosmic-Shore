@@ -385,11 +385,11 @@ namespace CosmicShore.UI
         }
 
         /// <summary>The fleet's press-flash colour, so the row and the HUD flash identically.</summary>
-        public Color PressFlashColor => ResolveStyle() ? ResolveStyle().pressFlashColor : new Color(1f, 1f, 1f, 0.22f);
+        public Color PressFlashColor => ResolveStyle() ? ResolveStyle().PressFlashColor : new Color(1f, 1f, 1f, 0.22f);
 
         /// <summary>The fleet's ready-flash colour — the loudest thing the card ever does.</summary>
         public Color ReadyFlashColor =>
-            ResolveStyle() ? ResolveStyle().cooldownReadyFlashColor : new Color(1f, 1f, 1f, 0.5f);
+            ResolveStyle() ? ResolveStyle().CooldownReadyFlashColor : new Color(1f, 1f, 1f, 0.5f);
 
         /// <summary>
         /// Build the veil and the flash over the icon, once, on the first row that needs them.
@@ -413,7 +413,7 @@ namespace CosmicShore.UI
             // See the class summary: the veil DEPLETES, so false is what reads as clockwise. The
             // lockup's own overlay carries the identical value and the identical reason.
             _veil.fillClockwise = false;
-            _veil.color = style ? style.cooldownVeilColor : new Color(0.024f, 0.031f, 0.063f, 0.72f);
+            _veil.color = style ? style.CooldownVeilColor : new Color(0.024f, 0.031f, 0.063f, 0.72f);
             _veil.gameObject.SetActive(false);
 
             _flash = ResolveOverlay(host, "AbilityFlash");

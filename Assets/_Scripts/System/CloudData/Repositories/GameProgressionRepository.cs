@@ -18,6 +18,12 @@ namespace CosmicShore.Core
             data.UnlockedModes ??= new List<string>();
             data.CompletedQuests ??= new List<string>();
             data.BestStats ??= new Dictionary<string, float>();
+            data.MaxUnlockedIntensity ??= new Dictionary<string, int>();
+            data.IntensityPlayCounts ??= new Dictionary<string, int>();
+
+            // Unlocks, quests and intensity progress are all keyed by the enum member NAME, so a
+            // mode rename would silently re-lock every mode. Runs on every load.
+            GameModeRenameMigration.Migrate(data);
         }
     }
 }
