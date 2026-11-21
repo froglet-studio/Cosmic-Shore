@@ -149,7 +149,7 @@ LADDERS = {
     "aiStandoff":           ([200, 240, 280, 320], "up"),
     "aiEdgeDegrees":        ([20, 14, 9, 5], "down"),
     "aiAimError":           ([50, 30, 15, 5], "down"),
-    "aiCrystalDetourRange": ([150, 220, 300, 400], "up"),
+    "aiCrystalDetourRange": ([300, 200, 100, 0], "down"),   # trained 2026-11-21: crystal chasing cost the AI its nests (LANCEFALL.md 4.1)
 }
 SHARED = {"aiChordOffset": CHORD_OFFSET}
 g.emit_asset("Assets/_SO_Assets/Games/LancefallSettings.asset", G_ASSET["LancefallSettings"],
