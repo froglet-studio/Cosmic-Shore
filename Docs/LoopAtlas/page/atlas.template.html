@@ -305,7 +305,7 @@ body { background: var(--ground); color: var(--text); }
     ['uses', 'Types it holds'], ['mentions', 'Types it mentions'], ['types', 'Types'], ['declares', 'Declares'],
     ['usedBy', 'Fields of this type'], ['usedByType', 'Types that hold it'], ['mentionedBy', 'Mentioned by'],
     ['refBy', 'Referred to by'], ['assetRefBy', 'Used by assets'], ['instancedIn', 'Instanced in'], ['namespace', 'Namespace'],
-    ['loops', 'Loops it serves']];
+    ['loops', 'Loops it serves'], ['ability', 'The ability'], ['abilityOf', 'The ability it is']];
   var MEMBER_BOX = { S: 'Serialized fields', F: 'Fields', K: 'Constants', P: 'Properties', M: 'Methods', C: 'Constructors',
     E: 'Events', V: 'Enum values', t: 'Nested types' };
   var KIND_WORD = { root: 'Codebase', group: 'Group', dir: 'Folder', cs: 'C# file', asset: 'Asset', prefab: 'Prefab', unity: 'Scene',
@@ -383,12 +383,14 @@ body { background: var(--ground); color: var(--text); }
   function labelOf(spec, ping) {
     if (spec.label) return spec.label;
     if (spec.box) return spec.box;
+    if (spec.id && spec.id.slice(0, 2) === 'v:') return vLabel(spec.id);
     var r = CODE.recs[spec.id]; return r ? r.n : nameOf(spec.id);
   }
   // A place in the tree. Many places can hold the same node id: they are the same node.
   function Place(spec, parent) {
     return { id: spec.id || null, box: spec.box || null, items: spec.items || null, label: spec.label || null, parent: parent,
-      depth: parent ? parent.depth + 1 : 0, kids: null, lx: 0, ly: 0, lr: 1, info: null, tone: spec.tone || null };
+      depth: parent ? parent.depth + 1 : 0, kids: null, lx: 0, ly: 0, lr: 1, info: null, tone: spec.tone || null,
+      note: spec.note != null ? spec.note : null, from: spec.from || null, conn: spec.conn || 0 };
   }
   function codeRoot(n) {
     return CODE.roots[n.id] || (CODE.roots[n.id] = Place({ id: portalId(n.codeKey) }, null));
@@ -397,56 +399,210 @@ body { background: var(--ground); color: var(--text); }
     if (key.indexOf('fleet/') === 0) return 'L:vessel/' + key.slice(6);
     return 'L:' + key;
   }
-  // What a ring holds: its contents, then one box per kind of neighbour. Null while a record it needs is loading.
+  // What a ring holds, the way a person inspects it (Garrett, 2026-11-21: "if i am inspecting an ability I want to see
+  // how it works, what it does, the parameters of interest and what they are"): first what the author wrote for a
+  // person (the /// summary as "How it works", the Inspector's parameters with their tooltips, the assets a designer
+  // tunes), then the code (properties, methods), then every other neighbour together in one Connections box.
+  // Null while a record it needs is loading.
+  var NAMEY = /^(AbilityLabel|DisplayName|displayName|Label|label|Name|name|Title|title|Callsign|callsign|Id|id|key|Key)$/;
+  // words a person wrote to be read (a description), as against a name or label, which is shown as a parameter
+  var PROSE_KEY = /(description|desc|summary|text|blurb|prompt|message|body|explanation|hint)$/i;
+  // Unity's Inspector label for a field name: m_maxSpeed -> Max Speed
+  function nice(k) {
+    k = String(k).replace(/^m_/, '').replace(/^_+/, '');
+    k = k.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+    return k.charAt(0).toUpperCase() + k.slice(1);
+  }
+  function isProse(key, v) {
+    if (typeof v !== 'string' || !v || v === 'null' || /^-?[\d.]+$/.test(v) || v.charAt(0) === '→') return false;
+    return v.length >= 60 || (PROSE_KEY.test(key) && v.length >= 30 && v.indexOf(' ') > 0);
+  }
+  function num(v) { var t = String(v == null ? '' : v).trim().replace(/^"(.*)"$/, '$1').replace(/(\d)[fFdDmM]$/, '$1'); if (t === 'true') return '1'; if (t === 'false') return '0'; var x = parseFloat(t); return isNaN(x) || String(x) !== t.replace(/^\+/, '').replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1') && !/^-?[\d.]+$/.test(t) ? t : String(x); }
+  // an enum field's value as its name ("Mass (2)"), from the sheet row's enum map [10]
+  function enumName(row, v) { var m = row && row[10]; if (!m) return null; var k = String(v).trim(); return m[k] != null ? m[k] : null; }
+  function shown(row, v) {
+    var e = enumName(row, v); if (e != null) return e + ' (' + v + ')';
+    if (row && row[4] === 'bool' && (v === '1' || v === '0')) return v === '1' ? 'on' : 'off';
+    return String(v).replace(/^→ /, '→ ');
+  }
+  // a default as written in code, for a person: 6f -> 6, Mode.Relock -> Relock
+  function dflt(d) { return String(d).replace(/^(-?[\d.]+)[fFdDmM]$/, '$1').replace(/^[A-Z]\w*\.(\w+)$/, '$1').replace(/^true$/, 'on').replace(/^false$/, 'off'); }
+  function sameAsDefault(v, d, row) {
+    if (d == null) return true;
+    var m = row && row[10];
+    if (m) { var dn = String(d).split('.').pop(); for (var k in m) if (m[k] === dn) return String(v).trim() === k; }
+    return num(v) === num(d);
+  }
+  // The parameter-sheet row of a serialized key (first segment, or a former name of it), or null.
+  function psRow(ps, seg) {
+    if (!ps) return null;
+    for (var i = 0; i < ps.length; i++) if (ps[i][0] === seg || (ps[i][8] && ps[i][8].indexOf(seg) >= 0)) return ps[i];
+    return null;
+  }
+  // The sheet row behind any key of an object made from script tid, walking into [Serializable] list entries.
+  // undefined while a type record loads, null when the key is not a declared field.
+  function fieldInfo(tid, key, ping) {
+    var segs = key.replace(/\[[^\]]*\]/g, '').split('.'), row = null;
+    for (var i = 0; i < segs.length; i++) {
+      if (!tid) return null;
+      var t = rec(tid, ping); if (!t) return undefined;
+      row = psRow(t.ps, segs[i]); if (!row) return null;
+      tid = row[9];
+    }
+    return row;
+  }
+  function scriptOf(r) { return r && r.r && r.r.script ? r.r.script[0] : null; }
+  // A list entry's name: its label / name field ("Crystal Joust"), else its number.
+  function entryName(rows, key) {
+    for (var i = 0; i < rows.length; i++) {
+      var k = rows[i][0]; if (k.indexOf(key + '.') !== 0) continue;
+      var rest = k.slice(key.length + 1);
+      if (NAMEY.test(rest) && typeof rows[i][1] === 'string' && rows[i][1] && rows[i][1] !== 'null' && rows[i][1].length < 60) return rows[i][1].replace(/^→ /, '');
+    }
+    var m = key.match(/\[(\d+)\]$/); return m ? 'Entry ' + m[1] : nice(key.split('.').pop());
+  }
+  // A readable name for a value id, once its object is loaded.
+  function vLabel(id) {
+    var o = CODE.recs[recIdOf(id)], key = id.slice(id.indexOf('|') + 1);
+    if (!o) return nice(key.split('.').pop().replace(/\[\d+\]$/, ''));
+    if (/\]$/.test(key)) return entryName(o.f || [], key);
+    return nice(key.split('.').pop());
+  }
+  // The rows directly under key: one child per next segment (.Field or [i]), each labelled for a person.
+  function childKeys(rows, key) {
+    var seen = {}, out = [];
+    rows.forEach(function (x) {
+      if (x[0] === key) return;
+      var rest = x[0].slice(key.length), m = rest.match(/^(\.[^.\[]+|\[[^\]]*\])/); if (!m) return;
+      var ck = key + m[1]; if (seen[ck]) return; seen[ck] = 1;
+      out.push({ key: ck, label: m[1].charAt(0) === '[' ? entryName(rows, ck) : nice(m[1].slice(1)) });
+    });
+    return out;
+  }
+  var CODE_ORDER = [['v:', 0, 'What a designer reads'], ['.asset', 1, 'Tuning assets'], ['.md', 2, 'Docs'], ['s:', 2, 'Docs'],
+    ['.prefab', 3, 'Prefabs and scenes'], ['.unity', 3, 'Prefabs and scenes'], ['t:', 4, 'Scripts'], ['.cs', 4, 'Scripts']];
+  function codeRank(id) {
+    for (var i = 0; i < CODE_ORDER.length; i++) { var c = CODE_ORDER[i]; if (c[0].charAt(0) === '.' ? id.slice(0, 2) === 'f:' && id.slice(-c[0].length) === c[0] : id.slice(0, c[0].length) === c[0]) return c; }
+    return [null, 5, 'Other'];
+  }
+  // a loop's code, human-facing first: what a designer reads, tuning assets, docs, prefabs and scenes, scripts
+  function loopCode(r) {
+    var ids = ((r.r && r.r.ability) || []).concat(((r.r && r.r.code) || []).filter(function (c) { return !(r.r.ability || []).some(function (a) { return a === c; }); }));
+    ids.sort(function (a, b) { return codeRank(a)[1] - codeRank(b)[1]; });
+    var items = ids.map(function (c) { return { id: c }; });
+    if (items.length <= 9) return items;
+    var groups = [], by = {};
+    ids.forEach(function (c, j) { var g = codeRank(c)[2]; if (!by[g]) { by[g] = []; groups.push(g); } by[g].push(items[j]); });
+    return groups.map(function (g) { return by[g].length === 1 ? by[g][0] : { box: g + ' (' + by[g].length + ')', items: by[g], tone: 'human' }; });
+  }
+  // Every neighbour box but the ones a person looks for first goes into one Connections box.
+  function connections(near) {
+    if (near.length <= 1) return near;
+    var n = 0; near.forEach(function (b) { n += b.items ? b.items.length : 1; });
+    return [{ box: 'Connections (' + n + ')', items: near, tone: 'near', conn: 1 }];
+  }
   function specsFor(pl, ping) {
+    if (pl.note != null) return [];
     if (pl.box) return pl.items;
     var id = pl.id, r = rec(id, ping); if (!r) return null;
     var out = [], i;
     if (r.k === 'value') {
-      if (r.sub) r.sub.forEach(function (x) { out.push({ id: 'v:' + r.o.slice(2) + '|' + x[0], label: x[0].slice(r.key.length).replace(/^\./, '') || x[0] }); });
-      if (r.ref) out.push({ box: 'Refers to', items: [{ id: r.ref }], tone: 'near' });
-      if (r.script) {
-        var f = fieldOf(r.script, r.key.split(/[.\[]/)[0], ping);
+      var sub = r.sub || [];
+      if (sub.length) childKeys(sub, r.key).forEach(function (c) { out.push({ id: 'v:' + r.o.slice(2) + '|' + c.key, label: c.label }); });
+      var fi = r.script ? fieldInfo(r.script, r.key, ping) : null;
+      if (fi && fi[7] && fi[7].length > 160) out.push({ note: fi[7], label: 'How it works' });
+      var vn = [];
+      if (r.ref) vn.push({ box: 'Refers to', items: [{ id: r.ref }], tone: 'near' });
+      if (r.script && r.key.indexOf('.') < 0 && r.key.indexOf('[') < 0) {
+        var f = fi && fi[5] ? fi[5] : fieldOf(r.script, r.key.split(/[.\[]/)[0], ping);
         if (f === null) return null;
-        if (f) out.push({ box: 'The field', items: [{ id: f }], tone: 'near' });
+        if (f) vn.push({ box: 'The field in code', items: [{ id: f }], tone: 'near' });
       }
-      out.push({ box: 'Set on', items: [{ id: r.o }], tone: 'near' });
-      return out;
+      vn.push({ box: 'Set on', items: [{ id: r.o }], tone: 'near' });
+      return out.concat(vn);
     }
-    if (r.k === 'loop') (r.r && r.r.code || []).forEach(function (c) { out.push({ id: c }); });
-    if (r.f && r.f.length) {
-      var segs = {}, order = [];
-      r.f.forEach(function (x) { var s = x[0].split(/[.\[]/)[0]; if (!segs[s]) { segs[s] = 1; order.push(s); } });
-      var vals = order.map(function (s) { return { id: 'v:' + id.slice(2) + '|' + s, label: s }; });
-      if (r.c && r.c.length) out.push({ box: 'Values (' + vals.length + ')', items: vals }); else out = out.concat(vals);
+    var near = [], lead = [];
+    if (r.k === 'loop') out = out.concat(loopCode(r));
+    // an asset file holding one object (a ScriptableObject asset): open straight onto that object's parameters
+    var obj = r, objId = id;
+    if (r.k === 'asset' && r.c && r.c.length === 1 && r.c[0].slice(0, 2) === 'o:') { obj = rec(r.c[0], ping); objId = r.c[0]; if (!obj) return null; }
+    var st = scriptOf(obj), sr = st ? rec(st, ping) : null; if (st && !sr) return null;
+    if (sr && sr.doc && sr.doc.length > 240 && obj !== r) out.push({ note: sr.doc, label: 'How it works', from: st });
+    if (r.doc && r.doc.length > 240) out.push({ note: r.doc, label: 'How it works' });
+    if (obj.f && obj.f.length) {
+      var ps = sr && sr.ps, segs = {}, order = [];
+      obj.f.forEach(function (x) { var s = x[0].split(/[.\[]/)[0]; if (!segs[s]) { segs[s] = 1; order.push(s); } });
+      var vals = order.map(function (s) { return { id: 'v:' + objId.slice(2) + '|' + s, label: nice(s), seg: s }; });
+      if (ps) {
+        var at = function (s) { for (var j = 0; j < ps.length; j++) if (ps[j][0] === s || (ps[j][8] && ps[j][8].indexOf(s) >= 0)) return j; return -1; };
+        var known = vals.filter(function (v) { return at(v.seg) >= 0; }).sort(function (a, b) { return at(a.seg) - at(b.seg); });
+        known.forEach(function (v) { v.label = nice(ps[at(v.seg)][0]); });
+        var other = vals.filter(function (v) { return at(v.seg) < 0; });
+        var hds = [], byH = {};
+        known.forEach(function (v) { var h = ps[at(v.seg)][1] || 'Parameters'; if (!byH[h]) { byH[h] = []; hds.push(h); } byH[h].push(v); });
+        if (hds.length > 1 && known.length > 8) hds.forEach(function (h) { out.push({ box: h + ' (' + byH[h].length + ')', items: byH[h], tone: 'human' }); });
+        else if (known.length > 12) out.push({ box: 'Parameters (' + known.length + ')', items: known, tone: 'human' });
+        else out = out.concat(known);
+        if (other.length) near.push({ box: 'Other values (' + other.length + ')', items: other, tone: 'value' });
+      } else if (r.c && r.c.length && obj === r) out.push({ box: 'Values (' + vals.length + ')', items: vals, tone: 'value' });
+      else if (r.k === 'go') near.push({ box: 'GameObject values (' + vals.length + ')', items: vals, tone: 'value' });
+      else out = out.concat(vals);
     }
+    if (st) lead.push({ box: 'Its script', items: [{ id: st }], tone: 'near' });
     var inside = [];
-    if (r.c && r.c.length) {
+    if (obj === r && r.c && r.c.length) {
       var kids = r.c.map(function (c, j) { return { id: c, label: (r.cn && r.cn[j]) || null, ck: r.ck ? r.ck[j] : '' }; });
       if (r.k === 'type') {
-        var groups = {}, gorder = [];
-        kids.forEach(function (k) { var g = MEMBER_BOX[k.ck] || 'Members'; if (!groups[g]) { groups[g] = []; gorder.push(g); } groups[g].push(k); });
-        if (gorder.length === 1) inside = kids;
-        else gorder.forEach(function (g) { inside.push({ box: g + ' (' + groups[g].length + ')', items: groups[g] }); });
+        var groups = {}, gorder = [], params = [];
+        kids.forEach(function (k) {
+          if (k.ck === 'S' && r.role) { k.label = nice(nameOf(k.id)); params.push(k); return; }
+          var g = MEMBER_BOX[k.ck] || 'Members'; if (!groups[g]) { groups[g] = []; gorder.push(g); } groups[g].push(k);
+        });
+        if (params.length) {
+          // the Inspector, grouped by its headers, in declaration order
+          var hd = {}, ho = [];
+          (r.ps || []).forEach(function (row) { if (row[5] && row[5].indexOf('m:' + id.slice(2) + '.') === 0) { var h = row[1] || 'Parameters'; if (!hd[h]) { hd[h] = []; ho.push(h); } hd[h].push({ id: row[5], label: nice(row[0]) }); } });
+          var pitems = ho.length > 1 && params.length > 8 ? ho.map(function (h) { return { box: h + ' (' + hd[h].length + ')', items: hd[h], tone: 'human' }; }) : params;
+          if (params.length > 6 || gorder.length) out.push({ box: 'Parameters (' + params.length + ')', items: pitems, tone: 'human' });
+          else out = out.concat(params);
+        }
+        var inst = r.r && r.r.instances || [];
+        if (inst.length) out.push({ box: (r.role === 'config' ? 'Assets made from it' : 'On prefabs and scenes') + ' (' + inst.length + ')', items: inst.map(function (o) { return { id: o }; }), tone: 'human' });
+        var codeBoxes = gorder.map(function (g) { return { box: g + ' (' + groups[g].length + ')', items: groups[g] }; });
+        if (r.role) { var nc = 0; gorder.forEach(function (g) { nc += groups[g].length; }); if (nc) inside.push({ box: 'The code (' + nc + ')', items: gorder.length === 1 ? groups[gorder[0]] : codeBoxes }); }
+        else if (gorder.length === 1) inside = groups[gorder[0]];
+        else inside = codeBoxes;
+      } else if (r.k === 'go') {
+        // a GameObject: our scripts on it first, then its child objects, then Unity's built-in components
+        var BUILTIN = /^(Transform|RectTransform|MeshRenderer|MeshFilter|CanvasRenderer|Canvas|CanvasGroup|Rigidbody|Animator|LODGroup|AudioSource|Light|Camera|.*Collider(2D)?|ParticleSystem.*|SkinnedMeshRenderer|SpriteRenderer|LineRenderer|TrailRenderer|Rigidbody2D|MonoBehaviour|Unity object.*)$/;
+        var mine = kids.filter(function (k) { return k.ck === 'o' && !BUILTIN.test(k.label || ''); });
+        var subs = kids.filter(function (k) { return k.ck !== 'o'; });
+        var built = kids.filter(function (k) { return k.ck === 'o' && BUILTIN.test(k.label || ''); });
+        inside = mine.concat(subs);
+        if (built.length) near.unshift({ box: 'Built-in components (' + built.length + ')', items: built, tone: 'near' });
       } else inside = kids;
     }
-    var near = [];
     if (r.k === 'member' && (r.tk === 'field') && r.p) {
       var tr = rec(r.p, ping); if (!tr) return null;
-      var inst = tr.r && tr.r.instances || [];
-      if (inst.length) near.push({ box: 'Its value in each asset (' + inst.length + ')', items: inst.map(function (o) { return { id: 'v:' + o.slice(2) + '|' + r.n, label: nameOf(o).replace(' ›', '') }; }), tone: 'value' });
+      var inst2 = tr.r && tr.r.instances || [];
+      if (inst2.length) out.push({ box: 'Its value in each asset (' + inst2.length + ')', items: inst2.map(function (o) { return { id: 'v:' + o.slice(2) + '|' + r.n, label: nameOf(o).replace(' ›', '') }; }), tone: 'value' });
     }
-    REL.forEach(function (rl) {
-      if (rl[0] === 'code' && r.k === 'loop') return;
-      var lst = r.r && r.r[rl[0]]; if (!lst || !lst.length) return;
-      near.push({ box: rl[1] + ' (' + lst.length + ')', items: lst.map(function (x) { return { id: x }; }), tone: 'near' });
+    if (r.k === 'member' && r.doc && r.doc.length > 160) out.push({ note: r.doc, label: 'How it works' });
+    [r, obj !== r ? obj : null].forEach(function (src) {
+      if (!src) return;
+      REL.forEach(function (rl) {
+        if ((rl[0] === 'code' || rl[0] === 'ability') && r.k === 'loop') return;
+        if (rl[0] === 'script' || (rl[0] === 'instances' && src.k === 'type')) return;
+        var lst = src.r && src.r[rl[0]]; if (!lst || !lst.length) return;
+        var b = { box: rl[1] + ' (' + lst.length + ')', items: lst.map(function (x) { return { id: x }; }), tone: 'near' };
+        if (rl[0] === 'loops' || rl[0] === 'abilityOf') lead.push(b); else near.push(b);
+      });
     });
     if (r.p && r.p.indexOf('code/') !== 0) near.push({ box: r.k === 'loop' ? 'The loop above' : 'Lives in', items: [{ id: r.p }], tone: 'near' });
     if (r.k === 'loop') near.push({ id: 'code', label: 'The whole codebase' });
-    // what it is made of stays loose when there is room; otherwise it gets a box of its own beside the neighbours
-    if (inside.length && (r.k === 'loop' || out.length + inside.length + near.length > MAXK)) out.push({ box: (r.k === 'loop' ? 'Loops inside' : 'Inside') + ' (' + r.c.length + ')', items: inside });
+    if (inside.length && (r.k === 'loop' || out.length + inside.length + lead.length + 1 > MAXK)) out.push({ box: (r.k === 'loop' ? 'Loops inside' : 'Inside') + ' (' + r.c.length + ')', items: inside });
     else out = out.concat(inside);
-    return out.concat(near);
+    return out.concat(lead, connections(near));
   }
   // The field a serialized value fills: on the script's type, or up its base types.
   function fieldOf(tid, name, ping) {
@@ -493,17 +649,19 @@ body { background: var(--ground); color: var(--text); }
     });
     return { rho: rho, r: r };
   }
+  // The card sits in the middle, where the eye lands first, and is the biggest thing in the ring: what the node is,
+  // what it does and its parameters are read before anything it holds. Its contents ring it, read clockwise from the top.
   function layoutPlace(pl) {
     var ch = pl.kids, LIM = 0.86;
     if (!ch.length) { pl.info = { x: 0, y: 0, r: 0.82 }; return; }
-    if (ch.length === 1) { pl.info = { x: 0, y: -0.52, r: 0.3 }; ch[0].lx = 0; ch[0].ly = 0.3; ch[0].lr = 0.52; return; }
-    if (ch.length > 10) {
-      var k1 = Math.ceil(ch.length * 0.62), o1 = orbitU(ch.slice(0, k1), LIM, 0, true, pl);
-      orbitU(ch.slice(k1), o1.rho - o1.r - 0.03, 0, false, pl);
-    } else orbitU(ch, LIM, 0, true, pl);
+    if (ch.length === 1) { pl.info = { x: 0, y: -0.36, r: 0.46 }; ch[0].lx = 0; ch[0].ly = 0.5; ch[0].lr = 0.34; return; }
+    var C = ch.length > 12 ? 0.38 : 0.46;
+    pl.info = { x: 0, y: 0, r: C };
+    orbitU(ch, LIM, C, false, pl);
   }
   function imagesOf(pl) {
     if (pl.id) { var r = CODE.recs[recIdOf(pl.id)]; return r && r.im || null; }
+    if (!pl.items) return null;
     if (pl._im !== undefined && pl._imN === pl.items.length) return pl._im;
     var out = [];
     for (var i = 0; i < pl.items.length && out.length < 4; i++) {
@@ -538,40 +696,148 @@ body { background: var(--ground); color: var(--text); }
     ctx.restore();
   }
   function placeTone(pl, r, C) {
-    if (pl.box) return pl.tone === 'value' ? C.proposed : C.line;
+    if (pl.note != null) return C['text-soft'];
+    if (pl.box) return pl.tone === 'value' ? C.proposed : pl.tone === 'human' ? C['tier-5'] : C.line;
     if (!r) return C['text-off'];
     return ({ loop: C['tier-7'], type: C['tier-5'], member: C['tier-3'], value: C.proposed, ns: C['tier-6'], dir: C['text-soft'],
       asset: C['tier-6'], prefab: C['tier-6'], unity: C['tier-7'], comp: C['tier-4'], go: C['tier-2'], pi: C['tier-2'],
       cs: C['tier-4'], md: C['text-soft'], sec: C['text-soft'], img: C.selection, missing: C.hole })[r.k] || C.text;
   }
-  // The lines a node's card says, most important first.
-  function cardLines(pl, r) {
-    if (pl.box) return pl.tone === 'near' || pl.tone === 'value'
-      ? { kick: pl.tone === 'value' ? 'VALUES' : 'NEIGHBOURS', name: pl.box, rows: [pl.items.length + (pl.items.length === 1 ? ' neighbour' : ' neighbours') + '. Each is the node itself, the same wherever it appears: zoom in instead of following a link.'] }
-      : { kick: pl.tone === 'bucket' ? 'BY NAME' : 'INSIDE', name: pl.box, rows: [pl.items.length + ' inside'] };
-    if (!r) return { kick: '…', name: nameOf(pl.id), rows: [] };
-    if (!pl.parent && r.k === 'loop') return { kick: 'THE CODE OF ' + r.n.toUpperCase(), name: 'Code', rows: [((r.r && r.r.code) || []).length + ' places in the code implement this loop. Zoom into any of them: every neighbour of a node sits beside it, so the whole codebase is reachable from here without a link.'] };
-    var kw = KIND_WORD[r.k] || r.k, rows = [], nm = r.n;
-    if (r.k === 'value' && pl.label && pl.label !== r.key) nm = pl.label;
-    if (r.k === 'member') kw = ({ field: r.ser === true ? 'Serialized field' : 'Field', const: 'Constant', property: 'Property', method: 'Method', ctor: 'Constructor', event: 'Event', enum: 'Enum value' })[r.tk] || 'Member';
-    if (r.k === 'type') kw = (r.mods ? r.mods + ' ' : '') + (r.tk || 'type');
-    if (r.k === 'value') { rows.push('= ' + r.v); rows.push('key ' + r.key); }
-    if (r.v != null && r.k !== 'value') rows.push('= ' + r.v);
-    if (r.ty) rows.push('type ' + r.ty);
-    if (r.sig) rows.push(r.sig);
-    if (r.tip) rows.push('“' + r.tip + '”');
-    if (r.hd) rows.push('under the header “' + r.hd + '”');
-    if (r.path) rows.push(r.path + (r.l ? ':' + r.l : ''));
-    else if (r.l && pl.id && pl.id.slice(0, 2) === 'm:') rows.push('line ' + r.l);
-    if (r.wh) rows.push(r.wh + ' px');
-    if (r.lines) rows.push(r.lines + ' lines');
-    if (r.uc && r.k !== 'go') rows.push('Unity ' + r.uc);
-    if (r.d) rows.push(r.d);
-    if (r.c && r.c.length && r.k !== 'type') rows.push(r.c.length + ' inside');
-    if (r.r && r.r.code && pl.parent) rows.push(r.r.code.length + ' places in the code implement it');
-    if (pl.parent && pl.parent.box && pl.parent.parent && pl.parent.parent.id) rows.push('Here as a neighbour of ' + labelOf({ id: pl.parent.parent.id }) + '. Every copy is this same node.');
-    return { kick: kw.toUpperCase(), name: nm, rows: rows };
+  // What a node's card says, in the order a person reads it: what it is, what it does (the author's words), the
+  // parameters that matter with their values, and only then the facts about the code (type, signature, path:line).
+  // { kick, name, what, params: [[label, value, note]], rows, foot }
+  function keyParams(f, ps, max, skip) {
+    var out = [], seen = {};
+    if (!f) return out;
+    var tops = [];
+    f.forEach(function (x) { var s = x[0].split(/[.\[]/)[0]; if (!seen[s]) { seen[s] = 1; tops.push(s); } });
+    var cand = [];
+    tops.forEach(function (s, j) {
+      if (/^m_/.test(s)) return;
+      var row = psRow(ps, s), rows = f.filter(function (x) { return x[0] === s || x[0].indexOf(s + '.') === 0 || x[0].indexOf(s + '[') === 0; });
+      if (!row && ps) return;
+      var v;
+      if (rows.length === 1 && rows[0][0] === s) { v = rows[0][1]; if (isProse(s, v)) return; }
+      else {
+        var names = childKeys(rows, s).filter(function (c) { return /\]$/.test(c.key); }).map(function (c) { return c.label; });
+        v = names.length ? names.slice(0, 6).join(', ') + (names.length > 6 ? ', …' : '') : rows.length + ' values';
+      }
+      var list = rows.length > 1 || rows[0][0] !== s;
+      var score = (row && (/Elemental/.test(row[4] || '') || /elemental|upgrade|element|level/i.test((row[1] || '') + ' ' + s)) ? 4 : 0) + (row && !list && !sameAsDefault(v, row[3], row) ? 3 : 0) + (row && row[2] ? 1 : 0) + (rows.length > 1 ? 1 : 0) + (row && row[10] ? 1 : 0);
+      cand.push({ s: s, v: v, row: row, score: score, j: j, list: rows.length > 1 || rows[0][0] !== s });
+    });
+    cand.sort(function (a, b) { return b.score - a.score || a.j - b.j; });
+    cand.slice(0, max).sort(function (a, b) { return a.j - b.j; }).forEach(function (c) {
+      var note = c.row && c.list === false && !sameAsDefault(c.v, c.row[3], c.row) ? 'code default ' + dflt(c.row[3]) : '';
+      if (skip && String(c.v) === skip) return;
+      out.push([nice(c.row ? c.row[0] : c.s), shown(c.row, c.v), note]);
+    });
+    return out;
   }
+  function prose(f, ps) {
+    var out = [];
+    (f || []).forEach(function (x) { if (isProse(x[0], x[1]) && x[0].indexOf('[') < 0) out.push(x[1]); });
+    return out.join('\n');
+  }
+  function firstSentences(t, n) {
+    if (!t) return '';
+    var para = String(t).split('\n')[0], m = para.match(/^(.*?[.!?])(\s|$)/g);
+    if (!m) return para;
+    var acc = '', i = 0, rest = para;
+    while (i < n && rest) { var mm = rest.match(/^(.*?[.!?])(\s+|$)/); if (!mm) { acc += rest; break; } acc += mm[0]; rest = rest.slice(mm[0].length); i++; if (acc.length > 220) break; }
+    return acc.trim();
+  }
+  var ROLE_WORD = { config: 'ScriptableObject · designer config', component: 'Component · set on prefabs', data: 'Serializable data' };
+  function cardLines(pl, r) {
+    if (pl.note != null) return { kick: 'HOW IT WORKS', name: pl.label || 'How it works', what: pl.note, params: [], rows: [], foot: pl.from ? 'from the summary of ' + nameOf(pl.from) : '' };
+    if (pl.box) {
+      if (pl.conn) return { kick: 'CONNECTIONS', name: pl.box, what: 'Everything else this node touches: ' + pl.items.map(function (b) { return b.box || b.label || ''; }).join(', ') + '.', params: [], rows: [], foot: 'Each neighbour is the node itself, the same wherever it appears.' };
+      if (pl.tone === 'human' && pl.items.length && pl.items[0].id) {
+        var ps2 = [];
+        pl.items.slice(0, 9).forEach(function (it) {
+          var x = it.id.slice(0, 2) === 'v:' ? valueRec(it.id, function () {}) : CODE.recs[it.id];
+          if (!x) return;
+          if (x.k === 'value') ps2.push([it.label || nice(x.n), x.sub ? x.sub.length + ' values' : shown(null, x.v), '']);
+          else if (x.k === 'member') ps2.push([it.label || nice(x.n), x.v != null ? dflt(x.v) : (x.ty || ''), x.tip ? x.tip.slice(0, 70) + (x.tip.length > 70 ? '…' : '') : '']);
+          else ps2.push([it.label || x.n, KIND_WORD[x.k] || x.k, '']);
+        });
+        return { kick: /^(Assets made|On prefabs)/.test(pl.box) ? 'WHERE A DESIGNER TUNES IT' : 'PARAMETERS', name: pl.box, what: '', params: ps2, rows: pl.items.length > 9 ? [(pl.items.length - 9) + ' more inside'] : [], foot: '' };
+      }
+      if (pl.tone === 'near' || pl.tone === 'value') return { kick: pl.tone === 'value' ? 'VALUES' : 'NEIGHBOURS', name: pl.box, what: '', params: [], rows: [pl.items.length + (pl.items.length === 1 ? ' neighbour' : ' neighbours') + '. Each is the node itself, the same wherever it appears: zoom in instead of following a link.'], foot: '' };
+      return { kick: pl.tone === 'bucket' ? 'BY NAME' : 'INSIDE', name: pl.box, what: '', params: [], rows: [pl.items.length + ' inside'], foot: '' };
+    }
+    if (!r) return { kick: '…', name: nameOf(pl.id), what: '', params: [], rows: [], foot: '' };
+    if (!pl.parent && r.k === 'loop') {
+      var nc = ((r.r && r.r.code) || []).length + ((r.r && r.r.ability) || []).length;
+      return { kick: 'THE CODE OF ' + r.n.toUpperCase(), name: 'Code', what: nc + ' places implement this loop, opened in the order a person inspects them: what a designer reads, the assets they tune, the docs, then the scripts.', params: [], rows: [], foot: 'Every neighbour of a node sits beside it, so the whole codebase is reachable from here without a link.' };
+    }
+    var kw = KIND_WORD[r.k] || r.k, rows = [], nm = r.n, what = '', params = [], foot = '';
+    if (r.k === 'member') kw = ({ field: r.ser === true ? 'Parameter (serialized field)' : 'Field', const: 'Constant', property: 'Property', method: 'Method', ctor: 'Constructor', event: 'Event', enum: 'Enum value' })[r.tk] || 'Member';
+    if (r.k === 'type') kw = r.role ? ROLE_WORD[r.role] : (r.mods ? r.mods + ' ' : '') + (r.tk || 'type');
+    // an object made from one of our scripts (a ScriptableObject asset, a component), or an asset holding one
+    var obj = r.k === 'asset' && r.c && r.c.length === 1 ? CODE.recs[r.c[0]] : (r.k === 'comp' ? r : null);
+    var st = scriptOf(obj), sr = st ? CODE.recs[st] : null;
+    if (r.k === 'value') {
+      var fi = r.script ? fieldInfo(r.script, r.key, function () {}) : null;
+      nm = pl.label || vLabel(pl.id);
+      kw = /\]$/.test(r.key) ? (fi && fi[4] ? nice(String(fi[4]).replace(/^.*<\s*|\s*>.*$|\[\]$/g, '')) : 'Entry') : 'Value';
+      if (r.sub) {
+        var subs = r.sub.map(function (x) { return [x[0].slice(r.key.length + 1), x[1]]; });
+        what = prose(subs.filter(function (x) { return x[1] !== nm; }));
+        var subTid = fi && fi[9], subPs = subTid && CODE.recs[subTid] ? CODE.recs[subTid].ps : null;
+        params = keyParams(subs, subPs, 7, nm);
+        if (!what && fi && fi[2]) what = fi[2];
+      } else {
+        params = [['Value', shown(fi, r.v), fi && !sameAsDefault(r.v, fi[3], fi) ? 'code default ' + dflt(fi[3]) : (fi && fi[3] != null ? 'same as the code default' : '')]];
+        if (isProse(r.key, r.v)) { what = r.v; params = []; }
+        else if (fi && fi[2]) what = fi[2];
+      }
+      if (fi && fi[6]) rows.push('range ' + fi[6]);
+      if (fi && fi[1]) rows.push('under the header “' + fi[1] + '”');
+      if (fi && fi[4] && !r.sub) rows.push('type ' + fi[4]);
+      foot = 'key ' + r.key + ' on ' + nameOf(r.o).replace(' ›', '');
+    } else if (r.k === 'member') {
+      nm = r.ser === true ? nice(r.n) : r.n;
+      what = r.tip || firstSentences(r.doc, 2);
+      if (r.tip && r.doc) rows.push(firstSentences(r.doc, 1));
+      if (r.v != null) params.push([r.tk === 'field' ? 'Default in code' : 'Value', r.v, '']);
+      if (r.rng) params.push(['Range', r.rng, '']);
+      if (r.ty) params.push(['Type', r.ty, '']);
+      if (r.hd) rows.push('under the header “' + r.hd + '”');
+      if (r.sig) rows.push(r.sig);
+      if (r.ser === true && r.n !== nm) rows.push('field ' + r.n);
+      foot = r.l ? 'line ' + r.l : '';
+    } else if (r.k === 'type') {
+      what = firstSentences(r.doc, 2);
+      if (r.menu) rows.push('Create › ' + r.menu.replace(/\//g, ' › '));
+      if (r.ps && r.ps.length) {
+        var ser = r.ps.filter(function (x) { return x[2]; }).slice(0, 4);
+        ser.forEach(function (x) { params.push([nice(x[0]), x[3] != null ? x[3] : '', x[2]]); });
+        rows.push(r.ps.length + ' parameters in the Inspector' + (r.r && r.r.instances ? ', ' + r.r.instances.length + (r.role === 'config' ? ' assets' : ' placed') : ''));
+      }
+      foot = r.path ? r.path + (r.l ? ':' + r.l : '') : '';
+    } else if (obj && obj.f) {
+      // an asset or a component: the words a designer wrote on it, then its parameters that matter
+      what = prose(obj.f, sr && sr.ps) || (sr ? firstSentences(sr.doc, 2) : '');
+      params = keyParams(obj.f, sr && sr.ps, 6);
+      if (sr) { kw = (r.k === 'asset' ? 'Asset · ' : 'Component · ') + sr.n; if (sr.doc && what !== firstSentences(sr.doc, 2)) rows.push(firstSentences(sr.doc, 1)); }
+      foot = r.path || (pl.id && pl.id.slice(0, 2) === 'o:' ? nameOf(pl.id).replace(' ›', '') : '');
+    } else {
+      if (r.v != null) params.push(['Value', r.v, '']);
+      if (r.d) what = r.d;
+      if (r.wh) rows.push(r.wh + ' px');
+      if (r.lines) rows.push(r.lines + ' lines');
+      if (r.uc && r.k !== 'go') rows.push('Unity ' + r.uc);
+      if (r.c && r.c.length) rows.push(r.c.length + ' inside');
+      foot = r.path ? r.path + (r.l ? ':' + r.l : '') : (r.l ? 'line ' + r.l : '');
+    }
+    if (r.r && r.r.code && pl.parent && r.k !== 'loop') rows.push('Serves ' + r.r.code.length + ' loop' + (r.r.code.length === 1 ? '' : 's'));
+    if (r.k === 'loop' && pl.parent) rows.push(((r.r && r.r.code) || []).length + ' places in the code implement it');
+    if (pl.parent && pl.parent.box && pl.parent.parent && pl.parent.parent.id) rows.push('Here as a neighbour of ' + labelOf({ id: pl.parent.parent.id }) + '. Every copy is this same node.');
+    return { kick: kw.toUpperCase(), name: nm, what: what, params: params, rows: rows, foot: foot };
+  }
+  // the card as one list of lines (the screen reader, the small label)
+  function cardText(cl) { return [cl.what].concat(cl.params.map(function (p) { return p[0] + ' ' + p[1] + (p[2] ? ' (' + p[2] + ')' : ''); }), cl.rows, [cl.foot]).filter(Boolean); }
   function codeKeyOf(n) {
     if (n.kind === 'verb') return 'verb/' + n.vessel + '/' + n.element;
     if (n.kind === 'vessel' || n.kind === 'kit') return 'fleet/' + n.vessel;
@@ -783,6 +1049,19 @@ body { background: var(--ground); color: var(--text); }
     // ---------- the inspection window: the view Amoebius drew for the node you are on, found up the path ----------
     var IN = { key: null, entries: [], at: 0, frame: 0, imgs: {}, ui: {}, min: false, spin: null, drag: null };
     CODE.view.IN = IN;
+    // for a session checking the page (and, later, the find box): open a loop's Code ring, then fly to a place in it
+    CODE.view.enter = function (codeRingId) {
+      var n = S.tree && S.tree.all[codeRingId]; if (!n || n.kind !== 'code') return false;
+      enterDeep(n, S.w / 2, S.h / 2, 0.6 * Math.hypot(S.w, S.h)); CZ.sel = S.deep.anchor; draw(); return true;
+    };
+    CODE.view.fly = function (pl) {
+      var root = pl; while (root.parent) root = root.parent;
+      if (!S.deep) { var id = Object.keys(CODE.roots).filter(function (k) { return CODE.roots[k] === root; })[0]; if (!id || !CODE.view.enter(id)) return; }
+      deepFly(pl, true);
+    };
+    CODE.view.kids = function (pl) { return kidsOf(pl, ping); };
+    CODE.view.card = function (pl) { return cardLines(pl, pl.id ? rec(pl.id, ping) : null); };
+    window.__codeAtlas = CODE.view;
     var insp = el('div', 'la-insp'); insp.hidden = true; insp.setAttribute('role', 'region'); insp.setAttribute('aria-label', 'Inspection window');
     wrap.appendChild(insp);
     var inHead = el('div', 'la-insp-head'); insp.appendChild(inHead);
@@ -988,11 +1267,14 @@ body { background: var(--ground); color: var(--text); }
       var ims = imagesOf(pl);
       if (ims && !huge) paintImages(ctx, ims, X, Y, R * 0.97, showKids ? Math.max(0, 1 - (maxChild - 14) / 50) * 0.85 : 0.9, ping);
       if (!showKids) {
+        // a ring with nothing inside it is all card: once it is big enough to read, the whole card is drawn
+        if (kids && !kids.length && R > 120) { paintCard(pl, r, col, X, Y, R * 0.82); return; }
         if (R >= 16) {
-          var cl = cardLines(pl, r), fs = R > 70 ? 15 : R > 34 ? 12 : 10, nm = fitText(r && r.k === 'value' ? cl.name + ' = ' + r.v : cl.name, R * 1.7, fs, 'label');
+          var cl = cardLines(pl, r), fs = R > 70 ? 15 : R > 34 ? 12 : 10, nm = fitText(r && r.k === 'value' && !r.sub && !isProse(r.key, r.v) ? cl.name + ' = ' + r.v : cl.name, R * 1.7, fs, 'label');
           if (nm) label(nm, X, Y, fs, C.text, 'label');
           if (R > 44) label(fitText(cl.kick, R * 1.5, 10, 'label') || '', X, Y - 19, 10, col, 'label');
-          if (R > 60 && cl.rows[0]) { var t0 = fitText(cl.rows[0], R * 1.6, 11, 'read'); if (t0) label(t0, X, Y + 19, 11, C['text-soft'], 'read'); }
+          var t1 = cardText(cl)[0];
+          if (R > 60 && t1) { var t0 = fitText(t1, R * 1.6, 11, 'read'); if (t0) label(t0, X, Y + 19, 11, C['text-soft'], 'read'); }
           if (!kids && R > 26 && pl.id) label('…', X, Y + (R > 60 ? 36 : 16), 12, C['text-off'], 'label');
         }
         return;
@@ -1011,18 +1293,49 @@ body { background: var(--ground); color: var(--text); }
         return;
       }
       ctx.save(); ctx.beginPath(); ctx.arc(X, Y, R, 0, 6.2832); ctx.fillStyle = C['ground-deep']; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.stroke(); ctx.clip();
-      ctx.translate(X, Y); ctx.scale(u, u); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-      var y = -70;
-      ctx.font = font(12, 'label'); ctx.fillStyle = col; ctx.fillText(cl.kick, 0, y); y += 30;
-      ctx.font = font(22, 'read'); ctx.fillStyle = C.text;
-      wrapText(cl.name, 250, 26).forEach(function (ln) { ctx.fillText(ln, 0, y); y += 26; });
-      y += 6; ctx.font = font(13, 'read');
-      cl.rows.forEach(function (row, j) {
-        ctx.fillStyle = j === 0 && r && (r.k === 'value' || r.v != null) ? C.proposed : C['text-soft'];
-        wrapText(row, 250 - Math.max(0, y) * 0.5, 17).forEach(function (ln) { if (y < 132) ctx.fillText(ln, 0, y); y += 17; });
-      });
+      ctx.translate(X, Y); ctx.scale(u, u); ctx.textBaseline = 'alphabetic';
+      // lay the card out at the biggest type that fits the circle, then draw it: kick, name, what it does (the
+      // author's words), the parameters as label = value rows, then code facts, then where it lives
+      var chord = function (y) { var h = Math.min(144, Math.abs(y)); return 2 * Math.sqrt(150 * 150 - h * h) * 0.86; };
+      function layout(sz, y0) {
+        var ln = [], y = 0, yy = y0;
+        // wrap each line to the circle's width at the height it will be drawn
+        function add(text, fnt, px, color, gap) {
+          ctx.font = font(px, fnt);
+          var words = String(text).split(/\s+/), line = '';
+          words.forEach(function (w) {
+            var W = chord(yy + px * 1.3), tryL = line ? line + ' ' + w : w;
+            if (line && ctx.measureText(tryL).width > W) { ln.push({ t: line, f: fnt, px: px, c: color }); yy += px * 1.3; line = w; } else line = tryL;
+          });
+          if (line) { ln.push({ t: line, f: fnt, px: px, c: color }); yy += px * 1.3; }
+          if (gap) { ln.push({ gap: gap }); yy += gap; }
+        }
+        add(cl.kick, 'label', Math.max(8, sz * 0.85), col, 4);
+        add(cl.name, 'read', sz * 1.55, C.text, 6);
+        if (cl.what) String(cl.what).split('\n').forEach(function (para, j, all) { add(para, 'read', sz, C.text, j === all.length - 1 ? 7 : 3); });
+        cl.params.forEach(function (p) { add(p[0] + ' = ' + p[1] + (p[2] ? '  (' + p[2] + ')' : ''), 'read', sz * 0.92, C.proposed, 0); });
+        if (cl.params.length) ln.push({ gap: 6 });
+        cl.rows.forEach(function (row) { add(row, 'read', sz * 0.85, C['text-soft'], 0); });
+        if (cl.foot) { ln.push({ gap: 5 }); add(cl.foot, 'read', sz * 0.78, C['text-off'], 0); }
+        ln.forEach(function (l) { y += l.gap || l.px * 1.3; });
+        return { ln: ln, h: y };
+      }
+      var sz = 14, L0 = layout(sz, -60);
+      L0 = layout(sz, -Math.min(L0.h, 270) / 2);
+      while (L0.h > 250 && sz > 7) { sz -= 1; L0 = layout(sz, -125); }
+      var y = -Math.min(L0.h, 270) / 2, cut = 132;
+      for (var li = 0; li < L0.ln.length; li++) {
+        var l = L0.ln[li];
+        if (l.gap) { y += l.gap; continue; }
+        y += l.px * 1.3;
+        if (y > cut) { ctx.font = font(l.px, 'read'); ctx.fillStyle = C['text-off']; ctx.textAlign = 'center'; ctx.fillText('… zoom into “How it works” for the rest', 0, y); break; }
+        ctx.font = font(l.px, l.f); ctx.fillStyle = l.c; ctx.textAlign = 'center';
+        var t = l.t; if (ctx.measureText(t).width > chord(y)) t = fitTextW(t, chord(y));
+        ctx.fillText(t, 0, y);
+      }
       ctx.restore();
     }
+    function fitTextW(t, W) { while (t.length > 3 && ctx.measureText(t + '…').width > W) t = t.slice(0, -1); return t + '…'; }
     function wrapText(t, W, lh) {
       var words = String(t).split(/\s+/), lines = [], line = '';
       words.forEach(function (w) {
@@ -1066,7 +1379,7 @@ body { background: var(--ground); color: var(--text); }
     function deepSr() {
       var p = CZ.sel; if (!p) return '';
       var cl = cardLines(p, p.id ? CODE.recs[recIdOf(p.id)] && rec(p.id, ping) : null);
-      return [cl.name, cl.kick].concat(cl.rows).join('. ');
+      return [cl.name, cl.kick].concat(cardText(cl)).join('. ');
     }
     // the loop map's pictures: a loop shows its code's pictures until its children are big enough to show their own
     function paintLoopImages(n, X, Y, R, maxChild) {
