@@ -404,3 +404,23 @@
 2026-11-21T07:29:24.180Z PlayMode session ended (48s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
 2026-11-21T07:30:25.655Z PlayMode session ended (48s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
 2026-11-21T07:31:51.160Z PlayMode session ended (48s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-21T07:36:42.512Z EditMode session ended (12min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73 E-c8e2f49696
+2026-11-21T07:36:52.765Z editor load: play=False capture=True minPlay=15s issues=81
+2026-11-21T07:37:20.953Z E-8ddade9b04: fix 65ffb622d is not in this checkout yet — waiting for a pull
+2026-11-21T07:37:59.395Z PlayMode session ended (46s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-21T07:39:08.043Z PlayMode session ended (47s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-21T07:40:27.924Z PlayMode session ended (48s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-21T07:41:54.961Z PlayMode session ended (47s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-21T07:43:16.989Z PlayMode session ended (48s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-21T07:44:33.015Z PlayMode session ended (48s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-21T07:45:35.158Z PlayMode session ended (49s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-21T07:46:36.538Z PlayMode session ended (48s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-21T07:48:03.765Z PlayMode session ended (48s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-21T08:51:10.871Z EditMode session ended (74min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73 E-c8e2f49696
+2026-11-21T08:51:20.279Z editor load: play=False capture=True minPlay=15s issues=81
+2026-11-21T09:06:03.208Z EditMode session ended (14min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73
+2026-11-21T09:06:13.518Z editor load: play=False capture=True minPlay=15s issues=81
+2026-11-21T09:10:51.733Z editor load: play=False capture=True minPlay=15s issues=81
+2026-11-21T11:34:13.019Z editor load: play=False capture=True minPlay=15s issues=81
+2026-11-21T11:35:07.227Z E-8ddade9b04: fix 65ffb622d taken (PlayMode); needs 2 clean run(s)
+2026-11-21T11:36:39.624Z PlayMode session ended (73s play run, exiting play mode): 1 fix(es) waiting; counted: E-8ddade9b04 1/2; fired: E-c8e2f49696
