@@ -51,6 +51,13 @@ namespace CosmicShore.Tests
                 ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE,
                 ScreenSwitcher.ModalWindows.SETTINGS,
                 ScreenSwitcher.ModalWindows.CREDITS,
+                // The browser build's arcade and arena (Shombith, 2026-11-21); which cards they offer is
+                // WebBuildScopeSO's (WebBuildScopeTests).
+                ScreenSwitcher.ModalWindows.ARCADE,
+                ScreenSwitcher.ModalWindows.ARCADE_GAME_CONFIGURE,
+                ScreenSwitcher.ModalWindows.MAELSTROM_GAME_CONFIGURE,
+                ScreenSwitcher.ModalWindows.ARENA,
+                ScreenSwitcher.ModalWindows.ARENA_GAME_CONFIGURE,
             };
             foreach (ScreenSwitcher.ModalWindows modal in Enum.GetValues(typeof(ScreenSwitcher.ModalWindows)))
             {

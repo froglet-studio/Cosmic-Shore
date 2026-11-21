@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-21-the-browser-webgl-build-s-maelstrom-deal-9d2546",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-21T11:25:29+00:00",
+  "area": "Maelstrom intensity tiers",
+  "summary": "The browser (WebGL) build's Maelstrom deals its own buckets (WebBuildScopeSO): Time games only, I1 2 / I2 4 / I3 6 / I4 8, ordered by your full-game tiers then maturity, with Scarab Rally in I1. The full game's tiers are unchanged.",
+  "branch": "claude/project-thread-282neh",
+  "commit": "4e4f3eaa6"
+}
