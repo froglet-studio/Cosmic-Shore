@@ -571,7 +571,7 @@ def imbalance(result, hulls):
     return ratio, {h: (round(v, 2) if v else None) for h, v in scores.items()}, dnf
 
 
-def evaluate(genome, seeds_a=(1,), seeds_b=(1, 2), limit_s=300):
+def evaluate(genome, seeds_a=(1,), seeds_b=(1,), limit_s=300):
     """Stage A (four hulls, one seed, card start), then the field at both starts. Returns the record's score part."""
     rj = _judge()
     rec = {}
