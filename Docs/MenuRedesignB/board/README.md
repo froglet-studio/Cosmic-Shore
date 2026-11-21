@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-20 from canvas version `1795202224-87de` of **Frogma**: Rev 41 to Rev 120, 300 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-21 from canvas version `1795251681-3892` of **Frogma**: Rev 41 to Rev 121, 306 boards on 15 tabs. The canvas opens on the tab `what-s-new`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -514,5 +514,16 @@ No boards yet.
 #### Rev 115 - Your Ark and the seat picker, five ways: hangar line-up, your seat first, pilot cards, formation, garage list
 
 - [`R115A.dc.html`](R115A.dc.html) - Rev 115 A - Ark A: Hangar line-up; the picker slides in from the right (recommended)
+
+### Tab: What's New  (`what-s-new`)
+
+#### Rev 121 - What's new: the pop-up after an update and from Settings, four ways, featuring Voyages
+
+- [`R121A.dc.html`](R121A.dc.html) - Rev 121 A - Poster: one window, the Ark over the HyperSea, three lines and Set sail (recommended) - interactive
+- [`R121B.dc.html`](R121B.dc.html) - Rev 121 B - Pages: one feature a page, paged with LB / RB, Set sail on the last - interactive
+- [`R121C.dc.html`](R121C.dc.html) - Rev 121 C - Changelog: the updates listed on the left, the picked one on the right - interactive
+- [`R121D.dc.html`](R121D.dc.html) - Rev 121 D - Card: a small card slides in over Home and opens into the window - interactive
+- [`R121Settings.dc.html`](R121Settings.dc.html) - Rev 121 Settings - Settings: the What's new row under Other opens the same window - interactive
+- [`R121Notes.dc.html`](R121Notes.dc.html) - Rev 121 - notes: what each option does, where it opens from, what the build needs
 
 <!-- frogma.py readme: end -->

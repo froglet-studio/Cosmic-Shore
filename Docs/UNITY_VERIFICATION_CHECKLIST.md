@@ -25800,3 +25800,23 @@ packages this machine lacks). Seen in Amoebius on a Crystal Run, offline.
 - [ ] The chip top left shows crystals, hull and, while anchored, the clock; toasts stack under it as a feed, and a
       long toast line widens the band instead of being cut off.
 - [ ] Escort the Ark: the plate shows the hull and the way home; Ruby and the other domains read correctly.
+
+## What's new window, Rev 121 C (2026-11-21)
+
+The What's new window from Frogma Rev 121 C (`Docs/MENU_REDESIGN_B.md` section 216, spec
+`Docs/UI/specs/rev121-c-whats-new.md`). Not run in the Unity editor: none in this session. The reference compile (player
+and editor) has 0 errors in the changed files (30 in untouched files, from packages this machine cannot fetch); a
+planted error in `WhatsNewModal.cs` was caught, so the files are compiled. The window is built in code, so there is no
+render of it beside the board yet.
+
+- [ ] Clear the pref `WhatsNew.SeenId` (or use a fresh install), open Menu_Main: once the menu is ready, the What's new
+      window opens by itself on Update 0.3 Voyages. Close it and reload the scene: it does not open again.
+- [ ] It does not open by itself during the first-time guided path, in freestyle, over another window, or when coming
+      back from a match to a card's launch panel.
+- [ ] Settings > General: a WHAT'S NEW button beside CREDITS opens the window over Settings; B goes back to Settings.
+      In a match's pause menu the button is not shown.
+- [ ] The window matches the board: the list on the left with "New" on 0.3, the HyperSea picture, the version and date,
+      Voyages, three features side by side, the three "Also in this update" lines; Close and Set sail at the foot.
+- [ ] Set sail closes the window and opens the Voyage window.
+- [ ] Gamepad: up and down walk the list, right reaches Close and Set sail, A presses them.
+- [ ] Phone and iPad: the window fits the screen with nothing cut off.

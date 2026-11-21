@@ -84,6 +84,9 @@ namespace CosmicShore.UI
                                  "this does not leave the game - it is main-menu only because the modal " +
                                  "stack it opens into (ScreenSwitcher) exists only in Menu_Main.")]
         Button creditsButton;
+        [SerializeField, Tooltip("Opens the WHAT'S NEW window (every update and what it brought; Docs/MENU_REDESIGN_B.md " +
+                                 "section 216). Main menu only, and hidden in a match: the window lives in Menu_Main.")]
+        Button whatsNewButton;
         [SerializeField, Tooltip("Leave empty to find the one in the scene. Only used by creditsButton.")]
         ScreenSwitcher screenSwitcher;
         [SerializeField, Tooltip("PC/Steam only: closes the game. Hidden automatically on mobile, where " +
@@ -244,6 +247,8 @@ namespace CosmicShore.UI
             // but it opens a ScreenSwitcher modal, and the switcher only exists in Menu_Main. So it
             // is locked for a different reason from the four above: there is nothing to open here.
             SetInteractable(creditsButton, menu);
+            // What's new is only ever reached from the menu, so in a match it is not shown at all.
+            if (whatsNewButton) whatsNewButton.gameObject.SetActive(menu);
             // The colour sets live on the Profile, a Menu_Main screen: the same reason as Credits.
             SetInteractable(colourSetsButton, menu);
 
@@ -320,6 +325,7 @@ namespace CosmicShore.UI
             BindButton(deleteDataButton, OpenDeleteDataForm);
             EnsureCreditsRow();
             BindButton(creditsButton, OpenCredits);
+            BindButton(whatsNewButton, OpenWhatsNew);
             BindQuitButton();
 
             // DISPLAY
@@ -769,6 +775,21 @@ namespace CosmicShore.UI
             }
 
             screenSwitcher.OpenModal(ScreenSwitcher.ModalWindows.CREDITS);
+        }
+
+        /// <summary>Opens the WHAT'S NEW window over Settings, through the switcher, as <see cref="OpenCredits"/> does.</summary>
+        void OpenWhatsNew()
+        {
+            if (!screenSwitcher)
+                screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+            if (!screenSwitcher)
+            {
+                CSDebug.LogWarningFormat(
+                    "{0} - no ScreenSwitcher in the scene, so the What's new window cannot be opened.",
+                    nameof(GameSettingsPanelController));
+                return;
+            }
+            screenSwitcher.OpenModal(ScreenSwitcher.ModalWindows.WHATS_NEW);
         }
 
         // The breadcrumb: close Settings and open the Profile on Colour sets, the one place a colour set is picked.
