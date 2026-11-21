@@ -92,6 +92,12 @@ namespace CosmicShore.Gameplay
                  "(Mass itself widens the blade: RhinoPloughBlade.) None = never.")]
         [SerializeField] Element bermUpgradeElement = Element.Mass;
 
+        [Header("Claim (experiment, off)")]
+        [Tooltip("EXPERIMENT (Brood Rush, 2026-11-21): a rival's prism the plough throws and LANDS turns to the Rhino's " +
+                 "domain (a steal: the plough turns the soil over), when the hull rams at least Claim Min Speed. Off ships.")]
+        [SerializeField] bool claimOpposing = false;
+        [SerializeField, Min(0f)] float claimMinSpeed = 0f;
+
         [Header("Slide")]
         [Tooltip("Seconds the prism's VISUAL takes to slide from where it was to where it now rests. " +
                  "Animation only: its collider is already at rest on the frame of the ram.")]
@@ -150,6 +156,7 @@ namespace CosmicShore.Gameplay
                 ChainReach = avalancheReach,
                 Berm = bermUpgradeElement != Element.None && abilities && abilities.IsUpgradeActive(bermUpgradeElement),
                 Unstoppable = unstoppable,
+                Claim = claimOpposing && status.Speed >= claimMinSpeed,
             };
             Vector3 land = prismPos + right * shove;
             Throw(prism, prismPos, land, throwSettings, status);
@@ -172,6 +179,7 @@ namespace CosmicShore.Gameplay
             public int LinksLeft;
             public bool Berm;
             public bool Unstoppable;
+            public bool Claim;
         }
 
         /// <summary>
@@ -221,7 +229,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            Land(prism, from, land, settings.Berm);
+            Land(prism, from, land, settings, status);
         }
 
         /// <summary>
@@ -248,12 +256,15 @@ namespace CosmicShore.Gameplay
                 }
                 rebound = secondContact;
             }
-            Land(prism, from, rebound, settings.Berm);
+            Land(prism, from, rebound, settings, status);
         }
 
-        void Land(Prism prism, Vector3 from, Vector3 at, bool berm)
+        void Land(Prism prism, Vector3 from, Vector3 at, ThrowSettings settings, IVesselStatus status)
         {
+            bool berm = settings.Berm;
             Slide(prism, from, at, slideSeconds);
+            if (settings.Claim && !prism.destroyed && prism.Domain != status.Domain)
+                prism.Steal(status.PlayerName, status.Domain);
             // Berm (Mass L5): the furrow banks into armour. ActivateShield is the prism's own state change, and
             // like the move it runs per peer from the same replicated upgrade bit.
             if (berm && !prism.destroyed && prism.prismProperties is not { IsShielded: true } &&
