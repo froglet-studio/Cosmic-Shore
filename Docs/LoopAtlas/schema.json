@@ -38,8 +38,16 @@
     "senses": {"type": "array", "items": {"$ref": "#/$defs/sense"}, "minItems": 1, "description": "What an AI reads of the world: the words a gene's cues use (kit.yaml)."},
     "sights": {"type": "array", "items": {"$ref": "#/$defs/sight"}, "minItems": 1, "description": "The pilot callsigns (Docs/Pilots/CALLSIGNS.md section 2). A gene's sight is the callsign whose pilot leans into it."},
     "genes": {
-      "type": "object", "additionalProperties": false, "required": ["is", "activation"],
-      "properties": {"is": {"type": "string"}, "activation": {"type": "string"}}
+      "type": "object", "additionalProperties": false, "required": ["is", "activation", "search"],
+      "properties": {
+        "is": {"type": "string"}, "activation": {"type": "string"},
+        "search": {
+          "type": "object", "additionalProperties": false, "required": ["is", "cut", "keep", "ladder", "measure"],
+          "properties": {"is": {"type": "string", "minLength": 1}, "cut": {"type": "string", "minLength": 1},
+            "keep": {"type": "string", "minLength": 1}, "ladder": {"type": "string", "minLength": 1},
+            "measure": {"type": "string", "minLength": 1}}
+        }
+      }
     }
   },
   "$defs": {

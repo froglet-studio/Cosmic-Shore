@@ -7,6 +7,15 @@ Every combo is also an AI behaviour: one gene of the vessel's genome for one ele
 
 **Activation:** A new pilot completes the first combo listed for a vessel at least once within their first three rounds on that vessel. The Mentor teaches that combo after the Lesson (arc.activation, hole 1). combo_completed carries vessel, combo, genome, seconds and whether a person or an AI flew it, so the same number reads activation and AI coverage.
 
+## How a search scores a genome
+
+Garrett, 2026-11-21: a search tells two kinds of complexity apart, keeps one small and weights toward the other. Players get a more interesting game from vessels that switch between noticeably different behaviours, and less from a perfect AI with mistakes added.
+
+- **Keep small:** Bloat: a dial, cue or branch that changes nothing an onlooker can see and nothing the score shows, that only widens the search space, or that costs effectiveness. The search pays a cost for every dial and branch a genome uses, and drops a dial whose whole range moves neither the outcome nor the visible behaviour.
+- **Weight toward:** Style: switching between noticeably different behaviours (different genes of the genome, or one gene flown in clearly different ways) whose effectiveness is roughly comparable. The search keeps an archive of distinct behaviours (MAP-Elites over which genes fire, how often, and when) beside the single best genome, and rewards a genome that switches between archive cells without losing effectiveness.
+- **The ladder:** Skill comes down by weighting a genome toward the fun, less effective behaviours the archive kept, never by adding random mistakes to the best one. A behaviour that costs effectiveness but reads as a real pilot is recycled for the lower rungs (I1, I2) and for AI teammates, so the player feels they play with or against a person, not a perturbed optimiser. The top rung (I4) flies the best archive cells; every rung still switches.
+- **Measured by:** combo_completed per AI round: distinct genes used, switches between them, and each gene's effectiveness next to the genome's best. Proposed target: at I2 and above, three or more distinct genes a round with the best and third within a fifth of each other; lower rungs lean on genes up to a third less effective, not on more errors. Dials per genome is reported beside the score so bloat is visible.
+
 ## Coverage
 
 Genes per vessel and genome. A dash is a genome the vessel has a verb for and no combo carries yet, off is a verb switched off, blank is no verb.

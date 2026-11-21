@@ -95,6 +95,12 @@ one AI per vessel per element, `Docs/AI_SYSTEM/AI_PLAN.md`):
 | `sight` | The pilot callsign whose sight leans into it (`Docs/Pilots/CALLSIGNS.md`): a pilot changes what the AI goes after, never what the vessel can do. |
 | `in` | Its layers; `x` (Proposed) until the AI owner plans it. |
 
+`genes.search` is how a search scores a genome (Garrett, 2026-11-21): it keeps **bloat** small (a dial, cue or
+branch nobody can see change anything, that widens the search or costs effectiveness) and weights toward **style**
+(switching between noticeably different behaviours of roughly comparable effectiveness, kept in a MAP-Elites archive
+beside the best genome). Skill comes down the ladder by leaning on the archive's fun, less effective behaviours, never
+by adding random mistakes to the best one. GENES.md prints it under "How a search scores a genome".
+
 The check refuses a cue that is not a sense, a sight that is not a callsign, a dial range that is empty, and a genome
 the vessel has no verb for. `report` lists a vessel with a game or arena for an element and no gene for it.
 
