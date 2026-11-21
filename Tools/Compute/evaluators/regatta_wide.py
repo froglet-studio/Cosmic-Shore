@@ -666,7 +666,8 @@ def field_score(field):
 
 def rescore(r):
     if r.get("stage") == "B" and r.get("field"):
-        holes = any(v.get("holes") for v in r["field"].values())
+        # A hull with no time at all (None; a DNF is 400) never raced: a hole, in records written before holes were named.
+        holes = any(v.get("holes") or any(t is None for t in v["times"].values()) for v in r["field"].values())
         r = dict(r, score=None if holes or r.get("error") else field_score(r["field"]))
     elif r.get("stage") == "A" and (r.get("stage_a") or {}).get("times") and r.get("score") is not None:
         r = dict(r, score=2.0 * (field_score({"card": {"times": r["stage_a"]["times"]}}) or 99.0))
