@@ -579,7 +579,8 @@ def evaluate(genome, seeds_a=(1,), seeds_b=(1,), limit_s=300):
     a, times_a, dnf_a = imbalance(ra, STAGE_A)
     rec["stage_a"] = {"imbalance": a, "times": times_a, "dnf": dnf_a, "notes": ra.get("notes", [])[:6]}
     if a is None or a > STAGE_A_BAR:
-        rec["score"] = None if a is None else a * 2.0   # a stage-A failure ranks below every stage-B course
+        # A stage-A failure ranks below every stage-B course of the same spread.
+        rec["score"] = None if a is None else 2.0 * field_score({"card": {"times": times_a}})
         rec["stage"] = "A"
         return rec
     worst, out = 0.0, {}
@@ -589,7 +590,8 @@ def evaluate(genome, seeds_a=(1,), seeds_b=(1,), limit_s=300):
         out[start] = {"imbalance": x, "times": times, "dnf": dnf}
         worst = max(worst, x if x else 99.0)
     rec["field"] = out
-    rec["score"] = worst
+    rec["imbalance"] = worst
+    rec["score"] = field_score(out)
     rec["stage"] = "B"
     return rec
 
@@ -610,9 +612,41 @@ def _load(path):
     return recs
 
 
+def spread_stats(times):
+    """(max/min, the tightest 9-hull window, exp of the RMS log distance from the median) of one start's times; a DNF
+    counts as the 400 s limit."""
+    v = sorted(x if x else 400.0 for x in times.values())
+    med = v[len(v) // 2]
+    rms = math.sqrt(sum(math.log(x / med) ** 2 for x in v) / len(v))
+    k = min(9, len(v))
+    nine = min(v[i + k - 1] / v[i] for i in range(len(v) - k + 1))
+    return v[-1] / v[0], nine, math.exp(rms)
+
+
+def field_score(field):
+    """The search's balance score for a field result (worse of the two starts): the RMS log spread squared times the
+    full spread's root. Max/min alone is set by the one or two worst hulls on a course (2026-11-21: courses with nine
+    hulls inside 1.22x scored 3.6x for a slow Shrike), so it hid the courses closest to balance; the RMS rewards the
+    whole field coming together and the root keeps an outlier from being free. Selection for Garrett still reads the
+    true max/min."""
+    worst = 0.0
+    for v in field.values():
+        full, _, rms = spread_stats(v["times"])
+        worst = max(worst, rms ** 2 * math.sqrt(full))
+    return worst
+
+
+def rescore(r):
+    if r.get("stage") == "B" and r.get("field"):
+        r["score"] = field_score(r["field"])
+    elif r.get("stage") == "A" and (r.get("stage_a") or {}).get("times") and r.get("score") is not None:
+        r["score"] = 2.0 * field_score({"card": {"times": r["stage_a"]["times"]}})
+    return r
+
+
 def elites(records):
     best = {}
-    for r in records:
+    for r in map(rescore, records):
         if r.get("score") is None:
             continue
         d = r["niche"]
@@ -699,7 +733,7 @@ def pick(records, k=8, bar=1.25):
     return chosen
 
 
-def confirm(records, out, per_base=1, bar=1.35, seeds=(1, 2, 3), limit_s=300):
+def confirm(records, out, per_base=1, bar=2.2, seeds=(1, 2, 3), limit_s=300):
     """Re-race the best stage-B course of each world (and of each super-shielded bin) on more seeds at both starts:
     a one-seed screen is noisy (2026-11-18: 1.05-1.10x screens came out 1.15-1.48x on three seeds)."""
     rj = _judge()
