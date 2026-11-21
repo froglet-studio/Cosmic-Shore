@@ -510,6 +510,7 @@ namespace CosmicShore.Player
         /// </summary>
         void ApplyOverrides()
         {
+            _refRuntime = _runtime;
             foreach (var o in _spec["overrides"]?.AsArray() ?? new JsonArray())
             {
                 string path = o?["asset"]?.GetValue<string>() ?? throw new InvalidOperationException("an override without an asset");
@@ -675,8 +676,16 @@ namespace CosmicShore.Player
             return target;
         }
 
+        // The runtime an override's asset references load through ({"asset": "Assets/...asset"} as a value).
+        static ContentRuntime _refRuntime;
+
         static object ConvertJson(JsonNode value, Type type, string what) =>
             type.IsArray && value is JsonArray items ? BuildArray(items, type.GetElementType()!, what)
+            : value is JsonArray listItems && typeof(System.Collections.IList).IsAssignableFrom(type) && type.IsGenericType
+                ? BuildList(listItems, type, what)
+            : value is JsonObject refObj && refObj["asset"] is JsonNode refPath && typeof(CosmicShore.Engine.Object).IsAssignableFrom(type)
+                ? TrainingHost.LoadAsset(_refRuntime, refPath.GetValue<string>()) ?? throw new InvalidOperationException($"{what}: {refPath} not found")
+            : value is null && !type.IsValueType ? null
             : type == typeof(float) ? value!.GetValue<float>()
             : type == typeof(int) ? value!.GetValue<int>()
             : type == typeof(bool) ? value!.GetValue<bool>()
@@ -699,6 +708,25 @@ namespace CosmicShore.Player
                 else arr.SetValue(ConvertJson(items[i]!, elem, $"{what}[{i}]"), i);
             }
             return arr;
+        }
+
+        /// <summary>A whole List&lt;T&gt; from JSON, filled like <see cref="BuildArray"/> (classes as well as structs):
+        /// <c>"abilities": [{"Ability": {"asset": "Assets/.../X.asset"}, "Duration": 2, "Cooldown": 5}]</c>.</summary>
+        static System.Collections.IList BuildList(JsonArray items, Type listType, string what)
+        {
+            var elem = listType.GetGenericArguments()[0];
+            var list = (System.Collections.IList)Activator.CreateInstance(listType)!;
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] is JsonObject fields && !(fields["asset"] != null && typeof(CosmicShore.Engine.Object).IsAssignableFrom(elem)))
+                {
+                    object box = Activator.CreateInstance(elem)!;
+                    foreach (var (name, value) in fields) box = SetPath(box, new[] { name }, 0, value!, $"{what}[{i}]");
+                    list.Add(box);
+                }
+                else list.Add(ConvertJson(items[i]!, elem, $"{what}[{i}]"));
+            }
+            return list;
         }
 
         static FieldInfo FieldOf(object target, string name)
