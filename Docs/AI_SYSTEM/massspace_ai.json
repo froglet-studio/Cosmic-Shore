@@ -1,4 +1,278 @@
 {
  "note": "Each hull's learned Mass-Space AI (plan steps mass-arcade, space-arcade). Found by Tools/Compute/evaluators/massspace_ai_search.py in the hull's OWN Mass and Space games on the volume books (VC+VD per second vs the shipped AI), never in an arena game. 'ship': true rows are written into Assets/Resources/AIMassSpacePlan.asset (and the Urchin's UrchinAutopilotConfig_<mode>) by Tools/Build/massspace_ai_plan.py; --check is the drift gate. A genome: per button {on, dur, cd}, aggr and throttle scales (Urchin: its rail autopilot numbers).",
- "hulls": {}
+ "hulls": {
+  "Sparrow": {
+   "ship": true,
+   "genome": {
+    "aggr": 0.7429857589726144,
+    "throttle": 1.0258885023278044,
+    "skyburst": {
+     "on": true,
+     "dur": 3.5850970598297596,
+     "cd": 3.776814510422832
+    },
+    "fullauto": {
+     "on": true,
+     "dur": 4.01891382136729,
+     "cd": 0.6963419462375359
+    },
+    "boost": {
+     "on": true,
+     "dur": 4.124808037600141,
+     "cd": 7.142637387053233
+    },
+    "modefire": {
+     "on": false,
+     "dur": 2.739699183627468,
+     "cd": 14.572299243350963
+    },
+    "stationary": {
+     "on": true,
+     "dur": 2.0185712615857425,
+     "cd": 6.0823145404868555
+    }
+   },
+   "confirm": {
+    "loss_vs_shipped": -0.7564,
+    "seeds": "101-102",
+    "rate_shipped": {
+     "Salvo@1": 221.6,
+     "Salvo@2": 206.2,
+     "Salvo@3": 200.9,
+     "Salvo@4": 196.2,
+     "WildlifeLiberation@1": 182.6,
+     "WildlifeLiberation@2": 174.2,
+     "WildlifeLiberation@3": 168.0,
+     "WildlifeLiberation@4": 160.4
+    },
+    "rate_best": {
+     "Salvo@1": 735.9,
+     "Salvo@2": 499.6,
+     "Salvo@3": 374.0,
+     "Salvo@4": 435.7,
+     "WildlifeLiberation@1": 255.2,
+     "WildlifeLiberation@2": 337.5,
+     "WildlifeLiberation@3": 300.5,
+     "WildlifeLiberation@4": 422.6
+    }
+   },
+   "note": ""
+  },
+  "Urchin": {
+   "ship": true,
+   "genome": {
+    "RailLeadDistance": 260,
+    "ScanArc": 1600,
+    "CaptureFraction": 0.98,
+    "ClosingFraction": 0.7,
+    "MaxDryCrawlSeconds": 2.4489503046751206,
+    "ParkedSeconds": 5.224552854357913,
+    "MinSlipIntervalSeconds": 2.00354709523934,
+    "SpikeIntervalSeconds": 1.5,
+    "SpikeMinAmmo": 0.2,
+    "TrackAimDegrees": 8,
+    "TrackMinRangeInLengths": 1.9829668921807002,
+    "TrackAxisAlignment": 0.6654257022420561,
+    "aggr": 0.9568324858233637,
+    "throttle": 1.0666215310650629
+   },
+   "confirm": {
+    "loss_vs_shipped": -0.73,
+    "seeds": "101-102",
+    "rate_shipped": {
+     "Hijack@1": 59.8,
+     "Hijack@2": 98.9,
+     "Hijack@3": 2593.0,
+     "Hijack@4": 1426.3
+    },
+    "rate_best": {
+     "Hijack@1": 169.5,
+     "Hijack@2": 499.2,
+     "Hijack@3": 2569.5,
+     "Hijack@4": 1866.1
+    }
+   },
+   "note": ""
+  },
+  "Stoat": {
+   "ship": true,
+   "genome": {
+    "aggr": 0.7560867960604637,
+    "throttle": 0.9928584547891469,
+    "slingL": {
+     "on": true,
+     "dur": 1.3622285225894757,
+     "cd": 1.6271852310041262
+    },
+    "slingR": {
+     "on": true,
+     "dur": 1.660456637290298,
+     "cd": 3.26306301951397
+    },
+    "hold": {
+     "on": false,
+     "dur": 0.607381324680207,
+     "cd": 1.3908626037940546
+    }
+   },
+   "confirm": {
+    "loss_vs_shipped": -0.2404,
+    "seeds": "101-102",
+    "rate_shipped": {
+     "Fulmen@1": 148.8,
+     "Fulmen@2": 151.7,
+     "Fulmen@3": 158.4,
+     "Fulmen@4": 178.3
+    },
+    "rate_best": {
+     "Fulmen@1": 204.6,
+     "Fulmen@2": 216.9,
+     "Fulmen@3": 200.4,
+     "Fulmen@4": 187.5
+    }
+   },
+   "note": ""
+  },
+  "Meerkat": {
+   "ship": true,
+   "genome": {
+    "aggr": 1.0081113127308448,
+    "throttle": 1.1442924439076823,
+    "form": {
+     "on": true,
+     "dur": 2.7687244962273123,
+     "cd": 3.962581637627666
+    },
+    "shorten": {
+     "on": true,
+     "dur": 1.8632468770911983,
+     "cd": 8.343919129873788
+    },
+    "hold": {
+     "on": false,
+     "dur": 0.9638487573672819,
+     "cd": 3.846401677055612
+    },
+    "sentinel": {
+     "on": false,
+     "dur": 2.2121872405168164,
+     "cd": 6.09507393169058
+    }
+   },
+   "confirm": {
+    "loss_vs_shipped": -0.0953,
+    "seeds": "101-104",
+    "rate_shipped": {
+     "Warren@1": 227.9,
+     "Warren@2": 209.4,
+     "Warren@3": 224.0,
+     "Warren@4": 323.7,
+     "CaveIn@1": 198.5,
+     "CaveIn@2": 310.7,
+     "CaveIn@3": 327.9,
+     "CaveIn@4": 295.4
+    },
+    "rate_best": {
+     "Warren@1": 234.5,
+     "Warren@2": 233.1,
+     "Warren@3": 251.4,
+     "Warren@4": 363.6,
+     "CaveIn@1": 203.0,
+     "CaveIn@2": 346.1,
+     "CaveIn@3": 365.6,
+     "CaveIn@4": 345.3
+    }
+   },
+   "note": ""
+  },
+  "Honeyguide": {
+   "ship": false,
+   "genome": {
+    "aggr": 0.7022177887668749,
+    "throttle": 1.1994582898814405,
+    "rt": {
+     "on": true,
+     "dur": 6.0,
+     "cd": 20.0
+    },
+    "lt": {
+     "on": true,
+     "dur": 6.0,
+     "cd": 16.141579346016847
+    }
+   },
+   "confirm": {
+    "loss_vs_shipped": 0.0139,
+    "seeds": "101-104",
+    "rate_shipped": {
+     "Honeycomb@1": 674.2,
+     "Honeycomb@2": 554.2,
+     "Honeycomb@3": 558.0,
+     "Honeycomb@4": 506.1,
+     "Woodpecker@1": 247.9,
+     "Woodpecker@2": 242.6,
+     "Woodpecker@3": 231.1,
+     "Woodpecker@4": 240.7
+    },
+    "rate_best": {
+     "Honeycomb@1": 623.6,
+     "Honeycomb@2": 621.4,
+     "Honeycomb@3": 547.6,
+     "Honeycomb@4": 535.2,
+     "Woodpecker@1": 236.7,
+     "Woodpecker@2": 229.2,
+     "Woodpecker@3": 230.3,
+     "Woodpecker@4": 222.6
+    }
+   },
+   "note": "no real gain on fresh seeds (search winner was noise); flies as authored"
+  },
+  "Scarab": {
+   "ship": false,
+   "genome": {
+    "aggr": 2.8969569793763177,
+    "throttle": 0.9778679582250555,
+    "drift": {
+     "on": false,
+     "dur": 0.6952275892854174,
+     "cd": 0.7524439718683744
+    },
+    "sharp": {
+     "on": true,
+     "dur": 6.0,
+     "cd": 11.981244739207833
+    },
+    "switch": {
+     "on": false,
+     "dur": 0.15,
+     "cd": 0.31864439528511673
+    }
+   },
+   "confirm": {
+    "loss_vs_shipped": 0.6273,
+    "seeds": "101-104",
+    "rate_shipped": {
+     "Tollway@1": 237.2,
+     "Tollway@2": 1381.3,
+     "Tollway@3": 1205.3,
+     "Tollway@4": 1225.4,
+     "WreckingBall@1": 237.4,
+     "WreckingBall@2": 238.9,
+     "WreckingBall@3": 239.3,
+     "WreckingBall@4": 239.0
+    },
+    "rate_best": {
+     "Tollway@1": 237.4,
+     "Tollway@2": 237.1,
+     "Tollway@3": 237.5,
+     "Tollway@4": 237.2,
+     "WreckingBall@1": 237.2,
+     "WreckingBall@2": 240.1,
+     "WreckingBall@3": 240.5,
+     "WreckingBall@4": 239.2
+    }
+   },
+   "note": "its own games do not respond: volume is trail plus rare Tollway toll monuments that land by chance; flies as authored. Needs a real objective behaviour (no VD in Wrecking Ball)"
+  }
+ }
 }

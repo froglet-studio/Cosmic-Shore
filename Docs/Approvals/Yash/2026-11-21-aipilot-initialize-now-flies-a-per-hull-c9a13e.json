@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-21-aipilot-initialize-now-flies-a-per-hull-c9a13e",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-21T20:07:58+00:00",
+  "area": "the AI platform (AIPilot)",
+  "summary": "AIPilot.Initialize now flies a per-hull Mass-Space AI row (AIMassSpacePlanSO) in Mass-Space modes only: an ability cycle replacing the prefab list plus aggressiveness/throttle scales. First rows: Meerkat, Sparrow, Stoat, Urchin (and UrchinAutopilotConfig_Hijack/_BroodRush). Time and Charge modes keep the prefab values.",
+  "why": "Most hulls ship AIPilot.abilities: [] so their AIs pressed no ability in Mass-Space games; trained in each hull's own games (plan steps mass-arcade, space-arcade).",
+  "branch": "claude/project-thread-d1elkw",
+  "lane": "ai-system",
+  "commit": "b3c47042a",
+  "paths": [
+    "Assets/Resources/AIMassSpacePlan.asset",
+    "Assets/_Scripts/Controller/AI/AIMassSpacePlanSO.cs",
+    "Assets/_Scripts/Controller/AI/AIPilot.cs"
+  ],
+  "loop": {
+    "elements": [
+      "Mass",
+      "Space"
+    ],
+    "step": "3"
+  }
+}

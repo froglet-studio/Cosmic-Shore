@@ -51,7 +51,7 @@ def plan_asset(spec):
            "  m_PrefabAsset: {fileID: 0}", "  m_GameObject: {fileID: 0}", "  m_Enabled: 1", "  m_EditorHideFlags: 0",
            "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % script, "  m_Name: AIMassSpacePlan",
            "  m_EditorClassIdentifier: "]
-    rows = [(h, s) for h, s in sorted(spec["hulls"].items()) if h != "Urchin" and s.get("ship")]
+    rows = [(h, s) for h, s in sorted(spec["hulls"].items()) if s.get("ship")]
     if not rows:
         out.append("  rows: []")
     else:
