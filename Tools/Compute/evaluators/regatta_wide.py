@@ -631,6 +631,10 @@ def field_score(field):
     true max/min."""
     worst = 0.0
     for v in field.values():
+        # A start with no finisher at all is a judge that did not race (a crashed or starved game process), never a
+        # perfectly balanced course: 2026-11-21 a PC shard's empty field scored 1.00.
+        if not any(v["times"].values()):
+            return None
         full, _, rms = spread_stats(v["times"])
         worst = max(worst, rms ** 2 * math.sqrt(full))
     return worst
@@ -638,9 +642,9 @@ def field_score(field):
 
 def rescore(r):
     if r.get("stage") == "B" and r.get("field"):
-        r["score"] = field_score(r["field"])
+        r = dict(r, score=field_score(r["field"]))
     elif r.get("stage") == "A" and (r.get("stage_a") or {}).get("times") and r.get("score") is not None:
-        r["score"] = 2.0 * field_score({"card": {"times": r["stage_a"]["times"]}})
+        r = dict(r, score=2.0 * (field_score({"card": {"times": r["stage_a"]["times"]}}) or 99.0))
     return r
 
 
