@@ -355,7 +355,7 @@ jobs:
       # autofix only acts on 'compile'.
       failure_kind: ${{ steps.classify.outputs.failure_kind }}
       # 'unity' | 'refcompile' - which compiler ran; the report names it.
-      compile_mode: ${{ steps.mode.outputs.mode }}
+      compile_mode: ${{ steps.fallback.outputs.use == 'true' && 'refcompile' || steps.mode.outputs.mode }}
     steps:
       - name: Choose the compiler
         id: mode
@@ -476,7 +476,23 @@ jobs:
           echo "Container exited with $?."
           # The container ran as root; hand its output back to the runner user so the
           # cache save and artifact upload can read it.
-          sudo chown -R "$(id -u):$(id -g)" Library editmode-results.xml unity-editmode.log unity-exit-code.txt 2>/dev/null || true
+          sudo chown -R "$(id -u):$(id -g)" Library editmode-results.xml unity-editmode.log unity-exit-code.txt unity-activation-failed 2>/dev/null || true
+
+      # No licence could be activated (the account has no headless entitlement, a seat is in use,
+      # the licence server is down): that says nothing about the code, so the run falls back to
+      # the reference compile below rather than going red as "infra" on every push.
+      - name: Fall back when the licence did not activate
+        id: fallback
+        if: always() && steps.mode.outputs.mode == 'unity'
+        run: |
+          if [ -f unity-activation-failed ]; then
+            echo "use=true" >> "$GITHUB_OUTPUT"
+            rm -f unity-activation-failed unity-exit-code.txt unity-editmode.log
+            echo "::warning title=Not a Unity compile::The Unity licence did not activate, so this run uses the reference compile (Tools/Build/unity_refcompile). Fix the licence in the unity-ci environment for a real compile."
+            echo "Unity licence did not activate: fell back to the reference compile." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "use=false" >> "$GITHUB_OUTPUT"
+          fi
 
       # Saved even when the compile or the tests failed: the imported assets are
       # still good, and a cold import is the expensive part. Not on an exact hit.
@@ -489,7 +505,7 @@ jobs:
 
       # ── refcompile mode ─────────────────────────
       - name: Restore the reference-compile cache
-        if: steps.mode.outputs.mode == 'refcompile'
+        if: always() && (steps.mode.outputs.mode == 'refcompile' || steps.fallback.outputs.use == 'true')
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: refcache
         with:
@@ -498,7 +514,7 @@ jobs:
           restore-keys: unity-refcompile-
 
       - name: Reference compile (no Unity licence)
-        if: steps.mode.outputs.mode == 'refcompile'
+        if: always() && (steps.mode.outputs.mode == 'refcompile' || steps.fallback.outputs.use == 'true')
         run: |
           set +e
           set -uo pipefail
@@ -509,7 +525,7 @@ jobs:
           echo "Reference compile exited with $(cat unity-exit-code.txt)."
 
       - name: Save the reference-compile cache
-        if: always() && steps.mode.outputs.mode == 'refcompile' && steps.refcache.outputs.cache-hit != 'true'
+        if: always() && (steps.mode.outputs.mode == 'refcompile' || steps.fallback.outputs.use == 'true') && steps.refcache.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/unity_refcompile
@@ -520,7 +536,7 @@ jobs:
         id: classify
         if: always()
         env:
-          MODE: ${{ steps.mode.outputs.mode }}
+          MODE: ${{ steps.fallback.outputs.use == 'true' && 'refcompile' || steps.mode.outputs.mode }}
           TESTS_BLOCKING: ${{ vars.UNITY_TESTS_BLOCKING }}
         run: |
           # `set +e` is REQUIRED and must be explicit: GitHub runs bash with -e as a
