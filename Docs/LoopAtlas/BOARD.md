@@ -16,7 +16,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | voy.meet | Round | V2 and V3. One squad hosts, one joins, in a managed peer-to-peer instance. |
 | era.meta | Era | Garrett, 2026-11-12: it will disrupt the meta on an optimized schedule before it gets stale. Each loop needs fewer people. |
 
-## Brainstorm: proposed (29)
+## Brainstorm: proposed (31)
 
 | Loop or item | Tier or area | The proposal |
 | --- | --- | --- |
@@ -36,6 +36,8 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | arc.replay | Session | The breath offers 'watch the pass that beat you': a ten-second cut, not the whole match. |
 | era.meta | Era | Tie each turn to a Tide so that players can see it coming. |
 | era.tide | Era | Proposal P6. It gives the long game's empty last phase a rhythm built from systems that already tick. |
+| seat.crew | Role | In the game today on four crew vessels, networked for the rider (Docs/CREW_STATIONS.md). Proposed as a loop because it is the one way into the game that needs no flying: Mira's and the night crew's fourth friend's path both start here (journeys.yaml). |
+| seat.ratel | Combo | Built (Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md, DynamoCore). A casual puzzle player's whole game, on an older phone in portrait with one thumb. Proposed as a loop so its sittings are counted apart from the hull's. |
 | P1 | proposal | One ladder of words: Use the eight tier terms (Pulse, Verb, Combo, Role, Round, Session, Arc, Era) in every design doc, ticket and review, so a problem is placed before it is argued. |
 | P2 | proposal | Every verb names its feeling: Each ability's doc gets its loop as steps and one sentence: the feeling, and the step where it lands. The fun card asks about that step. |
 | P3 | proposal | Every kit names two combos: A feeder into a spender, and one that crosses two elements. Ability icons and the Mentor teach them; a game's course is checked against them. |
@@ -50,7 +52,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | P12 | proposal | A replay can travel: A ten-second cut shared as a link that opens the same card at the same rung. |
 | kit-drift | Tooling | Kit drift check: Add a report check that flags a vessel whose abilities changed in the game while its kit in model/fleet/ did not. On 2026-11-19 the Rhino (Time is now Momentum with oversteer, Unstoppable and the Momentum ward are base, L5s Avalanche and Slingshot), the Shrike (trail almost nothing, a nest walled in super-shielded plates) and the Jewel Wasp (a possessed creature is stolen for good) all changed, and their fleet YAML still describes the old kits. The element-ability-table reader already reads the shipped ability maps, so the check can compare against it. |
 
-## Holes: undecided (22)
+## Holes: undecided (31)
 
 | Loop or item | Hole | Question | Proposed fill |
 | --- | --- | --- | --- |
@@ -58,24 +60,33 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | sitting | 0 | Nothing in the game points a player from one place to another. A crossing happens only if the player opens Home and thinks of it. | The breath (new loop): after each result, one offered next step chosen from what the round just trained. |
 | sitting | 1 | Rounds per sitting and places per sitting are not measured. | Aim for 5 to 8 rounds and 1 or 2 places in a sitting; read it from the analytics events. |
 | toybox | 0 | What a toy session is for, in loop terms, is not written: there is no stated reason to leave a toy or to come back to one. | A toy's exit is a crossing. Every toy names the scored loop it is the free version of, and offers it when the player has done the toy's verb a few times. |
+| toybox | 1 | Every arc in the atlas is fed by winning. A player who only makes things (the painter in Docs/LoopAtlas/personas/journeys.yaml) moves no arc, and has seen every painting and microscene by week 3. | Each week of the Tide adds one painting and one microscene, and a shared painting opens the same canvas for whoever taps it. |
 | arcade | 0 | Rounds per run are not measured, and nothing but the player's own wish moves them from a card to the next card. | 3 to 5 rounds a run. The breath offers the next rung after a win and the same rung after a loss. |
 | arcade | 1 | Most cards have never been played: steps 1 to 3 of the elemental loop are 'built', not 'done', for every vessel and element except Dolphin Time step 1. |  |
 | round.ms | 0 | Only the category has landed. The per-vessel merge has not started: the board still shows Mass and Space as two games each. |  |
 | arena | 0 | Matches per set, and what makes a squad stay for another, are not written. | Best of three against the same opponents, hulls re-drafted between matches, so the set is a loop of its own. |
 | round.astro | 0 | The plan names three arena games. Where Astro League sits (a fourth arena, or an arena-sized party game) is not said. | Call it the Arena's party game: it balances nothing and is kept for fellowship, the way party cards are in the Arcade. |
 | voyages | 0 | It is not said whether voyage pay is the same crystals that buy vessels, so the step from 'voyage ends' to 'spend it on a vessel' has no confirmed path. | One soft currency. Voyage pay is crystals, paid at dock, scaled so a clean voyage is worth about three arcade wins. |
+| voyages | 1 | A voyage is 20 to 40 minutes and leaving abandons it, so a player whose sittings are six minutes (the commuter in Docs/LoopAtlas/personas/journeys.yaml) never finishes one. | The Ark docks at the location it reached when the player leaves; the next sitting sails from there, one leg at a time. |
 | voy.cell | 0 | Cells per leg is not set. | 2 to 4 cells a leg, more on a rough lane, so a leg stays inside 2 to 5 minutes at 45 to 90 seconds a cell. |
 | voy.cell | 1 | Whether 'take the cell, the Ark regrows, move on' is the built loop or the intended one needs one editor run to confirm. |  |
 | arc.activation | 0 | No player has seen the onboarding. The first loop a stranger meets is an unlocked menu. |  |
 | arc.activation | 1 | The Lesson teaches a ship's Time verb. Nothing yet teaches a combo or a role. | The Mentor's stream is ordered by the ladder of tiers: Pulse and Verb in the Lesson, the kit's first Combo after three races, the Role the first time the player enters a Mass-Space game. |
+| arc.activation | 2 | Activation has one door: first launch, the spotlight, a Lesson that flies a Time verb. Two of the six journeys (Mira, the night crew) arrive by invite and never pass through it, and Mira does not want to fly at all. | Activation starts where the player arrived: an invite starts in the inviter's party and the seat it named, and the Lesson for that seat (a crew board, a hull) runs there. |
 | arc.unlock | 0 | The chain orders 4 cards. About 80 others have no order, so after the Hangar opens nothing says what to play next. | After the Hangar, the chain is per vessel: each hull's flower (see The vessel's flower) is its own short chain of three element games. |
 | arc.fleet | 0 | Crystals buy only vessels. When the fleet is owned the reward has no use, and the payout stops driving anything. | Three more sinks: refitting the Ark (hold and plates), recruiting a pilot at port, and colour sets. |
 | arc.fleet | 1 | Which of the 23 hulls ship, at what price and in what order, is not decided beyond the first five. | Price by how many loops a hull opens: a solo hull 4000, a crew vessel 6000 because it opens a second seat for a friend. |
+| arc.fleet | 2 | Only the winner is paid. In a group of friends who beat each other, the one who wins least owns nothing new after two weeks; in the night crew journey that friend leaves on day 17 and the crew shrinks. | Pay a team win to every seat on the team, crew seats included, and pay a little for finishing, so a friend's fleet grows at the group's pace. |
 | arc.saga | 0 | A saga does not run again, so four sagas are a fixed amount of story. 'A season could reseed it' is a default, not a decision. | Each Tide reseeds one saga and adds one, so there is always an unfinished thread. |
 | arc.social | 0 | Nothing a party does together lasts past the sitting, so a friend is a reason to play tonight and not a reason to return. | A party shares one voyage record: the Ark, its hoard and the saga thread belong to the party that sailed it. |
+| arc.social | 1 | The now note says crew vessels are local only, but Docs/CREW_STATIONS.md has the rider seat networked on the Orca, Honeyguide, Wrasse and Goby. One of them is stale. |  |
 | arc.replay | 0 | A replay cannot leave the device, so it drives mastery and nothing else. | Share a ten-second cut as a link that opens the same card at the same rung for whoever taps it. |
 | arc.support | 0 | What an episode gives the player is not defined in loop terms: it opens no loop on this map. | An episode is a Tide's content, sold once the Tide has run free for its season: its saga, its arena environments, its colour set. |
 | era.meta | 0 | The schedule is not set, and nothing tells a player that the meta turned or why their vessel flies differently. | One turn per Tide, six weeks. The Tide's news says in authored words which vessels changed and which arena environments are new. |
+| seat.crew | 0 | A crew seat is reached only from inside a hull: the Toybox's Vessel Changer, then a seat swap. Nobody arriving by invite is dropped into the seat they were invited to. | The invite names the seat, and accepting it opens the game in that seat (the prop of Party and friends: the empty seat is the invite). |
+| seat.crew | 1 | A squad is three seats and a voyage party at most three players, so a group of four never fits one team. | A crew seat is the fourth place: it costs no squad slot, so four friends fly three hulls with one of them riding. |
+| seat.ratel | 0 | The Ratel has no way in of its own. A player who wants the puzzle has to find the Honeyguide in the Toybox and swap seats, and the Toybox gives the board no goal and banks nothing. | A Ratel card: the Honeyguide's Mass game (Honeycomb) with the player seated on the Ratel and the AI flying, on its own I1 to I4 ladder, so a Ratel player's rungs light the hull's Mass petal. |
+| seat.ratel | 1 | The Honeyguide is in no arena roster, so a Ratel player cannot come along when their squad goes to the arena. | Seat the Honeyguide in Brood Rush, where a hive-builder's Mass verb serves the cultivator role. |
 
 ## Recent moves (4)
 

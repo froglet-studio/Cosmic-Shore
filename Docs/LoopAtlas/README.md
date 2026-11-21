@@ -28,6 +28,7 @@ https://claude.ai/artifact/QUiM5ztvnHhkpWgsn4S43K.
 | `BOARD.md` | The atlas as a work board, **generated**: build orders, decided plans, proposals, holes, recent moves. |
 | `CODE.md` | **The Code Atlas**: how the map zooms from a loop into the whole codebase down to every value (equivalent places, no links), the data model, loading, the anchored camera, the pictures. |
 | `code/links.yaml` | Hand links from loops to the code that implements them (the automatic ones need none). |
+| `personas/journeys.yaml` | **Player journeys**: six personas (shared ids with the economy simulation's `sim/personas.yaml`) and the path each takes through the loops, in the game today and with the Proposed layer's fixes. `Tools/Build/loop_journeys.py build` expands it into `personas/journeys.json` (generated; read by the page and the simulation) and `personas/JOURNEYS.md`; `--html DIR` writes the animated page (https://claude.ai/artifact/QTMtLQcBVg4FipV27WSswD) with its data, and `--sim sim/out/journeys.json` adds the simulation's runs as three more layers. |
 | `code-out/` | The Code Atlas build (`Tools/Build/code_atlas.py build`), **generated and ignored**; published beside the page as `code/`. |
 
 ## Editing the model

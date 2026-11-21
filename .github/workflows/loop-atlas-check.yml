@@ -8,12 +8,14 @@ on:
     paths:
       - "Docs/LoopAtlas/**"
       - "Tools/Build/loop_atlas.py"
+      - "Tools/Build/loop_journeys.py"
       - ".github/workflows/loop-atlas-check.yml"
   push:
     branches: [bleeding-edge]
     paths:
       - "Docs/LoopAtlas/**"
       - "Tools/Build/loop_atlas.py"
+      - "Tools/Build/loop_journeys.py"
       - ".github/workflows/loop-atlas-check.yml"
   workflow_dispatch:
 
@@ -36,6 +38,7 @@ jobs:
           sparse-checkout: |
             Docs/LoopAtlas
             Tools/Build/loop_atlas.py
+            Tools/Build/loop_journeys.py
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
@@ -46,5 +49,9 @@ jobs:
         run: python Tools/Build/loop_atlas.py self-test
       - name: Model valid and model.json up to date
         run: python Tools/Build/loop_atlas.py --check
+      - name: Player journeys refuse bad input
+        run: python Tools/Build/loop_journeys.py self-test
+      - name: Player journeys valid and journeys.json up to date
+        run: python Tools/Build/loop_journeys.py --check
       - name: Drift report (informational)
         run: python Tools/Build/loop_atlas.py report
