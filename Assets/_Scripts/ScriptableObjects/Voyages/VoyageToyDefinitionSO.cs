@@ -113,6 +113,10 @@ namespace CosmicShore.ScriptableObjects
                                  "Locked, its card still shows in the crew's locked voyages but cannot be opened or sailed.")]
         bool lockEscort = true;
 
+        [SerializeField, Tooltip("Offer \"Fill the AI seats from a saved squad\" on Your Ark (Shombith, 2026-11-21: removed " +
+                                 "for now). Off = the button is hidden; each AI seat is still set on its own.")]
+        bool offerFillFromSquad;
+
         [SerializeField, Tooltip("The job templates that still sail while jobs are locked (VoyageJob.TemplateId). Milestone 1 " +
                                  "keeps Sail home (job.return) and the crew's Crystal Run (job.raid.crystals, authored in " +
                                  "voyage_slice.json). Add a template id here to open that job.")]
@@ -449,6 +453,16 @@ namespace CosmicShore.ScriptableObjects
         {
             var settings = Load();
             return !settings || settings.IsEscortOpen;
+        }
+
+        /// <summary>True when Your Ark offers to fill the AI seats from a saved squad (<see cref="offerFillFromSquad"/>).</summary>
+        public bool OffersFillFromSquad => offerFillFromSquad;
+
+        /// <summary><see cref="OffersFillFromSquad"/> on the shipped settings; with no settings asset it is offered.</summary>
+        public static bool FillFromSquadOffered()
+        {
+            var settings = Load();
+            return !settings || settings.OffersFillFromSquad;
         }
 
         /// <summary><see cref="IsJobOpen"/> on the shipped settings; with no settings asset every job is open.</summary>
