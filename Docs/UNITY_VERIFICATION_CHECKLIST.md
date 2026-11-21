@@ -66,6 +66,16 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 ---
 
 
+## 🔴 Voyages launch fixes: follow the host, the Ark's one domain, the Escort lock, Start pauses (2026-11-21, Shombith, NOT RUN IN EDITOR)
+`claude/project-thread-zobeo0` into `launch-check`. `VoyageLobbyLink` + `ScreenSwitcher.VoyageLobby.cs` (protocol 38, `Docs/Voyages/PARTY.md` §7), `VoyageArkPage` (domain chips, uncropped faces, the Fill button), `VoyageKit.Commit` (ruby Set sail / Open voyage / Ready), `VoyageToyDefinitionSO.lockEscort`, `VoyageJobsView` (locked jobs off the board), `MenuMiniGameHUD` (Start pauses in the voyage), `MenuServerPlayerVesselInitializer` (the voyage scene spawns everyone in the Ark's domain), the Crystal Run's kind Raid -> Salvage. Verified: `unity_refcompile` has no errors in the changed files (the UGS package errors on launch-check are the sandbox's); `author_voyage_assets.py --check` clean; colour_trace, console logging, conditional compilation OK. Not compiled or run in Unity.
+- [ ] Compiles; EditMode `VoyageMilestoneOneTests`, `VoyageBoardTests`, `VoyageLobbyTests`, `VoyageShellTests` pass.
+- [ ] Voyages tab: only the Crystal Run (and Sail home when away) is on offer; Escort the Ark shows locked and its Open voyage is greyed; no other job (Iri Whistlebell) shows. The Crystal Run's kind reads Salvage.
+- [ ] Set sail, Open voyage and the brief's Ready are ruby with white words.
+- [ ] Your Ark page: the three pilot faces are whole (not cropped); "Fill the AI seats from a saved squad" fits in its button beside its Y keycap.
+- [ ] In a voyage, the pad's Start opens the pause window and closes it again; Select still opens it.
+- [ ] Two machines: friend flying freestyle, host opens the Voyage window and the Crystal Run: the friend leaves freestyle and lands on it; the host moves to the voyage and Ark pages, the friend follows; the host closes the window, the friend's closes.
+- [ ] Two machines: the friend presses Ruby on Your Ark (their chip outlined, the host's Ruby chip says "Ruby - 1"); the host presses Ruby: both show Ruby picked. Set sail: both vessels, the AI wingmates and the Ark's hull and model are Ruby.
+
 ## 🔴 iOS privacy manifest in the Xcode project (2026-11-06, Shombith, NOT BUILT FOR iOS)
 
 Branch `claude/launch-ios-privacy-manifest`; launch blocker #14 (`Docs/IOS_BUILD.md` "Privacy manifest"). The manifest and

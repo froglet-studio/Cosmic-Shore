@@ -38,7 +38,7 @@ namespace CosmicShore.UI
         const float SeatX = 80f, SeatY = 124f, SeatWidth = 520f, SeatHeight = 620f, SeatStep = 580f;
         const float HullY = 70f, HullHeight = 260f, LineY = 390f, NamesY = 410f, FootY = 520f, FootHeight = 48f;
         const float FloorY = 464f, FloorHeight = 300f, BarY = 814f, BarHeight = 56f;
-        const float FillWidth = 420f, SailWidth = 300f, SailAsWidth = 640f, FillRow = 52f;
+        const float FillWidth = 560f, SailWidth = 300f, SailAsWidth = 640f, FillRow = 52f;
         const string LastKitKey = "Voyages.LastKit";
 
         readonly VoyageBoard _board;
@@ -104,6 +104,7 @@ namespace CosmicShore.UI
 
             BuildFloor();
             BuildVoyage();
+            BuildDomain();
             for (int seat = 0; seat < SavedSquad.SlotCount; seat++) _seatViews.Add(BuildSeat(seat));
             BuildBar();
             _picker = new VoyageSeatPicker(_board, _kit, _rules, Root);
@@ -184,8 +185,8 @@ namespace CosmicShore.UI
             _voyageDifficulty = _kit.Text(meta, 14, _kit.Sub, TextAlignmentOptions.Left);
             VoyageKit.Le(_voyageDifficulty).minWidth = VoyageKit.Le(_voyageDifficulty).preferredWidth = 24f;
 
-            // On a friend's machine only: who picks what (15, Sub), at the right.
-            _guestLine = _kit.Text(At("GuestLine", 1040f, 10f, 800f, 40f), 15, _kit.Sub, TextAlignmentOptions.TopRight);
+            // On a friend's machine only: who picks what (15, Sub), at the right, under the Ark's domain.
+            _guestLine = _kit.Text(At("GuestLine", 1040f, 62f, 800f, 40f), 15, _kit.Sub, TextAlignmentOptions.TopRight);
             VoyageKit.Stretch(_guestLine.rectTransform);
             _guestLine.textWrappingMode = TextWrappingModes.Normal;
         }
@@ -217,7 +218,7 @@ namespace CosmicShore.UI
 
             // Under the line: the pilot's face (60 x 72), the vessel (24) over "pilot - artifact" (14, Sub), and the element's
             // flower (34) over its name (13, Sub) at the right.
-            var face = At("Pilot", 0f, NamesY, 60f, 72f, c);
+            var face = At("Pilot", 0f, NamesY, FaceBox.x, FaceBox.y, c);
             VoyageKit.Block(face, VoyageKit.Fade(_kit.Popup, 0.6f));
             view.Portrait = VoyageKit.CoverBox(face);
             var names = At("Names", 76f, NamesY + 6f, w - 76f - 96f, 64f, c);
@@ -255,7 +256,16 @@ namespace CosmicShore.UI
         {
             var fill = At("FillFromSquad", 0f, BarY, FillWidth, BarHeight);
             _fillButton = fill;
-            _kit.Quiet(fill, _lines?.ArkFillKey, _lines?.ArkFillSquad, ToggleFill);
+            _kit.Quiet(fill, _lines?.ArkFillKey, _lines?.ArkFillSquad, ToggleFill, out var fillWords);
+            // Its words are long: at the button's 18 they ran wider than the button, out past its line and over the Y
+            // keycap (Shombith, 2026-11-21: "Fill the seats button is messed"). They shrink to fit, on one line.
+            fillWords.textWrappingMode = TextWrappingModes.NoWrap;
+            fillWords.enableAutoSizing = true;
+            fillWords.fontSizeMax = 16f;
+            fillWords.fontSizeMin = 10f;
+            fillWords.characterSpacing = 4f;
+            fillWords.overflowMode = TextOverflowModes.Ellipsis;
+            VoyageKit.Le(fillWords.rectTransform).flexibleWidth = 1f;
             // The saved squads to fill from, over the button while it is open.
             _fillList = At("FillFrom", 0f, BarY, FillWidth, 0f);
             _kit.Box(_fillList, VoyageKit.Fade(_kit.Popup, 0.94f), _kit.Outline, hit: true);
@@ -274,7 +284,7 @@ namespace CosmicShore.UI
             VoyageKit.Stretch(_sailAsFlower);
 
             var sail = At("SetSail", sailX, BarY, SailWidth, BarHeight);
-            (_sail, _sailWords) = _kit.Cta(sail, _lines?.BoardSailKey, _lines?.CardSetSail, _board.SetSail);
+            (_sail, _sailWords) = _kit.Commit(sail, _lines?.BoardSailKey, _lines?.CardSetSail, _board.SetSail);
         }
 
         // ── The seats this voyage sails with ─────────────────────────────────
@@ -295,6 +305,125 @@ namespace CosmicShore.UI
                 from = _rules.Seed(from, settings ? settings.FirstLineUp : null) ?? from;
             }
             return VoyageSeatRecord.For(key, from) ?? from;
+        }
+
+        // ── The Ark's domain ─────────────────────────────────────────────────
+
+        // Shombith, 2026-11-21: "one single domain for the Ark and the host can select it and the clients can vote, in
+        // the In your Ark part of voyages". The host's pick (VoyageLobbyLink.ArkDomain) is what every seat's vessel and the
+        // Ark's hull and model fly; a friend's press is a vote the host sees on the chip.
+        static readonly Domains[] ArkDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+        const float DomainChipWidth = 150f, DomainChipHeight = 40f, DomainHeadWidth = 300f;
+
+        sealed class DomainChip
+        {
+            public Domains Domain;
+            public Image Edge;
+            public VoyageRing Dot;
+            public TMP_Text Words;
+        }
+
+        readonly List<DomainChip> _domainChips = new();
+        TMP_Text _domainHead;
+        int _domainSig;
+
+        void BuildDomain()
+        {
+            // Top right, one row: the head (14, Sub), then Jade, Ruby and Gold, each a quiet plate with the domain's dot.
+            var row = At("ArkDomain", 1840f - DomainHeadWidth - 3 * (DomainChipWidth + 10f), 6f,
+                DomainHeadWidth + 3 * (DomainChipWidth + 10f), DomainChipHeight);
+            VoyageKit.Row(row, 10f, TextAnchor.MiddleRight);
+            _domainHead = _kit.Label(row, 14, _kit.Sub, TextAlignmentOptions.Right);
+            _domainHead.overflowMode = TextOverflowModes.Overflow;
+            var hle = VoyageKit.Le(_domainHead);
+            hle.preferredWidth = hle.minWidth = DomainHeadWidth;
+            foreach (var domain in ArkDomains)
+            {
+                var chip = VoyageKit.Node("Domain" + domain, row);
+                var le = VoyageKit.Le(chip);
+                le.preferredWidth = le.minWidth = DomainChipWidth;
+                le.preferredHeight = le.minHeight = DomainChipHeight;
+                var fill = VoyageKit.Sliced(chip, _kit.Style.Sliver10Fill, VoyageKit.Fade(_kit.Popup, 0.78f));
+                fill.raycastTarget = true;
+                var edge = VoyageKit.Node("Edge", chip);
+                VoyageKit.Le(edge).ignoreLayout = true;
+                VoyageKit.Stretch(edge);
+                var view = new DomainChip { Domain = domain, Edge = VoyageKit.Sliced(edge, _kit.Style.Sliver10Line, _kit.Sub) };
+                view.Edge.raycastTarget = false;
+                var inner = VoyageKit.Node("Inner", chip);
+                VoyageKit.Stretch(inner);
+                VoyageKit.Row(inner, 8f, TextAnchor.MiddleCenter);
+                var dot = VoyageKit.Node("Dot", inner);
+                var dle = VoyageKit.Le(dot);
+                dle.preferredWidth = dle.minWidth = dle.preferredHeight = dle.minHeight = 12f;
+                view.Dot = dot.gameObject.AddComponent<VoyageRing>();
+                view.Dot.raycastTarget = false;
+                view.Dot.Width = 2f;
+                view.Words = _kit.Text(inner, 15, _kit.Light, TextAlignmentOptions.Left);
+                view.Words.overflowMode = TextOverflowModes.Overflow;
+                var button = chip.gameObject.AddComponent<Button>();
+                button.targetGraphic = fill;
+                var picked = domain;
+                button.onClick.AddListener(() => PickDomain(picked));
+                _domainChips.Add(view);
+            }
+        }
+
+        void PickDomain(Domains domain)
+        {
+            if (Guest) VoyageLobbyLink.Vote(domain);
+            else VoyageLobbyLink.SetArkDomain(domain);
+            _domainSig = DomainSignature();
+            DrawDomain();
+            // "You sail as" and the seats read the domain too.
+            Refresh();
+        }
+
+        // The Ark's domain and the votes, so the page redraws when the host picks or a friend votes.
+        int DomainSignature()
+        {
+            int sig = (int)VoyageLobbyLink.ArkDomain * 7 + (int)VoyageLobbyLink.MyVote;
+            foreach (var d in ArkDomains) sig = sig * 31 + DomainVotes(d);
+            return sig;
+        }
+
+        // The votes for a domain: the host counts them; a friend reads the host's count.
+        static int DomainVotes(Domains domain) => Guest
+            ? VoyageLobbyLink.Latest?.VotesFor(domain) ?? 0
+            : VoyageLobbyLink.VotesFor(domain);
+
+        string DomainName(Domains domain) => domain switch
+        {
+            Domains.Jade => _lines?.ArkDomainJade,
+            Domains.Ruby => _lines?.ArkDomainRuby,
+            Domains.Gold => _lines?.ArkDomainGold,
+            _ => null,
+        };
+
+        void DrawDomain()
+        {
+            bool guest = Guest;
+            VoyageKit.Set(_domainHead, guest ? _lines?.ArkDomainHeadGuest : _lines?.ArkDomainHead);
+            var ark = VoyageLobbyLink.ArkDomain;
+            var gameData = VoyageLaunch.ResolveGameData();
+            var theme = gameData ? gameData.ThemeManagerData : null;
+            foreach (var chip in _domainChips)
+            {
+                bool on = chip.Domain == ark;
+                bool myVote = guest && chip.Domain == VoyageLobbyLink.MyVote;
+                int votes = DomainVotes(chip.Domain);
+                string name = DomainName(chip.Domain);
+                VoyageKit.Set(chip.Words, votes > 0
+                    ? TemplateText.Fill(_lines?.ArkDomainVotes, "domain", name,
+                        "votes", votes.ToString(CultureInfo.InvariantCulture))
+                    : name);
+                // The Ark's domain is the picked one (the selection's cyan line, as your seat's); a friend's own vote in
+                // Light; the others idle.
+                chip.Edge.color = on ? _kit.Cyan : myVote ? _kit.Light : VoyageKit.Fade(_kit.Outline, 0.9f);
+                chip.Words.color = on ? _kit.Light : _kit.Sub;
+                var color = ToyFactory.DomainAccentColor(theme, chip.Domain);
+                chip.Dot.Set(color, on ? color : VoyageKit.Fade(color, 0f));
+            }
         }
 
         // ── Showing ──────────────────────────────────────────────────────────
@@ -369,6 +498,7 @@ namespace CosmicShore.UI
 
             VoyageKit.Set(_guestLine, guest ? _lines?.ArkLobbyLineGuest : null);
             DrawVoyage();
+            DrawDomain();
 
             // You, then the friends in your lobby in the seats after yours (as the voyage seats them), then an AI wingmate
             // in each seat left.
@@ -464,6 +594,14 @@ namespace CosmicShore.UI
             VoyageKit.Set(view.Line, line);
         }
 
+        /// <summary>The seat's pilot, whole inside its 60 x 72 face box (<see cref="VoyageKit.ShowCover"/>). A bare
+        /// <see cref="VoyageKit.Show"/> left the picture at its default 100 x 100, so the box's mask cut the face off
+        /// (Shombith, 2026-11-21: "the pilots images are getting cropped").</summary>
+        static void ShowFace(SeatView view, Sprite portrait) =>
+            VoyageKit.ShowCover(view.Portrait, portrait, FaceBox, VoyageKit.FaceFocus);
+
+        static readonly Vector2 FaceBox = new(60f, 72f);
+
         void DrawSeat(SeatView view, SavedSquad squad, int seat, bool you, bool editable)
         {
             view.Root.gameObject.SetActive(true);
@@ -473,7 +611,7 @@ namespace CosmicShore.UI
             if (squad == null)
             {
                 _rules.SetHull(view.Hull, null);
-                VoyageKit.Show(view.Portrait, null);
+                ShowFace(view, null);
                 VoyageKit.Set(view.Vessel, null);
                 VoyageKit.Set(view.Pilot, null);
                 VoyageKit.Set(view.Element, null);
@@ -486,7 +624,7 @@ namespace CosmicShore.UI
             var pilot = _rules.PilotOf(slot, vessel);
             bool canEdit = editable && VoyageSeats.CanEdit(squad, seat);
             _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
-            VoyageKit.Show(view.Portrait, pilot ? pilot.Portrait : null);
+            ShowFace(view, pilot ? pilot.Portrait : null);
             VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : null);
             string artifact = vessel ? _rules.ArtifactName(slot, vessel, canEdit) : null;
             string pilotName = VoyageSeats.PilotName(slot, pilot, canEdit);
@@ -520,7 +658,7 @@ namespace CosmicShore.UI
             {
                 var slot = reported.Slot;
                 var pilot = _rules.PilotOf(slot, vessel);
-                VoyageKit.Show(view.Portrait, pilot ? pilot.Portrait : null);
+                ShowFace(view, pilot ? pilot.Portrait : null);
                 VoyageKit.Set(view.Pilot, !string.IsNullOrEmpty(reported.PilotName) ? reported.PilotName : VoyageSeats.PilotName(slot, pilot, false));
                 view.Flower.parent.gameObject.SetActive(slot.Element != Element.None);
                 VoyageSeatPicker.Petals(view.Flower, slot.Element);
@@ -528,7 +666,7 @@ namespace CosmicShore.UI
             }
             else
             {
-                VoyageKit.Show(view.Portrait, null);
+                ShowFace(view, null);
                 VoyageKit.Set(view.Pilot, vessel ? name : null);
                 view.Flower.parent.gameObject.SetActive(false);
                 VoyageKit.Set(view.Element, null);
@@ -641,7 +779,14 @@ namespace CosmicShore.UI
                 // The party's seat reports travel on the voyage's named messages: listen while the lobby is open, and a
                 // friend's machine repeats its own seat now and then.
                 VoyageCourseLink.EnsureListening();
+                VoyageLobbyLink.EnsureListening();
                 PublishSeat(force: false);
+                int domainSig = DomainSignature();
+                if (domainSig != _domainSig)
+                {
+                    _domainSig = domainSig;
+                    DrawDomain();
+                }
                 ReadParty();
                 int sig = PartySignature();
                 if (sig != _partySig)
