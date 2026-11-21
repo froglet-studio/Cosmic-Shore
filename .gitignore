@@ -162,3 +162,8 @@ Port/dist/*
 *.pdata
 *.snap
 ProfileAnalyzer/
+
+# The build stamp BuildStampProcessor writes while a player builds and removes afterwards
+# (Docs/LAUNCH/BUILD_STAMP.md). After the meta negation above, so its folder meta stays ignored too.
+/Assets/Resources/Generated/
+/Assets/Resources/Generated.meta

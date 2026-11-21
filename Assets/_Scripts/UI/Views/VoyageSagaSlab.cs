@@ -42,7 +42,7 @@ namespace CosmicShore.UI
                 return;
             }
             _squad = new VoyageSquadColumn(Kit, Panel, Vessels);
-            Kit.Cta(_squad.Foot, Lines?.BoardSailKey, Lines?.CardSetSail, SetSail);
+            Kit.Commit(_squad.Foot, Lines?.BoardSailKey, Lines?.CardSetSail, SetSail);
         }
 
         void SetSail()

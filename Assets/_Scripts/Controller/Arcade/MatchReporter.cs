@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
     /// counts them only once a second host reported the same account, so one lying host cannot flag anyone.</para>
     ///
     /// <para>AI pilots have no UGS id and are left out. Attached by <see cref="MultiplayerMiniGameControllerBase"/>
-    /// on every peer, only while <see cref="MatchReportGate.Enabled"/>.</para>
+    /// on every peer, only while <see cref="MatchReportGate.IsActive"/>.</para>
     /// </summary>
     public sealed class MatchReporter : MonoBehaviour
     {
