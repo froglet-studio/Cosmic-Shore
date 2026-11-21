@@ -149,6 +149,10 @@ DEFAULTS = {
     # Set it false in config.json to bring the read / admin split back; profile_readers then applies again.
     "all_keys_admin": True,
     "geo_csv": "",                     # DB-IP country lite file; default <data_dir>/dbip-country-lite.csv.gz
+    # The committed public ingest key this instance accepts. Empty: ingest_key.public beside this file (Cosmic
+    # Shore's). A second instance for another game (Tumult, 2026-11-20) points it at that game's own key file, so a
+    # build of one game can never write into the other's data.
+    "public_key_file": "",
 }
 
 
@@ -229,7 +233,7 @@ class App:
         self.store = S.Store(config["data_dir"], schema_events(config["schema_path"]), config["extra_events"])
         self.limit = RateLimit(config["ingest_per_minute"])
         self.ingest_keys = {f"ingest{i}": k for i, k in enumerate(config["ingest_keys"])}
-        public = public_ingest_key()
+        public = public_ingest_key(os.path.expanduser(config.get("public_key_file") or PUBLIC_KEY_FILE))
         if public:                           # the key every build ships with (FrogletAnalyticsConfig.asset)
             self.ingest_keys["public"] = public
         self.geo_path = config["geo_csv"] or os.path.join(config["data_dir"], "dbip-country-lite.csv.gz")
