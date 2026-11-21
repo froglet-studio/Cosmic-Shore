@@ -53,8 +53,10 @@ namespace CosmicShore.Core
         [Tooltip("How long one drain frame may take, in milliseconds: the slice is resized every frame to fit it, " +
                  "so a phone takes smaller slices than a desktop. 0 = a fixed slice of the count above (1-2 s " +
                  "frames on a desktop at 15,000, measured 2026-11-21). A destroy during play costs about 2.6 times " +
-                 "the scene unload's, so a slower drain leaves more for the load's own frame when it is cut short.")]
-        [SerializeField, Min(0f)] float sceneExitFrameBudgetMs = 200f;
+                 "the scene unload's, so a slower drain leaves more for the load's own frame when it is cut short. " +
+                 "Off by default: at 200 ms a desktop return took 4-5 s longer with more 0.5 s hitches, because " +
+                 "those frames cost 0.3-0.5 s whatever the slice (measured 2026-11-21).")]
+        [SerializeField, Min(0f)] float sceneExitFrameBudgetMs = 0f;
 
         /// <summary>Milliseconds of pool-return work a frame during the drain (the Maelstrom hub's own slice).</summary>
         const double SceneExitSliceMs = 24.0;
