@@ -7,14 +7,14 @@
 
 - **Seven machines send errors from Unity**, each to its own `bugledger/<user>` branch: Garrett (`gradi`), Shombith,
   Andrew (`owner`), jtgjones (`mrglo`), Yash (`yskha`), Caleb (`belac`), Will (`will`).
-- **Ledger on 2026-11-22 (by hand; 2026-11-21 19:38 UTC): 382 open, 38 being checked after a fix** (420 issues;
-  the Team Bug Board was mirrored with it: ten issue documents, the counts and the day's run entry). Yash asked for
+- **Ledger on 2026-11-22 (by hand; 2026-11-21 20:37 UTC): 380 open, 40 being checked after a fix** (420 issues;
+  the Team Bug Board was mirrored with it). Yash asked for
   the two errors new since the 11-21 sweep, then every open one on his machine (81), then the other machines' (208
   seen since 10-21, 53 of them naming a game script outside the multiplayer folders). Five were code and are fixed
   (section 3), one was already fixed and is now marked, one is a missing backend deploy (the `launch-flags` Cloud
   Code script answers 404 "Script could not be found" at sign-in, E-930ca435ca; the script is in
   `Tools/UGS/CloudCode/`, the game keeps the default flags, Shombith deploys). Two bugs in the multiplayer folders
-  went to the multiplayer session (section 4). The rest have no fix to make in game code: section 4 says why by group.
+  went to the multiplayer session, which fixed one and found the other already fixed (section 3). The rest have no fix to make in game code: section 4 says why by group.
 - **Ledger on 2026-11-21 (03:57 UTC sweep, 182 branches): 386 open, 35 being checked after a fix** (421 issues).
   The routine's first run with the repository attached: its push to `Ys-bleeding-edge` worked. Eight issues were new
   or seen again since the 11-20 report. One was code and is fixed (`65ffb622dd`, section 3); the rest are not code or
@@ -109,6 +109,16 @@ errors that come with the offline host (E-849115e303, E-f18360ba1d, E-55c19c8f2b
 Already fixed, marked on 2026-11-22: the voyage stop's NullReferenceException in `VoyageRun.StandStop`
 (E-2367abc157, Garrett's machine), fixed on 11-08 by `fe32896d7b`.
 
+From the multiplayer session, the same day:
+
+- `NetworkSceneObjectGuard.NeutralizeStray` stripped a stray NetworkObject with `DestroyImmediate` inside a physics
+  callback, which Unity refuses, so the stray stayed (E-6bc7e07601, five machines). Fixed in `97aab2a6a7`: a deferred
+  form (`Destroy` at the end of the frame) that the three creature-birth callers in `FaunaNetworkSync` use. Compiled
+  in Unity; the Angler tame hit was not replayed. Marked on all five machines.
+- "Double initialization not allowed" from `ClientPlayerVesselInitializer.ReInitializePair` (E-71cedd035d, Yash's
+  machine) was already fixed on 11-02 by `b6c5ad826` (B47: a reclaimed seat uses `ChangePlayer`, not a second
+  `Initialize`). Marked against that commit.
+
 ### 2026-11-21 (not run in the editor; `unity_refcompile` OK)
 
 | Error | Machines | Cause | Fix |
@@ -148,9 +158,6 @@ Earlier fixes are in each issue's ledger note and in `git log --grep "bugledger"
 ## 4. Left, and for whom
 
 - **Read again on 2026-11-22, nothing to fix here:**
-  - With the multiplayer session (its files, sent to it on 11-22): `NetworkSceneObjectGuard.NeutralizeStray` using
-    `DestroyImmediate` inside a physics callback (E-6bc7e07601) and "Double initialization not allowed" from
-    `ClientPlayerVesselInitializer.ReInitializePair` (E-71cedd035d).
   - Shombith, backend: the `launch-flags` script not deployed (E-930ca435ca), the `weekly_challenge` board (42
     sightings on five other machines), Vivox (about 38).
   - Code that changed since the one or two sightings, so the reported line no longer matches and a new capture is
