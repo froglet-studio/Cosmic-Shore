@@ -39,6 +39,19 @@ give me a vessel, ark, and prism cluster to attack."
 - **Waiting on a person:** the editor hand tests (`Docs/UNITY_VERIFICATION_CHECKLIST.md`: the armour entry, the four
   creatures' entry, the Ray's entry), and judging the sixteen new forms here.
 
+## Follow-ups (debt this work created or walked past; rows, not promises)
+
+| what | where | how to see it |
+|---|---|---|
+| `GrownLimbDriver`'s joint beat and the Ray's `degrees` / `lag` are used only by the `"sway": "joints"` fallback. Delete both once the shader wave has been seen in the editor | `GrownLimbDriver.cs`, `specs/ray.py` `unity` block, `unity_port.sway_mode` | `grep -n '"sway"' Tools/Build/fauna_kit/specs/*.py` prints nothing: no creature uses the fallback |
+| `FaunaAttackDriver.Scan` walks FIRST children and turns every one, renderers included; grown limbs end on an empty tip to stay out of its way. A scan that stops at a renderer would remove the need | `FaunaAttackDriver.cs` `Scan`, `unity_port.py` (the tip) | `grep -n "Tip" Tools/Build/fauna_kit/unity_port.py` |
+| The lab has suction shapes the game does not (`funnel`, `bore`: the archived round-1 creatures) | `GrownFauna.SuctionShape`, `unity_port.SUCTION` | `unity_port.py` refuses them by name |
+| A Plume is 16 renderers, each with a per-renderer property block for the turn (not SRP-batched). Unmeasured. Options if it shows: whip joints on five arms, or the turn's six floats as per-instance properties | `GrownLimbDriver.AnswerTheTurn`, `unity_port.WHIP_HINGES` | a frame-time A/B with eight Plumes on the Spawn Matrix |
+| Element armour now lands on every Mass and Charge light fauna and boid: the cost of shields on a large Mass school has never been measured | `Fauna.AssignLineage` | a frame-time A/B in a cell with a Mass tadpole school |
+| Amoebius does not build on bleeding-edge (`UIThemeLive.cs` line 272 against the engine's `Shadow : MonoBehaviour`) | `Port/src/CosmicShore.Engine/UI/PackageComponents.cs:261` | Shombith's (queued in his `/approve`) |
+| The Manta is still the braid kit's body with no forms of its own; the five archived round-1 creatures were never brought up | `specs/manta.py`, `lab_export.ARCHIVED` | `elements.py` lists only grown creatures |
+| No Codex page for any grown creature | - | - |
+
 ## Round 11 (2026-11-21): the other four brought to the Ray's standard, and into Unity
 
 Garrett: "bring everything up to this ones standard and continue learning and updating the skills along the way so we
