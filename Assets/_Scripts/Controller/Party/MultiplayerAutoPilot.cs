@@ -110,6 +110,7 @@ namespace CosmicShore.Gameplay
         async UniTask<string> HostAsync(CancellationToken ct)
         {
             TryDelete(_args.RendezvousPath);   // a previous run's file must never send a joiner to a dead session
+            if (!string.IsNullOrEmpty(_args.RendezvousPath)) ClearJoinedMarkers();
             if (!await WaitUntil(ct, "solo party session up", () => OwnSessionId() != null)) return "the solo party session never came up";
 
             string written = null;
@@ -130,7 +131,43 @@ namespace CosmicShore.Gameplay
                 if (!done) await UniTask.Delay(TimeSpan.FromSeconds(PollSeconds), DelayType.Realtime, cancellationToken: ct);
             }
             Step($"{_args.Expect} players in the party");
+
+            // Stay up until every joiner says it is in. The host counts a joiner the moment it connects, seconds
+            // before that joiner's own vessel is ready; quitting then pulled the session from under it (the first
+            // built-player run, 2026-11-22: host PASS at 97 s, joiner never ready).
+            if (!string.IsNullOrEmpty(_args.RendezvousPath))
+            {
+                if (!await WaitUntil(ct, "every joiner confirmed", () => JoinedMarkerCount() >= _args.Expect - 1))
+                    return $"only {JoinedMarkerCount()} of {_args.Expect - 1} joiners confirmed they were in the party";
+            }
             return null;
+        }
+
+        const string JoinedSuffix = ".joined";
+
+        string JoinedMarkerPath(string profile) => $"{_args.RendezvousPath}.{profile}{JoinedSuffix}";
+
+        int JoinedMarkerCount()
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(Path.GetFullPath(_args.RendezvousPath));
+                string pattern = Path.GetFileName(_args.RendezvousPath) + ".*" + JoinedSuffix;
+                return Directory.Exists(dir) ? Directory.GetFiles(dir, pattern).Length : 0;
+            }
+            catch (IOException) { return 0; }
+        }
+
+        void ClearJoinedMarkers()
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(Path.GetFullPath(_args.RendezvousPath));
+                if (!Directory.Exists(dir)) return;
+                foreach (string f in Directory.GetFiles(dir, Path.GetFileName(_args.RendezvousPath) + ".*" + JoinedSuffix))
+                    TryDelete(f);
+            }
+            catch (IOException) { }
         }
 
         bool IsHostWithEveryone()
@@ -197,7 +234,13 @@ namespace CosmicShore.Gameplay
                 float settleUntil = Time.realtimeSinceStartup + JoinSettleSeconds;
                 while (Time.realtimeSinceStartup < settleUntil && !TimedOut())
                 {
-                    if (IsClientInParty()) { Step("in the party as a client"); return null; }
+                    if (IsClientInParty())
+                    {
+                        Step("in the party as a client");
+                        if (_args.TargetKind == MultiplayerAutoTargetKind.RendezvousFile)
+                            WriteAllTextAtomic(JoinedMarkerPath(_args.Profile), _args.Profile);   // tells the host it may close
+                        return null;
+                    }
                     await UniTask.Delay(TimeSpan.FromSeconds(PollSeconds), DelayType.Realtime, cancellationToken: ct);
                 }
                 if (TimedOut()) break;

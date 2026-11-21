@@ -92,7 +92,17 @@ namespace CosmicShore.Core
         /// </summary>
         public bool OfflinePreferred
         {
-            get => PlayerPrefs.GetInt(OFFLINE_PREFERENCE_KEY, 0) == 1;
+            get
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                // An automatic multiplayer run (-csMpAutoHost / -csMpAutoJoin) is an online test by definition: a saved
+                // "play offline" choice on the test machine sent both players offline (run of 2026-11-22). Read-only
+                // here, so the player's saved choice is left as it was.
+                var autoArgs = CosmicShore.Gameplay.MultiplayerAutoPilot.Args;
+                if (autoArgs != null && autoArgs.IsActive) return false;
+#endif
+                return PlayerPrefs.GetInt(OFFLINE_PREFERENCE_KEY, 0) == 1;
+            }
             set
             {
                 PlayerPrefs.SetInt(OFFLINE_PREFERENCE_KEY, value ? 1 : 0);

@@ -1854,7 +1854,7 @@ which no longer applies while nests stand).
 4. Every third nest holds a crystal you can take once it is open.
 5. AI Threshers (the soak or the AI Diagnose panel): they break their nests and finish at every intensity.
 
-### 🔴 Automatic host and join with built development players: -csMpAutoHost / -csMpAutoJoin (`Ys-bleeding-edge`, 2026-11-21; from `claude/mp-plan-p0`, 2026-11-02) — COMPILED AND UNIT-TESTED, NO BUILT-PLAYER RUN YET
+### 🔴 Automatic host and join with built development players: -csMpAutoHost / -csMpAutoJoin (`Ys-bleeding-edge`, 2026-11-21; from `claude/mp-plan-p0`, 2026-11-02) — 2 AND 4 BUILT PLAYERS PASS ON ONE PC (2026-11-22); TWO MACHINES NOT RUN
 
 **What landed:** `MultiplayerAutoArgs` (the arguments, pure), `MultiplayerAutoPilot` (development builds and the editor
 only; hosts or presses JOIN through `PartyInviteController.JoinPartyAsync` and writes a result JSON), a `-csMpProfile`
@@ -1871,7 +1871,23 @@ test, no built player, no UGS sign-in.
 **2026-11-21, on `Ys-bleeding-edge`** (commit `2c9bb3617d` brought over; the B47 / B48 / B49 commits of that branch were
 not): Unity 6000.3.17f1 `unity recompile` 0 errors, 0 warnings. `MultiplayerAutoArgsTests` 26 of 26 pass, called
 directly in the open editor (not through the Test Runner); `TwoStandalonePlayers_HostAndJoin_BothReachTheParty` skips
-without `CS_MP_PLAYER`. `mp_auto.py --self-test` OK. **Still not run:** a built player, so steps 2-6 below.
+without `CS_MP_PLAYER`. `mp_auto.py --self-test` OK. Not run that day: a built player, so steps 2-6 below.
+
+**2026-11-22, built players on one PC** (Windows development build, IL2CPP, `development` UGS environment; profiles
+`mpauto-host`, `mpauto-join1..3`; each run alone on the machine, the editor open and not in Play):
+- Run 1 (2 players): host PASS, joiner FAIL. Two causes, both fixed: the host quit the moment it counted the joiner,
+  before the joiner's vessel was ready (the host now waits for a `.joined` marker from every joiner); and the joiner's
+  ready-wait timeout fired on a timer thread, so its bounce to the solo menu threw `get_realtimeSinceStartupAsDouble
+  can only be called from the main thread` (`PartyInviteController.WaitForClientReadyAsync` now resumes on the main
+  thread; `SpectatorController.WaitUntilWatchingAsync` had the same shape).
+- Run 2 (2 players): both FAIL, both started offline: the built player on that PC has a saved "play offline" choice.
+  An automatic run now ignores it (`OfflineModeService.OfflinePreferred`, development builds and the editor only).
+- Run 3 (2 players): PASS host 55.9 s, PASS join1 55.2 s (JOIN pressed to in the party: 6.1 s).
+- Run 4 (4 players): PASS host 62.6 s, join1 56.5 s, join2 54.9 s, join3 57.5 s. No exception from project code and no
+  main-thread error in any log; `Relay session not ready (attempt 1-2/3)` at boot on every player.
+Steps 2 and 3 below are done. **Still not run:** step 4 (the Test Runner test), step 5 (the negative), step 6 (a
+release build), two machines, and anything past the menu (no match was launched). A joiner passes when it sees itself
+and the host; only the host checks the full count.
 
 **Test:**
 1. EditMode: `MultiplayerAutoArgsTests` all pass; the existing multiplayer set still passes.
