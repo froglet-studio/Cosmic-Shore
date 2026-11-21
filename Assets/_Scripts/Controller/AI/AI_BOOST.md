@@ -87,8 +87,9 @@ spending, the next leg starts at the objective. A break-off (orbit break) and a 
 have handed over, so the hull flies exactly as before. Shipped lists:
 
 - Sparrow: Dog Fight, Wildlife Liberation (gun hunts — engagement range, not speed).
-- Dolphin: The Bends, Rampage, Broadside — the commit drift is how the AI AIMS the crystal blast
-  those modes score by; releasing it early trades aim for speed.
+- Dolphin: The Bends, Broadside — the commit drift is how the AI AIMS the crystal blast
+  those modes score by; releasing it early trades aim for speed. Rampage was listed until 2026-11-21: on the Mass-Space
+  volume books the speed is worth more than the aim there (`RAMPAGE.md` § The AI trained on the volume books).
 - Squirrel: Skim Race (its own pilot), Joust, Astro League; plus `requireAIPlayer`, because the
   ring is permanent mass and the menu's lava-lamp autopilot must not wall up Menu_Main.
 - Scarab: Astro League, Scarab Scramble, Tollway (ball modes).
