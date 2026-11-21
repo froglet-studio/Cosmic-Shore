@@ -1,0 +1,641 @@
+# Player journeys: who plays Cosmic Shore, and the path each takes through the Loop Atlas's loops.
+# Garrett, 2026-11-21: "anticipate how different demographics will engage differently and model their different
+# paths ... I want to know what their activation paths look like ... animate their path through their respective
+# gameplay loops with a velocity slider."
+#
+# Every persona here is a hypothesis on the Proposed layer: an invention for the team to accept, change or throw out.
+# Nothing here is measured. The loop ids are the atlas's (model/loops/*.yaml); the build refuses an unknown id.
+#
+# Shared with the economy and timescale simulation (Docs/LoopAtlas/sim/personas.yaml, branch
+# claude/loop-timescale-sim): the ids mira, jonah and night-crew are the same people there. That file is the
+# statistical definition (segment, skill, schedule, affinities); this one is the authored path in two layers.
+#
+# Fields
+#   persona: id, name, who, from (whose idea), challenge (where the example does not hold), device, group (people
+#     who play as this persona), drivers (atlas driver ids, strongest first), timescale (what the economy sim reads:
+#     sittings a week, minutes a sitting, the longest loop they will sit through, in seconds), win (share of rounds
+#     won, for the crystal estimate), layers.
+#   layers.now = the game today (bleeding-edge, the master unlock on: every lock open, no guide).
+#   layers.prop = the same person with the Proposed layer's fixes (the proposal ids in `uses`).
+#   A layer has `sittings` (one-off `day: N`, or `every: [mon, ...]` with `from` and `to`), `events` (dated lines
+#   shown on the timeline) and `fate` (`day` and `why` when they leave; no day means still playing at the horizon).
+#   A sitting has `at` (HH:MM), `with` (another persona sitting together) and `steps`.
+#   A step: l = loop id, m = minutes, in = the place it is played in when the loop sits elsewhere in the tree
+#     (the Ratel's board played inside a Honeycomb round), via = the handoff that brought them (vocabulary.yaml),
+#     n = what happens, hole = where the path breaks, risk = chance they leave at that step (0 to 1),
+#     ev = the analytics event that would see it, won = rounds the persona's typical member wins in the step
+#     (crystals = won x 200; the build adds an event each time the total covers another 4000-crystal vessel).
+horizon: 49
+start: mon
+personas:
+
+- id: mira
+  name: Mira, the puzzle parent
+  from: Garrett's example
+  who: 44, works full time, plays on an older phone in portrait at the end of the day. Plays the Ratel as a casual
+    puzzle game; gets pulled into her son Jonah's squad on weekends.
+  challenge: 'The example runs the wrong way round in today''s build. The Ratel is not a game she can find: it is the
+    second seat of the Honeyguide, reached through the Toybox''s Vessel Changer and a two-finger swipe. So she cannot
+    start as a solo puzzle player and later be roped in. She is roped in first, by Jonah, and only discovers the
+    Ratel because it is the one seat that needs no flying. And his squad cannot take her along: the Honeyguide has no
+    arena card, so the day he moves to the arena she is handed a hull to fly.'
+  device: phone, older, portrait, one thumb
+  group: 1
+  drivers: [crew, mastery, make]
+  timescale: {sittings_week: [3, 5], sitting_min: [6, 15], longest_loop_s: 900, best_tiers: [1, 2, 3]}
+  win: 0.3
+  layers:
+    now:
+      fate: {day: 13, why: 'She can only reach the Ratel when Jonah sets it up, and on day 13 he takes the squad to
+        the arena, where the Honeyguide has no card. She flies a Squirrel, finishes last, and stops.'}
+      sittings:
+      - day: 2
+        at: '20:30'
+        with: jonah
+        steps:
+        - {l: arc.social, m: 2, via: pull, n: Jonah installs it on her phone and asks her into his party.}
+        - {l: sitting, m: 1, n: 'Home: four places, every card unlocked, nothing pointing anywhere.', ev: ftue_phase_completed}
+        - {l: toybox, m: 2, n: He flies her out to the Vessel Changer.}
+        - {l: toy.changers, m: 2, n: 'Honeyguide and Ratel, then a two-finger swipe to the Ratel''s seat.'}
+        - {l: seat.ratel, in: toybox, m: 14, n: 'She plays the Dynamo while the AI flies the hull. She likes it. No goal,
+            no score and no end, so she stops when the tea is cold.', hole: The Toybox gives the Ratel no objective and
+            banks nothing., risk: 0.2}
+      - day: 4
+        at: '21:40'
+        steps:
+        - {l: sitting, m: 2, n: 'Alone. Home has no Ratel on it.', hole: There is no way in to the Ratel on its own.,
+           risk: 0.4}
+        - {l: toybox, m: 4, n: 'Flies about looking for the Changer, does not find it, closes the game.', via: tired}
+      - day: 6
+        at: '15:00'
+        with: jonah
+        steps:
+        - {l: arc.social, m: 1, via: pull}
+        - {l: seat.ratel, in: round.ms, m: 16, won: 1, n: 'Jonah flies the Honeyguide in Honeycomb, she plays the Ratel.
+            Four rounds. Her patterns load his darts: my partner made that shot possible.'}
+        - {l: sitting, m: 1, n: 'Results, then Home. Nothing offers her the next step.', hole: No breath between rounds.}
+      - day: 9
+        at: '21:30'
+        steps:
+        - {l: sitting, m: 3, n: 'Alone again; gives up after three minutes.', risk: 0.5}
+      - day: 13
+        at: '15:00'
+        with: jonah
+        steps:
+        - {l: arc.social, m: 1, via: pull}
+        - {l: arena, m: 2, n: Jonah wants Brood Rush with his squad.}
+        - {l: round.broodrush, m: 6, n: 'The Honeyguide is in no arena roster. She is given a Squirrel to fly and comes
+            last.', hole: The Honeyguide has no arena card., risk: 0.9}
+      events:
+      - {day: 2, at: '20:50', kind: find, n: 'Finds the Ratel, through Jonah.'}
+      - {day: 13, at: '15:10', kind: loss, n: Leaves. Jonah loses his weekend partner too.}
+    prop:
+      uses: [seat.crew, seat.ratel, breath, era.tide, arc.flower]
+      fate: {why: 'Still playing at week 7: four short Ratel sittings a week on her own, and Saturdays in Jonah''s squad.
+        Her Saturdays keep Jonah coming back as well.'}
+      sittings:
+      - day: 2
+        at: '20:30'
+        with: jonah
+        steps:
+        - {l: arc.social, m: 1, via: pull, n: 'The invite is the empty seat: "play the Ratel on my Honeyguide". The link
+            opens the game straight into the seat.'}
+        - {l: seat.crew, m: 1, n: 'She is seated; the Mentor shows the board, one move at a time.', ev: ftue_step_completed}
+        - {l: seat.ratel, in: round.ms, m: 14, won: 1, n: 'Three Honeycomb rounds with Jonah flying.'}
+        - {l: breath, m: 1, n: 'The breath offers: "Play the Ratel on your own".', via: new}
+      - day: 3
+        at: '21:45'
+        steps:
+        - {l: sitting, m: 1}
+        - {l: seat.ratel, in: ladder, m: 9, won: 2, n: 'The Ratel''s own card, the AI flying the hull. Rungs I1 and I2.'}
+        - {l: breath, m: 1, n: 'Rung I3 is offered for tomorrow.'}
+      - every: [mon, wed, thu]
+        from: 5
+        to: 49
+        at: '21:45'
+        steps:
+        - {l: sitting, m: 1}
+        - {l: seat.ratel, in: ladder, m: 8, won: 1}
+        - {l: breath, m: 1}
+      - every: [tue, fri]
+        from: 8
+        to: 49
+        at: '22:00'
+        steps:
+        - {l: era.tide, m: 6, won: 1, n: 'The day''s job: a five-minute hive puzzle that expires tonight.'}
+      - every: [sat]
+        from: 6
+        to: 49
+        at: '15:00'
+        with: jonah
+        steps:
+        - {l: arc.social, m: 1, via: pull}
+        - {l: seat.ratel, in: round.ms, m: 12, won: 1}
+        - {l: seat.ratel, in: round.broodrush, m: 14, won: 1, n: 'The Honeyguide seats in Jonah''s Brood Rush squad, so
+            she plays the Ratel in the arena too.'}
+        - {l: breath, m: 1}
+      events:
+      - {day: 2, at: '20:31', kind: find, n: Straight into the Ratel's seat from Jonah's invite.}
+      - {day: 17, at: '21:55', kind: own, n: 'The Honeyguide''s Mass petal lights from the Ratel seat.'}
+      - {day: 27, at: '15:20', kind: crew, n: 'First arena win as the Ratel.'}
+
+- id: jonah
+  name: Jonah, the squad kid
+  from: Garrett's example (the son)
+  who: 14, plays after school on a PC and his phone, watches clips of the game, wants every hull. The one who pulls
+    his mother in.
+  challenge: 'He is the engine of Mira''s path, so his path decides hers. Today he gets every card on day 1 under the
+    master unlock and burns through the fleet''s novelty in two weeks; when he leaves, Mira goes with him. With the
+    activation gate flipped he would instead be held for hours behind a quest chain that ends at I4, which is too slow
+    for him in the other direction.'
+  device: PC and phone
+  group: 1
+  drivers: [mastery, rival, own, find]
+  timescale: {sittings_week: [6, 9], sitting_min: [30, 90], longest_loop_s: 2400, best_tiers: [3, 4, 5]}
+  win: 0.45
+  layers:
+    now:
+      fate: {day: 27, why: 'Everything was open on day 1 and nothing has changed since. By week 4 his friends have moved
+        to another game and he follows.'}
+      sittings:
+      - day: 1
+        at: '16:30'
+        steps:
+        - {l: arc.activation, m: 1, n: 'The master unlock is on: every card open, no spotlight, no Lesson.', hole: No
+            player has seen the onboarding., ev: ftue_phase_completed}
+        - {l: sitting, m: 1}
+        - {l: arcade, m: 2}
+        - {l: round.time, m: 8, won: 2}
+        - {l: round.charge, m: 8, won: 1}
+        - {l: toybox, m: 8, via: tired}
+        - {l: arena, m: 2, via: new}
+        - {l: round.regatta, m: 15, won: 1}
+      - day: 2
+        at: '20:30'
+        with: mira
+        steps:
+        - {l: arc.social, m: 2, via: pull, n: Gets his mother into his party.}
+        - {l: toybox, m: 4}
+        - {l: toy.changers, m: 2}
+        - {l: toy.fly, m: 14, n: Flies the Honeyguide while she plays the Ratel.}
+      - every: [mon, tue, wed, thu, fri]
+        from: 3
+        to: 14
+        at: '16:30'
+        steps:
+        - {l: sitting, m: 1}
+        - {l: arcade, m: 2}
+        - {l: ladder, m: 20, won: 3, n: Climbs rungs on whatever card he likes.}
+        - {l: arena, m: 2, via: new}
+        - {l: round.broodrush, m: 15, won: 1}
+        - {l: arc.fleet, m: 2, n: Checks his crystals against 4000.}
+      - every: [sat]
+        from: 6
+        to: 13
+        at: '15:00'
+        with: mira
+        steps:
+        - {l: arc.social, m: 1, via: pull}
+        - {l: round.ms, m: 16, won: 1, n: Flies the Honeyguide in Honeycomb with her on the Ratel.}
+      - every: [sun]
+        from: 7
+        to: 21
+        at: '11:00'
+        steps:
+        - {l: arena, m: 3}
+        - {l: round.broadside, m: 30, won: 3}
+        - {l: round.broodrush, m: 30, won: 2}
+        - {l: arc.fleet, m: 3}
+      - every: [tue, thu, sat]
+        from: 15
+        to: 27
+        at: '17:00'
+        steps:
+        - {l: sitting, m: 1}
+        - {l: arena, m: 2}
+        - {l: round.regatta, m: 20, won: 2, n: 'Same environments, same hulls as day 1.', hole: Nothing in the build
+            changes on a schedule., risk: 0.15}
+      events:
+      - {day: 13, at: '15:10', kind: loss, n: Mira stops playing.}
+    prop:
+      uses: [arc.flower, breath, era.tide, seat.crew]
+      fate: {why: 'Still playing at week 7, at a lower but steady rate. Each week''s card and the Tide''s meta turn
+        on day 42 give him something new; Saturdays with Mira give him a partner.'}
+      sittings:
+      - day: 1
+        at: '16:30'
+        steps:
+        - {l: arc.activation, m: 8, n: 'The spotlight leads to one card; the Lesson''s ghost flies the Squirrel''s Time
+            verb once.', ev: ftue_step_completed}
+        - {l: round.time, m: 8, won: 2}
+        - {l: breath, m: 1, n: 'Offered: the Charge game, "this trained your boost".'}
+        - {l: round.charge, m: 8, won: 1}
+        - {l: arc.flower, m: 1, n: Two petals of the Squirrel's flower lit on day 1.}
+      - day: 2
+        at: '20:30'
+        with: mira
+        steps:
+        - {l: arc.social, m: 1, via: pull, n: Sends Mira the Honeyguide's empty seat as the invite.}
+        - {l: round.ms, m: 14, won: 1}
+        - {l: breath, m: 1}
+      - every: [mon, tue, wed, thu, fri]
+        from: 3
+        to: 49
+        at: '16:30'
+        steps:
+        - {l: sitting, m: 1}
+        - {l: ladder, m: 18, won: 3}
+        - {l: breath, m: 1, via: done}
+        - {l: arc.flower, m: 1}
+        - {l: round.broodrush, m: 12, won: 1}
+      - every: [sat]
+        from: 6
+        to: 49
+        at: '15:00'
+        with: mira
+        steps:
+        - {l: arc.social, m: 1, via: pull}
+        - {l: round.ms, m: 12, won: 1}
+        - {l: round.broodrush, m: 14, won: 1}
+        - {l: breath, m: 1}
+      - every: [sun]
+        from: 7
+        to: 49
+        at: '11:00'
+        steps:
+        - {l: era.tide, m: 2, n: 'The card of the week, and this week''s arena pool.'}
+        - {l: arena, m: 2}
+        - {l: round.broadside, m: 25, won: 3}
+        - {l: arc.fleet, m: 2}
+      - day: 42
+        at: '16:30'
+        steps:
+        - {l: era.meta, m: 3, n: 'The Tide turns: his Rhino was retuned and the news says how.'}
+        - {l: round.regatta, m: 20, won: 1}
+      events:
+      - {day: 5, at: '17:00', kind: find, n: 'The quest chain opens the arena.'}
+      - {day: 42, at: '16:30', kind: find, n: 'The first Tide turns the meta.'}
+
+- id: night-crew
+  name: The night crew
+  from: Garrett's example
+  who: Four friends, 24 to 28, on PC with voice chat. The arena most nights from about 21:30, voyages in a long
+    binge on Saturday afternoons.
+  challenge: 'Four does not fit. An arena team is three seats and a voyage party is at most three players, so every
+    night one of them is on the other team or out. Only the winner of a match is paid (200 crystals, 4000 a vessel),
+    so in a group that wins and loses to each other the quietest friend owns nothing new after two weeks. A Saturday
+    voyage binge builds only the host''s Ark and hoard. And they never meet activation at all: they come in by invite
+    and go straight to the arena, which is fine today and would be a wall if the gate flipped as planned.'
+  device: PC, voice chat
+  group: 4
+  drivers: [crew, rival, mastery, stake]
+  timescale: {sittings_week: [5, 7], sitting_min: [90, 300], longest_loop_s: 14400, best_tiers: [4, 5, 6]}
+  win: 0.33
+  layers:
+    now:
+      fate: {day: 38, why: 'The quietest friend leaves on day 17. By day 30 the top two own the priced fleet and
+        crystals buy nothing; the arena has not changed since day 1. Nights drop to two a week and the crew moves to
+        another game.'}
+      sittings:
+      - day: 5
+        at: '21:00'
+        steps:
+        - {l: arc.social, m: 4, via: pull, n: One of them installs it and invites the other three. AI fills the seats.}
+        - {l: arena, m: 3, n: 'Four of them, three seats a team: two against two, with AI.', hole: A party of four does
+            not fit a three-seat team., risk: 0.05}
+        - {l: round.regatta, m: 30, won: 3}
+        - {l: round.broadside, m: 45, won: 4}
+        - {l: round.broodrush, m: 60, won: 4}
+      - every: [mon, tue, wed, thu]
+        from: 8
+        to: 30
+        at: '21:30'
+        steps:
+        - {l: arc.social, m: 2, via: pull}
+        - {l: arena, m: 2}
+        - {l: round.broodrush, m: 40, won: 3}
+        - {l: round.broadside, m: 30, won: 2}
+        - {l: round.regatta, m: 25, won: 2}
+      - every: [sat]
+        from: 6
+        to: 34
+        at: '14:00'
+        steps:
+        - {l: voy.port, m: 10, n: 'Three sail; the fourth stays in the arena with AI.', hole: A voyage party is at most
+            three., risk: 0.05}
+        - {l: voy.leg, m: 30}
+        - {l: voy.place, m: 12}
+        - {l: voy.meet, m: 8}
+        - {l: voy.home, m: 8}
+        - {l: voy.port, m: 6}
+        - {l: voy.leg, m: 30}
+        - {l: voy.cell, m: 20}
+        - {l: voy.place, m: 12}
+        - {l: voy.home, m: 10}
+        - {l: arc.hoard, m: 4, n: 'The haul is the host''s. The other two built nothing that stays.', hole: Nothing a
+            party does together lasts past the sitting.}
+        - {l: voy.port, m: 6}
+        - {l: voy.leg, m: 35}
+        - {l: voy.place, m: 12}
+        - {l: voy.home, m: 10}
+      - every: [sun]
+        from: 7
+        to: 28
+        at: '15:00'
+        steps:
+        - {l: arena, m: 2}
+        - {l: round.broodrush, m: 60, won: 5}
+        - {l: arc.fleet, m: 4}
+      - every: [tue, thu]
+        from: 31
+        to: 38
+        at: '21:30'
+        steps:
+        - {l: arena, m: 2}
+        - {l: round.broadside, m: 40, won: 3, hole: 'Same environments and hulls for five weeks.', risk: 0.2}
+      events:
+      - {day: 9, at: '22:30', kind: loss, n: 'The best of them has two vessels'' worth of crystals; the quietest has 400.'}
+      - {day: 17, at: '23:00', kind: loss, n: 'The quietest friend stops coming: nothing new in two weeks. The crew is three.'}
+      - {day: 30, at: '23:00', kind: loss, n: 'The top two own all five priced hulls. Crystals have no use.'}
+      - {day: 38, at: '23:00', kind: loss, n: The crew moves on.}
+    prop:
+      uses: [seat.crew, breath, era.tide, era.meta, arc.social, arc.fleet]
+      fate: {why: 'All four still play at week 7. The fourth takes a crew seat on someone''s hull, the party owns its
+        voyage record, everyone is paid for a team win, and the Tide gives the arena a new pool every week and turns
+        the meta on day 42.'}
+      sittings:
+      - day: 5
+        at: '21:00'
+        steps:
+        - {l: arc.social, m: 3, via: pull}
+        - {l: seat.crew, in: round.broodrush, m: 30, won: 3, n: 'Three hulls, four friends: the fourth rides the Orca''s
+            gunner seat, so the party fits one team.'}
+        - {l: round.broadside, m: 45, won: 4}
+        - {l: round.broodrush, m: 60, won: 4}
+        - {l: breath, m: 2}
+      - every: [mon, tue, wed, thu]
+        from: 8
+        to: 49
+        at: '21:30'
+        steps:
+        - {l: arc.social, m: 2, via: pull}
+        - {l: era.tide, m: 2, n: This week's arena pool.}
+        - {l: round.broodrush, m: 40, won: 3}
+        - {l: seat.crew, in: round.broadside, m: 30, won: 2}
+        - {l: round.regatta, m: 25, won: 2}
+        - {l: breath, m: 1}
+      - every: [sat]
+        from: 6
+        to: 49
+        at: '14:00'
+        steps:
+        - {l: voy.port, m: 10, n: 'Four aboard: three hulls and a crew seat.'}
+        - {l: voy.leg, m: 30}
+        - {l: voy.place, m: 12}
+        - {l: voy.meet, m: 8}
+        - {l: voy.home, m: 8}
+        - {l: arc.hoard, m: 3, n: 'The party''s Ark and hoard: the haul belongs to all four.'}
+        - {l: voy.port, m: 6}
+        - {l: voy.leg, m: 30}
+        - {l: voy.cell, m: 20}
+        - {l: voy.place, m: 12}
+        - {l: voy.home, m: 10}
+        - {l: arc.saga, m: 4, n: 'A chapter of the party''s saga closes.'}
+        - {l: voy.port, m: 6}
+        - {l: voy.leg, m: 35}
+        - {l: voy.home, m: 10}
+      - every: [sun]
+        from: 7
+        to: 49
+        at: '15:00'
+        steps:
+        - {l: arena, m: 2}
+        - {l: round.broodrush, m: 60, won: 5}
+        - {l: arc.fleet, m: 4, n: 'Crystals have a second sink: the Ark''s refit and pilots at port.'}
+      events:
+      - {day: 12, at: '22:30', kind: own, n: 'Everyone has been paid for team wins; the quietest is a week from a vessel.'}
+      - {day: 20, at: '17:00', kind: own, n: 'The party''s first relic.'}
+      - {day: 42, at: '21:30', kind: find, n: 'The Tide turns the meta. Their arena changes for the first time.'}
+
+- id: commuter
+  name: The five-minute commuter
+  from: Claude, to challenge the Session tier
+  who: 34, rides a train twice a day on an older Android phone, sound off, one hand. Six or seven minutes a sitting.
+  challenge: 'The atlas''s Session tier starts at 10 minutes and a voyage takes 20 to 40. His sittings are 6. Most
+    of the game is out of reach of his day: he can fit three Time rounds and nothing that banks. He is the player the
+    economy simulation''s short-session cultures will look like.'
+  device: phone, older, one hand
+  group: 1
+  drivers: [mastery, joy, reward]
+  timescale: {sittings_week: [8, 10], sitting_min: [5, 7], longest_loop_s: 420, best_tiers: [1, 2, 4]}
+  win: 0.35
+  layers:
+    now:
+      fate: {day: 19, why: 'Twelve days of the same three cards. Nothing between his sittings carries over except
+        crystals at 200 a win, a vessel 20 wins away, and the voyage he tried on day 4 cannot be paused.'}
+      sittings:
+      - day: 1
+        at: '08:10'
+        steps:
+        - {l: arc.activation, m: 1, n: Every card open and nothing to say which is short., hole: The first loop a
+            stranger meets is an unlocked menu., risk: 0.15}
+        - {l: sitting, m: 1}
+        - {l: round.time, m: 4, won: 1}
+        - {l: sitting, m: 1, n: 'The results screen, and his stop.', hole: No breath between rounds.}
+      - day: 4
+        at: '18:05'
+        steps:
+        - {l: voyages, m: 1}
+        - {l: voy.port, m: 5, n: 'Reads the news and takes a job. His stop comes before he has sailed. Leaving abandons the
+            voyage.', hole: 'A voyage cannot be paused between sittings.', risk: 0.1}
+      - every: [mon, tue, wed, thu, fri]
+        from: 2
+        to: 19
+        at: '08:10'
+        steps:
+        - {l: sitting, m: 1}
+        - {l: round.time, m: 4, won: 1}
+        - {l: round.charge, m: 2}
+      - every: [mon, tue, wed, thu]
+        from: 2
+        to: 16
+        at: '18:05'
+        steps:
+        - {l: sitting, m: 1}
+        - {l: round.time, m: 5, won: 1, hole: Nothing between sittings carries over., risk: 0.04}
+      events:
+      - {day: 4, at: '18:11', kind: loss, n: 'His first voyage is abandoned at port.'}
+      - {day: 19, at: '08:17', kind: loss, n: Uninstalls to free space.}
+    prop:
+      uses: [breath, era.tide, voyages]
+      fate: {why: 'Still playing at week 7, nine sittings a week. The day''s job is five minutes, the breath always has
+        a next round that fits, and his voyage waits docked at a location between trains.'}
+      sittings:
+      - day: 1
+        at: '08:10'
+        steps:
+        - {l: arc.activation, m: 3, n: 'The spotlight leads to one short card; the Lesson is two minutes.', ev: ftue_step_completed}
+        - {l: round.time, m: 3, won: 1}
+        - {l: breath, m: 1, n: 'One offered next step, sized to what is left of the ride.'}
+      - every: [mon, tue, wed, thu, fri]
+        from: 2
+        to: 49
+        at: '08:10'
+        steps:
+        - {l: era.tide, m: 4, won: 1, n: 'The day''s job, which expires tonight.'}
+        - {l: breath, m: 1}
+        - {l: round.time, m: 2}
+      - every: [mon, tue, wed, thu]
+        from: 2
+        to: 49
+        at: '18:05'
+        steps:
+        - {l: voy.leg, m: 5, n: 'One leg of his voyage. The Ark docks at the next location until the next train.'}
+        - {l: voy.place, m: 1}
+      events:
+      - {day: 9, at: '18:11', kind: own, n: 'His first voyage, sailed in eight legs over two weeks, docks home.'}
+
+- id: painter
+  name: The painter
+  from: Claude, a player the atlas has no arc for
+  who: 19, art student, plays the Toybox on a tablet on weekend afternoons and one weeknight, shares paintings with
+    friends. Never touches a competitive mode.
+  challenge: 'Every long loop in the atlas is fed by winning (crystals, rungs, petals). She never wins anything, so
+    no arc moves for her. What keeps her is new things to make and a reason for someone to see them.'
+  device: tablet
+  group: 1
+  drivers: [make, joy, find]
+  timescale: {sittings_week: [2, 3], sitting_min: [40, 70], longest_loop_s: 1500, best_tiers: [3, 4, 5]}
+  win: 0
+  layers:
+    now:
+      fate: {day: 24, why: 'Every painting done and every microscene seen by week 3. The Toybox has not changed and
+        her shared screenshots open nothing for anyone who taps them.'}
+      sittings:
+      - every: [sat, sun]
+        from: 6
+        to: 21
+        at: '14:00'
+        steps:
+        - {l: sitting, m: 1}
+        - {l: toybox, m: 2}
+        - {l: toy.fly, m: 8}
+        - {l: toy.paint, m: 25}
+        - {l: toy.wander, m: 12, via: tired}
+        - {l: toy.arkway, m: 12}
+      - every: [wed]
+        from: 3
+        to: 24
+        at: '22:00'
+        steps:
+        - {l: toybox, m: 2}
+        - {l: toy.paint, m: 25, n: 'The picture is done. She screenshots it.', hole: 'A painting shared is a picture; it
+            opens nothing for whoever taps it.', risk: 0.08}
+        - {l: toy.matrix, m: 8}
+      events:
+      - {day: 14, at: '15:00', kind: loss, n: 'Has seen every microscene.'}
+    prop:
+      uses: [era.tide, arc.replay, arc.social]
+      fate: {why: 'Still playing at week 7. Each week''s Tide adds a painting and a microscene, and a shared painting
+        opens the same canvas for a friend, who became a player on day 19.'}
+      sittings:
+      - every: [sat, sun]
+        from: 6
+        to: 49
+        at: '14:00'
+        steps:
+        - {l: era.tide, m: 2, n: 'This week''s painting and microscene.'}
+        - {l: toybox, m: 2}
+        - {l: toy.paint, m: 25}
+        - {l: toy.wander, m: 12}
+        - {l: toy.arkway, m: 12}
+      - every: [wed]
+        from: 3
+        to: 49
+        at: '22:00'
+        steps:
+        - {l: toy.paint, m: 25}
+        - {l: arc.replay, m: 2, n: 'Shares the painting as a link that opens the same canvas.', via: spend}
+        - {l: arc.social, m: 1, n: A friend taps it.}
+      events:
+      - {day: 19, at: '22:30', kind: crew, n: 'A friend opens her painting and starts playing.'}
+
+- id: returner
+  name: The returner
+  from: Claude, to test the Era tier
+  who: 29, tried the game in launch week with a friend, drifted off on day 6. Would come back for news.
+  challenge: 'Only the Era loops can bring him back, and today the long game''s last phase is empty: nothing changes
+    without him, so there is nothing to come back to.'
+  device: PC
+  group: 1
+  drivers: [find, story, mastery]
+  timescale: {sittings_week: [1, 4], sitting_min: [20, 60], longest_loop_s: 2400, best_tiers: [4, 5, 7]}
+  win: 0.3
+  layers:
+    now:
+      fate: {day: 6, why: 'Leaves in week 1 and never returns: the build changes nothing on a schedule, so no news reaches
+        him.'}
+      sittings:
+      - day: 1
+        at: '19:30'
+        steps:
+        - {l: arc.activation, m: 1, hole: No player has seen the onboarding.}
+        - {l: arcade, m: 2}
+        - {l: round.time, m: 10, won: 1}
+        - {l: arena, m: 2}
+        - {l: round.regatta, m: 20, won: 1}
+      - day: 3
+        at: '20:00'
+        steps:
+        - {l: voyages, m: 1}
+        - {l: voy.port, m: 6}
+        - {l: voy.leg, m: 20}
+        - {l: voy.home, m: 6}
+      - day: 6
+        at: '21:00'
+        steps:
+        - {l: arcade, m: 2}
+        - {l: round.charge, m: 10, via: tired, risk: 0.6, hole: Nothing pulls him into a long loop.}
+      events:
+      - {day: 6, at: '21:12', kind: loss, n: Drifts off.}
+    prop:
+      uses: [era.tide, era.meta, arc.saga]
+      fate: {why: 'Comes back on day 42 because the Tide''s news reaches him, and stays for the new saga.'}
+      sittings:
+      - day: 1
+        at: '19:30'
+        steps:
+        - {l: arc.activation, m: 8, ev: ftue_step_completed}
+        - {l: round.time, m: 10, won: 1}
+        - {l: breath, m: 1}
+        - {l: round.regatta, m: 20, won: 1}
+      - day: 3
+        at: '20:00'
+        steps:
+        - {l: voy.port, m: 6}
+        - {l: voy.leg, m: 20}
+        - {l: voy.home, m: 6}
+      - day: 6
+        at: '21:00'
+        steps:
+        - {l: round.charge, m: 10, via: tired}
+      - day: 42
+        at: '20:00'
+        steps:
+        - {l: era.tide, m: 2, via: new, n: 'The Tide''s news: two vessels retuned, a saga reseeded, a new hull.'}
+        - {l: era.meta, m: 3, n: 'His Dolphin flies differently, and the news says why.'}
+        - {l: arc.saga, m: 2, n: 'The new saga''s first chapter at port.'}
+        - {l: voy.port, m: 6}
+        - {l: voy.leg, m: 25}
+        - {l: voy.home, m: 8}
+      - every: [tue, fri]
+        from: 43
+        to: 49
+        at: '20:00'
+        steps:
+        - {l: voy.port, m: 5}
+        - {l: voy.leg, m: 25}
+        - {l: arc.saga, m: 2}
+      events:
+      - {day: 6, at: '21:12', kind: loss, n: Drifts off.}
+      - {day: 42, at: '20:00', kind: find, n: The Tide's news brings him back.}

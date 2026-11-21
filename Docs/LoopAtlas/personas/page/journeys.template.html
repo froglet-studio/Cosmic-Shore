@@ -1,0 +1,390 @@
+<meta charset="utf-8">
+<title>Player Journeys</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap">
+<style>
+/* Layout: a sticky transport bar (play, velocity, clock, layer), then one lane per persona: who they are on the left,
+   their own loop circles on the right (columns by tier, Era at the left), and a 49-day strip of their sittings below.
+   Froglet UI style guide: Deep Sea (dark) and its light twin Shore; Lime is the call to action, Jade the selection. */
+:root {
+  --bg: #F4F5FF; --bg-deep: #E6E9FF; --surface: #FFFFFF; --raised: #DDE1F7; --line: #B8C0F0;
+  --text: #00041F; --soft: #434C89; --off: #8A8FAE; --cta: #487C1F; --cta-fill: #99FF80; --on-fill: #00041F;
+  --sel: #007D73; --danger: #CD373A; --gold: #B86A00;
+  --p0: #C2337E; --p1: #2266CC; --p2: #C8601C; --p3: #0F8A74; --p4: #7446E0; --p5: #8E7A0E;
+  --f-body: 'Aldrich', 'Chakra Petch', system-ui, sans-serif; --f-label: 'Chakra Petch', 'Aldrich', system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #00041F; --bg-deep: #00010A; --surface: #0E1336; --raised: #222645; --line: #343B70;
+  --text: #E6E9FF; --soft: #8D94C4; --off: #5C5F70; --cta: #99FF80; --cta-fill: #99FF80; --on-fill: #00041F;
+  --sel: #21C0BD; --danger: #FF4B3A; --gold: #FF9B11;
+  --p0: #FF6FB5; --p1: #5AA2FF; --p2: #FF9A4D; --p3: #3FD9B6; --p4: #A98BFF; --p5: #E6CB3F; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #00041F; --bg-deep: #00010A; --surface: #0E1336; --raised: #222645; --line: #343B70;
+  --text: #E6E9FF; --soft: #8D94C4; --off: #5C5F70; --cta: #99FF80; --cta-fill: #99FF80; --on-fill: #00041F;
+  --sel: #21C0BD; --danger: #FF4B3A; --gold: #FF9B11;
+  --p0: #FF6FB5; --p1: #5AA2FF; --p2: #FF9A4D; --p3: #3FD9B6; --p4: #A98BFF; --p5: #E6CB3F; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--f-body); font-size: 14px; line-height: 1.45; }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1400px; margin: 0 auto; }
+header.top { padding-block: 22px 10px; display: grid; gap: 6px; }
+h1 { font-family: var(--f-label); font-weight: 700; font-size: 26px; letter-spacing: .02em; margin: 0; text-wrap: balance; }
+.lede { color: var(--soft); max-width: 72ch; margin: 0; }
+.label { font-family: var(--f-label); font-weight: 600; text-transform: uppercase; letter-spacing: .12em; font-size: 11px; color: var(--soft); }
+.num { font-variant-numeric: tabular-nums; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+.bar .wrap { padding-block: 10px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.play { font-family: var(--f-label); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: var(--cta-fill); color: var(--on-fill); border: 0; border-radius: 3px; padding: 8px 14px; min-width: 84px; cursor: pointer; }
+.play:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
+.ctl { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ctl input[type=range] { width: 170px; accent-color: var(--sel); }
+#day { width: min(360px, 60vw); }
+.clock { font-family: var(--f-label); font-weight: 700; font-size: 16px; min-width: 150px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.seg button { font-family: var(--f-label); font-weight: 600; font-size: 12px; letter-spacing: .06em; background: transparent; color: var(--soft); border: 0; padding: 6px 10px; cursor: pointer; }
+.seg button[aria-pressed=true] { background: var(--sel); color: var(--bg); }
+.chk { display: flex; gap: 6px; align-items: center; color: var(--soft); font-size: 12px; }
+main.wrap { padding-block: 14px 40px; display: grid; gap: 14px; }
+.lane { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 4px 16px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); padding: 12px 14px; }
+.lane.off { display: none; }
+.who { min-width: 0; display: grid; gap: 6px; align-content: start; }
+.who h2 { font-family: var(--f-label); font-weight: 700; font-size: 17px; margin: 0; display: flex; gap: 8px; align-items: center; }
+.dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.who .blurb { color: var(--soft); font-size: 12px; margin: 0; }
+.state { font-size: 13px; min-height: 3.6em; }
+.state b { font-family: var(--f-label); }
+.pill { display: inline-block; font-family: var(--f-label); font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; border-radius: 2px; padding: 1px 6px; border: 1px solid currentColor; }
+.pill.gone { color: var(--danger); } .pill.away { color: var(--off); } .pill.in { color: var(--sel); } .pill.hole { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.stats { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--soft); }
+.stats b { color: var(--text); font-family: var(--f-label); font-size: 14px; }
+.more { font-family: var(--f-label); font-size: 12px; background: none; border: 0; color: var(--sel); padding: 0; cursor: pointer; text-align: left; }
+.viz { min-width: 0; overflow-x: auto; }
+.viz svg { display: block; }
+.strip { grid-column: 2; min-width: 0; }
+.strip canvas { width: 100%; height: 64px; display: block; cursor: pointer; }
+.detail { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 24px; font-size: 13px; }
+.detail p { margin: 0; max-width: 68ch; }
+.detail ol, .detail ul { margin: 4px 0 0; padding-left: 18px; }
+.detail li { margin: 2px 0; }
+svg text { font-family: var(--f-label); fill: var(--soft); font-size: 10px; }
+svg .ring { fill: none; stroke: var(--line); stroke-width: 1.2; }
+svg .ring.on { stroke-width: 2.4; }
+svg .ring.lit { stroke-width: 1.8; }
+svg .holeRing { fill: none; stroke: var(--danger); stroke-width: 2; stroke-dasharray: 3 3; }
+svg .edge { fill: none; stroke-linecap: round; }
+svg .tick { stroke: var(--line); stroke-width: 1; }
+section.sum { display: grid; gap: 10px; }
+h3 { font-family: var(--f-label); font-weight: 700; font-size: 18px; margin: 10px 0 0; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-family: var(--f-label); font-weight: 600; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--soft); }
+td.num, th.num { text-align: right; }
+.bars { display: flex; height: 10px; width: 160px; border-radius: 2px; overflow: hidden; background: var(--raised); }
+.finds { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+.find { border: 1px solid var(--line); border-radius: 4px; background: var(--surface); padding: 10px 12px; }
+.find b { font-family: var(--f-label); display: block; margin-bottom: 2px; }
+.find p { margin: 0; color: var(--soft); font-size: 13px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--soft); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+#err { color: var(--danger); }
+@media (max-width: 760px) {
+  .lane { grid-template-columns: minmax(0, 1fr); }
+  .strip { grid-column: 1; }
+  .bar { position: static; }
+  .ctl input[type=range] { width: 130px; }
+}
+@media (prefers-reduced-motion: reduce) { .play { transition: none; } }
+</style>
+
+<header class="top wrap">
+  <span class="label">Cosmic Shore · Loop Atlas</span>
+  <h1>Player Journeys</h1>
+  <p class="lede">Six players, each on their own loops. A dot circles the loop the player is in right now; the circles it sits inside glow; the lines are the path walked so far. Switch between the game today and the game with the Proposed layer's fixes, and watch who stays. Every persona is a hypothesis, not a measurement.</p>
+</header>
+
+<div class="bar" role="toolbar" aria-label="Playback">
+  <div class="wrap">
+    <button class="play" id="play" type="button">Pause</button>
+    <div class="ctl"><label class="label" for="vel">Velocity</label><input id="vel" type="range" min="0" max="100" step="1" value="38"><span id="velv" class="num"></span></div>
+    <div class="ctl"><label class="label" for="day">Day</label><input id="day" type="range" min="0" max="49" step="0.01" value="1.85"></div>
+    <span class="clock num" id="clock" aria-live="off"></span>
+    <div class="seg" role="group" aria-label="Layer">
+      <button type="button" id="L-now" aria-pressed="true">Game today</button>
+      <button type="button" id="L-prop" aria-pressed="false">With proposals</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="skip" checked> Skip the quiet hours</label>
+    <div class="legend" id="chips" aria-label="Show players"></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <p id="err" hidden></p>
+  <div id="lanes"></div>
+  <section class="sum">
+    <h3>Side by side</h3>
+    <div class="tbl"><table id="sumt"></table></div>
+    <div class="legend" id="placeLegend"></div>
+    <h3>What the journeys found</h3>
+    <div class="finds" id="finds"></div>
+    <p class="lede">Source: <span class="num">Docs/LoopAtlas/personas/journeys.yaml</span>, expanded by <span class="num">Tools/Build/loop_journeys.py</span>. Loop ids, names, tiers and timescales come from the Loop Atlas model. Crystals assume 200 a win and 4000 a vessel, as the economy is today.</p>
+  </section>
+</main>
+
+<script>
+(() => {
+const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const TIERW = {7:"Era",6:"Arc",5:"Session",4:"Round",3:"Role",2:"Combo",1:"Verb",0:"Pulse"};
+const RAD = {7:30,6:20,5:20,4:15,3:12,2:10,1:9,0:8};
+const PLACES = ["toybox","arcade","arena","voyages","other"];
+const PLACE_NAME = {toybox:"Toybox",arcade:"Arcade",arena:"Arena",voyages:"Voyages",other:"Home and arcs"};
+const FINDS = [
+  ["The Ratel has no door of its own", "Mira can only reach the puzzle she loves through Jonah. It is the Honeyguide's second seat, found in the Toybox's Vessel Changer. Proposed: a Ratel card with the AI flying, on its own ladder (seat.ratel)."],
+  ["A crew seat is how non-flyers arrive", "Mira and the night crew's fourth friend both start in someone else's hull. The atlas had no loop for it. Proposed: the crew seat, opened straight from the invite (seat.crew)."],
+  ["Four friends do not fit", "A squad is three seats and a voyage party three players. A crew seat costs no squad slot, so four friends fly three hulls with one riding."],
+  ["Winner-take-all splits a group", "Only the winner is paid. The friend who wins least owns nothing new after two weeks and leaves on day 17. Proposed: pay a team win to every seat (arc.fleet)."],
+  ["Activation has one door", "Invited players skip the spotlight and the Lesson, and the Lesson teaches flying. Proposed: start activation where the player arrived (arc.activation)."],
+  ["Six minutes is below the Session tier", "The commuter's sittings never fit a 20 to 40 minute voyage. Proposed: the Ark docks between sittings and sails on leg by leg (voyages)."],
+  ["Makers move no arc", "Every arc is fed by winning. The painter has seen everything by week 3. Proposed: the Tide adds a painting and a microscene each week (toybox)."],
+  ["Nothing brings anyone back", "In today's build the long game's last phase is empty, so the returner never returns and Jonah, then Mira, run out of new things. The Tide is the one proposal every journey uses."],
+];
+let D, layer = "now", t = 0, playing = true, last = 0, lanes = [];
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const vel = () => { const v = +$("vel").value / 100; return Math.round(Math.pow(10, v * Math.log10(604800))); };
+const fmtVel = v => v < 60 ? `${v} s per second` : v < 3600 ? `${Math.round(v/60)} min per second` : v < 86400 ? `${(v/3600).toFixed(v<36000?1:0)} h per second` : `${(v/86400).toFixed(1)} days per second`;
+const fmtClock = m => { const d = Math.floor(m / 1440) + 1, mm = Math.floor(m % 1440); return `Day ${Math.min(d, D.horizon)} · ${DOW[(d - 1) % 7]} ${String(Math.floor(mm/60)).padStart(2,"0")}:${String(mm%60).padStart(2,"0")}`; };
+const fmtDur = s => s < 90 ? `${Math.round(s)} s` : s < 5400 ? `${Math.round(s/60)} min` : s < 172800 ? `${Math.round(s/3600)} h` : `${Math.round(s/86400)} days`;
+const NS = "http://www.w3.org/2000/svg";
+const el = (n, a = {}, p) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+
+function layout(p) {
+  const ids = new Set();
+  for (const L of ["now", "prop"]) for (const s of p.layers[L].steps) s.path.forEach(x => ids.add(x));
+  const cols = {};
+  for (const id of ids) { const tr = D.loops[id].tier; (cols[tr] = cols[tr] || []).push(id); }
+  const order = Object.keys(cols).map(Number).sort((a, b) => b - a);
+  const pos = {}; let x = 8, H = 0; const ROWS = 4;
+  for (const tr of order) {
+    const list = cols[tr].sort((a, b) => (D.loops[a].parent || "").localeCompare(D.loops[b].parent || "") || a.localeCompare(b));
+    const r = RAD[tr], cw = r * 2 + 54, rh = Math.max(r * 2 + 22, 44);
+    const ncol = Math.ceil(list.length / ROWS);
+    list.forEach((id, i) => {
+      const c = Math.floor(i / ROWS), row = i % ROWS;
+      const off = (tr === 7) ? 1.5 * rh - rh * 0 : 0;
+      pos[id] = { x: x + c * cw + cw / 2, y: 14 + row * rh + r + (tr === 7 ? rh : 0), r };
+      H = Math.max(H, pos[id].y + r + 16);
+    });
+    x += ncol * cw + 6;
+  }
+  return { pos, W: x + 4, H: Math.max(H, 150) };
+}
+
+function buildLane(p, i) {
+  const color = css(`--p${i}`);
+  const lane = document.createElement("section");
+  lane.className = "lane"; lane.id = `lane-${p.id}`;
+  lane.innerHTML = `<div class="who"><h2><span class="dot" style="background:${color}"></span>${p.name}</h2>
+    <p class="blurb">${p.who}</p><div class="state" id="st-${p.id}"></div>
+    <div class="stats" id="ss-${p.id}"></div><button class="more" type="button" id="mo-${p.id}" aria-expanded="false">Challenge, fate and activation path</button></div>
+    <div class="viz" id="vz-${p.id}"></div><div class="strip"><canvas id="cv-${p.id}" aria-label="${p.name}'s sittings, day by day"></canvas></div>
+    <div class="detail" id="dt-${p.id}" hidden></div>`;
+  $("lanes").appendChild(lane);
+  const L = layout(p);
+  const svg = el("svg", { width: L.W, height: L.H, viewBox: `0 0 ${L.W} ${L.H}`, role: "img", "aria-label": `${p.name}'s loops` }, $(`vz-${p.id}`));
+  const gE = el("g", {}, svg), gR = el("g", {}, svg), gT = el("g", {}, svg);
+  const rings = {};
+  for (const id in L.pos) {
+    const q = L.pos[id], lp = D.loops[id];
+    const g = el("g", {}, gR);
+    el("title", {}, g).textContent = `${lp.name} · ${TIERW[lp.tier]} · one pass ${fmtDur(lp.t[0])} to ${fmtDur(lp.t[1])}${lp.in === "x" ? " · Proposed" : ""}`;
+    const c = el("circle", { cx: q.x, cy: q.y, r: q.r, class: "ring" }, g);
+    if (lp.in === "x") c.setAttribute("stroke-dasharray", "4 3");
+    const h = el("circle", { cx: q.x, cy: q.y, r: q.r + 4, class: "holeRing", visibility: "hidden" }, g);
+    const m = el("circle", { r: 2.6, fill: color, visibility: "hidden" }, g);
+    const name = lp.name.length > 16 ? lp.name.slice(0, 15) + "…" : lp.name;
+    const tx = el("text", { x: q.x, y: q.y + q.r + 11, "text-anchor": "middle" }, g); tx.textContent = name;
+    rings[id] = { c, h, m, q, ph: Math.random() * 6.28, lap: (lp.t[0] + lp.t[1]) / 2 };
+  }
+  const tok = el("circle", { r: 5.5, fill: color, stroke: css("--bg"), "stroke-width": 1.5 }, gT);
+  const lane_ = { p, i, color, svg, gE, rings, tok, L, tp: { x: 0, y: 0 }, edgeKey: "", detailOpen: false };
+  $(`mo-${p.id}`).onclick = () => { const d = $(`dt-${p.id}`); d.hidden = !d.hidden; $(`mo-${p.id}`).setAttribute("aria-expanded", String(!d.hidden)); renderDetail(lane_); };
+  const cv = $(`cv-${p.id}`);
+  cv.onclick = e => { const r = cv.getBoundingClientRect(); setT(((e.clientX - r.left) / r.width) * D.horizon * 1440); };
+  return lane_;
+}
+
+function renderDetail(ln) {
+  const p = ln.p, lay = p.layers[layer], s = lay.summary;
+  const path = s.first_visits.slice(0, 14).map(f => `<li>Day ${f.day}: ${D.loops[f.loop].name}</li>`).join("");
+  const holes = s.holes.length ? s.holes.map(h => `<li>${h}</li>`).join("") : "<li>None on this layer.</li>";
+  const uses = lay.uses.length ? `<p><span class="label">Uses proposals</span><br>${lay.uses.map(u => D.loops[u].name).join(", ")}</p>` : "";
+  $(`dt-${p.id}`).innerHTML = `<div><span class="label">The challenge</span><p>${p.challenge}</p></div>
+    <div><span class="label">${layer === "now" ? "Fate in the game today" : "Fate with proposals"}</span><p>${lay.fate.why || ""}</p>${uses}</div>
+    <div><span class="label">Activation path (first visit to each loop)</span><ol>${path}</ol></div>
+    <div><span class="label">Holes on the path</span><ul>${holes}</ul></div>`;
+}
+
+function stepAt(lay, T) {
+  const st = lay.steps; let lo = 0, hi = st.length - 1, k = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (st[m].t <= T) { k = m; lo = m + 1; } else hi = m - 1; }
+  return k;
+}
+
+function drawEdges(ln, k) {
+  const key = `${layer}:${k}`; if (key === ln.edgeKey) return; ln.edgeKey = key;
+  const lay = ln.p.layers[layer], counts = {};
+  let prev = "era";
+  for (let j = 0; j <= k; j++) {
+    const s = lay.steps[j]; const a = (j > 0 && lay.steps[j - 1].sit === s.sit) ? lay.steps[j - 1].loop : "era";
+    if (a !== s.loop) { const e = a + ">" + s.loop; counts[e] = (counts[e] || 0) + 1; }
+  }
+  ln.gE.replaceChildren();
+  for (const e in counts) {
+    const [a, b] = e.split(">"), A = ln.rings[a], B = ln.rings[b]; if (!A || !B) continue;
+    const mx = (A.q.x + B.q.x) / 2, my = (A.q.y + B.q.y) / 2 - Math.min(40, Math.abs(A.q.x - B.q.x) * .25) - 6;
+    el("path", { d: `M${A.q.x},${A.q.y} Q${mx},${my} ${B.q.x},${B.q.y}`, class: "edge", stroke: ln.color,
+      "stroke-opacity": Math.min(.85, .18 + .07 * counts[e]), "stroke-width": Math.min(5, 1 + Math.log2(1 + counts[e])) }, ln.gE);
+  }
+}
+
+function frame(ln, T, dt, v) {
+  const lay = ln.p.layers[layer], k = stepAt(lay, T * 1);
+  const s = k >= 0 ? lay.steps[k] : null;
+  const inStep = s && T < s.t + s.dur_s / 60;
+  const gone = lay.fate.day && T >= (lay.fate.day) * 1440 - 1 && !inStep && (!s || T > s.t + s.dur_s / 60);
+  drawEdges(ln, k);
+  const lit = new Set(inStep ? s.path : []);
+  for (const id in ln.rings) {
+    const R = ln.rings[id], on = inStep && id === s.loop, li = lit.has(id);
+    R.c.setAttribute("class", "ring" + (on ? " on" : li ? " lit" : ""));
+    R.c.style.stroke = on || li ? ln.color : "";
+    R.c.style.opacity = (on || li) ? 1 : .55;
+    R.h.setAttribute("visibility", on && s.hole ? "visible" : "hidden");
+    if (li) {
+      R.ph += dt * Math.min((2 * Math.PI * v) / R.lap, on ? 4 * Math.PI : 1.5 * Math.PI);
+      R.m.setAttribute("visibility", on ? "hidden" : "visible");
+      R.m.setAttribute("cx", R.q.x + R.q.r * Math.cos(R.ph)); R.m.setAttribute("cy", R.q.y + R.q.r * Math.sin(R.ph));
+    } else R.m.setAttribute("visibility", "hidden");
+  }
+  let target;
+  if (inStep) { const R = ln.rings[s.loop]; target = { x: R.q.x + R.q.r * Math.cos(R.ph), y: R.q.y + R.q.r * Math.sin(R.ph) }; }
+  else { const R = ln.rings.era; R.ph += dt * .6; target = { x: R.q.x + (R.q.r + 0) * Math.cos(R.ph), y: R.q.y + R.q.r * Math.sin(R.ph) }; }
+  const a = Math.min(1, dt * 14);
+  ln.tp.x += (target.x - ln.tp.x) * a; ln.tp.y += (target.y - ln.tp.y) * a;
+  ln.tok.setAttribute("cx", ln.tp.x); ln.tok.setAttribute("cy", ln.tp.y);
+  ln.tok.setAttribute("fill", gone ? css("--off") : ln.color);
+  // the words
+  const st = $(`st-${ln.p.id}`);
+  let html;
+  if (gone) html = `<span class="pill gone">Left on day ${lay.fate.day}</span><br>${lay.fate.why}`;
+  else if (inStep) {
+    const lp = D.loops[s.loop], into = (T - s.t) * 60, laps = s.laps >= 1 ? ` · pass ${Math.min(Math.ceil(into / (s.dur_s / s.laps) + 1e-9), Math.ceil(s.laps))} of ${Math.ceil(s.laps)}` : "";
+    const ctx = s.parent && D.loops[s.parent] ? ` in ${D.loops[s.parent].name}` : "";
+    const w = s.with ? ` · with ${D.personas.find(x => x.id === s.with).name.split(",")[0]}` : "";
+    html = `<span class="pill ${s.hole ? "hole" : "in"}">${s.hole ? "Hole" : TIERW[lp.tier]}</span> <b>${lp.name}</b>${ctx}<span class="num">${laps}${w}</span><br>${s.hole ? s.hole + (s.risk ? ` <span class="num">(${Math.round(s.risk*100)}% may leave)</span>` : "") : (s.note || "")}`;
+  } else {
+    const nx = lay.steps[k + 1];
+    html = `<span class="pill away">Away</span> ${nx ? `next sitting in <span class="num">${fmtDur((nx.t - T) * 60)}</span>` : (lay.fate.day ? "" : "no more sittings before the horizon")}`;
+  }
+  if (st._h !== html) { st.innerHTML = html; st._h = html; }
+  let cr = 0; for (let j = 0; j <= k; j++) cr += lay.steps[j].crystals;
+  const ss = $(`ss-${ln.p.id}`);
+  const sh = `<span><b class="num">${cr.toLocaleString()}</b> crystals</span><span><b class="num">${Math.floor(cr / D.price)}</b> vessels' worth</span><span><b class="num">${k >= 0 ? lay.steps[k].sit + (inStep ? 1 : 1) : 0}</b> sittings</span>`;
+  if (ss._h !== sh) { ss.innerHTML = sh; ss._h = sh; }
+  drawStrip(ln, T);
+}
+
+function drawStrip(ln, T) {
+  const cv = $(`cv-${ln.p.id}`), dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (!w) return;
+  if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const lay = ln.p.layers[layer], H = D.horizon, top = 8, hh = h - top - 2, dw = w / H;
+  g.fillStyle = css("--raised"); g.fillRect(0, top, w, hh);
+  g.fillStyle = css("--line");
+  for (let d = 0; d <= H; d += 7) g.fillRect(d * dw, top, 1, hh);
+  g.fillStyle = ln.color;
+  for (const s of lay.sittings) {
+    const d = s.day - 1, y0 = (s.t0 % 1440) / 1440, y1 = Math.min(1, ((s.t1 - (s.day - 1) * 1440)) / 1440);
+    g.globalAlpha = s.t0 <= T ? 1 : .35;
+    g.fillRect(d * dw + .5, top + y0 * hh, Math.max(1, dw - 1), Math.max(1.5, (y1 - y0) * hh));
+  }
+  g.globalAlpha = 1;
+  for (const e of lay.events) {
+    g.fillStyle = e.kind === "loss" ? css("--danger") : e.kind === "own" ? css("--gold") : css("--sel");
+    g.beginPath(); g.arc((e.t / 1440) * dw, 4, 2.6, 0, 6.3); g.fill();
+  }
+  if (lay.fate.day) { g.fillStyle = css("--danger"); g.globalAlpha = .12; g.fillRect(lay.fate.day * dw, top, w - lay.fate.day * dw, hh); g.globalAlpha = 1; }
+  g.fillStyle = css("--text"); g.fillRect((T / 1440) * dw - .5, 0, 1.5, h);
+}
+
+function nextStart(T) {
+  let best = Infinity;
+  for (const ln of lanes) {
+    if (ln.off) continue;
+    const lay = ln.p.layers[layer];
+    for (const s of lay.sittings) { if (s.t0 <= T && T < s.t1) return null; if (s.t0 > T) { best = Math.min(best, s.t0); break; } }
+  }
+  return best;
+}
+
+function setT(m) { t = Math.max(0, Math.min(D.horizon * 1440, m)); $("day").value = (t / 1440).toFixed(2); }
+
+function tick(now) {
+  const dt = Math.min(.1, last ? (now - last) / 1000 : 0); last = now;
+  const v = vel();
+  if (playing) {
+    let nt = t + dt * v / 60;
+    if ($("skip").checked && v < 43200) { const ns = nextStart(t); if (ns !== null && ns !== Infinity && ns - t > 2) nt = Math.max(nt, ns - 0.5); }
+    if (nt >= D.horizon * 1440) { nt = D.horizon * 1440; playing = false; $("play").textContent = "Replay"; }
+    setT(nt);
+  }
+  $("clock").textContent = fmtClock(t);
+  for (const ln of lanes) if (!ln.off) frame(ln, t, playing ? dt : 0, playing ? v : 0);
+  requestAnimationFrame(tick);
+}
+
+function summary() {
+  const rows = [`<tr><th>Player</th><th>Layer</th><th>Stays?</th><th class="num">Sittings a week</th><th class="num">Minutes a sitting</th><th class="num">Minutes a week</th><th class="num">Crystals</th><th>Where the time goes</th></tr>`];
+  const pc = { toybox: css("--p3"), arcade: css("--p1"), arena: css("--p2"), voyages: css("--p4"), other: css("--off") };
+  D.personas.forEach((p, i) => ["now", "prop"].forEach(L => {
+    const s = p.layers[L].summary, tot = Object.values(s.minutes_by_place).reduce((a, b) => a + b, 0) || 1;
+    const bars = PLACES.map(k => `<span title="${PLACE_NAME[k]}: ${s.minutes_by_place[k]} min" style="width:${100 * s.minutes_by_place[k] / tot}%;background:${pc[k]}"></span>`).join("");
+    rows.push(`<tr><td>${L === "now" ? `<span class="dot" style="display:inline-block;background:${css(`--p${i}`)}"></span> ${p.name}` : ""}</td><td>${L === "now" ? "Game today" : "With proposals"}</td>
+      <td>${s.left_on ? `<span class="pill gone">Leaves day ${s.left_on}</span>` : `<span class="pill in">Still playing</span>`}</td>
+      <td class="num">${s.sittings_week}</td><td class="num">${s.sitting_min}</td><td class="num">${s.minutes_week}</td><td class="num">${s.crystals.toLocaleString()}</td><td><div class="bars">${bars}</div></td></tr>`);
+  }));
+  $("sumt").innerHTML = rows.join("");
+  $("placeLegend").innerHTML = PLACES.map(k => `<span><i class="sw" style="background:${pc[k]}"></i>${PLACE_NAME[k]}</span>`).join("");
+  $("finds").innerHTML = FINDS.map(([a, b]) => `<div class="find"><b>${a}</b><p>${b}</p></div>`).join("");
+}
+
+function setLayer(L) {
+  layer = L;
+  $("L-now").setAttribute("aria-pressed", String(L === "now")); $("L-prop").setAttribute("aria-pressed", String(L === "prop"));
+  for (const ln of lanes) { ln.edgeKey = ""; if (!$(`dt-${ln.p.id}`).hidden) renderDetail(ln); }
+}
+
+function start(data) {
+  D = data; $("day").max = D.horizon;
+  lanes = D.personas.map(buildLane);
+  $("chips").innerHTML = D.personas.map((p, i) => `<label class="chk"><input type="checkbox" id="ck-${p.id}" checked><i class="sw" style="background:${css(`--p${i}`)}"></i>${p.name.split(",")[0]}</label>`).join("");
+  lanes.forEach(ln => { $(`ck-${ln.p.id}`).onchange = e => { ln.off = !e.target.checked; $(`lane-${ln.p.id}`).classList.toggle("off", ln.off); }; ln.tp = { ...ln.rings.era.q }; });
+  $("play").onclick = () => { if (t >= D.horizon * 1440) setT(0); playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; last = 0; };
+  $("vel").oninput = () => $("velv").textContent = fmtVel(vel()); $("vel").oninput();
+  $("day").oninput = e => setT(+e.target.value * 1440);
+  $("L-now").onclick = () => setLayer("now"); $("L-prop").onclick = () => setLayer("prop");
+  setT(1 * 1440 + 20 * 60 + 40);
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { playing = false; $("play").textContent = "Play"; }
+  summary();
+  requestAnimationFrame(tick);
+}
+
+fetch("journeys.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(start)
+  .catch(e => { $("err").hidden = false; $("err").textContent = `The journeys data did not load (${e.message}). It is published beside this page as journeys.json.`; });
+})();
+</script>

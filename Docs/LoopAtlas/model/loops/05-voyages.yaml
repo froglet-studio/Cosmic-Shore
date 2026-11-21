@@ -40,6 +40,11 @@
       it on a vessel' has no confirmed path.
     fill: One soft currency. Voyage pay is crystals, paid at dock, scaled so a clean voyage is worth about three arcade
       wins.
+  - 'on': npx
+    q: 'A voyage is 20 to 40 minutes and leaving abandons it, so a player whose sittings are six minutes (the commuter in
+      Docs/LoopAtlas/personas/journeys.yaml) never finishes one.'
+    fill: The Ark docks at the location it reached when the player leaves; the next sitting sails from there, one leg
+      at a time.
   src: [Docs/Voyages/VOYAGES.md, Docs/Voyages/DEPTH.md, Docs/Voyages/HANDOFF.md]
 - id: voy.port
   parent: voyages
