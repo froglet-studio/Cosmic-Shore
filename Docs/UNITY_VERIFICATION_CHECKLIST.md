@@ -24880,6 +24880,20 @@ Measured in `Docs/PartySystem/BUGS.md`, "B45 on the return to the menu".
 - [ ] Play Again (the same scene reloads) and a Maelstrom round back to the hub still work.
 - [ ] `FrogletTools`: nothing new. The two numbers are on the SceneLoader in Bootstrap ("Scene exit drain").
 
+## 🟡 A freeze names the work it was made of: the `stallFrame` mark (B45, 2026-11-21, Yash, COMPILED and PLAYED by a session)
+
+`StallFrameMarkers` (new), `FrameStallWatch`, `FrameStallWatchTests`, `net_scenarios.py` (`MARKS`). `unity recompile`:
+0 errors; `FrameStallWatchTests` 10/10 in the open editor (by reflection, with SetUp and TearDown);
+`check_agent_first`, `check_console_logging`, `check_conditional_compilation` and `net_scenarios.py --self-test` pass.
+
+- [x] Solo online host, Bloomrush, return to the menu: each `stall` is followed one frame later by a `stallFrame`
+      line naming the scene load's work (measured: `Application.LoadLevelAsync Integrate 2737 ms`, `GC.Collect 806 ms`...).
+- [x] Running `FrameStallWatchTests` in the editor no longer switches the stall record off for the next Play.
+- [ ] The next two-machine test: any freeze on the menu after a return shows a `stallFrame` line in
+      `net_logs.py show` on the machine that froze. Read it before changing anything.
+- [ ] A development build: the line carries markers. A release build: it reads "no profiler markers on this build".
+- [ ] No frame-rate change from the recorders (about 120, started once online): compare a menu's fps online and offline.
+
 ## 🟡 Maelstrom seats its AI where the host placed them (2026-11-20, Yash, COMPILED and PLAYED by a session, solo host)
 
 `ServerPlayerVesselInitializerWithAI.PlacedOrBalancedDomain`, used by the match spawner and by
