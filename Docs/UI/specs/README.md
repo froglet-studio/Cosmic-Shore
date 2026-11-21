@@ -31,3 +31,4 @@ draft's `?`.
 | Spec | Board | Status |
 |---|---|---|
 | [sg5-play-ready](sg5-play-ready.md) | Style Guide 5, the Play / Ready row | built, in PR |
+| [rev121-c-whats-new](rev121-c-whats-new.md) | Rev 121 C, the What's new window | built, in PR |

@@ -143,6 +143,7 @@ READOUTS = {"fovSlider": "fovValueText", "musicSlider": "musicValueText", "sfxSl
 GO_BUTTONS = {"colourSetsButton": ("ColourSets", "COLOUR SETS")}   # field: (instance key, caption)
 LINKS = (("BugReport", "BUG REPORT", "Default", "bugReportButton"), ("Privacy", "PRIVACY POLICY", "Default", "privacyPolicyButton"),
          ("DeleteData", "DELETE MY DATA", "Danger", "deleteDataButton"), ("Credits", "CREDITS", "Default", "creditsButton"),
+         ("WhatsNew", "WHAT'S NEW", "Default", "whatsNewButton"),
          ("Quit", "QUIT GAME", "Cancel", "quitGameButton"))
 PERF_BUTTONS = (("AutoDetect", "AUTO DETECT", "autoDetectButton"), ("Benchmark", "RUN BENCHMARK", "benchmarkButton"))
 WIN_W, WIN_H, PAD, ROW_H, CTRL_X = 1600, 900, 48, 84, 970
@@ -555,6 +556,7 @@ def controller_body(ctx, wiring):
             + btn("colourSetsButton", GO_BUTTONS["colourSetsButton"][0]) + onoff("subtitles") + dd("subtitleScaleDropdown") + onoff("analyticsConsent")
             + btn("bugReportButton", links["bugReportButton"]) + btn("privacyPolicyButton", links["privacyPolicyButton"])
             + btn("deleteDataButton", links["deleteDataButton"]) + btn("creditsButton", links["creditsButton"])
+            + btn("whatsNewButton", links["whatsNewButton"])
             + "  screenSwitcher: {fileID: 0}\n" + btn("quitGameButton", links["quitGameButton"])
             + f"  versionText: {ref(ctx.c('Window/Version', 'tmp'))}\n"
             + dd("displayModeDropdown") + dd("resolutionDropdown") + dd("frameCapDropdown") + onoff("vsync")
