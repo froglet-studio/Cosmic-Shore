@@ -62,6 +62,10 @@ MonoBehaviour:
       Cooldown: 3.263
     AggressivenessScale: 0.7561
     ThrottleScale: 0.9929
+  - Hull: 29
+    Abilities: []
+    AggressivenessScale: 1.0
+    ThrottleScale: 1.6667
   - Hull: 4
     Abilities: []
     AggressivenessScale: 0.9568

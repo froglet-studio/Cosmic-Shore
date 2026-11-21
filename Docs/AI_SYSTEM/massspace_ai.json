@@ -353,6 +353,58 @@
     }
    },
    "note": "Abilities = the shipped list unchanged (all three are commit-drift bound, the cycler never presses them). The gain is ThrottleScale 1.25 (0.8/0.4 -> 1.0/0.5) TOGETHER with DolphinAIBoostPolicy.disabledInModes losing Rampage (shipped in the asset on claude/ms-ai-dolphin). Throttle alone was +2-4% on seeds 1-2; the row must land for the full gain. Trained by thread 'Train Mass-Space AIs, last seven hulls'."
+  },
+  "TigerMoth": {
+   "ship": true,
+   "genome": {
+    "aggr": 1.0,
+    "throttle": 1.6667
+   },
+   "confirm": {
+    "seeds": "11-12, 4 seats, mean VC+VD",
+    "Tapestry": {
+     "I1": [
+      22142,
+      30379
+     ],
+     "I2": [
+      172016,
+      231270
+     ],
+     "I3": [
+      161727,
+      215683
+     ],
+     "I4": [
+      159759,
+      210497
+     ],
+     "baseline_is": "new TapestrySettings, throttle 0.6 -> 1.0"
+    },
+    "Sirocco": {
+     "I1": [
+      11722,
+      14008
+     ],
+     "I2": [
+      19066,
+      15299
+     ],
+     "I3": [
+      12852,
+      13342
+     ],
+     "I4": [
+      12781,
+      17454
+     ],
+     "I2_seeds1-4": [
+      15012,
+      16555
+     ]
+    }
+   },
+   "note": "No AIPilot.abilities row: the Tiger Moth's only Mass/Space verb is the Dust/Mass mode switch, which the Tapestry and Sirocco controllers drive themselves (ButterflyAutopilotModeDriver); the Drop (LT) lays no trail and is not wanted here. Keep abilities as shipped ([]). ThrottleScale 1.6667 takes defaultThrottle 0.6 -> 1.0 (capped). Aggressiveness 0.07 / 0.0175 were within noise in Sirocco. Tapestry gains below are on top of the shipped TapestrySettings change (commit on claude/ms-ai-tigermoth). Trained by thread 'Train Mass-Space AIs, last seven hulls' (PR #2333 carries the Tapestry settings). Already 1.15 in Brood Rush at Medium 3x3: this row pushes it further over the field."
   }
  }
 }
