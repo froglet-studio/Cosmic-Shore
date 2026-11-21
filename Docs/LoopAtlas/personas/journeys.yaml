@@ -356,7 +356,7 @@ personas:
       events:
       - {day: 9, at: '22:30', kind: loss, n: 'The best of them has two vessels'' worth of crystals; the quietest has 400.'}
       - {day: 17, at: '23:00', kind: loss, n: 'The quietest friend stops coming: nothing new in two weeks. The crew is three.'}
-      - {day: 30, at: '23:00', kind: loss, n: 'The top two own all five priced hulls. Crystals have no use.'}
+      - {day: 30, at: '23:00', kind: loss, n: 'The top two own every priced hull. Crystals have no use.'}
       - {day: 38, at: '23:00', kind: loss, n: The crew moves on.}
     prop:
       uses: [seat.crew, breath, era.tide, era.meta, arc.social, arc.fleet]
