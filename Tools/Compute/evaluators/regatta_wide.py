@@ -699,6 +699,37 @@ def pick(records, k=8, bar=1.25):
     return chosen
 
 
+def confirm(records, out, per_base=1, bar=1.35, seeds=(1, 2, 3), limit_s=300):
+    """Re-race the best stage-B course of each world (and of each super-shielded bin) on more seeds at both starts:
+    a one-seed screen is noisy (2026-11-18: 1.05-1.10x screens came out 1.15-1.48x on three seeds)."""
+    rj = _judge()
+    path = os.path.join(out, "confirmed.jsonl")
+    done = {r["id"] for r in _load(path)}
+    by_base = {}
+    for r in sorted((r for r in elites(records).values() if r.get("stage") == "B" and r["score"] <= bar),
+                    key=lambda r: r["score"]):
+        key = r["niche"].split("|")[0]
+        by_base.setdefault(key, [])
+        if len(by_base[key]) < per_base:
+            by_base[key].append(r)
+    todo = [r for rs in by_base.values() for r in rs if r["id"] not in done]
+    print(f"[wide] confirming {len(todo)} courses on seeds {list(seeds)}", flush=True)
+    for r in todo:
+        res = {}
+        worst = 0.0
+        for start in ("card", "L5"):
+            jr = rj.judge(r["genome"], FIELD, list(seeds), limit_s=limit_s, start=start)
+            x, times, dnf = imbalance(jr, FIELD)
+            res[start] = {"imbalance": x, "times": times, "dnf": dnf}
+            worst = max(worst, x if x else 99.0)
+            prisms = next((race.get("course_placement_prisms") for race in jr["races"]), None)
+        c = dict(id=r["id"], niche=r["niche"], screen=r["score"], confirmed=worst, seeds=list(seeds), field=res,
+                 prisms=prisms, genome=r["genome"], ss_share=r["ss_share"], facts=r["facts"])
+        with open(path, "a") as f:
+            f.write(json.dumps(c) + "\n")
+        print(f"[wide] confirmed {r['id']} {r['niche']} screen {r['score']:.3f} -> {worst:.3f}", flush=True)
+
+
 def self_test():
     rng = random.Random(7)
     seen = set()
@@ -745,6 +776,12 @@ def main():
         return
     if a.cmd == "shard":
         return shard(a.out, a.budget, a.seed)
+    if a.cmd == "confirm":
+        recs = []
+        for d in a.dirs:
+            recs += _load(os.path.join(d, "records.jsonl"))
+        os.makedirs(a.out, exist_ok=True)
+        return confirm(recs, a.out)
     if a.cmd in ("merge", "pick"):
         recs = []
         for d in a.dirs or [a.out]:
