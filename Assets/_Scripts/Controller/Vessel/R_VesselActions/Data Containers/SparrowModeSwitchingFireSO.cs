@@ -25,6 +25,9 @@ namespace CosmicShore.Gameplay
 
         private readonly Dictionary<IVesselStatus, HoldState> _held = new();
         private bool _subscribed;
+        /// <summary>It fires the guns (their rounds break prisms); the inner shot runs wherever this runs: an AI's press must run on every peer (<see cref="ShipActionSO.AutopilotPressTravels"/>).</summary>
+        public override bool AutopilotPressTravels => true;
+
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vs)
         {
