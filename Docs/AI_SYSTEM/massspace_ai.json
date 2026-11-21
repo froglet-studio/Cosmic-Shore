@@ -273,6 +273,43 @@
     }
    },
    "note": "its own games do not respond: volume is trail plus rare Tollway toll monuments that land by chance; flies as authored. Needs a real objective behaviour (no VD in Wrecking Ball)"
+  },
+  "Wrasse": {
+   "ship": false,
+   "genome": {
+    "aggr": 0.5296575538309868,
+    "throttle": 1.25,
+    "crew": {
+     "on": false,
+     "dur": 4.730678420760652,
+     "cd": 20.0
+    }
+   },
+   "confirm": {
+    "loss_vs_shipped": -0.1606,
+    "seeds": "101-102",
+    "rate_shipped": {
+     "Reefbuild@1": 153.7,
+     "Reefbuild@2": 197.7,
+     "Reefbuild@3": 224.2,
+     "Reefbuild@4": 198.2,
+     "Blastline@1": 114.9,
+     "Blastline@2": 111.8,
+     "Blastline@3": 126.8,
+     "Blastline@4": 115.6
+    },
+    "rate_best": {
+     "Reefbuild@1": 122.5,
+     "Reefbuild@2": 295.3,
+     "Reefbuild@3": 318.8,
+     "Reefbuild@4": 287.2,
+     "Blastline@1": 113.2,
+     "Blastline@2": 136.6,
+     "Blastline@3": 127.1,
+     "Blastline@4": 141.3
+    }
+   },
+   "note": "held: steering only (crew trigger off, throttle at the search cap); Reefbuild I2-I4 +45% but I1 -20% and Blastline mixed, and the Wrasse already sits 1.06-1.11 in Brood Rush. Re-search with I1 in the loss before shipping."
   }
  }
 }
