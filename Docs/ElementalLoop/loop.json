@@ -65,6 +65,14 @@
      "date": "2026-11-17",
      "evidence": "Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed I3 flat over I2 (1.02x) and I4 1.7x; proposed I3 field + hairpins measure 1.16-1.21x over I2, I4 ~1.5x; HELD as a patch (Yash's occupied Switchback lane), DOLPHIN_TIME_LADDER.md"
     }
+   },
+   "Space": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-21",
+     "evidence": "Rampage AI trained on the volume books: charge boost driver on in Rampage (DolphinAIBoostPolicy.disabledInModes drops 2) + ThrottleScale 1.25 through the Mass-Space AI row; VC+VD +15/+14/+8/+6% on I1-I4, fresh seeds (RAMPAGE.md). The throttle half ships with the Mass-Space row."
+    }
    }
   },
   "Squirrel": {
@@ -279,6 +287,22 @@
      "date": "2026-11-19",
      "evidence": "Re-checked 2026-11-19 after #2253's sling cooldown 4.75->3.75: real game, seeds 101-104, all 16 races finish; I1 49.1->42.3 s, I2 55.7->39.9, I3 39.3->40.9, I4 41.5->43.3 (THORNLINE.md 4.1). Difficulty is the aim, unchanged."
     }
+   },
+   "Space": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-21",
+     "evidence": "Lancefall edger trained on the volume books (VC+VD, Amoebius, Shrike mirror): aiCrystalDetourRange 150/220/300/400 -> 300/200/100/0; nests 3-4x, VC+VD I1-I4 13.9k->66.2k, 21.4k->53.1k, 19.7k->51.8k, 27.1k->63.1k on fresh seeds (LANCEFALL.md 4.1). Mode AI only: Brood Rush and Time unchanged."
+    }
+   },
+   "Mass": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-21",
+     "evidence": "Thornbush builder searched on the volume books (raid, perch, dock, lance targets): nothing beat the shipped builder on fresh seeds; it lays 8-9 of the ~11 nests its cooldown allows (THORNBUSH.md 4.1)."
+    }
    }
   },
   "Swordfish": {
@@ -394,6 +418,16 @@
      "by": "Claude",
      "date": "2026-11-19",
      "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta shuffle, 5 seeds: card 374 s / L5 363 s (5.1x / 5.6x the field); its Time levers at the 37.5% cap together (zip speed, slip reach, Time's zip scaling) reach 358 / 351 s. Docs/ElementalLoop/REDESIGN.md"
+    }
+   }
+  },
+  "Grizzly": {
+   "Space": {
+    "3": {
+     "state": "redo",
+     "by": "Claude",
+     "date": "2026-11-21",
+     "evidence": "Grizzly Charge can't train a volume AI: it is a 90-point blast race (~20 s) where a better AI ends the match sooner and scores lower, and I1-I4 play the same match. A kit hand (GrizzlyKitAutopilot, unshipped, /mnt/project-files/regatta-flywheel/mass7/grizzly/) uses claw and Rush but cannot move the score. Needs a volume or time end condition first."
     }
    }
   }
