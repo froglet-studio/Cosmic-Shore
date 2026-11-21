@@ -15,3 +15,5 @@ MonoBehaviour:
   payPartyByBestPlacing: 1
   crystalsPerVoyageJob: 600
   voyageDockCap: 1800
+  crystalsPerPainting: 150
+  paintingsPaidPerDay: 2
