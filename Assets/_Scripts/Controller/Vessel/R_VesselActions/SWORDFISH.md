@@ -46,7 +46,8 @@ row (index = its VC + VD over the match mean; bar 0.90-1.10):
 | Afterimages x3 a window, 15 s window | 1.14 ± 0.08 | 1.17 | 0.76 |
 | Afterimage volume x3 | 1.52 ± 0.07 | 1.65 | 0.81 |
 
-Data: `/mnt/project-files/regatta-flywheel/broodrush-deep/swordfish/`. Regatta: REGATTA_LINE.
+Data: `/mnt/project-files/regatta-flywheel/broodrush-deep/swordfish/`. Regatta (`regatta_judge.py --course shuffle`, seeds 1-3, geometric mean of the 8 courses): card 71.2 -> 71.1 s, L5 66.3
+-> 65.7 s, both inside the field.
 
 ## The ramp runs on slices (2026-11-18)
 
