@@ -1086,6 +1086,7 @@ namespace CosmicShore.Gameplay
                 }
                 for (int e = 0; e < x.Crystals.Length; e++)
                     if (x.Crystals[e] > 0) PilotLoadoutStore.AddCrystals((Element)e, x.Crystals[e], "voyage");
+                BankWalletCrystals(x);
                 Banner(TemplateText.Fill(Line(Lines.Extracted, _state.At), "count", x.Artifacts.Count.ToString()));
             }
             SaveState();
@@ -1099,6 +1100,29 @@ namespace CosmicShore.Gameplay
                 VoyageCourseLink.Send(end);
             }
             _sea.End(returnToCell: true, "the voyage docked at home");
+        }
+
+        /// <summary>
+        /// One currency (P10, Loop Atlas voyages hole): a docking also pays the crystals that buy vessels, for every job
+        /// finished since the last dock (<see cref="RetentionTuningSO.CrystalsPerVoyageJob"/>), so "the voyage ended, buy
+        /// a vessel" is a real path. The elemental crystals above still go to the Ark and the Hangar.
+        /// </summary>
+        public static int BankWalletCrystals(VoyageRules.Extraction x)
+        {
+            if (x == null) return 0;
+            var tuning = RetentionTuningSO.Load();
+            int pay = RetentionPay.VoyageWalletCrystals(x.JobsDone, tuning.CrystalsPerVoyageJob, tuning.VoyageDockCap);
+            if (pay <= 0 || PlayerDataService.Instance == null) return 0;
+            try
+            {
+                PlayerDataService.Instance.AddCrystals(pay, "voyage_dock");
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogError($"[Voyage] Dock pay failed ({pay} crystals): {e}");
+                return 0;
+            }
+            return pay;
         }
 
         /// <summary>End the voyage here (freestyle left, the host's voyage ended): anchored at a stop, given up at sea.</summary>

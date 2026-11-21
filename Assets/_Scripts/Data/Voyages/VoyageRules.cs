@@ -1097,6 +1097,7 @@ namespace CosmicShore.Data
             {
                 if (ok) state.AddOwed(t.RewardElement, job.Pay > 0 ? job.Pay : t.Reward);
                 if (ok) state.Log.JobsDone++; else state.Log.JobsFailed++;
+                if (ok) state.JobsDoneSinceDock++;
 
                 // Standing and notoriety (DEPTH.md §6).
                 if (t.Faction != FactionType.None && t.StandingDelta != 0)
@@ -1460,6 +1461,7 @@ namespace CosmicShore.Data
             state.Aboard.Clear();
             state.Owed.Clear();
             state.Carrying.Clear();
+            state.JobsDoneSinceDock = 0;
             state.AtSea = false;
             state.At = state.Home;
             state.LastPort = state.Home;
@@ -1533,6 +1535,8 @@ namespace CosmicShore.Data
             public readonly int[] Crystals = new int[(int)Element.Omni + 1];
             /// <summary>The relics among the artifacts: their ids with the authored name and lore to give the record.</summary>
             public readonly List<(string Id, string Name, string Lore)> Relics = new();
+            /// <summary>Jobs finished since the last dock, which the dock pays in wallet crystals (P10).</summary>
+            public int JobsDone;
         }
 
         /// <summary>
@@ -1568,6 +1572,8 @@ namespace CosmicShore.Data
             int crystals = 0;
             foreach (var c in x.Crystals) crystals += c;
             state.Log.Crystals += crystals;
+            x.JobsDone = state.JobsDoneSinceDock;
+            state.JobsDoneSinceDock = 0;
             state.Aboard.Clear();
             state.Owed.Clear();
             return x;

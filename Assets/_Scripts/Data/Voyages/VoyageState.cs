@@ -62,6 +62,9 @@ namespace CosmicShore.Data
         public int TickedDay;
         /// <summary>When the record was last saved (ms since the epoch): the days away tick the galaxy on return.</summary>
         public long SavedAtMs;
+        /// <summary>Jobs finished since the last dock: what the dock pays in wallet crystals (P10, one currency;
+        /// <c>RetentionPay.VoyageWalletCrystals</c>). Lost with the haul when the voyage is given up.</summary>
+        public int JobsDoneSinceDock;
 
         public bool HasJob() => Current != null && !string.IsNullOrEmpty(Current.TemplateId);
 

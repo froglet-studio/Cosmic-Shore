@@ -36,6 +36,9 @@ const RULES = {
     // Scoreboard placement crystals: 200 / 50 / 0 by default (Scoreboard.placementCrystalRewards).
     game_placement:       { maxPerCall: 250, minIntervalSeconds: 30, dailyCap: 6000 },
     tournament_placement: { maxPerCall: 250, minIntervalSeconds: 30, dailyCap: 6000 },
+    // A voyage's dock: RetentionTuning.crystalsPerVoyageJob (600) per job finished since the last dock, at most
+    // voyageDockCap (1800) a dock (P10, one currency). A Crystal Run takes about 11 minutes.
+    voyage_dock:          { maxPerCall: 1800, minIntervalSeconds: 120, dailyCap: 6000 },
     // Editor and test builds only (the Froglet Toolbox crystal field). Refused in production.
     debug:                { maxPerCall: 100000, minIntervalSeconds: 0, dailyCap: 1e9, nonProductionOnly: true },
   },

@@ -70,6 +70,13 @@ async function test(name, fn) { await fn(); passed++; console.log("ok -", name);
     assert.equal(r.ok, false); assert.equal(r.reason, "too_soon"); assert.equal(r.crystalBalance, 200);
   });
 
+  await test("a voyage dock pays at most three jobs and no faster than a Crystal Run", () => {
+    const e = emptyEconomy(); const t = Date.UTC(2026, 10, 21, 1);
+    assert.equal(apply(e, { action: "earn", source: "voyage_dock", amount: 600 }, t, "production").ok, true);
+    assert.equal(apply(e, { action: "earn", source: "voyage_dock", amount: 600 }, t + 30000, "production").reason, "too_soon");
+    assert.equal(apply(e, { action: "earn", source: "voyage_dock", amount: 5000 }, t + 600000, "production").reason, "bad_amount");
+  });
+
   await test("the daily cap holds", () => {
     const e = emptyEconomy(); let t = Date.UTC(2026, 9, 24, 1); let ok = 0;
     for (let i = 0; i < 100; i++) { if (apply(e, { action: "earn", source: "game_placement", amount: 200 }, t, "production").ok) ok++; t += 31000; }

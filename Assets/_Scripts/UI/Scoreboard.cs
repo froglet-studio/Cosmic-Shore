@@ -10,6 +10,7 @@ using CosmicShore.Soap;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -998,7 +999,7 @@ namespace CosmicShore.UI
             if (service == null) return;
 
             var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
-            int amount = CrystalsForPlacement(localDomain);
+            int amount = CrystalsForPlacement(PayDomain(localDomain));
             string source = gameData.IsMaelstromMode ? "tournament_placement" : "game_placement";
 
             _crystalsAwardedThisGame = true;
@@ -1018,6 +1019,44 @@ namespace CosmicShore.UI
             {
                 CSDebug.LogError($"[Scoreboard] Crystal award failed for '{localName}' ({source}, {amount}): {e}");
             }
+        }
+
+        // The party, for party pay (arc.social hole; RetentionTuningSO.PayPartyByBestPlacing). Injected like the arcade
+        // controllers' copy; absent in a scene with no Reflex scope, where every player is paid by their own domain.
+        [Inject] HostConnectionDataSO _party;
+
+        /// <summary>
+        /// The domain the local player is paid by: their own, or with party pay on, the best-placed domain any member of
+        /// their party flew for in this match (<see cref="RetentionPay.PayDomain"/>). Party members are matched to the
+        /// match's pilots by display name, the name the round stats carry.
+        /// </summary>
+        Domains PayDomain(Domains localDomain)
+        {
+            var tuning = RetentionTuningSO.Load();
+            if (!tuning.PayPartyByBestPlacing || _party == null || _party.PartyMembers == null || _party.PartyMembers.Count < 2)
+                return localDomain;
+            if (gameData.RoundStatsList == null) return localDomain;
+
+            var names = new HashSet<string>();
+            foreach (var m in _party.PartyMembers)
+                if (!string.IsNullOrEmpty(m.DisplayName)) names.Add(m.DisplayName);
+            var partyDomains = new List<Domains>();
+            foreach (var stats in gameData.RoundStatsList)
+                if (stats != null && names.Contains(stats.Name) && !partyDomains.Contains(stats.Domain))
+                    partyDomains.Add(stats.Domain);
+
+            return RetentionPay.PayDomain(localDomain, PlacementOrder(), partyDomains);
+        }
+
+        /// <summary>Domains best first: the mode rule's order when it has one, else the rank order of the results.</summary>
+        List<Domains> PlacementOrder()
+        {
+            if (_shufflePlacement != null && _shufflePlacement.Count > 0) return _shufflePlacement;
+            var order = new List<Domains>();
+            if (gameData.Results == null) return order;
+            foreach (var r in gameData.Results)
+                if (!order.Contains(r.Domain)) order.Add(r.Domain);
+            return order;
         }
 
         /// <summary>

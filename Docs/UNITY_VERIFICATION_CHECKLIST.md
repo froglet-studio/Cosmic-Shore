@@ -25914,3 +25914,18 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
+
+## Retention economy: party pay, voyage dock pay, quests at intensity 2 (2026-11-21)
+
+The economy fixes of the Loop Atlas retention build (Garrett: "Build everything proposed. Get all personas retained";
+`Docs/LoopAtlas/sim/REPORT.md`). Not run in the Unity editor: none in this session. The reference compile has 0 errors
+in the changed files; `RetentionPayTests` were not run.
+
+- [ ] A party of two in one match on different domains: when one domain places first, BOTH players' reward strips show
+      200 crystals. Solo, a last place still shows nothing.
+- [ ] A Crystal Run that meets its goal and docks: the wallet (Hangar's crystal display) rises by 600 on top of the
+      elemental crystals. A run given up at sea pays no wallet crystals.
+- [ ] Fresh account: win the Scurry quest's intensity-2 goal (rank first at I2): the quest is ready to claim at once.
+      Playing I3 later still opens I4 on its goal.
+- [ ] Run the edit-mode tests: `RetentionPayTests` passes, and the progression tests still pass.
+

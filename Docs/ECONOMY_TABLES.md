@@ -30,6 +30,14 @@ Same table in every mode, tournament included. Last place always earns 0.
 | Last | **0** |
 | Did not place | 0 |
 
+**Party pay (2026-11-21, the retention build):** in a match with two or more members of the same party, every member
+is paid by the party's best placing (`RetentionPay.PayDomain`, `Assets/Resources/RetentionTuning.asset`
+`payPartyByBestPlacing`). Solo losing still pays nothing.
+
+**Voyage pay (P10, one currency):** a dock pays **600** wallet crystals per job finished since the last dock, at most
+**1,800** a dock (`RetentionTuning.asset`; Cloud Code earn source `voyage_dock`). The elemental crystals a voyage banks
+are unchanged.
+
 | Rule | Value |
 |---|---|
 | Losing payout | None |
