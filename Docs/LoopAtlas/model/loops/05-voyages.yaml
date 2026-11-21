@@ -40,12 +40,6 @@
       it on a vessel' has no confirmed path.
     fill: One soft currency. Voyage pay is crystals, paid at dock, scaled so a clean voyage is worth about three arcade
       wins.
-  - 'on': x
-    q: 'A voyage runs 20 to 40 minutes. Snack-session players (sittings of 4 to 15 minutes) never finish one, and commute
-      players finish one sitting in three. In the simulation June abandoned about 7 voyages a month and finished none. (player_journeys.py,
-      2026-11-21: Docs/LoopAtlas/journeys-out/JOURNEYS.md)'
-    fill: A voyage can be left after any cell and resumed from the Ark at the next sitting. In the model this took June
-      from 0 to 2 finished voyages a month and raised her week-four return from 66% to 76%.
   src: [Docs/Voyages/VOYAGES.md, Docs/Voyages/DEPTH.md, Docs/Voyages/HANDOFF.md]
 - id: voy.port
   parent: voyages

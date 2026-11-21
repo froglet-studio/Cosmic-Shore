@@ -121,8 +121,6 @@ potential benefit"):
   `gene_search.py retrain --balance` re-searches the touched vessels and reports each new plateau and whether a vessel
   collapsed to one behaviour (`genes-out/retrain-<arena>.json`). Never balance a vessel whose pool entry has not
   plateaued (`Docs/ElementalAbilitySystem/SILENCE.md` section 6).
-- **Players to loops.** `player_journeys.py` runs the personas of `model/players.yaml` through the loops. A loop their
-  sittings cannot reach, or an activation path with a gap, becomes a hole on the Proposed layer.
 
 ## Claude keeps proposing
 

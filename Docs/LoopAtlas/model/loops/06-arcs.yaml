@@ -32,11 +32,6 @@
     q: The Lesson teaches a ship's Time verb. Nothing yet teaches a combo or a role.
     fill: 'The Mentor''s stream is ordered by the ladder of tiers: Pulse and Verb in the Lesson, the kit''s first Combo
       after three races, the Role the first time the player enters a Mass-Space game.'
-  - 'on': x
-    q: 'Activation is defined by a pilot completing a combo. A player who joins from a crew seat (the Ratel, the Kite, the
-      Pistol) never flies, so the Lesson and the Mentor never reach them. (player_journeys.py, 2026-11-21: Docs/LoopAtlas/journeys-out/JOURNEYS.md)'
-    fill: 'A crew seat has its own first-hour milestone: the first time a card or call the crewmate made lands a hit (combo_completed
-      with the crew seat as maker). The Mentor teaches the board in the seat''s own words.'
   src:
   - Docs/ACTIVATION.md
   - Docs/ModePreview/TRAINING_PLAN.md
@@ -282,11 +277,6 @@
     q: Nothing a party does together lasts past the sitting, so a friend is a reason to play tonight and not a reason to
       return.
     fill: 'A party shares one voyage record: the Ark, its hoard and the saga thread belong to the party that sailed it.'
-  - 'on': x
-    q: 'Crew invites are not counted, so nobody can see whether the empty seat is bringing people in. (player_journeys.py,
-      2026-11-21: Docs/LoopAtlas/journeys-out/JOURNEYS.md)'
-    fill: party_joined carries the seat (pilot or crew) and the inviter; a crew invite that leads to a second sitting counts
-      as its own activation.
   src:
   - Docs/claude/MULTIPLAYER_AND_SOCIAL.md
   - Docs/Voyages/PARTY.md

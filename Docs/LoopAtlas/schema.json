@@ -5,10 +5,9 @@
   "description": "The assembled Loop Atlas model (Docs/LoopAtlas/model.json), built from the YAML files under Docs/LoopAtlas/model/ by Tools/Build/loop_atlas.py. Cross-references (parents, edges, drivers, handoffs, proposals) are checked by the tool, not here. Docs/LoopAtlas/README.md explains every field.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "updated", "layers", "tiers", "drivers", "handoffs", "nodes", "edges", "roles", "roleHoles", "kit", "pulse", "verbHole", "archetypes", "elementDrivers", "proposals", "fleet", "fleetOrder", "defaultVessel", "artifact", "areas", "items", "senses", "sights", "genes", "players"],
+  "required": ["schema", "updated", "layers", "tiers", "drivers", "handoffs", "nodes", "edges", "roles", "roleHoles", "kit", "pulse", "verbHole", "archetypes", "elementDrivers", "proposals", "fleet", "fleetOrder", "defaultVessel", "artifact", "areas", "items", "senses", "sights", "genes"],
   "properties": {
     "schema": {"const": 1},
-    "players": {"description": "Personas, the session patterns (cultures) they keep and the stages of their journeys through the loops (model/players.yaml; simulated by Tools/Build/player_journeys.py). Loop ids are checked by the tool.", "type": "object", "additionalProperties": false, "required": ["is", "cultures", "personas"], "properties": {"is": {"type": "string"}, "in": {"$ref": "#/$defs/layerSet"}, "cultures": {"type": "array", "items": {"type": "object", "required": ["id", "name", "is", "weekday", "weekend", "comfort", "returns"]}}, "personas": {"type": "array", "items": {"type": "object", "required": ["id", "name", "who", "culture", "color", "drivers", "entry", "stages", "challenge"]}}}},
     "updated": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
     "layers": {"type": "array", "items": {"$ref": "#/$defs/layer"}, "minItems": 1},
     "tiers": {"type": "array", "items": {"$ref": "#/$defs/tier"}, "minItems": 1},

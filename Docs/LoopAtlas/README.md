@@ -21,11 +21,9 @@ https://claude.ai/artifact/QUiM5ztvnHhkpWgsn4S43K.
 | `model/items.yaml` | Product work beyond the loops: the areas (Game, App, AI, ...) and the items in them, which move through the layers like loops. |
 | `model/fleet/<Vessel>.yaml` | One vessel: its verbs, combos (with nested `sub` loops and each combo's AI `gene`), games, arenas and board. |
 | `model/genes.yaml` | What turns a combo into an AI gene: the rule, the activation expectation for combos, the `senses` a gene's cues name and the pilot `sights` (callsigns). |
-| `model/players.yaml` | Personas, the session cultures they keep (sitting lengths, returns) and the stages of their journeys through the loops. Proposed layer; every number is a hypothesis to calibrate with analytics. |
 | `genes-out/` | **The gene search's output** (`Tools/Build/gene_search.py run`): one genome per vessel and element (best, MAP-Elites archive, I1-I4 ladder, plateau, bloat), `pool.json` (the fixed AI pool arena balancing races against), `retrain-<arena>.json`, `discovered.json` (candidate loops) and `SUMMARY.md`. |
 | `balance-in/` | Proposed tuning from the arena balancing work, one JSON per arena, read by `gene_search.py retrain --balance`. |
 | `discover-in/` | Strategies other searches observed, offered as loops (`README.md` there has the shape). |
-| `journeys-out/` | **Player journeys** (`Tools/Build/player_journeys.py`): `journeys.json`, `JOURNEYS.md`, and `PlayerJourneys.html`, the animated page (https://claude.ai/artifact/4nfBMbpPw6t1PSDa261Mm8). |
 | `GENES.md` | Every combo as an AI gene, the coverage per vessel and genome, and the activation expectations of every measured loop, **generated**. |
 | `schema.json` | JSON Schema for the assembled model. |
 | `model.json` | The assembled model, **generated**; never edit it by hand. Other tools read this. |
