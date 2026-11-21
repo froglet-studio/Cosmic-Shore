@@ -16,7 +16,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | voy.meet | Round | V2 and V3. One squad hosts, one joins, in a managed peer-to-peer instance. |
 | era.meta | Era | Garrett, 2026-11-12: it will disrupt the meta on an optimized schedule before it gets stale. Each loop needs fewer people. |
 
-## Brainstorm: proposed (29)
+## Brainstorm: proposed (35)
 
 | Loop or item | Tier or area | The proposal |
 | --- | --- | --- |
@@ -36,6 +36,12 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | arc.replay | Session | The breath offers 'watch the pass that beat you': a ten-second cut, not the whole match. |
 | era.meta | Era | Tie each turn to a Tide so that players can see it coming. |
 | era.tide | Era | Proposal P6. It gives the long game's empty last phase a rhythm built from systems that already tick. |
+| sys.petals | Role | In the game today (ResourceSystem.AccrueElementalLoss, ElementalCrystalEjector, the silence window). Proposed as a loop of its own so its count is measured and taught. |
+| sys.element | Combo | In the game today (ResourceSystem, ElementalBarsConfigSO, ElementalAbilityMapSO, the four-petal flower). Runs inside every round; proposed as a loop so a round's element swing is measured. |
+| sys.hearts | Combo | In the game today (LifeFormCrystal, the Squirrel's crystal joust, every kill that frees a heart). Proposed as a loop so hunting has a count. |
+| sys.cellphase | Role | In the game today (Cell.ResolvedThresholds, CellPhase Calm / Restless / Frenzy, the concentric hexagon volume indicator). Proposed as a loop so a match's arc is read and measured. |
+| sys.trail | Combo | In the game today, on every hull (the trail, the volume books on Brood Rush's scoreboard). Proposed as a loop so made and removed volume are read per pilot. |
+| sys.sight | Verb | In the game today (PilotSight, PilotSightGesture, CallsignSetSO), unverified in the editor. Proposed as a loop so a callsign's worth is measured, and so the genes' sight bias has a human twin. |
 | P1 | proposal | One ladder of words: Use the eight tier terms (Pulse, Verb, Combo, Role, Round, Session, Arc, Era) in every design doc, ticket and review, so a problem is placed before it is argued. |
 | P2 | proposal | Every verb names its feeling: Each ability's doc gets its loop as steps and one sentence: the feeling, and the step where it lands. The fun card asks about that step. |
 | P3 | proposal | Every kit names two combos: A feeder into a spender, and one that crosses two elements. Ability icons and the Mentor teach them; a game's course is checked against them. |
@@ -50,7 +56,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | P12 | proposal | A replay can travel: A ten-second cut shared as a link that opens the same card at the same rung. |
 | kit-drift | Tooling | Kit drift check: Add a report check that flags a vessel whose abilities changed in the game while its kit in model/fleet/ did not. On 2026-11-19 the Rhino (Time is now Momentum with oversteer, Unstoppable and the Momentum ward are base, L5s Avalanche and Slingshot), the Shrike (trail almost nothing, a nest walled in super-shielded plates) and the Jewel Wasp (a possessed creature is stolen for good) all changed, and their fleet YAML still describes the old kits. The element-ability-table reader already reads the shipped ability maps, so the check can compare against it. |
 
-## Holes: undecided (22)
+## Holes: undecided (23)
 
 | Loop or item | Hole | Question | Proposed fill |
 | --- | --- | --- | --- |
@@ -76,6 +82,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | arc.replay | 0 | A replay cannot leave the device, so it drives mastery and nothing else. | Share a ten-second cut as a link that opens the same card at the same rung for whoever taps it. |
 | arc.support | 0 | What an episode gives the player is not defined in loop terms: it opens no loop on this map. | An episode is a Tide's content, sold once the Tide has run free for its season: its saga, its arena environments, its colour set. |
 | era.meta | 0 | The schedule is not set, and nothing tells a player that the meta turned or why their vessel flies differently. | One turn per Tide, six weeks. The Tide's news says in authored words which vessels changed and which arena environments are new. |
+| sys.petals | 0 | Nothing tells a new pilot that the crystal leaving them is their own petal, or that a silenced pilot can still take it back. | The Mentor's first Charge tip: "That crystal is your petal. Take it back." The flower's step and the crystal are the same event, so the tip points at the flower. |
 
 ## Recent moves (4)
 

@@ -66,4 +66,29 @@ combos:
     - Time cards bring the next hand sooner
   drivers: [mastery, find]
   feel: A build coming together.
+  gene:
+    genome: Time
+    cue: [crew_ready]
+    dials:
+    - - timeWeight
+      - how much the AI wants a Time card
+      - 0
+      - 1
+      - ''
+    - - chargeWeight
+      - how much the AI wants a Charge card
+      - 0
+      - 1
+      - ''
+    - - massWeight
+      - how much the AI wants a Mass card
+      - 0
+      - 1
+      - ''
+    - - spaceWeight
+      - how much the AI wants a Space card
+      - 0
+      - 1
+      - ''
+    done: The picked card is the one the swarm held least of, and the next hand comes sooner.
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
