@@ -66,17 +66,51 @@ Full release has no gate: its instrumented data feeds Game 2 and beyond.
 
 ## Current stage
 
-**Beta Phase 1** (assumed 2026-11-17 from the diagram, which shows Phase 1 with today's counts: 21 vessels on
-Bleeding Edge, 6 on Development and Master; Shombith confirms). Update this line, with the date and who said so,
-when a gate passes.
+**Beta Phase 1** (Shombith, 2026-11-21: "beta phase 1, the phase we are in right now"). Update this line, with the
+date and who said so, when a gate passes.
 
-## Not decided yet (Shombith's calls; do not fill them in)
+## A build round (Beta Phase 1)
 
-- The **X** and **Y** vessel counts for Phase 2 onward, and the **X%** thresholds of Gates 2 and 3.
-- How Gate 1's "co-op repeat retention over weeks" is measured (which event, how many weeks).
-- **The Release branch does not exist yet** (the repository has `bleeding-edge`, `development`, `master`, and the
-  `build/*` branches). It is first needed in Beta Phase 2. Creating it, and whether `master` stops being "what
-  players get" (`GIT_RULES.md`, `Docs/BUILD_AND_DELIVERY.md`) and becomes the Alpha / Pre-release tier the diagram
-  shows, is a decision for Shombith, not something a session does.
-- Where the platform milestones sit on the stages (`Docs/LAUNCH/READINESS.md` §11: mobile first when activation is
-  ready; Steam keys by March 2027, before GDC). Activation data is first read in Beta Phase 2.
+What Shombith set for this phase (2026-11-17 and 2026-11-21). A launch session runs a round in this order.
+
+**Source:** whatever is on `bleeding-edge`. Every build in a round is made from the same commit.
+
+**Four builds, four destinations:**
+
+| Build | Goes to | How (the way the last builds were made) | Who presses the last button |
+|---|---|---|---|
+| Windows | **Discord**, as a download link (no Steam yet) | Unity on Shombith's PC, IL2CPP Release player from the build profile (`Docs/BUILD_AND_DELIVERY.md`), zipped and uploaded to Drive | Shombith posts the link in Discord by hand |
+| iOS | **TestFlight** | **No Xcode on Shombith's PC**: Unity on his PC exports the Release Xcode project (Development Build off), zipped to a share link; `ios-testflight.yml` (Actions, run by hand) compiles, signs and uploads it on a GitHub-hosted Mac (`Docs/IOS_BUILD.md` §2 Path C; secrets in the `testflight` Environment) | Shombith runs the workflow and approves the Environment |
+| Android | **Google Play internal testing** | Unity on Shombith's PC builds the `.aab` (the `/androidbuild` recipe, but an App Bundle for Play); no Play upload automation exists yet, so the `.aab` is uploaded in Play Console | Shombith uploads in Play Console |
+| WebGL | **The Toybox page** (www.froglet.games/play) | Unity on Shombith's PC builds WebGL; `toybox-publish.yml` stages it on R2 and promotes it (`Docs/WEBGL_TOYBOX.md`) | Shombith runs the promote step |
+
+All Unity builds run on **Shombith's computer**: a cloud session has no Unity editor and no signing keys. A session
+prepares everything up to each button (the version bump, the preflight checks, the exact steps and the copy-paste
+prompts) and hands it over.
+
+**One version for the round (cross-play):** players on all four builds play together, so a round carries one
+`bundleVersion` and one `NetworkConfig.ProtocolVersion` on all four, and the console's `status/versions` pin holds
+them. Before the round:
+- **Bump `bundleVersion`** every round. A new feature set bumps the minor (Voyages joined `bleeding-edge`, so the
+  2026-11-21 round moves off `0.2.0` to the next minor); a fix-only round bumps the patch.
+- **Raise the store build numbers** above the last upload to each store: the iOS build number above the last
+  TestFlight upload, `AndroidBundleVersionCode` above the last Play upload. A store refuses an equal or lower number.
+- Bump the protocol version only when the network contract changed (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
+- The bump is one commit on `bleeding-edge`, made before any of the four builds starts.
+
+**Learn from every round:** each build thread writes down what broke or slowed it, and the round ends by folding that
+into this file and `SKILL.md`, so the next round needs fewer steps.
+
+## Settled for now (Shombith asked for the recommended option, 2026-11-21)
+
+- **No Release branch in Beta Phase 1.** The diagram gives Phase 1 none, and this phase builds from `bleeding-edge`.
+  It is created from `master` on the day Beta Phase 2 starts; on that day `master` becomes the Alpha / Pre-release
+  tier and `release` becomes "what players get", and `GIT_RULES.md` and `Docs/BUILD_AND_DELIVERY.md` change in the
+  same commit. Until then those two docs stand as they are.
+- **The X and Y vessel counts and the X% thresholds stay blank** until Gate 1 is near: nothing in Beta Phase 1 reads
+  them. A session never picks them; it asks Shombith when Phase 2 planning starts.
+- **Gate 1, proposed measure** (Shombith confirms before anyone reports against it): of the Beta Phase 1 testers, the
+  share who play a co-op match (two or more people in one party) in each of three weeks in a row on the same build
+  line. It needs the analytics event for a party match; until that exists, a session says Gate 1 is not measured.
+- **Milestones on the stages:** the mobile release (when activation is ready) and Steam keys (March 2027, before GDC)
+  are read as Beta Phase 2 and 3 work, where Release and Beta keys first appear. Confirm when Phase 2 is planned.

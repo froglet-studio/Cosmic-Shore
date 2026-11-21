@@ -71,6 +71,13 @@ Shombith.
 Then **ask which item to start** (`AskUserQuestion`, header "Start with", the top three or four session-work items,
 recommended first). Do not start editing before the person picks.
 
+## 3.5 A build round
+
+When the ask is "build what is on bleeding-edge for every platform" (the Beta Phase 1 round), follow
+`references/STAGES.md` § A build round instead of picking one blocker: the version bump first (one commit, all four
+builds share it), then the four builds on Shombith's computer, each to its destination, then the learnings folded
+back into `STAGES.md` and this file. A session prepares each build up to its button and never presses it.
+
 ## 4. Work the picked item
 
 - Branch from `origin/bleeding-edge` (`claude/launch-<platform>-<item>`); push there only.
