@@ -13,6 +13,19 @@ MonoBehaviour:
   m_Name: AIMassSpacePlan
   m_EditorClassIdentifier: 
   rows:
+  - Hull: 2
+    Abilities:
+    - Ability: {fileID: 11400000, guid: 51198b110e790e047b4fe6979db3f47c, type: 2}
+      Duration: 2
+      Cooldown: 2
+    - Ability: {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
+      Duration: 2
+      Cooldown: 2
+    - Ability: {fileID: 11400000, guid: ab7bab2c9e3d95e478b95f459e44b5c2, type: 2}
+      Duration: 2
+      Cooldown: 2
+    AggressivenessScale: 1.0
+    ThrottleScale: 1.25
   - Hull: 28
     Abilities:
     - Ability: {fileID: 11400000, guid: 1f2e3d4c5b6a4978a8b7c6d5e4f3a2b1, type: 2}

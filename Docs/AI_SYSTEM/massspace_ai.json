@@ -310,6 +310,49 @@
     }
    },
    "note": "held: steering only (crew trigger off, throttle at the search cap); Reefbuild I2-I4 +45% but I1 -20% and Blastline mixed, and the Wrasse already sits 1.06-1.11 in Brood Rush. Re-search with I1 in the loss before shipping."
+  },
+  "Dolphin": {
+   "ship": true,
+   "genome": {
+    "drift": {
+     "on": true,
+     "dur": 2,
+     "cd": 2
+    },
+    "drifttrail": {
+     "on": true,
+     "dur": 2,
+     "cd": 2
+    },
+    "chargeboost": {
+     "on": true,
+     "dur": 2,
+     "cd": 2
+    },
+    "aggr": 1.0,
+    "throttle": 1.25
+   },
+   "confirm": {
+    "game": "Rampage",
+    "seeds": [
+     11,
+     12
+    ],
+    "metric": "mean seat VC+VD, 1v1 Dolphin mirror, 200 s",
+    "before": {
+     "I1": 47737.9,
+     "I2": 49255.0,
+     "I3": 48375.8,
+     "I4": 47308.4
+    },
+    "after": {
+     "I1": 55087.5,
+     "I2": 56287.8,
+     "I3": 52190.5,
+     "I4": 49979.9
+    }
+   },
+   "note": "Abilities = the shipped list unchanged (all three are commit-drift bound, the cycler never presses them). The gain is ThrottleScale 1.25 (0.8/0.4 -> 1.0/0.5) TOGETHER with DolphinAIBoostPolicy.disabledInModes losing Rampage (shipped in the asset on claude/ms-ai-dolphin). Throttle alone was +2-4% on seeds 1-2; the row must land for the full gain. Trained by thread 'Train Mass-Space AIs, last seven hulls'."
   }
  }
 }

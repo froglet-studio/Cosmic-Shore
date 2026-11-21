@@ -50,6 +50,12 @@ HULLS = {
                 "sharp": [VA + "Scarab/ScarabSharpDriftAction.asset"],
                 "switch": [VA + "Scarab/PlaceSwitchAction.asset"]}, []),
     "Urchin": (P + "Urchin.prefab", 3440187540988767646, ["Hijack"], {}, []),
+    # Trained by the other seven's thread (mass7/dolphin/winner.json); its three abilities are commit-drift bound.
+    "Dolphin": (P + "Dolphin.prefab", 1528510160414134526, ["Rampage"],
+                {"drift": [VA + "Dolphin/DolphinDriftAction.asset"],
+                 "drifttrail": [VA + "Dolphin/DriftTrailAction.asset"],
+                 "chargeboost": [VA + "Dolphin/ChargeBoostAction.asset"]},
+                {"drift": (2, 2), "drifttrail": (2, 2), "chargeboost": (2, 2)}),
 }
 URCHIN_CFG = "Assets/Resources/UrchinAutopilotConfig.asset"
 URCHIN_GENES = {  # name: (shipped, lo, hi, log-scale)
@@ -62,7 +68,7 @@ URCHIN_GENES = {  # name: (shipped, lo, hi, log-scale)
 }
 # AIPilot as shipped: (defaultThrottleHigh, defaultThrottleLow, defaultAggressivenessHigh, defaultAggressivenessLow).
 # The skill (intensity x 0.25 on an arcade card) lerps Low -> High, so the genome SCALES both and keeps the ladder.
-STEER = {"Urchin": (0.8, 0.8, 0.035, 0.035), "Meerkat": (0.9, 0.2, 0.09, 0.04), "Stoat": (0.9, 0.2, 0.09, 0.04)}
+STEER = {"Urchin": (0.8, 0.8, 0.035, 0.035), "Dolphin": (0.8, 0.4, 0.1, 0.035), "Meerkat": (0.9, 0.2, 0.09, 0.04), "Stoat": (0.9, 0.2, 0.09, 0.04)}
 STEER_DEFAULT = (0.9, 0.2, 0.03, 0.04)
 
 
