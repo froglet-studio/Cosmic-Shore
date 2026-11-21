@@ -316,15 +316,36 @@ def shuffle_volume(e) -> int:
     return int(e["prisms"] * PRISM_VOLUME)
 
 
+def shuffle_cell(e):
+    """A version-2 genome's cell (RegattaCourseGenome Nucleus / Lifeforms, regatta_wide.py): the nucleus line and the
+    spawn profile line of its cell config. No nucleus writes a null NucleusPrefab; lifeforms take the named cell
+    config's own spawn profile (its flora and fauna). A version-1 entry keeps the Regatta nucleus and the Barren profile."""
+    cell = e["genome"].get("cell") or {}
+    nucleus = ("{fileID: 0}" if cell.get("nucleus") == "None"
+               else f"{{fileID: 7555898194514117247, guid: {EXISTING['NucleusPrefab']}, type: 3}}")
+    profile = f"{{fileID: 11400000, guid: {EXISTING['BarrenSpawnProfile']}, type: 2}}"
+    if cell.get("lifeforms"):
+        donor = os.path.join(lib.ROOT, "Assets", "_SO_Assets", "Cell Configs", cell["lifeforms"] + ".asset")
+        m = re.search(r"SpawnProfile: (\{fileID: \d+, guid: \w+, type: 2\})", open(donor, encoding="utf-8").read())
+        if not m:
+            raise SystemExit(f"shuffle {e['label']}: {cell['lifeforms']} has no spawn profile")
+        profile = m.group(1)
+    return nucleus, profile
+
+
 for _k, _e in enumerate(SHUFFLE):
     _lab = _e["label"]
+    _nucleus, _profile = shuffle_cell(_e)
     t = phase_thresholds(int(_e["prisms"]), shuffle_volume(_e))
     desc = lib.wrap_yaml_scalar(
         f"Regatta course-pool entry {_k}, shuffle course {pool_label(_e)} (CellTypeChoiceOptions.CourseVariantWise, list "
         f"order = Regatta Course Pool order - the host deals one enabled entry per match). A searched course: its rails "
         f"prefab carries the whole RegattaCourseGenome (circuit, braid, features, placements), the one the real-game "
         f"judge raced. {_e['notes']} {_e['prisms']} prisms measured; PhaseThresholds ride that count at the rail "
-        f"prism's nominal volume plus a trail band. The spawn profile is the Barren cell's (no flora, no fauna). "
+        f"prism's nominal volume plus a trail band. "
+        + (f"Flora and fauna: {(_e['genome'].get('cell') or {})['lifeforms']}'s spawn profile. "
+           if (_e['genome'].get('cell') or {}).get('lifeforms') else
+           "The spawn profile is the Barren cell's (no flora, no fauna). ") + 
         f"Regenerate with Tools/Build/author_regatta_assets.py from Tools/Build/regatta_shuffle_pool.json, never by hand.")
     g.emit_asset(f"{CELL_DIR}/Regatta Shuffle Cell Config {_lab}.asset", G_ASSET[f"ShuffleConfig{_lab}"],
                  lib.header_for(EXISTING["CellConfigDataSO"], f"Regatta Shuffle Cell Config {_lab}") + f"""  CellName: Regatta
@@ -333,10 +354,10 @@ for _k, _e in enumerate(SHUFFLE):
   Difficulty: {int(_e['genome'].get('intensity', 1))}
   CellEndGameScore: 0
   MembranePrefab: {{fileID: 346633111830028674, guid: {EXISTING['MembranePrefab']}, type: 3}}
-  NucleusPrefab: {{fileID: 7555898194514117247, guid: {EXISTING['NucleusPrefab']}, type: 3}}
+  NucleusPrefab: {_nucleus}
   CytoplasmPrefab: {{fileID: 639495419069806261, guid: {EXISTING['CytoplasmPrefab']}, type: 3}}
   CellModifiers: []
-  SpawnProfile: {{fileID: 11400000, guid: {EXISTING['BarrenSpawnProfile']}, type: 2}}
+  SpawnProfile: {_profile}
   EnvironmentPrefab: {{fileID: 5260000000000303, guid: {G_ASSET[f'ShuffleRails{_lab}']}, type: 3}}
   EnvironmentIntensity: {int(_e['genome'].get('intensity', 1))}
   PhaseThresholds:
