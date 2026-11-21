@@ -1,0 +1,774 @@
+{
+    "schemaVersion": 1,
+    "reportId": "a7687c8e919f",
+    "timestamp": "2026-11-21T00:47:49.4121724Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "Ys-bleeding-edge",
+    "gitCommitHash": "923711842b",
+    "trigger": "Netcode scene load (client) — MinigameBroodRush",
+    "loadKind": "launch",
+    "completionReason": "Loaded — arena complete (laid + grown), connecting screen done",
+    "interrupted": false,
+    "sceneFrom": "Menu_Main",
+    "sceneTo": "MinigameBroodRush",
+    "gameMode": "BroodRush",
+    "intensity": 1,
+    "totalPlayers": 2,
+    "humanPlayers": 2,
+    "aiBackfill": 0,
+    "isMultiplayer": true,
+    "networkRole": "Client",
+    "connectedClients": 0,
+    "totalMs": 5575.5322265625,
+    "visualReadyMs": 2829.693603515625,
+    "waitMs": 1974.276611328125,
+    "humanWaitMs": 0.0,
+    "workMs": 3601.255615234375,
+    "unattributedMs": 830.7581787109375,
+    "framesDuringLoad": 44,
+    "avgFpsDuringLoad": 7.891623497009277,
+    "worstFrameMs": 3665.92724609375,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Client scene load (MinigameBroodRush)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 2.0237998962402345,
+            "endMs": 2743.160888671875,
+            "durationMs": 2741.13720703125,
+            "exclusiveMs": 2560.73876953125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Flora spawn (SpireFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "startMs": 277.2218017578125,
+            "endMs": 279.4642028808594,
+            "durationMs": 2.242401123046875,
+            "exclusiveMs": 2.242401123046875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Fauna spawn (MassBrittlestarFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 392.1343078613281,
+            "endMs": 492.81329345703127,
+            "durationMs": 100.67898559570313,
+            "exclusiveMs": 100.67898559570313,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Fauna spawn (MassBrittlestarFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 492.84130859375,
+            "endMs": 500.41668701171877,
+            "durationMs": 7.57537841796875,
+            "exclusiveMs": 7.57537841796875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Fauna spawn (MassBrittlestarFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 500.4338073730469,
+            "endMs": 512.6586303710938,
+            "durationMs": 12.224822998046875,
+            "exclusiveMs": 12.224822998046875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 512.9354248046875,
+            "endMs": 515.823974609375,
+            "durationMs": 2.8885498046875,
+            "exclusiveMs": 2.8885498046875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 515.8369140625,
+            "endMs": 517.7327880859375,
+            "durationMs": 1.8958740234375,
+            "exclusiveMs": 1.8958740234375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 517.744873046875,
+            "endMs": 519.2156982421875,
+            "durationMs": 1.4708251953125,
+            "exclusiveMs": 1.4708251953125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 519.2252197265625,
+            "endMs": 521.3057861328125,
+            "durationMs": 2.08056640625,
+            "exclusiveMs": 2.08056640625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 0,
+            "depth": 1,
+            "label": "InitDelayMs gate before InitializeGame (1000ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 2693.81982421875,
+            "endMs": 4746.7734375,
+            "durationMs": 2052.95361328125,
+            "exclusiveMs": 1857.05810546875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 10,
+            "parentId": 9,
+            "depth": 2,
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 2694.937255859375,
+            "endMs": 2890.832763671875,
+            "durationMs": 195.8955078125,
+            "exclusiveMs": 117.218505859375,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 11,
+            "parentId": 10,
+            "depth": 3,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 2714.888427734375,
+            "endMs": 2715.84130859375,
+            "durationMs": 0.952880859375,
+            "exclusiveMs": 0.952880859375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 12,
+            "parentId": 10,
+            "depth": 3,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 2749.100341796875,
+            "endMs": 2750.18408203125,
+            "durationMs": 1.083740234375,
+            "exclusiveMs": 1.083740234375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 13,
+            "parentId": 10,
+            "depth": 3,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 2752.17236328125,
+            "endMs": 2753.015625,
+            "durationMs": 0.84326171875,
+            "exclusiveMs": 0.84326171875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 14,
+            "parentId": 10,
+            "depth": 3,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 2753.032958984375,
+            "endMs": 2753.130859375,
+            "durationMs": 0.097900390625,
+            "exclusiveMs": 0.097900390625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 15,
+            "parentId": 10,
+            "depth": 3,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 2753.1630859375,
+            "endMs": 2757.789306640625,
+            "durationMs": 4.626220703125,
+            "exclusiveMs": 4.626220703125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 16,
+            "parentId": 10,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (ys1)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 2758.5859375,
+            "endMs": 2808.763916015625,
+            "durationMs": 50.177978515625,
+            "exclusiveMs": 50.177978515625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 17,
+            "parentId": 10,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (YS2)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 2808.779541015625,
+            "endMs": 2829.674560546875,
+            "durationMs": 20.89501953125,
+            "exclusiveMs": 20.89501953125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 18,
+            "parentId": -1,
+            "depth": 0,
+            "label": "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)",
+            "category": 12,
+            "categoryName": "Game Flow & Countdown",
+            "startMs": 4746.8115234375,
+            "endMs": 4746.8359375,
+            "durationMs": 0.0244140625,
+            "exclusiveMs": 0.0244140625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 2560.73876953125,
+            "percent": 45.92815017700195,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 1857.05810546875,
+            "percent": 33.30727767944336,
+            "spanCount": 1,
+            "waitMs": 1857.05810546875
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 830.7581787109375,
+            "percent": 14.900069236755371,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 7,
+            "name": "Fauna",
+            "attributedMs": 128.81500244140626,
+            "percent": 2.3103623390197756,
+            "spanCount": 7,
+            "waitMs": 0.0
+        },
+        {
+            "category": 1,
+            "name": "Netcode & Sync",
+            "attributedMs": 117.218505859375,
+            "percent": 2.1023733615875246,
+            "spanCount": 1,
+            "waitMs": 117.218505859375
+        },
+        {
+            "category": 3,
+            "name": "Vessels & Players",
+            "attributedMs": 71.072998046875,
+            "percent": 1.2747303247451783,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 5.5673828125,
+            "percent": 0.09985383599996567,
+            "spanCount": 3,
+            "waitMs": 0.0
+        },
+        {
+            "category": 6,
+            "name": "Flora",
+            "attributedMs": 2.242401123046875,
+            "percent": 0.04021860286593437,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 9,
+            "name": "Crystals",
+            "attributedMs": 1.083740234375,
+            "percent": 0.019437430426478387,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 10,
+            "name": "Pooling & Prewarm",
+            "attributedMs": 0.952880859375,
+            "percent": 0.01709040254354477,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 12,
+            "name": "Game Flow & Countdown",
+            "attributedMs": 0.0244140625,
+            "percent": 0.0004378785961307585,
+            "spanCount": 1,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Client scene load (MinigameBroodRush)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 2741.13720703125,
+            "exclusiveMs": 2560.73876953125,
+            "maxSingleMs": 2741.13720703125,
+            "isWait": false
+        },
+        {
+            "label": "InitDelayMs gate before InitializeGame (1000ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 2052.95361328125,
+            "exclusiveMs": 1857.05810546875,
+            "maxSingleMs": 2052.95361328125,
+            "isWait": true
+        },
+        {
+            "label": "Fauna spawn (MassBrittlestarFauna)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "count": 3,
+            "totalMs": 120.47918701171875,
+            "exclusiveMs": 120.47918701171875,
+            "maxSingleMs": 100.67898559570313,
+            "isWait": false
+        },
+        {
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "count": 1,
+            "totalMs": 195.8955078125,
+            "exclusiveMs": 117.218505859375,
+            "maxSingleMs": 195.8955078125,
+            "isWait": true
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (ys1)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 50.177978515625,
+            "exclusiveMs": 50.177978515625,
+            "maxSingleMs": 50.177978515625,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (YS2)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 20.89501953125,
+            "exclusiveMs": 20.89501953125,
+            "maxSingleMs": 20.89501953125,
+            "isWait": false
+        },
+        {
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "count": 4,
+            "totalMs": 8.3358154296875,
+            "exclusiveMs": 8.3358154296875,
+            "maxSingleMs": 2.8885498046875,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 4.626220703125,
+            "exclusiveMs": 4.626220703125,
+            "maxSingleMs": 4.626220703125,
+            "isWait": false
+        },
+        {
+            "label": "Flora spawn (SpireFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "count": 1,
+            "totalMs": 2.242401123046875,
+            "exclusiveMs": 2.242401123046875,
+            "maxSingleMs": 2.242401123046875,
+            "isWait": false
+        },
+        {
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "count": 1,
+            "totalMs": 1.083740234375,
+            "exclusiveMs": 1.083740234375,
+            "maxSingleMs": 1.083740234375,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 1,
+            "totalMs": 0.952880859375,
+            "exclusiveMs": 0.952880859375,
+            "maxSingleMs": 0.952880859375,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.84326171875,
+            "exclusiveMs": 0.84326171875,
+            "maxSingleMs": 0.84326171875,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.097900390625,
+            "exclusiveMs": 0.097900390625,
+            "maxSingleMs": 0.097900390625,
+            "isWait": false
+        },
+        {
+            "label": "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)",
+            "category": 12,
+            "categoryName": "Game Flow & Countdown",
+            "count": 1,
+            "totalMs": 0.0244140625,
+            "exclusiveMs": 0.0244140625,
+            "maxSingleMs": 0.0244140625,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 4748.53564453125,
+            "durationMs": 3665.92724609375,
+            "during": "InitDelayMs gate before InitializeGame (1000ms)"
+        },
+        {
+            "atMs": 4984.009765625,
+            "durationMs": 565.7650146484375,
+            "during": "InitDelayMs gate before InitializeGame (1000ms)"
+        },
+        {
+            "atMs": 266.7493896484375,
+            "durationMs": 278.7210998535156,
+            "during": "Client scene load (MinigameBroodRush)"
+        },
+        {
+            "atMs": 585.7313842773438,
+            "durationMs": 203.73019409179688,
+            "during": "Fauna spawn (MassBrittlestarFauna)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Netcode scene load (client) — MinigameBroodRush"
+        },
+        {
+            "atMs": 1.7624000310897828,
+            "label": "Netcode scene load begins: MinigameBroodRush"
+        },
+        {
+            "atMs": 2662.90283203125,
+            "label": "Unity scene loaded: MinigameBroodRush (Single)"
+        },
+        {
+            "atMs": 2679.5,
+            "label": "Game controller spawned (BroodRushController, IsServer=False)"
+        },
+        {
+            "atMs": 2700.966796875,
+            "label": "Game config received from server"
+        },
+        {
+            "atMs": 2743.15771484375,
+            "label": "Netcode scene load complete: MinigameBroodRush (client 1)"
+        },
+        {
+            "atMs": 2757.8515625,
+            "label": "Flora/fauna spawner started (cell 0, RandomLifeSpawner)"
+        },
+        {
+            "atMs": 2829.696044921875,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 2830.33447265625,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 2871.369140625,
+            "label": "Connecting panel shown (holding for arena build)"
+        },
+        {
+            "atMs": 4696.89208984375,
+            "label": "Game config received from server"
+        },
+        {
+            "atMs": 4696.990234375,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 4697.27880859375,
+            "label": "Connecting panel shown (holding for arena build)"
+        },
+        {
+            "atMs": 4698.17578125,
+            "label": "Netcode scene load completed on ALL clients: MinigameBroodRush"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Flora spawned during load",
+            "value": 1
+        },
+        {
+            "name": "Fauna spawned during load",
+            "value": 7
+        },
+        {
+            "name": "Pool objects prewarmed during load",
+            "value": 10
+        },
+        {
+            "name": "Crystals spawned during load",
+            "value": 1
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 20,
+            "totalMs": 4.0355000495910648,
+            "maxSingleMs": 0.3804999887943268
+        }
+    ],
+    "errors": [
+        {
+            "timeSeconds": 0.529701292514801,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {7d65355d-2a35-47b9-afb1-3f09c0773638} (event:/SFX/Loops/mass birttle)"
+        },
+        {
+            "timeSeconds": 0.535264253616333,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {7d65355d-2a35-47b9-afb1-3f09c0773638} (event:/SFX/Loops/mass birttle)"
+        },
+        {
+            "timeSeconds": 0.5373104810714722,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {7d65355d-2a35-47b9-afb1-3f09c0773638} (event:/SFX/Loops/mass birttle)"
+        },
+        {
+            "timeSeconds": 0.7486290335655212,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.8849375247955322,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.894496500492096,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.9017186164855957,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.9118682742118836,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.9178214073181152,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.9588117003440857,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.9684178829193115,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.9818629026412964,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 1.5353716611862183,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        }
+    ],
+    "hints": [
+        {
+            "id": "scripted-delays",
+            "severity": 1,
+            "title": "Hardcoded delays are on the critical path",
+            "finding": "1.9s (33%) of this load is fixed UniTask.Delay-style gates.",
+            "fixAdvice": "These are free wins — replace fixed delays with event-driven readiness (SOAP events / NetworkVariable callbacks) or shrink the constants.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 3.7s during \"InitDelayMs gate before InitializeGame (1000ms)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "errors-during-load",
+            "severity": 1,
+            "title": "Errors fired during the load",
+            "finding": "13 error(s)/exception(s) during load — failures often add retry waits.",
+            "fixAdvice": "Fix the errors first; they may be the hidden cause of the slow path.",
+            "matchedMarker": ""
+        }
+    ]
+}
