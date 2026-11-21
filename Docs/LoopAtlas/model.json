@@ -378,7 +378,7 @@
    "id": "breath",
    "parent": "sitting",
    "at": 4,
-   "in": "x",
+   "in": "px",
    "name": "The breath",
    "tier": 3,
    "kind": "loop",
@@ -411,13 +411,20 @@
    ],
    "reps": "1",
    "repsOf": "per round",
-   "prop": {
-    "s": "add",
-    "note": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off."
-   },
    "src": [
     "proposal"
-   ]
+   ],
+   "plan": {
+    "s": "decided",
+    "note": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off."
+   },
+   "build": {
+    "s": "building",
+    "what": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.",
+    "by": "Garrett",
+    "at": "2026-11-21",
+    "branch": "claude/retain-breath"
+   }
   },
   {
    "id": "toybox",
@@ -1791,18 +1798,24 @@
      "on": "np",
      "q": "The chain orders 4 cards. About 80 others have no order, so after the Hangar opens nothing says what to play next.",
      "fill": "After the Hangar, the chain is per vessel: each hull's flower (see The vessel's flower) is its own short chain of three element games."
-    },
-    {
-     "on": "np",
-     "q": "The loop says each quest needs its mode's top rung (I4), ECONOMY_TABLES says the Hangar opens after about three games. Simulated with I4 on four modes, a casual player reaches the Hangar in about 1% of runs within six weeks; a teen in two days.",
-     "fill": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar."
     }
    ],
    "src": [
     "Docs/MENU_PROGRESSION_AND_IAP.md section 2",
     "Docs/QUEST_TRACK_AND_BREADCRUMB.md",
     "Docs/LoopAtlas/sim/REPORT.md"
-   ]
+   ],
+   "plan": {
+    "s": "decided",
+    "note": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar."
+   },
+   "build": {
+    "s": "building",
+    "what": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar.",
+    "by": "Garrett",
+    "at": "2026-11-21",
+    "branch": "claude/retain-economy"
+   }
   },
   {
    "id": "arc.fleet",
@@ -2200,18 +2213,24 @@
      "on": "np",
      "q": "A group of four meets three seats everywhere: a squad, a voyage party, a team in Brood Rush. Simulated, one of the Night Crew sits out 47% of their team matches. No crew vessel has an arena card, so a crew vessel cannot take the fourth.",
      "fill": "P15: every crew vessel seats at least one arena card and a voyage squad, so two people share one seat and four friends fit three seats."
-    },
-    {
-     "on": "np",
-     "q": "In a party of friends the payout pays one friend 200 and the others 50 or nothing, so the weakest friend in a group falls weeks behind on vessels and the group's shared progress splits.",
-     "fill": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided."
     }
    ],
    "src": [
     "Docs/claude/MULTIPLAYER_AND_SOCIAL.md",
     "Docs/Voyages/PARTY.md",
     "Docs/LoopAtlas/sim/REPORT.md"
-   ]
+   ],
+   "plan": {
+    "s": "decided",
+    "note": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided."
+   },
+   "build": {
+    "s": "building",
+    "what": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided.",
+    "by": "Garrett",
+    "at": "2026-11-21",
+    "branch": "claude/retain-economy"
+   }
   },
   {
    "id": "arc.replay",
@@ -3034,7 +3053,9 @@
     "breath",
     "sitting",
     "arcade"
-   ]
+   ],
+   "stage": "building",
+   "branch": "claude/retain-breath"
   },
   {
    "id": "P6",
@@ -3082,7 +3103,9 @@
    "touches": [
     "voyages",
     "arc.fleet"
-   ]
+   ],
+   "stage": "building",
+   "branch": "claude/retain-economy"
   },
   {
    "id": "P11",
@@ -3109,7 +3132,9 @@
     "voy.place",
     "voy.home",
     "sitting"
-   ]
+   ],
+   "stage": "building",
+   "branch": "claude/retain-voyage-chapters"
   },
   {
    "id": "P14",
@@ -3120,7 +3145,9 @@
     "arc.unlock",
     "toybox",
     "fleet"
-   ]
+   ],
+   "stage": "building",
+   "branch": "claude/retain-makers"
   },
   {
    "id": "P15",
@@ -3143,7 +3170,9 @@
     "toy.paint",
     "arc.replay",
     "arc.fleet"
-   ]
+   ],
+   "stage": "building",
+   "branch": "claude/retain-makers"
   }
  ],
  "fleet": {
