@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using CosmicShore.Core;
 using CosmicShore.Editor.Froglet;
+using CosmicShore.ScriptableObjects;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -19,7 +21,9 @@ namespace CosmicShore.Editor
     /// the same player.
     ///
     /// <para><b>What it sets, for this build only.</b> The four scenes the toybox needs
-    /// (<see cref="Scenes"/>, whatever the global Build Settings list holds) and the
+    /// (<see cref="Scenes"/>) plus the scene of every card <see cref="WebBuildScopeSO"/> lists
+    /// (<see cref="ScopeAssetPath"/>; Beta Phase 1: Squirrel's games, every Time game, Regatta and the
+    /// Maelstrom), whatever the global Build Settings list holds, and the
     /// <see cref="WebToybox.Define"/> scripting define, passed through
     /// <see cref="BuildPlayerOptions.extraScriptingDefines"/> so it never lands in
     /// <c>ProjectSettings.asset</c> and no other build can carry it. The WebGL player settings
@@ -57,6 +61,9 @@ namespace CosmicShore.Editor
             "Assets/_Scenes/Voyage.unity",
         };
 
+        /// <summary>The browser build's card scope, whose cards' scenes join <see cref="Scenes"/> in the build.</summary>
+        public const string ScopeAssetPath = "Assets/Resources/" + WebBuildScopeSO.ResourcePath + ".asset";
+
         /// <summary>Default output folder, relative to the project root. Git-ignored (<c>/[Bb]uilds/</c>).</summary>
         public const string DefaultOutputFolder = "Builds/WebGLToybox";
 
@@ -69,7 +76,7 @@ namespace CosmicShore.Editor
 
         [MenuItem("FrogletTools/Build/WebGL Toybox", false, 123)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 3,
-            Description = "Browser Toybox WebGL build: four scenes, FROGLET_WEB_TOYBOX, Builds/WebGLToybox.",
+            Description = "Browser WebGL build: the Toybox plus the WebBuildScope cards, FROGLET_WEB_TOYBOX, Builds/WebGLToybox.",
             DocPath = "Docs/WEBGL_TOYBOX.md")]
         public static void Build() => Run(development: HasFlag("-development"));
 
@@ -193,14 +200,47 @@ namespace CosmicShore.Editor
             if (batch) EditorApplication.Exit(ok ? 0 : 1);
         }
 
-        /// <summary>Every toybox scene, checked to exist; throws naming the missing one.</summary>
-        static string[] RequireScenes()
+        /// <summary>
+        /// Every scene the browser build carries, checked to exist: <see cref="Scenes"/>, then each
+        /// <see cref="WebBuildScopeSO"/> card's scene in the scope's order. Throws naming what is missing, so a
+        /// card whose scene cannot be found fails the build instead of shipping a card that cannot launch.
+        /// </summary>
+        public static string[] RequireScenes()
         {
             foreach (string path in Scenes)
                 if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null)
                     throw new FileNotFoundException(
                         $"The browser Toybox needs {path}, and there is no scene there. Update WebToyboxBuild.Scenes.");
-            return Scenes.ToArray();
+
+            var scope = AssetDatabase.LoadAssetAtPath<WebBuildScopeSO>(ScopeAssetPath);
+            if (!scope)
+                throw new FileNotFoundException(
+                    $"The browser build's card scope {ScopeAssetPath} is missing. Run Tools/Build/web_build_scope.py --write.");
+
+            var scenes = new List<string>(Scenes);
+            foreach (var game in scope.Games)
+            {
+                if (!game)
+                    throw new InvalidDataException($"{ScopeAssetPath} lists an empty or missing card.");
+                string name = (game.SceneName ?? string.Empty).Trim();
+                string path = ResolveScenePath(name)
+                    ?? throw new FileNotFoundException(
+                        $"{game.name} names scene '{name}', and no scene has that name. Fix the card or drop it from {ScopeAssetPath}.");
+                if (!scenes.Contains(path)) scenes.Add(path);
+            }
+            return scenes.ToArray();
+        }
+
+        /// <summary>The scene asset whose file name is exactly <paramref name="sceneName"/>, or null.</summary>
+        static string ResolveScenePath(string sceneName)
+        {
+            if (string.IsNullOrEmpty(sceneName)) return null;
+            foreach (var guid in AssetDatabase.FindAssets($"t:Scene {sceneName}"))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (Path.GetFileNameWithoutExtension(path) == sceneName) return path;
+            }
+            return null;
         }
 
         // ──────────────────────────────────────────────

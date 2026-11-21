@@ -68,11 +68,33 @@ so unlocks and painting progress persist per browser.
 in the Editor, so the toybox path can be played before it is built). Everywhere else the loopback
 `UnityTransport` host is unchanged.
 
-## 3. Menu: the toybox and nothing else
+## 3. Menu: the toybox, and the cards the scope lists
 
-- `ScreenSwitcher.IsModalInWebToybox`: Toybox, Toybox configure, Settings and Credits open; every other
-  modal is refused, and `WebToyboxTests` enumerates the enum, so a new modal is refused until someone decides.
-- Every screen but HOME, and the Arcade, Arena and Mission hub entries, read **Locked: "In the full game"**.
+**Beta Phase 1 scope (Shombith, 2026-11-21):** "web has the toybox, all of squirrel's games and all the time games and
+arena's regatta unlocked. Maelstrom only picks between time games: I1 2 games, I2 4, I3 6, I4 8." No Missions, no
+Voyages, no other Arena game, no multiplayer.
+
+- **One asset decides it:** `WebBuildScopeSO` at `Assets/Resources/WebBuildScope.asset`, written by
+  `python3 Tools/Build/web_build_scope.py --write` from that rule (cards read from the shipped assets: every ArcadeGames
+  card that seats the Squirrel, every non-party Time card, the Regatta card, the Maelstrom card). `--check` (a `/ship`
+  gate) fails when the asset drifts or a rule breaks; `WebBuildScopeTests` holds the same in Unity.
+- **The build** adds every listed card's scene to the four Toybox scenes (`WebToyboxBuild.RequireScenes`), and fails
+  naming any card whose scene it cannot find.
+- **The menu** opens the Arcade and Arena windows and their configure panels and the Maelstrom's
+  (`ScreenSwitcher.IsModalInWebToybox`); the grids show only cards `WebToybox.Offers` accepts. The weekly challenge card
+  is hidden (its board is a UGS leaderboard).
+- **The Maelstrom** deals from the scope's buckets instead of `MaelstromData`'s own (`MaelstromDataSO.ActiveTiers`).
+  Buckets are exclusive, as in the full game: a run at intensity N draws only bucket N. The 20 dealt Time games are
+  ordered by their full-game tier, then measured maturity (`maelstrom_tiers.json`); Decoy Run, Perch Run and Spearline
+  are in the Arcade but never dealt. Edit `TIERS` in the script and `--write` to re-deal.
+- **Test it** as a real WebGL build on localhost (§0 steps 2-3), not as an artifact.
+
+What follows is the freestyle Toybox's own menu rules, unchanged:
+
+- `ScreenSwitcher.IsModalInWebToybox`: Toybox, Toybox configure, Settings, Credits, and (since 2026-11-21) the
+  Arcade, Arena and their configure windows open; every other modal is refused, and `WebToyboxTests` enumerates the
+  enum, so a new modal is refused until someone decides.
+- Every screen but HOME, and the Mission hub entry, read **Locked: "In the full game"**.
   The layout stays intact, the tap explains itself, and it points at the full game.
 - `OfflineUIGate` keeps hiding online-only UI but no longer reveals the offline notice or reconnect button.
   `OnlineStatusIndicator` and `ReconnectButton` hide themselves, and `ReconnectService.ReconnectAsync` refuses.

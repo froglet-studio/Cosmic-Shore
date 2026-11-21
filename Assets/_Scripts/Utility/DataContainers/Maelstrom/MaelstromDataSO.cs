@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Soap;
@@ -436,7 +437,8 @@ namespace CosmicShore.Utility
             var result = new List<SO_ArcadeGame>();
             if (GameQueue == null) return result;
 
-            if (IntensityTiers != null && IntensityTiers.Count > 0)
+            var tiers = ActiveTiers;
+            if (tiers != null && tiers.Count > 0)
             {
                 int level = Mathf.Clamp(intensity <= 0 ? 1 : intensity, 1, 4);
 
@@ -448,16 +450,42 @@ namespace CosmicShore.Utility
                 if (result.Count > 0) return result;
             }
 
+            // The legacy whole-queue pool - in the browser build only the cards it carries, because a draw
+            // of any other card would load a scene the build does not have.
             foreach (var game in GameQueue)
-                if (game != null) result.Add(game);
+                if (game != null && WebToybox.Offers(game)) result.Add(game);
             return result;
         }
+
+        /// <summary>
+        /// The buckets this build deals from: <see cref="WebBuildScopeSO.MaelstromTiers"/> in the browser build
+        /// (Shombith, 2026-11-21: Time games only, 2 / 4 / 6 / 8 by intensity), <see cref="IntensityTiers"/>
+        /// everywhere else.
+        /// </summary>
+        public List<MaelstromIntensityTier> ActiveTiers
+        {
+            get
+            {
+                if (!WebToybox.IsBuild) return IntensityTiers;
+                var scope = WebBuildScopeSO.Load();
+                return scope ? scope.MaelstromTiers : null;
+            }
+        }
+
+        /// <summary>
+        /// True when this build's Maelstrom can ever deal <paramref name="game"/>, so a roster list (the launch
+        /// panel's pool, the hub's pool count) leaves out what this build does not carry. Every queued card
+        /// outside the browser build, where a card in no bucket still shows, greyed.
+        /// </summary>
+        public bool IsInThisBuildsPool(SO_ArcadeGame game) =>
+            game != null && (!WebToybox.IsBuild || UnlockIntensityOf(game) > 0);
 
         /// <summary>True when the <paramref name="intensity"/> bucket lists <paramref name="game"/>.</summary>
         public bool IsInTier(SO_ArcadeGame game, int intensity)
         {
-            if (game == null || IntensityTiers == null) return false;
-            foreach (var tier in IntensityTiers)
+            var tiers = ActiveTiers;
+            if (game == null || tiers == null) return false;
+            foreach (var tier in tiers)
                 if (tier?.Games != null && Mathf.Clamp(tier.Intensity, 1, 4) == intensity && tier.Games.Contains(game))
                     return true;
             return false;
@@ -485,10 +513,11 @@ namespace CosmicShore.Utility
         public int UnlockIntensityOf(SO_ArcadeGame game)
         {
             if (game == null) return 0;
-            if (IntensityTiers == null || IntensityTiers.Count == 0) return 1;
+            var tiers = ActiveTiers;
+            if (tiers == null || tiers.Count == 0) return WebToybox.Offers(game) ? 1 : 0;
 
             int best = 0;
-            foreach (var tier in IntensityTiers)
+            foreach (var tier in tiers)
             {
                 if (tier?.Games == null) continue;
                 if (!tier.Games.Contains(game)) continue;

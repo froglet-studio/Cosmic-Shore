@@ -58,7 +58,7 @@ namespace CosmicShore.UI
             int used = 0;
             foreach (var game in tournamentData.GameQueue)
             {
-                if (!game) continue;
+                if (!game || !tournamentData.IsInThisBuildsPool(game)) continue;
 
                 var row = RowAt(used);
                 if (!row) break;
