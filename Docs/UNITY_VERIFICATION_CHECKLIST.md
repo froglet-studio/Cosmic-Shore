@@ -24891,10 +24891,12 @@ not this change). Measured in `Docs/Multiplayer/BUGS.md` (the 41% row).
 
 - [x] Solo online boots in the editor: the Garland is laid during "Creating session"; the menu shows 6.8-7.5 s after Menu_Main loads (about 10.5 s before).
 - [x] When the host is slower than the lay: the menu fades in with UI input off; input comes back when the vessel spawns.
-- [ ] A focused editor or a build: the menu dissolves smoothly while the session is still being created (the background editor here ran at about 4 fps, so its fades crawled).
-- [ ] Click ARCADE, TOY BOX and the cell during the early menu: nothing happens until the vessel is in.
-- [ ] Block the network after sign-in (or a Relay failure): about 12 s after the early reveal the loading screen comes back with the retry, then "Starting offline".
-- [ ] A first-time player (FTUE): the guided path starts only once the vessel is in.
+- [x] A focused editor (2026-11-21, second run): the splash dissolves in about 1.1 s while the session is still being created; the menu was up 1.7-2.3 s before the host listened. A build is still owed.
+- [x] UI input during the early menu, as a state check (same run): the EventSystem is disabled (`EventSystem.current` null) from the reveal until the vessel spawns, then enabled again. A person still owes the real clicks on ARCADE, TOY BOX and the cell; input that does not go through the EventSystem is not held.
+- [x] The late-host re-cover, forced (the host wait set to 0.5 s by a probe in Play): the warning is logged, the splash covers the menu again with input back on, and the ordinary reveal shows the menu once the host listens and the vessel spawns.
+- [ ] Block the network after sign-in (or a Relay failure): the boot's retry and "Starting offline" screens show on the re-covered splash.
+- [x] A first-time player (FTUE), by reading the code: `QuestGraphRunner.TryStart` runs only from `OnClientReady` (the vessel) and `FTUEEventManager.InitializeFTUE`, which nothing calls. A person still owes a first-run boot.
+- [ ] A build, and two machines.
 
 ## 🟡 The boot's 41% "Creating session": no redundant identity republish on the party create (2026-11-21, Yash, COMPILED and PLAYED by a session)
 
