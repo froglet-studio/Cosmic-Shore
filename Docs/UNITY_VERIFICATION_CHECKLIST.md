@@ -25852,7 +25852,8 @@ configs: 0 errors in the changed files; the remaining errors are this sandbox's 
 no Unity editor, so `SerpentWallSyncTests` has not run. What changed is in `R_VesselActions/SERPENT_SEED_WALL.md`
 "Multiplayer"; protocol 39 (both machines need this build).
 
-- [ ] EditMode `SerpentWallSyncTests` (4) pass.
+- [ ] EditMode `SerpentWallSyncTests` pass (the flag table: 29 cases, plus 3 tests).
+- [ ] Host + client, an AI Sparrow and an AI Squirrel: the client sees the Sparrow's shots break prisms and the Squirrel's tube rings, where the host does.
 - [ ] MPPM, host + one client, Brood Rush with an AI Serpent on the host: when the AI cloaks, the client sees its
   hull vanish and its wall grow at the same place as the host's; the AI's walls are on both screens.
 - [ ] Host + two clients, client A flies the Serpent and stops (the stance): client B sees A's trail stop and the held
