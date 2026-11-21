@@ -360,8 +360,9 @@ namespace CosmicShore.Data
         // Grizzly Time, the Grizzly's Time race (_Scripts/Controller/Arcade/GRIZZLYTIME.md, Docs/GrizzlyTime/
         // POWDER_KEGS_SPEC.md). Its race beats are the shared 129-132 + 30 (DomainRaceToasts). Posted to the LOCAL pilot
         // only. 300-309 are reserved for Grizzly Time (2026-11-11: parallel Time-game sessions hold 310-429).
-        GrizzlyTimeHint = 300,          // once, at the start: freeze a bomb in the keg, get on its far side, blow it
-        GrizzlyTimeBankShot = 301,      // a keg blown from its exit side threw you down the lane; {0} = how many so far
+        GrizzlyTimeHint = 300,          // once, at the start: bomb a keg or Rush through it; blow a bomb from its exit side
+        GrizzlyTimeBankShot = 301,      // a keg broke beside you and a bomb threw you down its lane; {0} = how many so far
+        GrizzlyTimeRamKey = 302,        // the local pilot's own Rush rammed a keg open; {0} = how many so far
 
         // Brittle Star Time, the Brittle Star's Time race (_Scripts/Controller/Arcade/BRITTLESTARTIME.md section 0, the
         // Shift Line; Docs/BrittleStarTime/SHIFT_LINE_SPEC.md). Its race beats are the shared 129-132 + 30

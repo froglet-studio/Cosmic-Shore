@@ -63,18 +63,22 @@ cat "$OUT/result.txt"
 [ $rc -eq 0 ] || exit $rc
 [ "${1:-}" = "--self-test" ] || exit 0
 
-# Negative controls: each mutated copy must make the tests fail.
-negative() {   # $1 = label, $2 = kegs source, $3 = course source
+# Negative controls: each mutated copy must make the tests fail - and, where a test is named, THAT test (a mutant that
+# only trips some other test proves nothing about the one it was written for).
+negative() {   # $1 = label, $2 = kegs source, $3 = course source, $4 = the test that must fail (optional)
   build "$2" "$3" neg
   set +e; run neg > "$OUT/neg.txt"; local nrc=$?; set -e
   if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
+  if [ -n "${4:-}" ] && ! grep -q "^FAIL .*\.$4:" "$OUT/neg.txt"; then
+    echo "NEGATIVE CONTROL FIRED THE WRONG TEST: $1 (wanted $4)"; grep '^FAIL' "$OUT/neg.txt" | cut -c1-160; exit 1
+  fi
   echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
 }
-mutate() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must contain, $4 = file (kegs|course)
+mutate() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must contain, $4 = file (kegs|course), $5 = test
   local src="$KEGS"; [ "${4:-kegs}" = course ] && src="$COURSE"
   sed "$2" "$src" > "$OUT/mutant.cs"
   grep -q "$3" "$OUT/mutant.cs" || { echo "the mutation did not apply: $1"; exit 1; }
-  if [ "${4:-kegs}" = course ]; then negative "$1" "$KEGS" "$OUT/mutant.cs"; else negative "$1" "$OUT/mutant.cs" "$COURSE"; fi
+  if [ "${4:-kegs}" = course ]; then negative "$1" "$KEGS" "$OUT/mutant.cs" "${5:-}"; else negative "$1" "$OUT/mutant.cs" "$COURSE" "${5:-}"; fi
 }
 mutate "kegs pulled into the mouth" 's/public const float KegOffset = 140f;/public const float KegOffset = 90f;/' 'KegOffset = 90f'
 mutate "chalk inside a keg blast" 's/public const float ChalkFrom = 120f;/public const float ChalkFrom = 40f;/' 'ChalkFrom = 40f'
@@ -82,4 +86,11 @@ mutate "chalk on the ring-to-ring line" 's/public const float ChalkHalfGap = 70f
 mutate "kegs on the outside of the corner" 's/if (deflection >= StraightDegrees && inPlane.sqrMagnitude > 1e-6f) return inPlane.normalized;/if (deflection >= StraightDegrees \&\& inPlane.sqrMagnitude > 1e-6f) return -inPlane.normalized;/' 'return -inPlane.normalized;'
 mutate "I3 core left plain" 's/{ PrismKind.Plain, PrismKind.Plain, PrismKind.Shielded, PrismKind.Shielded }/{ PrismKind.Plain, PrismKind.Plain, PrismKind.Plain, PrismKind.Shielded }/' 'PrismKind.Plain, PrismKind.Plain, PrismKind.Plain, PrismKind.Shielded'
 mutate "I4 mouth back to 46" 's/RingRadius = new\[\] { 96f, 84f, 74f, 66f }/RingRadius = new[] { 96f, 84f, 74f, 46f }/' '74f, 46f' course
+mutate "blow point back on the entry side" 's/=> keg.Centre + keg.ExitDir \* standOff;/=> keg.Centre - keg.ExitDir * standOff;/' '=> keg.Centre - keg.ExitDir \* standOff;' kegs Every_keg_can_be_blown_from_its_exit_side_inside_its_credit_radius
+mutate "a Rush reads as a bank shot" 's/public const float BankShotMinPush = 150f;/public const float BankShotMinPush = 0f;/' 'BankShotMinPush = 0f' kegs A_Rush_alone_is_not_a_bank_shot
+mutate "the ram reaches the pass beside a keg" 's/public static float RamReach => RamRadius + CoreCube \* 0.5f;/public static float RamReach => RamRadius + 60f;/' 'RamReach => RamRadius + 60f' kegs A_Rush_through_the_core_opens_the_keg_and_a_pass_beside_it_does_not
+mutate "the ram misses the core" 's/return (keg.Centre + across \* along - hull).sqrMagnitude <= reach \* reach;/return false;/' 'return false;' kegs A_Rush_through_the_core_opens_the_keg_and_a_pass_beside_it_does_not
+mutate "the AI Rushes mid-launch" 's/if (push > AIRushMaxPush) return false;/if (push < 0f) return false;/' 'if (push < 0f) return false;' kegs The_AI_rushes_only_on_a_lined_up_straight_outside_a_launch
+mutate "the AI Rushes with no Energy to spare" 's/if (energy < energyCost + Mathf.Max(0f, energyHeadroom) - 1e-4f) return false;/if (energy < energyCost - 1e-4f) return false;/' 'if (energy < energyCost - 1e-4f) return false;' kegs The_AI_rushes_only_on_a_lined_up_straight_outside_a_launch
+mutate "the ram radius drifts from the Rush" 's/public const float RamRadius = 16f;/public const float RamRadius = 12f;/' 'RamRadius = 12f' kegs Ram_constants_match_the_shipped_Rush
 echo "grizzly_time_course_harness self-test: ok"

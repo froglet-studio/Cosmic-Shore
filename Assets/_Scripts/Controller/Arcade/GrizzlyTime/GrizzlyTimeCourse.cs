@@ -58,15 +58,15 @@ namespace CosmicShore.Gameplay
 
         /// <summary>`minBlastScale` / `maxBlastScale` on GrizzlyTriggerBombConfig.asset - a tap's
         /// blast and a full squeeze's.</summary>
-        public const float MinBlastScale = 50f;
-        public const float MaxBlastScale = 200f;
+        public const float MinBlastScale = 20f;
+        public const float MaxBlastScale = 80f;
 
         /// <summary>`ExplosionDuration` on AOEGrizzlyExplosion.prefab. An AOE's impulse speed is
         /// <c>MaxScale / ExplosionDuration</c> (<c>AOEExplosion</c>, Inertia 1).</summary>
         public const float ExplosionDuration = 1.2f;
 
         /// <summary>`selfLaunchMultiplier` on GrizzlyTriggerBombConfig.asset.</summary>
-        public const float SelfLaunchMultiplier = 4.5f;
+        public const float SelfLaunchMultiplier = 11.25f;
 
         /// <summary>`selfLaunchSeconds` on GrizzlyTriggerBombConfig.asset - seconds a launch lives
         /// (cosine ease-out).</summary>

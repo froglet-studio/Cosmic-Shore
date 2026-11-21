@@ -1,0 +1,3 @@
+# Exact repo paths allowed to be ADDED to git over the size limit outside LFS (Tools/Build/check_large_files.py).
+# One path per line. Add one only after the repo owner agrees; prefer .gitignore or `git lfs track`.
+# Docs/BRANCH_POLICY.md.

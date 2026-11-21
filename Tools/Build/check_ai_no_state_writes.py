@@ -51,6 +51,9 @@ SCOPES = [
     # a vessel. Two FILES (a scope may be one): the rest of that folder is the race and its heat, which move scenery.
     "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeCoach.cs",
     "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeController.Coach.cs",
+    # Grizzly Time's AI (2026-11-20): where it aims and when it presses Rush (the replicated press) - nothing it may write
+    # to a vessel. One FILE: the rest of that folder is the race and its kegs, which move scenery.
+    "Assets/_Scripts/Controller/Arcade/GrizzlyTime/GrizzlyTimeController.AI.cs",
 ]
 
 # Members whose assignment changes the world rather than the pilot's input.

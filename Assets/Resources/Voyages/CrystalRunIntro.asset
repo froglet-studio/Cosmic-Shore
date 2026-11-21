@@ -108,6 +108,7 @@ MonoBehaviour:
     Path: 
   goWord: GO
   skipHint: Hold B to skip
+  touchSkipHint: Hold here to skip
   skippableAfterFirstRun: 1
   holdToSkipSeconds: 0.6
   skipGraceSeconds: 0.5

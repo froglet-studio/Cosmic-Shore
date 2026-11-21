@@ -1,0 +1,21 @@
+# Dependabot keeps the GitHub Actions our workflows use up to date. Every action is pinned to a
+# commit (a tag can be moved to point at other code; a commit cannot), and Dependabot bumps those
+# pins, with the version in the trailing comment, when the action ships a new release.
+#
+# Only GitHub Actions are covered: Dependabot cannot read Unity's Packages/manifest.json.
+# Security fixes for any ecosystem GitHub can read still arrive through Dependabot security
+# updates (Settings > Code security), which do not need this file.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(ci)"
