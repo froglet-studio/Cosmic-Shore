@@ -62,6 +62,8 @@ DOC_ROOTS = ["Docs"]
 SKIP_DIRS = {".git", "Library", "Temp", "Logs", "obj", "node_modules", "code-out"}
 MAX_LIST = 64           # list elements kept per serialized list; the rest is counted
 MAX_VAL = 160           # characters of a value shown
+MAX_PROSE = 1600        # characters of a value that is prose a person wrote (a description, a label)
+MAX_DOC = 2400          # characters of a /// doc comment kept
 MAX_DOC_BYTES = 2_000_000  # a YAML document bigger than this (baked meshes, terrain) is summarised, not read
 SHARD_TARGET = 900_000  # raw bytes per shard (about 90 KB gzipped)
 MAX_SHARDS = 220        # the artifact takes 255 files a publish (shards + atlases + index + names)
@@ -277,17 +279,107 @@ def _strip_attrs(masked: str, orig: str) -> tuple[str, str, list[str]]:
     return masked[i:], orig[i:], attrs
 
 
-def _attr_value(attrs: list[str], name: str) -> str | None:
+_STR = r'"((?:[^"\\]|\\.)*)"'
+
+
+def _attr_calls(attrs: list[str]):
+    """Each attribute in [A(...), B] blocks as (name, argument text), reading string literals whole (a comma or a
+    bracket inside a tooltip is text, not syntax)."""
     for a in attrs:
-        for part in _split_top(a, ","):
-            m = re.match(r"\s*(?:\w+\.)*" + name + r"(?:Attribute)?\s*\(\s*\"((?:[^\"\\]|\\.)*)\"", part)
-            if m:
-                return m.group(1)
+        i, n = 0, len(a)
+        while i < n:
+            m = re.compile(r"\s*,?\s*((?:\w+\.)*\w+)\s*").match(a, i)
+            if not m or not m.group(1):
+                break
+            name, i = m.group(1).split(".")[-1], m.end()
+            args = ""
+            if i < n and a[i] == "(":
+                depth, j, ins = 0, i, False
+                while j < n:
+                    c = a[j]
+                    if ins:
+                        if c == "\\":
+                            j += 1
+                        elif c == '"':
+                            ins = False
+                    elif c == '"':
+                        ins = True
+                    elif c == "(":
+                        depth += 1
+                    elif c == ")":
+                        depth -= 1
+                        if depth == 0:
+                            break
+                    j += 1
+                args, i = a[i + 1:j], j + 1
+            yield (name[:-9] if name.endswith("Attribute") else name), args
+
+
+def _strings(text: str) -> str | None:
+    """A run of "a" + "b" literals at the start of text, joined."""
+    lm = re.match(r"\s*((?:" + _STR + r"\s*\+?\s*)+)", text, re.S)
+    if not lm:
+        return None
+    return "".join(re.findall(_STR, lm.group(1))).replace('\\"', '"').replace("\\n", " ")
+
+
+def _attr_value(attrs: list[str], name: str, arg: str | None = None) -> str | None:
+    """The string argument of [Name("...")] (or of its named argument `arg`), with "a" + "b" concatenations joined."""
+    for nm, args in _attr_calls(attrs):
+        if nm != name:
+            continue
+        if arg:
+            am = re.search(r"\b" + arg + r"\s*=\s*", args)
+            if am:
+                v = _strings(args[am.end():])
+                if v is not None:
+                    return v
+            continue
+        v = _strings(args)
+        if v is not None:
+            return v
     return None
 
 
+def _attr_range(attrs: list[str]) -> str | None:
+    """[Range(a, b)] or [Min(a)] as "a to b" / "at least a"."""
+    for nm, args in _attr_calls(attrs):
+        parts = [x.strip().rstrip("fF") for x in args.split(",")]
+        if nm == "Range" and len(parts) == 2:
+            return f"{parts[0]} to {parts[1]}"
+        if nm == "Min" and len(parts) == 1 and parts[0]:
+            return f"at least {parts[0]}"
+    return None
+
+
+def doc_comment(lines: list[str], line_no: int) -> str | None:
+    """The /// XML doc comment that ends just above 1-based line_no (attribute lines between are skipped), as plain
+    text: tags dropped, <see cref="X"/> kept as X, <para> as a paragraph break. This is what the author wrote for a
+    person, so the map shows it before the code."""
+    i = line_no - 2
+    while i >= 0 and lines[i].strip().startswith("[") and not lines[i].strip().startswith("///"):
+        i -= 1
+    got = []
+    while i >= 0 and lines[i].strip().startswith("///"):
+        got.append(lines[i].strip()[3:])
+        i -= 1
+    if not got:
+        return None
+    text = "\n".join(reversed(got))
+    text = re.sub(r"<(?:see|seealso|paramref|typeparamref)\s+(?:cref|name|langword)=\"(?:[A-Z]:)?([^\"]+)\"\s*/>", lambda m: m.group(1).rsplit(".", 1)[-1], text)
+    text = re.sub(r"<(?:see|seealso)\s+[^>]*>(.*?)</(?:see|seealso)>", r"\1", text, flags=re.S)
+    text = re.sub(r"<param\s+name=\"([^\"]+)\">", r"\n\1: ", text)
+    text = re.sub(r"<returns>", "\nReturns ", text)
+    text = re.sub(r"</?para\s*/?>|<br\s*/?>", "\n\n", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
+    paras = [" ".join(p.split()) for p in re.split(r"\n\s*\n", text)]
+    out = "\n".join(p for p in paras if p)
+    return out[:MAX_DOC] if out else None
+
+
 def _has_attr(attrs: list[str], name: str) -> bool:
-    return any(re.match(r"\s*(?:\w+\.)*" + name + r"(?:Attribute)?\b", p) for a in attrs for p in _split_top(a, ","))
+    return any(nm == name for nm, _ in _attr_calls(attrs))
 
 
 def parse_cs(src: str) -> dict:
@@ -301,6 +393,7 @@ def parse_cs(src: str) -> dict:
         if ch == "\n":
             ln += 1
     line_of[len(src)] = ln
+    src_lines = src.split("\n")
     types: list[dict] = []
     file_ns = None
     stack: list[dict] = []   # {"kind": ns|type|other, ...}
@@ -360,13 +453,15 @@ def parse_cs(src: str) -> dict:
                 mods = set(text[:mdecl.start()].split())
                 t = {"kind": kind, "name": name, "gen": gen, "bases": bases, "ns": cur_ns(), "line": line_of[a],
                      "outer": parent["t"] if parent else None, "members": [], "body_start": i + 1,
-                     "attrs": attrs, "mods": sorted(mods & _KW), "header": None}
+                     "attrs": attrs, "mods": sorted(mods & _KW), "header": None,
+                     "doc": doc_comment(src_lines, line_of[a]), "menu": _attr_value(attrs, "CreateAssetMenu", "menuName")}
                 types.append(t)
                 stack.append({"kind": "type", "t": t, "header": None})
             else:
                 ct = stack[-1] if stack and stack[-1]["kind"] == "type" else None
                 if ct is not None and text:
-                    _member(ct, text, o_txt, attrs, line_of[first_code(i - len(m_txt))], body=True)
+                    _member(ct, text, o_txt, attrs, line_of[first_code(i - len(m_txt))], body=True,
+                            doc=doc_comment(src_lines, line_of[a]))
                 stack.append({"kind": "other"})
             stmt = i + 1
         elif ch == "}":
@@ -403,7 +498,8 @@ def parse_cs(src: str) -> dict:
             if fm and (top is None or top["kind"] == "ns"):
                 file_ns = fm.group(1)
             elif top is not None and top["kind"] == "type" and text:
-                _member(top, text, " ".join(o_txt.split()), attrs, line_of[first_code(i - len(m_txt))], body=False)
+                _member(top, text, " ".join(o_txt.split()), attrs, line_of[first_code(i - len(m_txt))], body=False,
+                        doc=doc_comment(src_lines, line_of[a]))
             stmt = i + 1
         i += 1
     for t in types:
@@ -411,47 +507,7 @@ def parse_cs(src: str) -> dict:
     return {"types": types, "masked": masked}
 
 
-_DOC_TAG = re.compile(r"<see\s+(?:cref|langword)=\"([^\"]+)\"\s*/>|<paramref\s+name=\"([^\"]+)\"\s*/>|<[^>]+>")
-
-
-def doc_summaries(src: str, cap: int = 320) -> dict[int, str]:
-    """Each /// doc comment as plain text, keyed by every line from the end of the comment to the declaration it
-    documents (attribute lines included), so a type or member finds its summary by its own line number. This is the
-    sentence a person wrote for whoever opens the node: the map shows it first (Garrett, 2026-11-21: lead with what a
-    human wants to inspect)."""
-    lines = src.splitlines()
-    out: dict[int, str] = {}
-    i = 0
-    while i < len(lines):
-        if not lines[i].lstrip().startswith("///"):
-            i += 1
-            continue
-        block = []
-        while i < len(lines) and lines[i].lstrip().startswith("///"):
-            block.append(lines[i].lstrip()[3:])
-            i += 1
-        text = " ".join(block)
-        m = re.search(r"<summary>(.*?)</summary>", text, re.S)
-        text = m.group(1) if m else re.sub(r"<(param|returns|typeparam|remarks)\b.*", "", text, flags=re.S)
-        text = re.split(r"<para>", text)[0] or text  # the first paragraph is the summary; the rest is the essay
-        text = _DOC_TAG.sub(lambda mm: (mm.group(1) or mm.group(2) or "").split(".")[-1].replace("T:", ""), text)
-        text = " ".join(text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").split())
-        if not text:
-            continue
-        if len(text) > cap:
-            cut = text.rfind(". ", 0, cap)
-            text = text[:cut + 1] if cut > cap // 3 else text[:cap].rstrip() + "…"
-        j = i
-        while j < len(lines):
-            out[j + 1] = text
-            s = lines[j].strip()
-            if s and not s.startswith("[") and not s.startswith("//"):
-                break
-            j += 1
-    return out
-
-
-def _member(scope: dict, text: str, orig: str, attrs: list[str], line: int, body: bool):
+def _member(scope: dict, text: str, orig: str, attrs: list[str], line: int, body: bool, doc: str | None = None):
     t = scope["t"]
     header = _attr_value(attrs, "Header")
     if header is not None:
@@ -467,6 +523,14 @@ def _member(scope: dict, text: str, orig: str, attrs: list[str], line: int, body
     m = {"line": line, "mods": mods, "header": scope["header"]}
     if tooltip:
         m["tip"] = tooltip
+    if doc:
+        m["doc"] = doc
+    rng = _attr_range(attrs)
+    if rng:
+        m["rng"] = rng
+    was = [v for v in (_strings(a) for nm, a in _attr_calls(attrs) if nm == "FormerlySerializedAs") if v]
+    if was:
+        m["was"] = was
     eq = _top_index(rest, "=")
     par = rest.find("(")
     arrow = rest.find("=>")
@@ -593,6 +657,8 @@ def flatten(val, key: str, out: list):
         s = _scalar(val)
         if isinstance(val, str) and len(val) > 40 and re.fullmatch(r"[0-9a-f]+", val):
             s = f"<{len(val) // 2} bytes of data>"
+        elif isinstance(val, str) and len(val) > MAX_VAL and " " in val:
+            s = " ".join(val.split())[:MAX_PROSE]   # prose a person wrote: keep it whole, it is what they read first
         out.append((key, s))
 
 
@@ -691,7 +757,6 @@ class Builder:
                 self.say(f"  parse failed {path}: {e}")
                 continue
             self.cs_parsed[path] = parsed
-            sums = doc_summaries(src)
             g.recs[fid]["lines"] = src.count("\n") + 1
             for t in parsed["types"]:
                 full = (t["outer"]["full"] + "." if t["outer"] else (t["ns"] + "." if t["ns"] else "")) + t["name"]
@@ -699,7 +764,7 @@ class Builder:
                 tid = "t:" + full
                 parent = "t:" + t["outer"]["full"] if t["outer"] else fid
                 rec = g.node(tid, "type", t["name"] + (t["gen"] or ""), parent, tk=t["kind"], path=path, l=t["line"],
-                             mods=" ".join(t["mods"]) or None, sum=sums.get(t["line"]))
+                             mods=" ".join(t["mods"]) or None, doc=t.get("doc"), menu=t.get("menu"))
                 if t["outer"] is None and parent != fid:
                     g.child(fid, tid)
                 if t["outer"] is None:
@@ -721,7 +786,7 @@ class Builder:
                     kw = {"tk": mb["kind"], "l": mb["line"], "ty": mb.get("type"), "v": mb.get("value"),
                           "sig": mb.get("sig"), "tip": mb.get("tip"), "hd": mb.get("header"),
                           "ser": mb.get("ser"), "mods": " ".join(mb.get("mods", [])) or None,
-                          "sum": sums.get(mb["line"])}
+                          "doc": mb.get("doc"), "rng": mb.get("rng"), "was": mb.get("was")}
                     g.node("m:" + mid[2:], "member", mb["name"], tid, **kw)
                     self.stats["member " + mb["kind"]] += 1
                 self.stats["type " + t["kind"]] += 1
@@ -742,6 +807,7 @@ class Builder:
                     for ft in self.resolve(type_idents(mb.get("type")), t):
                         g.link(mid, "type", ft, "usedBy")
                         g.link(tid, "uses", ft, "usedByType")
+        self.human_pass()
         for path, parsed in self.cs_parsed.items():
             masked = parsed["masked"]
             for t in parsed["types"]:
@@ -756,6 +822,91 @@ class Builder:
                             if ot not in seen and ot != tid and not ot.startswith(tid + "."):
                                 seen.add(ot)
                                 g.link(tid, "mentions", ot, "mentionedBy")
+
+    def human_pass(self):
+        """What a person sees of a type in Unity's Inspector, stored on the type so the map can show it first
+        (Garrett, 2026-11-21: "if i am inspecting an ability I want to see how it works, what it does, the parameters
+        of interest and what they are ... the stuff that would be seen by looking at its scriptable objects").
+        `role` says whether the type is something a designer touches: a ScriptableObject config (made into assets) or
+        a component (set on prefabs and scenes). `ps` is its parameter sheet in Inspector order, base types first:
+        [field, header, tooltip, default in code, type, member id, range, doc, former serialized names, the
+        [Serializable] type it holds (so a list entry's own fields have their tooltips too), and for an enum field
+        {number: member name} (so a value reads "Mass (2)", not "2")]."""
+        g = self.g
+        role_of: dict[str, str | None] = {}
+
+        def role(tid, seen=()):
+            if tid in role_of:
+                return role_of[tid]
+            t = self.type_info.get(tid)
+            out = None
+            if t and tid not in seen:
+                for b in t["bases"]:
+                    bn = re.sub(r"<.*", "", b).split(".")[-1].strip()
+                    if bn == "ScriptableObject":
+                        out = "config"
+                    elif bn in ("MonoBehaviour", "NetworkBehaviour", "StateMachineBehaviour"):
+                        out = "component"
+                    if out:
+                        break
+                if not out:
+                    for bt in g.recs[tid].get("r", {}).get("base", []):
+                        out = role(bt, seen + (tid,))
+                        if out:
+                            break
+                if not out and t["kind"] in ("struct", "class") and _has_attr(t.get("attrs", []), "Serializable"):
+                    out = "data"
+            role_of[tid] = out
+            return out
+
+        def sheet(tid, seen=()):
+            if tid in seen or tid not in self.type_info:
+                return []
+            rows = []
+            for bt in g.recs[tid].get("r", {}).get("base", [])[:1]:
+                rows += sheet(bt, seen + (tid,))
+            for mb in self.type_info[tid]["members"]:
+                if mb["kind"] == "field" and mb.get("ser") is True:
+                    mid = "m:" + f"{tid}.{mb['name']}"[2:]
+                    hits = self.resolve(type_idents(mb.get("type")), self.type_info[tid])
+                    elt = next((x for x in hits if role(x) == "data"), None)
+                    en = next((enum_map(x) for x in hits if self.type_info.get(x, {}).get("kind") == "enum"), None)
+                    rows.append([mb["name"], mb.get("header"), mb.get("tip"), mb.get("value"), mb.get("type"),
+                                 mid if mid in g.recs else None, mb.get("rng"), (mb.get("doc") or "")[:400] or None,
+                                 mb.get("was"), elt, en])
+            return rows
+
+        enums: dict[str, dict | None] = {}
+
+        def enum_map(tid):
+            """{serialized number: member name}; implicit values count up from the last explicit one."""
+            if tid not in enums:
+                out, nxt = {}, 0
+                for mb in self.type_info[tid]["members"]:
+                    v = mb.get("value")
+                    if v is not None:
+                        try:
+                            nxt = int(v, 0)
+                        except ValueError:
+                            m = re.fullmatch(r"\s*(\d+)\s*<<\s*(\d+)\s*", v)
+                            if not m:
+                                out = None
+                                break
+                            nxt = int(m.group(1)) << int(m.group(2))
+                    out[str(nxt)] = mb["name"]
+                    nxt += 1
+                enums[tid] = out or None
+            return enums[tid]
+
+        for tid in self.type_info:
+            r = role(tid)
+            if not r:
+                continue
+            g.recs[tid]["role"] = r
+            ps = sheet(tid)
+            if ps:
+                g.recs[tid]["ps"] = ps
+            self.stats["human " + r] += 1
 
     def ns_node(self, ns: str):
         parent = "code/namespaces"
@@ -776,7 +927,10 @@ class Builder:
             if len(cands) == 1:
                 out.append(cands[0])
                 continue
-            best = sorted(cands, key=lambda c: -_common_prefix(c[2:], ns))
+            # a nested type is only in scope inside its outer type, so a top-level type wins a tie
+            mine = (ctx.get("full") or "") if ctx else ""
+            best = sorted(cands, key=lambda c: (-_common_prefix(c[2:], ns),
+                                                1 if self.type_info.get(c, {}).get("outer") and not mine.startswith(c[2:].rsplit(".", 1)[0]) else 0))
             out.append(best[0])
         return out
 
@@ -885,7 +1039,7 @@ class Builder:
             if cls == "MonoBehaviour":
                 st = self.type_of_script(data.get("m_Script"))
                 nm = data.get("m_Name")
-                tn = st.rsplit(".", 1)[-1] if st else "Script (unresolved)"
+                tn = st[2:].rsplit(".", 1)[-1] if st else "Script (unresolved)"
                 return f"{nm} ({tn})" if nm and path.endswith(".asset") else tn
             if cls == "PrefabInstance":
                 sp = self.guid_path.get(((data.get("m_SourcePrefab") or {}).get("guid")) or "", "")
@@ -1140,9 +1294,13 @@ class Builder:
             for oid in so_vessel:
                 if re.search(r"(^|[^A-Za-z])" + re.escape(V) + r"([^A-Za-z]|$)", oid.split("#")[0].rsplit("/", 1)[-1]):
                     g.link(vid, "code", oid.split("#")[0].replace("o:", "f:", 1), "loops")
+            prefab = "f:Assets/_Prefabs/Spacevessels/" + V + ".prefab"
+            if prefab in g.recs:
+                g.link(vid, "code", prefab, "loops")
             amap = "f:Assets/Resources/ElementalAbilityMaps/" + V + ".asset"
             if amap in g.recs:
                 g.link(vid, "code", amap, "loops")
+                self.ability_links(V, amap, f)
             for short, tids in self.types_by_short.items():
                 if short.startswith(V) and len(short) > len(V) and short[len(V)].isupper():
                     for tid in tids[:1]:
@@ -1183,6 +1341,49 @@ class Builder:
                 for h in hits:
                     g.link(lnode, "code", h, "loops")
 
+    ELEMENTS = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
+
+    def ability_links(self, V: str, amap: str, f: dict):
+        """An ability (a verb on the map) opens on what a designer reads and tunes: its entry in the vessel's
+        ElementalAbilityMap (label, description, upgrade, unlock level) and the action assets bound to its input on the
+        vessel prefab (_inputEventShipActions / _touchActionOverrides, matched on the entry's Input). The entry is a
+        value id (a row of the map's object), so it is linked one way: it has no record of its own to link back from."""
+        g = self.g
+        mo = next((c for c in g.recs[amap].get("c", []) if c.startswith("o:")), None)
+        if not mo:
+            return
+        rows = g.recs[mo].get("f", [])
+        prefab = "Assets/_Prefabs/Spacevessels/" + V + ".prefab"
+        binds = defaultdict(list)   # input event -> action asset file ids
+        if "f:" + prefab in g.recs:
+            pre_id = "o:" + prefab + "#"
+            for oid in [i for i in g.recs if i.startswith(pre_id)]:
+                fr = g.recs[oid].get("f", [])
+                for k, v, *ref in fr:
+                    m = re.match(r"(_inputEventShipActions|_touchActionOverrides|_gamepadActionOverrides)\[(\d+)\]\.InputEvent$", k)
+                    if m:
+                        pre = f"{m.group(1)}[{m.group(2)}].ShipActions["
+                        for k2, v2, *ref2 in fr:
+                            if k2.startswith(pre) and ref2:
+                                tgt = ref2[0]
+                                binds[(m.group(1), str(v))].append(tgt.split("#")[0].replace("o:", "f:", 1))
+        for E, verb in (f.get("verbs") or {}).items():
+            vid = f"L:verb/{V}/{E}"
+            if vid not in g.recs or E not in self.ELEMENTS:
+                continue
+            j = next((m.group(1) for k, v, *_ in rows for m in [re.match(r"entries\[(\d+)\]\.Element$", k)]
+                      if m and str(v) == str(self.ELEMENTS[E])), None)
+            if j is None:
+                continue
+            g.rel(vid, "ability", "v:" + mo[2:] + f"|entries[{j}]")
+            inp = next((str(v) for k, v, *_ in rows if k == f"entries[{j}].Input"), "0")
+            if inp == "0":
+                continue
+            # touch and the primary input list share the entry's InputEvent numbering
+            for key in (("_touchActionOverrides", inp), ("_inputEventShipActions", inp)):
+                for fa in binds.get(key, []):
+                    if fa in g.recs:
+                        g.link(vid, "ability", fa, "abilityOf")
     def ability_assets(self, vessel: str, ability: str) -> list[str]:
         """The ScriptableObjects a person tunes for one ability: its Ability asset (`Ability<Vessel><Name>`) and the
         vessel's action assets whose name shares a word with the ability's name."""
@@ -1205,17 +1406,9 @@ class Builder:
         return out[:8]
 
     def human_first(self):
-        """Put what a person inspects first (Garrett, 2026-11-21: deep code should not read like a generated API; an
-        ability shows how it works, what it does and its parameters, from its ScriptableObjects and the other
-        human-facing parts, before the code). An object made from a script carries its script's summary as `ws`; a
-        loop's code is ordered abilities, tuned assets, docs, prefabs, then code."""
+        """A loop's code in the order a person inspects it: abilities, tuned assets, docs, prefabs, then code, tests last
+        (Garrett, 2026-11-21: deep code should not read like a generated API)."""
         g = self.g
-        for r in g.recs.values():
-            sc = r.get("r", {}).get("script")
-            if sc and "ws" not in r:
-                s = g.recs.get(sc[0], {}).get("sum")
-                if s:
-                    r["ws"] = s
 
         def rank(nid: str) -> tuple:
             r = g.recs.get(nid, {})
@@ -1309,7 +1502,8 @@ class Builder:
         index = {"schema": 1, "shards": count, "shardFile": "{n}.gz.txt", "hash": "fnv1a32", "root": "code", "nodes": len(g.recs),
                  "images": len(self.images), "thumb": THUMB, "sheet": SHEET, "loopImages": loop_im,
                  "loopCode": {**{r["lid"]: len(r.get("r", {}).get("code", [])) for r in g.recs.values() if r["k"] == "loop" and "lid" in r},
-                              **{"verb/" + i[len("L:verb/"):]: len(r.get("r", {}).get("code", [])) for i, r in g.recs.items() if i.startswith("L:verb/")}},
+                              **{"verb/" + i[len("L:verb/"):]: len(set(r.get("r", {}).get("code", []) + r.get("r", {}).get("ability", [])))
+                                 for i, r in g.recs.items() if i.startswith("L:verb/")}},
                  "values": values, "bytes": total, "kinds": dict(sorted(kinds.items())),
                  "missingLinks": getattr(self, "missing_links", [])}
         (out / "index.json").write_text(json.dumps(index, indent=1))
@@ -1375,6 +1569,24 @@ namespace CosmicShore.Game
     }
 }
 '''
+SAMPLE_CS_HUMAN = r'''
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// Lays a <b>ring</b> of prisms ahead. See <see cref="CosmicShore.Gameplay.BoostRingBuilder"/>.
+    /// <para>Second paragraph.</para>
+    /// </summary>
+    [CreateAssetMenu(fileName = "Ring", menuName = "ScriptableObjects/Vessel Actions/Ring")]
+    public class RingActionSO : ShipActionSO
+    {
+        /// <summary>How wide the ring is.</summary>
+        [Tooltip("Radius in world units, (tuned in-editor), " +
+                 "so the skimmer reaches it.")]
+        [FormerlySerializedAs("oldRadius")]
+        [SerializeField, Range(1f, 20f)] private float radius = 8f;
+    }
+}
+'''
 SAMPLE_CS_FILE_NS = "namespace CosmicShore.Data;\npublic sealed record Card(string Name) : Base { public const int Max = 3; }\n"
 
 
@@ -1406,12 +1618,17 @@ def self_test() -> int:
     q = parse_cs(SAMPLE_CS_FILE_NS)
     ok(q["types"] and q["types"][0]["ns"] == "CosmicShore.Data" and q["types"][0]["bases"] == ["Base"],
        f"file-scoped namespace and record: {q['types'][:1]}")
-    # doc comments: a summary reaches its declaration across attribute lines, tags become words, nothing leaks
-    ds = doc_summaries('/// <summary>How far the AI detours for a <see cref="T:Crystal"/>.</summary>\n'
-                       '[CreateAssetMenu]\n[Serializable]\npublic class Genes {}\n// plain\nint x;\n'
-                       '/// <param name="a">not a summary</param>\nvoid F(int a) {}\n')
-    ok(ds.get(4) == "How far the AI detours for a Crystal.", f"summary on the declaration line: {ds.get(4)}")
-    ok(6 not in ds and 8 not in ds, "a plain comment, or a doc comment with only a param, gives no summary")
+    # what a person reads: the /// summary, a tooltip with commas and brackets across a concatenation, the Create
+    # menu, a range and a former serialized name
+    h = parse_cs(SAMPLE_CS_HUMAN)["types"][0]
+    ok(h.get("menu") == "ScriptableObjects/Vessel Actions/Ring", f"CreateAssetMenu menuName: {h.get('menu')}")
+    ok(h.get("doc") == "Lays a ring of prisms ahead. See BoostRingBuilder.\nSecond paragraph.", f"type doc comment: {h.get('doc')!r}")
+    rad = h["members"][0]
+    ok(rad.get("tip") == "Radius in world units, (tuned in-editor), so the skimmer reaches it.", f"concatenated tooltip: {rad.get('tip')!r}")
+    ok(rad.get("doc") == "How wide the ring is." and rad.get("rng") == "1 to 20" and rad.get("was") == ["oldRadius"],
+       f"member doc, range, former name: {rad.get('doc')!r} {rad.get('rng')!r} {rad.get('was')!r}")
+    ok(rad.get("ser") is True, "[SerializeField, Range(...)] in one block is still serialized")
+    ok(mem["Boost"].get("doc") is None, "no doc comment is invented where none was written")
     # negative control: a comment or string that looks like a type is not one
     ok("Fake" not in names and "NotAType" not in names and "Inner" not in names, "masked text is not parsed")
     # graph: copies are one node
