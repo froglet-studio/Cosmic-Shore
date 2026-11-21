@@ -56,9 +56,11 @@ namespace CosmicShore.Gameplay
     /// comes on are sealed at the next steal sweep.</para>
     ///
     /// <para><b>Multiplayer.</b> Like the legacy wall and the Scarab switch, the wall is rebuilt
-    /// independently on every peer from replicated inputs (the cloak and stance presses, the
-    /// broadcast crystal effect). Recruitment reads each peer's own prism set, so two peers can
-    /// pull different loose prisms into the same site, exactly as the legacy wall could.</para>
+    /// independently on every peer from replicated inputs: the cloak press (an AI's too:
+    /// <see cref="ShipActionSO.AutopilotPressTravels"/>), the stance's replicated flag, the broadcast
+    /// crystal effect, and the owner's REPLICATED Mass and Space levels for its size and reach.
+    /// Recruitment reads each peer's own prism set, so two peers can pull different loose prisms
+    /// into the same site, exactly as the legacy wall could.</para>
     /// </summary>
     public sealed class SerpentWallAssembler : Assembler
     {
@@ -312,7 +314,9 @@ namespace CosmicShore.Gameplay
             if (index == null || !index.IsAvailable) return;
 
             var cfg = _shape.Config;
-            float space = ElementalScaling.Multiplier(_shape.Owner, Element.Space,
+            // The REPLICATED level: every peer grows its own copy of this wall, and the owner's local level is
+            // known on the owner alone, so a remote copy reached as far as its replica's level said.
+            float space = ElementalScaling.ReplicatedMultiplier(_shape.Owner, Element.Space,
                 atFull: cfg.SpaceStealRadiusMultiplierAtFull, minMul: cfg.MinSpaceStealRadiusMultiplier);
             float radius = cfg.StealRadius * _shape.MassMultiplier * space;
             var abilities = _shape.Owner?.ElementalAbilityHandler;
