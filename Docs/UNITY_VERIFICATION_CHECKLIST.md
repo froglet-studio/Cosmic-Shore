@@ -25997,3 +25997,13 @@ Three fixes, compiled with Unity's own compiler (0 errors), none played: the ope
       the vessel. No MissingReferenceException from `PreGameCinematicController.TransitionToPlayer`.
 - [ ] Ready button (E-c223e6e8e9): press Ready the moment a multiplayer mode's scene opens. No NullReferenceException
       from `MultiplayerDomainGamesController.OnReadyClicked_`; a press after the player exists readies as before.
+
+## Serpent wall after its owner is gone (2026-11-22)
+
+Bug ledger E-05e4645aad (Shombith's editor): a Serpent wall whose vessel had been destroyed threw
+MissingReferenceException from `SerpentWallAssembler.LockdownActive`. The wall now asks whether its owner is alive
+before reading its abilities. Compiled with Unity's own compiler (0 errors); not played.
+
+- [ ] Fly the Serpent, raise a wall, then leave the match (or swap vessel) while the wall is still growing: no
+      MissingReferenceException naming VesselStatus.
+- [ ] With the Serpent alive, the wall's Mass lockdown panels and the Space upgrade's steal of shielded prisms work as before.
