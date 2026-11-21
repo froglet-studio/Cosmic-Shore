@@ -123,9 +123,11 @@ namespace CosmicShore.Gameplay
         /// u of it).</item>
         /// <item><b>An open keg</b> (anyone's blast or ram, its own included) within
         /// <see cref="GrizzlyTimeKegs.AIKegAimRange"/>: pass beside it down its exit lane, inside the credit radius.</item>
-        /// <item>A <b>standing</b> keg, plain or shielded: the mouth. It could ram the keg open, but the mouth is open, and
-        /// an AI breaks only what it cannot pass. (Until 2026-11-21 it passed beside a standing PLAIN keg at I1-I2 for its
-        /// bombs to open; with the 40 u blast that opened about one keg a race and ran the ladder backwards.)</item>
+        /// <item>A <b>standing</b> keg, plain or shielded: rammed open with Rush when a Rush is banked and the line through
+        /// its core to the next ring is no longer than the line through the mouth (<see cref="GrizzlyTimeKegs.AIRamPays"/>,
+        /// <c>aiRamsKegs</c>); otherwise, or once a ram misses (inside <see cref="GrizzlyTimeKegs.AIRamGiveUp"/> of a core
+        /// still standing), the mouth. (Until 2026-11-21 it passed beside a standing PLAIN keg at I1-I2 for its bombs to
+        /// open; with the 40 u blast that opened about one keg a race and ran the ladder backwards.)</item>
         /// </list>
         /// </summary>
         bool KegAim(IPlayer pilot, Vector3 at, int index, int ring, RacerAI state, float now, out Vector3 target)
@@ -190,15 +192,6 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        /// <summary>
-        /// The AI's Rush (<see cref="GrizzlyTimeKegs.AIShouldRush"/>): pace on a straight it is lined up on, pressed and
-        /// let go in the same call (Rush is fire-and-forget) through the replicated press on the hull's own bound control,
-        /// as the Urchin and Tiger Moth drivers do, so no release is ever left pending. Only the machine that owns the
-        /// hull's input presses. The Rush's cost, cooldown and control are read off the vessel's own action, and the
-        /// Energy's gain per tick off its resource: every peer runs the press against its OWN Energy, which ticks on its
-        /// own phase, so the AI waits for one tick of headroom and a peer one tick behind still accepts it. A press the
-        /// vessel refuses (no charge banked) does nothing and is tried again after the cooldown.
-        /// </summary>
         /// <summary>Is a Rush banked for this AI's hull now (Energy for one press with a tick to spare)? Read off the
         /// vessel's own action and resource, as <see cref="TickRush"/> reads them.</summary>
         bool RushReady(IPlayer pilot)
@@ -212,6 +205,15 @@ namespace CosmicShore.Gameplay
             return energy.CurrentAmount >= rush.EnergyCost + energy.resourceGainRate - 1e-4f;
         }
 
+        /// <summary>
+        /// The AI's Rush (<see cref="GrizzlyTimeKegs.AIShouldRush"/>): pace on a straight it is lined up on, or a ram into a keg (<see cref="GrizzlyTimeKegs.AIShouldRam"/>), pressed and
+        /// let go in the same call (Rush is fire-and-forget) through the replicated press on the hull's own bound control,
+        /// as the Urchin and Tiger Moth drivers do, so no release is ever left pending. Only the machine that owns the
+        /// hull's input presses. The Rush's cost, cooldown and control are read off the vessel's own action, and the
+        /// Energy's gain per tick off its resource: every peer runs the press against its OWN Energy, which ticks on its
+        /// own phase, so the AI waits for one tick of headroom and a peer one tick behind still accepts it. A press the
+        /// vessel refuses (no charge banked) does nothing and is tried again after the cooldown.
+        /// </summary>
         void TickRush(IPlayer pilot, Transform self, RacerAI state, Vector3 steer, float run, float now, bool ram)
         {
             var status = pilot.Vessel.VesselStatus;
