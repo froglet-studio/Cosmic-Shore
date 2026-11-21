@@ -65,7 +65,7 @@ The retire condition           in a playtest the bales do not matter: the trail 
 autopiloted Thresher never presses A, so its ball stays in Mass Mode.
 
 1. **Haul** (its domain is not trailing by more than `aiRaidDeficitFraction`): the nearest bale with unclaimed prisms,
-   kept until it is hauled or `aiRetargetSeconds` pass, circled at `aiOrbitRadius` (160 u) so the ball on its chain
+   kept until it is hauled or `aiRetargetSeconds` pass, circled at `aiOrbitRadius` (320 u, 160 until 2026-11-21) so the ball on its chain
    swings through it.
 2. **Raid** (trailing): circling the densest opposing mass (`Cell.GetExplosionTarget`), where the ball steals the
    rival's hoard back.
@@ -76,6 +76,29 @@ autopiloted Thresher never presses A, so its ball stays in Mass Mode.
 | `aiRetargetSeconds` | 12, 9, 7, 5 |
 
 Froglet Compute is paused, so no search was queued.
+
+### The hauler trained here (2026-11-21, elemental loop step 3, plan step `mass-arcade`)
+
+Raced on the Brood Rush volume books (each seat's VC + VD, `brood_judge.py --mode Haul`, Amoebius headless, Thresher
+against Thresher, Legendary), the hauler lost most of its time to the hull's own **sling**: `ThresherSlingAIPolicySO`
+plants the ball on every corner, and a planted ball stops, steals only what it already touches and lays no trail.
+Circling a bale at 160 u is all corners, so it planted 12-17 times a match. Two AI-only knobs, neither read by any
+Time mode:
+- the sling stands down in Haul: `ThresherAIBoostPolicy.asset` `disabledInModes: [Haul]` (the policy's own pure
+  revert to the pre-policy pilot, `AIBoostPolicySO`);
+- `HaulSettings.aiOrbitRadius` 160 -> 320 u: the wider circle swings the ball through more of the bale per lap.
+
+| Mean seat VC + VD (2 seeds, 4 seats) | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| shipped -> trained | 17.8k -> 28.3k | 104.2k -> 188.0k | 100.0k -> 180.1k | 103.7k -> 182.7k |
+
+I2 on fresh seeds 11-12, the other rungs on seeds 21-22. Search (seeds 1-2, I2; shipped 104k and 107k on two runs):
+sling off alone 160k; orbit 240 / 320 alone 126k / 142k; sling off with orbit 240 / 320 / 450 / 600: 174k / 173k / 170k
+/ 181k (a plateau, 320 taken). Within noise or worse: the raid ladder (never / more), `aiRetargetSeconds` 2 or 15, an
+eager sling (65-95k), aggressiveness x0.5 / x2 and throttle x1.3 on the AIPilot. A code test that sent the hauler for
+omni crystals (the Windmill) and raided once every bale was hauled scored 172k-179k against 173k, so it was not kept.
+Neither knob is read outside this mode. Regatta (shuffle, seeds 1-3, the untouched tree against this one): card 72.2 -> 72.4 / 72.8 s on two runs, L5 67.2 -> 67.6 s, within the engine's run-to-run jitter; Thresher Time reads neither knob. Raw:
+`/mnt/project-files/regatta-flywheel/mass7/thresher/`.
 
 ## Platform changes
 

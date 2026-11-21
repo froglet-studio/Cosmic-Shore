@@ -150,6 +150,28 @@ No offline race model exists for this mode, so it cannot be taught by self-play 
 (`Docs/AI_SYSTEM/AI_PLAN.md`), this is the Thresher's Space arcade game, where its space genome would train
 (`space-arcade`); Froglet Compute is paused and nothing has been trained here.
 
+### The reaper trained here (2026-11-21, elemental loop step 3, plan step `space-arcade`)
+
+Raced on the Brood Rush volume books (`brood_judge.py --mode Harvest`, Amoebius headless, Thresher against Thresher,
+Legendary), the reaper's own numbers barely mattered: `aiMowSeconds`, `aiMowStandoff`, `aiMowLeadDegrees`,
+`aiStrikeOvershoot`, `aiAxleReachFactor` and `aiRevisitSeconds` all stayed within the run-to-run noise (22.5k / 23.8k
+shipped). What moved the score is the hull's **sling**: a planted ball skids and the ship swings round it on the chain,
+which is a mow, and the shipped policy plants only on a 70 degree corner 120 u out, about 30 times a match. Turning the
+sling off cost 17% (19.1k). So Harvest gets its own variant of the policy, which no other mode reads:
+`Assets/Resources/AIBoostPolicies/ThresherAIBoostPolicy_Harvest.asset` (`AIBoostPolicySO.ForMode`), plant at 10 degrees
+off (was 70), 0 u away (was 120), 0.2 s after a let-go (was 1.5), at most 1.5 s planted (was 3). It now plants about
+100 times a match.
+
+| Mean seat VC + VD (2 seeds, 4 seats) | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| shipped -> trained | 25.8k -> 53.6k | 26.3k -> 51.6k | 26.2k -> 56.1k | 26.4k -> 52.4k |
+
+I2 on fresh seeds 11-12, the other rungs on seeds 21-22. Search (seeds 1-2, I2): 30 degrees / 40 u 26.5k-27.7k;
+15 / 40 u / 0.8 s 33.2k; 15 / 20 u / 0.5 s 38.0k; 10 / 0 / 0.3 s 42.4k; 10 / 0 / 0.2 s 44.2k, with 1.5 s planted
+47.1k (2 s 44.3k, 5 s 31.5k); without the winch 37.2k. No effect: aggressiveness and throttle on the AIPilot, a blind
+Winch press cycle (the sling owns the winch). No other mode reads the variant. Regatta (shuffle, seeds 1-3, the untouched tree against this one): card 72.2 -> 72.4 / 72.8 s on two runs, L5 67.2 -> 67.6 s, within the engine's run-to-run jitter; Thresher Time reads neither knob. Raw:
+`/mnt/project-files/regatta-flywheel/mass7/thresher/`.
+
 ## Sounds
 
 None of its own. Every sound is the Thresher's (the crush, the smash, the blast) or the platform's. No

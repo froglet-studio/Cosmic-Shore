@@ -194,7 +194,7 @@ g.emit_asset("Assets/_SO_Assets/Games/HaulSettings.asset", G_ASSET["HaulSettings
              + "  leadAnnounceAfterSeconds: 20\n  leadAnnounceMinGapSeconds: 10\n  progressSampleSeconds: 1\n"
              + "  aiDecisionSeconds: 5\n"
              + "".join(ladder_yaml(n) for n in LADDERS)
-             + "  aiOrbitRadius: 160\n")
+             + "  aiOrbitRadius: 320\n")
 
 # ── 4. Arcade card ───────────────────────────────────────────────────────────
 # MinPlayers 1 / MinDomains 1: a haul against the clock is still a game (the field is finite).

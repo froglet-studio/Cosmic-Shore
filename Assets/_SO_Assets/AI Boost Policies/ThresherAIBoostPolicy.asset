@@ -18,7 +18,8 @@ MonoBehaviour:
   releaseStickBand: 0.6
   engageRunwaySeconds: 1.5
   releaseRunwaySeconds: 0.5
-  disabledInModes: []
+  disabledInModes:
+  - 93
   requireAIPlayer: 1
   plantMinTurnDegrees: 70
   plantMinDistance: 120
