@@ -1231,11 +1231,11 @@ namespace CosmicShore.Gameplay
         public static Domains LiveDomain(ToyContext context) => LiveDomain(context?.GameData);
 
         /// <inheritdoc cref="LiveDomain(ToyContext)"/>
-        public static Domains LiveDomain(GameDataSO gameData)
-        {
-            var domain = (gameData ? gameData.LocalPlayer?.Domain : null) ?? Domains.Jade;
-            return domain == Domains.Blue ? Domains.Jade : domain;
-        }
+        public static Domains LiveDomain(GameDataSO gameData) =>
+            // The Ark's one domain, the host's pick (VoyageLobbyLink.ArkDomain; Shombith, 2026-11-21): every seat, the
+            // Ark's hull and model and the home harbour fly it. The voyage scene spawns every person's vessel in it
+            // (MenuServerPlayerVesselInitializer), so the local player's domain agrees with it there.
+            VoyageLobbyLink.ArkDomain;
 
         IVesselStatus LocalVessel() => Alive(_context?.GameData?.LocalPlayer?.Vessel);
 
