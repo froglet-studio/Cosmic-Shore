@@ -7,7 +7,8 @@
 
 - **Seven machines send errors from Unity**, each to its own `bugledger/<user>` branch: Garrett (`gradi`), Shombith,
   Andrew (`owner`), jtgjones (`mrglo`), Yash (`yskha`), Caleb (`belac`), Will (`will`).
-- **Ledger on 2026-11-22 (19:35 UTC, by hand): 383 open, 37 being checked after a fix** (420 issues). Yash asked for
+- **Ledger on 2026-11-22 (by hand; 2026-11-21 19:38 UTC): 382 open, 38 being checked after a fix** (420 issues;
+  the Team Bug Board was mirrored with it: ten issue documents, the counts and the day's run entry). Yash asked for
   the two errors new since the 11-21 sweep, then every open one on his machine (81), then the other machines' (208
   seen since 10-21, 53 of them naming a game script outside the multiplayer folders). Five were code and are fixed
   (section 3), one was already fixed and is now marked, one is a missing backend deploy (the `launch-flags` Cloud
