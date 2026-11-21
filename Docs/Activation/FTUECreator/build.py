@@ -41,6 +41,7 @@ def main():
     seed = open(os.path.join(HERE, 'out', 'seed.json'), encoding='utf-8').read()
     head = subprocess.run(['git', '-C', REPO, 'log', '-1', '--format=%h, %cs', '--', 'Assets/FTUE/DataContainer'], capture_output=True, text=True).stdout.strip()
     page = open(os.path.join(HERE, 'template.html'), encoding='utf-8').read()
+    page = page.replace('__SIMCSS__', open(os.path.join(HERE, 'sim.css'), encoding='utf-8').read()).replace('__SIM__', open(os.path.join(HERE, 'sim.js'), encoding='utf-8').read())
     page = page.replace('__CORE__', core).replace('__SEED__', seed.replace('</', '<\\/')).replace('__SEEDDATE__', 'commit ' + head)
     open(os.path.join(HERE, 'out', 'ftue-creator.html'), 'w', encoding='utf-8').write(page)
     print('wrote out/ftue-creator.html')

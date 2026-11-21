@@ -14,6 +14,9 @@
   --display: "Aldrich", "Chakra Petch", system-ui, sans-serif;
   --body: "Chakra Petch", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --glass: rgba(10, 14, 48, .62); --glass-strong: rgba(0, 4, 31, .78); --glass-card: rgba(17, 21, 57, .72); --bezel: #0b0f2e;
+  --sea-top: #001a4d; --sea-bottom: #00010A; --sea-shaft: rgba(0,212,255,.07); --sea-p1: #00D4FF; --sea-p2: #21C0BD; --sea-p3: #A600FF; --sea-mote: rgba(230,233,255,.55);
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
@@ -21,12 +24,18 @@
   --line: #C9CFF2; --text: #00041F; --soft: #434C89; --off: #8A8FAE;
   --cta: #487C1F; --on-cta: #FFFFFF; --select: #007D73; --danger: #CD373A; --gold: #B06A00; --tip: #893BFF; --jade: #007D73;
   --c-presentation: #007D9E; --c-gameplay: #B06A00; --c-gate: #893BFF; --c-terminal: #CD373A; --c-flow: #434C89;
+
+  --glass: rgba(255, 255, 255, .7); --glass-strong: rgba(244, 245, 255, .82); --glass-card: rgba(255, 255, 255, .82); --bezel: #c9cff2;
+  --sea-top: #cfe9ff; --sea-bottom: #eef0ff; --sea-shaft: rgba(255,255,255,.35); --sea-p1: #007D9E; --sea-p2: #007D73; --sea-p3: #893BFF; --sea-mote: rgba(67,76,137,.4);
   color-scheme: light; } }
 :root[data-theme="light"] {
   --ground: #F4F5FF; --ground-deep: #E6E9FF; --surface: #FFFFFF; --surface-2: #EDEFFC; --raised: #DDE1F7;
   --line: #C9CFF2; --text: #00041F; --soft: #434C89; --off: #8A8FAE;
   --cta: #487C1F; --on-cta: #FFFFFF; --select: #007D73; --danger: #CD373A; --gold: #B06A00; --tip: #893BFF; --jade: #007D73;
   --c-presentation: #007D9E; --c-gameplay: #B06A00; --c-gate: #893BFF; --c-terminal: #CD373A; --c-flow: #434C89;
+
+  --glass: rgba(255, 255, 255, .7); --glass-strong: rgba(244, 245, 255, .82); --glass-card: rgba(255, 255, 255, .82); --bezel: #c9cff2;
+  --sea-top: #cfe9ff; --sea-bottom: #eef0ff; --sea-shaft: rgba(255,255,255,.35); --sea-p1: #007D9E; --sea-p2: #007D73; --sea-p3: #893BFF; --sea-mote: rgba(67,76,137,.4);
   color-scheme: light; }
 
 * { box-sizing: border-box; }
@@ -147,10 +156,12 @@ dialog::backdrop { background: rgba(0, 1, 10, .6); }
 .legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: var(--soft); margin-top: 18px; }
 .legend i { display: inline-block; width: 8px; height: 8px; background: var(--cat); margin-right: 4px; border-radius: 1px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+__SIMCSS__
 </style>
 
+<canvas id="bgSea" aria-hidden="true"></canvas>
 <header class="top">
-  <div class="brand">FTUE Creator <small>Quest Graph phases for Assets/FTUE, drafted with Claude</small></div>
+  <div class="brand"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 29 26H3Z" fill="none" stroke="var(--select)" stroke-width="2"/><path d="M16 3v15l13 8M16 18 3 26" fill="none" stroke="var(--cta)" stroke-width="1.5"/></svg><span class="ttl"><b>FTUE CREATOR</b><small>Design the first hour in the HyperSea, play it, export it to the Quest Graph</small></span></div>
   <button class="btn" id="btnImport">Import .asset</button>
   <button class="btn" id="btnTeam">Team drafts</button>
   <button class="btn cta" id="btnExport">Export to Unity</button>
@@ -170,7 +181,7 @@ dialog::backdrop { background: rgba(0, 1, 10, .6); }
     <div class="legend" id="legend"></div>
   </aside>
 
-  <section class="pane center" id="center"></section>
+  <section class="pane center"><div class="stageWrap"><div class="stagehead"><h2 style="margin:0">Preview</h2><span class="tiny muted">What a new player sees, step by step. Sound starts after your first click.</span></div><div id="stage"></div></div><div id="center"></div></section>
 
   <aside class="pane right">
     <nav class="tabs" role="tablist">
@@ -201,6 +212,7 @@ dialog::backdrop { background: rgba(0, 1, 10, .6); }
 <dialog id="dlgAdd"><div class="insp" id="addBody"></div></dialog>
 
 <script>__CORE__</script>
+<script>__SIM__</script>
 <script>
 const SEED = __SEED__;
 const SEED_NOTE = 'Shipped MainQuest from bleeding-edge, __SEEDDATE__';
@@ -258,7 +270,9 @@ function summary(n) {
 const trim = (s, n) => (s = String(s || '')).length > n ? s.slice(0, n - 1) + '…' : s;
 
 // ---------- render ----------
-function render() { renderLeft(); renderCenter(); renderRight(); }
+function render() { renderLeft(); renderCenter(); renderRight(); if (player) player.refresh(); }
+let player = null, playingNode = null;
+function markPlaying() { document.querySelectorAll('.card.playing').forEach(c => c.classList.remove('playing')); if (playingNode) document.querySelector(`.card[data-node="${playingNode}"]`)?.classList.add('playing'); }
 function renderLeft() {
   $('#questName').value = state.quest.assetName;
   $('#questEnabled').checked = !!state.quest.enabled;
@@ -328,6 +342,7 @@ function renderCenter() {
       off.map(n => { const s = NODE_TYPES[n.type]; return `<div class="card cat-${s.cat} disabled ${selNode === n.nodeId ? 'sel' : ''}" data-node="${n.nodeId}" tabindex="0"><div class="stripe"></div><div class="body"><div class="type">${esc(s.label)}</div><div class="name">${esc(n.displayName)}</div><div class="sum">${summary(n)}</div></div><div class="side"><div class="acts"><button class="icon" data-attach="${n.nodeId}" title="Put back on the path, before the end">↩</button><button class="icon" data-deloff="${n.nodeId}" title="Delete">✕</button></div></div></div>`; }).join('') + '</div>';
   }
   c.innerHTML = html;
+  markPlaying();
 }
 
 function fieldInput(n, [name, kind, def, extra]) {
@@ -648,7 +663,7 @@ document.addEventListener('click', async e => {
   const d = t.dataset;
   if (t.classList.contains('tab')) { tab = d.tab; renderRight(); return; }
   if (d.up || d.down) { e.stopPropagation(); const i = Number(d.up || d.down), j = i + (d.up ? -1 : 1); if (j < 0 || j >= state.phases.length) return; snapshot(); [state.phases[i], state.phases[j]] = [state.phases[j], state.phases[i]]; selPhase = j; render(); persist(); return; }
-  if (t.classList.contains('phase')) { selPhase = Number(d.i); selNode = null; render(); return; }
+  if (t.classList.contains('phase')) { player && player.stop(); playingNode = null; selPhase = Number(d.i); selNode = null; render(); return; }
   if (d.mv) { e.stopPropagation(); const p = phase(), path = FTUE.chain(p).path, i = Number(d.mv), j = i + Number(d.d); if (j < 0 || j >= path.length) return; snapshot(); [path[i], path[j]] = [path[j], path[i]]; FTUE.relink(p, path); render(); persist(); return; }
   if (d.dup) { e.stopPropagation(); const p = phase(), path = FTUE.chain(p).path, src = path[Number(d.dup)]; snapshot(); const n = JSON.parse(JSON.stringify(src)); n.nodeId = FTUE.rndHex(32); n.fileId = ''; n.objName = ''; n.displayName += ' (copy)'; n.outputs = n.outputs.filter(o => o.port === 'next'); p.nodes.push(n); FTUE.relink(p, path.slice(0, Number(d.dup) + 1).concat([n], path.slice(Number(d.dup) + 1))); selNode = n.nodeId; render(); persist(); return; }
   if (d.del) { e.stopPropagation(); const p = phase(), path = FTUE.chain(p).path, n = path[Number(d.del)]; snapshot(); p.nodes = p.nodes.filter(x => x !== n); FTUE.relink(p, path.filter(x => x !== n)); if (selNode === n.nodeId) selNode = null; render(); persist(); toast('Step deleted. Undo puts it back.'); return; }
@@ -736,5 +751,13 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.activeElement.matches('.card, .phase')) document.activeElement.click();
 });
 document.addEventListener('focusin', e => { if (e.target.matches('textarea, input[type=text], input[type=number]')) snapshot(); }, true);
+(() => { const h = document.querySelector('.top'); const set = () => document.documentElement.style.setProperty('--headH', h.offsetHeight + 'px'); set(); if ('ResizeObserver' in window) new ResizeObserver(set).observe(h); })();
+FTUESim.Sea(document.getElementById('bgSea'), { prisms: 40, motes: 120 });
+player = FTUESim.Player(document.getElementById('stage'), {
+  phase, enumName, speakers: SPEAKERS, label: n => NODE_TYPES[n.type].label,
+  startIndex: () => { const p = phase(); if (!p) return 0; const i = FTUE.chain(p).path.findIndex(n => n.nodeId === selNode); return Math.max(0, i); },
+  onStep: id => { playingNode = id; markPlaying(); const el = id && document.querySelector(`.card[data-node="${id}"]`); if (el && getComputedStyle(document.querySelector('.stageWrap')).position === 'sticky') { const r = el.getBoundingClientRect(), top = document.querySelector('.stageWrap').getBoundingClientRect().bottom; if (r.top < top || r.bottom > innerHeight) scrollBy({ top: r.top - top - 16, behavior: 'smooth' }); } },
+  onEdit: n => { if (selNode === n.nodeId) renderStep(); renderCenter(); persist(); },
+});
 render();
 </script>

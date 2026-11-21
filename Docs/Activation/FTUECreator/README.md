@@ -12,6 +12,9 @@ keeps pointing at the same nodes. `build.py` proves this on every shipped phase 
 page (`--check` runs only that).
 
 What it does:
+- plays a phase as a new player sees it (`sim.js`, `sim.css`): the menus, the spotlight with Settings
+  left usable, the comms window with typewriter and voiced lines, the flight view for the gameplay
+  steps, synthesized UI sounds and sea ambience; the words in the preview are edited in place;
 - shows a phase as the chain its `next` edges make, with the editor's venue rows (app shell or
   gameplay), and edits every serialized field of the 18 node types;
 - drafts steps, a whole phase, or three takes of a dialogue in a pilot's voice with Claude, from a
@@ -27,7 +30,7 @@ kept as they were and set in Unity; edit branch ports other than `next` (no ship
 
 ## Change it
 
-Edit `template.html` (the page) or `core.src.js` (schema, YAML reader and writer, checks), then:
+Edit `template.html` (the page), `sim.js` / `sim.css` (the preview) or `core.src.js` (schema, YAML reader and writer, checks), then:
 
 ```
 python3 Docs/Activation/FTUECreator/build.py   # needs node; writes out/ftue-creator.html
