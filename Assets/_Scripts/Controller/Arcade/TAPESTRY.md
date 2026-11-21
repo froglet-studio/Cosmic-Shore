@@ -90,6 +90,39 @@ flies **above** the densest opposing mass (`Cell.GetExplosionTarget`) so it pass
 hanging below the hull. The mode switch is `ButterflyAutopilotModeDriver` (see `DUSTUP.md`) — a
 replicated press, read back rather than counted.
 
+### AI trained (2026-11-21, elemental loop step 3)
+
+Raced on the Brood Rush volume books (each pilot's VC + VD, `brood_judge.py --mode Tapestry`, Amoebius headless, Tiger
+Moth against Tiger Moth). **What the shipped policy failed to do: its raid takes almost nothing.** A raiding bot aimed at
+the cell's densest opposing voxel (`Cell.GetExplosionTarget`), which the 60-unit capsule mostly misses: a raid's VD was
+0.1-0.8k against a painter's ~120k VC. So the 10% deficit rule was a death spiral (the trailing bot raided, fell further
+behind and raided for the rest of the round: seats of 12-19k beside 110-129k), and the 25 s closing raid cost a quarter
+of the round's paint for nothing.
+
+The knobs (all on `TapestrySettings.asset`, read by `TapestryController` only, so no other mode sees them):
+
+| Field | Was | Now | Why |
+|---|---|---|---|
+| `aiRaidDeficitFraction` | 0.1 | **0.5** | raid only when far behind (a mirror never is; a human who paints much better is) |
+| `aiLateRaidSeconds` | 25 | **0** | the closing raid cost ~27% of the score (seeds 1-2: no raid 162k, late raid only 118k) |
+| `aiCrystalReach` | 450 | **900** | a Mass crystal widens the brush, which is score here (crystal reach 0 / 450 / 900: 148k / 161k / 168k) |
+| `aiWakeSampleSeconds` (new) | - | **0.5** | a raid now flies DOWN the nearest rival's wake: the server samples every pilot's path, and a raider aims a few samples further along the one nearest it, so the dust hangs on fresh keys (`TryRivalWake`). Raid VD rose ~3-6x (to 2.6-6k), still far under paint, which is why raids are now rare |
+
+Also searched, no gain: dust hover 0 / 70, orbit radius 0.3 / 0.9, orbit 15 deg/s, the decision clock. Generic AIPilot
+throttle (0.6 -> 1.0) is a further +30-40% here and is shipped through the Mass-Space AI plan row (`AIMassSpacePlan.asset`,
+ThrottleScale 1.67), not the prefab, so Regatta and Waystation keep the hull's feel-tuned 0.6.
+
+| Mean seat VC + VD (seeds 11-12, 4 seats) | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| shipped | 22.1k | 91.4k | 93.4k | 91.0k |
+| settings (this asset) | 22.1k | 172.0k | 161.7k | 159.8k |
+| settings + plan-row throttle 1.0 | 30.4k | 231.3k | 215.7k | 210.5k |
+
+I1 is unchanged by the settings: there the mirror stays close and the bots never raided in either version (M0 start).
+Regatta does not read this asset (only `TapestryController` does). Checked anyway, shuffle course, seeds 1-3, new vs old
+values: card start identical on all four courses (176.5 / 147.3 / 120.5 / 142.8 s); `--start L5` 119.8 vs 129.9,
+132.4 = 132.4, 107.0 = 107.0, 119.8 vs 120.1 s (the two differences are L5 run noise, and the new side is the faster). Raw: `/mnt/project-files/regatta-flywheel/mass7/tigermoth/`.
+
 ## Verification status
 
 **Authored headless; nothing has been opened in the editor.** Proved: the generator's `--check`, the
