@@ -25971,3 +25971,14 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
+
+## Grizzly scope camera at teardown (2026-11-22)
+
+Bug ledger E-5e0864d332: leaving a match while the Grizzly's scope camera was out on a round logged "Cannot set the
+parent of the GameObject 'ScopeCamera' while its new parent 'Grizzly(Clone)' is being destroyed". `GrizzlyHUDView.OnDestroy`
+now destroys a camera that is still off the hull and leaves one that is on it. Not run in the Unity editor (it did not
+answer the CLI): Assembly-CSharp compiled with Unity's own compiler, 0 errors.
+
+- [ ] Fly the Grizzly, fire a sniper round and quit to the menu while the round's picture-in-picture is showing: no red
+      error, and no ScopeCamera left in the scene root.
+- [ ] Fire a round and let it finish: the scope view returns to the hull as before, and scoping still works afterwards.
