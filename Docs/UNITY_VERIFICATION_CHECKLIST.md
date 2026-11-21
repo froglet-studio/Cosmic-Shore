@@ -25914,3 +25914,17 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
+
+## Mass-Space AI rows (2026-11-21)
+
+`AIMassSpacePlanSO` (`Assets/Resources/AIMassSpacePlan.asset`, written by `Tools/Build/massspace_ai_plan.py`) gives the
+Meerkat, Sparrow, Stoat and Urchin AIs a learned ability cycle and steering in Mass-Space modes only; the Urchin also gets
+`UrchinAutopilotConfig_Hijack` / `_BroodRush`. Measured in Amoebius only; not run in the Unity editor. The reference
+compile has 0 errors in the changed files.
+
+- [ ] Brood Rush with AI Meerkat, Sparrow and Stoat: the Meerkat AI forms and shortens solitons, the Sparrow AI goes
+      stationary and fires its guns, the Stoat AI slings. No errors in the console when they spawn.
+- [ ] Regatta with the same hulls: their AIs fly exactly as before (no soliton, sling or stationary presses there).
+- [ ] Warren, Cave-in, Salvo, Wildlife Liberation, Fulmen, Hijack at I1 and I4: the AI plays, nothing stalls.
+- [ ] Multiplayer host with an AI Sparrow in Brood Rush: a client sees its guns fire (AI presses replicate once #2322's
+      AutopilotPressTravels lands).
