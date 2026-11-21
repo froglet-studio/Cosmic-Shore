@@ -17,12 +17,12 @@ MonoBehaviour:
     scale model rebuilds when the intensity row moves. An arena card: the flight preview
     flies whichever hull the pilot picked in the carousel. The rings are laid by the
     controller and are not in the scale model; the rails are.'
-  PreviewCell: {fileID: 11400000, guid: 7fc59ba89af24bd423392e54e1692688, type: 2}
+  PreviewCell: {fileID: 11400000, guid: bb2f0490e16e46fcc5aff4879f4c8f43, type: 2}
   PreviewCellsByIntensity:
-  - {fileID: 11400000, guid: 7fc59ba89af24bd423392e54e1692688, type: 2}
-  - {fileID: 11400000, guid: b331d4a3860aff8cd93fb11cd0102ffc, type: 2}
-  - {fileID: 11400000, guid: 65aff413873c2b50dccb97d0601b767c, type: 2}
-  - {fileID: 11400000, guid: 89ec70ade92c6edcd61b9ebdbe27b96a, type: 2}
+  - {fileID: 11400000, guid: bb2f0490e16e46fcc5aff4879f4c8f43, type: 2}
+  - {fileID: 11400000, guid: f3734c7541f66efb9279736770eb38f2, type: 2}
+  - {fileID: 11400000, guid: fdbbf8a69cba1a5f40fc8c1c4f209b73, type: 2}
+  - {fileID: 11400000, guid: 6d418a7e688375a2307a0da98b361d27, type: 2}
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
   Vessel: -1

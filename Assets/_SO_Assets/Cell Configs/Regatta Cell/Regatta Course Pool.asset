@@ -13,43 +13,33 @@ MonoBehaviour:
   m_Name: Regatta Course Pool
   m_EditorClassIdentifier:
   entries:
-  - Label: Ref1 (Course3)
-    CellConfig: {fileID: 11400000, guid: 7fc59ba89af24bd423392e54e1692688, type: 2}
+  - Label: Ref1 (Wild1)
+    CellConfig: {fileID: 11400000, guid: bb2f0490e16e46fcc5aff4879f4c8f43, type: 2}
     Enabled: 1
-    Notes: 'Shuffle course 3: polished-five spread 1.11x card, 1.19x L5 (3 seeds, real-game
-    judge).'
-  - Label: Ref2 (Course7)
-    CellConfig: {fileID: 11400000, guid: b331d4a3860aff8cd93fb11cd0102ffc, type: 2}
+    Notes: 'Wide search shard_gbox2-0013: Orrery world, super-shielded 0%, no rails, nucleus,
+    lifeforms Serpentine Cell/Serpentine Cell Config 2, lap 5439 u. Field spread {''card'':
+    2.298, ''L5'': 2.343} (3 seeds, real-game judge).'
+  - Label: Ref2 (Wild2)
+    CellConfig: {fileID: 11400000, guid: f3734c7541f66efb9279736770eb38f2, type: 2}
     Enabled: 1
-    Notes: 'Shuffle course 7: polished-five spread 1.15x card, 1.12x L5 (3 seeds, real-game
-    judge).'
-  - Label: Ref3 (Course1)
-    CellConfig: {fileID: 11400000, guid: 65aff413873c2b50dccb97d0601b767c, type: 2}
+    Notes: 'Wide search shard_cloud3-0089: Corona world, super-shielded 9%, no rails, nucleus,
+    lifeforms Orrery Cell/Orrery Cell Config, lap 4948 u. Field spread {''card'': 2.094,
+    ''L5'': 2.972} (3 seeds, real-game judge).'
+  - Label: Ref3 (Wild3)
+    CellConfig: {fileID: 11400000, guid: fdbbf8a69cba1a5f40fc8c1c4f209b73, type: 2}
     Enabled: 1
-    Notes: 'Shuffle course 1: polished-five spread 1.14x card, 1.13x L5 (3 seeds, real-game
-    judge).'
-  - Label: Ref4 (Course8)
-    CellConfig: {fileID: 11400000, guid: 89ec70ade92c6edcd61b9ebdbe27b96a, type: 2}
+    Notes: 'Wide search shard_cloud4-0089: Boneyard world, super-shielded 17%, no rails, no
+    nucleus, lifeforms Scurry Cell/Scurry Cell Config, lap 6495 u. Field spread {''card'':
+    4.475, ''L5'': 4.932} (3 seeds, real-game judge).'
+  - Label: Ref4 (Wild4)
+    CellConfig: {fileID: 11400000, guid: 6d418a7e688375a2307a0da98b361d27, type: 2}
     Enabled: 1
-    Notes: 'Shuffle course 8: polished-five spread 1.23x card, 1.17x L5 (3 seeds, real-game
-    judge).'
-  - Label: Course2
-    CellConfig: {fileID: 11400000, guid: 990476063f9591da21b377cc2a38dc88, type: 2}
+    Notes: 'Wide search shard_cloud0-0042: Garland world, super-shielded 0%, no rails, nucleus,
+    lifeforms Ark Escort Cell/Escort Garland Cell Config, lap 6313 u. Field spread
+    {''card'': 4.905, ''L5'': 5.328} (3 seeds, real-game judge).'
+  - Label: Wild5
+    CellConfig: {fileID: 11400000, guid: de0dd660f18f3aaf5c76599e344d0f30, type: 2}
     Enabled: 1
-    Notes: 'Shuffle course 2: polished-five spread 1.28x card, 1.21x L5 (3 seeds, real-game
-    judge).'
-  - Label: Course4
-    CellConfig: {fileID: 11400000, guid: f7da5e947b36af11154512cb1b00d7e0, type: 2}
-    Enabled: 1
-    Notes: 'Shuffle course 4: polished-five spread 1.13x card, 1.25x L5 (3 seeds, real-game
-    judge).'
-  - Label: Course5
-    CellConfig: {fileID: 11400000, guid: 670f965a49bb827f9fc718ef447a2cb3, type: 2}
-    Enabled: 1
-    Notes: 'Shuffle course 5: polished-five spread 1.12x card, 1.28x L5 (3 seeds, real-game
-    judge).'
-  - Label: Course6
-    CellConfig: {fileID: 11400000, guid: b4a170db9d53cc110baac5465cd9bd4b, type: 2}
-    Enabled: 1
-    Notes: 'Shuffle course 6: polished-five spread 1.34x card, 1.20x L5 (3 seeds, real-game
-    judge).'
+    Notes: 'Wide search shard_cloud4-0049: Ourobor world, super-shielded 48%, no rails, nucleus,
+    lifeforms none, lap 4968 u. Field spread {''card'': 4.168, ''L5'': 6.215} (3 seeds,
+    real-game judge).'

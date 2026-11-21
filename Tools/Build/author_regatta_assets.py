@@ -40,6 +40,7 @@ below and stated in the doc: what an element cannot close is not hidden by this 
 import hashlib
 import json
 import os
+import glob
 import re
 import sys
 
@@ -604,9 +605,17 @@ scene, _scene_errors = lib.committed_scene(
 # The Cell's list is this script's block: when the shuffle changes, the committed scene's list is rewritten to match
 # (only that block; every other line of the scene is the Editor's). Any other list there is an edit to look at.
 # A list is this script's when it holds any shuffle course's config (the old circuits' list held them too).
+_COMMITTED_SHUFFLE_GUIDS = set()
+for _meta in glob.glob(os.path.join(lib.ROOT, CELL_DIR, "Regatta Shuffle Cell Config *.asset.meta")):
+    _m = re.search(r"guid: ([0-9a-f]{32})", open(_meta).read())
+    if _m:
+        _COMMITTED_SHUFFLE_GUIDS.add(_m.group(1))
 for _old in sorted(set(re.findall(r"  CellConfigs:\n(?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)+"
                                   + f"  cellTypeChoiceOptions: {COURSE_VARIANT_WISE}\n", scene))):
-    if _old != NEW_CELL_BLOCK and any(G_ASSET[f"ShuffleConfig{l}"] in _old for l in SHUFFLE_LABELS):
+    # A pool with new labels (the wide search's Wild1..N) replaces a list of the earlier labels' configs: any shuffle
+    # cell config committed in the folder marks the list as this script's.
+    if _old != NEW_CELL_BLOCK and (any(G_ASSET[f"ShuffleConfig{l}"] in _old for l in SHUFFLE_LABELS)
+                                   or any(_gd in _old for _gd in _COMMITTED_SHUFFLE_GUIDS)):
         scene = scene.replace(_old, NEW_CELL_BLOCK)
 if NEW_CELL_BLOCK not in scene:
     _scene_errors.append(f"MinigameRegatta.unity: the Cell's CellConfigs list is not this script's:\n{NEW_CELL_BLOCK}")
@@ -691,7 +700,10 @@ for _e in SHUFFLE:
     _pf = g.files[f"{SHUFFLE_PREFAB_DIR}/RegattaShuffleRails{_e['label']}.prefab"]
     if _pf.count("  lifeforms:\n") != 1:
         errors.append(f"RegattaShuffleRails{_e['label']}.prefab does not carry exactly one lifeforms block")
-    if EXISTING["BarrenSpawnProfile"] not in g.files[f"{CELL_DIR}/Regatta Shuffle Cell Config {_e['label']}.asset"]:
+    # A v2 genome's cell may name another cell config's lifeforms (its spawn profile, shuffle_cell); every other
+    # entry stays Barren.
+    _life = ((_e.get("genome") or {}).get("cell") or {}).get("lifeforms")
+    if not _life and EXISTING["BarrenSpawnProfile"] not in g.files[f"{CELL_DIR}/Regatta Shuffle Cell Config {_e['label']}.asset"]:
         errors.append(f"shuffle {_e['label']} does not reference the Barren spawn profile")
 
 # The balance the model reaches, asserted so a vessel retune that breaks it is caught here.

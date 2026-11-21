@@ -1,1182 +1,1384 @@
 {
-  "picked_by": "regatta-flywheel/w3/shuffle/pick.py Squirrel re-judged at the #2209 throttle lever (3 seeds, median).",
-  "imbalance": {
-    "card": 1.132,
-    "L5": 1.083
-  },
-  "entries": [
-    {
-      "label": "Course1",
-      "genome": {
-        "version": 1,
-        "intensity": 3,
-        "seed": 501109793,
-        "circuit": {
-          "RadialSwing": 0.04595226441703325,
-          "AxisJitterDegrees": 0.41292096756199714,
-          "MaxPresentDegrees": 36.07401995859823,
-          "LateralPerturbation": 14.150183586714357,
-          "CornerFloorRadius": 209.34649624435843,
-          "CornerProfile": [
-            44.62285068317129,
-            44.62285068317129,
-            45.1257164389429,
-            45.1257164389429,
-            45.1257164389429,
-            45.1257164389429,
-            45.1257164389429,
-            45.1257164389429
-          ]
-        },
-        "features": {
-          "Sections": [],
-          "AlternateGates": [
-            {
-              "Ring": 5,
-              "Offset": 167.43816059042115,
-              "Bearing": 166.92723524038493,
-              "RadiusScale": 1.1359316203189318
-            }
-          ],
-          "Crystals": {
-            "PerLap": 0,
-            "Phase": 0.5647383317490348
-          }
-        },
-        "line_clearance": 18.155361904102413,
-        "flora": {
-          "sitesPerLeg": [],
-          "offsetMin": 90.0,
-          "offsetMax": 160.0,
-          "sideDegrees": 0.0,
-          "sideSpreadDegrees": 180.0,
-          "legWindowStart": 0.2,
-          "legWindowEnd": 0.8,
-          "ringClearance": 60.0,
-          "faunaCorridorRadius": 0.0,
-          "faunaCorridorStandoff": 50.0,
-          "preset": "none"
-        },
-        "placements": [
-          {
-            "kind": "Harvest",
-            "leg": 7.729440616642578,
-            "offset": [
-              122.99682209296759,
-              245.6919562442655,
-              -0.7841710986958113
-            ],
-            "scale": 182.4818664743507,
-            "yaw": 76.53470690976764,
-            "pitch": 123.89605205405542,
-            "roll": 207.27223593170518,
-            "domain": "Native",
-            "prism": "SuperShielded",
-            "seed": 1465594940,
-            "density": 0.3853180757032695,
-            "cross_line": false,
-            "cross_rail": true,
-            "params": {
-              "baleCount": 5.0,
-              "baleSize": 5.0,
-              "centreClearingRadius": 271.55648927347636,
-              "chaffCloudRadius": 104.4235673177545,
-              "colourPattern": 0.0,
-              "coreBlocks": 169.0,
-              "coreGap": 104.63990847145251,
-              "fieldRadius": 1690.9236307990273,
-              "shieldedCores": 1.0,
-              "strawsPerCloud": 24.0
-            }
-          },
-          {
-            "kind": "Panes",
-            "leg": 5.023456186179881,
-            "offset": [
-              30.314166200724348,
-              316.1855780868012,
-              -24.71177408683549
-            ],
-            "scale": 200.64907176455338,
-            "yaw": 291.7948279142338,
-            "pitch": 192.1610146566451,
-            "roll": 12.663554369631624,
-            "domain": "Gold",
-            "prism": "Danger",
-            "seed": 671084881,
-            "density": 0.13167181927260965,
-            "cross_line": true,
-            "cross_rail": false,
-            "params": {}
-          }
-        ]
-      },
-      "prisms": 5269,
-      "candidate": 1,
-      "notes": "Shuffle course 1: polished-five spread 1.14x card, 1.13x L5 (3 seeds, real-game judge).",
-      "judged": {
-        "card": {
-          "Urchin": 67.92,
-          "Scarab": 65.6,
-          "Sparrow": 67.03,
-          "Dolphin": 74.57,
-          "Squirrel": 66.14,
-          "Rhino": 22.95,
-          "Manta": 83.52,
-          "Thresher": 90.09,
-          "Serpent": 75.19,
-          "BrittleStar": 82.24,
-          "Swordfish": 27.23
-        },
-        "L5": {
-          "Urchin": 62.13,
-          "Scarab": 65.6,
-          "Sparrow": 67.03,
-          "Dolphin": 59.18,
-          "Squirrel": 54.73,
-          "Rhino": 24.28,
-          "Manta": 28.05,
-          "Thresher": 90.09,
-          "Serpent": 75.19,
-          "BrittleStar": 76.92,
-          "Swordfish": 27.12
-        }
-      },
-      "ref": "Ref3"
+ "picked_by": "Tools/Compute/evaluators/regatta_wide.py playtest (most different, then most balanced)",
+ "imbalance": {
+  "card": 4.904525241956576,
+  "L5": 6.215362303827627
+ },
+ "refs_by": "the four most balanced wide-search courses (playtest branch only)",
+ "entries": [
+  {
+   "label": "Wild1",
+   "genome": {
+    "version": 2,
+    "intensity": 1,
+    "seed": 154434389,
+    "features": {
+     "Sections": [],
+     "AlternateGates": [],
+     "Crystals": {
+      "PerLap": 1,
+      "Phase": 0.6862121763189427
+     }
     },
-    {
-      "label": "Course2",
-      "genome": {
-        "version": 1,
-        "intensity": 2,
-        "seed": 0,
-        "circuit": {
-          "RingRadius": 82.99742334657546
-        },
-        "features": {
-          "Sections": [
-            {
-              "Leg": 3,
-              "From": 0.7968410942986797,
-              "To": 1.0,
-              "Kind": 3,
-              "Neutral": false,
-              "Detour": 0.0,
-              "DetourBearing": 16.019987152364838
-            }
-          ],
-          "AlternateGates": [],
-          "Crystals": {
-            "PerLap": 0,
-            "Phase": 0.0
-          }
-        },
-        "line_clearance": 44.0,
-        "flora": {
-          "sitesPerLeg": [
-            1,
-            0,
-            2,
-            0,
-            0,
-            2,
-            1,
-            0
-          ],
-          "offsetMin": 90.0,
-          "offsetMax": 160.0,
-          "sideDegrees": 0.0,
-          "sideSpreadDegrees": 180.0,
-          "legWindowStart": 0.2,
-          "legWindowEnd": 0.8,
-          "ringClearance": 60.0,
-          "faunaCorridorRadius": 0.0,
-          "faunaCorridorStandoff": 50.0,
-          "preset": "none"
-        },
-        "placements": [
-          {
-            "kind": "Switchyard",
-            "leg": 1.9052677508515394,
-            "offset": [
-              0.0,
-              52.01366105427795,
-              27.358648372792928
-            ],
-            "scale": 218.22493795042757,
-            "yaw": 138.71089292934735,
-            "pitch": 57.4739332647262,
-            "roll": 280.8279851586319,
-            "domain": "Gold",
-            "prism": "Native",
-            "seed": 0,
-            "density": 1.0718305849835026,
-            "cross_line": true,
-            "cross_rail": false,
-            "params": {
-              "bigBurrShells": 1.0,
-              "railPrisms": 38.0,
-              "smallBurrShells": 2.0,
-              "stationsPerRing": 6.0
-            }
-          },
-          {
-            "kind": "HopfFibration",
-            "leg": 6.788063495789019,
-            "offset": [
-              35.6370384557367,
-              337.1839159778151,
-              29.52556961413032
-            ],
-            "scale": 194.29404708190447,
-            "yaw": 67.62505030187896,
-            "pitch": 54.34130790052712,
-            "roll": 307.84328360113255,
-            "domain": "Native",
-            "prism": "Shielded",
-            "seed": 1229315297,
-            "density": 1.0,
-            "cross_line": true,
-            "cross_rail": false,
-            "params": {
-              "colorByLatitude": 0.0,
-              "includePolarFibers": 0.0,
-              "includeVillarceauCircles": 1.0,
-              "projectionPole": 0.9433035876442921,
-              "villarceauBlocks": 39.0,
-              "villarceauFibers": 8.0
-            }
-          }
-        ]
+    "line_clearance": 25.777,
+    "placements": [
+     {
+      "kind": "Orrery",
+      "leg": 0.0,
+      "offset": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "scale": 901.408,
+      "yaw": 244.33,
+      "pitch": 145.308,
+      "roll": 146.442,
+      "seed": 656635179,
+      "density": 0.8012,
+      "cross_line": true,
+      "cross_rail": true,
+      "params": {},
+      "base": true,
+      "at": [
+       -107.739,
+       126.781,
+       99.944
+      ],
+      "domain": "Blue",
+      "prism": "Mix",
+      "prism_mix": [
+       0.1861,
+       0.4013,
+       0.0,
+       0.4125
+      ],
+      "prism_size": 0.5643
+     },
+     {
+      "kind": "TorusKnot",
+      "leg": 6.1715,
+      "offset": [
+       128.158,
+       100.792,
+       24.191
+      ],
+      "scale": 23.675,
+      "yaw": 306.007,
+      "pitch": 44.918,
+      "roll": 155.094,
+      "seed": 1206941586,
+      "density": 1.0,
+      "cross_line": false,
+      "cross_rail": true,
+      "params": {
+       "majorRadius": 86.55994018951608,
+       "blocksAlongKnot": 838.0
       },
-      "prisms": 7952,
-      "candidate": 9,
-      "notes": "Shuffle course 2: polished-five spread 1.28x card, 1.21x L5 (3 seeds, real-game judge).",
-      "judged": {
-        "card": {
-          "Urchin": 74.09,
-          "Scarab": 71.22,
-          "Sparrow": 76.5,
-          "Dolphin": 91.14,
-          "Squirrel": 83.07,
-          "Rhino": 40.32,
-          "Manta": 95.94,
-          "Thresher": 101.59,
-          "Serpent": 82.61,
-          "BrittleStar": 84.02,
-          "Swordfish": 45.53
-        },
-        "L5": {
-          "Urchin": 76.06,
-          "Scarab": 71.22,
-          "Sparrow": 76.5,
-          "Dolphin": 86.31,
-          "Squirrel": 77.85,
-          "Rhino": 40.12,
-          "Manta": 27.53,
-          "Thresher": 101.59,
-          "Serpent": 82.61,
-          "BrittleStar": 75.84,
-          "Swordfish": 49.23
-        }
-      }
-    },
-    {
-      "label": "Course3",
-      "genome": {
-        "version": 1,
-        "intensity": 2,
-        "seed": 0,
-        "circuit": {
-          "BaseRadius": 751.8265561005898,
-          "AngularSpread": 4.2941628532959095,
-          "RadialSwing": 0.043573117776335886,
-          "LateralPerturbation": 50.91382542732968,
-          "AxisJitterDegrees": 3.998778968984654,
-          "CornerFloorRadius": 194.80909907437825,
-          "CornerProfile": [
-            77.91599617819772,
-            77.91599617819772,
-            34.028001273934095,
-            34.028001273934095,
-            34.028001273934095,
-            34.028001273934095,
-            34.028001273934095,
-            34.028001273934095
-          ]
-        },
-        "features": {
-          "Sections": [
-            {
-              "Leg": 7,
-              "From": 0.21012674438810144,
-              "To": 0.7481450517907201,
-              "Kind": 3,
-              "Neutral": true,
-              "Detour": 0.0,
-              "DetourBearing": 110.94787670409079
-            },
-            {
-              "Leg": 0,
-              "From": 0.22234065699961966,
-              "To": 0.5303437878893945,
-              "Kind": 1,
-              "Neutral": false,
-              "Detour": 0.0,
-              "DetourBearing": 357.81514218579224
-            }
-          ],
-          "AlternateGates": [],
-          "Crystals": {
-            "PerLap": 0,
-            "Phase": 0.0
-          }
-        },
-        "line_clearance": 19.923015781102436,
-        "flora": {
-          "sitesPerLeg": [
-            6,
-            0,
-            1,
-            2,
-            3,
-            1,
-            6,
-            1
-          ],
-          "offsetMin": 90.0,
-          "offsetMax": 160.0,
-          "sideDegrees": 0.0,
-          "sideSpreadDegrees": 180.0,
-          "legWindowStart": 0.2,
-          "legWindowEnd": 0.8,
-          "ringClearance": 60.0,
-          "faunaCorridorRadius": 0.0,
-          "faunaCorridorStandoff": 50.0,
-          "preset": "thicket"
-        },
-        "placements": [
-          {
-            "kind": "Flatline",
-            "leg": 2.680592362801927,
-            "offset": [
-              195.60976314684427,
-              263.43586626284065,
-              -28.305406330447397
-            ],
-            "scale": 183.52621132908635,
-            "yaw": 341.27561702356576,
-            "pitch": 161.82818024840614,
-            "roll": 108.40505473772407,
-            "domain": "Native",
-            "prism": "Danger",
-            "seed": 0,
-            "density": 0.5010807964928288,
-            "cross_line": true,
-            "cross_rail": false,
-            "params": {
-              "crystalCount": 12.0,
-              "dangerRoomEvery": 1.0,
-              "holeShare": 0.6752895112716738,
-              "outerRadius": 653.6469898860137,
-              "paneHalfMax": 3.0,
-              "paneHalfMin": 1.0,
-              "roomHalf": 2.0,
-              "tunnelCount": 2.0
-            }
-          },
-          {
-            "kind": "Ribcage",
-            "leg": 7.486934420721756,
-            "offset": [
-              80.40850887928919,
-              92.38719951579985,
-              -15.698533664976374
-            ],
-            "scale": 126.55655761619771,
-            "yaw": 236.39609976468648,
-            "pitch": 164.13612118118252,
-            "roll": 343.2646541374912,
-            "domain": "Native",
-            "prism": "Danger",
-            "seed": 1983441054,
-            "density": 1.136273195236953,
-            "cross_line": false,
-            "cross_rail": false,
-            "params": {
-              "shellCount": 1.0
-            }
-          }
-        ]
+      "domain": "Mix",
+      "domain_mix": [
+       0.987,
+       0.249,
+       0.976,
+       0.671
+      ],
+      "prism": "Mix",
+      "prism_mix": [
+       0.1694,
+       0.8092,
+       0.0,
+       0.0214
+      ],
+      "prism_size": 0.768,
+      "jitter": 57.117
+     },
+     {
+      "kind": "Flatline",
+      "leg": 6.8064,
+      "offset": [
+       205.229,
+       351.199,
+       91.175
+      ],
+      "scale": 114.623,
+      "yaw": 322.73,
+      "pitch": 270.443,
+      "roll": 134.63,
+      "seed": 1530485118,
+      "density": 1.0,
+      "cross_line": false,
+      "cross_rail": true,
+      "params": {
+       "outerRadius": 229.50487737067857,
+       "paneCount": 17.0,
+       "paneHalfMin": 3.0,
+       "tunnelCount": 4.0,
+       "cageCount": 7.0,
+       "roomHalf": 6.0,
+       "dangerPaneEvery": 8.0,
+       "crystalCount": 4.0
       },
-      "prisms": 5030,
-      "candidate": 12,
-      "notes": "Shuffle course 3: polished-five spread 1.11x card, 1.19x L5 (3 seeds, real-game judge).",
-      "judged": {
-        "card": {
-          "Urchin": 63.31,
-          "Scarab": 60.94,
-          "Sparrow": 62.59,
-          "Dolphin": 57.03,
-          "Squirrel": 62.8,
-          "Rhino": 26.85,
-          "Manta": 78.8,
-          "Thresher": 68.37,
-          "Serpent": 61.72,
-          "BrittleStar": 70.02,
-          "Swordfish": 31.4
-        },
-        "L5": {
-          "Urchin": 57.95,
-          "Scarab": 60.94,
-          "Sparrow": 62.59,
-          "Dolphin": 52.8,
-          "Squirrel": 55.63,
-          "Rhino": 26.95,
-          "Manta": 20.95,
-          "Thresher": 68.37,
-          "Serpent": 61.72,
-          "BrittleStar": 61.12,
-          "Swordfish": 32.07
-        }
+      "domain": "Ruby",
+      "prism": "Mix",
+      "prism_mix": [
+       0.001,
+       0.8776,
+       0.0,
+       0.1214
+      ],
+      "prism_size": 1.475
+     },
+     {
+      "kind": "FiveRings",
+      "leg": 7.5986,
+      "offset": [
+       143.482,
+       136.819,
+       72.602
+      ],
+      "scale": 105.052,
+      "yaw": 101.918,
+      "pitch": 214.135,
+      "roll": 355.082,
+      "seed": 1004299706,
+      "density": 1.0,
+      "cross_line": false,
+      "cross_rail": true,
+      "params": {
+       "ringRadius": 18.08012630797431
       },
-      "ref": "Ref1"
-    },
-    {
-      "label": "Course4",
-      "genome": {
-        "version": 1,
-        "intensity": 2,
-        "seed": 0,
-        "features": {
-          "Sections": [],
-          "AlternateGates": [],
-          "Crystals": {
-            "PerLap": 0,
-            "Phase": 0.0
-          }
-        },
-        "line_clearance": 44.0,
-        "flora": {
-          "sitesPerLeg": [],
-          "offsetMin": 90.0,
-          "offsetMax": 160.0,
-          "sideDegrees": 0.0,
-          "sideSpreadDegrees": 180.0,
-          "legWindowStart": 0.2,
-          "legWindowEnd": 0.8,
-          "ringClearance": 60.0,
-          "faunaCorridorRadius": 0.0,
-          "faunaCorridorStandoff": 50.0,
-          "preset": "none"
-        },
-        "placements": [
-          {
-            "kind": "Switchyard",
-            "leg": 4.342663180748852,
-            "offset": [
-              140.00271973836087,
-              147.18579471506152,
-              -43.89794478884699
-            ],
-            "scale": 183.39168781928174,
-            "yaw": 154.0162937086651,
-            "pitch": 324.2669311290359,
-            "roll": 294.3937796045878,
-            "domain": "Native",
-            "prism": "Native",
-            "seed": 199897113,
-            "density": 0.9578893080579155,
-            "cross_line": false,
-            "cross_rail": false,
-            "params": {
-              "railHalfGapDegrees": 7.512474599131384,
-              "railPrisms": 35.0,
-              "ringRadius": 1469.8207260742968,
-              "shellPitch": 11.048080751621145,
-              "smallBurrShells": 3.0
-            }
-          }
-        ]
-      },
-      "prisms": 4693,
-      "candidate": 18,
-      "notes": "Shuffle course 4: polished-five spread 1.13x card, 1.25x L5 (3 seeds, real-game judge).",
-      "judged": {
-        "card": {
-          "Urchin": 74.37,
-          "Scarab": 75.62,
-          "Sparrow": 76.12,
-          "Dolphin": 84.11,
-          "Squirrel": 83.14,
-          "Rhino": 40.02,
-          "Manta": 95.52,
-          "Thresher": 77.55,
-          "Serpent": 82.97,
-          "BrittleStar": 81.29,
-          "Swordfish": 47.02
-        },
-        "L5": {
-          "Urchin": 68.02,
-          "Scarab": 75.62,
-          "Sparrow": 76.12,
-          "Dolphin": 84.69,
-          "Squirrel": 75.86,
-          "Rhino": 39.9,
-          "Manta": 24.67,
-          "Thresher": 77.55,
-          "Serpent": 82.97,
-          "BrittleStar": 72.97,
-          "Swordfish": 45.12
-        }
-      }
-    },
-    {
-      "label": "Course5",
-      "genome": {
-        "version": 1,
-        "intensity": 2,
-        "seed": 0,
-        "circuit": {
-          "BaseRadius": 751.8265561005898,
-          "AngularSpread": 4.2941628532959095,
-          "RadialSwing": 0.043573117776335886,
-          "LateralPerturbation": 50.91382542732968,
-          "AxisJitterDegrees": 0.0,
-          "CornerFloorRadius": 194.80909907437825,
-          "CornerProfile": [
-            77.05972182774964,
-            81.01601811197226,
-            33.65404334337968,
-            33.65404334337968,
-            33.65404334337968,
-            33.65404334337968,
-            33.65404334337968,
-            33.65404334337968
-          ]
-        },
-        "features": {
-          "Sections": [],
-          "AlternateGates": [],
-          "Crystals": {
-            "PerLap": 0,
-            "Phase": 0.5139242237955111
-          }
-        },
-        "line_clearance": 19.923015781102436,
-        "flora": {
-          "sitesPerLeg": [
-            6,
-            1,
-            2,
-            3,
-            0,
-            2,
-            6,
-            2
-          ],
-          "offsetMin": 90.0,
-          "offsetMax": 160.0,
-          "sideDegrees": 0.0,
-          "sideSpreadDegrees": 180.0,
-          "legWindowStart": 0.2,
-          "legWindowEnd": 0.8,
-          "ringClearance": 60.0,
-          "faunaCorridorRadius": 0.0,
-          "faunaCorridorStandoff": 50.0,
-          "preset": "groves"
-        },
-        "placements": [
-          {
-            "kind": "Flatline",
-            "leg": 5.125,
-            "offset": [
-              146.65769744268692,
-              133.2304677801123,
-              6.2572673696202905
-            ],
-            "scale": 120.0,
-            "yaw": 62.29981700226566,
-            "pitch": 337.70012351558825,
-            "roll": 34.29294182634471,
-            "domain": "Gold",
-            "prism": "Danger",
-            "seed": 980823395,
-            "density": 0.49722968846711335,
-            "cross_line": true,
-            "cross_rail": false,
-            "params": {
-              "innerRadius": 148.78488574565603,
-              "outerRadius": 697.5392765137801,
-              "paneHalfMax": 5.0,
-              "paneHalfMin": 6.0,
-              "tunnelCount": 1.0
-            }
-          },
-          {
-            "kind": "Wall",
-            "leg": 7.125,
-            "offset": [
-              115.36254584116466,
-              35.03767335396145,
-              -5.412565113692427
-            ],
-            "scale": 120.0,
-            "yaw": 296.0553222371306,
-            "pitch": 341.06516443994917,
-            "roll": 130.3166487671254,
-            "domain": "Gold",
-            "prism": "Danger",
-            "seed": 1271407322,
-            "density": 1.0,
-            "cross_line": true,
-            "cross_rail": false,
-            "params": {
-              "padding": 0.08961151751004365
-            }
-          },
-          {
-            "kind": "Garland",
-            "leg": 7.375,
-            "offset": [
-              140.34544472671155,
-              353.4341404052811,
-              -18.56265318017765
-            ],
-            "scale": 234.43,
-            "yaw": 50.40351759752467,
-            "pitch": 202.77093448887285,
-            "roll": 150.13625731309082,
-            "domain": "Native",
-            "prism": "Shielded",
-            "seed": 2040899111,
-            "density": 1.1045778738737364,
-            "cross_line": true,
-            "cross_rail": false,
-            "params": {}
-          }
-        ]
-      },
-      "prisms": 5111,
-      "candidate": 19,
-      "notes": "Shuffle course 5: polished-five spread 1.12x card, 1.28x L5 (3 seeds, real-game judge).",
-      "judged": {
-        "card": {
-          "Urchin": 62.91,
-          "Scarab": 59.87,
-          "Sparrow": 62.22,
-          "Dolphin": 61.73,
-          "Squirrel": 61.98,
-          "Rhino": 26.82,
-          "Manta": 77.85,
-          "Thresher": 62.62,
-          "Serpent": 59.28,
-          "BrittleStar": 67.87,
-          "Swordfish": 33.27
-        },
-        "L5": {
-          "Urchin": 57.53,
-          "Scarab": 59.87,
-          "Sparrow": 62.22,
-          "Dolphin": 48.5,
-          "Squirrel": 55.3,
-          "Rhino": 26.22,
-          "Manta": 26.48,
-          "Thresher": 62.62,
-          "Serpent": 59.28,
-          "BrittleStar": 57.27,
-          "Swordfish": 32.27
-        }
-      }
-    },
-    {
-      "label": "Course6",
-      "genome": {
-        "version": 1,
-        "intensity": 2,
-        "seed": 0,
-        "circuit": {
-          "AxisJitterDegrees": 17.817227207611786
-        },
-        "features": {
-          "Sections": [],
-          "AlternateGates": [],
-          "Crystals": {
-            "PerLap": 0,
-            "Phase": 0.0
-          }
-        },
-        "line_clearance": 44.0,
-        "flora": {
-          "sitesPerLeg": [],
-          "offsetMin": 90.0,
-          "offsetMax": 160.0,
-          "sideDegrees": 0.0,
-          "sideSpreadDegrees": 180.0,
-          "legWindowStart": 0.2,
-          "legWindowEnd": 0.8,
-          "ringClearance": 60.0,
-          "faunaCorridorRadius": 0.0,
-          "faunaCorridorStandoff": 50.0,
-          "preset": "none"
-        },
-        "placements": [
-          {
-            "kind": "FiveRings",
-            "leg": 5.68090565056819,
-            "offset": [
-              0.9402301041258738,
-              171.24290806734024,
-              17.596540848795847
-            ],
-            "scale": 211.35110792752414,
-            "yaw": 143.65621393125338,
-            "pitch": 109.92088487468652,
-            "roll": 147.45670193094819,
-            "domain": "Jade",
-            "prism": "Plain",
-            "seed": 923164614,
-            "density": 1.0,
-            "cross_line": true,
-            "cross_rail": false,
-            "params": {
-              "blocksPerRing": 23.0,
-              "ringRadius": 5.884286684130503
-            }
-          }
-        ]
-      },
-      "prisms": 2076,
-      "candidate": 23,
-      "notes": "Shuffle course 6: polished-five spread 1.34x card, 1.20x L5 (3 seeds, real-game judge).",
-      "judged": {
-        "card": {
-          "Urchin": 74.14,
-          "Scarab": 75.49,
-          "Sparrow": 75.85,
-          "Dolphin": 99.43,
-          "Squirrel": 80.53,
-          "Rhino": 43.67,
-          "Manta": 95.77,
-          "Thresher": 80.0,
-          "Serpent": 82.42,
-          "BrittleStar": 81.87,
-          "Swordfish": 44.22
-        },
-        "L5": {
-          "Urchin": 67.8,
-          "Scarab": 75.49,
-          "Sparrow": 75.85,
-          "Dolphin": 70.53,
-          "Squirrel": 75.77,
-          "Rhino": 41.25,
-          "Manta": 33.1,
-          "Thresher": 80.0,
-          "Serpent": 82.42,
-          "BrittleStar": 73.4,
-          "Swordfish": 43.42
-        }
-      }
-    },
-    {
-      "label": "Course7",
-      "genome": {
-        "version": 1,
-        "intensity": 2,
-        "seed": 0,
-        "circuit": {
-          "BaseRadius": 751.8265561005898,
-          "AngularSpread": 4.2941628532959095,
-          "RadialSwing": 0.043573117776335886,
-          "LateralPerturbation": 50.91382542732968,
-          "AxisJitterDegrees": 0.0,
-          "CornerFloorRadius": 194.80909907437825,
-          "CornerProfile": [
-            77.91599617819772,
-            77.91599617819772,
-            34.028001273934095,
-            34.028001273934095,
-            34.028001273934095,
-            34.028001273934095,
-            34.028001273934095,
-            34.028001273934095
-          ]
-        },
-        "features": {
-          "Sections": [
-            {
-              "Leg": 6,
-              "From": 0.8586649945471784,
-              "To": 1.0,
-              "Kind": 3,
-              "Neutral": true,
-              "Detour": 0.0,
-              "DetourBearing": 126.47484119952534
-            }
-          ],
-          "AlternateGates": [
-            {
-              "Ring": 0,
-              "Offset": 266.9712932512829,
-              "Bearing": 10.672399881500603,
-              "RadiusScale": 1.136180036838486
-            }
-          ],
-          "Crystals": {
-            "PerLap": 0,
-            "Phase": 0.15571029802116365
-          }
-        },
-        "line_clearance": 19.923015781102436,
-        "flora": {
-          "sitesPerLeg": [
-            8,
-            0,
-            2,
-            4,
-            1,
-            2,
-            4,
-            1
-          ],
-          "offsetMin": 90.0,
-          "offsetMax": 160.0,
-          "sideDegrees": 0.0,
-          "sideSpreadDegrees": 180.0,
-          "legWindowStart": 0.2,
-          "legWindowEnd": 0.8,
-          "ringClearance": 60.0,
-          "faunaCorridorRadius": 0.0,
-          "faunaCorridorStandoff": 50.0,
-          "preset": "reef-fenced"
-        },
-        "placements": [
-          {
-            "kind": "LinkedRings",
-            "leg": 4.276796573818537,
-            "offset": [
-              219.9434454011973,
-              117.53278182050805,
-              54.91776600692114
-            ],
-            "scale": 36.24582118954495,
-            "yaw": 257.3751000858344,
-            "pitch": 131.43401848798317,
-            "roll": 168.90613340356654,
-            "domain": "Native",
-            "prism": "Native",
-            "seed": 1858495181,
-            "density": 1.0,
-            "cross_line": false,
-            "cross_rail": false,
-            "params": {
-              "blocksPerRing": 27.0,
-              "colorByRing": 0.0,
-              "numberOfRings": 7.0
-            }
-          },
-          {
-            "kind": "Wall",
-            "leg": 3.4558763783172965,
-            "offset": [
-              36.30234139242412,
-              348.1016255559506,
-              22.523835207352363
-            ],
-            "scale": 25.581061875862893,
-            "yaw": 118.8848862265004,
-            "pitch": 265.7036525325304,
-            "roll": 163.13129430142664,
-            "domain": "Jade",
-            "prism": "Danger",
-            "seed": 0,
-            "density": 1.0,
-            "cross_line": true,
-            "cross_rail": false,
-            "params": {
-              "padding": 0.16764525096746158
-            }
-          },
-          {
-            "kind": "Standoff",
-            "leg": 5.401793819621476,
-            "offset": [
-              179.9299124310353,
-              1.1069570022236386,
-              29.48955583653938
-            ],
-            "scale": 81.8747227017148,
-            "yaw": 215.56658100649378,
-            "pitch": 84.88573193371715,
-            "roll": 82.23568678137853,
-            "domain": "Native",
-            "prism": "Native",
-            "seed": 1311017387,
-            "density": 0.3989821743020552,
-            "cross_line": false,
-            "cross_rail": false,
-            "params": {
-              "postCount": 7.0,
-              "postGrid": 3.0,
-              "shieldedRim": 1.0
-            }
-          }
-        ]
-      },
-      "prisms": 2384,
-      "candidate": 27,
-      "notes": "Shuffle course 7: polished-five spread 1.15x card, 1.12x L5 (3 seeds, real-game judge).",
-      "judged": {
-        "card": {
-          "Urchin": 62.59,
-          "Scarab": 59.98,
-          "Sparrow": 62.39,
-          "Dolphin": 63.92,
-          "Squirrel": 63.12,
-          "Rhino": 26.83,
-          "Manta": 77.85,
-          "Thresher": 61.12,
-          "Serpent": 59.25,
-          "BrittleStar": 67.94,
-          "Swordfish": 31.87
-        },
-        "L5": {
-          "Urchin": 57.18,
-          "Scarab": 59.98,
-          "Sparrow": 62.39,
-          "Dolphin": 64.19,
-          "Squirrel": 57.58,
-          "Rhino": 24.15,
-          "Manta": 25.4,
-          "Thresher": 61.12,
-          "Serpent": 59.25,
-          "BrittleStar": 58.48,
-          "Swordfish": 30.67
-        }
-      },
-      "ref": "Ref2"
-    },
-    {
-      "label": "Course8",
-      "genome": {
-        "version": 1,
-        "intensity": 1,
-        "seed": 1898197151,
-        "circuit": {
-          "RingRadius": 56.21069566839276,
-          "CornerFloorRadius": 160.53486290701224,
-          "LateralPerturbation": 172.59974010708623,
-          "RadialSwing": 0.3120872766147334,
-          "CornerProfile": [
-            10.007690764559408,
-            83.17228492190942,
-            77.68846419938177,
-            56.136156488263765,
-            54.966883023298244,
-            27.608057750833673,
-            35.394629515989394,
-            15.025833335764345
-          ]
-        },
-        "rails": {
-          "LaneOffset": 17.966299265105977
-        },
-        "features": {
-          "Sections": [
-            {
-              "Leg": 7,
-              "From": 0.38793767784851063,
-              "To": 0.593024050994343,
-              "Kind": 3,
-              "Neutral": false,
-              "Detour": 0.0,
-              "DetourBearing": 297.3956515208958
-            },
-            {
-              "Leg": 7,
-              "From": 0.7915359104105788,
-              "To": 1.0,
-              "Kind": 0,
-              "Neutral": false,
-              "Detour": 0.0,
-              "DetourBearing": 33.50402324402633
-            },
-            {
-              "Leg": 7,
-              "From": 0.8637261565201564,
-              "To": 1.0,
-              "Kind": 2,
-              "Neutral": false,
-              "Detour": 0.0,
-              "DetourBearing": 310.1984366084615
-            },
-            {
-              "Leg": 7,
-              "From": 0.1782625157023412,
-              "To": 0.6875054838946578,
-              "Kind": 0,
-              "Neutral": true,
-              "Detour": 0.0,
-              "DetourBearing": 81.85301703138126
-            }
-          ],
-          "AlternateGates": [
-            {
-              "Ring": 6,
-              "Offset": 345.94000578216196,
-              "Bearing": 304.93491909774093,
-              "RadiusScale": 0.713623315597751
-            },
-            {
-              "Ring": 5,
-              "Offset": 336.46636079272207,
-              "Bearing": 86.33488301132647,
-              "RadiusScale": 0.7652893342910139
-            }
-          ],
-          "Crystals": {
-            "PerLap": 4,
-            "Phase": 0.09315598453834462
-          }
-        },
-        "line_clearance": 47.83367705339886,
-        "flora": {
-          "sitesPerLeg": [],
-          "offsetMin": 90.0,
-          "offsetMax": 160.0,
-          "sideDegrees": 0.0,
-          "sideSpreadDegrees": 180.0,
-          "legWindowStart": 0.2,
-          "legWindowEnd": 0.8,
-          "ringClearance": 60.0,
-          "faunaCorridorRadius": 0.0,
-          "faunaCorridorStandoff": 50.0,
-          "preset": "none"
-        },
-        "placements": [
-          {
-            "kind": "Kelpwood",
-            "leg": 5.189641249181695,
-            "offset": [
-              2.2452044980095565,
-              10.852285412201464,
-              37.51153029484914
-            ],
-            "scale": 201.6701679474334,
-            "yaw": 3.3418221285125327,
-            "pitch": 31.63791032797119,
-            "roll": 181.47967706747437,
-            "domain": "Native",
-            "prism": "Native",
-            "seed": 31638176,
-            "density": 1.0953701393658504,
-            "cross_line": false,
-            "cross_rail": true,
-            "params": {
-              "collarEveryNth": 2.0,
-              "dangerTipEveryNth": 5.0,
-              "strandCount": 25.0
-            }
-          },
-          {
-            "kind": "LSystem",
-            "leg": 4.2061881619907515,
-            "offset": [
-              370.4374045373274,
-              149.96503753878451,
-              26.470950986217375
-            ],
-            "scale": 156.87957876125108,
-            "yaw": 31.699066752372783,
-            "pitch": 307.42219504367034,
-            "roll": 39.61468603006828,
-            "domain": "Ruby",
-            "prism": "SuperShielded",
-            "seed": 326267061,
-            "density": 1.0,
-            "cross_line": false,
-            "cross_rail": false,
-            "params": {
-              "baseLength": 5.4573486870682135,
-              "preset": 0.0,
-              "widthScaleReduction": 1.2153136867944556
-            }
-          },
-          {
-            "kind": "Garland",
-            "leg": 1.872908767741147,
-            "offset": [
-              170.31889217631704,
-              61.64948621943351,
-              -6.96492250881758
-            ],
-            "scale": 240.59286407450705,
-            "yaw": 307.54527112796893,
-            "pitch": 261.9546559081894,
-            "roll": 212.9298370473182,
-            "domain": "Native",
-            "prism": "Danger",
-            "seed": 0,
-            "density": 0.3201083529536128,
-            "cross_line": true,
-            "cross_rail": false,
-            "params": {}
-          },
-          {
-            "kind": "Panes",
-            "leg": 0.1667827695305908,
-            "offset": [
-              1.5605567617460725,
-              351.810862593488,
-              1.3091698260759728
-            ],
-            "scale": 200.10232697134526,
-            "yaw": 100.16276074186257,
-            "pitch": 186.2497877866795,
-            "roll": 232.33584940043968,
-            "domain": "Gold",
-            "prism": "Danger",
-            "seed": 322496928,
-            "density": 0.3170742047069216,
-            "cross_line": true,
-            "cross_rail": false,
-            "params": {}
-          }
-        ]
-      },
-      "prisms": 7863,
-      "candidate": 29,
-      "notes": "Shuffle course 8: polished-five spread 1.23x card, 1.17x L5 (3 seeds, real-game judge).",
-      "judged": {
-        "card": {
-          "Urchin": 78.64,
-          "Scarab": 69.91,
-          "Sparrow": 70.12,
-          "Dolphin": 86.32,
-          "Squirrel": 77.46,
-          "Rhino": 51.28,
-          "Manta": 86.21,
-          "Thresher": 76.27,
-          "Serpent": 89.11,
-          "BrittleStar": 75.79,
-          "Swordfish": 56.92
-        },
-        "L5": {
-          "Urchin": 63.97,
-          "Scarab": 69.91,
-          "Sparrow": 70.12,
-          "Dolphin": 64.62,
-          "Squirrel": 75.33,
-          "Rhino": 40.72,
-          "Manta": 41.58,
-          "Thresher": 76.27,
-          "Serpent": 89.11,
-          "BrittleStar": 66.8,
-          "Swordfish": 47.47
-        }
-      },
-      "ref": "Ref4"
+      "domain": "Jade",
+      "prism": "Mix",
+      "prism_mix": [
+       0.8297,
+       0.1673,
+       0.0,
+       0.003
+      ],
+      "prism_size": 2.0939
+     }
+    ],
+    "rings": [
+     {
+      "pos": [
+       -140.843,
+       905.659,
+       104.292
+      ],
+      "axis": [
+       -0.60084,
+       -0.43375,
+       0.67145
+      ],
+      "radius": 125.356
+     },
+     {
+      "pos": [
+       -472.267,
+       669.26,
+       170.548
+      ],
+      "axis": [
+       -0.65698,
+       -0.74453,
+       0.11854
+      ],
+      "radius": 76.259
+     },
+     {
+      "pos": [
+       -636.087,
+       259.993,
+       -189.658
+      ],
+      "axis": [
+       -0.41589,
+       -0.90494,
+       -0.09012
+      ],
+      "radius": 40.001
+     },
+     {
+      "pos": [
+       -662.954,
+       -384.503,
+       -163.866
+      ],
+      "axis": [
+       0.22453,
+       -0.97336,
+       -0.04636
+      ],
+      "radius": 61.256
+     },
+     {
+      "pos": [
+       -111.03,
+       -907.666,
+       -88.74
+      ],
+      "axis": [
+       0.96175,
+       -0.02974,
+       0.2723
+      ],
+      "radius": 138.539
+     },
+     {
+      "pos": [
+       346.221,
+       -787.993,
+       80.304
+      ],
+      "axis": [
+       0.80509,
+       0.58361,
+       0.10597
+      ],
+      "radius": 142.474
+     },
+     {
+      "pos": [
+       630.427,
+       -298.268,
+       189.611
+      ],
+      "axis": [
+       0.23715,
+       0.97122,
+       0.02227
+      ],
+      "radius": 169.444
+     },
+     {
+      "pos": [
+       563.295,
+       537.51,
+       -173.413
+      ],
+      "axis": [
+       -0.67876,
+       0.56385,
+       -0.47049
+      ],
+      "radius": 165.444
+     }
+    ],
+    "sight_clearance": 8.004,
+    "rails_off": true,
+    "cell": {
+     "nucleus": "Standard",
+     "shell_radius": 0.0,
+     "lifeforms": "Serpentine Cell/Serpentine Cell Config 2"
     }
-  ],
-  "refs_by": "Ref1-Ref4: the four courses with the tightest five-hull spread (worse of card and L5), ordered by the five's card lap time (61-76 s); Garrett 2026-11-18: a fixed, named subset of the eight for anything that needs stable reference courses."
+   },
+   "prisms": 27102,
+   "candidate": "shard_gbox2-0013",
+   "notes": "Wide search shard_gbox2-0013: Orrery world, super-shielded 0%, no rails, nucleus, lifeforms Serpentine Cell/Serpentine Cell Config 2, lap 5439 u. Field spread {'card': 2.298, 'L5': 2.343} (3 seeds, real-game judge).",
+   "judged": {
+    "card": {
+     "Urchin": 166.23,
+     "Scarab": 81.29,
+     "Sparrow": 82.57,
+     "Dolphin": 85.47,
+     "Squirrel": 114.39,
+     "Thresher": 103.48,
+     "BrittleStar": 84.41,
+     "Rhino": 143.21,
+     "Swordfish": 159.23,
+     "Goby": 72.34,
+     "Shrike": 125.41
+    },
+    "L5": {
+     "Urchin": 146.15,
+     "Scarab": 70.14,
+     "Sparrow": 72.86,
+     "Dolphin": 77.79,
+     "Squirrel": 113.18,
+     "Thresher": 137.73,
+     "BrittleStar": 78.48,
+     "Rhino": 133.44,
+     "Swordfish": 163.99,
+     "Goby": 69.98,
+     "Shrike": 124.39
+    }
+   },
+   "ref": "Ref1"
+  },
+  {
+   "label": "Wild2",
+   "genome": {
+    "version": 2,
+    "intensity": 1,
+    "seed": 1573442044,
+    "features": {
+     "Sections": [],
+     "AlternateGates": [],
+     "Crystals": {
+      "PerLap": 0,
+      "Phase": 0.4935345094799787
+     }
+    },
+    "line_clearance": 63.356,
+    "placements": [
+     {
+      "kind": "Corona",
+      "leg": 0.0,
+      "offset": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "scale": 1032.61,
+      "yaw": 133.149,
+      "pitch": 323.279,
+      "roll": 237.64,
+      "seed": 1181515221,
+      "density": 0.6278,
+      "cross_line": false,
+      "cross_rail": true,
+      "params": {
+       "shellCount": 2.0,
+       "innerShellRadius": 253.6109017319234,
+       "shellSpacing": 198.00706138547955,
+       "gateHalfAngle": 5.2434616605815965
+      },
+      "base": true,
+      "at": [
+       124.185,
+       -133.331,
+       2.624
+      ],
+      "domain": "Jade",
+      "prism": "Mix",
+      "prism_mix": [
+       0.0485,
+       0.1716,
+       0.0699,
+       0.71
+      ],
+      "prism_size": 0.3843,
+      "jitter": 8.364
+     },
+     {
+      "kind": "Standoff",
+      "leg": 4.6247,
+      "offset": [
+       79.748,
+       178.743,
+       -55.077
+      ],
+      "scale": 144.479,
+      "yaw": 144.213,
+      "pitch": 333.325,
+      "roll": 171.802,
+      "seed": 798970063,
+      "density": 1.0,
+      "cross_line": true,
+      "cross_rail": true,
+      "params": {
+       "postRadius": 526.8446124451722,
+       "postGrid": 10.0
+      },
+      "domain": "Native",
+      "prism": "Mix",
+      "prism_mix": [
+       0.1198,
+       0.3905,
+       0.1215,
+       0.3682
+      ],
+      "prism_size": 1.7813,
+      "jitter": 24.547
+     }
+    ],
+    "rings": [
+     {
+      "pos": [
+       98.995,
+       -797.721,
+       46.503
+      ],
+      "axis": [
+       -0.79828,
+       0.31209,
+       -0.51512
+      ],
+      "radius": 49.243
+     },
+     {
+      "pos": [
+       -353.717,
+       -410.217,
+       -486.928
+      ],
+      "axis": [
+       -0.32119,
+       0.48975,
+       -0.81054
+      ],
+      "radius": 170.117
+     },
+     {
+      "pos": [
+       -513.748,
+       25.463,
+       -402.294
+      ],
+      "axis": [
+       -0.46849,
+       0.80705,
+       0.35944
+      ],
+      "radius": 68.342
+     },
+     {
+      "pos": [
+       -332.57,
+       511.586,
+       -145.583
+      ],
+      "axis": [
+       0.62082,
+       0.78359,
+       -0.02362
+      ],
+      "radius": 165.989
+     },
+     {
+      "pos": [
+       23.537,
+       648.299,
+       -158.206
+      ],
+      "axis": [
+       0.94746,
+       -0.29796,
+       0.11637
+      ],
+      "radius": 163.938
+     },
+     {
+      "pos": [
+       495.463,
+       554.268,
+       66.66
+      ],
+      "axis": [
+       0.13798,
+       -0.53878,
+       0.83107
+      ],
+      "radius": 118.519
+     },
+     {
+      "pos": [
+       608.211,
+       109.072,
+       531.496
+      ],
+      "axis": [
+       -0.09558,
+       -0.56462,
+       0.8198
+      ],
+      "radius": 49.035
+     },
+     {
+      "pos": [
+       441.247,
+       -272.971,
+       670.366
+      ],
+      "axis": [
+       -0.28033,
+       -0.95587,
+       0.08794
+      ],
+      "radius": 172.637
+     }
+    ],
+    "sight_clearance": 24.741,
+    "rails_off": true,
+    "cell": {
+     "nucleus": "Standard",
+     "shell_radius": 0.0,
+     "lifeforms": "Orrery Cell/Orrery Cell Config"
+    }
+   },
+   "prisms": 4061,
+   "candidate": "shard_cloud3-0089",
+   "notes": "Wide search shard_cloud3-0089: Corona world, super-shielded 9%, no rails, nucleus, lifeforms Orrery Cell/Orrery Cell Config, lap 4948 u. Field spread {'card': 2.094, 'L5': 2.972} (3 seeds, real-game judge).",
+   "judged": {
+    "card": {
+     "Urchin": 128.8,
+     "Scarab": 72.9,
+     "Sparrow": 73.75,
+     "Dolphin": 83.63,
+     "Squirrel": 110.04,
+     "Thresher": 120.8,
+     "BrittleStar": 79.22,
+     "Rhino": 152.67,
+     "Swordfish": 138.11,
+     "Goby": 73.86,
+     "Shrike": 119.8
+    },
+    "L5": {
+     "Urchin": 131.22,
+     "Scarab": 61.79,
+     "Sparrow": 70.36,
+     "Dolphin": 81.83,
+     "Squirrel": 80.57,
+     "Thresher": 128.94,
+     "BrittleStar": 69.18,
+     "Rhino": 130.7,
+     "Swordfish": 129.88,
+     "Goby": 69.53,
+     "Shrike": 183.64
+    }
+   },
+   "ref": "Ref2"
+  },
+  {
+   "label": "Wild3",
+   "genome": {
+    "version": 2,
+    "intensity": 1,
+    "seed": 943661604,
+    "features": {
+     "Sections": [],
+     "AlternateGates": [],
+     "Crystals": {
+      "PerLap": 2,
+      "Phase": 0.295777463971413
+     }
+    },
+    "line_clearance": 45.558,
+    "placements": [
+     {
+      "kind": "Boneyard",
+      "leg": 0.0,
+      "offset": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "scale": 763.888,
+      "yaw": 77.622,
+      "pitch": 162.809,
+      "roll": 124.247,
+      "seed": 13135512,
+      "density": 0.9495,
+      "cross_line": false,
+      "cross_rail": true,
+      "params": {
+       "arenaRadius": 756.5629913942848,
+       "crustDepth": -152.54205878497874,
+       "debrisFields": 4.0,
+       "fieldRadiusFraction": 0.39251806613871726
+      },
+      "base": true,
+      "at": [
+       119.996,
+       -9.902,
+       -112.127
+      ],
+      "domain": "Native",
+      "prism": "Mix",
+      "prism_mix": [
+       0.0792,
+       0.7094,
+       0.1713,
+       0.0401
+      ],
+      "prism_size": 1.9163,
+      "jitter": 59.674
+     }
+    ],
+    "rings": [
+     {
+      "pos": [
+       302.072,
+       474.824,
+       -793.22
+      ],
+      "axis": [
+       0.23568,
+       -0.6786,
+       -0.69567
+      ],
+      "radius": 82.882
+     },
+     {
+      "pos": [
+       355.1,
+       -567.994,
+       -743.666
+      ],
+      "axis": [
+       -0.17384,
+       -0.90501,
+       0.38824
+      ],
+      "radius": 116.03
+     },
+     {
+      "pos": [
+       548.063,
+       -746.847,
+       -315.616
+      ],
+      "axis": [
+       0.37882,
+       0.00417,
+       0.92546
+      ],
+      "radius": 67.203
+     },
+     {
+      "pos": [
+       360.709,
+       -860.985,
+       202.231
+      ],
+      "axis": [
+       -0.54881,
+       -0.03065,
+       0.83539
+      ],
+      "radius": 57.32
+     },
+     {
+      "pos": [
+       -286.72,
+       -631.572,
+       690.99
+      ],
+      "axis": [
+       -0.46023,
+       0.82244,
+       0.33433
+      ],
+      "radius": 131.463
+     },
+     {
+      "pos": [
+       -717.12,
+       178.133,
+       674.679
+      ],
+      "axis": [
+       -0.16811,
+       0.67341,
+       -0.7199
+      ],
+      "radius": 100.933
+     },
+     {
+      "pos": [
+       -266.059,
+       927.955,
+       177.374
+      ],
+      "axis": [
+       0.42688,
+       0.56693,
+       -0.70453
+      ],
+      "radius": 87.603
+     },
+     {
+      "pos": [
+       156.293,
+       936.707,
+       -25.549
+      ],
+      "axis": [
+       0.82672,
+       -0.27343,
+       -0.4917
+      ],
+      "radius": 180.0
+     }
+    ],
+    "sight_clearance": 8.054,
+    "rails_off": true,
+    "cell": {
+     "nucleus": "None",
+     "shell_radius": 0.0,
+     "lifeforms": "Scurry Cell/Scurry Cell Config"
+    }
+   },
+   "prisms": 16586,
+   "candidate": "shard_cloud4-0089",
+   "notes": "Wide search shard_cloud4-0089: Boneyard world, super-shielded 17%, no rails, no nucleus, lifeforms Scurry Cell/Scurry Cell Config, lap 6495 u. Field spread {'card': 4.475, 'L5': 4.932} (3 seeds, real-game judge).",
+   "judged": {
+    "card": {
+     "Urchin": 163.77,
+     "Scarab": 94.85,
+     "Sparrow": 94.23,
+     "Dolphin": 92.91,
+     "Squirrel": 148.37,
+     "Thresher": 153.05,
+     "BrittleStar": 98.49,
+     "Rhino": 152.53,
+     "Swordfish": 209.19,
+     "Goby": 89.38,
+     "Shrike": 400.0
+    },
+    "L5": {
+     "Urchin": 159.6,
+     "Scarab": 81.1,
+     "Sparrow": 85.59,
+     "Dolphin": 91.57,
+     "Squirrel": 133.63,
+     "Thresher": 121.88,
+     "BrittleStar": 88.33,
+     "Rhino": 139.78,
+     "Swordfish": 190.76,
+     "Goby": 85.34,
+     "Shrike": 400.0
+    }
+   },
+   "ref": "Ref3"
+  },
+  {
+   "label": "Wild4",
+   "genome": {
+    "version": 2,
+    "intensity": 1,
+    "seed": 554862982,
+    "features": {
+     "Sections": [],
+     "AlternateGates": [],
+     "Crystals": {
+      "PerLap": 0,
+      "Phase": 0.5909432741130066
+     }
+    },
+    "line_clearance": 43.146,
+    "placements": [
+     {
+      "kind": "Garland",
+      "leg": 0.0,
+      "offset": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "scale": 1080.103,
+      "yaw": 116.072,
+      "pitch": 356.321,
+      "roll": 13.112,
+      "seed": 778791654,
+      "density": 0.4775,
+      "cross_line": false,
+      "cross_rail": true,
+      "params": {},
+      "base": true,
+      "at": [
+       104.375,
+       53.902,
+       -58.6
+      ],
+      "domain": "Native",
+      "prism": "Mix",
+      "prism_mix": [
+       0.142,
+       0.2337,
+       0.0,
+       0.6243
+      ],
+      "prism_size": 0.5659,
+      "jitter": 19.273
+     },
+     {
+      "kind": "Wall",
+      "leg": 2.2395,
+      "offset": [
+       181.692,
+       305.928,
+       -66.394
+      ],
+      "scale": 104.179,
+      "yaw": 62.402,
+      "pitch": 107.861,
+      "roll": 150.752,
+      "seed": 923617991,
+      "density": 1.0,
+      "cross_line": true,
+      "cross_rail": true,
+      "params": {},
+      "domain": "Blue",
+      "prism": "Mix",
+      "prism_mix": [
+       0.7479,
+       0.0091,
+       0.0,
+       0.2429
+      ],
+      "prism_size": 1.6336,
+      "jitter": 52.02
+     },
+     {
+      "kind": "Helicoid",
+      "leg": 3.0778,
+      "offset": [
+       222.281,
+       236.209,
+       -100.906
+      ],
+      "scale": 196.427,
+      "yaw": 288.89,
+      "pitch": 213.548,
+      "roll": 239.874,
+      "seed": 1217900108,
+      "density": 1.0,
+      "cross_line": true,
+      "cross_rail": true,
+      "params": {
+       "height": 248.53869381269624,
+       "innerRadius": 4.214250683269506,
+       "samplesPerTurn": 23.0,
+       "radialSamples": 4.0
+      },
+      "domain": "Native",
+      "prism": "Mix",
+      "prism_mix": [
+       0.4367,
+       0.4472,
+       0.0,
+       0.1161
+      ],
+      "prism_size": 1.0841
+     },
+     {
+      "kind": "LSystem",
+      "leg": 5.0722,
+      "offset": [
+       111.171,
+       119.002,
+       56.963
+      ],
+      "scale": 107.467,
+      "yaw": 98.435,
+      "pitch": 112.14,
+      "roll": 358.856,
+      "seed": 116728066,
+      "density": 1.0,
+      "cross_line": false,
+      "cross_rail": true,
+      "params": {
+       "baseLength": 9.697476260535716,
+       "widthScaleReduction": 1.2365582748660784,
+       "lengthScaleReduction": 0.9715561627898219,
+       "customIterations": 7.0
+      },
+      "domain": "Blue",
+      "prism": "Mix",
+      "prism_mix": [
+       0.2588,
+       0.69,
+       0.0,
+       0.0512
+      ],
+      "prism_size": 1.2791,
+      "jitter": 50.823
+     }
+    ],
+    "rings": [
+     {
+      "pos": [
+       245.619,
+       855.556,
+       -308.922
+      ],
+      "axis": [
+       -0.83239,
+       0.52361,
+       0.18153
+      ],
+      "radius": 131.392
+     },
+     {
+      "pos": [
+       -346.229,
+       824.475,
+       -153.0
+      ],
+      "axis": [
+       -0.97653,
+       -0.03406,
+       -0.21269
+      ],
+      "radius": 130.004
+     },
+     {
+      "pos": [
+       -766.019,
+       440.627,
+       -210.649
+      ],
+      "axis": [
+       -0.00586,
+       -0.98647,
+       -0.16381
+      ],
+      "radius": 90.655
+     },
+     {
+      "pos": [
+       -860.318,
+       -332.763,
+       199.532
+      ],
+      "axis": [
+       0.62568,
+       -0.77395,
+       0.09759
+      ],
+      "radius": 119.78
+     },
+     {
+      "pos": [
+       -105.239,
+       -697.463,
+       709.476
+      ],
+      "axis": [
+       0.96818,
+       -0.24243,
+       0.06213
+      ],
+      "radius": 93.878
+     },
+     {
+      "pos": [
+       561.38,
+       -565.215,
+       550.385
+      ],
+      "axis": [
+       0.95053,
+       0.30884,
+       -0.03338
+      ],
+      "radius": 161.734
+     },
+     {
+      "pos": [
+       972.571,
+       66.438,
+       -161.235
+      ],
+      "axis": [
+       0.35653,
+       0.89341,
+       -0.27331
+      ],
+      "radius": 141.918
+     },
+     {
+      "pos": [
+       679.889,
+       453.993,
+       -571.919
+      ],
+      "axis": [
+       -0.59532,
+       0.76114,
+       -0.25742
+      ],
+      "radius": 96.881
+     }
+    ],
+    "sight_clearance": 22.903,
+    "rails_off": true,
+    "cell": {
+     "nucleus": "Standard",
+     "shell_radius": 0.0,
+     "lifeforms": "Ark Escort Cell/Escort Garland Cell Config"
+    }
+   },
+   "prisms": 4628,
+   "candidate": "shard_cloud0-0042",
+   "notes": "Wide search shard_cloud0-0042: Garland world, super-shielded 0%, no rails, nucleus, lifeforms Ark Escort Cell/Escort Garland Cell Config, lap 6313 u. Field spread {'card': 4.905, 'L5': 5.328} (3 seeds, real-game judge).",
+   "judged": {
+    "card": {
+     "Urchin": 159.83,
+     "Scarab": 95.09,
+     "Sparrow": 97.23,
+     "Dolphin": 91.69,
+     "Squirrel": 141.88,
+     "Thresher": 127.71,
+     "BrittleStar": 96.54,
+     "Rhino": 152.63,
+     "Swordfish": 145.35,
+     "Goby": 81.56,
+     "Shrike": 400.0
+    },
+    "L5": {
+     "Urchin": 158.0,
+     "Scarab": 81.72,
+     "Sparrow": 88.47,
+     "Dolphin": 84.78,
+     "Squirrel": 118.53,
+     "Thresher": 133.56,
+     "BrittleStar": 88.27,
+     "Rhino": 126.11,
+     "Swordfish": 143.36,
+     "Goby": 75.08,
+     "Shrike": 400.0
+    }
+   },
+   "ref": "Ref4"
+  },
+  {
+   "label": "Wild5",
+   "genome": {
+    "version": 2,
+    "intensity": 1,
+    "seed": 1324042898,
+    "features": {
+     "Sections": [],
+     "AlternateGates": [],
+     "Crystals": {
+      "PerLap": 3,
+      "Phase": 0.35853624961541
+     }
+    },
+    "line_clearance": 65.713,
+    "placements": [
+     {
+      "kind": "Ourobor",
+      "leg": 0.0,
+      "offset": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "scale": 1120.445,
+      "yaw": 150.825,
+      "pitch": 116.281,
+      "roll": 259.086,
+      "seed": 1263645336,
+      "density": 0.6841,
+      "cross_line": false,
+      "cross_rail": true,
+      "params": {},
+      "base": true,
+      "at": [
+       -113.327,
+       -68.438,
+       3.819
+      ],
+      "domain": "Gold",
+      "prism": "Mix",
+      "prism_mix": [
+       0.0116,
+       0.172,
+       0.3803,
+       0.4362
+      ],
+      "prism_size": 0.9915,
+      "keep": 0.1618
+     },
+     {
+      "kind": "TorusKnot",
+      "leg": 0.6263,
+      "offset": [
+       74.743,
+       231.925,
+       -10.181
+      ],
+      "scale": 35.05,
+      "yaw": 103.933,
+      "pitch": 298.587,
+      "roll": 132.242,
+      "seed": 1321662344,
+      "density": 1.0,
+      "cross_line": true,
+      "cross_rail": true,
+      "params": {
+       "p": 5.0,
+       "blocksAlongKnot": 392.0
+      },
+      "domain": "Ruby",
+      "prism": "Mix",
+      "prism_mix": [
+       0.338,
+       0.0647,
+       0.5645,
+       0.0329
+      ],
+      "prism_size": 1.2322
+     },
+     {
+      "kind": "Helicoid",
+      "leg": 4.5797,
+      "offset": [
+       170.277,
+       274.701,
+       -22.863
+      ],
+      "scale": 43.561,
+      "yaw": 247.637,
+      "pitch": 329.264,
+      "roll": 33.487,
+      "seed": 1443754786,
+      "density": 1.0,
+      "cross_line": false,
+      "cross_rail": true,
+      "params": {
+       "turns": 4.970976243932514,
+       "height": 183.36794201286088,
+       "outerRadius": 94.46738605299318,
+       "colorBySheet": 1.0
+      },
+      "domain": "Jade",
+      "prism": "Mix",
+      "prism_mix": [
+       0.1606,
+       0.2085,
+       0.3544,
+       0.2764
+      ],
+      "prism_size": 0.7969,
+      "jitter": 48.404
+     },
+     {
+      "kind": "Batman",
+      "leg": 3.5246,
+      "offset": [
+       227.085,
+       188.373,
+       3.679
+      ],
+      "scale": 40.05,
+      "yaw": 83.995,
+      "pitch": 4.939,
+      "roll": 347.479,
+      "seed": 1256690845,
+      "density": 1.0,
+      "cross_line": false,
+      "cross_rail": true,
+      "params": {},
+      "domain": "Ruby",
+      "prism": "Mix",
+      "prism_mix": [
+       0.4161,
+       0.0566,
+       0.5039,
+       0.0234
+      ],
+      "prism_size": 2.4033,
+      "jitter": 17.18
+     },
+     {
+      "kind": "Ribcage",
+      "leg": 7.7453,
+      "offset": [
+       179.739,
+       116.033,
+       102.856
+      ],
+      "scale": 225.195,
+      "yaw": 336.863,
+      "pitch": 336.529,
+      "roll": 52.476,
+      "seed": 341610660,
+      "density": 1.0,
+      "cross_line": true,
+      "cross_rail": true,
+      "params": {},
+      "domain": "Ruby",
+      "prism": "Mix",
+      "prism_mix": [
+       0.0212,
+       0.2105,
+       0.6763,
+       0.092
+      ],
+      "prism_size": 2.0855
+     },
+     {
+      "kind": "LSystem",
+      "leg": 1.9773,
+      "offset": [
+       113.889,
+       338.893,
+       27.243
+      ],
+      "scale": 179.695,
+      "yaw": 218.469,
+      "pitch": 138.49,
+      "roll": 24.787,
+      "seed": 2589940,
+      "density": 1.0,
+      "cross_line": true,
+      "cross_rail": true,
+      "params": {
+       "preset": 3.0,
+       "baseWidth": 1.2649808968884229,
+       "customAngle": 21.8810297582893
+      },
+      "domain": "Gold",
+      "prism": "Mix",
+      "prism_mix": [
+       0.1689,
+       0.1259,
+       0.425,
+       0.2802
+      ],
+      "prism_size": 0.9286,
+      "jitter": 53.287
+     }
+    ],
+    "rings": [
+     {
+      "pos": [
+       229.61,
+       565.274,
+       -80.97
+      ],
+      "axis": [
+       0.90291,
+       -0.42654,
+       -0.05305
+      ],
+      "radius": 153.444
+     },
+     {
+      "pos": [
+       474.878,
+       200.251,
+       296.872
+      ],
+      "axis": [
+       -0.22083,
+       -0.89114,
+       0.39636
+      ],
+      "radius": 143.673
+     },
+     {
+      "pos": [
+       514.169,
+       -210.535,
+       144.164
+      ],
+      "axis": [
+       0.37508,
+       -0.58123,
+       -0.72214
+      ],
+      "radius": 78.0
+     },
+     {
+      "pos": [
+       312.74,
+       -419.009,
+       -372.304
+      ],
+      "axis": [
+       -0.63443,
+       -0.19609,
+       -0.7477
+      ],
+      "radius": 149.855
+     },
+     {
+      "pos": [
+       -221.136,
+       -547.96,
+       -441.29
+      ],
+      "axis": [
+       -0.81467,
+       0.34432,
+       0.46665
+      ],
+      "radius": 91.567
+     },
+     {
+      "pos": [
+       -728.565,
+       -130.097,
+       260.528
+      ],
+      "axis": [
+       -0.07941,
+       0.67232,
+       0.73599
+      ],
+      "radius": 106.054
+     },
+     {
+      "pos": [
+       -564.11,
+       350.243,
+       372.346
+      ],
+      "axis": [
+       0.30237,
+       0.92488,
+       0.2306
+      ],
+      "radius": 43.943
+     },
+     {
+      "pos": [
+       -149.789,
+       670.379,
+       -69.149
+      ],
+      "axis": [
+       0.80036,
+       0.49027,
+       -0.34505
+      ],
+      "radius": 84.829
+     }
+    ],
+    "sight_clearance": 21.044,
+    "rails_off": true,
+    "cell": {
+     "nucleus": "Standard",
+     "shell_radius": 938.403,
+     "lifeforms": ""
+    }
+   },
+   "prisms": 4570,
+   "candidate": "shard_cloud4-0049",
+   "notes": "Wide search shard_cloud4-0049: Ourobor world, super-shielded 48%, no rails, nucleus, lifeforms none, lap 4968 u. Field spread {'card': 4.168, 'L5': 6.215} (3 seeds, real-game judge).",
+   "judged": {
+    "card": {
+     "Urchin": 133.2,
+     "Scarab": 75.5,
+     "Sparrow": 76.22,
+     "Dolphin": 85.26,
+     "Squirrel": 119.77,
+     "Thresher": 111.48,
+     "BrittleStar": 86.79,
+     "Rhino": 165.11,
+     "Swordfish": 314.69,
+     "Goby": 79.01,
+     "Shrike": 145.48
+    },
+    "L5": {
+     "Urchin": 134.69,
+     "Scarab": 64.36,
+     "Sparrow": 68.2,
+     "Dolphin": 75.8,
+     "Squirrel": 101.02,
+     "Thresher": 122.68,
+     "BrittleStar": 79.11,
+     "Rhino": 131.9,
+     "Swordfish": 400.0,
+     "Goby": 77.07,
+     "Shrike": 138.06
+    }
+   }
+  }
+ ]
 }

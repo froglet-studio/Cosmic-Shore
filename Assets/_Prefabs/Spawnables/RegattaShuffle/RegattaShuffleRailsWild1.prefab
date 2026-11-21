@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5260000000000301
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5260000000000302}
+  - component: {fileID: 5260000000000303}
+  m_Layer: 0
+  m_Name: RegattaShuffleRailsWild1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5260000000000302
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5260000000000301}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5260000000000303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5260000000000301}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24b34d8d18afe497d8873ce631a6c7d5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  seed: 0
+  domain: 3
+  children: []
+  leafPrefab: {fileID: 0}
+  layAcrossFrames: 1
+  layBudgetMsPerFrame: 8
+  intensityLevel: 1
+  prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
+  density: 1
+  spawnClearRadius: 0
+  spawnClearPoints: []
+  courseIntensity: 1
+  courseSeed: 0
+  prismScale: {x: 6, y: 6, z: 8}
+  laneOffset: 22
+  laneTwistTurnsPerLap: 1
+  prismSpacing: 8
+  lifeforms:
+    sitesPerLeg: []
+    offsetMin: 90
+    offsetMax: 160
+    sideDegrees: 0
+    sideSpreadDegrees: 180
+    legWindowStart: 0.2
+    legWindowEnd: 0.8
+    ringClearance: 60
+    faunaCorridorRadius: 0
+    faunaCorridorStandoff: 50
+  courseGenome: '{"cell":{"lifeforms":"Serpentine Cell/Serpentine Cell Config 2","nucleus":"Standard","shell_radius":0.0},"features":{"AlternateGates":[],"Crystals":{"PerLap":1,"Phase":0.6862121763189427},"Sections":[]},"intensity":1,"line_clearance":25.777,"placements":[{"at":[-107.739,126.781,99.944],"base":true,"cross_line":true,"cross_rail":true,"density":0.8012,"domain":"Blue","kind":"Orrery","leg":0.0,"offset":[0.0,0.0,0.0],"params":{},"pitch":145.308,"prism":"Mix","prism_mix":[0.1861,0.4013,0.0,0.4125],"prism_size":0.5643,"roll":146.442,"scale":901.408,"seed":656635179,"yaw":244.33},{"cross_line":false,"cross_rail":true,"density":1.0,"domain":"Mix","domain_mix":[0.987,0.249,0.976,0.671],"jitter":57.117,"kind":"TorusKnot","leg":6.1715,"offset":[128.158,100.792,24.191],"params":{"blocksAlongKnot":838.0,"majorRadius":86.55994018951608},"pitch":44.918,"prism":"Mix","prism_mix":[0.1694,0.8092,0.0,0.0214],"prism_size":0.768,"roll":155.094,"scale":23.675,"seed":1206941586,"yaw":306.007},{"cross_line":false,"cross_rail":true,"density":1.0,"domain":"Ruby","kind":"Flatline","leg":6.8064,"offset":[205.229,351.199,91.175],"params":{"cageCount":7.0,"crystalCount":4.0,"dangerPaneEvery":8.0,"outerRadius":229.50487737067857,"paneCount":17.0,"paneHalfMin":3.0,"roomHalf":6.0,"tunnelCount":4.0},"pitch":270.443,"prism":"Mix","prism_mix":[0.001,0.8776,0.0,0.1214],"prism_size":1.475,"roll":134.63,"scale":114.623,"seed":1530485118,"yaw":322.73},{"cross_line":false,"cross_rail":true,"density":1.0,"domain":"Jade","kind":"FiveRings","leg":7.5986,"offset":[143.482,136.819,72.602],"params":{"ringRadius":18.08012630797431},"pitch":214.135,"prism":"Mix","prism_mix":[0.8297,0.1673,0.0,0.003],"prism_size":2.0939,"roll":355.082,"scale":105.052,"seed":1004299706,"yaw":101.918}],"rails_off":true,"rings":[{"axis":[-0.60084,-0.43375,0.67145],"pos":[-140.843,905.659,104.292],"radius":125.356},{"axis":[-0.65698,-0.74453,0.11854],"pos":[-472.267,669.26,170.548],"radius":76.259},{"axis":[-0.41589,-0.90494,-0.09012],"pos":[-636.087,259.993,-189.658],"radius":40.001},{"axis":[0.22453,-0.97336,-0.04636],"pos":[-662.954,-384.503,-163.866],"radius":61.256},{"axis":[0.96175,-0.02974,0.2723],"pos":[-111.03,-907.666,-88.74],"radius":138.539},{"axis":[0.80509,0.58361,0.10597],"pos":[346.221,-787.993,80.304],"radius":142.474},{"axis":[0.23715,0.97122,0.02227],"pos":[630.427,-298.268,189.611],"radius":169.444},{"axis":[-0.67876,0.56385,-0.47049],"pos":[563.295,537.51,-173.413],"radius":165.444}],"seed":154434389,"sight_clearance":8.004,"version":2}'
