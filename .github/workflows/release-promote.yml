@@ -71,7 +71,7 @@ jobs:
     outputs:
       version: ${{ steps.inputs.outputs.version }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false, persist-credentials: false }
       - name: Check the inputs
         id: inputs
@@ -157,7 +157,7 @@ jobs:
     environment: android-production
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false, persist-credentials: false }
       - name: Change the track
         env:
@@ -228,7 +228,7 @@ jobs:
     permissions:
       contents: write   # the launch-status branch; this job holds no other secret
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false }
       - name: Publish the production record
         env:

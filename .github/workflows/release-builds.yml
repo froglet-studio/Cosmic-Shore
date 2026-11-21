@@ -86,7 +86,7 @@ jobs:
       ios: ${{ steps.plan.outputs.ios }}
       web: ${{ steps.plan.outputs.web }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           sparse-checkout: Tools/Launch
@@ -159,7 +159,7 @@ jobs:
       contents: read
       actions: read   # GET /repos/{repo}/environments/{name}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           sparse-checkout: Tools/Launch
@@ -193,7 +193,7 @@ jobs:
     outputs:
       build: ${{ steps.start.outputs.build }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false, persist-credentials: false }
       - name: Start the UBA build at the tag's commit
         id: start
@@ -245,7 +245,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           sparse-checkout: |
@@ -325,7 +325,7 @@ jobs:
     outputs:
       build: ${{ steps.start.outputs.build }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false, persist-credentials: false }
       - name: Start the UBA build at the tag's commit
         id: start
@@ -360,7 +360,7 @@ jobs:
     outputs:
       version_code: ${{ steps.upload.outputs.version_code }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false, persist-credentials: false }
       - name: Download the App Bundle from UBA (the tag's commit only)
         env:
@@ -404,7 +404,7 @@ jobs:
     outputs:
       build: ${{ steps.start.outputs.build }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false, persist-credentials: false }
       - name: Start the UBA build at the tag's commit
         id: start
@@ -471,7 +471,7 @@ jobs:
     permissions:
       contents: write   # the launch-status branch; this job holds no other secret
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           sparse-checkout: Tools/Launch
