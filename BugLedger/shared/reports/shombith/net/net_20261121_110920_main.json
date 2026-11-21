@@ -1,0 +1,173 @@
+{
+  "schema": "cosmicshore.nettestlog.v1",
+  "engine": "unity",
+  "peer": "main",
+  "isVirtualPlayer": false,
+  "why": "client 1 approved",
+  "user": "Shombith",
+  "unityVersion": "6000.3.17f1",
+  "branch": "launch-check",
+  "commit": "4e4f3eaa65",
+  "playStartedUtc": "2026-11-21T11:09:20.9312123Z",
+  "playEndedUtc": "2026-11-21T11:13:29.4884956Z",
+  "record": {
+    "schema": "cosmicshore.netsession.v1",
+    "startedUtc": "2026-11-21T11:09:30.5185941Z",
+    "durationSeconds": 238.8369903564453,
+    "buildGuid": "00000000000000000000000000000000",
+    "platform": "WindowsEditor",
+    "isOfflineSession": false,
+    "role": "host",
+    "counters": {
+        "requests": 34,
+        "lobbyReads": 50,
+        "retries": 1,
+        "coalesced": 0,
+        "budgetExhausted": 0,
+        "rateLimited": 1,
+        "transient": 0,
+        "benign": 0,
+        "conflict": 0,
+        "full": 0,
+        "gone": 0,
+        "fatal": 1,
+        "presenceForceReset": 0,
+        "offlineFallback": 0,
+        "partyRosterPush": 3,
+        "presencePush": 13,
+        "lobbyReadsPerSecond": 0.20934779942035676
+    },
+    "verdict": {
+        "offlineFallbacksWhileOnline": 0,
+        "forceResets": 0,
+        "budgetExhaustions": 0,
+        "rateLimited": 1
+    },
+    "lifecycle": [
+        {
+            "t": 0.0000024000000848900528,
+            "e": "party",
+            "detail": "Disconnected->InPresenceLobby"
+        },
+        {
+            "t": 0.00001359999987471383,
+            "e": "party",
+            "detail": "InPresenceLobby->HostingParty"
+        },
+        {
+            "t": 5.870537757873535,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 5.916939735412598,
+            "e": "netConfig",
+            "detail": "hash=88d983d2ae1136d9 prefabs=33 234294682:Rhino 297461143:Angler 336337177:BrittleStar 504450242:Termite 515096987:Grizzly 532772460:Honeyguide 758961507:StatsManager 873610668:Urchin 1012147755:Stoat 1066882345:NetworkVesselSpawner 1124080984:Sparrow 1234547654:AstroLeagueBall 1554866019:Serpent 1887398589:Thresher 1945657574:TigerMoth 2256742461:Squirrel 2358568326:TadPoleFauna 2437889963:Orca 2603481845:MassSharkFauna 2640575084:Jacks 2854954169:Falcon 3228241887:BeeFauna 3347286452:Goby 3392890734:Manta 3401243537:Shrike 3404334551:Dolphin 3630817127:Swordfish 3827091966:Scarab 3939330856:Player 3950253892:JewelWasp 4022926403:Starling 4044113297:Wrasse 4221370039:Meerkat"
+        },
+        {
+            "t": 7.371826171875,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 33.627803802490237,
+            "e": "party",
+            "detail": "InParty->Inviting"
+        },
+        {
+            "t": 39.22861099243164,
+            "e": "party",
+            "detail": "Inviting->InParty"
+        },
+        {
+            "t": 41.41775131225586,
+            "e": "clientApproved",
+            "detail": "1"
+        },
+        {
+            "t": 183.1929168701172,
+            "e": "clientLeft",
+            "detail": "1"
+        }
+    ],
+    "lifecycleDropped": 0
+},
+  "console": {
+    "errors": 2,
+    "warnings": 36,
+    "dropped": 0,
+    "lines": [
+      {"t": 0.05, "type": "log", "msg": "[Adaptive Performance] Only default scaler profile available. Reset all scalers to default profile."},
+      {"t": 0.176, "type": "warning", "msg": "Entities.Graphics should be used with URP Forward+. Change Rendering Path on URP_Asset_Renderer for best compatibility.", "at": "Unity.Debug:LogWarning (object) (at ./Library/PackageCache/com.unity.entities@f6e02210e263/Unity.Entities/Stubs/Unity/Debug.cs:13)"},
+      {"t": 0.192, "type": "warning", "msg": "[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN - every vessel, game mode, intensity and the Vessel Hangar are unlocked, and the quest graph is stood down. This is the shipped default until the FTUE is designed. Turn it off in the Froglet Toolbox (Quest Debug or Vessel Unlock tab) to test real progression or the FTUE itself.", "at": "CosmicShore.Core.DeveloperUnlockGate:AnnounceOnce () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/System/Progression/DeveloperUnlockGate.cs:152)"},
+      {"t": 0.213, "type": "log", "msg": "Root Bindings Installed from 'ContainerScope'"},
+      {"t": 0.214, "type": "log", "msg": "Root Bindings Installed from 'AppManager'"},
+      {"t": 0.214, "type": "log", "msg": "Scene (Bootstrap) Bindings Installed"},
+      {"t": 1.262, "type": "log", "msg": "Overriding environment to 'development' through InitializationOptions"},
+      {"t": 1.473, "type": "warning", "msg": "[DailyChallengeSystem] Arcade or TrainingGames not ready - daily challenge unavailable.", "at": "CosmicShore.Core.DailyChallengeSystem:TryFetchDailyChallenge (CosmicShore.Data.DailyChallenge&) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/System/DailyChallengeSystem.cs:147)"},
+      {"t": 1.474, "type": "log", "msg": "<color=red><b>Gamepad Detected:</b> 'Xbox Controller' ()\n<b>Controller Type:</b> Other\n<b>[Details]</b>\nName: XInputControllerWindows\nProduct: \nManufacturer: \nInterface: XInput\nUsages: \n<b>Supported Controls:</b>\n   - dpad: /XInputControllerWindows/dpad [Dpad]\n   - start: /XInputControllerWindows/start [Button]\n   - select: /XInputControllerWindows/select [Button]\n   - leftStickPress: /XInputControllerWindows/leftStickPress [Button]\n   - rightStickPress: /XInputControllerWindows/rightStickPress [Button]\n   - leftShoulder: /XInputControllerWindows/leftShoulder [Button]\n   - rightShoulder: /XInputControllerWindows/rightShoulder [Button]\n   - buttonSouth: /XInputControllerWindows/buttonSouth [Button]\n   - buttonEast: /XInputControllerWindows/buttonEast [Button]\n   - buttonWest: /XInputControllerWindows/buttonWest [Button]\n   - buttonNorth: /XInputControllerWindows/buttonNorth [Button]\n   - leftTrigger: /XInputControllerWindows/leftTrigger [Button]\n   - rightTrigger: /XInputControllerWindo..."},
+      {"t": 2.115, "type": "log", "msg": "Container Bootstrap (379438937) disposed"},
+      {"t": 2.121, "type": "log", "msg": "Scene (Authentication) Bindings Installed"},
+      {"t": 3.007, "type": "error", "msg": "NotFound\r\n(404) HTTP/1.1 404 Not Found\r\nError\r\nScript could not be found\r\n", "at": "Unity.Services.CloudCode.CloudCodeInternal:BuildException (bool,long,int,string,Unity.Services.CloudCode.Internal.Http.HttpException) (at ./Library/PackageCache/com.unity.services.cloudcode@4d38bd1f7a5b/Runtime/CloudCode.cs:182)"},
+      {"t": 3.011, "type": "warning", "msg": "[LaunchFlags] The flags could not be fetched (NotFound\r\n(404) HTTP/1.1 404 Not Found\r\nError\r\nScript could not be found\r\n); keeping the Default flags.", "at": "CosmicShore.Core.LaunchFlagsService/<FetchAsync>d__7:MoveNext () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/System/CloudData/LaunchFlagsService.cs:62)"},
+      {"t": 3.029, "type": "log", "msg": "[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only)."},
+      {"t": 5.088, "type": "log", "msg": "Container Authentication (-1594153516) disposed"},
+      {"t": 5.693, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.694, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.695, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.697, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.698, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.699, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.701, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.703, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.704, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 7.046, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "CosmicShore.UI.GameCard:UpdateCardView () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/UI/Elements/GameCard.cs:163)"},
+      {"t": 7.048, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "CosmicShore.UI.GameCard:UpdateCardView () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/UI/Elements/GameCard.cs:163)"},
+      {"t": 7.049, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "CosmicShore.UI.GameCard:UpdateCardView () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/UI/Elements/GameCard.cs:163)"},
+      {"t": 7.05, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "CosmicShore.UI.GameCard:UpdateCardView () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/UI/Elements/GameCard.cs:163)"},
+      {"t": 7.131, "type": "log", "msg": "[GameModeProgressionService] ProgressionBackendGate closed — cloud record ignored; progression is session-local and starts fresh each launch."},
+      {"t": 8.214, "type": "error", "msg": "[WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-11-16'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.", "at": "CosmicShore.Core.WeeklyChallengeLeaderboardService:WarnIfBoardNotResetting (string,int,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/System/WeeklyChallenge/WeeklyChallengeLeaderboardService.cs:600)"},
+      {"t": 14.092, "type": "log", "msg": "QosJob: executing job with 10000ms timeout"},
+      {"t": 14.093, "type": "log", "msg": "QosJob: send to 34.146.99.138:7778 took 0ms"},
+      {"t": 14.094, "type": "log", "msg": "QosJob: send to 8.231.126.202:7778 took 2ms"},
+      {"t": 14.095, "type": "log", "msg": "QosJob: send to 34.142.230.217:7778 took 0ms"},
+      {"t": 14.097, "type": "log", "msg": "QosJob: send to 34.116.71.234:7778 took 2ms"},
+      {"t": 14.097, "type": "log", "msg": "QosJob: send to 34.116.187.244:7778 took 0ms"},
+      {"t": 14.099, "type": "log", "msg": "QosJob: send to 34.88.56.54:7778 took 2ms"},
+      {"t": 14.1, "type": "log", "msg": "QosJob: send to 34.90.19.193:7778 took 0ms"},
+      {"t": 14.101, "type": "log", "msg": "QosJob: send to 35.199.98.209:7778 took 1ms"},
+      {"t": 14.101, "type": "log", "msg": "QosJob: send to 35.194.37.245:7778 took 0ms"},
+      {"t": 14.103, "type": "log", "msg": "QosJob: send to 34.74.55.21:7778 took 3ms"},
+      {"t": 14.104, "type": "log", "msg": "QosJob: send to 34.169.230.114:7778 took 0ms"},
+      {"t": 14.467, "type": "log", "msg": "QosJob: received 55 responses of 55/55 in 363ms waiting avg 7ms per response"},
+      {"t": 14.468, "type": "log", "msg": "QosJob: took 375ms to process 11 servers"},
+      {"t": 15.654, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Squirrel_Charge_HullFusionBake' is STALE (the hull has 13239 vertices, the bake 13238). Solving Squirrel/Charge at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 15.663, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Squirrel_Mass_HullFusionBake' is STALE (the hull has 13239 vertices, the bake 13238). Solving Squirrel/Mass at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 15.666, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Squirrel_Space_HullFusionBake' is STALE (the hull has 13239 vertices, the bake 13238). Solving Squirrel/Space at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 15.668, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Squirrel_Time_HullFusionBake' is STALE (the hull has 13239 vertices, the bake 13238). Solving Squirrel/Time at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 158.075, "type": "log", "msg": "[LoadInsights] ● Recording load — Game launch — Random → Voyage"},
+      {"t": 160.932, "type": "log", "msg": "Container Menu_Main (-2029499700) disposed"},
+      {"t": 160.95, "type": "log", "msg": "Scene (Voyage) Bindings Installed"},
+      {"t": 162.381, "type": "log", "msg": "Font Asset [LiberationSans SDF - Fallback] Units Per EM set to 2048. Please commit the newly serialized value."},
+      {"t": 162.962, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Sparrow_Charge_HullFusionBake' is STALE (the hull has 22014 vertices, the bake 22015). Solving Sparrow/Charge at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 162.965, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Sparrow_Mass_HullFusionBake' is STALE (the hull has 22014 vertices, the bake 22015). Solving Sparrow/Mass at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 162.967, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Sparrow_Space_HullFusionBake' is STALE (the hull has 22014 vertices, the bake 22015). Solving Sparrow/Space at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 162.971, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Sparrow_Time_HullFusionBake' is STALE (the hull has 22014 vertices, the bake 22015). Solving Sparrow/Time at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 163.146, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Charge_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Charge at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 163.148, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Mass_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Mass at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 163.149, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Space_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Space at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 163.15, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Time_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Time at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 165.541, "type": "warning", "msg": "[CrystalMorph] [HullFusion] Thresher/Charge has no bake. Solving it at runtime on a worker instead - run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 165.542, "type": "warning", "msg": "[CrystalMorph] [HullFusion] Thresher/Mass has no bake. Solving it at runtime on a worker instead - run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 165.544, "type": "warning", "msg": "[CrystalMorph] [HullFusion] Thresher/Space has no bake. Solving it at runtime on a worker instead - run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 165.546, "type": "warning", "msg": "[CrystalMorph] [HullFusion] Thresher/Time has no bake. Solving it at runtime on a worker instead - run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 165.715, "type": "log", "msg": "[LoadInsights] ■ Load recording ended — 7.62s · Superseded by new load (Cell swap -> Barren) → C:/Users/Shombith/AppData/LocalLow/Froglet Games/Cosmic Shore\\Benchmarks/LoadInsights\\load_Voyage_20261121_111206_88a850383505.json"},
+      {"t": 165.715, "type": "log", "msg": "[LoadInsights] ● Recording load — Cell swap -> Barren"},
+      {"t": 166.951, "type": "log", "msg": "[LoadInsights] ■ Load report ready — 1.23s · Cell swap: nothing to build behind a veil → C:/Users/Shombith/AppData/LocalLow/Froglet Games/Cosmic Shore\\Benchmarks/LoadInsights\\load_Voyage_20261121_111207_96dc8dea4b64.json"},
+      {"t": 168.28, "type": "warning", "msg": "[Netcode] [Deferred OnSpawn] Messages were received for a trigger of type NetworkVariableDeltaMessage associated with id (6), but the NetworkObject was not received within the timeout period 10 second(s).", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:153)"},
+      {"t": 173.191, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassSharkFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:115)"},
+      {"t": 177.013, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'TadPoleFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:115)"},
+      {"t": 197.08, "type": "warning", "msg": "[MouseFlight] One-thumb mouse controls are NOT engaged: unknown reason. Flight stays on the dual-WASD keyboard scheme. See _Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md.", "at": "CosmicShore.Gameplay.MouseFlightDiagnostics:Decline (CosmicShore.Gameplay.MouseFlightDiagnostics/Reason,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/IO/MouseFlightDiagnostics.cs:79)"}
+    ]
+  }
+}
