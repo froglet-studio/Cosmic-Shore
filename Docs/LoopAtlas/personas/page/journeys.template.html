@@ -103,7 +103,7 @@ td.num, th.num { text-align: right; }
 <header class="top wrap">
   <span class="label">Cosmic Shore · Loop Atlas</span>
   <h1>Player Journeys</h1>
-  <p class="lede">Six players, each on their own loops. A dot circles the loop the player is in right now; the circles it sits inside glow; the lines are the path walked so far. Switch between the game today and the game with the Proposed layer's fixes, and watch who stays. Every persona is a hypothesis, not a measurement.</p>
+  <p class="lede">Six players, each on their own loops. A dot circles the loop the player is in right now; the circles it sits inside glow; the lines are the path walked so far. Switch between the game today and the game with the Proposed layer's fixes, and watch who stays. The Sim layers replay one seeded run per player from the economy and timescale simulation. Every persona is a hypothesis, not a measurement.</p>
 </header>
 
 <div class="bar" role="toolbar" aria-label="Playback">
@@ -115,6 +115,11 @@ td.num, th.num { text-align: right; }
     <div class="seg" role="group" aria-label="Layer">
       <button type="button" id="L-now" aria-pressed="true">Game today</button>
       <button type="button" id="L-prop" aria-pressed="false">With proposals</button>
+    </div>
+    <div class="seg" role="group" aria-label="Simulated layer" id="simseg" hidden>
+      <button type="button" id="L-sim-now" aria-pressed="false" title="The economy simulation, the game today">Sim: today</button>
+      <button type="button" id="L-sim-plan" aria-pressed="false" title="The economy simulation, the activation gate flipped with the quest chain">Sim: planned</button>
+      <button type="button" id="L-sim-prop" aria-pressed="false" title="The economy simulation, planned plus the proposed fixes">Sim: proposals</button>
     </div>
     <label class="chk"><input type="checkbox" id="skip" checked> Skip the quiet hours</label>
     <div class="legend" id="chips" aria-label="Show players"></div>
@@ -140,6 +145,9 @@ const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const TIERW = {7:"Era",6:"Arc",5:"Session",4:"Round",3:"Role",2:"Combo",1:"Verb",0:"Pulse"};
 const RAD = {7:30,6:20,5:20,4:15,3:12,2:10,1:9,0:8};
 const PLACES = ["toybox","arcade","arena","voyages","other"];
+const LAYERS = ["now", "prop", "sim-now", "sim-plan", "sim-prop"];
+const LAYER_NAME = {"now": "Fate in the game today", "prop": "Fate with proposals", "sim-now": "Simulated, the game today",
+  "sim-plan": "Simulated, the activation gate flipped", "sim-prop": "Simulated, planned plus the proposed fixes"};
 const PLACE_NAME = {toybox:"Toybox",arcade:"Arcade",arena:"Arena",voyages:"Voyages",other:"Home and arcs"};
 const FINDS = [
   ["The Ratel has no door of its own", "Mira can only reach the puzzle she loves through Jonah. It is the Honeyguide's second seat, found in the Toybox's Vessel Changer. Proposed: a Ratel card with the AI flying, on its own ladder (seat.ratel)."],
@@ -163,7 +171,7 @@ const el = (n, a = {}, p) => { const e = document.createElementNS(NS, n); for (c
 
 function layout(p) {
   const ids = new Set();
-  for (const L of ["now", "prop"]) for (const s of p.layers[L].steps) s.path.forEach(x => ids.add(x));
+  for (const L in p.layers) for (const s of p.layers[L].steps) s.path.forEach(x => ids.add(x));
   const cols = {};
   for (const id of ids) { const tr = D.loops[id].tier; (cols[tr] = cols[tr] || []).push(id); }
   const order = Object.keys(cols).map(Number).sort((a, b) => b - a);
@@ -223,7 +231,7 @@ function renderDetail(ln) {
   const holes = s.holes.length ? s.holes.map(h => `<li>${h}</li>`).join("") : "<li>None on this layer.</li>";
   const uses = lay.uses.length ? `<p><span class="label">Uses proposals</span><br>${lay.uses.map(u => D.loops[u].name).join(", ")}</p>` : "";
   $(`dt-${p.id}`).innerHTML = `<div><span class="label">The challenge</span><p>${p.challenge}</p></div>
-    <div><span class="label">${layer === "now" ? "Fate in the game today" : "Fate with proposals"}</span><p>${lay.fate.why || ""}</p>${uses}</div>
+    <div><span class="label">${LAYER_NAME[layer]}</span><p>${lay.fate.why || ""}</p>${uses}</div>
     <div><span class="label">Activation path (first visit to each loop)</span><ol>${path}</ol></div>
     <div><span class="label">Holes on the path</span><ul>${holes}</ul></div>`;
 }
@@ -365,26 +373,66 @@ function summary() {
 
 function setLayer(L) {
   layer = L;
-  $("L-now").setAttribute("aria-pressed", String(L === "now")); $("L-prop").setAttribute("aria-pressed", String(L === "prop"));
+  for (const k of LAYERS) $(`L-${k}`).setAttribute("aria-pressed", String(L === k));
   for (const ln of lanes) { ln.edgeKey = ""; if (!$(`dt-${ln.p.id}`).hidden) renderDetail(ln); }
 }
 
-function start(data) {
+function chainOf(id) { const out = []; while (id && D.loops[id] && !out.includes(id)) { out.unshift(id); id = D.loops[id].parent; } return out; }
+
+// The economy and timescale simulation (Docs/LoopAtlas/sim/out/journeys.json): one seeded run per persona and scenario.
+// Its day is 0-based since install; here day 1 is install day.
+function addSim(sim) {
+  const kind = n => /buys|refit|recruit|colour/.test(n) ? "own" : /quest|Hangar|saga|liked/.test(n) ? "find" : /lost|no seat|sits out|splits|failed|quits/.test(n) ? "loss" : "crew";
+  let any = false;
+  for (const p of D.personas) {
+    const sp = sim.personas && sim.personas[p.id]; if (!sp) continue;
+    for (const sc of ["now", "plan", "prop"]) {
+      const run = sp.scenarios && sp.scenarios[sc]; if (!run) continue;
+      const steps = [], sittings = [], events = []; let open = null;
+      for (const x of run.steps) {
+        const t = x.day * 1440 + x.minute, day = x.day + 1;
+        if (x.event === "opens the game") { open = { day, t0: t, t1: t, with: x.with || null }; sittings.push(open); continue; }
+        if (x.event === "closes the game") { if (open) open.t1 = Math.max(open.t1, t); open = null; continue; }
+        if (x.event) events.push({ day, t, kind: kind(x.event), note: x.event });
+        if (!(x.dur_s > 0) || !D.loops[x.loop]) continue;
+        let path = chainOf(x.loop);
+        if (x.parent && D.loops[x.parent] && !path.includes(x.parent)) path = chainOf(x.parent).filter(y => !path.includes(y)).concat(path);
+        const lp = D.loops[x.loop], mean = (lp.t[0] + lp.t[1]) / 2;
+        steps.push({ day, minute: x.minute, t, loop: x.loop, dur_s: x.dur_s, parent: x.parent, path, laps: x.dur_s / mean, via: null,
+          note: null, hole: null, risk: 0, event: null, won: 0, crystals: x.crystals || 0, with: x.with || null, sit: Math.max(0, sittings.length - 1) });
+        if (open) open.t1 = Math.max(open.t1, t + x.dur_s / 60);
+      }
+      const lapsed = run.milestones && run.milestones.lapsed;
+      const fate = lapsed != null ? { day: lapsed + 1, why: `Lapsed on day ${lapsed + 1} of this simulated run (seed ${run.seed}).` }
+        : { why: `Still playing at the end of this simulated run (seed ${run.seed}, ${sim.meta && sim.meta.days} days).` };
+      const first = [], seen = new Set();
+      for (const s of steps) if (!seen.has(s.loop)) { seen.add(s.loop); first.push({ loop: s.loop, day: s.day }); }
+      p.layers[`sim-${sc}`] = { fate, uses: [], steps, sittings, events,
+        summary: { first_visits: first, holes: events.filter(e => e.kind === "loss").map(e => `Day ${e.day}: ${e.note}`), left_on: fate.day || null } };
+      any = true;
+    }
+  }
+  $("simseg").hidden = !any;
+}
+
+function start(data, sim) {
   D = data; $("day").max = D.horizon;
+  if (sim) try { addSim(sim); } catch (e) { console.warn("sim.json skipped", e); }
   lanes = D.personas.map(buildLane);
   $("chips").innerHTML = D.personas.map((p, i) => `<label class="chk"><input type="checkbox" id="ck-${p.id}" checked><i class="sw" style="background:${css(`--p${i}`)}"></i>${p.name.split(",")[0]}</label>`).join("");
   lanes.forEach(ln => { $(`ck-${ln.p.id}`).onchange = e => { ln.off = !e.target.checked; $(`lane-${ln.p.id}`).classList.toggle("off", ln.off); }; ln.tp = { ...ln.rings.era.q }; });
   $("play").onclick = () => { if (t >= D.horizon * 1440) setT(0); playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; last = 0; };
   $("vel").oninput = () => $("velv").textContent = fmtVel(vel()); $("vel").oninput();
   $("day").oninput = e => setT(+e.target.value * 1440);
-  $("L-now").onclick = () => setLayer("now"); $("L-prop").onclick = () => setLayer("prop");
+  for (const k of LAYERS) $(`L-${k}`).onclick = () => setLayer(k);
   setT(1 * 1440 + 20 * 60 + 40);
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) { playing = false; $("play").textContent = "Play"; }
   summary();
   requestAnimationFrame(tick);
 }
 
-fetch("journeys.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(start)
+const simData = fetch("sim.json").then(r => r.ok ? r.json() : null).catch(() => null);
+fetch("journeys.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(d => simData.then(s => start(d, s)))
   .catch(e => { $("err").hidden = false; $("err").textContent = `The journeys data did not load (${e.message}). It is published beside this page as journeys.json.`; });
 })();
 </script>

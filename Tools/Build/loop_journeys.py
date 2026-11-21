@@ -179,7 +179,7 @@ def expand(doc: dict, nodes: dict, handoffs: set) -> dict:
                 "summary": summarise(steps, sittings, fate, horizon, nodes),
             }
         personas.append(out)
-    loops = sorted({x for p in personas for lay in p["layers"].values() for st in lay["steps"] for x in st["path"]})
+    loops = sorted(nodes)  # every loop, so the page can also place the simulation's steps
     return {
         "horizon": horizon, "start": doc.get("start", "mon"), "price": VESSEL_PRICE, "pay": WIN_PAY,
         "loops": {i: {k: nodes[i].get(k) for k in ("name", "tier", "t", "parent", "kind", "in", "drivers")}
@@ -241,11 +241,16 @@ def report(data: dict) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def render(out_dir: Path) -> None:
-    """The page is the template as it is; it fetches journeys.json from beside itself."""
+def render(out_dir: Path, sim: str | None = None) -> None:
+    """The page is the template as it is; it fetches journeys.json, and sim.json when present, from beside itself.
+
+    sim is the economy and timescale simulation's output (Docs/LoopAtlas/sim/out/journeys.json); the page shows its
+    scenarios as three more layers for the personas both files share."""
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(TEMPLATE.read_text(encoding="utf-8"), encoding="utf-8")
     (out_dir / "journeys.json").write_text(OUT.read_text(encoding="utf-8"), encoding="utf-8")
+    if sim:
+        (out_dir / "sim.json").write_text(Path(sim).read_text(encoding="utf-8"), encoding="utf-8")
 
 
 def build(write: bool) -> list[str]:
@@ -293,6 +298,7 @@ def main() -> int:
     ap.add_argument("cmd", nargs="?", default="build", choices=["build", "self-test"])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--html")
+    ap.add_argument("--sim", help="the simulation's journeys.json, published beside the page as sim.json")
     a = ap.parse_args()
     try:
         if a.cmd == "self-test":
@@ -307,7 +313,7 @@ def main() -> int:
             return 0
         print(f"wrote {OUT.relative_to(ROOT.parents[1])} and {REPORT.name}")
         if a.html:
-            render(Path(a.html))
+            render(Path(a.html), a.sim)
             print(f"wrote {a.html}/index.html and journeys.json (publish journeys.json beside the page)")
     except JourneyError as e:
         print(f"loop_journeys: {e}", file=sys.stderr)
