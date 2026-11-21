@@ -72,6 +72,27 @@ identical to Home and is folded into it. A sweep path is matched to the atlas by
 nesting, an ambiguous name is settled by its parents' names and skipped only on a tie. Known gap: flora grown in code
 (no FBX) show only their seed, because drawing them needs the game's own code running (engine follow-up).
 
+## Human first: what a person inspects comes before the code
+
+Garrett, 2026-11-21: "when we get into the deepest aspects of the code it ends up having similar unusability to an
+automatically generated API. lets try to maintain relevance and place the information a human is more likely to want
+to inspect first. so if i am inspecting an ability I want to see how it works, what it does, the parameters of
+interest and what they are. the stuff that would be seen by looking at its scriptable objects and other human
+interfacing parts of the codebase first."
+
+- **An ability's ring** (a verb on the map) leads with what it does, its trigger and what more of the element does,
+  then its code in the order a person tunes it: the `Ability<Vessel><Name>` asset, the vessel's action assets whose name
+  shares a word with the ability (`VesselActions/<Vessel>/`), its doc, its arcade card, and only then types and files.
+  Every loop's Code ring is ordered the same way (`human_first` in the tool): abilities and ability maps, tuned assets,
+  docs, other assets, prefabs, pictures, types, C# files, scenes, folders, tests last.
+- **Every card leads with the sentence a person wrote**: a type's or member's `///` summary (`sum`, its first
+  paragraph), a field's tooltip, and for an object made from a script, that script's summary (`ws`), before value,
+  type, signature and path.
+- **A type's ring leads with its Parameters** (the inspector's serialized fields, each with its tooltip, and its value
+  in every asset one zoom further) and **the assets made from it**. Methods, properties, constants and plumbing fields
+  wait together in one **Code details** box, and the type graph (mentions, namespace, the types it holds) in one
+  **More neighbours** box, so the first ring is the inspector, not the API.
+
 ## The data model: canonical nodes, placements made while you zoom
 
 `Tools/Build/code_atlas.py build` stores the graph **once**. A record per node:
@@ -85,6 +106,7 @@ nesting, an ambiguous name is settled by its parents' names and skipped only on 
 | `f` | an object's serialized values: `[key, value, referenced node?]` rows, every value of the YAML (lists past 64 items are counted, not dropped) |
 | `im` | the node's pictures, indexes into the thumbnail sheets |
 | `path`, `l`, `ty`, `v`, `sig`, `tip`, `hd`, `ser`, `mods`, `tk`, `uc`, `wh`, `lines` | where it is, its type, value, signature, tooltip, header, serialized or not, modifiers, member kind, Unity class, picture size, line count |
+| `sum`, `ws`, `d`, `tr`, `sc` | a type's or member's doc summary; an object's script's summary; a verb's text, trigger and what more of its element does |
 
 Ids are canonical and readable, the prefix is the kind: `d:` folder, `f:` file, `n:` namespace, `t:` type, `m:` member,
 `o:<file>#<fileID>` Unity object, `v:<file>#<fileID>|<key>` value, `s:<file>#<slug>` doc section, `L:<loop>` loop,

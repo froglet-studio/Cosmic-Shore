@@ -19,7 +19,9 @@ https://claude.ai/artifact/QUiM5ztvnHhkpWgsn4S43K.
 | `model/kit.yaml` | What every vessel's kit shares: roles per game type, the flight-feel pulse, the verb archetypes, which drivers each element serves. |
 | `model/proposals.yaml` | Proposals P1 to P12 and the loops each touches. |
 | `model/items.yaml` | Product work beyond the loops: the areas (Game, App, AI, ...) and the items in them, which move through the layers like loops. |
-| `model/fleet/<Vessel>.yaml` | One vessel: its verbs, combos (with nested `sub` loops), games, arenas and board. |
+| `model/fleet/<Vessel>.yaml` | One vessel: its verbs, combos (with nested `sub` loops and each combo's AI `gene`), games, arenas and board. |
+| `model/genes.yaml` | What turns a combo into an AI gene: the rule, the activation expectation for combos, the `senses` a gene's cues name and the pilot `sights` (callsigns). |
+| `GENES.md` | Every combo as an AI gene, the coverage per vessel and genome, and the activation expectations of every measured loop, **generated**. |
 | `schema.json` | JSON Schema for the assembled model. |
 | `model.json` | The assembled model, **generated**; never edit it by hand. Other tools read this. |
 | `page/atlas.template.html` | The published page with the model taken out. The map's runtime lives here. |
@@ -55,6 +57,8 @@ The tool needs PyYAML and jsonschema (`pip install pyyaml jsonschema`).
 - Every driver, handoff, layer letter, tier and archetype a loop, edge, role or vessel names is defined in
   `vocabulary.yaml` or `kit.yaml`.
 - Every edge joins two loops, every proposal touches only loops that exist, the default vessel is in the fleet.
+- Every gene's cues, sight and dials are well formed (above); every `measure` names an Activation phase that exists and
+  an event no other loop uses.
 
 ## Fields of a loop
 
@@ -74,6 +78,25 @@ The tool needs PyYAML and jsonschema (`pip install pyyaml jsonschema`).
 | `src` | Where the loop came from: a repo path (optionally with a section), or a dated brief. |
 | `build` | A build order: the change graduated to Now that the game does not have yet (`s` queued or building, `what`, `by`, `at`, `branch`). |
 | `kit`, `element`, `core` | The role it plays a vessel's kit in, its element, and whether it is on the core path. |
+| `measure` | How a pass is counted and what activation expects of it: `event` (the analytics event one pass fires, `params`), `target`, `first` (the phase of `arc.activation` where a new player first meets it) and `expect` (what they have done by then). `in` its layers, `x` until planned. |
+
+## Genes: a combo as an AI behaviour
+
+Garrett, 2026-11-21: "your proposed gameplay loop combos are spot on for most vessels. expand that work. turn them into
+genes for ai behaviors". Every combo carries a `gene`, one gene of the vessel's genome for one element (the AI plan's
+one AI per vessel per element, `Docs/AI_SYSTEM/AI_PLAN.md`):
+
+| Field | Meaning |
+| --- | --- |
+| `genome` | Time, Charge, Mass or Space: the element genome that carries it, usually the element of the arcade game it pays in. |
+| `cue` | When the AI starts the combo: ids from `genes.yaml` senses (what the AI reads of the world, each with where the game knows it). |
+| `dials` | What a search learns: `[name, what it sets, low, high, unit]`. The seed is what the shipped AI does; once a search writes a dial nobody types it (the `RaceAICrystalGenesSO` rule). |
+| `done` | The measured moment the combo counts as done: the AI's fitness term and the player's `combo_completed` event are the same count. |
+| `sight` | The pilot callsign whose sight leans into it (`Docs/Pilots/CALLSIGNS.md`): a pilot changes what the AI goes after, never what the vessel can do. |
+| `in` | Its layers; `x` (Proposed) until the AI owner plans it. |
+
+The check refuses a cue that is not a sense, a sight that is not a callsign, a dial range that is empty, and a genome
+the vessel has no verb for. `report` lists a vessel with a game or arena for an element and no gene for it.
 
 ## Next phases
 

@@ -411,6 +411,46 @@ def parse_cs(src: str) -> dict:
     return {"types": types, "masked": masked}
 
 
+_DOC_TAG = re.compile(r"<see\s+(?:cref|langword)=\"([^\"]+)\"\s*/>|<paramref\s+name=\"([^\"]+)\"\s*/>|<[^>]+>")
+
+
+def doc_summaries(src: str, cap: int = 320) -> dict[int, str]:
+    """Each /// doc comment as plain text, keyed by every line from the end of the comment to the declaration it
+    documents (attribute lines included), so a type or member finds its summary by its own line number. This is the
+    sentence a person wrote for whoever opens the node: the map shows it first (Garrett, 2026-11-21: lead with what a
+    human wants to inspect)."""
+    lines = src.splitlines()
+    out: dict[int, str] = {}
+    i = 0
+    while i < len(lines):
+        if not lines[i].lstrip().startswith("///"):
+            i += 1
+            continue
+        block = []
+        while i < len(lines) and lines[i].lstrip().startswith("///"):
+            block.append(lines[i].lstrip()[3:])
+            i += 1
+        text = " ".join(block)
+        m = re.search(r"<summary>(.*?)</summary>", text, re.S)
+        text = m.group(1) if m else re.sub(r"<(param|returns|typeparam|remarks)\b.*", "", text, flags=re.S)
+        text = re.split(r"<para>", text)[0] or text  # the first paragraph is the summary; the rest is the essay
+        text = _DOC_TAG.sub(lambda mm: (mm.group(1) or mm.group(2) or "").split(".")[-1].replace("T:", ""), text)
+        text = " ".join(text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").split())
+        if not text:
+            continue
+        if len(text) > cap:
+            cut = text.rfind(". ", 0, cap)
+            text = text[:cut + 1] if cut > cap // 3 else text[:cap].rstrip() + "…"
+        j = i
+        while j < len(lines):
+            out[j + 1] = text
+            s = lines[j].strip()
+            if s and not s.startswith("[") and not s.startswith("//"):
+                break
+            j += 1
+    return out
+
+
 def _member(scope: dict, text: str, orig: str, attrs: list[str], line: int, body: bool):
     t = scope["t"]
     header = _attr_value(attrs, "Header")
@@ -621,6 +661,7 @@ class Builder:
         self.say(f"docs done ({time.time() - t0:.1f}s)")
         self.loops_pass()
         self.say(f"loops done ({time.time() - t0:.1f}s)")
+        self.human_first()
         self.imagery()
         self.say(f"imagery done ({time.time() - t0:.1f}s)")
         return self
@@ -650,6 +691,7 @@ class Builder:
                 self.say(f"  parse failed {path}: {e}")
                 continue
             self.cs_parsed[path] = parsed
+            sums = doc_summaries(src)
             g.recs[fid]["lines"] = src.count("\n") + 1
             for t in parsed["types"]:
                 full = (t["outer"]["full"] + "." if t["outer"] else (t["ns"] + "." if t["ns"] else "")) + t["name"]
@@ -657,7 +699,7 @@ class Builder:
                 tid = "t:" + full
                 parent = "t:" + t["outer"]["full"] if t["outer"] else fid
                 rec = g.node(tid, "type", t["name"] + (t["gen"] or ""), parent, tk=t["kind"], path=path, l=t["line"],
-                             mods=" ".join(t["mods"]) or None)
+                             mods=" ".join(t["mods"]) or None, sum=sums.get(t["line"]))
                 if t["outer"] is None and parent != fid:
                     g.child(fid, tid)
                 if t["outer"] is None:
@@ -678,7 +720,8 @@ class Builder:
                         mid = f"{mid}~{k}"
                     kw = {"tk": mb["kind"], "l": mb["line"], "ty": mb.get("type"), "v": mb.get("value"),
                           "sig": mb.get("sig"), "tip": mb.get("tip"), "hd": mb.get("header"),
-                          "ser": mb.get("ser"), "mods": " ".join(mb.get("mods", [])) or None}
+                          "ser": mb.get("ser"), "mods": " ".join(mb.get("mods", [])) or None,
+                          "sum": sums.get(mb["line"])}
                     g.node("m:" + mid[2:], "member", mb["name"], tid, **kw)
                     self.stats["member " + mb["kind"]] += 1
                 self.stats["type " + t["kind"]] += 1
@@ -1074,7 +1117,8 @@ class Builder:
             vid = "L:vessel/" + V
             g.node(vid, "loop", f["label"], "L:fleet", tier=2, lid="fleet/" + V)
             for E, v in (f.get("verbs") or {}).items():
-                g.node(f"L:verb/{V}/{E}", "loop", v.get("ability") or E, vid, tier=1, el=E)
+                g.node(f"L:verb/{V}/{E}", "loop", v.get("ability") or E, vid, tier=1, el=E, d=v.get("does"),
+                       tr=v.get("trigger"), sc=v.get("scales"))
         # automatic links: every repo path a loop cites
         def cite(lid, text):
             for path in re.findall(r"((?:Docs|Assets|Tools)/[^\s,;()]+?\.(?:md|cs|asset|prefab|unity|json|py))", text or ""):
@@ -1090,6 +1134,8 @@ class Builder:
             vid = "L:vessel/" + V
             for E, v in (f.get("verbs") or {}).items():
                 cite(f"L:verb/{V}/{E}", v.get("source"))
+                for fpath in self.ability_assets(V, v.get("ability") or ""):
+                    g.link(f"L:verb/{V}/{E}", "code", fpath, "loops")
             cite(vid, f.get("doc"))
             for oid in so_vessel:
                 if re.search(r"(^|[^A-Za-z])" + re.escape(V) + r"([^A-Za-z]|$)", oid.split("#")[0].rsplit("/", 1)[-1]):
@@ -1137,6 +1183,56 @@ class Builder:
                 for h in hits:
                     g.link(lnode, "code", h, "loops")
 
+    def ability_assets(self, vessel: str, ability: str) -> list[str]:
+        """The ScriptableObjects a person tunes for one ability: its Ability asset (`Ability<Vessel><Name>`) and the
+        vessel's action assets whose name shares a word with the ability's name."""
+        def norm(s):
+            return re.sub(r"[^a-z0-9]", "", s.lower())
+        if not hasattr(self, "_abil"):
+            self._abil = {}
+            for i, r in self.g.recs.items():
+                if i.startswith("f:Assets/_SO_Assets/Abilities/") and i.endswith(".asset"):
+                    self._abil[norm(i.rsplit("/", 1)[-1][:-6])] = i
+        out = []
+        key = norm("ability" + vessel + ability)
+        if key in self._abil:
+            out.append(self._abil[key])
+        words = [w for w in re.findall(r"[a-z]{4,}", ability.lower()) if w not in ("mode", "shot", "with", "your")]
+        pre = f"f:Assets/_SO_Assets/VesselActions/{vessel}/"
+        for i in self.g.recs:
+            if i.startswith(pre) and i.endswith(".asset") and any(w in norm(i[len(pre):]) for w in words):
+                out.append(i)
+        return out[:8]
+
+    def human_first(self):
+        """Put what a person inspects first (Garrett, 2026-11-21: deep code should not read like a generated API; an
+        ability shows how it works, what it does and its parameters, from its ScriptableObjects and the other
+        human-facing parts, before the code). An object made from a script carries its script's summary as `ws`; a
+        loop's code is ordered abilities, tuned assets, docs, prefabs, then code."""
+        g = self.g
+        for r in g.recs.values():
+            sc = r.get("r", {}).get("script")
+            if sc and "ws" not in r:
+                s = g.recs.get(sc[0], {}).get("sum")
+                if s:
+                    r["ws"] = s
+
+        def rank(nid: str) -> tuple:
+            r = g.recs.get(nid, {})
+            k, path = r.get("k"), nid[2:] if nid[:2] in ("f:", "o:") else r.get("path", "")
+            if "/Tests/" in path or ".Tests." in nid:
+                return (11, nid)
+            if "/_SO_Assets/Abilities/" in path or "/ElementalAbilityMaps/" in path:
+                return (0, nid)
+            if "/_SO_Assets/VesselActions/" in path or "/_SO_Assets/VesselStats/" in path:
+                return (1, nid)
+            order = {"md": 2, "sec": 2, "asset": 3, "comp": 3, "prefab": 4, "img": 5, "type": 6, "cs": 7, "unity": 8,
+                     "dir": 9}
+            return (order.get(k, 10), nid)
+        for i, r in g.recs.items():
+            if r.get("k") == "loop" and r.get("r", {}).get("code"):
+                r["r"]["code"].sort(key=rank)
+
     def write_atlases(self, out: Path):
         """Thumbnails of every picture, packed SHEET x SHEET per sheet (webp, alpha kept). Image i is sheet i // 256,
         cell i % 256, row-major."""
@@ -1167,7 +1263,9 @@ class Builder:
         for r in g.recs.values():
             if "r" in r:
                 for k in list(r["r"]):
-                    r["r"][k] = sorted(set(r["r"][k]))
+                    # a loop's code keeps the human-first order human_first() gave it; the rest sort by id
+                    r["r"][k] = (list(dict.fromkeys(r["r"][k])) if k == "code" and r.get("k") == "loop"
+                                 else sorted(set(r["r"][k])))
         # each record carries its children's kinds (one letter each) and, where the id does not say it, their names,
         # so the page can group and label a ring's children before it loads their records
         for r in g.recs.values():
@@ -1308,6 +1406,12 @@ def self_test() -> int:
     q = parse_cs(SAMPLE_CS_FILE_NS)
     ok(q["types"] and q["types"][0]["ns"] == "CosmicShore.Data" and q["types"][0]["bases"] == ["Base"],
        f"file-scoped namespace and record: {q['types'][:1]}")
+    # doc comments: a summary reaches its declaration across attribute lines, tags become words, nothing leaks
+    ds = doc_summaries('/// <summary>How far the AI detours for a <see cref="T:Crystal"/>.</summary>\n'
+                       '[CreateAssetMenu]\n[Serializable]\npublic class Genes {}\n// plain\nint x;\n'
+                       '/// <param name="a">not a summary</param>\nvoid F(int a) {}\n')
+    ok(ds.get(4) == "How far the AI detours for a Crystal.", f"summary on the declaration line: {ds.get(4)}")
+    ok(6 not in ds and 8 not in ds, "a plain comment, or a doc comment with only a param, gives no summary")
     # negative control: a comment or string that looks like a type is not one
     ok("Fake" not in names and "NotAType" not in names and "Inner" not in names, "masked text is not parsed")
     # graph: copies are one node

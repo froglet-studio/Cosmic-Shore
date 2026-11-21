@@ -237,6 +237,8 @@ body { background: var(--ground); color: var(--text); }
   function tierOf(n) { return M.tiers[n.tier]; }
   function termOf(n) { return n.kind === 'kit' || n.kind === 'vessel' ? 'Kit' : M.tiers[n.tier].term; }
   function driver(id) { for (var i = 0; i < M.drivers.length; i++) if (M.drivers[i].id === id) return M.drivers[i]; return null; }
+  function senseOf(id) { for (var i = 0; i < (M.senses || []).length; i++) if (M.senses[i].id === id) return M.senses[i]; return null; }
+  function sightOf(id) { for (var i = 0; i < (M.sights || []).length; i++) if (M.sights[i].id === id) return M.sights[i]; return null; }
   function handoff(id) { for (var i = 0; i < M.handoffs.length; i++) if (M.handoffs[i].id === id) return M.handoffs[i]; return null; }
 
   // ---------- the tree for one layer and one vessel ----------
@@ -276,7 +278,7 @@ body { background: var(--ground); color: var(--text); }
       out.push({ id: host.id + '/combo/' + i, name: c.name, tier: 2, kind: 'combo', t: c.t, is: c.is,
         phases: c.chain.map(function (s) { return { n: s[1], e: s[0] }; }), drivers: c.drivers || [], feel: c.feel,
         invented: cin === 'x', holes: [], src: [c.src || 'invented from the kit text (proposal P3)'], children: [], vessel: V,
-        propS: cin === 'x' ? 'add' : null });
+        propS: cin === 'x' ? 'add' : null, gene: c.gene && (c.gene.in || 'x').indexOf(L) >= 0 ? c.gene : null });
       // a loop inside the combo: it opens at one step of the chain and is one more layer of depth
       var cn = out[out.length - 1];
       (c.sub || []).forEach(function (s, j) {
@@ -306,7 +308,13 @@ body { background: var(--ground); color: var(--text); }
     ['usedBy', 'Fields of this type'], ['usedByType', 'Types that hold it'], ['mentionedBy', 'Mentioned by'],
     ['refBy', 'Referred to by'], ['assetRefBy', 'Used by assets'], ['instancedIn', 'Instanced in'], ['namespace', 'Namespace'],
     ['loops', 'Loops it serves']];
-  var MEMBER_BOX = { S: 'Serialized fields', F: 'Fields', K: 'Constants', P: 'Properties', M: 'Methods', C: 'Constructors',
+  // Human first (Garrett, 2026-11-21): deep code should not read like a generated API. A type leads with its
+  // parameters (the inspector's serialized fields) and the assets made from it; methods, plumbing fields and the
+  // type graph wait in one box each at the back.
+  var LEAD_BOX = { 'Parameters': 1, 'Enum values': 1 };
+  var LOW_REL = { mentions: 1, mentionedBy: 1, namespace: 1, uses: 1, usedByType: 1, declares: 1, types: 1, usedBy: 1 };
+  var REL_RANK = { instances: 0, loops: 1, script: 2, code: 2, refs: 3, assetRefs: 3, base: 4, derived: 4, source: 5, instancedIn: 5, refBy: 6, assetRefBy: 6 };
+  var MEMBER_BOX = { S: 'Parameters', F: 'Fields', K: 'Constants', P: 'Properties', M: 'Methods', C: 'Constructors',
     E: 'Events', V: 'Enum values', t: 'Nested types' };
   var KIND_WORD = { root: 'Codebase', group: 'Group', dir: 'Folder', cs: 'C# file', asset: 'Asset', prefab: 'Prefab', unity: 'Scene',
     md: 'Doc', img: 'Picture', type: 'Type', ns: 'Namespace', member: 'Member', go: 'GameObject', comp: 'Component',
@@ -427,7 +435,16 @@ body { background: var(--ground); color: var(--text); }
         var groups = {}, gorder = [];
         kids.forEach(function (k) { var g = MEMBER_BOX[k.ck] || 'Members'; if (!groups[g]) { groups[g] = []; gorder.push(g); } groups[g].push(k); });
         if (gorder.length === 1) inside = kids;
-        else gorder.forEach(function (g) { inside.push({ box: g + ' (' + groups[g].length + ')', items: groups[g] }); });
+        else {
+          var detail = [];
+          gorder.sort(function (a, b) { return (LEAD_BOX[b] ? 1 : 0) - (LEAD_BOX[a] ? 1 : 0); });
+          gorder.forEach(function (g) {
+            var bx = { box: g + ' (' + groups[g].length + ')', items: groups[g], tone: LEAD_BOX[g] ? 'lead' : null };
+            (LEAD_BOX[g] ? inside : detail).push(bx);
+          });
+          if (detail.length === 1) inside.push(detail[0]);
+          else if (detail.length) inside.push({ box: 'Code details', items: detail, tone: 'detail' });
+        }
       } else inside = kids;
     }
     var near = [];
@@ -436,11 +453,17 @@ body { background: var(--ground); color: var(--text); }
       var inst = tr.r && tr.r.instances || [];
       if (inst.length) near.push({ box: 'Its value in each asset (' + inst.length + ')', items: inst.map(function (o) { return { id: 'v:' + o.slice(2) + '|' + r.n, label: nameOf(o).replace(' ›', '') }; }), tone: 'value' });
     }
+    var low = [], rels = [];
     REL.forEach(function (rl) {
       if (rl[0] === 'code' && r.k === 'loop') return;
       var lst = r.r && r.r[rl[0]]; if (!lst || !lst.length) return;
-      near.push({ box: rl[1] + ' (' + lst.length + ')', items: lst.map(function (x) { return { id: x }; }), tone: 'near' });
+      var bx = { box: rl[1] + ' (' + lst.length + ')', items: lst.map(function (x) { return { id: x }; }), tone: 'near', rel: rl[0] };
+      (LOW_REL[rl[0]] ? low : rels).push(bx);
     });
+    rels.sort(function (a, b) { var x = REL_RANK[a.rel], y = REL_RANK[b.rel]; return (x == null ? 9 : x) - (y == null ? 9 : y); });
+    near = near.concat(rels);
+    if (low.length === 1) near.push(low[0]);
+    else if (low.length) near.push({ box: 'More neighbours', items: low, tone: 'near' });
     if (r.p && r.p.indexOf('code/') !== 0) near.push({ box: r.k === 'loop' ? 'The loop above' : 'Lives in', items: [{ id: r.p }], tone: 'near' });
     if (r.k === 'loop') near.push({ id: 'code', label: 'The whole codebase' });
     // what it is made of stays loose when there is room; otherwise it gets a box of its own beside the neighbours
@@ -548,25 +571,33 @@ body { background: var(--ground); color: var(--text); }
   function cardLines(pl, r) {
     if (pl.box) return pl.tone === 'near' || pl.tone === 'value'
       ? { kick: pl.tone === 'value' ? 'VALUES' : 'NEIGHBOURS', name: pl.box, rows: [pl.items.length + (pl.items.length === 1 ? ' neighbour' : ' neighbours') + '. Each is the node itself, the same wherever it appears: zoom in instead of following a link.'] }
+      : pl.tone === 'lead' ? { kick: 'WHAT YOU TUNE', name: pl.box, rows: ['What a person sets in the inspector, with each field’s tooltip. Zoom into one for its value in every asset.'] }
+      : pl.tone === 'detail' ? { kick: 'CODE DETAILS', name: pl.box, rows: ['Methods, properties and plumbing fields: the code behind it, kept here for completeness.'] }
       : { kick: pl.tone === 'bucket' ? 'BY NAME' : 'INSIDE', name: pl.box, rows: [pl.items.length + ' inside'] };
     if (!r) return { kick: '…', name: nameOf(pl.id), rows: [] };
-    if (!pl.parent && r.k === 'loop') return { kick: 'THE CODE OF ' + r.n.toUpperCase(), name: 'Code', rows: [((r.r && r.r.code) || []).length + ' places in the code implement this loop. Zoom into any of them: every neighbour of a node sits beside it, so the whole codebase is reachable from here without a link.'] };
+    if (!pl.parent && r.k === 'loop') return { kick: 'THE CODE OF ' + r.n.toUpperCase(), name: 'Code', rows: [((r.r && r.r.code) || []).length + ' places in the code implement this loop, the parts a person tunes first: abilities and their assets, then docs, prefabs, and the code last. Zoom into any of them: every neighbour of a node sits beside it, so the whole codebase is reachable from here without a link.'] };
     var kw = KIND_WORD[r.k] || r.k, rows = [], nm = r.n;
     if (r.k === 'value' && pl.label && pl.label !== r.key) nm = pl.label;
     if (r.k === 'member') kw = ({ field: r.ser === true ? 'Serialized field' : 'Field', const: 'Constant', property: 'Property', method: 'Method', ctor: 'Constructor', event: 'Event', enum: 'Enum value' })[r.tk] || 'Member';
     if (r.k === 'type') kw = (r.mods ? r.mods + ' ' : '') + (r.tk || 'type');
+    // what a person wrote for whoever opens this node comes first: the doc comment, the tooltip, the ability's text
+    if (r.sum) rows.push(r.sum);
+    if (r.ws) rows.push('Made from a script that says: ' + r.ws);
+    if (r.tip) rows.push('“' + r.tip + '”');
+    if (r.d && r.k === 'loop') rows.push(r.d);
+    if (r.tr) rows.push('Trigger: ' + r.tr);
+    if (r.sc) rows.push('More of the element: ' + r.sc);
     if (r.k === 'value') { rows.push('= ' + r.v); rows.push('key ' + r.key); }
     if (r.v != null && r.k !== 'value') rows.push('= ' + r.v);
+    if (r.hd) rows.push('under the header “' + r.hd + '”');
     if (r.ty) rows.push('type ' + r.ty);
     if (r.sig) rows.push(r.sig);
-    if (r.tip) rows.push('“' + r.tip + '”');
-    if (r.hd) rows.push('under the header “' + r.hd + '”');
     if (r.path) rows.push(r.path + (r.l ? ':' + r.l : ''));
     else if (r.l && pl.id && pl.id.slice(0, 2) === 'm:') rows.push('line ' + r.l);
     if (r.wh) rows.push(r.wh + ' px');
     if (r.lines) rows.push(r.lines + ' lines');
     if (r.uc && r.k !== 'go') rows.push('Unity ' + r.uc);
-    if (r.d) rows.push(r.d);
+    if (r.d && r.k !== 'loop') rows.push(r.d);
     if (r.c && r.c.length && r.k !== 'type') rows.push(r.c.length + ' inside');
     if (r.r && r.r.code && pl.parent) rows.push(r.r.code.length + ' places in the code implement it');
     if (pl.parent && pl.parent.box && pl.parent.parent && pl.parent.parent.id) rows.push('Here as a neighbour of ' + labelOf({ id: pl.parent.parent.id }) + '. Every copy is this same node.');
@@ -596,7 +627,7 @@ body { background: var(--ground); color: var(--text); }
       }
       var n = { id: s.id, name: s.name, tier: s.tier, kind: s.kind, t: s.t, is: s.is, phases: s.phases || [], drivers: s.drivers || [],
         reps: s.reps, repsOf: s.repsOf, at: s.at, core: !!s.core, ghost: ghost, kitKind: s.kit, element: s.element,
-        now: s.now, plan: s.plan, prop: s.prop, inL: s.in || 'npx', holes: holesFor(s.holes, L), src: s.src || [], children: [], parentId: s.parent };
+        now: s.now, plan: s.plan, prop: s.prop, inL: s.in || 'npx', measure: s.measure && has(s.measure, L) ? s.measure : null, holes: holesFor(s.holes, L), src: s.src || [], children: [], parentId: s.parent };
       byId[n.id] = n; list.push(n);
     });
     list.forEach(function (n) {
@@ -1497,6 +1528,20 @@ body { background: var(--ground); color: var(--text); }
         if (n.scales) vs.rows.push({ lead: 'More of the element:', t: n.scales });
         if (n.games && n.games.length) vs.rows.push({ lead: 'Its arcade game:', t: n.games.join(', ') });
         if (n.board) vs.rows.push({ lead: 'Elemental loop steps:', t: boardWords(n.board) });
+      }
+      if (n.gene) {
+        var gn = n.gene, gs = sec('As an AI gene');
+        gs.rows.push({ lead: 'Genome:', t: 'the ' + M.fleet[n.vessel].label + '’s ' + gn.genome + ' AI (one per vessel and element)' });
+        gs.rows.push({ lead: 'Starts when:', t: gn.cue.map(function (c, i) { var s = senseOf(c), w = s ? s.is.replace(/\.$/, '') : c; return i ? w.charAt(0).toLowerCase() + w.slice(1) : w; }).join('; and ') + '.' });
+        gn.dials.forEach(function (d) { gs.rows.push({ lead: d[0] + ':', t: d[1] + ', learned between ' + d[2] + ' and ' + d[3] + (d[4] ? ' ' + d[4] : ''), st: 'soft' }); });
+        gs.rows.push({ lead: 'Done when:', t: gn.done, st: 'prop', leadSt: 'prop' });
+        if (gn.sight) { var sg = sightOf(gn.sight); gs.rows.push({ lead: 'Pilot bias:', t: gn.sight + (sg ? ', who sees ' + sg.sees + ', leans into it.' : '') }); }
+      }
+      if (n.measure) {
+        var ms = n.measure, act = S.tree.all['arc.activation'], mm = sec('Measured by');
+        mm.rows.push({ lead: 'Event:', t: ms.event + (ms.params ? ' (' + ms.params.join(', ') + ')' : '') });
+        mm.rows.push({ lead: 'Target:', t: ms.target });
+        mm.rows.push({ lead: 'Activation:', t: (act && act.phases[ms.first] ? 'met at “' + act.phases[ms.first].n + '”. ' : '') + ms.expect, st: 'prop', leadSt: 'prop', go: act ? act.id : null });
       }
       if (n.kind === 'role' || n.kind === 'kit' || n.kind === 'vessel') {
         var f = M.fleet[n.vessel], rs = sec('The ' + f.label);
