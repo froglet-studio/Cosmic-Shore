@@ -25929,3 +25929,17 @@ in the changed files; `RetentionPayTests` were not run.
       Playing I3 later still opens I4 on its goal.
 - [ ] Run the edit-mode tests: `RetentionPayTests` passes, and the progression tests still pass.
 
+
+## The breath between rounds (P5, 2026-11-21)
+
+The scoreboard offers ONE next step beside Play again (`ScoreboardBreath`, a copy of the Play again button made in code;
+words and destinations on `Assets/Resources/BreathConfig.asset`; `BreathRules`). Not run in the Unity editor; the
+reference compile has 0 errors in the changed files; `BreathRulesTests` were not run.
+
+- [ ] Solo, win a Time arcade card at I2 with I3 open: a second button under Play again reads "Next: Intensity 3"; it
+      loads the same card at I3.
+- [ ] Lose a round: no second button (Play again is the same rung).
+- [ ] After three results in one sitting at a card's top open rung, the button reads "Take it to Regatta" (a Time
+      card), "Take it to Broadside" (Charge) or "Take it to Brood Rush" (Mass, Space), and loads that arena card at I2.
+- [ ] A guest in a party sees no second button; the Maelstrom's per-game scoreboard shows none.
+- [ ] The copy carries no rematch faces, and Play again still votes and replays as before.
