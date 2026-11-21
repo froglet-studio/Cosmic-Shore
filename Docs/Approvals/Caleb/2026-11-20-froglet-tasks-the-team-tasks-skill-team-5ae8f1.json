@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-20-froglet-tasks-the-team-tasks-skill-team-5ae8f1",
+  "to": "Caleb",
+  "by": "Shombith",
+  "date": "2026-11-20T19:05:08+00:00",
+  "area": "EditorChurn plan and tracker",
+  "summary": "Froglet Tasks (the /team-tasks skill, team_tasks.py, the team-task issues) was retired for Swim Lanes; the lines that told sessions to file tickets now point at the verification checklist and the /handoff-* skills. Wording only.",
+  "branch": "claude/project-thread-suflzs",
+  "commit": "eb61686fb"
+}

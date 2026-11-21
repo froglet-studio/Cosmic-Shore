@@ -31,7 +31,7 @@ python3 Tools/Compute/compute.py scout --propose      # queue the mechanical one
 
 The lenses find what looks like a search. Your job is the rest: read the last day of merges
 (`python3 .claude/hooks/team_activity.py --peek 12`), `Docs/QA/DEV_TASKS.md`, `Docs/BRANCH_PARTS_STATUS.md`, the
-open Froglet Tasks, and ask of each problem: **is there a space of choices and a number that says which is better?**
+swim lanes board (`/swimlanes`), and ask of each problem: **is there a space of choices and a number that says which is better?**
 
 - "The Thresher's sling feels random at I3" -> the sling's timing fields x the ThresherTime race time.
 - "Nobody can tell which Tandava form reads best" -> MAP-Elites over form genomes with a legibility measure.
@@ -68,8 +68,8 @@ divides by machines already on it (`compute.py top --why`).
 ## 4. What the scout never does
 
 - **Never promotes** a converged result: it lists it for the owner (`/compute` section 4).
-- **Never files a team ticket.** A hand test or decision a search leaves for a person may be SUGGESTED through
-  `/team-tasks suggest`, only with the session's person's yes (CLAUDE.md).
+- **Never hands work to anyone on its own.** A hand test or decision a search leaves for a person goes to the
+  session's person, who may hand the lane on (`/handoff-open`; CLAUDE.md).
 - **Never re-tunes someone's area.** A job whose answer would change another collaborator's numbers names them as
   `area_owner`, and the job stays a proposal for them.
 - **Never pushes game code to `compute-queue`.** That branch carries `Docs/Compute/**` only (README section 7).

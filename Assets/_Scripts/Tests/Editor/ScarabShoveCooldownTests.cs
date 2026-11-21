@@ -7,7 +7,7 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Scarab's CHARGE row is the shove plate's cooldown (Garrett, 2026-11-11): 2.5 s at rest down to 1.25 s at
+    /// The Scarab's CHARGE row is the shove plate's cooldown (Garrett, 2026-11-11): 4.25 s at rest down to 2.125 s at
     /// Charge 10. It was the petals the shove's debuff bit off (x1 -> x2.5), a dial in whole petals and too coarse to tune.
     /// Locks the shipped curve on Scarab.prefab, its floor, its element, and that the bite is flat again.
     /// </summary>
@@ -27,21 +27,21 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheShoveWaits2Point5sAtRest_AndHalfThatAtChargeTen()
+        public void TheShoveWaits4Point25sAtRest_AndHalfThatAtChargeTen()
         {
             var blast = ShippedBlast();
-            Assert.AreEqual(2.5f, blast.CooldownSecondsAtLevel(0f), 1e-4f, "Charge 0");
-            Assert.AreEqual(1.875f, blast.CooldownSecondsAtLevel(0.5f), 1e-4f, "Charge 5");
-            Assert.AreEqual(1.25f, blast.CooldownSecondsAtLevel(1f), 1e-4f, "Charge 10");
+            Assert.AreEqual(4.25f, blast.CooldownSecondsAtLevel(0f), 1e-4f, "Charge 0");
+            Assert.AreEqual(3.1875f, blast.CooldownSecondsAtLevel(0.5f), 1e-4f, "Charge 5");
+            Assert.AreEqual(2.125f, blast.CooldownSecondsAtLevel(1f), 1e-4f, "Charge 10");
         }
 
         [Test]
         public void ADrainedChargeSlowsTheShove_AndTheFloorKeepsItFromFiringEveryFrame()
         {
             var blast = ShippedBlast();
-            Assert.AreEqual(3.125f, blast.CooldownSecondsAtLevel(-0.5f), 1e-4f, "Charge -5");
-            Assert.AreEqual(0.625f, blast.CooldownSecondsAtLevel(1.5f), 1e-4f, "Charge 15");
-            Assert.AreEqual(0.625f, blast.CooldownSecondsAtLevel(3f), 1e-4f,
+            Assert.AreEqual(5.3125f, blast.CooldownSecondsAtLevel(-0.5f), 1e-4f, "Charge -5");
+            Assert.AreEqual(1.0625f, blast.CooldownSecondsAtLevel(1.5f), 1e-4f, "Charge 15");
+            Assert.AreEqual(1.0625f, blast.CooldownSecondsAtLevel(3f), 1e-4f,
                 "past the band the floor (x0.25) holds the wait at a quarter of the resting one");
         }
 

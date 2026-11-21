@@ -82,7 +82,7 @@ Worst first (open, then regressions, then times seen). One issue on several bran
    work, or a `Debug.Log` are not fixes (CLAUDE.md § What Claude Code Should Never Do).
 5. **Load the area's skill / topic file first**; shared prefabs and SOs are fixed once at the source.
 6. A DESIGN or CONTENT call (an FMOD event's loop region, what a skimmer should do) is not yours:
-   restore established behaviour if you can, and file it as a `decision` ticket (`/team-tasks add`, naming nobody).
+   restore established behaviour if you can, and tell your person it is a decision for the area's owner (`/handoff-open` with a note, naming nobody, on their yes).
 7. Team rules (CLAUDE.md § Team): a fix in another collaborator's area beyond a wiring/data repair
    is a task for its owner, not a commit; commits there say `Affects: <person>'s <area>`.
 

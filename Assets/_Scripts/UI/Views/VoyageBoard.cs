@@ -15,8 +15,8 @@ namespace CosmicShore.UI
     /// <list type="number">
     /// <item><b>The HyperSea</b> (<see cref="VoyageSeaPage"/>, Rev 111 Full on Rev 108's table): the live map lying back as a
     /// 50 degree table on the moving sea lines, its side view joined to its front edge and sliding with it, the zoom row
-    /// and + / - above it, Full screen (the table animates flat to a borderless full-screen map whose zoom goes down to
-    /// Neighbourhood and Cell), the crew's portraits down the right with a sliding Crew / Hide toggle, and the picked
+    /// and + / - above it, Full screen (the table animates flat to a borderless full-screen map; both zoom down to Neighbourhood
+    /// and Cell), the crew's portraits down the right with a sliding Crew / Hide toggle, and the picked
     /// voyage with Open voyage.</item>
     /// <item><b>The voyage</b> (<see cref="VoyageBriefPage"/>, Rev 100 P2A Briefing): the offering pilot's portrait and
     /// story, the route drawing itself stop by stop, the difficulty 1-9 with the pilot's recommendation marked, the

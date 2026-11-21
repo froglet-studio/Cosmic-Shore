@@ -63,7 +63,7 @@ the five scripts in rows 1-5; the two `.DS_Store` in row 17; 12 files inside FMO
 | W6 | Editor code that writes on load | row 11: `check_material_versions.py` (URP's MaterialPostprocessor filter: the 11 hand-written URP shaders and every URP Shader Graph; `--self-test` with a history control: the pre-#1770 file fails); `editor_churn.py` now names that writer | `claude/editor-churn-w6-material-version` | | wire into `gates.sh` (W7) |
 | W7 | Gates | not started | | | Shombith's `/approve` |
 | W8 | The ruleset `Docs/claude/EDITOR_CHURN.md` | not started | | | |
-| W9 | The hand test (Windows + macOS) | not started | | | one `/team-tasks` ticket, suggested only |
+| W9 | The hand test (Windows + macOS) | not started | | | one checklist entry, `/handoff-for-test` on a yes |
 
 ## Measurements
 

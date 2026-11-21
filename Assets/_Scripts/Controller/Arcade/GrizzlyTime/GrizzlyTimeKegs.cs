@@ -107,7 +107,7 @@ namespace CosmicShore.Gameplay
         public const float AIKegAimRange = 600f;
         /// <summary>The AI aims this far (u) past the keg down its exit lane, so it passes BESIDE the core (inside every
         /// credit radius and every full blast) instead of ramming the cage.</summary>
-        public const float AIKegPassOffset = 40f;
+        public const float AIKegPassOffset = 30f;
         /// <summary>Within this distance (u) of its keg aim point with the keg still standing, the AI gives that keg up
         /// for this gate and threads the mouth.</summary>
         public const float AIKegGiveUp = 50f;
@@ -289,8 +289,9 @@ namespace CosmicShore.Gameplay
 
         // ── Reading a keg ──────────────────────────────────────────────────
 
-        /// <summary>How far (u) from the core the blow point stands: inside a full blast, clear of the hoop.</summary>
-        public const float BlowStandOff = 60f;
+        /// <summary>How far (u) from the core the blow point stands: inside a full blast (40 u since the 20-80 blast), clear of
+        /// the hoop and its 6 u margin (22 u).</summary>
+        public const float BlowStandOff = 30f;
 
         /// <summary>Where to stand to blow a keg so its blast throws you down its exit lane: on the keg's EXIT side, between
         /// the core and the next ring, <paramref name="standOff"/> u out (inside a full blast). A Grizzly is launched AWAY
@@ -331,8 +332,9 @@ namespace CosmicShore.Gameplay
         /// a peer where the real ram broke the core at just under 16 u.</summary>
         public static float RamReach => RamRadius + CoreCube * 0.5f;
         /// <summary>A keg that broke with a ramming hull this near its core (u) was that pilot's ram (the feedback's
-        /// reading where the vessel's own ram broke the core first).</summary>
-        public static float RamCreditReach => RamReach + 20f;
+        /// reading where the vessel's own ram broke the core first). The slack is 10 u, so it stays inside
+        /// <see cref="BlowStandOff"/>: a hull waiting at the blow point never reads as the rammer.</summary>
+        public static float RamCreditReach => RamReach + 10f;
 
         /// <summary>
         /// Does a ramming hull at <paramref name="hull"/> open <paramref name="keg"/>? It does when it is within

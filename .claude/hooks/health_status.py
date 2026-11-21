@@ -54,7 +54,7 @@ def context(prompt, base):
     return ("PERFORMANCE & BUG HUNT STATUS (from Docs/perf/status.json; answer from this, not from memory). If it is "
             "more than a day old or the person wants it fresh, run `git fetch origin` then `python3 Tools/Build/perf_hunt.py "
             "status --refresh`. Give the person the next steps in plain words, one action each, naming nobody: open "
-            "work is a Froglet Tasks ticket anyone can take (`team_tasks.py list`). Load /perf-hunt to fix a performance item and /bug-ledger to fix a console bug.\n"
+            "work is on the swim lanes board (`/swimlanes`). Load /perf-hunt to fix a performance item and /bug-ledger to fix a console bug.\n"
             + text)
 
 

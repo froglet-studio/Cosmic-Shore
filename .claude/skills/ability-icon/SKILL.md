@@ -175,8 +175,8 @@ Time card (one part + the plate gauge). `specs/squirrel.py`, `specs/dolphin.py`.
 6. **Gates**: `author.py <hull>` then `--check`, `verify.py --self-test`, `check_console_logging.py`,
    `check_conditional_compilation.py`, `check_ui_colors.py`; read the states sheet.
 7. **Record**: `LESSONS.md` (the owner's words first), `Docs/ABILITY_LOCKUP.md`'s gauge table if a gauge moved,
-   `Docs/Icons/ABILITY_ICON_SKILL_PLAN.md` round status, a team task for the editor check
-   (`team_tasks.py add --area hud --kind test ...`, Yash or the owner) - there is no Unity CLI in a cloud session,
+   `Docs/Icons/ABILITY_ICON_SKILL_PLAN.md` round status, a hand test for the editor check in
+   `Docs/UNITY_VERIFICATION_CHECKLIST.md` - there is no Unity CLI in a cloud session,
    so every C# change ships editor-unverified and the commit says so.
 8. **Commit** the spec, PNGs + metas, prefab, C#, sheets and docs together, conventional message, "Affects: the
    <Hull> HUD"; one card per commit.
