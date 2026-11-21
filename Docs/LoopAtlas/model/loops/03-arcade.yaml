@@ -83,6 +83,12 @@
   src:
   - Docs/ElementalLoop/PLAYBOOK.md step 2
   - Docs/MENU_PROGRESSION_AND_IAP.md section 2b
+  holes:
+  - 'on': x
+    q: 'A commuter who races Time games never reaches the arena: an arena set (10 to 40 minutes) misses most of a 10 to
+      25 minute ride, so the Regatta balance work never meets them. (player_journeys.py, 2026-11-21: Docs/LoopAtlas/journeys-out/JOURNEYS.md)'
+    fill: One Regatta race against the fixed Time AI pool is a rung on the ladder, so Time-game players meet the arena one
+      race at a time.
 - id: round.time
   parent: arcade
   at: 3

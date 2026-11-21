@@ -34,6 +34,10 @@
   - 'on': np
     q: Matches per set, and what makes a squad stay for another, are not written.
     fill: Best of three against the same opponents, hulls re-drafted between matches, so the set is a loop of its own.
+  - 'on': x
+    q: 'A crew vessel with no arena card cannot bring its crewmate to arena nights: the Honeyguide seats none (fleet/Honeyguide.yaml
+      arenas: []), so a parent in the Ratel seat stays in the arcade and voyages. (player_journeys.py, 2026-11-21: Docs/LoopAtlas/journeys-out/JOURNEYS.md)'
+    fill: Seat the Honeyguide and Ratel on Brood Rush, the Mass-Space arena its Hive verb already serves.
   src:
   - Docs/ElementalLoop/STATUS.md section 2
   - Docs/ArcadeRestructure/PLAN.md rulings 3 and 11

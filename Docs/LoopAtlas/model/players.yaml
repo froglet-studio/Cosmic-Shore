@@ -1,0 +1,178 @@
+# Loop Atlas model: players. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page; Tools/Build/player_journeys.py simulates it.
+players:
+  is: 'Who plays, and how they move through the loops (Garrett, 2026-11-21: "anticipate how different demographics will
+    engage differently and model their different paths"). Everything here is on the Proposed layer: personas are
+    hypotheses, session patterns are assumptions, and every number is a dial to calibrate against analytics
+    (session_start, session_end, combo_completed, game_completed, party_joined) once those events report. A persona
+    names its stages; the simulator decides, minute by minute, which loop it plays from the stage''s weights, whether
+    that loop fits the time left in the sitting, and whether the player comes back tomorrow.'
+  in: x
+  cultures:
+  - id: snack
+    name: Snack sessions
+    is: Short gaps in a day (a queue, a coffee, the couch before dinner). Common in casual mobile play everywhere.
+    weekday: {sessions: [1, 4], minutes: [3, 12]}
+    weekend: {sessions: [2, 5], minutes: [4, 15]}
+    comfort: [30, 600]
+    returns: 0.62
+  - id: commute
+    name: Commute slots
+    is: Two fixed rides a day, ten to thirty minutes, one hand, often no sound. The pattern is strongest where most people
+      ride trains to work (Tokyo, Seoul, Shanghai, London are examples of where it is common, not of who plays).
+    weekday: {sessions: [2, 3], minutes: [8, 25]}
+    weekend: {sessions: [0, 2], minutes: [10, 30]}
+    comfort: [60, 1200]
+    returns: 0.74
+  - id: evening
+    name: Evening sit-down
+    is: One long sitting after work or school, at a PC or console or on a couch with a phone, sound on, often with friends
+      in a voice channel.
+    weekday: {sessions: [1, 1], minutes: [45, 150]}
+    weekend: {sessions: [1, 2], minutes: [60, 240]}
+    comfort: [300, 5400]
+    returns: 0.70
+  - id: binge
+    name: Weekend binge
+    is: Little on weekdays, long runs on Saturday and Sunday. Common among students and shift workers, and in PC-cafe
+      play where a group books hours together.
+    weekday: {sessions: [0, 1], minutes: [20, 60]}
+    weekend: {sessions: [1, 3], minutes: [120, 360]}
+    comfort: [900, 14400]
+    returns: 0.55
+  personas:
+  - id: ratel-mom
+    name: June, the Ratel
+    who: A mother in her forties who never thought of herself as a gamer. She found the Ratel's hex puzzle in the Toybox
+      when her son left the game open, and plays it as a casual puzzle game in short gaps. Her son keeps asking her to
+      join his squad.
+    culture: snack
+    color: '#e6a817'
+    drivers: {make: 1.0, crew: 0.9, mastery: 0.5, joy: 0.4, rival: 0.05, goal: 0.4}
+    entry: toy.changers
+    stages:
+    - id: puzzle
+      name: The Ratel puzzle on its own
+      loops: {toy.changers: 0.5, toy.fly: 1.0, toy.paint: 0.3}
+      note: She sits in the Ratel's seat while the Honeyguide's AI flies, and plays the Dynamo board for patterns. She
+        never touches the flight controls.
+      exit: {to: crewed, chance_per_day: 0.10, after_days: 3, why: her son sends a party invite}
+      milestone: Four patterns in one sitting, and an ability picked
+    - id: crewed
+      name: Ratel to her son's Honeyguide
+      loops: {arc.social: 0.3, round.ms: 1.0, toy.fly: 0.4}
+      note: He flies, she plays the board. The cards she makes load his shots, and she sees them land ("My partner made
+        that shot possible").
+      exit: {to: squad, after_sessions: 6, why: the crew wins a Mass-Space game and her son adds the Honeyguide to his
+          squad deck}
+      milestone: A banked Flit she made strikes a rival (combo_completed, Puzzle to dart)
+    - id: squad
+      name: In the squad, still in the Ratel seat
+      loops: {voy.cell: 1.0, voy.port: 0.3, round.ms: 0.6, arc.squad: 0.2, toy.fly: 0.3}
+      note: A voyage with her son and his friend, playing a cell at a time. She stays in the seat she knows.
+      exit: null
+      milestone: A voyage leg finished as the crew of a squad seat
+    challenge: 'Her bridge is the crew seat, and today it has gaps. The Honeyguide seats no arena card (fleet/Honeyguide.yaml
+      arenas: []), so the son cannot bring her to his arena nights, only to a Mass-Space game or a voyage. A voyage cell
+      runs 45 to 180 s but a voyage runs 20 to 40 min, past her 10 minute gaps, so she needs a voyage that can be left
+      after any cell and picked up later. Activation for her is a shot she made landing, not the Lesson''s first combo:
+      the Mentor never teaches the board.'
+  - id: ratel-son
+    name: Leo, her son
+    who: Thirteen, flies the Honeyguide, plays most evenings after homework and in short bursts on the bus.
+    culture: evening
+    color: '#4fb3ff'
+    drivers: {mastery: 0.9, rival: 0.8, crew: 0.7, joy: 0.8, own: 0.6, goal: 0.6}
+    entry: sitting
+    stages:
+    - id: learn
+      name: Lessons and the arcade
+      loops: {arc.activation: 1.0, round.time: 0.8, round.charge: 0.8, round.ms: 0.6, toy.fly: 0.4}
+      exit: {to: crew, after_sessions: 4, why: he finds the Honeyguide and Ratel in the Vessel Changer}
+      milestone: First combo of the vessel inside three rounds (genes.activation)
+    - id: crew
+      name: Crewing with his mother
+      loops: {round.ms: 1.0, arc.social: 0.4, ladder: 0.5, round.charge: 0.4}
+      exit: {to: squad, after_sessions: 8, why: a friend joins and they build a squad deck}
+      milestone: A party game won with his mother in the Ratel seat
+    - id: squad
+      name: Squad nights
+      loops: {arena: 0.3, round.broadside: 0.8, round.regatta: 0.6, round.broodrush: 0.7, voy.cell: 0.6, arc.squad: 0.3}
+      exit: null
+      milestone: First arena win as a squad
+    challenge: 'He is the recruiter: his pull on June is the only thing that moves her out of the Toybox. Give the party
+      invite a "bring a crewmate" form that opens straight into the Ratel seat, and count crew invites as their own
+      activation metric.'
+  - id: night-shift
+    name: The Night Shift
+    who: Four friends in their twenties who hit the arena most nights on voice chat, and binge voyages on the weekend.
+    culture: evening
+    weekend_culture: binge
+    color: '#ff5d73'
+    drivers: {rival: 1.0, mastery: 0.9, crew: 0.9, stake: 0.6, story: 0.5, own: 0.6, reward: 0.5}
+    entry: sitting
+    stages:
+    - id: arcade
+      name: Proving the hulls in the arcade
+      loops: {arc.activation: 0.5, round.time: 0.7, round.charge: 1.0, round.ms: 0.7, ladder: 0.6}
+      exit: {to: arena, after_sessions: 2, why: one of them has already reached the arena and invites the rest}
+      milestone: Each of them completes a combo inside three rounds
+    - id: arena
+      name: Arena nights
+      loops: {arena: 0.4, round.broadside: 1.0, round.regatta: 0.8, round.broodrush: 0.9, round.astro: 0.3,
+        arc.squad: 0.3}
+      weekend: {voy.leg: 0.8, voy.cell: 1.0, voy.place: 0.6, voy.meet: 0.4, voy.port: 0.3, arc.saga: 0.2}
+      exit: {to: meta, after_days: 21, why: they have flown every arena card and start reading the meta}
+      milestone: A squad deck built for each arena game
+    - id: meta
+      name: Chasing the meta and the sagas
+      loops: {round.broadside: 1.0, round.broodrush: 0.8, arc.squad: 0.5, era.meta: 0.2}
+      weekend: {voy.leg: 1.0, voy.cell: 1.0, arc.saga: 0.4, arc.crew: 0.3, arc.hoard: 0.3}
+      exit: null
+      milestone: A saga's relic
+    challenge: 'Their nights live or die on the arena''s balance: one dominant hull and they all fly it, the squad book
+      goes flat, and they leave by week four. That is the arena balancing project''s plateau work, and the gene search''s
+      style check (does a balance change collapse a vessel to one behaviour) is the early warning. Their weekend binge
+      is the only persona that finishes voyages as they are built today.'
+  - id: commuter
+    name: Aiko, the commuter racer
+    who: Late twenties, plays one-handed on the train twice a day, sound off. Races the Time games and climbs the rung
+      ladder; has never opened the arena.
+    culture: commute
+    color: '#7ed957'
+    drivers: {mastery: 1.0, joy: 0.8, goal: 0.6, rival: 0.3, crew: 0.1}
+    entry: sitting
+    stages:
+    - id: races
+      name: Time games on the train
+      loops: {arc.activation: 0.6, round.time: 1.0, ladder: 0.9, round.party: 0.2}
+      exit: {to: ladder, after_sessions: 10, why: she reaches I3 on her first vessel}
+      milestone: First combo inside three rounds
+    - id: ladder
+      name: The ladder, vessel by vessel
+      loops: {round.time: 1.0, ladder: 1.0, round.regatta: 0.25, arc.fleet: 0.2}
+      exit: null
+      milestone: I4 on two vessels
+    challenge: 'Challenge to the plan: she may never want the arena. Regatta is her natural door (every Time game is
+      training for Regatta), but a 10 to 25 minute ride fits one arena round, not an arena set. A single Regatta race
+      against the trained Time AIs, as a ladder rung, would let the balance work reach her.'
+  - id: voyager
+    name: Sam, the voyager
+    who: Thirties, plays alone on weekend afternoons for the story and the places. Ignores leaderboards.
+    culture: binge
+    color: '#b38cff'
+    drivers: {story: 1.0, find: 0.9, own: 0.6, make: 0.5, joy: 0.6, rival: 0.05}
+    entry: sitting
+    stages:
+    - id: tour
+      name: Toybox and the first voyage
+      loops: {arc.activation: 0.6, toy.wander: 0.8, toy.arkway: 0.6, voyages: 0.4, voy.port: 0.5}
+      exit: {to: voyages, after_sessions: 2, why: the first voyage opens}
+      milestone: First location found
+    - id: voyages
+      name: Voyages, with AI squadmates
+      loops: {voy.leg: 1.0, voy.cell: 0.9, voy.place: 0.9, voy.meet: 0.7, voy.port: 0.4, arc.crew: 0.4, arc.saga: 0.5}
+      exit: null
+      milestone: A saga's relic
+    challenge: 'Sam flies with AI teammates every session, so the AI ladder is Sam''s game: the gene search''s lower rungs
+      (fun, less effective behaviours that read as a person) are what make the squad feel like crew.'

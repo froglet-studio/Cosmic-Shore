@@ -53,11 +53,12 @@ FILES = {
     "edges.yaml": ["edges"],
     "items.yaml": ["areas", "items"],
     "genes.yaml": ["genes", "senses", "sights"],
+    "players.yaml": ["players"],
 }
 # The order of the assembled model's keys (the order the page was first published with).
 KEY_ORDER = ["schema", "updated", "layers", "tiers", "drivers", "handoffs", "nodes", "edges", "roles", "roleHoles",
              "kit", "pulse", "verbHole", "archetypes", "elementDrivers", "proposals", "fleet", "fleetOrder",
-             "defaultVessel", "artifact", "areas", "items", "genes", "senses", "sights"]
+             "defaultVessel", "artifact", "areas", "items", "genes", "senses", "sights", "players"]
 # The loops/ files an import writes: each top-level subtree of the era goes in one file.
 LOOP_FILES = [
     ("00-long-game.yaml", ["era"]),
@@ -283,6 +284,23 @@ def validate(model: dict) -> list[str]:
     if model["defaultVessel"] not in model["fleet"]:
         errors.append(f"defaultVessel '{model['defaultVessel']}' is not in the fleet")
     archetypes = set(model["archetypes"])
+
+    loop_ids = {n["id"] for n in model["nodes"]}
+    cultures = {c["id"] for c in model["players"]["cultures"]}
+    for p in model["players"]["personas"]:
+        where = f"persona '{p['id']}'"
+        for key in ("culture", "weekend_culture"):
+            if key in p and p[key] not in cultures:
+                errors.append(f"{where}: {key} '{p[key]}' is not a culture in players.yaml")
+        if p["entry"] not in loop_ids:
+            errors.append(f"{where}: entry '{p['entry']}' is not a loop")
+        stages = {s["id"] for s in p["stages"]}
+        for s in p["stages"]:
+            for lid in list(s.get("loops", {})) + list(s.get("weekend", {})):
+                if lid not in loop_ids:
+                    errors.append(f"{where} stage '{s['id']}': loop '{lid}' is not a loop")
+            if s.get("exit") and s["exit"]["to"] not in stages:
+                errors.append(f"{where} stage '{s['id']}': exit to '{s['exit']['to']}' is not a stage")
 
     senses = dupes([s["id"] for s in model["senses"]], "sense")
     sights = dupes([s["id"] for s in model["sights"]], "sight")

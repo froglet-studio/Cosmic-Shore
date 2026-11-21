@@ -1,0 +1,297 @@
+<meta charset="utf-8">
+<title>Player Journeys</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap">
+<style>
+/* Layout: one control bar, the loop map (hubs of loop circles, tokens orbiting the loop they are in) beside the
+   persona cards, then 28-day timelines under a shared playhead, then the numbers. Froglet Deep Sea / Shore tokens. */
+:root {
+  --bg: #F4F5FF; --panel: #FFFFFF; --raised: #DDE1F7; --line: #B8C0F0;
+  --fg: #00041F; --soft: #434C89; --off: #8A8FAE; --cta: #487C1F; --control: #007D73; --danger: #CD373A;
+  --hub: rgba(67,76,137,.10); --ring: rgba(67,76,137,.45);
+  --display: 'Aldrich', 'Chakra Petch', system-ui, sans-serif; --label: 'Chakra Petch', 'Aldrich', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #00041F; --panel: #0B1033; --raised: #222645; --line: #434C89;
+  --fg: #E6E9FF; --soft: #9AA1D6; --off: #5C5F70; --cta: #99FF80; --control: #00D4FF; --danger: #FF4B3A;
+  --hub: rgba(116,123,173,.10); --ring: rgba(154,161,214,.40); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #00041F; --panel: #0B1033; --raised: #222645; --line: #434C89;
+  --fg: #E6E9FF; --soft: #9AA1D6; --off: #5C5F70; --cta: #99FF80; --control: #00D4FF; --danger: #FF4B3A;
+  --hub: rgba(116,123,173,.10); --ring: rgba(154,161,214,.40); color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--label); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px }
+.wrap { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px }
+h1 { font: 28px/1.1 var(--display); margin: 0; letter-spacing: .02em }
+h2 { font: 600 13px var(--label); text-transform: uppercase; letter-spacing: .14em; color: var(--soft); margin: 0 0 8px }
+.lede { color: var(--soft); max-width: 75ch; margin: 6px 0 0; text-wrap: pretty }
+.bar { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 14px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5 }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg) }
+button { font: 600 13px var(--label); letter-spacing: .06em; text-transform: uppercase; color: var(--fg); background: var(--raised);
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--control); outline-offset: 2px }
+#play { background: var(--cta); color: #00041F; border-color: transparent; min-width: 84px }
+.speed { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 0 }
+.speed input { flex: 1; min-width: 80px; accent-color: var(--control) }
+.mono { font-variant-numeric: tabular-nums; white-space: nowrap }
+.clock { font: 18px var(--display); font-variant-numeric: tabular-nums; min-width: 9ch }
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { display: inline-flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font-weight: 600; padding: 4px 10px; border-radius: 99px }
+.chip i { width: 10px; height: 10px; border-radius: 50%; display: inline-block }
+.chip[aria-pressed="false"] { opacity: .45 }
+label.tog { display: inline-flex; gap: 6px; align-items: center; color: var(--soft) }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px }
+@media (max-width: 900px) { .main { grid-template-columns: 1fr } }
+.map { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; position: relative; min-width: 0 }
+#map { width: 100%; height: auto; aspect-ratio: 128 / 90; display: block }
+.cards { display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+.card { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 10px; padding: 10px 12px }
+.card h3 { font: 15px var(--display); margin: 0; display: flex; justify-content: space-between; gap: 8px }
+.card .now { color: var(--soft); font-size: 13px; margin-top: 2px }
+.stages { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 12.5px }
+.stages li { display: grid; grid-template-columns: 14px 1fr; gap: 6px; color: var(--off) }
+.stages li.on { color: var(--fg) } .stages li.done { color: var(--soft) }
+.stages li::before { content: "○"; color: var(--off) }
+.stages li.on::before { content: "●"; color: var(--c) } .stages li.done::before { content: "✓"; color: var(--c) }
+.tl { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow-x: auto }
+#tl { width: 100%; min-width: 640px; display: block }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--soft); margin-top: 8px }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--k); margin-right: 5px; vertical-align: -1px }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-weight: 600; color: var(--soft); font-size: 12px; letter-spacing: .04em }
+td.n, th.n { text-align: right }
+.heat { border-radius: 4px; text-align: center }
+.challenge { font-size: 13px; color: var(--soft); margin: 6px 0 0; text-wrap: pretty }
+.note { font-size: 12.5px; color: var(--off); max-width: 90ch }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Player Journeys</h1>
+    <p class="lede">Five players move through Cosmic Shore's loops over their first four weeks. Each dot circles the loop it is in, at that loop's own pace, and jumps when the player moves on. Between sittings it rests in Away. Every rate comes from a hypothesis in the Loop Atlas's <code>players.yaml</code>, so treat this as a model to check against analytics, not a measurement.</p>
+  </header>
+
+  <div class="bar" role="group" aria-label="Playback">
+    <button id="play" type="button">Pause</button>
+    <button id="restart" type="button">Restart</button>
+    <div class="clock" id="clock">Day 1 00:00</div>
+    <div class="speed"><label for="vel">Velocity</label><input id="vel" type="range" min="0" max="1000" value="520"><span class="mono" id="velv"></span></div>
+    <label class="tog"><input id="skip" type="checkbox" checked> Skip time away</label>
+    <div class="chips" id="chips" aria-label="Players shown"></div>
+  </div>
+
+  <div class="main">
+    <div class="map"><canvas id="map" width="1280" height="900" aria-label="Loop map with players moving through it"></canvas></div>
+    <div class="cards" id="cards"></div>
+  </div>
+
+  <section class="tl">
+    <h2>Four weeks side by side</h2>
+    <canvas id="tl" height="200" aria-label="Each player's sittings over 28 days"></canvas>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel"><h2>Activation paths</h2><div id="stagesT"></div>
+      <p class="note">Share of 300 simulated players who reach each stage, and the median day they get there. The animation follows the median player of those who reach the deepest stage most players reach.</p></section>
+    <section class="panel"><h2>What their time cannot reach</h2><div id="misfitT"></div>
+      <p class="note">Misfits are loops a player wanted but could not start in the minutes left in that sitting. A resumable voyage lets a sitting end after any cell and pick up the voyage later.</p></section>
+  </div>
+  <section class="panel"><h2>Session cultures against our loop timescales</h2><div id="econT"></div>
+    <p class="note">The share of each culture's sittings that are long enough to start a loop (its shortest length). Region names in the culture notes say where a pattern is common, not who plays.</p></section>
+  <section class="panel"><h2>Challenges to the plan</h2><div id="chal"></div></section>
+</div>
+
+<script>
+(async function () {
+  const J = await fetch('journeys.json').then(r => r.json());
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const HUBS = [
+    { id: 'toybox', name: 'Toybox', match: l => l === 'toybox' || l.startsWith('toy.') },
+    { id: 'arcade', name: 'Arcade', match: l => ['arcade', 'ladder', 'round.time', 'round.charge', 'round.ms', 'round.party'].includes(l) },
+    { id: 'arena', name: 'Arena', match: l => l === 'arena' || ['round.regatta', 'round.broadside', 'round.broodrush', 'round.astro'].includes(l) },
+    { id: 'voyages', name: 'Voyages', match: l => l === 'voyages' || l.startsWith('voy.') },
+    { id: 'arcs', name: 'Between sittings', match: l => l.startsWith('arc.') || l.startsWith('era.') || l === 'fleet' },
+  ];
+  const HUBCOL = { toybox: '#FF9B11', arcade: '#21C0BD', arena: '#FF4B3A', voyages: '#A600FF', arcs: '#747BAD', home: '#99FF80' };
+  const loops = Object.fromEntries(J.loops.map(l => [l.id, l]));
+  const hubOf = l => l === 'sitting' ? 'home' : (HUBS.find(h => h.match(l)) || { id: 'arcs' }).id;
+  const P = J.personas;
+  const shown = Object.fromEntries(P.map(p => [p.id, true]));
+
+  // ---------- map layout: hubs on an ellipse round Home, each hub's loops on a ring inside it
+  const W = 1280, H = 900, cx = W / 2, cy = 450;
+  const used = new Set(P.flatMap(p => p.trace.events.map(e => e[1])));
+  const pos = { sitting: { x: cx, y: cy, r: 46 } };
+  HUBS.forEach((h, i) => {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / HUBS.length;
+    const hx = cx + Math.cos(a) * 420, hy = cy + Math.sin(a) * 270, R = 150;
+    h.x = hx; h.y = hy; h.R = R;
+    const kids = J.loops.filter(l => h.match(l.id) && used.has(l.id) && l.id !== h.id);
+    if (used.has(h.id)) pos[h.id] = { x: hx, y: hy, r: R - 8 };
+    kids.forEach((l, k) => {
+      const b = -Math.PI / 2 + k * 2 * Math.PI / Math.max(1, kids.length);
+      const rr = kids.length === 1 ? 0 : R * 0.52;
+      pos[l.id] = { x: hx + Math.cos(b) * rr, y: hy + Math.sin(b) * rr, r: l.tier <= 3 ? 30 : l.tier === 4 ? 38 : 44 };
+    });
+  });
+  const away = { x: cx, y: 852 };
+
+  // ---------- state
+  const END = J.days * 86400;
+  let t = 0, playing = true, last = performance.now();
+  const S = P.map((p, i) => ({ p, i, ev: p.trace.events, ss: p.trace.sessions, k: 0, ang: Math.random() * 6.28, x: away.x, y: away.y, trail: [] }));
+  function rate() { const v = +vel.value / 1000; return Math.pow(10, 1.2 + v * 4.3); }
+  function fmtRate(r) { const s = r; if (s < 90) return `1 s = ${s.toFixed(0)} s`; if (s < 5400) return `1 s = ${(s / 60).toFixed(0)} min`; if (s < 86400 * 1.5) return `1 s = ${(s / 3600).toFixed(1)} h`; return `1 s = ${(s / 86400).toFixed(1)} days`; }
+  function current(s) {
+    while (s.k < s.ev.length - 1 && s.ev[s.k + 1][0] <= t) s.k++;
+    while (s.k > 0 && s.ev[s.k][0] > t) s.k--;
+    const e = s.ev[s.k];
+    return e && t >= e[0] && t < e[0] + e[2] ? e : null;
+  }
+  function stageAt(s) { let st = s.p.stages[0].id; for (const e of s.ev) { if (e[0] > t) break; st = e[3]; } return st; }
+  function nextStart() {
+    let n = END;
+    for (const s of S) if (shown[s.p.id]) for (const e of s.ev) if (e[0] > t) { n = Math.min(n, e[0]); break; }
+    return n;
+  }
+
+  // ---------- controls
+  const vel = document.getElementById('vel'), velv = document.getElementById('velv');
+  const playB = document.getElementById('play');
+  playB.onclick = () => { playing = !playing; playB.textContent = playing ? 'Pause' : 'Play'; };
+  document.getElementById('restart').onclick = () => { t = 0; S.forEach(s => { s.k = 0; s.trail = []; }); };
+  vel.oninput = () => velv.textContent = fmtRate(rate()); vel.oninput();
+  const chips = document.getElementById('chips');
+  P.forEach(p => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.setAttribute('aria-pressed', 'true');
+    b.innerHTML = `<i style="background:${p.color}"></i>${p.name.split(',')[0]}`;
+    b.onclick = () => { shown[p.id] = !shown[p.id]; b.setAttribute('aria-pressed', shown[p.id]); renderCards(); };
+    chips.appendChild(b);
+  });
+
+  // ---------- cards
+  const cards = document.getElementById('cards');
+  function renderCards() {
+    cards.innerHTML = '';
+    S.forEach(s => {
+      if (!shown[s.p.id]) return;
+      const d = document.createElement('div'); d.className = 'card'; d.style.setProperty('--c', s.p.color); d.id = 'card-' + s.p.id;
+      d.innerHTML = `<h3><span>${s.p.name}</span><span class="mono" data-m></span></h3><div class="now" data-now></div><ul class="stages">${s.p.stages.map(st => `<li data-s="${st.id}" title="${(st.milestone || '').replace(/"/g, '&quot;')}">${st.name}</li>`).join('')}</ul>`;
+      cards.appendChild(d);
+    });
+  }
+  renderCards();
+  function updateCards() {
+    S.forEach(s => {
+      const d = document.getElementById('card-' + s.p.id); if (!d) return;
+      const e = current(s), st = stageAt(s);
+      const played = s.ev.filter(x => x[0] <= t).reduce((a, x) => a + Math.min(x[2], Math.max(0, t - x[0])), 0);
+      d.querySelector('[data-m]').textContent = `${Math.round(played / 60)} min`;
+      d.querySelector('[data-now]').textContent = e ? `In ${loops[e[1]].name}` : (t < s.ev[0][0] ? 'Has not opened the game yet' : 'Away');
+      let seen = false;
+      const order = s.p.stages.map(x => x.id), at = order.indexOf(st);
+      d.querySelectorAll('[data-s]').forEach((li, i) => { li.className = i < at ? 'done' : i === at ? 'on' : ''; });
+    });
+  }
+
+  // ---------- map drawing
+  const cv = document.getElementById('map'), g = cv.getContext('2d');
+  function drawMap(dt) {
+    const fg = css('--fg'), soft = css('--soft'), off = css('--off'), hubF = css('--hub'), ring = css('--ring');
+    g.clearRect(0, 0, W, H);
+    HUBS.forEach(h => {
+      g.fillStyle = hubF; g.beginPath(); g.arc(h.x, h.y, h.R, 0, 6.283); g.fill();
+      g.strokeStyle = HUBCOL[h.id]; g.globalAlpha = .55; g.lineWidth = 2; g.stroke(); g.globalAlpha = 1;
+      g.fillStyle = fg; g.font = '600 17px Chakra Petch, sans-serif'; g.textAlign = 'center';
+      g.fillText(h.name.toUpperCase(), h.x, h.y - h.R - 10);
+    });
+    for (const [id, c] of Object.entries(pos)) {
+      if (HUBS.some(h => h.id === id)) continue;
+      g.strokeStyle = ring; g.lineWidth = 1.5; g.setLineDash(id === 'sitting' ? [] : [4, 4]);
+      g.beginPath(); g.arc(c.x, c.y, c.r, 0, 6.283); g.stroke(); g.setLineDash([]);
+      g.fillStyle = soft; g.font = '500 12px Chakra Petch, sans-serif';
+      const nm = loops[id].name; g.fillText(nm.length > 18 ? nm.slice(0, 17) + '…' : nm, c.x, c.y + 4);
+    }
+    g.fillStyle = off; g.font = '600 13px Chakra Petch, sans-serif'; g.fillText('AWAY, BETWEEN SITTINGS', away.x, away.y + 34);
+    g.strokeStyle = ring; g.setLineDash([2, 6]); g.beginPath(); g.moveTo(140, away.y + 14); g.lineTo(W - 140, away.y + 14); g.stroke(); g.setLineDash([]);
+    // tokens
+    S.forEach(s => {
+      if (!shown[s.p.id]) return;
+      const e = current(s);
+      let tx, ty;
+      if (e && pos[e[1]]) {
+        const c = pos[e[1]], l = loops[e[1]];
+        const period = l.tier <= 4 ? (l.t[0] + l.t[1]) / 2 : 90;
+        s.ang += Math.min(dt * rate() * 2 * Math.PI / period, 0.35);
+        const rr = c.r + 6 + s.i * 4;
+        tx = c.x + Math.cos(s.ang) * rr; ty = c.y + Math.sin(s.ang) * rr;
+      } else { tx = away.x + (s.i - (P.length - 1) / 2) * 56; ty = away.y; }
+      const k = Math.min(1, dt * 9); s.x += (tx - s.x) * k; s.y += (ty - s.y) * k;
+      s.trail.push([s.x, s.y]); if (s.trail.length > 46) s.trail.shift();
+      g.strokeStyle = s.p.color; g.lineWidth = 2.5; g.lineCap = 'round';
+      for (let i = 1; i < s.trail.length; i++) { g.globalAlpha = i / s.trail.length * .7; g.beginPath(); g.moveTo(...s.trail[i - 1]); g.lineTo(...s.trail[i]); g.stroke(); }
+      g.globalAlpha = 1; g.fillStyle = s.p.color; g.beginPath(); g.arc(s.x, s.y, 8, 0, 6.283); g.fill();
+      g.strokeStyle = css('--panel'); g.lineWidth = 2; g.stroke();
+    });
+  }
+
+  // ---------- timelines
+  const tl = document.getElementById('tl'), tg = tl.getContext('2d');
+  const legend = document.getElementById('legend');
+  legend.innerHTML = [['home', 'Home'], ...HUBS.map(h => [h.id, h.name])].map(([k, n]) => `<span style="--k:${HUBCOL[k]}">${n}</span>`).join('');
+  function drawTL() {
+    const dpr = window.devicePixelRatio || 1, cw = tl.clientWidth, lane = 30, top = 22, ch = top + P.length * lane + 6;
+    if (tl.width !== Math.round(cw * dpr) || tl.height !== Math.round(ch * dpr)) { tl.width = Math.round(cw * dpr); tl.height = Math.round(ch * dpr); tl.style.height = ch + 'px'; }
+    tg.setTransform(dpr, 0, 0, dpr, 0, 0); tg.clearRect(0, 0, cw, ch);
+    const x0 = 130, x1 = cw - 8, X = v => x0 + (x1 - x0) * v / END;
+    tg.font = '500 11px Chakra Petch, sans-serif'; tg.fillStyle = css('--off'); tg.textAlign = 'center';
+    for (let d = 0; d <= J.days; d += 7) { tg.fillText(d === J.days ? 'day 28' : `day ${d + 1}`, X(d * 86400), 12); tg.fillStyle = css('--line'); tg.fillRect(X(d * 86400), 16, 1, ch - 16); tg.fillStyle = css('--off'); }
+    P.forEach((p, i) => {
+      const y = top + i * lane;
+      tg.globalAlpha = shown[p.id] ? 1 : .3;
+      tg.textAlign = 'left'; tg.fillStyle = p.color; tg.font = '600 12px Chakra Petch, sans-serif'; tg.fillText(p.name.split(',')[0], 4, y + 16);
+      for (let d = 5; d < J.days; d += 7) { tg.fillStyle = css('--hub'); tg.fillRect(X(d * 86400), y + 3, X(2 * 86400) - X(0), lane - 8); }
+      for (const e of p.trace.events) { tg.fillStyle = HUBCOL[hubOf(e[1])]; tg.fillRect(X(e[0]), y + 5, Math.max(1.5, X(e[2]) - X(0)), lane - 12); }
+      tg.globalAlpha = 1;
+    });
+    tg.fillStyle = css('--fg'); tg.fillRect(X(t) - 1, 16, 2, ch - 16);
+  }
+  tl.addEventListener('click', ev => { const r = tl.getBoundingClientRect(); const v = (ev.clientX - r.left - 130) / (r.width - 138); if (v >= 0 && v <= 1) { t = v * END; S.forEach(s => s.trail = []); } });
+
+  // ---------- loop
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (playing) {
+      t += dt * rate();
+      if (document.getElementById('skip').checked && S.every(s => !shown[s.p.id] || !current(s))) {
+        const n = nextStart(); if (n > t + rate() * 0.6) t = n - rate() * 0.3;
+      }
+      if (t >= END) t = 0;
+    }
+    const day = Math.floor(t / 86400), hh = Math.floor(t % 86400 / 3600), mm = Math.floor(t % 3600 / 60);
+    document.getElementById('clock').textContent = `Day ${day + 1} ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    drawMap(playing ? dt : 0); drawTL(); updateCards();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ---------- tables
+  const pct = v => `${Math.round(v * 100)}%`;
+  document.getElementById('stagesT').innerHTML = `<table><tr><th>Player</th><th>Stage</th><th class="n">Reach</th><th class="n">Median day</th></tr>` +
+    P.map(p => p.now.stages.map((s, i) => `<tr><td style="color:${p.color};font-weight:600">${i ? '' : p.name}</td><td title="${(s.milestone || '').replace(/"/g, '&quot;')}">${s.name}</td><td class="n">${pct(s.reach)}</td><td class="n">${s.median_day == null ? '–' : +s.median_day + 1}</td></tr>`).join('')).join('') + '</table>';
+  document.getElementById('misfitT').innerHTML = `<table><tr><th>Player</th><th>Wanted, did not fit</th><th class="n">Voyages done / lost</th><th class="n">Resumable: done</th><th class="n">Week 4, as built → resumable</th></tr>` +
+    P.map(p => `<tr><td style="color:${p.color};font-weight:600">${p.name.split(',')[0]}</td><td>${Object.entries(p.now.misfit).slice(0, 3).map(([k, v]) => `${loops[k].name} ${v.toFixed(1)}`).join(', ') || 'none'}</td><td class="n">${p.now.voyages.finished} / ${p.now.voyages.abandoned}</td><td class="n">${p.resumable.voyages.finished}</td><td class="n">${pct(p.now.retention.W4)} → ${pct(p.resumable.retention.W4)}</td></tr>`).join('') + '</table>';
+  const E = J.economics;
+  const heat = v => `background: color-mix(in srgb, var(--cta) ${Math.round(v * 55)}%, var(--danger) ${Math.round((1 - v) * 35)}%); color: var(--fg)`;
+  document.getElementById('econT').innerHTML = `<table><tr><th>Culture</th>${E.loops.map(l => `<th class="n">${E.names[l]}<br><span style="font-weight:500;color:var(--off)">from ${E.t[l][0] >= 60 ? Math.round(E.t[l][0] / 60) + ' min' : E.t[l][0] + ' s'}</span></th>`).join('')}</tr>` +
+    E.rows.map(r => `<tr><td title="${(J.cultures.find(c => c.id === r.culture) || {}).is || ''}">${r.name}</td>${E.loops.map(l => `<td class="heat mono" style="${heat(r.fit[l])}">${pct(r.fit[l])}</td>`).join('')}</tr>`).join('') + '</table>';
+  document.getElementById('chal').innerHTML = P.map(p => `<div style="border-left:4px solid ${p.color};padding-left:10px;margin-bottom:12px"><strong>${p.name}</strong> <span style="color:var(--off)">(${p.trace.of})</span><p class="challenge">${p.challenge}</p></div>`).join('');
+})();
+</script>

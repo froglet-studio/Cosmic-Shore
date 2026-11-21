@@ -106,6 +106,24 @@ A scheduled Claude session (daily) keeps the atlas moving; the `/loop-atlas` ski
 - The map: https://claude.ai/artifact/8XkvFKuTFeEpRoLfp8QQpw, rebuilt from the model with
   `loop_atlas.py build --html <file>` and republished to the same URL after a model change merges.
 
+## Two ways between genes and loops
+
+The atlas and the AI search feed each other (Garrett, 2026-11-21: "if you inform each other two ways we get the most
+potential benefit"):
+
+- **Loops to genes.** Every combo's `gene` seeds a behaviour of its vessel's genome. `gene_search.py run` trains each
+  vessel and element, keeps an archive of distinct, comparably effective behaviours, builds the I1-I4 ladder from it
+  and writes the fixed AI pool (`genes-out/pool.json`) that arena balancing races against.
+- **Genes to loops.** A chain of the vessel's verbs that the search keeps and no combo names is a candidate loop, and
+  so is a strategy the arena balancing project or any other search observes (`discover-in/`). `gene_search.py
+  propose` writes the best onto the Proposed layer as combos with genes; from there they move like any proposal.
+- **Balancing to genes and back.** The balancing project writes its proposed tuning to `balance-in/<arena>.json`;
+  `gene_search.py retrain --balance` re-searches the touched vessels and reports each new plateau and whether a vessel
+  collapsed to one behaviour (`genes-out/retrain-<arena>.json`). Never balance a vessel whose pool entry has not
+  plateaued (`Docs/ElementalAbilitySystem/SILENCE.md` section 6).
+- **Players to loops.** `player_journeys.py` runs the personas of `model/players.yaml` through the loops. A loop their
+  sittings cannot reach, or an activation path with a gap, becomes a hole on the Proposed layer.
+
 ## Claude keeps proposing
 
 Claude stays on top of the Proposed layer: wherever a session finds a suggestion, an insight or a hole (in a design
