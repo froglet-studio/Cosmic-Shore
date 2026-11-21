@@ -1,4 +1,4 @@
-# Bug Hunt — where it stands (2026-11-21)
+# Bug Hunt — where it stands (2026-11-22)
 
 **Owner:** Yash. **Branch:** fixes land on `Ys-bleeding-edge` first and reach `bleeding-edge` with each merge.
 **Board:** [Team Bug Board](https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno). Mechanism: `Docs/DIAGNOSTICS.md` § "The Bug Ledger".
@@ -7,6 +7,13 @@
 
 - **Seven machines send errors from Unity**, each to its own `bugledger/<user>` branch: Garrett (`gradi`), Shombith,
   Andrew (`owner`), jtgjones (`mrglo`), Yash (`yskha`), Caleb (`belac`), Will (`will`).
+- **Ledger on 2026-11-22 (19:35 UTC, by hand): 383 open, 37 being checked after a fix** (420 issues). Yash asked for
+  the two errors new since the 11-21 sweep, then every open one on his machine (81), then the other machines' (208
+  seen since 10-21, 53 of them naming a game script outside the multiplayer folders). Five were code and are fixed
+  (section 3), one was already fixed and is now marked, one is a missing backend deploy (the `launch-flags` Cloud
+  Code script answers 404 "Script could not be found" at sign-in, E-930ca435ca; the script is in
+  `Tools/UGS/CloudCode/`, the game keeps the default flags, Shombith deploys). Two bugs in the multiplayer folders
+  went to the multiplayer session (section 4). The rest have no fix to make in game code: section 4 says why by group.
 - **Ledger on 2026-11-21 (03:57 UTC sweep, 182 branches): 386 open, 35 being checked after a fix** (421 issues).
   The routine's first run with the repository attached: its push to `Ys-bleeding-edge` worked. Eight issues were new
   or seen again since the 11-20 report. One was code and is fixed (`65ffb622dd`, section 3); the rest are not code or
@@ -82,6 +89,25 @@ games the daily challenge should offer is its owner's call.
 
 ## 3. Fixed
 
+### 2026-11-22 (not run in the editor, which did not answer the CLI; compiled with Unity's compiler, 0 errors)
+
+Hand tests: `Docs/UNITY_VERIFICATION_CHECKLIST.md` § "Grizzly scope camera at teardown", "Bug ledger fixes from
+Yash's machine" and "Serpent wall after its owner is gone" (all 2026-11-22).
+
+| Error | Machines | Cause | Fix |
+|---|---|---|---|
+| "Cannot set the parent of the GameObject 'ScopeCamera' while its new parent 'Grizzly(Clone)' is being destroyed" (E-5e0864d332) | one (Andrew) | `GrizzlyHUDView.OnDestroy` put a scope camera that was out on a round back on a hull Unity was destroying | `536a720a85`: a camera still off the hull is destroyed with the view |
+| "[OfflineModeService] StartHost failed - offline session unavailable" (E-6f8a396c25) and the bind errors with it | two (Yash, Garrett) | a second copy of the game on one computer found UDP 7777 taken, so its offline host never started | `475c34feb7`: the offline host takes any free port when 7777 is in use |
+| NullReferenceException in `MultiplayerDomainGamesController.OnReadyClicked_` (E-c223e6e8e9) | one (Yash) | Ready pressed before the local player exists | `beb7a758b0`: the press is ignored and the button stays up |
+| MissingReferenceException in `PreGameCinematicController.TransitionToPlayer` (E-b872184a91) | one (Yash) | the vessel was destroyed while the camera was moving to it | `981fff05df`: the move ends |
+| MissingReferenceException, `VesselStatus` destroyed, in `SerpentWallAssembler.LockdownActive` (E-05e4645aad) | one (Shombith) | a wall outlives its Serpent, and `?.` does not stop at a destroyed owner held as an interface | `25d287a0b2`: both reads go through the wall's `IsOwnerAlive` |
+
+Marked only where the error text has that one cause. Left open though the cause is fixed: the three transport bind
+errors that come with the offline host (E-849115e303, E-f18360ba1d, E-55c19c8f2b), whose text other causes share.
+
+Already fixed, marked on 2026-11-22: the voyage stop's NullReferenceException in `VoyageRun.StandStop`
+(E-2367abc157, Garrett's machine), fixed on 11-08 by `fe32896d7b`.
+
 ### 2026-11-21 (not run in the editor; `unity_refcompile` OK)
 
 | Error | Machines | Cause | Fix |
@@ -120,6 +146,19 @@ Earlier fixes are in each issue's ledger note and in `git log --grep "bugledger"
 
 ## 4. Left, and for whom
 
+- **Read again on 2026-11-22, nothing to fix here:**
+  - With the multiplayer session (its files, sent to it on 11-22): `NetworkSceneObjectGuard.NeutralizeStray` using
+    `DestroyImmediate` inside a physics callback (E-6bc7e07601) and "Double initialization not allowed" from
+    `ClientPlayerVesselInitializer.ReInitializePair` (E-71cedd035d).
+  - Shombith, backend: the `launch-flags` script not deployed (E-930ca435ca), the `weekly_challenge` board (42
+    sightings on five other machines), Vivox (about 38).
+  - Code that changed since the one or two sightings, so the reported line no longer matches and a new capture is
+    needed: the menu spotlight's `OnPath` (E-15b4eb64f0), `KitRectMask2D.PerformClipping` (E-4ae8006406),
+    `Crystal.ActivateCrystal` (E-57b430e550), the Meerkat zap (E-f19547a0fb), the wormhole frustum error (E-fcf50f15ac).
+  - One edit-mode session on Garrett's machine where the app never booted: the "not found at injection time" family
+    and the three toast `Start` errors (E-cb6faeeaa6, E-eb8720ddfc, E-b72940176d).
+  - Yash's machine: the Rider folder (51 sightings) and about 25 failures of Claude's own editor commands, compile
+    gates and Unity sign-in, none of them the game.
 - **With the multiplayer work (81 issues):** Relay, transport, lobby, session and party errors, including today's
   two-machine test (E-0a098d80df, E-e5ff2abb8c, E-e6054bc064, E-fda866d511, E-ced2f8d740, E-cd8ad9dbfe,
   E-abc13c880b, E-b2c9301f4c, E-f4fd02cb76, E-afa8c57ab8) and the "address already in use" family on Yash's and
