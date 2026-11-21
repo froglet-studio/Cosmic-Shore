@@ -75,14 +75,15 @@ What Shombith set for this phase (2026-11-17 and 2026-11-21). A launch session r
 
 **Source:** whatever is on `bleeding-edge`. Every build in a round is made from the same commit.
 
-**Four builds, four destinations:**
+**Four builds, four destinations** (corrected 2026-11-21 against the repo by the preflight; the full step-by-step
+recipe for the first round is `/mnt/project-files/launch/beta-phase-1/BUILD_RECIPE.md` in the Launch project):
 
-| Build | Goes to | How (the way the last builds were made) | Who presses the last button |
+| Build | Goes to | How | Who presses the last button |
 |---|---|---|---|
-| Windows | **Discord**, as a download link (no Steam yet) | Unity on Shombith's PC, IL2CPP Release player from the build profile (`Docs/BUILD_AND_DELIVERY.md`), zipped and uploaded to Drive | Shombith posts the link in Discord by hand |
-| iOS | **TestFlight** | **No Xcode on Shombith's PC**: Unity on his PC exports the Release Xcode project (Development Build off), zipped to a share link; `ios-testflight.yml` (Actions, run by hand) compiles, signs and uploads it on a GitHub-hosted Mac (`Docs/IOS_BUILD.md` §2 Path C; secrets in the `testflight` Environment) | Shombith runs the workflow and approves the Environment |
-| Android | **Google Play internal testing** | Unity on Shombith's PC builds the `.aab` (the `/androidbuild` recipe, but an App Bundle for Play); no Play upload automation exists yet, so the `.aab` is uploaded in Play Console | Shombith uploads in Play Console |
-| WebGL | **The Toybox page** (www.froglet.games/play) | Unity on Shombith's PC builds WebGL; `toybox-publish.yml` stages it on R2 and promotes it (`Docs/WEBGL_TOYBOX.md`) | Shombith runs the promote step |
+| Windows | **Discord**, as a download link (no Steam yet) | Unity on Shombith's PC: **FrogletTools > Build > Windows x64 (Release)**, or `Tools/Build/build_windows.sh --version <v>` (`CosmicShoreBuildPipeline.cs`). There is no Windows build profile, and **no Windows player had ever been built** before this round (`Docs/LAUNCH/READINESS.md` §1, R1), so expect first-build problems. Zip it and share the link | Shombith posts the link in Discord by hand |
+| iOS | **TestFlight** | **No Xcode on Shombith's PC**: Unity on his PC exports the Release Xcode project (Development Build off) and zips it. The share link must be **Dropbox or a direct download**: `ios-testflight.yml` refuses Google Drive links. The workflow (Actions, run by hand) compiles, signs and uploads it on a GitHub-hosted Mac (`Docs/IOS_BUILD.md` §2 Path C; secrets in the `testflight` Environment). The hardened workflow (#1068) and the Pillow bump (#2291) had not run before this round | Shombith runs the workflow and approves the Environment |
+| Android | **Google Play internal testing** | Unity on Shombith's PC: **FrogletTools > Build > Android App Bundle (Release)** (not `/androidbuild`, which makes a development APK for Drive); **FrogletTools > Build > Check Android App Bundle...** before uploading. No Play upload automation exists, so the `.aab` is uploaded in Play Console. **Blocker: nothing records who holds the upload keystore**; find out before the round | Shombith uploads in Play Console |
+| WebGL | **The Toybox page** (www.froglet.games/play) | Unity on Shombith's PC: **FrogletTools > Build > WebGL Toybox**, then `python3 Tools/Build/publish_toybox.py upload --root staging`, play it there, then promote (`Docs/WEBGL_TOYBOX.md`). `toybox-publish.yml` has never run and pulls from Unity Build Automation, which is not set up, so do not use it. The last build (2) was uploaded by hand: run `publish_toybox.py adopt --version 2` once before the first staged upload | Shombith runs the promote step |
 
 All Unity builds run on **Shombith's computer**: a cloud session has no Unity editor and no signing keys. A session
 prepares everything up to each button (the version bump, the preflight checks, the exact steps and the copy-paste
@@ -91,12 +92,14 @@ prompts) and hands it over.
 **One version for the round (cross-play):** players on all four builds play together, so a round carries one
 `bundleVersion` and one `NetworkConfig.ProtocolVersion` on all four, and the console's `status/versions` pin holds
 them. Before the round:
-- **Bump `bundleVersion`** every round. A new feature set bumps the minor (Voyages joined `bleeding-edge`, so the
-  2026-11-21 round moves off `0.2.0` to the next minor); a fix-only round bumps the patch.
-- **Raise the store build numbers** above the last upload to each store: the iOS build number above the last
-  TestFlight upload, `AndroidBundleVersionCode` above the last Play upload. A store refuses an equal or lower number.
+- **Bump `bundleVersion`** every round, in one commit on `bleeding-edge` before any build starts. A new feature set
+  bumps the minor (Voyages: `0.2.0` -> `0.3.0`, PR #2302, 2026-11-21); a fix-only round bumps the patch.
+- **Store build numbers are not raised by hand.** Android's version code is the minutes since 2026-01-01 at build time
+  (`AndroidBundleCheck.VersionCodeAt`), and the iOS build number is set by `ios-testflight.yml` to
+  `<exported number>.<run number>`. Both always exceed the last upload.
 - Bump the protocol version only when the network contract changed (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
-- The bump is one commit on `bleeding-edge`, made before any of the four builds starts.
+- **Nothing gates a match by version yet** (the protocol filter is not merged), so an old build can join a new one:
+  pull the previous round's test links when a new round goes out.
 
 **Learn from every round:** each build thread writes down what broke or slowed it, and the round ends by folding that
 into this file and `SKILL.md`, so the next round needs fewer steps.
