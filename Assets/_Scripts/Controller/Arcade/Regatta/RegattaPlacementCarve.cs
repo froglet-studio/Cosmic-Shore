@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed class RegattaPlacementCarve
     {
-        public enum Verdict { Laid = 0, Line = 1, Ring = 2, Rail = 3, Shell = 4, Overlap = 5, Fine = 6 }
+        public enum Verdict { Laid = 0, Line = 1, Ring = 2, Rail = 3, Shell = 4, Overlap = 5, Fine = 6, Sight = 7 }
 
         /// <summary>Half the depth (u) of the slab either side of a ring's plane that is kept clear.</summary>
         public const float RingSlab = 20f;
@@ -41,8 +41,9 @@ namespace CosmicShore.Gameplay
         readonly List<float> _claimedRadius = new();
         readonly Dictionary<long, List<int>> _claimGrid = new();
         readonly Vector3 _shellCentre;
-        readonly float _nucleus = RegattaCourseGenome.NucleusCarve;
-        readonly float _membrane = RegattaCourseGenome.MembraneCarve;
+        float _nucleus = RegattaCourseGenome.NucleusCarve;
+        float _membrane = RegattaCourseGenome.MembraneCarve;
+        readonly List<(Vector3 a, Vector3 b, float r)> _sight = new();
         float _maxClaimRadius;
         float _spineReach;   // half the longest spine segment: how far a segment's nearest point can be from both ends
 
@@ -134,6 +135,21 @@ namespace CosmicShore.Gameplay
             return (p - (a + ab * t)).magnitude;
         }
 
+        /// <summary>A version-2 genome's cell: its own inner (nucleus) and outer (size) carve radii.</summary>
+        public void SetShell(float nucleus, float membrane)
+        {
+            _nucleus = nucleus;
+            _membrane = membrane;
+        }
+
+        /// <summary>Keep a sight tube clear (<see cref="RegattaCourseGenome.SightClearance"/>): from where a pilot flies
+        /// a leg to the ring after the one ahead. It is carved for EVERY placement, cross-line ones too: an obstacle may
+        /// stand on the line, but never between a pilot and the next ring.</summary>
+        public void AddSight(Vector3 from, Vector3 to, float radius)
+        {
+            if (radius > 0f) _sight.Add((from, to, radius));
+        }
+
         /// <summary>Whether a prism (bounding radius <paramref name="r"/>) at <paramref name="p"/> may be laid. With
         /// <paramref name="crossLine"/> (<see cref="RegattaPlacement.CrossLine"/>) the line's tube is not carved; the
         /// ring mouths, the rails and the shell still are; with <paramref name="crossRail"/>
@@ -143,6 +159,8 @@ namespace CosmicShore.Gameplay
             float d = (p - _shellCentre).magnitude;
             if (d - r < _nucleus || d + r > _membrane) return Verdict.Shell;
             if (!crossLine && SpineDistance(p, _line + r) < _line + r) return Verdict.Line;
+            for (int i = 0; i < _sight.Count; i++)
+                if (SegmentDistance(p, _sight[i].a, _sight[i].b) < _sight[i].r + r) return Verdict.Sight;
             for (int i = 0; i < _rings.Count; i++)
             {
                 var g = _rings[i];

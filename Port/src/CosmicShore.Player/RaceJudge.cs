@@ -337,6 +337,14 @@ namespace CosmicShore.Player
                 if (IsRegatta) race["laps_total"] = total / RegattaCourse.RingsPerLap;
                 race["course_seed"] = IsRegatta && RegattaCourseSource.TryResolveLiveRails(out var rails, out _) ? rails.CourseSeed
                     : controller is GateRaceController gc ? gc.CourseSeed : controller is SkimRaceController sc ? sc.TrackSeed : 0;
+                if (IsRegatta && RegattaCourseSource.TryResolveLiveRails(out var laid, out _))
+                {
+                    // What the course actually laid (a version-2 genome's world, the rails or none), so a search
+                    // reads the course it scored, not the one it asked for.
+                    race["course_rails"] = laid.LaneCount;
+                    race["course_placements"] = new JsonArray(laid.PlacementReports.Select(r => (JsonNode)r.ToString()).ToArray());
+                    race["course_placement_prisms"] = laid.PhaseBaselinePrisms;
+                }
                 race["host_hull"] = hostHull.ToString();
                 // Each racer's element levels as the turn starts (what "start" and the card actually gave it).
                 var startLevels = ais.Select(p => p.Vessel?.VesselStatus?.ResourceSystem is { } rs
@@ -759,6 +767,7 @@ namespace CosmicShore.Player
                     object g = parse.Invoke(null, new object[] { genome.ToJsonString() });
                     if (slot is FieldInfo f) f.SetValue(null, g); else ((PropertyInfo)slot).SetValue(null, g);
                     _notes.Add("course: RegattaCourseGenome.Override");
+                    if (g is RegattaCourseGenome cg) ApplyCell(cg, intensity);
                     return;
                 }
             }
@@ -778,6 +787,31 @@ namespace CosmicShore.Player
             if (genome?["placements"] is JsonArray { Count: > 0 })
                 _notes.Add("genome.placements ignored: this build has no RegattaCourseGenome");
             _notes.Add($"course: pool entry {intensity - 1}, seed {rails.CourseSeed}, features {(RegattaCourseFeatures.Override == null ? "arena's own" : "genome")}");
+        }
+
+        /// <summary>A version-2 genome's cell, in memory on the course's own cell config: no nucleus, and another
+        /// cell's flora and fauna (its spawn profile). Nothing is written to disk.</summary>
+        void ApplyCell(RegattaCourseGenome g, int intensity)
+        {
+            if (g.Nucleus == "Standard" && string.IsNullOrEmpty(g.Lifeforms)) return;
+            var pool = TrainingHost.LoadAsset(_runtime, CoursePoolPath) as RegattaCoursePoolSO
+                ?? throw new InvalidOperationException(CoursePoolPath + " not found");
+            int i = intensity - 1;
+            var config = i >= 0 && i < pool.Count ? pool.Entries[i]?.CellConfig : null;
+            if (!config) throw new InvalidOperationException($"Regatta's pool entry {i} has no cell config for the genome's cell");
+            if (g.Nucleus == "None")
+            {
+                config.NucleusPrefab = null;
+                _notes.Add("cell: no nucleus");
+            }
+            if (!string.IsNullOrEmpty(g.Lifeforms))
+            {
+                string path = $"Assets/_SO_Assets/Cell Configs/{g.Lifeforms}.asset";
+                var donor = TrainingHost.LoadAsset(_runtime, path) as CellConfigDataSO
+                    ?? throw new InvalidOperationException($"genome lifeforms: no cell config at {path}");
+                config.SpawnProfile = donor.SpawnProfile;
+                _notes.Add($"cell: lifeforms of {g.Lifeforms} ({(donor.SpawnProfile ? donor.SpawnProfile.name : "none")})");
+            }
         }
 
         static bool IsMenu() =>

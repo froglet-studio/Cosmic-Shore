@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Prisms removed by an even stride to keep the placement and the course under their caps.</summary>
         public int Thinned;
         /// <summary>Prisms carved, by rule (index = <see cref="RegattaPlacementCarve.Verdict"/>; 0 is unused, 6 is a prism
-        /// scaled finer than <see cref="RegattaPlacementBuilder.MinPrismAxis"/>).</summary>
+        /// scaled finer than <see cref="RegattaPlacementBuilder.MinPrismAxis"/>, 7 a prism in a sight tube).</summary>
         public int[] Carved;
         /// <summary>Non-null when the spawner could not be generated at all.</summary>
         public string Failure;
@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
             Failure != null
                 ? $"{Kind}: FAILED ({Failure})"
                 : $"{Kind}: {Laid} laid of {Native} (thinned {Thinned}, carved line {Carved[1]} ring {Carved[2]} " +
-                  $"rail {Carved[3]} shell {Carved[4]} overlap {Carved[5]} too fine {Carved[6]})";
+                  $"rail {Carved[3]} shell {Carved[4]} overlap {Carved[5]} too fine {Carved[6]} sight {Carved[7]})";
     }
 
     /// <summary>
@@ -207,12 +207,13 @@ namespace CosmicShore.Gameplay
                                                    Quaternion rotation, int cap, RegattaPlacementCarve carve,
                                                    List<PrismLay> output)
         {
-            var report = new RegattaPlacementReport { Kind = p.Kind, Native = native?.Count ?? 0, Carved = new int[7] };
+            var report = new RegattaPlacementReport { Kind = p.Kind, Native = native?.Count ?? 0, Carved = new int[8] };
             if (native == null || native.Count == 0 || cap <= 0) { report.Thinned = report.Native; return report; }
 
             Bounds(native, out var c0, out float r0);
             float k = r0 > 1e-4f ? p.Scale / r0 : 1f;
-            int stride = Mathf.Max(1, Mathf.CeilToInt(native.Count / (float)cap));
+            // A Keep share thins first, so the stride only takes what the cap still needs.
+            int stride = Mathf.Max(1, Mathf.CeilToInt(native.Count * Mathf.Clamp01(p.Keep) / (float)cap));
             int domainIndex = Array.IndexOf(RegattaCourseGenome.PlacementDomains, p.Domain);
             int prismIndex = Array.IndexOf(RegattaCourseGenome.PlacementPrisms, p.Prism);
             Domains? domain = domainIndex > 0
@@ -223,12 +224,23 @@ namespace CosmicShore.Gameplay
                 : (PrismKind?)null;
 
             var laid = new List<(Vector3 pos, float r)>();
+            uint salt = (uint)(p.Seed != 0 ? p.Seed : StableSeed(p.Kind));
             for (int i = 0; i < native.Count; i++)
             {
                 if (i % stride != 0) { report.Thinned++; continue; }
+                if (p.Keep < 1f && Draw(salt, i, 0) >= p.Keep) { report.Thinned++; continue; }
+                if (laid.Count >= cap) { report.Thinned++; continue; }
                 var lay = native[i];
                 Vector3 pos = centre + rotation * ((lay.Point.Position - c0) * k);
-                Vector3 scale = lay.Point.Scale * k;
+                if (p.Warp > 0f) pos += WarpAt(pos, p.Warp, p.WarpWavelength, salt);
+                Vector3 scale = lay.Point.Scale * (k * p.PrismSize);
+                Quaternion turn = p.Jitter > 0f
+                    ? Quaternion.AngleAxis((Draw(salt, i, 1) * 2f - 1f) * p.Jitter,
+                                           RaceCourseGeometry.SafeNormalize(new Vector3(Draw(salt, i, 2) - 0.5f,
+                                               Draw(salt, i, 3) - 0.5f, Draw(salt, i, 4) - 0.5f), Vector3.up))
+                    : Quaternion.identity;
+                var layDomain = domain ?? (p.DomainMix != null ? MixDomain(p.DomainMix, Draw(salt, i, 5)) : lay.Domain);
+                var layKind = kind ?? (p.PrismMix != null ? MixKind(p.PrismMix, Draw(salt, i, 6)) : lay.Kind);
                 if (!Finite(pos) || !Finite(scale))
                 {
                     // A spawner that lays a prism at infinity has a bug of its own; the course never takes it.
@@ -243,8 +255,7 @@ namespace CosmicShore.Gameplay
                 float r = RegattaPlacementCarve.RadiusOf(scale);
                 var verdict = carve?.Test(pos, r, p.CrossLine, p.CrossRail) ?? RegattaPlacementCarve.Verdict.Laid;
                 if (verdict != RegattaPlacementCarve.Verdict.Laid) { report.Carved[(int)verdict]++; continue; }
-                output.Add(new PrismLay(new SpawnPoint(pos, rotation * lay.Point.Rotation, scale),
-                                        domain ?? lay.Domain, kind ?? lay.Kind));
+                output.Add(new PrismLay(new SpawnPoint(pos, turn * rotation * lay.Point.Rotation, scale), layDomain, layKind));
                 laid.Add((pos, r));
             }
             // Claimed after the whole placement is laid: a spawner's own prisms keep whatever spacing it authored.
@@ -252,6 +263,42 @@ namespace CosmicShore.Gameplay
             report.Laid = laid.Count;
             return report;
         }
+
+        /// <summary>A seeded draw in [0, 1) for prism <paramref name="i"/>, channel <paramref name="ch"/> (pure, the
+        /// same on every machine).</summary>
+        public static float Draw(uint salt, int i, int ch)
+        {
+            unchecked
+            {
+                uint h = salt * 0x9E3779B1u ^ (uint)i * 0x85EBCA77u ^ (uint)(ch + 1) * 0xC2B2AE3Du;
+                h ^= h >> 16; h *= 0x7FEB352Du; h ^= h >> 15; h *= 0x846CA68Bu; h ^= h >> 16;
+                return (h >> 8) * (1f / 16777216f);
+            }
+        }
+
+        /// <summary>The smooth displacement a warped placement bends a prism by: three crossed sine waves of one
+        /// wavelength, phased by the placement's seed.</summary>
+        public static Vector3 WarpAt(Vector3 p, float amplitude, float wavelength, uint salt)
+        {
+            float w = 2f * Mathf.PI / Mathf.Max(1f, wavelength);
+            float a = Draw(salt, 0, 10) * 6.2832f, b = Draw(salt, 0, 11) * 6.2832f, c = Draw(salt, 0, 12) * 6.2832f;
+            return amplitude * new Vector3(Mathf.Sin(w * p.y + a) * Mathf.Cos(w * p.z + b),
+                                           Mathf.Sin(w * p.z + b) * Mathf.Cos(w * p.x + c),
+                                           Mathf.Sin(w * p.x + c) * Mathf.Cos(w * p.y + a));
+        }
+
+        static readonly PrismKind[] MixKinds = { PrismKind.Plain, PrismKind.Shielded, PrismKind.SuperShielded, PrismKind.Danger };
+        static readonly Domains[] MixDomains = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+
+        static int Pick(float[] weights, float u)
+        {
+            float acc = 0f;
+            for (int i = 0; i < weights.Length; i++) { acc += weights[i]; if (u < acc) return i; }
+            return weights.Length - 1;
+        }
+
+        static PrismKind MixKind(float[] mix, float u) => MixKinds[Mathf.Clamp(Pick(mix, u), 0, 3)];
+        static Domains MixDomain(float[] mix, float u) => MixDomains[Mathf.Clamp(Pick(mix, u), 0, 3)];
 
         /// <summary>
         /// Lay every placement of <paramref name="genome"/> (already repaired) into <paramref name="output"/>, in order,
@@ -263,28 +310,29 @@ namespace CosmicShore.Gameplay
         {
             var reports = new List<RegattaPlacementReport>();
             if (genome?.Placements == null || catalogue == null) return reports;
-            int budget = RegattaCourseGenome.TotalPrismBudget;
+            int budget = RegattaCourseGenome.TotalPrismBudget, baseBudget = RegattaCourseGenome.BasePrismBudget;
             var native = new List<PrismLay>(4096);
             foreach (var p in genome.Placements)
             {
                 if (!catalogue.TryGet(p.Kind, out var kind) || !kind.Usable)
                 {
-                    reports.Add(new RegattaPlacementReport { Kind = p.Kind, Carved = new int[7], Failure = "not a placeable kind" });
+                    reports.Add(new RegattaPlacementReport { Kind = p.Kind, Carved = new int[8], Failure = "not a placeable kind" });
                     continue;
                 }
                 native.Clear();
                 if (!TryGenerateNative(kind, p, native, out var failure))
                 {
-                    reports.Add(new RegattaPlacementReport { Kind = p.Kind, Carved = new int[7], Failure = failure });
+                    reports.Add(new RegattaPlacementReport { Kind = p.Kind, Carved = new int[8], Failure = failure });
                     CSDebug.LogWarning($"[Regatta] Course genome placement '{p.Kind}' could not be generated ({failure}); " +
                                        "it is left out. Re-run Tools/Build/regatta_gene_catalogue.py --measure to mark it unusable.");
                     continue;
                 }
                 RegattaCourseGenome.PlacementPose(gates, p, out var centre, out var rotation);
                 int before = output.Count;
-                var report = Place(native, p, centre, rotation, Mathf.Min(RegattaCourseGenome.PerPlacementCap, budget),
-                                   carve, output);
-                budget -= output.Count - before;
+                int cap = p.Base ? baseBudget : Mathf.Min(RegattaCourseGenome.PerPlacementCap, budget);
+                var report = Place(native, p, centre, rotation, cap, carve, output);
+                if (p.Base) baseBudget -= output.Count - before;
+                else budget -= output.Count - before;
                 reports.Add(report);
             }
             return reports;

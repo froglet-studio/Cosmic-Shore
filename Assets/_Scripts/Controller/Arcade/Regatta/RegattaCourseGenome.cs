@@ -49,11 +49,58 @@ namespace CosmicShore.Gameplay
         /// <summary>The spawner's own fields, by serialized name (catalogue <c>params</c>).</summary>
         public SortedDictionary<string, double> Params = new(StringComparer.Ordinal);
 
+        // ── Version 2: a world the course runs through (Garrett, 2026-11-21: "every prism in the cell (its state
+        // orientation, size, position, etc)") ──────────────────────────────────────────────────────────────────
+
+        /// <summary>A BASE placement is the cell's world, not a decoration beside the line: it is posed in the CELL's
+        /// frame at <see cref="At"/> (not the spine's), and it lays under <see cref="RegattaCourseGenome.BasePrismBudget"/>
+        /// instead of the per-placement cap, so a whole Yggdra or Ourobor goes in at full density.</summary>
+        public bool Base;
+        /// <summary>A base placement's centre, cell-local (u).</summary>
+        public Vector3 At;
+        /// <summary>For <see cref="Prism"/> "Mix": the weights of Plain, Shielded, SuperShielded and Danger; each prism
+        /// draws its state from them (seeded by the placement, so the same genome lays the same prisms).</summary>
+        public float[] PrismMix;
+        /// <summary>For <see cref="Domain"/> "Mix": the weights of Jade, Ruby, Gold and Blue.</summary>
+        public float[] DomainMix;
+        /// <summary>Every prism's own size times this, about its own centre (the layout keeps its spacing).</summary>
+        public float PrismSize = 1f;
+        /// <summary>Up to this many degrees of seeded random turn on every prism (0 = the spawner's own orientation).</summary>
+        public float Jitter;
+        /// <summary>The share of the spawner's prisms kept, by a seeded draw per prism (1 = all of them).</summary>
+        public float Keep = 1f;
+        /// <summary>A smooth displacement field (u) bending the whole layout (0 = none), and its wavelength (u).</summary>
+        public float Warp, WarpWavelength = 400f;
+
+        /// <summary>True when any version-2 prism field is set (the version-1 placement lays exactly as before).</summary>
+        public bool Expressive =>
+            Base || Prism == "Mix" || Domain == "Mix" || Mathf.Abs(PrismSize - 1f) > 1e-6f || Jitter > 0f || Keep < 1f
+            || Warp > 0f;
+
         public RegattaPlacement Clone()
         {
             var c = (RegattaPlacement)MemberwiseClone();
             c.Params = new SortedDictionary<string, double>(Params ?? new SortedDictionary<string, double>(), StringComparer.Ordinal);
+            c.PrismMix = (float[])PrismMix?.Clone();
+            c.DomainMix = (float[])DomainMix?.Clone();
             return c;
+        }
+    }
+
+    /// <summary>One ring a version-2 genome places itself (cell-local): where, facing which way, how wide.</summary>
+    [Serializable]
+    public struct RegattaRingGene
+    {
+        public Vector3 Position;
+        /// <summary>The direction the course flows through the mouth (normalised by <see cref="RegattaCourseGenome.Repair"/>).</summary>
+        public Vector3 Axis;
+        public float Radius;
+
+        public RegattaRingGene(Vector3 position, Vector3 axis, float radius)
+        {
+            Position = position;
+            Axis = axis;
+            Radius = radius;
         }
     }
 
@@ -85,6 +132,8 @@ namespace CosmicShore.Gameplay
     public sealed class RegattaCourseGenome
     {
         public const int CurrentVersion = 1;
+        /// <summary>The version a genome that uses any version-2 field writes (free rings, no rails, sight lines, bases).</summary>
+        public const int ExpressiveVersion = 2;
 
         /// <summary>Most placements one course carries.</summary>
         public const int MaxPlacements = 24;
@@ -101,6 +150,24 @@ namespace CosmicShore.Gameplay
         /// <summary>No placement prism farther from the cell centre than this (inside the 1,200 u membrane).</summary>
         public const float MembraneCarve = 1150f;
         public const float LineClearanceMin = 12f, LineClearanceMax = 80f, DefaultLineClearance = 32f;
+
+        /// <summary>Most prisms all BASE placements lay together (<see cref="RegattaPlacement.Base"/>): a whole cell's
+        /// world. The shipped world cells lay 30,000 to 45,000 (Yggdra 34,130, Ourobor 37,865), with no rails beside.</summary>
+        public const int BasePrismBudget = 45000;
+        /// <summary>A free ring's mouth radius range (u).</summary>
+        public const float RingRadiusMin = 40f, RingRadiusMax = 180f;
+        /// <summary>How far a free ring may face away from the line through it (degrees off the bisector of the legs
+        /// either side): past this a pilot meets the ring edge-on.</summary>
+        public const float MaxRingTilt = 65f;
+        /// <summary>The sight line rule (Garrett, 2026-11-21: "make each ring visible from the sight lines that got from
+        /// one ring to another so players can keep a flow of where they are supposed to go next"): flying the leg INTO
+        /// ring i, the ring after it stands within this half-angle (degrees) of the heading at
+        /// <see cref="SightFrom"/> of the leg, and a tube of <see cref="SightClearance"/> from there to it is carved
+        /// clear of every placement prism (cross-line ones too).</summary>
+        public const float SightCone = 60f;
+        /// <summary>Where along the leg into a ring the sight check stands (Hermite parameter).</summary>
+        public const float SightFrom = 0.6f;
+        public const float SightClearanceMin = 6f, SightClearanceMax = 40f;
 
         /// <summary>Placement colours; index 0 keeps the spawner's own.</summary>
         public static readonly string[] PlacementDomains = { "Native", "Jade", "Ruby", "Gold", "Blue" };
@@ -139,6 +206,30 @@ namespace CosmicShore.Gameplay
         /// <summary>Radius (u) of the tube round the racing line no placement prism may enter.</summary>
         public float LineClearance = DefaultLineClearance;
         public List<RegattaPlacement> Placements = new();
+        /// <summary>Version 2: the rings themselves (exactly <see cref="RegattaCourse.RingsPerLap"/>), replacing the
+        /// circuit generator. Empty = the circuit (<see cref="Circuit"/>, <see cref="CornerProfile"/>).</summary>
+        public List<RegattaRingGene> Rings = new();
+        /// <summary>Version 2: lay no rails at all (the course is its rings and its world).</summary>
+        public bool RailsOff;
+        /// <summary>Version 2: the sight tube's radius (u); 0 = no sight carve and no sight rule (version 1).</summary>
+        public float SightClearance;
+        /// <summary>Version 2: "Standard" (the Regatta cell's nucleus, carved at <see cref="NucleusCarve"/>) or "None" (no
+        /// nucleus: the course may run through the cell's centre, carved only at <see cref="NoNucleusCarve"/>). The
+        /// arena reads the carve; the cell config's nucleus is set by whoever lays the cell (the race judge, a pool
+        /// entry's generator).</summary>
+        public string Nucleus = "Standard";
+        /// <summary>Version 2: the cell's racing size, the outer carve radius (u); 0 = the membrane's
+        /// <see cref="MembraneCarve"/>.</summary>
+        public float ShellRadius;
+        /// <summary>Version 2: the cell config (path under Assets/_SO_Assets/Cell Configs/, no extension) whose spawn
+        /// profile (its flora and fauna) the course's cell lives with; empty = the course cell's own.</summary>
+        public string Lifeforms = "";
+
+        public const float NoNucleusCarve = 40f, ShellRadiusMin = 650f;
+        /// <summary>The inner carve radius this genome's cell keeps clear (the nucleus, or almost nothing without one).</summary>
+        public float ShellInner => Nucleus == "None" ? NoNucleusCarve : NucleusCarve;
+        /// <summary>The outer carve radius this genome's cell keeps clear.</summary>
+        public float ShellOuter => ShellRadius > 0f ? Mathf.Clamp(ShellRadius, ShellRadiusMin, MembraneCarve) : MembraneCarve;
         /// <summary>The lifeform preset (Tools/Build/regatta_lifeforms.py PRESETS) a pool entry built from this genome
         /// authors its cell's spawn profile from; "none" = barren. The sites below are laid by the arena itself.</summary>
         public string FloraPreset = "none";
@@ -152,7 +243,15 @@ namespace CosmicShore.Gameplay
             Intensity == 1 && Seed == 0 && (Circuit == null || Circuit.Count == 0) && CornerProfile == null
             && float.IsNaN(LaneOffset) && float.IsNaN(TwistTurnsPerLap) && float.IsNaN(PrismSpacing)
             && (Features == null || Features.IsEmpty) && (Placements == null || Placements.Count == 0)
-            && (Flora == null || (!Flora.HasSites && Flora.faunaCorridorRadius <= 0f));
+            && (Flora == null || (!Flora.HasSites && Flora.faunaCorridorRadius <= 0f))
+            && (Rings == null || Rings.Count == 0) && !RailsOff && SightClearance <= 0f
+            && Nucleus == "Standard" && ShellRadius <= 0f && string.IsNullOrEmpty(Lifeforms);
+
+        /// <summary>True when the genome uses a version-2 field.</summary>
+        public bool IsExpressive =>
+            (Rings != null && Rings.Count > 0) || RailsOff || SightClearance > 0f || Nucleus != "Standard"
+            || ShellRadius > 0f || !string.IsNullOrEmpty(Lifeforms)
+            || (Placements != null && Placements.Exists(p => p != null && p.Expressive));
 
         public HeadlongCircuitSettings CircuitSettings()
         {
@@ -177,8 +276,49 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        public List<RaceGate> BuildGates() =>
-            HeadlongCircuit.Generate(RegattaCourse.SeedForIntensity(EffectiveSeed, Intensity), CircuitSettings());
+        public List<RaceGate> BuildGates()
+        {
+            if (Rings is { Count: RegattaCourse.RingsPerLap })
+            {
+                var free = new List<RaceGate>(Rings.Count);
+                foreach (var r in Rings)
+                    free.Add(new RaceGate(r.Position, RaceCourseGeometry.SafeNormalize(r.Axis, Vector3.forward), r.Radius));
+                return free;
+            }
+            return HeadlongCircuit.Generate(RegattaCourse.SeedForIntensity(EffectiveSeed, Intensity), CircuitSettings());
+        }
+
+        // ── The sight line rule (pure; regatta_genome.py sight_report) ──────────────────────────────────────────
+
+        /// <summary>For each ring i: the point on the leg INTO ring i where the sight check stands, and the ring after
+        /// it. Each pair is a sight segment the carve keeps clear and the cone rule measures.</summary>
+        public static void SightSegments(IReadOnlyList<RaceGate> gates, List<(Vector3 from, Vector3 heading, Vector3 to)> into)
+        {
+            into.Clear();
+            int n = gates?.Count ?? 0;
+            if (n < 3) return;
+            for (int i = 0; i < n; i++)
+            {
+                SpineFrame(gates, (i - 1 + n) % n + SightFrom, out var from, out var heading, out _);
+                into.Add((from, heading, gates[(i + 1) % n].Position));
+            }
+        }
+
+        /// <summary>How many rings break the sight cone, and the worst angle (degrees) any ring stands off the heading.</summary>
+        public static int SightViolations(IReadOnlyList<RaceGate> gates, out float worstDegrees)
+        {
+            var segs = new List<(Vector3 from, Vector3 heading, Vector3 to)>();
+            SightSegments(gates, segs);
+            worstDegrees = 0f;
+            int bad = 0;
+            foreach (var (from, heading, to) in segs)
+            {
+                float a = Vector3.Angle(heading, to - from);
+                worstDegrees = Mathf.Max(worstDegrees, a);
+                if (a > SightCone) bad++;
+            }
+            return bad;
+        }
 
         public RegattaRailSettings RailSettings(RegattaRailSettings authored) => new()
         {
@@ -215,6 +355,13 @@ namespace CosmicShore.Gameplay
         public static void PlacementPose(IReadOnlyList<RaceGate> gates, RegattaPlacement p, out Vector3 centre,
                                          out Quaternion rotation)
         {
+            if (p.Base)
+            {
+                // A world: posed in the cell's own frame, not the spine's.
+                centre = p.At;
+                rotation = Quaternion.Euler(p.Pitch, p.Yaw, p.Roll);
+                return;
+            }
             SpineFrame(gates, p.Leg, out var point, out var tangent, out var outward);
             Vector3 side = Vector3.Cross(tangent, outward);
             float b = p.Bearing * Mathf.Deg2Rad;
@@ -243,7 +390,7 @@ namespace CosmicShore.Gameplay
         {
             var g = new RegattaCourseGenome
             {
-                Version = CurrentVersion,
+                Version = IsExpressive ? ExpressiveVersion : CurrentVersion,
                 Intensity = Mathf.Clamp(Intensity, 1, 4),
                 Seed = Seed,
                 FloraPreset = string.IsNullOrEmpty(FloraPreset) ? "none" : FloraPreset,
@@ -275,6 +422,26 @@ namespace CosmicShore.Gameplay
             }
             float ringRadius = g.CircuitSettings().RingRadius;
 
+            g.Nucleus = Nucleus == "None" ? "None" : "Standard";
+            g.ShellRadius = ShellRadius > 0f ? Mathf.Clamp(ShellRadius, ShellRadiusMin, MembraneCarve) : 0f;
+            g.Lifeforms = Lifeforms ?? "";
+
+            // Free rings (version 2): exactly a lap of them, each inside the shell and facing along the line.
+            if (Rings is { Count: > 0 })
+            {
+                if (Rings.Count != RegattaCourse.RingsPerLap)
+                    notes?.Add($"rings: {Rings.Count} free rings, a lap is {RegattaCourse.RingsPerLap}; the circuit is used");
+                else
+                {
+                    g.Rings = RepairRings(Rings, g.ShellInner, g.ShellOuter, notes);
+                    float tightest = float.MaxValue;
+                    foreach (var r in g.Rings) tightest = Mathf.Min(tightest, r.Radius);
+                    ringRadius = tightest;
+                }
+            }
+            g.RailsOff = RailsOff;
+            g.SightClearance = SightClearance > 0f ? Mathf.Clamp(SightClearance, SightClearanceMin, SightClearanceMax) : 0f;
+
             // Braid: a lane inside the tightest mouth with a prism and a margin to spare (RegattaCourse.DefaultRails).
             if (!float.IsNaN(LaneOffset))
                 g.LaneOffset = Mathf.Clamp(LaneOffset, 14f, Mathf.Max(14f, Mathf.Min(40f, ringRadius - 28f)));
@@ -293,7 +460,7 @@ namespace CosmicShore.Gameplay
 
             // Placements.
             var gates = g.BuildGates();
-            int estimated = 0;
+            int estimated = 0, estimatedBase = 0;
             if (Placements != null)
                 for (int idx = 0; idx < Placements.Count; idx++)
                 {
@@ -313,9 +480,24 @@ namespace CosmicShore.Gameplay
                     p.Yaw = Wrap(p.Yaw, 360f);
                     p.Pitch = Wrap(p.Pitch, 360f);
                     p.Roll = Wrap(p.Roll, 360f);
-                    if (Array.IndexOf(PlacementDomains, p.Domain) < 0) p.Domain = PlacementDomains[0];
-                    if (Array.IndexOf(PlacementPrisms, p.Prism) < 0) p.Prism = PlacementPrisms[0];
+                    if (p.Domain == "Mix") p.DomainMix = RepairMix(p.DomainMix);
+                    if (p.Domain == "Mix" && p.DomainMix == null) p.Domain = PlacementDomains[0];
+                    if (p.Domain != "Mix") { p.DomainMix = null; if (Array.IndexOf(PlacementDomains, p.Domain) < 0) p.Domain = PlacementDomains[0]; }
+                    if (p.Prism == "Mix") p.PrismMix = RepairMix(p.PrismMix);
+                    if (p.Prism == "Mix" && p.PrismMix == null) p.Prism = PlacementPrisms[0];
+                    if (p.Prism != "Mix") { p.PrismMix = null; if (Array.IndexOf(PlacementPrisms, p.Prism) < 0) p.Prism = PlacementPrisms[0]; }
                     p.Density = kind.World ? Mathf.Clamp(p.Density, 0.1f, 2f) : 1f;
+                    p.PrismSize = Mathf.Clamp(float.IsFinite(p.PrismSize) ? p.PrismSize : 1f, 0.3f, 3f);
+                    p.Jitter = Mathf.Clamp(float.IsFinite(p.Jitter) ? p.Jitter : 0f, 0f, 180f);
+                    p.Keep = Mathf.Clamp(float.IsFinite(p.Keep) ? p.Keep : 1f, 0.02f, 1f);
+                    p.Warp = Mathf.Clamp(float.IsFinite(p.Warp) ? p.Warp : 0f, 0f, 250f);
+                    p.WarpWavelength = Mathf.Clamp(float.IsFinite(p.WarpWavelength) ? p.WarpWavelength : 400f, 60f, 1500f);
+                    if (p.Base)
+                    {
+                        p.At = Vector3.ClampMagnitude(Finite(p.At) ? p.At : Vector3.zero, 600f);
+                        p.Leg = p.Radius = p.Bearing = p.Along = 0f;
+                    }
+                    else p.At = Vector3.zero;
                     var clean = new SortedDictionary<string, double>(StringComparer.Ordinal);
                     foreach (var kv in p.Params)
                     {
@@ -325,13 +507,23 @@ namespace CosmicShore.Gameplay
                     }
                     p.Params = clean;
 
-                    float scale = Mathf.Clamp(p.Scale, (float)kind.ScaleLo, (float)kind.ScaleHi);
+                    float scale = p.Base
+                        ? Mathf.Clamp(p.Scale, (float)kind.ScaleLo, Mathf.Max((float)kind.ScaleHi, g.ShellOuter))
+                        : Mathf.Clamp(p.Scale, (float)kind.ScaleLo, (float)kind.ScaleHi);
                     PlacementPose(gates, p, out var c, out _);
-                    if (c.magnitude > MembraneCarve) { notes?.Add($"placement {idx}: centre outside the membrane, dropped"); continue; }
+                    if (c.magnitude > g.ShellOuter) { notes?.Add($"placement {idx}: centre outside the membrane, dropped"); continue; }
                     p.Scale = scale;
                     int est = EstimatedPrisms(kind, p);
-                    if (estimated + est > TotalPrismBudget) { notes?.Add($"placement {idx}: over the prism budget, dropped"); continue; }
-                    estimated += est;
+                    if (p.Base)
+                    {
+                        if (estimatedBase + est > BasePrismBudget) { notes?.Add($"placement {idx}: over the base prism budget, dropped"); continue; }
+                        estimatedBase += est;
+                    }
+                    else
+                    {
+                        if (estimated + est > TotalPrismBudget) { notes?.Add($"placement {idx}: over the prism budget, dropped"); continue; }
+                        estimated += est;
+                    }
                     g.Placements.Add(p);
                 }
             return g;
@@ -339,7 +531,63 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The prisms a placement is expected to lay: its kind's measured count, scaled by density, capped.</summary>
         public static int EstimatedPrisms(RegattaGeneCatalogue.Kind kind, RegattaPlacement p) =>
-            Mathf.Min(PerPlacementCap, Mathf.Max(1, Mathf.RoundToInt(kind.NativePrisms * (kind.World ? p.Density : 1f))));
+            Mathf.Min(p.Base ? BasePrismBudget : PerPlacementCap,
+                      Mathf.Max(1, Mathf.RoundToInt(kind.NativePrisms * (kind.World ? p.Density : 1f) * p.Keep)));
+
+        static bool Finite(Vector3 v) => float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z);
+
+        /// <summary>Four non-negative weights summing to 1, or null when there is nothing to draw from.</summary>
+        static float[] RepairMix(float[] mix)
+        {
+            if (mix == null) return null;
+            var o = new float[4];
+            float sum = 0f;
+            for (int i = 0; i < 4; i++)
+            {
+                float v = i < mix.Length && float.IsFinite(mix[i]) ? Mathf.Max(0f, mix[i]) : 0f;
+                o[i] = v;
+                sum += v;
+            }
+            if (sum <= 1e-6f) return null;
+            for (int i = 0; i < 4; i++) o[i] /= sum;
+            return o;
+        }
+
+        /// <summary>A lap of free rings made legal: each mouth in range, each centre inside the shell with its mouth
+        /// clear of the nucleus and the membrane, each axis turned to within <see cref="MaxRingTilt"/> of the bisector of
+        /// the legs either side (so the line meets it face-on enough to fly through).</summary>
+        static List<RegattaRingGene> RepairRings(List<RegattaRingGene> src, float inner, float outer, List<string> notes)
+        {
+            int n = src.Count;
+            var o = new List<RegattaRingGene>(n);
+            for (int i = 0; i < n; i++)
+            {
+                var r = src[i];
+                float radius = Mathf.Clamp(float.IsFinite(r.Radius) ? r.Radius : 90f, RingRadiusMin, RingRadiusMax);
+                Vector3 pos = Finite(r.Position) ? r.Position : Vector3.forward * 800f;
+                float lo = inner + radius + 20f, hi = Mathf.Max(lo, outer - radius - 20f);
+                float d = pos.magnitude;
+                if (d < 1e-3f) { pos = Vector3.forward * lo; d = lo; }
+                if (d < lo || d > hi) pos = pos / d * Mathf.Clamp(d, lo, hi);
+                o.Add(new RegattaRingGene(pos, Finite(r.Axis) ? r.Axis : Vector3.zero, radius));
+            }
+            for (int i = 0; i < n; i++)
+            {
+                var r = o[i];
+                Vector3 inDir = RaceCourseGeometry.SafeNormalize(r.Position - o[(i - 1 + n) % n].Position, Vector3.forward);
+                Vector3 outDir = RaceCourseGeometry.SafeNormalize(o[(i + 1) % n].Position - r.Position, inDir);
+                Vector3 bisector = RaceCourseGeometry.SafeNormalize(inDir + outDir, inDir);
+                Vector3 axis = r.Axis.sqrMagnitude > 1e-8f ? r.Axis.normalized : bisector;
+                float off = Vector3.Angle(bisector, axis);
+                if (off > MaxRingTilt)
+                {
+                    axis = Vector3.Slerp(bisector, axis, MaxRingTilt / off).normalized;
+                    notes?.Add($"rings: ring {i} turned to face the line ({off:F0} degrees off)");
+                }
+                o[i] = new RegattaRingGene(r.Position, axis, r.Radius);
+            }
+            return o;
+        }
 
         static RegattaCourseFeatures RepairFeatures(RegattaCourseFeatures f, List<string> notes)
         {
@@ -466,8 +714,35 @@ namespace CosmicShore.Gameplay
                 if (prm != null)
                     foreach (var kv in prm)
                         p.Params[kv.Key] = RegattaJson.Num(kv.Value, 0);
+                p.Base = RegattaJson.Bool(pd, "base", false);
+                p.At = Vec(RegattaJson.Get(pd, "at"), Vector3.zero);
+                p.PrismMix = Floats(RegattaJson.Get(pd, "prism_mix"));
+                p.DomainMix = Floats(RegattaJson.Get(pd, "domain_mix"));
+                p.PrismSize = (float)RegattaJson.Num(pd, "prism_size", 1);
+                p.Jitter = (float)RegattaJson.Num(pd, "jitter", 0);
+                p.Keep = (float)RegattaJson.Num(pd, "keep", 1);
+                p.Warp = (float)RegattaJson.Num(pd, "warp", 0);
+                p.WarpWavelength = (float)RegattaJson.Num(pd, "warp_wavelength", 400);
                 g.Placements.Add(p);
             }
+
+            foreach (var ro in RegattaJson.Arr(RegattaJson.Get(root, "rings")) ?? new List<object>())
+            {
+                var rd = RegattaJson.Obj(ro);
+                if (rd == null) continue;
+                g.Rings.Add(new RegattaRingGene(Vec(RegattaJson.Get(rd, "pos"), Vector3.zero),
+                                                Vec(RegattaJson.Get(rd, "axis"), Vector3.zero),
+                                                (float)RegattaJson.Num(rd, "radius", 90)));
+            }
+            g.RailsOff = RegattaJson.Bool(root, "rails_off", false);
+            var cell = RegattaJson.Obj(RegattaJson.Get(root, "cell"));
+            if (cell != null)
+            {
+                g.Nucleus = RegattaJson.Str(cell, "nucleus", "Standard");
+                g.ShellRadius = (float)RegattaJson.Num(cell, "shell_radius", 0);
+                g.Lifeforms = RegattaJson.Str(cell, "lifeforms", "");
+            }
+            g.SightClearance = (float)RegattaJson.Num(root, "sight_clearance", 0);
 
             var flora = RegattaJson.Obj(RegattaJson.Get(root, "flora"));
             if (flora != null)
@@ -492,6 +767,25 @@ namespace CosmicShore.Gameplay
             }
             return g;
         }
+
+        static Vector3 Vec(object node, Vector3 fallback)
+        {
+            var a = RegattaJson.Arr(node);
+            return a is { Count: 3 }
+                ? new Vector3((float)RegattaJson.Num(a[0], 0), (float)RegattaJson.Num(a[1], 0), (float)RegattaJson.Num(a[2], 0))
+                : fallback;
+        }
+
+        static float[] Floats(object node)
+        {
+            var a = RegattaJson.Arr(node);
+            if (a == null) return null;
+            var o = new float[a.Count];
+            for (int i = 0; i < a.Count; i++) o[i] = (float)RegattaJson.Num(a[i], 0);
+            return o;
+        }
+
+        static List<object> VecJson(Vector3 v) => new() { (double)v.x, (double)v.y, (double)v.z };
 
         public static RegattaCourseFeatures FeaturesFromJson(Dictionary<string, object> d)
         {
@@ -579,7 +873,7 @@ namespace CosmicShore.Gameplay
                 {
                     var prm = new OrderedDictionary();
                     foreach (var kv in p.Params) prm[kv.Key] = kv.Value;
-                    placements.Add(new OrderedDictionary
+                    var pd = new OrderedDictionary
                     {
                         ["kind"] = p.Kind, ["leg"] = (double)p.Leg,
                         ["offset"] = new List<object> { (double)p.Radius, (double)p.Bearing, (double)p.Along },
@@ -587,9 +881,32 @@ namespace CosmicShore.Gameplay
                         ["roll"] = (double)p.Roll, ["domain"] = p.Domain, ["prism"] = p.Prism, ["seed"] = p.Seed,
                         ["density"] = (double)p.Density, ["cross_line"] = p.CrossLine,
                         ["cross_rail"] = p.CrossRail, ["params"] = prm,
-                    });
+                    };
+                    // Version-2 fields only when set, so a version-1 genome's canonical JSON (and hash) is unchanged.
+                    if (p.Base) { pd["base"] = true; pd["at"] = VecJson(p.At); }
+                    if (p.PrismMix != null) pd["prism_mix"] = new List<object>(Array.ConvertAll(p.PrismMix, x => (object)(double)x));
+                    if (p.DomainMix != null) pd["domain_mix"] = new List<object>(Array.ConvertAll(p.DomainMix, x => (object)(double)x));
+                    if (Mathf.Abs(p.PrismSize - 1f) > 1e-6f) pd["prism_size"] = (double)p.PrismSize;
+                    if (p.Jitter > 0f) pd["jitter"] = (double)p.Jitter;
+                    if (p.Keep < 1f) pd["keep"] = (double)p.Keep;
+                    if (p.Warp > 0f) { pd["warp"] = (double)p.Warp; pd["warp_wavelength"] = (double)p.WarpWavelength; }
+                    placements.Add(pd);
                 }
             root["placements"] = placements;
+            if (Rings is { Count: > 0 })
+            {
+                var rings = new List<object>();
+                foreach (var r in Rings)
+                    rings.Add(new OrderedDictionary { ["pos"] = VecJson(r.Position), ["axis"] = VecJson(r.Axis), ["radius"] = (double)r.Radius });
+                root["rings"] = rings;
+            }
+            if (RailsOff) root["rails_off"] = true;
+            if (Nucleus != "Standard" || ShellRadius > 0f || !string.IsNullOrEmpty(Lifeforms))
+                root["cell"] = new OrderedDictionary
+                {
+                    ["nucleus"] = Nucleus ?? "Standard", ["shell_radius"] = (double)ShellRadius, ["lifeforms"] = Lifeforms ?? "",
+                };
+            if (SightClearance > 0f) root["sight_clearance"] = (double)SightClearance;
             var f = Flora ?? new RegattaLifeformSiteSettings();
             root["flora"] = new OrderedDictionary
             {

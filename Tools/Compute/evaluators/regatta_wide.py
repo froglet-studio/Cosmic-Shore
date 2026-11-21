@@ -1,0 +1,768 @@
+#!/usr/bin/env python3
+"""The WIDE Regatta course genome and its search (Garrett, 2026-11-21; Plan step: time-arena-course).
+
+    "I want each one i try to be as different as the yggdra cell is to the ourobor cell. no more bland tripple domain
+    tracks of supershielded prisms ... the only constraint is just make each ring visible from the sight lines that got
+    from one ring to another ... the size of the rings, their position and orientation, every prism in the cell (its
+    state orientation, size, position, etc), the size of the cell, its nucleus, its flora, its fauna. everything."
+
+Why the earlier searches (regatta_qd.py, archives under regatta-flywheel/archive*) all came back looking alike: every
+genome they could write kept the three braided super-shielded rails (1,812 prisms, one lane per team domain) on the
+same 8-ring circuit generator round the nucleus, and a world placement was thinned to 3,000 prisms and carved out of
+the line. The search could only decorate one track. This genome (RegattaCourseGenome version 2) removes all three:
+
+    rings   eight free rings drawn from a closed curve through the shell (genes: winding 0/1/2, radius and its swing,
+            latitude and longitude waves, the curve's orientation, each ring's mouth and tilt);
+    rails   off by default (a gene can lay them, in any rail kind);
+    base    a WHOLE world from any cell (Yggdra, Ourobor, Atlantis, Caldera ... or a giant shape) at full density in the
+            cell's own frame: its scale, centre, turn, density, the share of prisms kept, every prism's STATE (a weighted
+            mix of plain, shielded, super-shielded and danger), colour (native, one domain, or a mix), size, turn
+            jitter and a smooth warp field bending the whole layout;
+    extras  up to five more spawner placements on the line, each with the same per-prism genes, some across the line;
+    sight   the one hard rule: flying a leg into ring i, ring i+1 stands within 60 degrees of the heading and a tube to
+            it is carved clear of every prism (RegattaCourseGenome.SightCone / SightClearance, checked here before a
+            genome is ever raced).
+
+The genotype lives in the genome's "wide" key (the game ignores it); render() writes the phenotype the game lays.
+
+The search is MAP-Elites over three descriptors that force real difference: the BASE world (one niche per world), the
+SUPER-SHIELDED share of the course's prisms (four bins: none, a little, some, mostly) and the course SHAPE (winding x
+vertical extent). Each niche keeps its most balanced course, so a niche can never be won by the seed design: the
+shipped track (a rails-on, no-base course) does not even belong to most niches.
+
+    python3 Tools/Compute/evaluators/regatta_wide.py --self-test
+    python3 Tools/Compute/evaluators/regatta_wide.py sample --n 5 --out /tmp/w           # genomes only
+    python3 Tools/Compute/evaluators/regatta_wide.py shard --out DIR [--budget N] [--seed S]
+    python3 Tools/Compute/evaluators/regatta_wide.py merge --out DIR SHARD_DIR...
+    python3 Tools/Compute/evaluators/regatta_wide.py pick --out DIR [--k 8]               # the most different set
+"""
+import argparse
+import copy
+import json
+import math
+import os
+import random
+import sys
+import time
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import regatta_genome as rg  # noqa: E402
+
+RINGS = 8
+NUCLEUS = 391.9 * 1.1
+MEMBRANE = 1150.0
+SIGHT_CONE = 60.0          # RegattaCourseGenome.SightCone
+SIGHT_FROM = 0.6           # RegattaCourseGenome.SightFrom
+MAX_RING_TILT = 65.0       # RegattaCourseGenome.MaxRingTilt
+RING_RADIUS = (40.0, 180.0)
+
+# The balanced Regatta field (night of 2026-11-19 report: 1.076x card, 1.072x L5 on the shipped shuffle).
+FIELD = ["Urchin", "Scarab", "Sparrow", "Dolphin", "Squirrel", "Thresher", "BrittleStar", "Rhino", "Swordfish",
+         "Goby", "Shrike"]
+# Stage A screens a course on the four hulls that spread most on new ground (the rail rider, the fastest free flyer,
+# the line-splitter and the skimmer) at one seed and the card start; only a course inside STAGE_A_BAR races the field.
+STAGE_A = ["Urchin", "Scarab", "Dolphin", "Squirrel"]
+STAGE_A_BAR = 1.8
+SS_BINS = (0.0, 0.05, 0.35, 0.7)     # super-shielded share: none (< 5%), a little, some, mostly
+
+
+def _catalogue():
+    return rg.catalogue()
+
+
+def world_kinds():
+    return sorted(k["id"] for k in _catalogue()["usable"] if k["world"])
+
+
+# Giant shapes that can stand in for a world (a cell-sized gyroid is a world of its own).
+SHAPE_BASES = ["Gyroid", "SchwarzPSurface", "HopfFibration", "Spherene", "TorusKnot", "Helicoid", "CliffordTorus",
+               "LSystem", "LinkedRings"]
+EXTRA_KINDS = ["Gyroid", "SchwarzPSurface", "HopfFibration", "Spherene", "TorusKnot", "Helicoid", "CliffordTorus",
+               "LSystem", "LinkedRings", "FiveRings", "Wall", "Batman", "Kelpwood", "Standoff", "Corona", "Jackstraw",
+               "Flatline", "Ribcage", "Skein", "Shatterplane"]
+
+
+_LIFE = None
+
+
+def lifeform_cells():
+    """(every cell config with a spawn profile, {world kind: its own cell's config}), read from the repo: a course may
+    live with any cell's flora and fauna, and a world most often with its own."""
+    global _LIFE
+    if _LIFE is None:
+        import glob
+        import re
+        root = os.path.join(rg.REPO, "Assets", "_SO_Assets", "Cell Configs")
+        guid2prefab = {}
+        for m in glob.glob(os.path.join(rg.REPO, "Assets", "_Prefabs", "Spawnables", "*.prefab.meta")):
+            g = re.search(r"guid: (\w+)", open(m, encoding="utf-8", errors="ignore").read())
+            if g:
+                guid2prefab[g.group(1)] = os.path.basename(m)[:-len(".prefab.meta")]
+        life, own = [], {}
+        for f in sorted(glob.glob(os.path.join(root, "*", "*.asset"))):
+            txt = open(f, encoding="utf-8", errors="ignore").read()
+            sp = re.search(r"SpawnProfile: \{fileID: \d+, guid: (\w+)", txt)
+            rel = os.path.relpath(f, root)[:-len(".asset")].replace(os.sep, "/")
+            if not sp or "Regatta" in rel:
+                continue
+            life.append(rel)
+            ep = re.search(r"EnvironmentPrefab: \{fileID: -?\d+, guid: (\w+)", txt)
+            pf = guid2prefab.get(ep.group(1)) if ep else None
+            if pf and pf.startswith("Spawnable"):
+                own.setdefault(pf[len("Spawnable"):].rstrip("0123456789"), rel)
+        _LIFE = (life, own)
+    return _LIFE
+
+
+def random_cell(rng, base_kind):
+    life, own = lifeform_cells()
+    r = rng.random()
+    lifeforms = own.get(base_kind) if r < 0.5 and own.get(base_kind) else rng.choice(life) if r < 0.85 else ""
+    return {"nucleus": "None" if rng.random() < 0.45 else "Standard",
+            "shell": rng.choice([0.0, 0.0, rng.uniform(700.0, 1150.0)]), "lifeforms": lifeforms}
+
+
+def base_choices():
+    return ["none"] + world_kinds() + SHAPE_BASES
+
+
+# ── Vector helpers (plain floats; the game's sight check is in float32, the margin here is a degree) ──────────────
+
+def _add(a, b): return (a[0] + b[0], a[1] + b[1], a[2] + b[2])
+def _sub(a, b): return (a[0] - b[0], a[1] - b[1], a[2] - b[2])
+def _mul(a, s): return (a[0] * s, a[1] * s, a[2] * s)
+def _dot(a, b): return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+def _cross(a, b): return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+def _len(a): return math.sqrt(_dot(a, a))
+
+
+def _norm(a, fb=(0.0, 0.0, 1.0)):
+    m = _len(a)
+    return _mul(a, 1.0 / m) if m > 1e-9 else fb
+
+
+def _angle(a, b):
+    c = _dot(_norm(a), _norm(b))
+    return math.degrees(math.acos(max(-1.0, min(1.0, c))))
+
+
+def _rot(v, yaw, pitch, roll):
+    """Unity's Quaternion.Euler(pitch, yaw, roll) * v (Z, then X, then Y)."""
+    x, y, z = v
+    r = math.radians(roll)
+    x, y = x * math.cos(r) - y * math.sin(r), x * math.sin(r) + y * math.cos(r)
+    p = math.radians(pitch)
+    y, z = y * math.cos(p) - z * math.sin(p), y * math.sin(p) + z * math.cos(p)
+    w = math.radians(yaw)
+    x, z = x * math.cos(w) + z * math.sin(w), -x * math.sin(w) + z * math.cos(w)
+    return (x, y, z)
+
+
+# ── The genotype ──────────────────────────────────────────────────────────────────────────────────────────────────
+
+def _mix(rng, ss_target=None):
+    """Weights of Plain, Shielded, SuperShielded, Danger. ss_target picks the super-shielded share's bin."""
+    w = [rng.random() ** 2 for _ in range(4)]
+    if ss_target is None:
+        ss_target = rng.choice([0, 0, 1, 2, 3])
+    lo = SS_BINS[ss_target]
+    hi = SS_BINS[ss_target + 1] if ss_target + 1 < len(SS_BINS) else 1.0
+    rest = sum(w[i] for i in (0, 1, 3)) or 1.0
+    ss = rng.uniform(lo, hi) if ss_target else 0.0
+    out = [w[0] / rest * (1 - ss), w[1] / rest * (1 - ss), ss, w[3] / rest * (1 - ss)]
+    return [round(x, 4) for x in out]
+
+
+def random_loop(rng):
+    winding = rng.choice([0, 1, 1, 1, 2])
+    return {
+        "winding": winding,
+        "R0": rng.uniform(600.0, 1000.0),
+        "rAmp": rng.uniform(0.0, 220.0), "rK": rng.choice([1, 2, 3]), "rPh": rng.uniform(0, 2 * math.pi),
+        "lat": [rng.uniform(-55, 55), rng.uniform(-35, 35), rng.uniform(-20, 20)],
+        "latPh": [rng.uniform(0, 2 * math.pi) for _ in range(3)],
+        "lon": [rng.uniform(-30, 30), rng.uniform(-15, 15)],
+        "lonPh": [rng.uniform(0, 2 * math.pi) for _ in range(2)],
+        # A winding-0 loop (not round the nucleus) spans this many degrees of the shell.
+        "span": rng.uniform(70.0, 150.0), "eight": rng.random() < 0.35,
+        "rot": [rng.uniform(0, 360), rng.uniform(-90, 90), rng.uniform(0, 360)],
+        "tJit": [rng.uniform(-0.25, 0.25) for _ in range(RINGS)],
+    }
+
+
+def random_base(rng, kind=None, ss=None):
+    kind = kind or rng.choice(base_choices())
+    if kind == "none":
+        return {"kind": "none"}
+    k = _catalogue()["by_id"][kind]
+    native = max(40.0, float(k["native_radius"]))
+    world = k["world"]
+    # The racing shell is 431-1150 u from the centre (nucleus to membrane): a world authored round its own cell's
+    # centre is scaled so it FILLS that shell (its 90% radius out near the membrane); the part inside the nucleus is
+    # carved. Measured 2026-11-21: Yggdra at its native 349 u laid 231 of 39,194 prisms (the rest inside the nucleus).
+    scale = rng.uniform(650.0, 1150.0)
+    domain = rng.choice(["Native", "Native", "Mix", "Jade", "Ruby", "Gold", "Blue"])
+    return {
+        "kind": kind, "scale": min(1150.0, scale),
+        "at": [rng.uniform(-150, 150), rng.uniform(-150, 150), rng.uniform(-150, 150)] if world else [0.0, 0.0, 0.0],
+        "rot": [rng.uniform(0, 360), rng.uniform(0, 360), rng.uniform(0, 360)],
+        "density": rng.uniform(0.4, 1.6) if world else 1.0,
+        "keep": rng.choice([1.0, 1.0, rng.uniform(0.15, 1.0)]),
+        "mix": _mix(rng, ss), "domain": domain, "dmix": [round(rng.random(), 3) for _ in range(4)],
+        # Scaling a world up grows its prisms with it (by about scale / native radius); the size gene brings them back
+        # down toward the native size or leaves them big.
+        "size": min(3.0, max(0.3, native / scale * math.exp(rng.uniform(math.log(0.6), math.log(3.0))))),
+        "jitter": rng.choice([0.0, 0.0, rng.uniform(5, 90)]),
+        "warp": rng.choice([0.0, 0.0, rng.uniform(10, 180)]), "wl": rng.uniform(150, 1200),
+        "seed": rng.randrange(1, 2 ** 31 - 1),
+        # Across the line: the world stands ON the racing line (only the ring mouths and the sight tubes stay clear),
+        # so it is terrain every pilot meets, not scenery beside a cleared tube. Measured 2026-11-21: with the line
+        # tube carved, Dolphin, Scarab and Urchin flew a Yggdra and an Ourobor lap to the same hundredth.
+        "cross_line": rng.random() < 0.6,
+        "params": rg.random_params(rng, k, 0.6) if k["params"] else {},
+    }
+
+
+def random_extra(rng, kind=None, ss=None):
+    kind = kind or rng.choice(EXTRA_KINDS)
+    k = _catalogue()["by_id"][kind]
+    return {
+        "kind": kind, "leg": rng.uniform(0, RINGS), "radius": rng.uniform(0, 260), "bearing": rng.uniform(0, 360),
+        "along": rng.uniform(-120, 120),
+        "scale": math.exp(rng.uniform(math.log(max(20.0, k["scale_lo"])), math.log(320.0))),
+        "rot": [rng.uniform(0, 360), rng.uniform(0, 360), rng.uniform(0, 360)],
+        "mix": _mix(rng, ss), "domain": rng.choice(["Native", "Mix", "Jade", "Ruby", "Gold", "Blue"]),
+        "dmix": [round(rng.random(), 3) for _ in range(4)],
+        "size": math.exp(rng.uniform(math.log(0.5), math.log(2.5))), "jitter": rng.choice([0.0, rng.uniform(5, 60)]),
+        "keep": 1.0, "warp": 0.0, "wl": 400.0, "cross_line": rng.random() < 0.4,
+        "seed": rng.randrange(1, 2 ** 31 - 1), "params": rg.random_params(rng, k, 0.5) if k["params"] else {},
+    }
+
+
+def random_genes(rng, base=None, ss=None):
+    genes = _random_genes(rng, base, ss)
+    genes["cell"] = random_cell(rng, genes["base"]["kind"])
+    # Without a nucleus the loop may cut through the centre: a smaller radius is a different course, not a shrunk one.
+    if genes["cell"]["nucleus"] == "None" and rng.random() < 0.5:
+        genes["loop"]["R0"] = rng.uniform(250.0, 700.0)
+    return genes
+
+
+def _random_genes(rng, base=None, ss=None):
+    return {
+        "loop": random_loop(rng),
+        "rings": {"radius": [rng.uniform(*RING_RADIUS) for _ in range(RINGS)],
+                  "tilt": [[rng.uniform(-30, 30), rng.uniform(-30, 30)] for _ in range(RINGS)]},
+        "base": random_base(rng, base, ss),
+        "extras": [random_extra(rng, None, ss) for _ in range(rng.choice([0, 0, 1, 2, 3, 5]))],
+        "cell": None,
+        "rails": "off" if rng.random() < 0.9 else "on",
+        "railKind": rng.choice([1, 2, 3]),      # Shielded, Plain, Gap (never all super-shielded)
+        "sight": rng.uniform(8.0, 30.0), "line": rng.uniform(14.0, 70.0),
+        "crystals": rng.choice([0, 0, 1, 2, 3, 4]), "crystalPhase": rng.random(),
+        "seed": rng.randrange(1, 2 ** 31 - 1),
+    }
+
+
+# ── Rendering the genotype into the game's genome ─────────────────────────────────────────────────────────────────
+
+def _loop_point(L, t):
+    """The closed curve's point at t in [0, 2 pi), cell-local."""
+    lat = sum(a * math.sin((k + 1) * t + ph) for k, (a, ph) in enumerate(zip(L["lat"], L["latPh"])))
+    r = L["R0"] + L["rAmp"] * math.sin(L["rK"] * t + L["rPh"])
+    if L["winding"] == 0:
+        # A loop on one side of the nucleus: a circle (or a figure eight) on the shell round a pole.
+        span = math.radians(L["span"]) * 0.5
+        x = math.sin(t) * span
+        y = (math.sin(2 * t) if L["eight"] else math.cos(t)) * span * 0.75 + math.radians(lat) * 0.3
+        d = _norm((x, y, 1.0))
+    else:
+        lon = L["winding"] * t + sum(math.radians(b) * math.sin((k + 1) * t + ph)
+                                     for k, (b, ph) in enumerate(zip(L["lon"], L["lonPh"])))
+        la = math.radians(lat)
+        d = (math.cos(la) * math.sin(lon), math.sin(la), math.cos(la) * math.cos(lon))
+    p = _mul(d, r)
+    return _rot(p, *L["rot"])
+
+
+def shell_of(genes):
+    c = genes.get("cell") or {}
+    inner = 40.0 if c.get("nucleus") == "None" else NUCLEUS
+    outer = min(MEMBRANE, max(650.0, c["shell"])) if c.get("shell") else MEMBRANE
+    return inner, outer
+
+
+def render_rings(genes):
+    L = genes["loop"]
+    inner, outer = shell_of(genes)
+    ts = [2 * math.pi * (i + 0.5 * genes["loop"]["tJit"][i]) / RINGS for i in range(RINGS)]
+    pts = [_loop_point(L, t) for t in ts]
+    rings = []
+    for i in range(RINGS):
+        rad = max(RING_RADIUS[0], min(RING_RADIUS[1], genes["rings"]["radius"][i]))
+        p = pts[i]
+        dist = _len(p)
+        lo, hi = inner + rad + 20.0, max(inner + rad + 20.0, outer - rad - 20.0)
+        if dist < lo or dist > hi:
+            p = _mul(p, max(lo, min(hi, dist)) / max(dist, 1e-6))
+        pts[i] = p
+    for i in range(RINGS):
+        rad = max(RING_RADIUS[0], min(RING_RADIUS[1], genes["rings"]["radius"][i]))
+        inbound = _norm(_sub(pts[i], pts[i - 1]))
+        outbound = _norm(_sub(pts[(i + 1) % RINGS], pts[i]), inbound)
+        axis = _norm(_add(inbound, outbound), inbound)
+        side = _norm(_cross(axis, _norm(pts[i])), (1.0, 0.0, 0.0))
+        up = _cross(side, axis)
+        ta, tb = (math.radians(x) for x in genes["rings"]["tilt"][i])
+        axis = _norm(_add(_add(_mul(axis, math.cos(ta) * math.cos(tb)), _mul(side, math.sin(ta))),
+                          _mul(up, math.sin(tb) * math.cos(ta))))
+        rings.append({"pos": [round(c, 3) for c in pts[i]], "axis": [round(c, 5) for c in axis], "radius": round(rad, 3)})
+    return rings
+
+
+def _v2_fields(src, pd):
+    if src.get("domain") == "Mix":
+        pd["domain"], pd["domain_mix"] = "Mix", list(src["dmix"])
+    else:
+        pd["domain"] = src.get("domain", "Native")
+    if src.get("mix") is not None:
+        pd["prism"], pd["prism_mix"] = "Mix", list(src["mix"])
+    if abs(src.get("size", 1.0) - 1.0) > 1e-6:
+        pd["prism_size"] = round(src["size"], 4)
+    if src.get("jitter", 0) > 0:
+        pd["jitter"] = round(src["jitter"], 3)
+    if src.get("keep", 1.0) < 1.0:
+        pd["keep"] = round(src["keep"], 4)
+    if src.get("warp", 0) > 0:
+        pd["warp"], pd["warp_wavelength"] = round(src["warp"], 3), round(src["wl"], 3)
+
+
+def render(genes):
+    """The game's genome (RegattaCourseGenome version 2 JSON) for a genotype; the genotype rides along in "wide"."""
+    sections = []
+    if genes["rails"] == "on":
+        sections.append({"Leg": -1, "From": 0.0, "To": 1.0, "Kind": int(genes["railKind"]), "Neutral": False,
+                         "Detour": 0.0, "DetourBearing": 0.0})
+    g = {"version": 2, "intensity": 1, "seed": int(genes["seed"]),
+         "features": {"Sections": sections, "AlternateGates": [],
+                      "Crystals": {"PerLap": int(genes["crystals"]), "Phase": float(genes["crystalPhase"])}},
+         "line_clearance": round(genes["line"], 3), "placements": [], "rings": render_rings(genes),
+         "sight_clearance": round(genes["sight"], 3)}
+    if genes["rails"] != "on":
+        g["rails_off"] = True
+    c = genes.get("cell") or {}
+    if c.get("nucleus") == "None" or c.get("shell") or c.get("lifeforms"):
+        g["cell"] = {"nucleus": c.get("nucleus", "Standard"), "shell_radius": round(float(c.get("shell") or 0.0), 3),
+                     "lifeforms": c.get("lifeforms") or ""}
+    b = genes["base"]
+    if b["kind"] != "none":
+        pd = {"kind": b["kind"], "leg": 0.0, "offset": [0.0, 0.0, 0.0], "scale": round(b["scale"], 3),
+              "yaw": round(b["rot"][0], 3), "pitch": round(b["rot"][1], 3), "roll": round(b["rot"][2], 3),
+              "seed": int(b["seed"]), "density": round(b["density"], 4), "cross_line": bool(b.get("cross_line")),
+              "cross_rail": True,
+              "params": dict(b.get("params") or {}), "base": True, "at": [round(x, 3) for x in b["at"]]}
+        _v2_fields(b, pd)
+        g["placements"].append(pd)
+    for e in genes["extras"]:
+        pd = {"kind": e["kind"], "leg": round(e["leg"], 4), "offset": [round(e["radius"], 3), round(e["bearing"], 3),
+                                                                     round(e["along"], 3)],
+              "scale": round(e["scale"], 3), "yaw": round(e["rot"][0], 3), "pitch": round(e["rot"][1], 3),
+              "roll": round(e["rot"][2], 3), "seed": int(e["seed"]), "density": 1.0,
+              "cross_line": bool(e["cross_line"]), "cross_rail": True, "params": dict(e.get("params") or {})}
+        _v2_fields(e, pd)
+        g["placements"].append(pd)
+    g["wide"] = genes
+    return g
+
+
+# ── The sight line rule and the shell, checked before a course is raced ──────────────────────────────────────────
+
+def _gates(genome):
+    return [{"p": tuple(rg.cp.f(x) for x in r["pos"]), "a": tuple(rg.cp.f(x) for x in _norm(tuple(r["axis"]))),
+             "r": rg.cp.f(r["radius"])} for r in genome["rings"]]
+
+
+def _repaired_axes(genome):
+    """RegattaCourseGenome.RepairRings' axis rule (within MAX_RING_TILT of the bisector)."""
+    rings = genome["rings"]
+    out = []
+    for i, r in enumerate(rings):
+        p = tuple(r["pos"])
+        inbound = _norm(_sub(p, tuple(rings[i - 1]["pos"])))
+        outbound = _norm(_sub(tuple(rings[(i + 1) % RINGS]["pos"]), p), inbound)
+        bis = _norm(_add(inbound, outbound), inbound)
+        axis = _norm(tuple(r["axis"]), bis)
+        off = _angle(bis, axis)
+        if off > MAX_RING_TILT:
+            t = MAX_RING_TILT / off
+            axis = _norm(_add(_mul(bis, 1 - t), _mul(axis, t)))   # close enough to slerp for a check
+        out.append(dict(r, axis=list(axis)))
+    return dict(genome, rings=out)
+
+
+def check(genome):
+    """(ok, facts): the sight cone at every ring, and the racing line kept inside the shell (out of the nucleus)."""
+    gs = _gates(_repaired_axes(genome))
+    worst, bad = 0.0, 0
+    for i in range(RINGS):
+        point, tangent, _ = rg.spine_frame(gs, (i - 1) % RINGS + SIGHT_FROM)
+        to = tuple(float(x) for x in gs[(i + 1) % RINGS]["p"])
+        a = _angle(tuple(float(x) for x in tangent), _sub(to, tuple(float(x) for x in point)))
+        worst = max(worst, a)
+        bad += a > SIGHT_CONE - 1.0
+    lo, hi, length = 1e9, 0.0, 0.0
+    prev = None
+    for s in range(RINGS * 16):
+        point, _, _ = rg.spine_frame(gs, s / 16.0)
+        p = tuple(float(x) for x in point)
+        d = _len(p)
+        lo, hi = min(lo, d), max(hi, d)
+        if prev is not None:
+            length += _len(_sub(p, prev))
+        prev = p
+    ys = [r["pos"][1] for r in genome["rings"]]
+    facts = {"sight_bad": bad, "sight_worst": round(worst, 1), "spine_min": round(lo, 1), "spine_max": round(hi, 1),
+             "lap_u": round(length, 0), "vertical_u": round(max(ys) - min(ys), 0)}
+    inner, outer = shell_of(genome["wide"]) if "wide" in genome else (NUCLEUS, MEMBRANE)
+    ok = bad == 0 and lo > inner + 30.0 and hi < outer - 30.0
+    return ok, facts
+
+
+def random_legal(rng, base=None, ss=None, tries=400):
+    for _ in range(tries):
+        genes = random_genes(rng, base, ss)
+        g = render(genes)
+        ok, facts = check(g)
+        if ok:
+            return g, facts
+    raise RuntimeError("no legal course in %d draws" % tries)
+
+
+# ── Descriptors: what makes two courses different ─────────────────────────────────────────────────────────────────
+
+def ss_share(genes):
+    """The expected super-shielded share of the course's PLACED prisms (rails counted when on). A native-state base
+    is read from what the world lays by default (most world cells mix shielded and super-shielded: counted at 0.5)."""
+    cat = _catalogue()["by_id"]
+    total, ss = 0.0, 0.0
+
+    def add(src, n):
+        nonlocal total, ss
+        mix = src.get("mix")
+        total += n
+        ss += n * (mix[2] if mix else 0.5)
+
+    b = genes["base"]
+    if b["kind"] != "none":
+        k = cat[b["kind"]]
+        add(b, min(45000.0, k["native_prisms"] * (b["density"] if k["world"] else 1.0) * b.get("keep", 1.0)))
+    for e in genes["extras"]:
+        add(e, min(3000.0, cat[e["kind"]]["native_prisms"]))
+    if genes["rails"] == "on" and genes["railKind"] != 3:
+        total += 1812.0
+    return ss / total if total else 0.0
+
+
+def descriptor(genes, facts):
+    share = ss_share(genes)
+    ss_bin = max(i for i, lo in enumerate(SS_BINS) if share >= lo)
+    shape = f"w{genes['loop']['winding']}{'e' if genes['loop']['winding'] == 0 and genes['loop']['eight'] else ''}"
+    tall = "tall" if facts["vertical_u"] > 900 else "flat"
+    nuc = "open" if (genes.get("cell") or {}).get("nucleus") == "None" else "core"
+    return f"{genes['base']['kind']}|ss{ss_bin}|{shape}-{tall}-{nuc}"
+
+
+# ── Variation ─────────────────────────────────────────────────────────────────────────────────────────────────────
+
+def _jiggle(rng, v, sd, lo, hi):
+    return max(lo, min(hi, v + rng.gauss(0, sd)))
+
+
+def mutate(genes, rng):
+    g = copy.deepcopy(genes)
+    ops = rng.randint(1, 4)
+    for _ in range(ops):
+        op = rng.choice(["loop", "loop", "ring", "ring", "base", "base", "basekind", "mix", "extra", "rails", "dials",
+                         "cell", "cross"])
+        L = g["loop"]
+        if op == "loop":
+            key = rng.choice(["R0", "rAmp", "lat", "lon", "rot", "tJit", "span", "phase"])
+            if key == "R0": L["R0"] = _jiggle(rng, L["R0"], 60, 600, 1000)
+            elif key == "rAmp": L["rAmp"] = _jiggle(rng, L["rAmp"], 40, 0, 220)
+            elif key == "lat": i = rng.randrange(3); L["lat"][i] = _jiggle(rng, L["lat"][i], 10, -55, 55)
+            elif key == "lon": i = rng.randrange(2); L["lon"][i] = _jiggle(rng, L["lon"][i], 6, -30, 30)
+            elif key == "rot": i = rng.randrange(3); L["rot"][i] += rng.gauss(0, 20)
+            elif key == "tJit": i = rng.randrange(RINGS); L["tJit"][i] = _jiggle(rng, L["tJit"][i], 0.08, -0.25, 0.25)
+            elif key == "span": L["span"] = _jiggle(rng, L["span"], 15, 70, 150)
+            else: i = rng.randrange(3); L["latPh"][i] += rng.gauss(0, 0.5)
+        elif op == "ring":
+            i = rng.randrange(RINGS)
+            g["rings"]["radius"][i] = _jiggle(rng, g["rings"]["radius"][i], 20, *RING_RADIUS)
+            j = rng.randrange(2)
+            g["rings"]["tilt"][i][j] = _jiggle(rng, g["rings"]["tilt"][i][j], 10, -40, 40)
+        elif op == "base" and g["base"]["kind"] != "none":
+            b = g["base"]
+            key = rng.choice(["scale", "at", "rot", "density", "keep", "size", "jitter", "warp", "seed"])
+            if key == "scale": b["scale"] = _jiggle(rng, b["scale"], 80, 500, 1150)
+            elif key == "at": i = rng.randrange(3); b["at"][i] = _jiggle(rng, b["at"][i], 40, -300, 300)
+            elif key == "rot": i = rng.randrange(3); b["rot"][i] += rng.gauss(0, 25)
+            elif key == "density": b["density"] = _jiggle(rng, b["density"], 0.2, 0.1, 2.0)
+            elif key == "keep": b["keep"] = _jiggle(rng, b.get("keep", 1.0), 0.15, 0.05, 1.0)
+            elif key == "size": b["size"] = _jiggle(rng, b["size"], 0.2, 0.3, 3.0)
+            elif key == "jitter": b["jitter"] = _jiggle(rng, b["jitter"], 15, 0, 180)
+            elif key == "warp": b["warp"] = _jiggle(rng, b["warp"], 30, 0, 250)
+            else: b["seed"] = rng.randrange(1, 2 ** 31 - 1)
+        elif op == "basekind":
+            # Keep the state mix's bin, change the world: a jump across niches.
+            ss = max(i for i, lo in enumerate(SS_BINS) if ss_share(g) >= lo)
+            g["base"] = random_base(rng, None, ss)
+            if g.get("cell") and rng.random() < 0.5:
+                g["cell"]["lifeforms"] = lifeform_cells()[1].get(g["base"]["kind"], g["cell"]["lifeforms"])
+        elif op == "mix":
+            target = rng.choice([g["base"]] + g["extras"]) if g["extras"] else g["base"]
+            if target.get("kind") != "none":
+                target["mix"] = _mix(rng)
+                target["domain"] = rng.choice(["Native", "Mix", "Jade", "Ruby", "Gold", "Blue"])
+        elif op == "extra":
+            if g["extras"] and rng.random() < 0.4:
+                g["extras"].pop(rng.randrange(len(g["extras"])))
+            elif len(g["extras"]) < 5:
+                g["extras"].append(random_extra(rng))
+            elif g["extras"]:
+                e = rng.choice(g["extras"])
+                e["leg"] = (e["leg"] + rng.gauss(0, 0.4)) % RINGS
+                e["radius"] = _jiggle(rng, e["radius"], 40, 0, 300)
+        elif op == "cell":
+            c = g.get("cell") or random_cell(rng, g["base"]["kind"])
+            key = rng.choice(["nucleus", "shell", "lifeforms"])
+            fresh = random_cell(rng, g["base"]["kind"])
+            c[key] = fresh[key]
+            g["cell"] = c
+        elif op == "cross" and g["base"]["kind"] != "none":
+            g["base"]["cross_line"] = not g["base"].get("cross_line")
+        elif op == "rails":
+            g["rails"] = "on" if g["rails"] == "off" and rng.random() < 0.3 else "off"
+            g["railKind"] = rng.choice([1, 2, 3])
+        else:
+            g["sight"] = _jiggle(rng, g["sight"], 4, 8, 30)
+            g["line"] = _jiggle(rng, g["line"], 8, 14, 70)
+            g["crystals"] = max(0, min(4, g["crystals"] + rng.choice([-1, 1])))
+    return g
+
+
+# ── Judging ───────────────────────────────────────────────────────────────────────────────────────────────────────
+
+def _judge():
+    import regatta_judge
+    return regatta_judge
+
+
+def imbalance(result, hulls):
+    rj = _judge()
+    by = {}
+    for race in result["races"]:
+        for s in race.get("seats", []):
+            by.setdefault(s["hull"], []).append(s.get("finish_s"))
+    scores = {h: rj.balance_score({"c": by.get(h, [])}) for h in hulls}
+    have = [v for v in scores.values() if v]
+    dnf = sum(1 for race in result["races"] for s in race.get("seats", []) if s.get("finish_s") is None)
+    ratio = max(have) / min(have) if len(have) == len(hulls) else None
+    return ratio, {h: (round(v, 2) if v else None) for h, v in scores.items()}, dnf
+
+
+def evaluate(genome, seeds_a=(1,), seeds_b=(1, 2), limit_s=300):
+    """Stage A (four hulls, one seed, card start), then the field at both starts. Returns the record's score part."""
+    rj = _judge()
+    rec = {}
+    ra = rj.judge(genome, STAGE_A, list(seeds_a), limit_s=limit_s, start="card")
+    a, times_a, dnf_a = imbalance(ra, STAGE_A)
+    rec["stage_a"] = {"imbalance": a, "times": times_a, "dnf": dnf_a, "notes": ra.get("notes", [])[:6]}
+    if a is None or a > STAGE_A_BAR:
+        rec["score"] = None if a is None else a * 2.0   # a stage-A failure ranks below every stage-B course
+        rec["stage"] = "A"
+        return rec
+    worst, out = 0.0, {}
+    for start in ("card", "L5"):
+        r = rj.judge(genome, FIELD, list(seeds_b), limit_s=limit_s, start=start)
+        x, times, dnf = imbalance(r, FIELD)
+        out[start] = {"imbalance": x, "times": times, "dnf": dnf}
+        worst = max(worst, x if x else 99.0)
+    rec["field"] = out
+    rec["score"] = worst
+    rec["stage"] = "B"
+    return rec
+
+
+# ── The archive (MAP-Elites) ──────────────────────────────────────────────────────────────────────────────────────
+
+def _load(path):
+    recs = []
+    if os.path.exists(path):
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        recs.append(json.loads(line))
+                    except ValueError:
+                        pass
+    return recs
+
+
+def elites(records):
+    best = {}
+    for r in records:
+        if r.get("score") is None:
+            continue
+        d = r["niche"]
+        if d not in best or r["score"] < best[d]["score"]:
+            best[d] = r
+    return best
+
+
+def shard(out, budget, seed, init=None):
+    os.makedirs(out, exist_ok=True)
+    path = os.path.join(out, "records.jsonl")
+    rng = random.Random(seed)
+    records = _load(path)
+    bases = base_choices()
+    n_init = init if init is not None else len(bases) * 2
+    done = len(records)
+    print(f"[wide] shard {out}: {done} records, budget {budget}", flush=True)
+    while done < budget:
+        arch = elites(records)
+        if done < n_init or not arch or rng.random() < 0.25:
+            # Fill the map: a base and a super-shielded bin the archive has least of.
+            counts = {}
+            for d in arch:
+                counts[d.split("|")[0]] = counts.get(d.split("|")[0], 0) + 1
+            base = min(bases, key=lambda b: (counts.get(b, 0), rng.random())) if done >= n_init else bases[done % len(bases)]
+            g, facts = random_legal(rng, base=base, ss=rng.choice([0, 0, 1, 2, 3]))
+            origin = "random"
+        else:
+            # Mutate an elite, weighted toward the balanced ones but from every niche.
+            pool = sorted(arch.values(), key=lambda r: r["score"])
+            parent = pool[min(len(pool) - 1, int(abs(rng.gauss(0, len(pool) / 3))))]
+            for _ in range(60):
+                genes = mutate(parent["genome"]["wide"], rng)
+                g = render(genes)
+                ok, facts = check(g)
+                if ok:
+                    break
+            else:
+                continue
+            origin = "mutant:" + parent["id"]
+        rid = f"{os.path.basename(out.rstrip('/'))}-{done:04d}"
+        t0 = time.time()
+        try:
+            sc = evaluate(g)
+        except Exception as e:   # a crashed judge is a record too, so the search does not retry it forever
+            sc = {"score": None, "error": f"{type(e).__name__}: {e}"[:400]}
+        rec = dict(id=rid, origin=origin, niche=descriptor(g["wide"], facts), facts=facts, ss_share=round(ss_share(g["wide"]), 3),
+                   genome=g, wall_s=round(time.time() - t0, 1), at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                   **sc)
+        with open(path, "a") as f:
+            f.write(json.dumps(rec) + "\n")
+        records.append(rec)
+        done += 1
+        print(f"[wide] {rid} {rec['niche']} stage {rec.get('stage')} score {rec.get('score')} "
+              f"({rec['wall_s']} s) {rec.get('error', '')}", flush=True)
+
+
+# ── Picking the set Garrett plays: balanced AND far apart ─────────────────────────────────────────────────────────
+
+def distance(a, b):
+    """How different two courses are: a different world counts most, then the state mix, the shape, the size."""
+    ga, gb = a["genome"]["wide"], b["genome"]["wide"]
+    d = 0.0
+    d += 3.0 if ga["base"]["kind"] != gb["base"]["kind"] else 0.0
+    d += 2.0 * abs(a["ss_share"] - b["ss_share"])
+    d += 1.0 if ga["loop"]["winding"] != gb["loop"]["winding"] else 0.0
+    d += abs(a["facts"]["vertical_u"] - b["facts"]["vertical_u"]) / 1500.0
+    d += abs(a["facts"]["lap_u"] - b["facts"]["lap_u"]) / 5000.0
+    d += 0.5 if ga["rails"] != gb["rails"] else 0.0
+    return d
+
+
+def pick(records, k=8, bar=1.25):
+    arch = [r for r in elites(records).values() if r.get("stage") == "B"]
+    arch.sort(key=lambda r: r["score"])
+    good = [r for r in arch if r["score"] <= bar] or arch[:k * 2]
+    chosen = []
+    if good:
+        chosen.append(good[0])
+    while len(chosen) < k and len(chosen) < len(good):
+        nxt = max((r for r in good if r not in chosen),
+                  key=lambda r: min(distance(r, c) for c in chosen) - 2.0 * (r["score"] - 1.0))
+        chosen.append(nxt)
+    return chosen
+
+
+def self_test():
+    rng = random.Random(7)
+    seen = set()
+    for i, base in enumerate(base_choices()):
+        g, facts = random_legal(rng, base=base)
+        assert g["version"] == 2 and len(g["rings"]) == RINGS, g
+        assert check(g)[0]
+        seen.add(descriptor(g["wide"], facts))
+        m = mutate(g["wide"], rng)
+        json.dumps(render(m))
+    # The no-super-shielded bin is reachable for every base.
+    g, facts = random_legal(rng, base="Yggdra", ss=0)
+    assert ss_share(g["wide"]) < SS_BINS[1], ss_share(g["wide"])
+    # Negative control: a lap that turns back on itself breaks the sight rule.
+    bad = copy.deepcopy(g)
+    for j in range(RINGS):
+        bad["rings"][j]["pos"] = list(_mul(tuple(bad["rings"][j]["pos"]), 1.0 if j % 2 else -1.0))
+    assert not check(bad)[0], "a zig-zag lap passed the sight check"
+    print(f"regatta_wide self-test ok: {len(base_choices())} bases, {len(seen)} niches sampled")
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("cmd", nargs="?", default="self-test")
+    ap.add_argument("--self-test", action="store_true")
+    ap.add_argument("--out")
+    ap.add_argument("--n", type=int, default=5)
+    ap.add_argument("--k", type=int, default=8)
+    ap.add_argument("--budget", type=int, default=400)
+    ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--base")
+    ap.add_argument("dirs", nargs="*")
+    a = ap.parse_args()
+    if a.self_test or a.cmd == "self-test":
+        return self_test()
+    if a.cmd == "sample":
+        os.makedirs(a.out, exist_ok=True)
+        rng = random.Random(a.seed)
+        for i in range(a.n):
+            g, facts = random_legal(rng, base=a.base)
+            with open(os.path.join(a.out, f"wide_{i}.json"), "w") as f:
+                json.dump(g, f, indent=1)
+            print(i, descriptor(g["wide"], facts), facts)
+        return
+    if a.cmd == "shard":
+        return shard(a.out, a.budget, a.seed)
+    if a.cmd in ("merge", "pick"):
+        recs = []
+        for d in a.dirs or [a.out]:
+            recs += _load(os.path.join(d, "records.jsonl"))
+        if a.cmd == "merge":
+            os.makedirs(a.out, exist_ok=True)
+            arch = elites(recs)
+            with open(os.path.join(a.out, "archive.json"), "w") as f:
+                json.dump(sorted(arch.values(), key=lambda r: r["score"]), f)
+            print(f"{len(recs)} records, {len(arch)} niches filled")
+            for r in sorted(arch.values(), key=lambda r: r["score"])[:20]:
+                print(f"  {r['score']:.3f} {r['niche']} {r['id']}")
+            return
+        for r in pick(recs, a.k):
+            print(f"{r['score']:.3f} {r['niche']} {r['id']}")
+        return
+    ap.error(f"unknown command {a.cmd}")
+
+
+if __name__ == "__main__":
+    main()
