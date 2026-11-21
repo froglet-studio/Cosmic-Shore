@@ -119,11 +119,9 @@ namespace CosmicShore.Gameplay
         /// u of it).</item>
         /// <item><b>An open keg</b> (anyone's blast or ram, its own included) within
         /// <see cref="GrizzlyTimeKegs.AIKegAimRange"/>: pass beside it down its exit lane, inside the credit radius.</item>
-        /// <item><b>A standing plain keg</b> (I1-I2): the same pass. The autopilot fires a full bomb about every 2.3 s and
-        /// blows it behind the hull, so a pass beside the core usually opens it; if the pass comes and the keg still
-        /// stands, the AI gives that keg up for this gate and threads the mouth.</item>
-        /// <item>A standing <b>shielded</b> keg (I3-I4): the mouth. It could ram the keg open, but the mouth is open, and
-        /// an AI breaks only what it cannot pass.</item>
+        /// <item>A <b>standing</b> keg, plain or shielded: the mouth. It could ram the keg open, but the mouth is open, and
+        /// an AI breaks only what it cannot pass. (Until 2026-11-21 it passed beside a standing PLAIN keg at I1-I2 for its
+        /// bombs to open; with the 40 u blast that opened about one keg a race and ran the ladder backwards.)</item>
         /// </list>
         /// </summary>
         bool KegAim(Vector3 at, int index, int ring, RacerAI state, float now, out Vector3 target)
@@ -157,14 +155,10 @@ namespace CosmicShore.Gameplay
             var site = _kegs[ring];
             Vector3 pass = site.Keg.Centre + site.Keg.ExitDir * GrizzlyTimeKegs.AIKegPassOffset;
             if ((at - site.Keg.Centre).sqrMagnitude > GrizzlyTimeKegs.AIKegAimRange * GrizzlyTimeKegs.AIKegAimRange) return false;
-            bool open = !site.Standing;
-            bool plain = GrizzlyTimeKegs.CoreKind(Intensity) == PrismKind.Plain;
-            if (!open && !plain) return false;
-            if (!open && (at - pass).sqrMagnitude <= GrizzlyTimeKegs.AIKegGiveUp * GrizzlyTimeKegs.AIKegGiveUp)
-            {
-                state.GaveUpOn = index;
-                return false;
-            }
+            // Only an OPEN keg is worth the detour (2026-11-21): since the 20-80 blast a standing core needs a bomb frozen
+            // within 40 u, which the autopilot's own fire clock does not aim, and chasing standing plain kegs at I1-I2
+            // cost about 55 s a race and ran the I1-I4 ladder backwards.
+            if (site.Standing) return false;
             target = pass;
             return true;
         }

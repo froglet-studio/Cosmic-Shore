@@ -49,7 +49,17 @@ in, and `kegsAtGates` turns them off).
   (`AICommitFromApproachPoint`; Redline went 10/24 → 24/24 offline on it); passes BESIDE a plain keg down its exit
   lane (the autopilot's bombs open it) and gives it up for the mouth if it still stands; flies to any OPEN keg within
   600 u; threads the mouth past a shielded keg; after 18 s without a gate it is steered to a run-up 300 u behind its
-  ring; and it Rushes on a straight (§0.1).
+  ring; and it Rushes on a straight (§0.1). **Since 2026-11-21 it threads the mouth past every STANDING keg, plain
+  too** (next bullet).
+- **The ladder after the 20-80 blast (2026-11-21).** With the smaller blast and its retrained Time AI the ladder ran
+  backwards (bleeding-edge, 12 courses: I1 133 s, I2 136, I3 82, I4 92). The cause was the AI, not the courses: at
+  I1-I2 it detoured to every standing plain keg, whose core now needs a bomb frozen within 40 u, and opened about one
+  a race. Threading the mouths past standing kegs (`GrizzlyTimeController.AI.cs`, `KegAim`; `AIKegGiveUp` retired),
+  `regatta_judge.py --mode GrizzlyTime`, card start, 24 fresh courses: **I1 77 s, I2 82, I3 80, I4 92**. I2 and I3
+  are level for the AI: what separates them (the shielded core, a narrower mouth) is in kegs it does not open. A
+  course pass was tried and dropped: squeeze, profile, mouth size and the out-of-plane swing barely move this AI;
+  only course length does (an I4 ring of 950 u gave 114 s), and the 480-1080 cell shell then cuts legs under a
+  launch and a half. Runs: `/mnt/project-files/regatta-flywheel/night3/grizzly_ladder/` (`be_*`, `fx*`).
 - **Feedback** (in the world, every peer): the keg's burst (doubled speed on your final lap) and its regrow as a live
   ribbon, the chalk lane, a crown of debris off each ring you clear (local). Toasts `GameToastConfig_GrizzlyTime`:
   the shared race beats 129-132 + 30, the hint (300, once), "Bank shot ({0})" (301, first and every 4th) and "Rammed

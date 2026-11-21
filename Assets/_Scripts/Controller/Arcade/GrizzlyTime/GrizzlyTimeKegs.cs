@@ -108,9 +108,6 @@ namespace CosmicShore.Gameplay
         /// <summary>The AI aims this far (u) past the keg down its exit lane, so it passes BESIDE the core (inside every
         /// credit radius and every full blast) instead of ramming the cage.</summary>
         public const float AIKegPassOffset = 30f;
-        /// <summary>Within this distance (u) of its keg aim point with the keg still standing, the AI gives that keg up
-        /// for this gate and threads the mouth.</summary>
-        public const float AIKegGiveUp = 50f;
         /// <summary>Seconds without a gate before the AI is steered back to its ring (about 3x a gate's measured 6-8 s).</summary>
         public const float AIStallSeconds = 18f;
         /// <summary>The stall rescue's run-up: this far (u) back along the ring's axis, then through the mouth.</summary>
