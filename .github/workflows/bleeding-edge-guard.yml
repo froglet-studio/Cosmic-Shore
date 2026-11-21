@@ -17,10 +17,13 @@ name: Bleeding-edge guard
 #   which fires no pull_request event at all. unity-ci.yml therefore never sees
 #   those commits. This does.
 #
-# And a pull_request trigger as well (2026-11-01): the same validate and unity
-# jobs run on every PR into bleeding-edge, claude/** heads included, so the
-# "Protect trunks" ruleset can REQUIRE them before a merge instead of this
-# workflow only reporting a break after it landed. Docs/BRANCH_PROTECTION.md.
+# And a pull_request trigger as well (2026-11-01): validate runs on every PR into
+# bleeding-edge, claude/** heads included, so the "Protect trunks" ruleset can
+# REQUIRE it before a merge instead of this workflow only reporting a break after
+# it landed. The Unity compile does NOT run on a PR (Shombith, 2026-11-21): the
+# unity-ci environment that holds the licence admits only the guarded branches,
+# so a PR's compile would be refused and read red. It compiles once the PR lands.
+# Docs/BRANCH_PROTECTION.md.
 #
 # Defence in depth, cheapest first:
 #   1. validate  - static checks, ubuntu, seconds, no Unity and no license. Also
@@ -61,9 +64,10 @@ on:
     # promotion reads, and BUILD_PROMOTION_REQUIRES_GREEN gates on check-runs
     # against THAT commit - without CI here that gate can never be switched on.
     branches: [bleeding-edge, development]
-  # The GATE. A pull request into bleeding-edge runs the same validate and unity
-  # jobs, so the "Protect trunks" ruleset can require "Static validation" and
-  # "Unity compile" before a merge (Docs/BRANCH_PROTECTION.md). No path filter:
+  # The GATE. A pull request into bleeding-edge runs the validate job, so the
+  # "Protect trunks" ruleset can require "Static validation" before a merge
+  # (Docs/BRANCH_PROTECTION.md); "Unity compile" is skipped on a PR (see the unity
+  # job's if), and a skipped check counts as passed. No path filter:
   # a required check whose workflow never starts stays "Expected" forever and
   # blocks the merge. On a pull request the report and autofix jobs stand down
   # (no tracking issue, no repair PR): the PR's own red check is the report.
@@ -330,7 +334,9 @@ jobs:
     # days (Docs/Reports/CI.md), and a compile that waits for green static checks
     # would not run at all for that whole time. The scope output is written by the
     # validate job's first step, so it is set whenever a later check failed.
-    if: ${{ !cancelled() && needs.validate.outputs.unity_relevant == 'true' }}
+    # Never on a pull request (Shombith, 2026-11-21): the unity-ci environment admits only
+    # bleeding-edge and development, so a PR's compile would be refused and fail.
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.validate.outputs.unity_relevant == 'true' }}
     runs-on: ubuntu-latest
     # A cold Library (first run, or a packages-lock change) imports the whole project.
     timeout-minutes: 180

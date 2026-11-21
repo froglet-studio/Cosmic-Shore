@@ -32,21 +32,19 @@ also runs on pull requests).
 reviewer who is away), an admin opens the PR and ticks **Merge without waiting for requirements to be met**. Use it
 for emergencies only. A bypass is visible to everyone in the ruleset's Insights tab.
 
-**What "Unity compile" proves today: nothing yet.** No Unity runner has been attached since 2026-10-13, so the job is
-skipped, and GitHub counts a skipped required check as passed. Requiring it now costs nothing. The day
-`UNITY_RUNNER_LABEL` is set (`Docs/BUILD_PIPELINE_SETUP.md` §5), every PR that touches code gets a real compile with
-no change to the ruleset. A PR from a **fork** never reaches the runner, so its "Unity compile" is always a skip.
+**What "Unity compile" proves on a PR: nothing, by decision.** The job is skipped on every pull request (Shombith,
+2026-11-21), and GitHub counts a skipped required check as passed. The licence lives in the `unity-ci` environment,
+which admits only `bleeding-edge` and `development`; a PR's run would be refused by that rule and read red. The
+compile runs on the push when the PR lands, so a break is caught one merge old, and `/trunk-doctor` repairs it.
 
 ### What the workflow change does
 
 `bleeding-edge-guard.yml` gained a `pull_request` trigger for `bleeding-edge`:
 
-- **Static validation** and **Unity compile** run on every PR into `bleeding-edge`, `claude/**` heads included,
-  with no path filter. A required check whose workflow never starts stays "Expected" forever and blocks the merge.
+- **Static validation** runs on every PR into `bleeding-edge`, `claude/**` heads included, with no path filter;
+  **Unity compile** is skipped on a PR (above). A required check whose workflow never starts stays "Expected" forever and blocks the merge.
 - On a PR, **Report status** and **Attempt autofix** do not run: no tracking issue, no repair PR. The PR's own red
   check is the report, and its author fixes their branch.
-- The Unity scope step reads the PR's base...head range, so a docs-only PR skips the compile the same way a
-  docs-only push does.
 - Pushes to `bleeding-edge` and `development` behave exactly as before: same jobs, same tracking issue, same autofix.
 
 `unity-ci.yml` is unchanged. It still skips `claude/**` PRs, and its job names (`resolve`, `conditional-compilation`,

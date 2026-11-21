@@ -535,7 +535,7 @@ above. Its first run is the real proof, and a cold import will be slow.
 
 ### Security note
 
-The guard uses **no self-hosted runner**. It runs on pull requests into `bleeding-edge` too (§10.1), but a fork's pull request never receives secrets, so it gets the reference compile at most; the licence is readable only by jobs that pass the `unity-ci`
+The guard uses **no self-hosted runner**. On a pull request into `bleeding-edge` it runs only the static checks: the compile is skipped on every PR (Shombith, 2026-11-21) and runs on the push when the PR lands; the licence is readable only by jobs that pass the `unity-ci`
 environment's branch rule. The self-hosted tiers of the other workflows still follow §10 *Security*.
 
 ---
