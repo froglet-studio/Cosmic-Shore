@@ -7,7 +7,7 @@ the geometric mean over the hull's games (and intensities). The judge is brood_j
 Genome per hull (HULLS below):
   - one gene triple per ability button: on, Duration, Cooldown (the AIPilot ability cycler, AIPilot.abilities);
   - aggr: a multiplier on defaultAggressivenessHigh/Low (how hard it turns onto its target);
-  - throttle: defaultThrottleHigh/Low;
+  - throttle: a multiplier on defaultThrottleHigh/Low (capped at 1);
   - the Urchin has its own rail autopilot (UrchinAutopilotConfigSO): its numbers are the genome instead.
 
 usage:
@@ -15,7 +15,7 @@ usage:
   massspace_ai_search.py confirm --hull Scarab --out DIR --seeds 101,102 --intensities 1,2,3,4
 Resumes from DIR/evals.jsonl. Nothing is written to the project: every candidate is an in-memory override.
 """
-import argparse, concurrent.futures, json, math, os, random, statistics, sys, threading, time
+import argparse, concurrent.futures, json, math, os, random, statistics, sys, tempfile, threading, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import brood_judge as BJ  # noqa: E402
@@ -60,15 +60,18 @@ URCHIN_GENES = {  # name: (shipped, lo, hi, log-scale)
     "SpikeMinAmmo": (0.2, 0.0, 0.9, False), "TrackAimDegrees": (8, 2, 30, True),
     "TrackMinRangeInLengths": (3, 0.5, 10, True), "TrackAxisAlignment": (0.8, 0.3, 0.98, False),
 }
-AGGR_SHIPPED = {"Meerkat": 0.09, "Stoat": 0.09, "Urchin": 0.035}  # defaultAggressivenessHigh/Low as shipped (else 0.03)
-THROTTLE_SHIPPED = {"Urchin": 0.8}  # else 0.9
+# AIPilot as shipped: (defaultThrottleHigh, defaultThrottleLow, defaultAggressivenessHigh, defaultAggressivenessLow).
+# The skill (intensity x 0.25 on an arcade card) lerps Low -> High, so the genome SCALES both and keeps the ladder.
+STEER = {"Urchin": (0.8, 0.8, 0.035, 0.035), "Meerkat": (0.9, 0.2, 0.09, 0.04), "Stoat": (0.9, 0.2, 0.09, 0.04)}
+STEER_DEFAULT = (0.9, 0.2, 0.03, 0.04)
 
 
 def shipped_genome(hull):
     if hull == "Urchin":
-        return {k: v[0] for k, v in URCHIN_GENES.items()} | {"aggr": 1.0, "throttle": THROTTLE_SHIPPED.get(hull, 0.9)}
+        return {k: v[0] for k, v in URCHIN_GENES.items()} | {"aggr": 1.0, "throttle": 1.0}
     _, _, _, buttons, shipped = HULLS[hull]
-    g = {"aggr": 1.0, "throttle": THROTTLE_SHIPPED.get(hull, 0.9)}
+    shipped = shipped or {}
+    g = {"aggr": 1.0, "throttle": 1.0}
     for b in buttons:
         d, c = shipped.get(b, (2.0, 5.0))
         g[b] = {"on": b in shipped, "dur": d, "cd": c}
@@ -77,9 +80,9 @@ def shipped_genome(hull):
 
 def overrides(hull, g):
     prefab, comp, _, buttons, _ = HULLS[hull]
-    a = AGGR_SHIPPED.get(hull, 0.03) * g["aggr"]
-    fields = {"defaultAggressivenessHigh": a, "defaultAggressivenessLow": a,
-              "defaultThrottleHigh": g["throttle"], "defaultThrottleLow": g["throttle"]}
+    tH, tL, aH, aL = STEER.get(hull, STEER_DEFAULT)
+    fields = {"defaultAggressivenessHigh": round(aH * g["aggr"], 5), "defaultAggressivenessLow": round(aL * g["aggr"], 5),
+              "defaultThrottleHigh": round(min(1.0, tH * g["throttle"]), 4), "defaultThrottleLow": round(min(1.0, tL * g["throttle"]), 4)}
     ov = []
     if hull == "Urchin":
         ov.append({"asset": URCHIN_CFG, "fields": {k: float(g[k]) for k in URCHIN_GENES}})
@@ -105,7 +108,7 @@ def _lu(x, lo, hi, rng, sigma, log):
 def mutate(hull, g, rng, sigma=0.35):
     g = json.loads(json.dumps(g))
     g["aggr"] = _lu(g["aggr"], 0.4, 4.0, rng, sigma, True)
-    g["throttle"] = _lu(g["throttle"], 0.5, 1.0, rng, sigma, False)
+    g["throttle"] = _lu(g["throttle"], 0.6, 1.25, rng, sigma, False)
     if hull == "Urchin":
         for k, (_, lo, hi, log) in URCHIN_GENES.items():
             if rng.random() < 0.6:
@@ -138,7 +141,7 @@ def evaluate(hull, g, seeds, intensities, workdir, limit_s=200):
     for game in HULLS[hull][2]:
         for inten in intensities:
             res = BJ.judge([[[hull], [hull]]], seeds_per_roster=len(seeds), seed0=seeds[0], limit_s=limit_s, mode=game,
-                           intensity=inten, workers=1, overrides=ov, workdir=workdir)
+                           intensity=inten, workers=1, overrides=ov, workdir=tempfile.mkdtemp(dir=workdir))
             rates, presses = [], []
             for m in res["matches"]:
                 if not BJ.good(m):
