@@ -18,7 +18,7 @@ using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
-    public class ScreenSwitcher : MonoBehaviour
+    public partial class ScreenSwitcher : MonoBehaviour
     {
         public enum MenuScreens
         {
@@ -125,6 +125,12 @@ namespace CosmicShore.UI
             // it. Built in code beside the Voyage window (EnsureQuestsModal). 20 was this window's once before
             // (section 151, reverted in section 159) and nothing took it since.
             QUESTS = 20,
+
+            // The What's new window (Docs/MENU_REDESIGN_B.md section 216, Frogma Rev 121 C; Shombith, 2026-11-21): every
+            // update and what it brought. Opened from Settings and once by itself after an update, so its own modal
+            // TYPE: gamepad B out of it lands back on Settings. Built in code beside the Quests window
+            // (EnsureWhatsNewModal).
+            WHATS_NEW = 22,
         }
 
         [System.Serializable]
@@ -709,6 +715,7 @@ namespace CosmicShore.UI
             // Before the first layout: the page's ground is found there as a background that bleeds to the screen's edges.
             EnsurePilotProfileModal();
             EnsureQuestsModal();
+            EnsureWhatsNewModal();
             LayoutScreensToViewport();
             MarkDisabledNavLinks();
             UpdateHubButtonsVisibility();
@@ -749,8 +756,17 @@ namespace CosmicShore.UI
             }
 
             // Back from a match launched off a card: land on that card's launch panel, not on HOME.
-            if (MenuReturnCard.TryTake(out var returnCard))
+            bool returningToCard = MenuReturnCard.TryTake(out var returnCard);
+            if (returningToCard)
                 StartCoroutine(ReturnToLaunchedCardCoroutine(returnCard));
+
+            // After an update, the What's new window once (WhatsNewRules), when the menu is at rest.
+            if (!returningToCard && !PlayerPrefs.HasKey(ReturnToModalPrefKey))
+                StartCoroutine(OpenWhatsNewAfterUpdateCoroutine());
+
+            // A party's voyage lobby: the host tells its friends where its Voyage window stands, a friend follows
+            // (ScreenSwitcher.VoyageLobby.cs).
+            StartCoroutine(VoyageLobbyCoroutine());
         }
 
         /// <summary>
