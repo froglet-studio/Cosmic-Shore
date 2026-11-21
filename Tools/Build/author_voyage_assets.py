@@ -56,7 +56,7 @@ ELEMENT_CS = "Assets/_Scripts/Data/Enums/Element.cs"
 
 # Every line the voyage HUD and the Voyage window show (VoyageLines in VoyageContentSO.cs). A missing key is a typo.
 LINES_FIELDS = [
-    "VoyageName", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "HoldProgress", "Done", "Failed", "Stowed", "Extracted",
+    "VoyageName", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "HoldProgress", "Done", "Failed", "WaypointSaved", "WaypointResumed", "Stowed", "Extracted",
     "ArkLost", "NoWork", "Following", "FollowerArkLost", "EscortHoldFallen", "EscortHoldThrough", "GuestStays", "ChooseNext",
     "Lair", "Hoard", "Nursery", "Derelict", "Pen", "Shrine", "KaijuHere", "HostileWater", "RivalHere", "RivalOpened",
     "Charted", "Relic", "Delivered", "Convoy", "ProgressStow", "ProgressHold", "ProgressGather", "ProgressCull",
