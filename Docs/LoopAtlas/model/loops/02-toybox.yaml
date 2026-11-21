@@ -33,9 +33,15 @@
       to one.'
     fill: A toy's exit is a crossing. Every toy names the scored loop it is the free version of, and offers it when the
       player has done the toy's verb a few times.
+  - 'on': np
+    q: The Toybox pays no progress. A player who only paints earns about 100 crystals in six weeks (simulated), so the long
+      game never starts for them.
+    fill: 'P16: a finished painting pays a little and can be shared as a replay link (P12), and a liked painting is the
+      creative player''s ''I won''.'
   src:
   - Docs/ToySystem/ARCHITECTURE.md
   - Docs/claude/MENU_AND_LAVA_LAMP.md
+  - Docs/LoopAtlas/sim/REPORT.md
 - id: toy.fly
   parent: toybox
   at: 0
