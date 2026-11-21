@@ -154,6 +154,12 @@ def circuit_settings(g):
 
 
 def gates(g):
+    # Version 2 (RegattaCourseGenome.Rings): a lap of free rings replaces the circuit. Their repair (shell, axis) is
+    # the game's; Tools/Compute/evaluators/regatta_wide.py writes them already legal.
+    rings = g.get("rings") or []
+    if len(rings) == RINGS:
+        return [{"p": tuple(cp.f(x) for x in r["pos"]), "a": cp.safe_normalize(tuple(cp.f(x) for x in r["axis"]), cp.FORWARD),
+                 "r": cp.f(r["radius"])} for r in rings]
     seed = int(g.get("seed", 0)) or cp.REGATTA_DEFAULT_SEED
     return cp.generate(cp.seed_for_intensity(seed, int(g.get("intensity", 1))), circuit_settings(g))
 
