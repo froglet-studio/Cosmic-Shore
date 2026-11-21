@@ -81,6 +81,10 @@ namespace CosmicShore.Gameplay
         /// its own, only a way to close it and keep flying; the host's next leg (or the end) reaches the voyage anyway.</summary>
         public bool Following;
 
+        /// <summary>The run's pilot, one line in their voice under the kicker (the authored ScoreQuote lines); empty shows
+        /// nothing.</summary>
+        public string Quote = string.Empty;
+
         /// <summary>The crystals of every element on the board.</summary>
         public int CrystalTotal
         {

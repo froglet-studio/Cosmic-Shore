@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -16,17 +17,21 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The powder kegs</b> (2026-11-11, <see cref="GrizzlyTimeKegs"/>, the partial
     /// GrizzlyTimeController.Kegs.cs, Docs/GrizzlyTime/POWDER_KEGS_SPEC.md) give that steering a
-    /// target: a keg beside every ring. Freeze a bomb in it, get round to its far side, blow it -
-    /// the keg bursts, the gate is yours, and the blast throws you down the next leg. The ring
-    /// mouth still clears the gate. I2 marks each keg's exit lane with chalk (the bank shot), I3
-    /// shields the core (strip it from range, then blow it), I4 tightens the credit and the regrow.</para>
+    /// target: a keg beside every ring. Freeze a bomb in it, get round to its exit side (between
+    /// the keg and the next ring), blow it - the keg bursts, the gate is yours, and the blast
+    /// throws you down the next leg. A Rush through a keg rams it open too, on every peer
+    /// (2026-11-20). The ring mouth still clears the gate. I2 marks each keg's exit lane with
+    /// chalk (the bank shot), I3 shields the core (strip it from range, then blow it, or Rush
+    /// through it once), I4 tightens the credit and the regrow.</para>
     ///
     /// <para><b>What the mode does NOT add:</b> no new weapon, no new ability, no change to the
     /// vessel (CLAUDE.md, "A game mode never changes the vessel"), no new scoring metric and no
     /// circuit generator - Redline's shape on Headlong's solver, with <see cref="GrizzlyTimeCourse"/>
-    /// supplying the Grizzly's cut. Rush is a short burst (about 75-80 u), Dig In is a hard stop,
-    /// and a blast that catches a rival silences it for 8 s - a silenced pilot cannot open kegs,
-    /// so it threads the mouths until it recovers (the fleet's silence rule, SILENCE.md).</para>
+    /// supplying the Grizzly's cut. Rush (the Grizzly's Time ability) is a ram: a burst of about
+    /// 76 u that smashes the prisms the hull ploughs into, three banked charges, each paid for in
+    /// Energy. Dig In is a hard stop that braces the cannon. A blast that catches a rival silences
+    /// it for 8 s - a silenced pilot cannot open kegs, by bomb or by ram, so it threads the mouths
+    /// until it recovers (the fleet's silence rule, SILENCE.md).</para>
     /// </summary>
     public partial class GrizzlyTimeController : GateRaceController
     {
@@ -38,10 +43,16 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Grizzly Time";
 
-        /// <summary>The AI commits to a ring from its approach point (Regatta's steering): the scene's approach lead (420)
-        /// sits outside its commit distance (380), which without this is the orbit shape (an AI circling a ring it
+        /// <summary>The AI commits to a ring from its approach point (Regatta's steering): the scene's approach lead (549)
+        /// sits outside its commit distance (522 since the 2026-11-20 retrain), which without this is the orbit shape (an AI circling a ring it
         /// cannot quite line up). Redline went from 10/24 to 24/24 offline finishes on this one switch.</summary>
         protected override bool AICommitFromApproachPoint => true;
+
+        [Tooltip("The Grizzly AI's nose follow rate in Grizzly Time (learned by time_ai_search against the 20-80 blast, " +
+                 "2026-11-20). No nose lead; the fleet lag is 1.5/s.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Grizzly, 0f, noseFollow: 9.05f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
         protected override RaceCourseSource CreateCourseSource() =>
             new GrizzlyTimeCourseSource { Laps = laps };

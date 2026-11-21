@@ -130,6 +130,49 @@ namespace CosmicShore.Gameplay
             _introPending = false;
             if (_intro) _intro.Stop();
             else EndIntro();
+            if (_outro) _outro.Stop();
+        }
+
+        // ── The docking ending (Shombith 2026-11-20, the story pass) ─────────
+
+        VoyageIntro _outro;
+        bool _outroRunning, _tearingDown;
+
+        /// <summary>Home: the camera finds the Ark at its berth with the run's pilot's last line (<see cref="VoyageIntroSO
+        /// .LoadDockOutro"/>), and the Ark docks (banks and shows the scoreboard) as the shot ends, however it ends. The
+        /// stick is held meanwhile. Without the reel, a camera or an Ark, it docks at once.</summary>
+        void DockAfterOutro()
+        {
+            if (_outroRunning) return;
+            var script = VoyageIntroSO.LoadDockOutro();
+            var local = LocalVessel();
+            if (!script || !Ark || local == null || !local.Transform)
+            {
+                Dock();
+                return;
+            }
+            _outroRunning = true;
+            int mySeat = Mathf.Clamp(_squad.MySeat, 0, SavedSquad.SlotCount - 1);
+            var cast = new VoyageIntro.Cast { Ark = Ark, ArkSize = HullHalfLength };
+            cast.Squad.Add(new VoyageIntro.Member
+            {
+                Hull = local.Transform, Vessel = local.VesselType, Seat = mySeat, IsYou = true, Slot = _squad.GetSlot(mySeat),
+            });
+            cast.Tokens.AddRange(new[]
+            {
+                "quote", PilotSays(Lines.ScoreQuoteDocked),
+                "to", PlaceName(_state?.At) ?? string.Empty,
+            });
+            var input = _context?.GameData?.LocalPlayer?.InputController;
+            if (input) input.SetPause(true);
+            _outro = VoyageIntro.Play(script, cast, _root, () =>
+            {
+                _outro = null;
+                _outroRunning = false;
+                var held = _context?.GameData?.LocalPlayer?.InputController;
+                if (held) held.SetPause(false);
+                if (_active && !_fallen && !_docked && !_tearingDown) Dock();
+            });
         }
     }
 }

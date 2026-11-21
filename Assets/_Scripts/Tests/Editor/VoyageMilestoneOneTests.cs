@@ -41,6 +41,22 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheArkEscort_IsLockedByDefaultAndInTheShippedSettings()
+        {
+            // Shombith, 2026-11-21: Beta Phase 1 sails the Crystal Run; the escort shows locked and cannot be opened.
+            var settings = ScriptableObject.CreateInstance<VoyageToyDefinitionSO>();
+            try
+            {
+                Assert.IsFalse(settings.IsEscortOpen, "The Ark escort sails by default.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+            }
+            Assert.IsFalse(VoyageToyDefinitionSO.EscortSails(), "The shipped settings let the Ark escort sail.");
+        }
+
+        [Test]
         public void ALockedJob_DoesNotSetSail()
         {
             Assert.IsFalse(VoyageLaunch.Begin(VoyageLaunchRequest.ForJob(Job("job.not.on.the.list"))));

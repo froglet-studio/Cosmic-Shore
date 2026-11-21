@@ -37,6 +37,24 @@ namespace CosmicShore.Core
                  "(Docs/MENU_REDESIGN_B.md section 99.1).")]
         [SerializeField, Min(0f)] float waitBeforeLoading = 0.1f;
 
+        [Header("Scene exit drain")]
+        [Tooltip("Longest the host holds a scene load while the scene it is leaving is taken down in slices behind " +
+                 "the splash: plants destroyed a slice a frame, environment prisms parked in the pool, trail " +
+                 "returned to its pool. What is not done by then is destroyed inside the load's own frame, as " +
+                 "before. That frame also loads the next scene, and Relay drops a player silent for about 10 s " +
+                 "(Docs/PartySystem/BUGS.md B45). 0 turns the drain off.")]
+        [SerializeField, Min(0f)] float sceneExitDrainMaxSeconds = 8f;
+
+        [Tooltip("Prisms' worth of plants and creatures the drain destroys per frame, a whole plant at a time. " +
+                 "Large on purpose: a destroy during play costs about 150 microseconds a prism against the scene " +
+                 "unload's 57, and small slices cost more still (2,000 a frame left a 7.8 s load frame, 15,000 a " +
+                 "6.4 s one, on a 73,500-prism Bloomrush). Each drain frame is then one to three seconds, far " +
+                 "under Relay's limit.")]
+        [SerializeField, Min(100)] int sceneExitDestroysPerFrame = 15000;
+
+        /// <summary>Milliseconds of pool-return work a frame during the drain (the Maelstrom hub's own slice).</summary>
+        const double SceneExitSliceMs = 24.0;
+
         [Tooltip("Frames rendered under the opaque splash between the covered garbage collection and the reveal, so " +
                  "a long frame ends out of sight instead of being spent inside the fade.")]
         [SerializeField, Min(0)] int revealSettleFrames = 2;
@@ -556,6 +574,11 @@ namespace CosmicShore.Core
 
             gameData.ResetRuntimeData();
 
+            // Take the old scene's world down in slices while the splash covers it, so the load's frame has
+            // less to destroy. Started here and awaited after the cover below, so the two run together.
+            // The trail stays with its pools here: InvokeSceneTransition above has already started their release.
+            var sceneExitDrain = DrainSceneForExitAsync(returnPooledTrail: false);
+
             // Normally a short cover for the fade; a between-game tournament transition extends it
             // (minSplashDwell) so the running standings on the splash are readable before the next scene
             // loads. Unscaled so a paused / zero timescale can't stall the hold.
@@ -567,6 +590,12 @@ namespace CosmicShore.Core
                     TimeSpan.FromSeconds(wait),
                     DelayType.UnscaledDeltaTime
                 );
+            }
+
+            using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                       "Scene exit drain behind the splash", isWait: true))
+            {
+                await sceneExitDrain;
             }
 
             _sceneLoadSpan = LoadInsights.Begin(LoadInsightCategory.SceneLoad,
@@ -599,6 +628,74 @@ namespace CosmicShore.Core
                 CSDebug.LogWarning("[SceneLoader] No active server - falling back to local scene load.");
                 SceneManager.LoadScene(sceneName);
             }
+        }
+
+        /// <summary>
+        /// A guest's half of the scene exit drain: the host's veil RPC calls it
+        /// (<c>MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc</c>), because a SOAP raise is local
+        /// and a guest never runs <see cref="LoadSceneAsync"/>. A guest cannot hold the load: the host's own hold is
+        /// the time it gets, and what it has not drained when the load arrives dies in that frame as before.
+        /// </summary>
+        public void BeginSceneExitDrain() => DrainSceneForExitAsync(returnPooledTrail: true).Forget();
+
+        /// <summary>
+        /// Retire every cell's world in the scene being left, a slice a frame, and wait for it up to
+        /// <see cref="sceneExitDrainMaxSeconds"/>. Call only with the splash opaque: the world is not eased away.
+        ///
+        /// <para>Why: a Single scene load destroys the old scene and wakes the new one in ONE frame. Measured on a
+        /// return from a 90 s Bloomrush (73,500 prisms, 60,000 of them plants): 9.5 and 10.5 s, of which 3.4-3.7 s
+        /// was the destroy. Relay drops a player it has not heard from for about 10 s, and a frozen frame sends
+        /// nothing (B36 / B45). The work is the same; it is spread over frames that still answer the network.</para>
+        /// </summary>
+        /// <param name="returnPooledTrail">True on a guest: the cell hands the trail back to its pool in slices,
+        /// so the pool's own release at the scene change has little left to do in the load's frame. False on the
+        /// host, whose pools are already releasing (see <c>Cell.RetireWorldIntoPoolForSceneExit</c>).</param>
+        async UniTask DrainSceneForExitAsync(bool returnPooledTrail)
+        {
+            if (sceneExitDrainMaxSeconds <= 0f) return;
+
+            // Leaving the menu is not drained: a launch's frame is short while the menu's world is small
+            // (2.1-2.6 s), and holding every launch for it cost about 5 s (measured 2026-11-20).
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+            if (SceneManager.GetActiveScene().name == menuScene) return;
+
+            System.Collections.Generic.List<Cell> draining = null;
+            foreach (var cell in FindObjectsByType<Cell>(FindObjectsSortMode.None))
+            {
+                if (cell && cell.RetireWorldIntoPoolForSceneExit(SceneExitSliceMs, 0f, requireEnvironment: false,
+                        rootDestroyPrismsPerFrame: sceneExitDestroysPerFrame, returnPooledTrail: returnPooledTrail))
+                    (draining ??= new System.Collections.Generic.List<Cell>()).Add(cell);
+            }
+            if (draining == null) return;
+
+            float startedAt = Time.unscaledTime;
+            float deadline = startedAt + sceneExitDrainMaxSeconds;
+            bool running = true, sceneLeft = false;
+            while (running && Time.unscaledTime < deadline)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                running = false;
+                foreach (var cell in draining)
+                {
+                    if (!cell) { sceneLeft = true; continue; }
+                    if (cell.IsRetiringForSceneExit) { running = true; break; }
+                }
+            }
+
+            int destroyed = 0, parked = 0;
+            foreach (var cell in draining)
+            {
+                if (!cell) continue;
+                destroyed += cell.LastSceneExitDestroyedCount;
+                parked += cell.LastSceneExitParkedCount;
+            }
+
+            // One mark per exit in the test log, so a run shows whether the drain finished before the load.
+            float took = Time.unscaledTime - startedAt;
+            NetSessionRecorder.Mark("sceneExitDrain",
+                running ? $"cut short at {sceneExitDrainMaxSeconds:0.0}s"
+                : sceneLeft ? $"the scene left first, after {took:0.0}s"
+                : $"{destroyed} destroyed, {parked} parked in {took:0.0}s");
         }
 
         void ClearPlayerVesselReferences()

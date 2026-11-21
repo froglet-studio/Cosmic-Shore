@@ -17,11 +17,11 @@ namespace CosmicShore.UI
     /// face, 96 tall. The map prints no names and no caption of its own (<see cref="VoyageMapGraphic.Unnamed"/>): each
     /// voyage stands on it as a pin (a stalk as tall as its difficulty, a ring, the place's name from Sector inwards), the
     /// picked one in cyan, home an amber diamond. Drag pans, the wheel zooms, a press on a pin picks its voyage.</item>
-    /// <item><b>The zoom row</b> above it: Region, Sector, Arm and Galaxy with their widths, + and -; the tier on show is
-    /// underlined.</item>
-    /// <item><b>Full screen</b>: the table lies flat and grows to a borderless full-screen map in 0.9 s; the zoom row rides
-    /// into its top-left corner and gains Neighbourhood and Cell, the crew stays on the right, the picked voyage moves to
-    /// the foot, and Back from full screen takes it home.</item>
+    /// <item><b>The zoom row</b> above it: Cell, Neighbourhood, Region, Sector, Arm and Galaxy with their widths, + and -;
+    /// the tier on show is underlined. The table zooms all the way to Cell, as the full screen does.</item>
+    /// <item><b>Full screen</b> (its button under the table's left corner): the table lies flat and grows to a borderless
+    /// full-screen map in 0.9 s; the zoom row rides into its top-left corner, the crew stays on the right, the picked voyage
+    /// moves to the foot, and Back from full screen takes it home.</item>
     /// <item><b>Open now</b> (Frogma Rev 113 Sea, Milestone 1): the voyages that sail now as cards down the right, the
     /// picked one marked by one thin cyan line; under them "Crew recommends · N", which opens the crew popup
     /// (<see cref="VoyageCrewPopup"/>), and a line saying how many crew voyages are locked. It replaced Rev 111's column of
@@ -42,19 +42,19 @@ namespace CosmicShore.UI
         const float SideX = 1360f, SideY = 4f, SideWidth = 480f, SideLabel = 20f, SideGap = 14f, OpenCardHeight = 140f,
             ButtonHeight = 56f, ButtonLift = 10f, LockedLine = 20f;
         const float TableX = 112f, TableY = 64f, TableWidth = 1216f, TableHeight = 540f, EdgeHeight = 96f;
-        const float FullButtonX = 988f, FullButtonWidth = 220f, BackFullWidth = 320f, Margin = 40f;
+        const float FullButtonWidth = 220f, BackFullWidth = 320f, Margin = 40f;
         const float CardX = 860f, CardY = 628f, CardWidth = 860f, CardFullWidth = 1180f, CardHeight = 108f;
-        // The tiers the zoom row offers, narrow to wide (HyperSeaSky.Tiers): the first two only in full screen.
+        // The tiers the zoom row offers, narrow to wide (HyperSeaSky.Tiers), on the table and in full screen alike.
         static readonly int[] RowTiers = { 5, 4, 3, 2, 1, 0 };
-        const int DeepTiers = 2;
         // Pins: names show from Sector inwards; past Region they stand down (only the picked one stays at Region).
         const int NamedFrom = 2, PinsTo = 3;
-        // The table (tilted) stays in Region: down to Region's narrowest view (550 ly), not its button's width (1,200 ly),
-        // so the table can frame a short course the way the voyage card does; the 2 fps were the closer tiers. The flat
-        // full screen goes on to the row's closest tier, Cell, which is why the row shows its two deep tiers only there
-        // (Shombith, 2026-11-17: "in full screen I cannot zoom past 1200 ly", and the table "not zoomed in" on a course).
-        static float TableFloorLy => (float)HyperSeaSky.Tiers[PinsTo].min;
-        static float FullFloorLy => (float)HyperSeaSky.Tiers[RowTiers[0]].width;
+        // The map zooms down to the row's closest tier, Cell, on the table as in full screen (Shombith, 2026-11-20: "i want
+        // the full zoom to work even if we are not in full screen"). The table held at Region while the closer tiers ran
+        // at 2 fps there (2026-11-14); the cell foam has kept to its mesh budget since 2026-11-17.
+        static float FloorLy => (float)HyperSeaSky.Tiers[RowTiers[0]].width;
+        /// <summary>The narrowest view a picked course is framed in: Region's (550 ly), so picking a short course frames it
+        /// on open water, not in the cell foam; the player zooms on from there.</summary>
+        public static float CourseFrameLy => (float)HyperSeaSky.Tiers[PinsTo].min;
 
         readonly VoyageBoard _board;
         readonly VoyageKit _kit;
@@ -100,7 +100,6 @@ namespace CosmicShore.UI
             public int Tier;
             public float Width;
             public RectTransform Root;
-            public CanvasGroup Group;
             public TMP_Text Name, Scale;
             public Image Bar;
         }
@@ -177,7 +176,6 @@ namespace CosmicShore.UI
                 var view = new TierView { Tier = RowTiers[i] };
                 view.Root = VoyageKit.Node("Tier" + view.Tier, _controls);
                 view.Root.anchorMin = view.Root.anchorMax = view.Root.pivot = Vector2.zero;
-                view.Group = Group(view.Root);
                 var hit = VoyageKit.Block(view.Root, VoyageKit.Clear, hit: true);
                 var button = view.Root.gameObject.AddComponent<Button>();
                 button.targetGraphic = hit;
@@ -305,7 +303,7 @@ namespace CosmicShore.UI
             cta.pivot = new Vector2(1f, 0.5f);
             cta.sizeDelta = new Vector2(300f, 56f);
             cta.anchoredPosition = new Vector2(-24f, 0f);
-            (_openButton, _) = _kit.Cta(cta, _lines?.BoardSailKey, _lines?.SeaOpenVoyage,
+            (_openButton, _) = _kit.Commit(cta, _lines?.BoardSailKey, _lines?.SeaOpenVoyage,
                 () => _board.ShowPage(VoyageBoard.Page.Voyage));
         }
 
@@ -379,9 +377,7 @@ namespace CosmicShore.UI
             map.Tilt = _tilt;
             map.Plain = true;
             map.Unnamed = true;
-            // The table zooms no closer than Region's narrowest view: the closer tiers cost the frame rate (2 fps, Shombith
-            // 2026-11-14).
-            map.NarrowestLy = TableFloorLy;
+            map.NarrowestLy = FloorLy;
             // The table's rim, drawn over the map at the same tilt.
             var rim = VoyageKit.Node("Rim", map.transform);
             VoyageKit.Stretch(rim);
@@ -424,7 +420,8 @@ namespace CosmicShore.UI
                 : TemplateText.Fill(_lines?.SeaOfferKicker, "kind", offer.Kind, "pilot", offer.Pilot));
             VoyageKit.Set(_cardTitle, offer.Title);
             ShowMeta(offer, d, _cardPips, _cardDifficulty, _cardFlower, _cardPay);
-            _openButton.interactable = true;
+            // A locked voyage shows but never opens (VoyageToyDefinitionSO: locked jobs and the locked escort).
+            _openButton.interactable = !offer.Locked;
             for (int i = 0; i < _openNow.Count && i < _cards.Count; i++)
             {
                 int index = _openNow[i];
@@ -667,13 +664,6 @@ namespace CosmicShore.UI
                 Root.SetParent(_overlay, true);
                 _overlay.gameObject.SetActive(true);
                 _overlay.SetAsLastSibling();
-                if (_map) _map.NarrowestLy = FullFloorLy;
-            }
-            else if (_map && _map.ViewLy >= 0f && _map.ViewLy < TableFloorLy)
-            {
-                // Out of the foam: back to Sector on the way home. The table's floor comes back once the flight lands
-                // (Tick), so the flight is not cut short at Region.
-                _map.ZoomToTier(2);
             }
             _laidFull = -1f;
             _board.RaiseScreenChanged();
@@ -731,16 +721,8 @@ namespace CosmicShore.UI
                 if (_fullT <= 0f && !_full) Home();
             }
             Layout();
-            RestoreTableFloor();
             MarkTier();
             PlacePins();
-        }
-
-        /// <summary>Back on the table, the map zooms no closer than Region again, once any flight out of the foam lands.</summary>
-        void RestoreTableFloor()
-        {
-            if (_full || !_map || _map.Flying || Mathf.Approximately(_map.NarrowestLy, TableFloorLy)) return;
-            _map.NarrowestLy = TableFloorLy;
         }
 
         void MarkTier()
@@ -800,10 +782,12 @@ namespace CosmicShore.UI
             Rect At(Rect a, Rect b) => e <= 0f ? a : e >= 1f ? b : Lerp(a, b, e);
 
             // The zoom row: over the table, then inside the map's top-left corner.
-            Place(_controls, At(Win(0f, 0f, ControlsWidth(0f), RowHeight), Full(Margin, Margin, ControlsWidth(1f), RowHeight)));
-            LayoutTiers(e);
+            Place(_controls, At(Win(0f, 0f, ControlsWidth(), RowHeight), Full(Margin, Margin, ControlsWidth(), RowHeight)));
+            LayoutTiers();
 
-            Place(_fullButton, Win(FullButtonX, 0f, FullButtonWidth, RowHeight));
+            // Full screen sits under the table's left corner, beside the picked voyage: the zoom row, now all six tiers,
+            // runs past the place it had over the table.
+            Place(_fullButton, Win(TableX, CardY, FullButtonWidth, RowHeight));
             _fullGroup.alpha = 1f - e;
             _fullGroup.blocksRaycasts = e < 0.5f;
             Place(_backFull, Full(F.x - Margin - BackFullWidth, Margin, BackFullWidth, RowHeight));
@@ -831,26 +815,20 @@ namespace CosmicShore.UI
             _pins.SetSiblingIndex(1);
         }
 
-        float ControlsWidth(float full)
+        float ControlsWidth()
         {
             float tiers = 0f;
-            for (int i = 0; i < _tiers.Count; i++) tiers += _tiers[i].Width * (i < DeepTiers ? full : 1f);
+            foreach (var t in _tiers) tiers += t.Width;
             return tiers + 16f + StepSize + 8f + StepSize;
         }
 
-        void LayoutTiers(float e)
+        void LayoutTiers()
         {
             float x = 0f, band = (RowHeight - BandHeight) * 0.5f;
-            for (int i = 0; i < _tiers.Count; i++)
+            foreach (var t in _tiers)
             {
-                var t = _tiers[i];
-                bool deep = i < DeepTiers;
-                float w = deep ? t.Width * e : t.Width;
-                Place(t.Root, new Rect(x, band, w, BandHeight));
-                t.Group.alpha = deep ? e : 1f;
-                t.Group.blocksRaycasts = !deep || e > 0.5f;
-                t.Root.gameObject.SetActive(!deep || e > 0.01f);
-                x += w;
+                Place(t.Root, new Rect(x, band, t.Width, BandHeight));
+                x += t.Width;
             }
             Place(_band, new Rect(0f, band, x, BandHeight));
             _band.SetAsFirstSibling();

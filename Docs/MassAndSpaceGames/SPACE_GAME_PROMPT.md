@@ -72,8 +72,8 @@ is the moment the destruction peaks, the way Rampage's one crystal fires the Dol
 - Write the mode doc (`Assets/_Scripts/Controller/Arcade/<MODE>.md`), update the <VESSEL> row in
   `Docs/MassAndSpaceGames/PLAN.md` §7, and add the mode to `Docs/claude/GAME_MODES_AND_CONTROLLERS.md`.
 - Run `python3 Tools/Build/approvals.py check --me <me>` before committing. Queue an `/approve` entry for anyone whose
-  work you changed. Commit with conventional commits and push to your branch. Suggest one Froglet Tasks ticket for the
-  editor playtest (through `/team-tasks`, once I approve).
+  work you changed. Commit with conventional commits and push to your branch. Put the editor playtest in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` (and `/handoff-for-test`, once I approve).
 
 **Seed for this vessel** (from `PLAN.md` §4):
 

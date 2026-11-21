@@ -105,7 +105,7 @@ COMEBACK_RATE = 0.4
 
 MEMBRANE_RADIUS = 1200.0
 OMNI_BALL = 80            # the omni crystals spawn in a ball this wide at the open centre (CrystalManager.noNucleusSpawnRadius)
-FULL_BLAST_RADIUS = 100   # a full trigger bomb's blast radius (GrizzlyTriggerBombConfig maxBlastScale 200 / 2)
+FULL_BLAST_RADIUS = 40    # a full trigger bomb's blast radius (GrizzlyTriggerBombConfig maxBlastScale 80 / 2)
 
 RUNGS = budget.RUNGS
 for r in RUNGS:
@@ -152,7 +152,7 @@ LADDERS = {
     "aiRetargetSeconds":            ([1.4, 1, 0.7, 0.5], "down"),
     "aiHuntRange":                  ([300, 420, 560, 720], "up"),
     "aiLeadSeconds":                ([0, 0.2, 0.4, 0.6], "up"),
-    "aiPassOffset":                 ([70, 55, 40, 28], "down"),
+    "aiPassOffset":                 ([34, 29, 24, 19], "down"),
     "aiBreakOffWhenSilencedChance": ([0, 0.5, 1, 1], "up"),
     "aiSilencedPreyFocus":          ([1, 1, 1.5, 2], "up"),
 }
@@ -457,8 +457,8 @@ for path, what in ((BOMB_CONFIG, "the trigger bombs"), (CANNON, "the charged can
     if blast_guid not in g.read(path):
         errors.append(f"{what} ({path}) no longer blow up as AOEGrizzlyExplosion - their blasts would not score")
 bomb_cfg = g.read(BOMB_CONFIG)
-if "  maxBlastScale: 200\n" not in bomb_cfg:
-    errors.append(f"a full trigger bomb's blast is no longer scale 200 ({FULL_BLAST_RADIUS} u): re-check the AI's "
+if "  maxBlastScale: 80\n" not in bomb_cfg:
+    errors.append(f"a full trigger bomb's blast is no longer scale 80 ({FULL_BLAST_RADIUS} u): re-check the AI's "
                   f"pass offsets, which must sit inside it")
 if "  aiFireStickBand: 0\n" in bomb_cfg or "aiFireStickBand:" not in bomb_cfg:
     errors.append("the Grizzly's autopilot bomb-jump is off (aiFireStickBand 0) - an AI Grizzly would never fire, "

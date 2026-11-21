@@ -285,7 +285,6 @@ a.tile:hover{transform:translateY(-3px);box-shadow:inset 0 0 0 1px var(--fs-sele
   function friendly(t){
     t = String(t || "");
     var m;
-    if((m = t.match(/^ticket [^:]*?\(#(\d+)[^)]*\):\s*(.*)$/))) return "Ticket #" + m[1] + ": " + m[2];
     if((m = t.match(/^hand test not run in the editor:\s*(.*?)(\s*\(`.*)?(\s*\u2014\s*NOT EDITOR-VERIFIED)?$/))) return "Needs a test in the editor: " + m[1];
     if((m = t.match(/^console error [^:]*:\s*(.*)$/))) return "Error in the console: " + m[1];
     if((m = t.match(/^handed off open by (\w+) ([\d-]+)(?::\s*(.*))?$/))) return m[1] + " put this back on the board" + (m[3] ? ": " + m[3] : ".");

@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-17 from canvas version `1794949812-dbeb` of **Frogma**: Rev 41 to Rev 117, 283 boards on 14 tabs. The canvas opens on the tab `launch-console`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-21 from canvas version `1795251681-3892` of **Frogma**: Rev 41 to Rev 121, 306 boards on 15 tabs. The canvas opens on the tab `what-s-new`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -452,6 +452,26 @@ No boards yet.
 
 ### Tab: Voyages playtest  (`voyages-playtest`)
 
+#### Rev 120 - B On the Ark on every in-game voyage screen
+
+- [`R120Intro.dc.html`](R120Intro.dc.html) - Rev 120 Intro - The intro: course title and objective, no HUD
+- [`R120SetOff.dc.html`](R120SetOff.dc.html) - Rev 120 SetOff - Setting off: the plate lights, the goal toast
+- [`R120Raid.dc.html`](R120Raid.dc.html) - Rev 120 Raid - Raiding a hostile cell: the plate over the Ark, the chip
+- [`R120Pickup.dc.html`](R120Pickup.dc.html) - Rev 120 Pickup - A crystal picked up: +1 toast, the plate's to-bank line
+- [`R120Banked.dc.html`](R120Banked.dc.html) - Rev 120 Banked - Banked at the Ark: the plate counts up, the split in the toast
+- [`R120Attack.dc.html`](R120Attack.dc.html) - Rev 120 Attack - The Ark under attack: the plate turns red
+- [`R120Leak.dc.html`](R120Leak.dc.html) - Rev 120 Leak - The hold leaking: hull under 30%
+- [`R120Sail.dc.html`](R120Sail.dc.html) - Rev 120 Sail - The raid countdown on the plate
+- [`R120Kaiju.dc.html`](R120Kaiju.dc.html) - Rev 120 Kaiju - Between cells: a kaiju in open water
+- [`R120Stray.dc.html`](R120Stray.dc.html) - Rev 120 Stray - Too far from the Ark: the plate small and far, the chip outlined
+- [`R120Goal.dc.html`](R120Goal.dc.html) - Rev 120 Goal - Goal met: the plate turns lime
+- [`R120Pause.dc.html`](R120Pause.dc.html) - Rev 120 Pause - Pause, goal met: Complete and set sail
+- [`R120Home.dc.html`](R120Home.dc.html) - Rev 120 Home - Sailing home: what is aboard
+- [`R120Escort.dc.html`](R120Escort.dc.html) - Rev 120 Escort - Escort the Ark: the hull is the score
+- [`R120Score.dc.html`](R120Score.dc.html) - Rev 120 Score - The end board: Finish here, Sail home, Venture further
+- [`R120Lost.dc.html`](R120Lost.dc.html) - Rev 120 Lost - The Ark lost
+- [`R120Notes.dc.html`](R120Notes.dc.html) - Rev 120 - notes: what each option changes, what is shared, what differs from the build
+
 #### Rev 116 - The in-game voyage UI, six ways: flight HUD, the Ark under attack, the toast spot, the raid countdown, pause, the scoreboard
 
 - [`R116A_Hud.dc.html`](R116A_Hud.dc.html) - 116A Marquee (recommended) - In flight
@@ -494,5 +514,16 @@ No boards yet.
 #### Rev 115 - Your Ark and the seat picker, five ways: hangar line-up, your seat first, pilot cards, formation, garage list
 
 - [`R115A.dc.html`](R115A.dc.html) - Rev 115 A - Ark A: Hangar line-up; the picker slides in from the right (recommended)
+
+### Tab: What's New  (`what-s-new`)
+
+#### Rev 121 - What's new: the pop-up after an update and from Settings, four ways, featuring Voyages
+
+- [`R121A.dc.html`](R121A.dc.html) - Rev 121 A - Poster: one window, the Ark over the HyperSea, three lines and Set sail (recommended) - interactive
+- [`R121B.dc.html`](R121B.dc.html) - Rev 121 B - Pages: one feature a page, paged with LB / RB, Set sail on the last - interactive
+- [`R121C.dc.html`](R121C.dc.html) - Rev 121 C - Changelog: the updates listed on the left, the picked one on the right - interactive
+- [`R121D.dc.html`](R121D.dc.html) - Rev 121 D - Card: a small card slides in over Home and opens into the window - interactive
+- [`R121Settings.dc.html`](R121Settings.dc.html) - Rev 121 Settings - Settings: the What's new row under Other opens the same window - interactive
+- [`R121Notes.dc.html`](R121Notes.dc.html) - Rev 121 - notes: what each option does, where it opens from, what the build needs
 
 <!-- frogma.py readme: end -->

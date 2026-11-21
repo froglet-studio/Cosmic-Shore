@@ -44,11 +44,13 @@ namespace CosmicShore.Gameplay
         /// <summary>Changes whenever a friend's seat changes (a page redraws on it).</summary>
         public static int Version => s_version;
 
-        /// <summary>The seat <paramref name="clientId"/> last reported while connected now, or null.</summary>
+        /// <summary>The seat <paramref name="clientId"/> last reported while connected now, or null. On a friend's machine
+        /// these are the seats the host last sent with its lobby (<see cref="Adopt"/>), the host's own among them.</summary>
         public static FriendSeat Of(ulong clientId)
         {
             if (!s_seats.TryGetValue(clientId, out var seat)) return null;
             var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm != null && nm.IsListening && !nm.IsServer) return seat;
             if (nm != null && nm.IsListening && nm.IsServer)
                 foreach (var id in nm.ConnectedClientsIds)
                     if (id == clientId) return seat;
@@ -88,7 +90,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static void Publish(SquadSlot slot, string playerName, string pilotName, bool force = false)
         {
-            if (!VoyageCourseLink.IsFollower) return;
+            bool host = VoyageCourseLink.HostWithParty;
+            if (!host && !VoyageCourseLink.IsFollower) return;
             VoyageCourseLink.EnsureListening();
             var report = new VoyagePartyReport
             {
@@ -105,7 +108,68 @@ namespace CosmicShore.Gameplay
             if (!force && sig == s_lastSent && Time.unscaledTime < s_nextResend) return;
             s_lastSent = sig;
             s_nextResend = Time.unscaledTime + ResendSeconds;
-            VoyageCourseLink.Report(report);
+            // The host's own seat is kept here and goes to every friend with the lobby (Shombith, 2026-11-21: "The client
+            // cannot see the host's avatar"); a friend's goes to the host.
+            if (host) Store(Unity.Netcode.NetworkManager.Singleton.LocalClientId, report);
+            else VoyageCourseLink.Report(report);
+        }
+
+        /// <summary>The host's seats, its own and each connected friend's, as the lobby sends them to the party.</summary>
+        public static List<VoyageLobbySeat> Snapshot()
+        {
+            var list = new List<VoyageLobbySeat>();
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsListening || !nm.IsServer) return list;
+            foreach (var id in nm.ConnectedClientsIds)
+            {
+                if (!s_seats.TryGetValue(id, out var seat)) continue;
+                list.Add(new VoyageLobbySeat
+                {
+                    ClientId = id,
+                    PlayerName = seat.PlayerName ?? string.Empty,
+                    SlotVessel = (int)seat.Slot.Vessel,
+                    SlotElement = (int)seat.Slot.Element,
+                    PilotId = seat.Slot.PilotId ?? string.Empty,
+                    ArtifactId = seat.Slot.ArtifactId ?? string.Empty,
+                    PilotName = seat.PilotName ?? string.Empty,
+                });
+            }
+            list.Sort((a, b) => a.ClientId.CompareTo(b.ClientId));
+            return list;
+        }
+
+        /// <summary>A friend's machine takes the seats the host sent with its lobby, in place of any it held.</summary>
+        internal static void Adopt(List<VoyageLobbySeat> seats)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || nm.IsServer) return;
+            bool changed = false;
+            var heard = new HashSet<ulong>();
+            if (seats != null)
+                foreach (var seat in seats)
+                {
+                    if (seat == null) continue;
+                    heard.Add(seat.ClientId);
+                    int version = s_version;
+                    Store(seat.ClientId, new VoyagePartyReport
+                    {
+                        Kind = VoyagePartyReport.ReportKind.Seat,
+                        PlayerName = seat.PlayerName,
+                        SlotVessel = seat.SlotVessel,
+                        SlotElement = seat.SlotElement,
+                        PilotId = seat.PilotId,
+                        ArtifactId = seat.ArtifactId,
+                        PilotName = seat.PilotName,
+                    });
+                    changed |= version != s_version;
+                }
+            // A seat the host no longer sends has left the party.
+            var gone = new List<ulong>();
+            foreach (var id in s_seats.Keys)
+                if (!heard.Contains(id)) gone.Add(id);
+            foreach (var id in gone) s_seats.Remove(id);
+            changed |= gone.Count > 0;
+            if (changed) s_version++;
         }
     }
 }
