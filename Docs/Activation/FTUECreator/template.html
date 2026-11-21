@@ -1,0 +1,740 @@
+<title>FTUE Creator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* Layout: three panes like the Quest Graph Editor (phases, the flow, the inspector), stacked on a phone.
+   Colours are the Froglet style guide's Deep Sea theme, Shore in light mode (Docs/UI/froglet.css). */
+:root {
+  --ground: #00041F; --ground-deep: #00010A; --surface: #111539; --surface-2: #222645; --raised: #434C89;
+  --line: #2d3366; --text: #E6E9FF; --soft: #8C92C4; --off: #5C5F70;
+  --cta: #99FF80; --on-cta: #00041F; --select: #00D4FF; --danger: #FF4B3A; --gold: #FF9B11; --tip: #A600FF; --jade: #21C0BD;
+  --c-presentation: #00D4FF; --c-gameplay: #FF9B11; --c-gate: #A600FF; --c-terminal: #FF4B3A; --c-flow: #8C92C4;
+  --display: "Aldrich", "Chakra Petch", system-ui, sans-serif;
+  --body: "Chakra Petch", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --ground: #F4F5FF; --ground-deep: #E6E9FF; --surface: #FFFFFF; --surface-2: #EDEFFC; --raised: #DDE1F7;
+  --line: #C9CFF2; --text: #00041F; --soft: #434C89; --off: #8A8FAE;
+  --cta: #487C1F; --on-cta: #FFFFFF; --select: #007D73; --danger: #CD373A; --gold: #B06A00; --tip: #893BFF; --jade: #007D73;
+  --c-presentation: #007D9E; --c-gameplay: #B06A00; --c-gate: #893BFF; --c-terminal: #CD373A; --c-flow: #434C89;
+  color-scheme: light; } }
+:root[data-theme="light"] {
+  --ground: #F4F5FF; --ground-deep: #E6E9FF; --surface: #FFFFFF; --surface-2: #EDEFFC; --raised: #DDE1F7;
+  --line: #C9CFF2; --text: #00041F; --soft: #434C89; --off: #8A8FAE;
+  --cta: #487C1F; --on-cta: #FFFFFF; --select: #007D73; --danger: #CD373A; --gold: #B06A00; --tip: #893BFF; --jade: #007D73;
+  --c-presentation: #007D9E; --c-gameplay: #B06A00; --c-gate: #893BFF; --c-terminal: #CD373A; --c-flow: #434C89;
+  color-scheme: light; }
+
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--text); font-family: var(--body); font-size: 14px; line-height: 1.45; margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding-block: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); background: var(--ground-deep); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--ground-deep); }
+.brand { font-family: var(--display); font-size: 18px; letter-spacing: .04em; margin-right: auto; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.brand small { font-family: var(--body); font-size: 12px; color: var(--soft); letter-spacing: 0; }
+.btn { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px 4px 4px 0; padding: 7px 12px; cursor: pointer; font-weight: 600; font-size: 13px; }
+.btn:hover { border-color: var(--select); }
+.btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .card:focus-visible { outline: 2px solid var(--select); outline-offset: 1px; }
+.btn.cta { background: var(--cta); color: var(--on-cta); border-color: var(--cta); }
+.btn.ghost { background: transparent; }
+.btn.small { padding: 3px 8px; font-size: 12px; }
+.btn.danger { color: var(--danger); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+.app { display: grid; grid-template-columns: 250px minmax(0, 1fr) 400px; min-height: calc(100vh - 60px); }
+.pane { min-width: 0; padding-block: 16px; padding-inline: 16px; }
+.left { border-right: 1px solid var(--line); background: var(--surface); padding-left: max(16px, env(safe-area-inset-left, 0px)); }
+.right { border-left: 1px solid var(--line); background: var(--surface); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+@media (max-width: 1100px) { .app { grid-template-columns: 220px minmax(0, 1fr); } .right { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); } }
+@media (max-width: 720px) { .app { grid-template-columns: minmax(0, 1fr); } .left { border-right: 0; border-bottom: 1px solid var(--line); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .center { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); } }
+
+h2 { font-family: var(--display); font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--soft); margin: 0 0 10px; font-weight: 400; }
+h3 { font-family: var(--display); font-size: 20px; margin: 0; font-weight: 400; text-wrap: balance; }
+.muted { color: var(--soft); }
+.tiny { font-size: 12px; }
+
+.quest { display: grid; gap: 6px; margin-bottom: 18px; }
+.phase { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 8px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; }
+.phase:hover { background: var(--surface-2); }
+.phase.sel { border-color: var(--select); background: var(--surface-2); }
+.phase .idx { font-family: var(--mono); font-size: 11px; color: var(--soft); text-align: right; }
+.phase .nm { min-width: 0; }
+.phase .nm b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.phase .nm span { font-size: 11px; color: var(--soft); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.phase .tools { display: flex; gap: 2px; opacity: .5; }
+.phase:hover .tools, .phase.sel .tools { opacity: 1; }
+.icon { background: none; border: 0; cursor: pointer; padding: 2px 4px; color: var(--soft); border-radius: 3px; font-size: 12px; }
+.icon:hover { color: var(--text); background: var(--raised); }
+.pill { font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); color: var(--soft); white-space: nowrap; }
+.pill.on { color: var(--cta); border-color: var(--cta); }
+.pill.warn { color: var(--gold); border-color: var(--gold); }
+.pill.err { color: var(--danger); border-color: var(--danger); }
+
+.phasehead { display: grid; gap: 10px; margin-bottom: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+label.f { display: grid; gap: 4px; font-size: 12px; color: var(--soft); }
+label.f > span { text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+input[type=text], input[type=number], select, textarea { background: var(--ground); border: 1px solid var(--line); border-radius: 3px; padding: 6px 8px; width: 100%; min-width: 0; color: var(--text); }
+textarea { resize: vertical; min-height: 60px; line-height: 1.4; }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; cursor: pointer; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+
+.flow { display: grid; gap: 0; }
+.venue { display: flex; align-items: center; gap: 10px; margin: 14px 0 6px; font-family: var(--display); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--soft); }
+.venue::after { content: ""; flex: 1; border-top: 1px dashed var(--line); }
+.venue.gp { color: var(--jade); }
+.card { display: grid; grid-template-columns: 4px minmax(0, 1fr) auto; gap: 0 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px 6px 6px 0; cursor: pointer; overflow: hidden; }
+.card:hover { border-color: var(--raised); }
+.card.sel { border-color: var(--select); box-shadow: 0 0 0 1px var(--select); }
+.card.disabled { opacity: .5; }
+.card .stripe { background: var(--cat); }
+.card .body { padding: 10px 0; min-width: 0; }
+.card .type { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--cat); font-weight: 600; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.card .name { font-weight: 600; font-size: 15px; margin-top: 2px; overflow-wrap: anywhere; }
+.card .sum { color: var(--soft); font-size: 13px; margin-top: 3px; overflow-wrap: anywhere; }
+.card .sum q { color: var(--text); quotes: "“" "”"; }
+.card .side { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; padding: 8px 8px 8px 0; gap: 4px; }
+.card .side .acts { display: flex; gap: 0; }
+.cat-Presentation { --cat: var(--c-presentation); } .cat-Gameplay { --cat: var(--c-gameplay); } .cat-Gate { --cat: var(--c-gate); }
+.cat-Terminal { --cat: var(--c-terminal); } .cat-Flow, .cat-Progression { --cat: var(--c-flow); }
+.link { display: flex; align-items: center; gap: 8px; padding: 2px 0 2px 18px; min-height: 26px; }
+.link .wire { width: 2px; align-self: stretch; background: var(--line); margin-left: 1px; }
+.link .delay { font-family: var(--mono); font-size: 11px; color: var(--soft); }
+.link .add { opacity: 0; transition: opacity .12s; }
+.link:hover .add, .link:focus-within .add, .link.always .add { opacity: 1; }
+.flag { font-size: 11px; color: var(--gold); }
+.flag.err { color: var(--danger); }
+
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 14px; overflow-x: auto; }
+.tab { background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px; cursor: pointer; color: var(--soft); font-weight: 600; white-space: nowrap; }
+.tab.on { color: var(--text); border-bottom-color: var(--select); }
+.insp { display: grid; gap: 12px; }
+.lines { display: grid; gap: 6px; }
+.lineRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px; }
+.comms { background: var(--ground-deep); border: 1px solid var(--line); border-radius: 6px 6px 6px 0; padding: 12px; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; }
+.comms .av { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--jade), var(--tip)); display: grid; place-items: center; font-family: var(--display); color: #fff; font-size: 16px; }
+.comms .eyebrow { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--jade); }
+.comms .who { font-family: var(--display); }
+.comms .said { margin-top: 4px; overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font-size: 12px; padding: 2px 8px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; }
+.chip.on { border-color: var(--select); color: var(--select); }
+.findings { display: grid; gap: 6px; }
+.finding { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 8px; font-size: 13px; padding: 6px 8px; border-radius: 4px; background: var(--surface-2); cursor: pointer; }
+.finding .lv { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; padding-top: 2px; }
+.lv.error { color: var(--danger); } .lv.warn { color: var(--gold); } .lv.info { color: var(--select); }
+.ai { display: grid; gap: 10px; }
+.ai .out { background: var(--ground); border: 1px solid var(--line); border-radius: 4px; padding: 10px; font-size: 13px; white-space: pre-wrap; max-height: 360px; overflow: auto; }
+.proposal { display: grid; gap: 6px; }
+.pstep { display: grid; grid-template-columns: 4px minmax(0, 1fr); gap: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.pstep .stripe { background: var(--cat); }
+.pstep div:last-child { padding: 6px 8px 6px 0; min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
+pre.code { background: var(--ground); border: 1px solid var(--line); border-radius: 4px; padding: 10px; font-family: var(--mono); font-size: 11px; max-height: 340px; overflow: auto; white-space: pre; margin: 0; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--surface-2); border: 1px solid var(--select); padding: 8px 14px; border-radius: 4px; z-index: 20; max-width: calc(100% - 32px); }
+.drafts { display: grid; gap: 4px; }
+.draft { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; font-size: 13px; padding: 6px 8px; background: var(--surface-2); border-radius: 4px; }
+.draft span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty { padding: 18px; border: 1px dashed var(--line); border-radius: 6px; color: var(--soft); text-align: center; }
+dialog { background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 6px; max-width: min(640px, calc(100vw - 32px)); width: 100%; }
+dialog::backdrop { background: rgba(0, 1, 10, .6); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: var(--soft); margin-top: 18px; }
+.legend i { display: inline-block; width: 8px; height: 8px; background: var(--cat); margin-right: 4px; border-radius: 1px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="top">
+  <div class="brand">FTUE Creator <small>Quest Graph phases for Assets/FTUE, drafted with Claude</small></div>
+  <button class="btn" id="btnImport">Import .asset</button>
+  <button class="btn" id="btnTeam">Team drafts</button>
+  <button class="btn cta" id="btnExport">Export to Unity</button>
+</header>
+
+<main class="app">
+  <aside class="pane left">
+    <h2>Quest</h2>
+    <label class="f"><span>Quest asset</span><input type="text" id="questName"></label>
+    <div class="row" style="margin:8px 0 14px">
+      <label class="check"><input type="checkbox" id="questEnabled"> Enabled</label>
+      <label class="check" title="QuestSO.runsUnderDeveloperUnlock"><input type="checkbox" id="questUnlock"> Runs under dev unlock</label>
+    </div>
+    <h2>Phases, in run order</h2>
+    <div class="quest" id="phaseList"></div>
+    <div class="row"><button class="btn small" id="btnAddPhase">+ New phase</button><button class="btn small ghost" id="btnDraftPhase">Draft a phase with Claude</button></div>
+    <div class="legend" id="legend"></div>
+  </aside>
+
+  <section class="pane center" id="center"></section>
+
+  <aside class="pane right">
+    <nav class="tabs" role="tablist">
+      <button class="tab on" data-tab="step">Step</button>
+      <button class="tab" data-tab="claude">Claude</button>
+      <button class="tab" data-tab="check">Check</button>
+      <button class="tab" data-tab="story">Story bible</button>
+    </nav>
+    <div id="tab-step"></div>
+    <div id="tab-claude" hidden></div>
+    <div id="tab-check" hidden></div>
+    <div id="tab-story" hidden></div>
+  </aside>
+</main>
+
+<dialog id="dlgImport">
+  <form method="dialog" class="insp" id="importForm">
+    <h3>Import from Unity</h3>
+    <p class="muted tiny">Open phase files from <code>Assets/FTUE/DataContainer/Phases</code> (pick the .asset and its .asset.meta to keep the guid), or MainQuest.asset to set the run order. You can also paste one phase's YAML below.</p>
+    <input type="file" id="importFiles" multiple accept=".asset,.meta">
+    <textarea id="importPaste" rows="8" placeholder="%YAML 1.1&#10;--- !u!114 &amp;11400000 ..."></textarea>
+    <div class="row"><button class="btn cta" id="importGo" value="go">Import</button><button class="btn ghost" value="cancel">Cancel</button><button class="btn ghost" id="importReset" value="reset" title="Back to the MainQuest shipped on bleeding-edge">Reload shipped MainQuest</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgExport"><div class="insp" id="exportBody"></div></dialog>
+<dialog id="dlgTeam"><div class="insp" id="teamBody"></div></dialog>
+<dialog id="dlgAdd"><div class="insp" id="addBody"></div></dialog>
+
+<script>__CORE__</script>
+<script>
+const SEED = __SEED__;
+const SEED_NOTE = 'Shipped MainQuest from bleeding-edge, __SEEDDATE__';
+const { NODE_TYPES, ENUMS, SPEAKERS } = FTUE;
+const CALLSIGNS = ['GALLEON','SUNDIAL','ANVIL','OPAL','HORNET','BANDIT','RAMPART','TALON','MANGER','ZODIAC','DOE','WINGMAN','CITADEL','ENSIGN','VOLT','FLUME','IVY','NEEDLE'];
+const DEFAULT_BIBLE = `Cosmic Shore: players pilot vessels through the HyperSea, a living sea of prisms, crystals and creatures.
+Speakers: Trace is the player's captain and first voice (the shipped first-login guide). The 18 pilots are callsigns (GALLEON, SUNDIAL, ANVIL, OPAL, HORNET, BANDIT, RAMPART, TALON, MANGER, ZODIAC, DOE, WINGMAN, CITADEL, ENSIGN, VOLT, FLUME, IVY, NEEDLE); a pilot is gained through the quest tracker.
+Elements: Mass, Charge, Space, Time. Every vessel has four abilities, one per element.
+Progression: the quest track unlocks arcade games one by one (Scurry, Hex Race / SkimRace, Joust, Maelstrom), then the Vessel Hangar, arena games and voyages. Crystals are earned in voyages and spent on the Ark screen. Artifacts are found only in voyages.
+Rules the onboarding keeps: guide, never carry. Spotlight the one control to press next, dim the rest, keep Settings available, and let the player press it. No XP: quest completion is the only currency. Unlocks are permanent.
+Voice: short lines a player reads in one breath (under 140 characters), second person, warm and confident, one idea per line, no lore dumps.`;
+
+// ---------- state ----------
+let state = load() || freshFromSeed();
+let selPhase = 0, selNode = null, tab = 'step';
+let history = [];
+function freshFromSeed() { const s = JSON.parse(JSON.stringify(SEED)); s.bible = DEFAULT_BIBLE; s.name = 'MainQuest (shipped)'; return s; }
+function load() { try { const s = localStorage.getItem('ftue-creator-v1'); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+let saveT = 0;
+function persist() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('ftue-creator-v1', JSON.stringify(state)); } catch (e) {} }, 300); }
+function snapshot() { history.push(JSON.stringify(state)); if (history.length > 50) history.shift(); }
+function undo() { if (!history.length) return toast('Nothing to undo.'); state = JSON.parse(history.pop()); selNode = null; render(); persist(); }
+const phase = () => state.phases[selPhase];
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
+const enumName = (en, v) => { const e = (ENUMS[en] || []).find(x => x[1] === Number(v)); return e ? e[0] : String(v); };
+const enumVal = (en, name) => { const e = (ENUMS[en] || []).find(x => x[0].toLowerCase() === String(name).toLowerCase()); return e ? e[1] : (Number.isFinite(Number(name)) ? Number(name) : null); };
+
+// ---------- summaries ----------
+function summary(n) {
+  const f = n.fields;
+  switch (n.type) {
+    case 'QuestDialogueNode': return f.lines.length ? `${esc(f.speakerName || 'Speaker')}: <q>${esc(trim(f.lines[0], 90))}</q>${f.lines.length > 1 ? ` +${f.lines.length - 1} more` : ''}` : '(no lines)';
+    case 'QuestShowInstructionNode': return (f.text ? `<q>${esc(trim(f.text, 100))}</q>` : '(no text)') + (f.panelKey ? ` · panel ${esc(f.panelKey)}` : '');
+    case 'QuestGuideToMicrogameNode': return `${f.source ? enumName('GameModes', f.mode) : 'Game of the Week'} · <q>${esc(trim(f.arcadeCaption, 70))}</q>`;
+    case 'QuestEnterFreestyleNode': return `timeout ${f.timeoutSeconds}s`;
+    case 'QuestExitFreestyleNode': return f.forceExit ? `force exit, timeout ${f.timeoutSeconds}s` : 'wait for the player to leave';
+    case 'QuestNavigateNode': return `→ ${enumName('QuestNavTarget', f.target)}`;
+    case 'QuestLockNavigationNode': return f.unlock ? 'unlock nav buttons' : 'lock nav buttons';
+    case 'QuestSetArcadeConstraintsNode': return f.clearConstraints ? 'clear all constraints' : `only ${enumName('GameModes', f.allowedMode)} · intensity ${f.forcedIntensity || 'any'} · ${f.forcedPlayerCount || 'any'} players`;
+    case 'QuestSetButtonInteractableNode': return `${esc(f.buttonKey)} → ${f.interactable ? 'on' : 'off'}`;
+    case 'QuestWaitForInputNode': return f.acceptedInputs.length ? f.acceptedInputs.map(v => enumName('InputEvents', v)).join(', ') : 'any input';
+    case 'QuestWaitForSkimNode': return `${f.targetSkims} skims`;
+    case 'QuestWaitForGamePlayedNode': return f.filterByMode ? `${enumName('GameModes', f.expectedMode)}${f.minIntensity ? ' @' + f.minIntensity + '+' : ''}` : 'any game';
+    case 'QuestWaitForIntensityNode': return `${enumName('GameModes', f.mode)} tier ${f.intensityTier}`;
+    case 'QuestWaitForModeUnlockedNode': return `claim ${enumName('GameModes', f.mode)}`;
+    case 'QuestWaitForUserActionNode': return enumName('UserActionType', f.action);
+    case 'QuestWaitForLessonNode': return 'until a Lesson ends';
+    case 'QuestPhaseEndNode': return 'next phase starts';
+    case 'QuestEndNode': return 'quest complete';
+  }
+  return '';
+}
+const trim = (s, n) => (s = String(s || '')).length > n ? s.slice(0, n - 1) + '…' : s;
+
+// ---------- render ----------
+function render() { renderLeft(); renderCenter(); renderRight(); }
+function renderLeft() {
+  $('#questName').value = state.quest.assetName;
+  $('#questEnabled').checked = !!state.quest.enabled;
+  $('#questUnlock').checked = !!state.quest.underUnlock;
+  let k = 0;
+  $('#phaseList').innerHTML = state.phases.map((p, i) => {
+    const errs = FTUE.validate(p).filter(f => f.level === 'error').length;
+    return `<div class="phase ${i === selPhase ? 'sel' : ''}" data-i="${i}" tabindex="0">
+      <div class="idx">${p.inQuest ? 'P' + (k++) : '–'}</div>
+      <div class="nm"><b>${esc(p.phaseName || p.assetName)}</b><span>${esc(p.assetName)} · ${p.nodes.length} steps</span></div>
+      <div class="tools">${errs ? `<span class="pill err" title="${errs} errors">${errs}</span>` : ''}
+        <button class="icon" data-up="${i}" title="Move up" aria-label="Move phase up">▲</button><button class="icon" data-down="${i}" title="Move down" aria-label="Move phase down">▼</button></div>
+    </div>`;
+  }).join('');
+  $('#legend').innerHTML = ['Presentation', 'Gameplay', 'Gate', 'Terminal'].map(c => `<span class="cat-${c}"><i></i>${c === 'Gate' ? 'Wait / gate' : c}</span>`).join('');
+}
+function venueLabel(v) { return v === 'Gameplay' ? 'Flying · gameplay' : 'App shell · menus'; }
+function renderCenter() {
+  const p = phase();
+  const c = $('#center');
+  if (!p) { c.innerHTML = '<div class="empty">No phase. Add one on the left.</div>'; return; }
+  const { path, off } = FTUE.chain(p);
+  const finds = FTUE.validate(p);
+  const flagFor = id => finds.filter(f => f.nodeId === id && f.level !== 'info');
+  let html = `<div class="phasehead">
+    <div class="row" style="justify-content:space-between"><h3>${esc(p.phaseName || p.assetName)}</h3>
+      <div class="row"><button class="btn small ghost" id="btnUndo" title="Undo (Ctrl+Z)">Undo</button><button class="btn small ghost danger" id="btnDelPhase">Delete phase</button></div></div>
+    <div class="grid2">
+      <label class="f"><span>Phase name</span><input type="text" id="phName" value="${esc(p.phaseName)}"></label>
+      <label class="f"><span>Asset name</span><input type="text" id="phAsset" value="${esc(p.assetName)}"></label>
+    </div>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="phInQuest" ${p.inQuest ? 'checked' : ''}> In the quest's run order</label>
+      <label class="check"><input type="checkbox" id="phEnabled" ${p.enabled ? 'checked' : ''}> Phase enabled</label>
+      <label class="check" title="QuestPhaseGraphSO.runsUnderDeveloperUnlock"><input type="checkbox" id="phUnlock" ${p.underUnlock ? 'checked' : ''}> Runs under dev unlock</label>
+    </div>
+    <label class="f"><span>Designer notes</span><textarea id="phNotes" rows="2">${esc(p.notes)}</textarea></label>
+  </div>
+  <div class="flow">`;
+  if (!path.length) html += `<div class="empty">This phase is empty. <button class="btn small" data-insert="0">+ Add the first step</button> or ask Claude to draft it.</div>`;
+  let venue = null;
+  path.forEach((n, i) => {
+    const s = NODE_TYPES[n.type];
+    if (s.venue && s.venue !== venue) { venue = s.venue; html += `<div class="venue ${venue === 'Gameplay' ? 'gp' : ''}">${venueLabel(venue)}</div>`; }
+    else if (i === 0) { venue = 'AppShell'; html += `<div class="venue">${venueLabel('AppShell')}</div>`; }
+    if (i === 0) html += `<div class="link ${path.length === 1 ? 'always' : ''}"><button class="btn small ghost add" data-insert="0">+ step at the start</button></div>`;
+    const fl = flagFor(n.nodeId);
+    html += `<div class="card cat-${s.cat} ${selNode === n.nodeId ? 'sel' : ''} ${n.enabled ? '' : 'disabled'}" data-node="${n.nodeId}" tabindex="0">
+      <div class="stripe"></div>
+      <div class="body"><div class="type">${esc(s.label)}${n.enabled ? '' : ' <span class="pill">off</span>'}${fl.map(f => `<span class="flag ${f.level === 'error' ? 'err' : ''}" title="${esc(f.msg)}">${f.level === 'error' ? '● error' : '▲ check'}</span>`).join('')}</div>
+        <div class="name">${esc(n.displayName)}</div><div class="sum">${summary(n)}</div></div>
+      <div class="side"><div class="acts">
+        <button class="icon" data-mv="${i}" data-d="-1" title="Move up" aria-label="Move step up">▲</button>
+        <button class="icon" data-mv="${i}" data-d="1" title="Move down" aria-label="Move step down">▼</button>
+        <button class="icon" data-dup="${i}" title="Duplicate" aria-label="Duplicate step">⧉</button>
+        <button class="icon" data-del="${i}" title="Delete" aria-label="Delete step">✕</button></div></div>
+    </div>`;
+    if (s.venueAfter && s.venueAfter !== venue) venue = s.venueAfter + '*';
+    const e = n.outputs.find(o => o.port === 'next');
+    const last = i === path.length - 1;
+    if (!s.terminal || !last) html += `<div class="link ${last ? 'always' : ''}"><div class="wire"></div>${e && e.delay ? `<span class="delay">wait ${e.delay}s</span>` : ''}<button class="btn small ghost add" data-insert="${i + 1}">+ step</button></div>`;
+    if (venue && venue.endsWith('*')) { venue = venue.slice(0, -1); html += `<div class="venue">${venueLabel(venue)}</div>`; }
+  });
+  html += '</div>';
+  if (off.length) {
+    html += `<h2 style="margin-top:24px">Off the path (${off.length}, kept in the asset, never run)</h2><div class="flow" style="gap:8px">` +
+      off.map(n => { const s = NODE_TYPES[n.type]; return `<div class="card cat-${s.cat} disabled ${selNode === n.nodeId ? 'sel' : ''}" data-node="${n.nodeId}" tabindex="0"><div class="stripe"></div><div class="body"><div class="type">${esc(s.label)}</div><div class="name">${esc(n.displayName)}</div><div class="sum">${summary(n)}</div></div><div class="side"><div class="acts"><button class="icon" data-attach="${n.nodeId}" title="Put back on the path, before the end">↩</button><button class="icon" data-deloff="${n.nodeId}" title="Delete">✕</button></div></div></div>`; }).join('') + '</div>';
+  }
+  c.innerHTML = html;
+}
+
+function fieldInput(n, [name, kind, def, extra]) {
+  const v = n.fields[name], id = `fld-${name}`;
+  const lab = name.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+  switch (kind) {
+    case 'bool': return `<label class="check"><input type="checkbox" id="${id}" data-f="${name}" data-k="bool" ${v ? 'checked' : ''}> ${lab}</label>`;
+    case 'int': case 'float': return `<label class="f"><span>${lab}</span><input type="number" id="${id}" data-f="${name}" data-k="${kind}" value="${v}" step="${kind === 'int' ? 1 : 0.1}" ${extra && extra.min != null ? `min="${extra.min}"` : ''} ${extra && extra.max != null ? `max="${extra.max}"` : ''}></label>`;
+    case 'enum': return `<label class="f"><span>${lab}</span><select id="${id}" data-f="${name}" data-k="enum">${ENUMS[extra].map(([nm, val]) => `<option value="${val}" ${val === Number(v) ? 'selected' : ''}>${nm}</option>`).join('')}</select></label>`;
+    case 'enumlist': return `<div class="f"><label class="f"><span>${lab} (none = any)</span></label><div class="chips">${ENUMS[extra].map(([nm, val]) => `<button class="chip ${v.includes(val) ? 'on' : ''}" data-chip="${name}" data-v="${val}">${nm.replace(/Action$/, '')}</button>`).join('')}</div></div>`;
+    case 'speaker': return `<label class="f"><span>${lab}</span><select id="${id}" data-f="${name}" data-k="str">${SPEAKERS.concat(SPEAKERS.some(s => s.ref === v) ? [] : [{ label: 'Kept from the asset', ref: v }]).map(s => `<option value="${esc(s.ref)}" ${s.ref === v ? 'selected' : ''}>${esc(s.label)}</option>`).join('')}</select></label>`;
+    case 'ref': return `<label class="f"><span>${lab} (asset reference, set in Unity)</span><input type="text" id="${id}" value="${esc(v)}" disabled></label>`;
+    case 'text': return `<label class="f"><span>${lab}</span><textarea id="${id}" data-f="${name}" data-k="str" rows="2">${esc(v)}</textarea></label>`;
+    case 'lines': return `<div class="f"><label class="f"><span>Lines (Next steps through them)</span></label><div class="lines">${v.map((l, i) => `<div class="lineRow"><textarea data-line="${i}" rows="2" aria-label="Line ${i + 1}">${esc(l)}</textarea><div style="display:grid;gap:2px;align-content:start"><button class="icon" data-lmv="${i}" data-d="-1" aria-label="Line up">▲</button><button class="icon" data-ldel="${i}" aria-label="Remove line">✕</button></div></div>`).join('')}</div><div class="row" style="margin-top:6px"><button class="btn small" id="addLine">+ Line</button><button class="btn small cta" id="aiLines">Write lines with Claude</button></div></div>`;
+    default: return `<label class="f"><span>${lab}</span><input type="text" id="${id}" data-f="${name}" data-k="str" value="${esc(v)}"></label>`;
+  }
+}
+function commsPreview(n) {
+  const f = n.fields;
+  let who = f.speakerName || 'Captain', line = f.lines ? f.lines[0] : f.arcadeCaption;
+  if (n.type === 'QuestGuideToMicrogameNode') who = (SPEAKERS.find(s => s.ref === f.speaker) || { label: 'Speaker' }).label.split(' ')[0];
+  if (!line) return '';
+  return `<div class="comms" aria-label="Preview"><div class="av">${esc(who[0] || '?')}</div><div><div class="eyebrow">Incoming</div><div class="who">${esc(who)}</div><div class="said">${esc(line)}</div></div></div>`;
+}
+function renderRight() {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
+  for (const t of ['step', 'claude', 'check', 'story']) $('#tab-' + t).hidden = t !== tab;
+  renderStep(); renderCheck(); renderStory(); if (!$('#tab-claude').dataset.built) renderClaude();
+}
+function renderStep() {
+  const p = phase(), n = p && p.nodes.find(x => x.nodeId === selNode), el = $('#tab-step');
+  if (!n) { el.innerHTML = `<div class="empty">Select a step to edit it.<br><span class="tiny">Each step is one QuestNodeSO sub-asset in the phase file.</span></div>`; return; }
+  const s = NODE_TYPES[n.type], e = n.outputs.find(o => o.port === 'next');
+  el.innerHTML = `<div class="insp">
+    <div class="row cat-${s.cat}"><span class="pill" style="color:var(--cat);border-color:var(--cat)">${esc(s.label)}</span><span class="tiny muted">${n.type}</span></div>
+    <p class="tiny muted" style="margin:0">${esc(s.tip)}</p>
+    ${n.type === 'QuestDialogueNode' || n.type === 'QuestGuideToMicrogameNode' ? commsPreview(n) : ''}
+    <label class="f"><span>Display name</span><input type="text" id="nDisp" value="${esc(n.displayName)}"></label>
+    <div class="row"><label class="check"><input type="checkbox" id="nEnabled" ${n.enabled ? 'checked' : ''}> Enabled</label>
+      ${s.terminal ? '' : `<label class="f" style="grid-auto-flow:column;align-items:center;gap:6px"><span>Wait before next (s)</span><input type="number" id="nDelay" min="0" step="0.5" value="${e ? e.delay : 0}" style="width:80px"></label>`}</div>
+    ${s.fields.map(fd => fieldInput(n, fd)).join('')}
+    <div class="tiny muted">nodeId <code>${n.nodeId}</code>${n.fileId ? ` · fileID <code>${n.fileId}</code>` : ' · new (fileID set on export)'}</div>
+  </div>`;
+}
+function renderCheck() {
+  const el = $('#tab-check'), p = phase();
+  if (!p) { el.innerHTML = ''; return; }
+  const fs = FTUE.validate(p);
+  el.innerHTML = `<div class="insp"><p class="tiny muted" style="margin:0">The Quest Graph Editor's checks plus the locked onboarding rules. Errors block a working phase; checks are for a person to judge.</p>
+    ${fs.length ? `<div class="findings">${fs.map(f => `<div class="finding" data-goto="${f.nodeId || ''}"><span class="lv ${f.level}">${f.level === 'warn' ? 'check' : f.level}</span><span>${esc(f.msg)}</span></div>`).join('')}</div>` : '<div class="empty">No problems found in this phase.</div>'}
+    <button class="btn" id="aiReview">Ask Claude to review this phase</button><div id="reviewOut"></div></div>`;
+}
+function renderStory() {
+  $('#tab-story').innerHTML = `<div class="insp"><p class="tiny muted" style="margin:0">Claude reads this with every request, so the pilots, the progression and the voice stay consistent across phases. Replace it with the activation story once it is written.</p>
+    <textarea id="bible" rows="18">${esc(state.bible)}</textarea><button class="btn small ghost" id="bibleReset">Reset to the default notes</button></div>`;
+}
+
+// ---------- Claude ----------
+let sample = null;
+window.claude?.use?.('sample').then(s => { sample = s; renderClaude(); });
+function renderClaude() {
+  const el = $('#tab-claude'); el.dataset.built = 1;
+  if (!sample) { el.innerHTML = `<div class="empty">Claude is not available in this view.<br><span class="tiny">Open the artifact on claude.ai while signed in. Everything else works without it.</span></div>`; return; }
+  el.innerHTML = `<div class="ai">
+    <p class="tiny muted" style="margin:0">Describe a beat in plain words. Claude drafts the steps with the game's real node types, modes and inputs, and you choose where they go.</p>
+    <label class="f"><span>What should the player learn or do?</span><textarea id="aiAsk" rows="4" placeholder="After their first Hex Race, have WINGMAN congratulate them, then spotlight the quest track so they claim Joust."></textarea></label>
+    <div class="chips" id="aiIdeas">${['Teach the boost on the Squirrel, then send them back to the menu', 'Welcome a returning player and point them to the Ark to spend crystals', 'Celebrate claiming Maelstrom and explain what it is', 'Introduce the first pilot from the quest tracker'].map(t => `<button class="chip" data-idea="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+    <label class="f"><span>Speaker for any dialogue</span><select id="aiSpeaker">${['Trace (captain)'].concat(CALLSIGNS).map(c => `<option>${c}</option>`).join('')}</select></label>
+    <div class="row"><button class="btn cta" id="aiDraft">Draft steps</button><button class="btn ghost" id="aiStop" hidden>Stop</button></div>
+    <div id="aiOut"></div></div>`;
+}
+function catalog() {
+  return Object.entries(NODE_TYPES).filter(([, s]) => !s.legacy).map(([t, s]) => `- ${t} (${s.label}): ${s.tip} Fields: ${s.fields.filter(f => f[1] !== 'ref' && f[1] !== 'speaker').map(([n, k, d, x]) => `${n}:${k === 'enum' || k === 'enumlist' ? (k === 'enumlist' ? x + '[] names' : x + ' name') : k}`).join(', ') || 'none'}`).join('\n');
+}
+function enumHelp() {
+  return ['InputEvents', 'HapticType', 'UserActionType', 'QuestMicrogameSource'].map(e => `${e}: ${ENUMS[e].map(x => x[0]).join(', ')}`).join('\n') + `\nGameModes: ${ENUMS.GameModes.map(x => x[0]).join(', ')}`;
+}
+function phaseText(p) {
+  return FTUE.chain(p).path.map((n, i) => `${i + 1}. ${n.type.replace(/^Quest|Node$/g, '')} "${n.displayName}": ${summary(n).replace(/<[^>]+>/g, '')}`).join('\n');
+}
+let aiCtl = null;
+async function runSample(prompt, outEl, asJson) {
+  if (aiCtl) aiCtl.abort();
+  aiCtl = new AbortController();
+  const stop = $('#aiStop'); if (stop) stop.hidden = false;
+  outEl.innerHTML = '<div class="out">Thinking…</div>';
+  const box = outEl.firstChild;
+  try {
+    const opts = { signal: aiCtl.signal, modelTier: 'default', onText: ({ text }) => { box.textContent = text; } };
+    const r = asJson ? await sample.json(prompt, opts) : (await sample(prompt, opts)).text;
+    return r;
+  } catch (e) {
+    const msg = { cancelled: 'Stopped.', rate_limited: 'Claude is busy. Try again in a minute.', not_granted: 'Claude was not allowed for this page. You can allow it from the artifact\'s Permissions menu.' }[e && e.code] || 'Claude could not answer that. Try rephrasing it.';
+    box.textContent = msg; return null;
+  } finally { if (stop) stop.hidden = true; aiCtl = null; }
+}
+const SYS = () => `You design onboarding (FTUE) for the game Cosmic Shore in its Quest Graph, a Unity system where a phase is a chain of steps (QuestNodeSO).
+Story bible from the team:
+${state.bible}`;
+function toNode(st) {
+  const type = NODE_TYPES[st.type] ? st.type : (NODE_TYPES['Quest' + st.type + 'Node'] ? 'Quest' + st.type + 'Node' : null);
+  if (!type || NODE_TYPES[type].legacy) return null;
+  const n = FTUE.newNode(type, { displayName: st.displayName });
+  for (const [name, kind, , en] of NODE_TYPES[type].fields) {
+    if (!st.fields || st.fields[name] === undefined) continue;
+    const v = st.fields[name];
+    if (kind === 'enum') { const x = enumVal(en, v); if (x != null) n.fields[name] = x; }
+    else if (kind === 'enumlist') n.fields[name] = (Array.isArray(v) ? v : [v]).map(x => enumVal(en, x)).filter(x => x != null);
+    else if (kind === 'lines') n.fields[name] = (Array.isArray(v) ? v : [v]).map(String);
+    else if (kind === 'bool') n.fields[name] = v ? 1 : 0;
+    else if (kind === 'int' || kind === 'float') n.fields[name] = Number(v) || 0;
+    else if (kind === 'str' || kind === 'text') n.fields[name] = String(v);
+  }
+  n._delay = Number(st.waitBeforeNext) || 0;
+  return n;
+}
+let proposal = [];
+async function draftSteps(ask, speaker, wholePhase) {
+  const p = phase();
+  const prompt = `${SYS()}
+
+Available step types (use ONLY these; Navigate and EnterFreestyle are retired because they carry the player):
+${catalog()}
+
+Enum names you may use:
+${enumHelp()}
+
+${wholePhase ? 'Draft a complete new phase. End it with QuestPhaseEndNode (or QuestEndNode if it ends the whole quest).' : `The phase being edited, "${p.phaseName || p.assetName}", currently runs:\n${phaseText(p) || '(empty)'}\n\nDraft the steps to INSERT for the request. Do not repeat existing steps and do not add a terminal step unless the phase has none.`}
+Dialogue: speakerName is "${speaker.split(' ')[0]}". Each line under 140 characters, one idea per line, 1 to 4 lines per Dialogue step.
+To move the player somewhere, show the path: a Dialogue or ShowInstruction naming the one control to press, then a Wait step for that action. Never force navigation.
+
+Request: ${ask}
+
+Reply with JSON only: {"phaseName": string, "notes": string (one or two sentences for designer notes), "steps": [{"type": "QuestDialogueNode", "displayName": short label, "fields": {...}, "waitBeforeNext": seconds}]}`;
+  const out = $('#aiOut');
+  const r = await runSample(prompt, out, true);
+  if (!r || !Array.isArray(r.steps)) { if (r) out.innerHTML = '<div class="out">Claude returned no steps. Try a more specific request.</div>'; return; }
+  proposal = r.steps.map(toNode).filter(Boolean);
+  const dropped = r.steps.length - proposal.length;
+  const path = FTUE.chain(p).path;
+  const selIdx = path.findIndex(n => n.nodeId === selNode);
+  const termIdx = path.length && NODE_TYPES[path[path.length - 1].type].terminal ? path.length - 1 : path.length;
+  out.innerHTML = `<div class="insp"><h2 style="margin:0">${proposal.length} steps drafted${dropped ? ` (${dropped} dropped: unknown or retired type)` : ''}</h2>
+    ${r.notes ? `<p class="tiny muted" style="margin:0">${esc(r.notes)}</p>` : ''}
+    <div class="proposal">${proposal.map(n => `<div class="pstep cat-${NODE_TYPES[n.type].cat}"><div class="stripe"></div><div><b>${esc(NODE_TYPES[n.type].label)}</b> · ${esc(n.displayName)}<br><span class="muted">${summary(n)}</span></div></div>`).join('')}</div>
+    <div class="row">${wholePhase ? '<button class="btn cta" data-place="newphase">Add as a new phase</button>' : `
+      <button class="btn cta" data-place="${termIdx}">Insert before the end</button>
+      ${selIdx >= 0 ? `<button class="btn" data-place="${selIdx + 1}">Insert after the selected step</button>` : ''}
+      <button class="btn ghost" data-place="0">Insert at the start</button>`}
+      <button class="btn ghost" id="aiAgain">Try again</button></div></div>`;
+  out.dataset.phaseName = r.phaseName || ''; out.dataset.notes = r.notes || ''; out.dataset.ask = ask; out.dataset.whole = wholePhase ? 1 : '';
+}
+function placeProposal(where) {
+  const out = $('#aiOut');
+  snapshot();
+  if (where === 'newphase') {
+    const p = blankPhase(out.dataset.phaseName || 'New phase'); p.notes = out.dataset.notes || '';
+    state.phases.push(p); selPhase = state.phases.length - 1;
+  }
+  const p = phase();
+  if (where === 'newphase' && proposal.some(n => NODE_TYPES[n.type].terminal)) p.nodes = [];
+  const path = FTUE.chain(p).path;
+  const at = where === 'newphase' ? 0 : Number(where);
+  const nodes = proposal.map(n => { const d = n._delay; delete n._delay; n._d = d; return n; });
+  p.nodes.push(...nodes);
+  const ordered = path.slice(0, at).concat(nodes, path.slice(at));
+  FTUE.relink(p, ordered);
+  for (const n of nodes) { const e = n.outputs.find(o => o.port === 'next'); if (e) e.delay = n._d || 0; delete n._d; }
+  selNode = nodes[0] && nodes[0].nodeId; proposal = [];
+  out.innerHTML = '<div class="out">Added. Undo puts it back.</div>';
+  render(); persist();
+}
+async function writeLines() {
+  const p = phase(), n = p.nodes.find(x => x.nodeId === selNode); if (!n || !sample) { if (!sample) toast('Claude is not available in this view.'); return; }
+  const path = FTUE.chain(p).path, i = path.indexOf(n);
+  const prompt = `${SYS()}
+
+The phase "${p.phaseName || p.assetName}" runs:
+${phaseText(p)}
+
+Rewrite the dialogue of step ${i + 1} ("${n.displayName}"), spoken by ${n.fields.speakerName || 'the captain'}. It must set up what the next step asks the player to do${path[i + 1] ? ` (${path[i + 1].type.replace(/^Quest|Node$/g, '')}: ${summary(path[i + 1]).replace(/<[^>]+>/g, '')})` : ''}.
+Current lines: ${JSON.stringify(n.fields.lines)}
+Give three different takes. Each: 1 to 3 lines, each under 140 characters, in the speaker's voice.
+Reply with JSON only: {"takes": [{"tone": one or two words, "lines": [string]}]}`;
+  tab = 'claude'; renderRight();
+  const out = $('#aiOut');
+  const r = await runSample(prompt, out, true);
+  if (!r || !Array.isArray(r.takes)) return;
+  out.innerHTML = `<div class="insp"><h2 style="margin:0">Three takes for "${esc(n.displayName)}"</h2>${r.takes.map((t, k) => `<div class="comms"><div class="av">${esc((n.fields.speakerName || '?')[0])}</div><div><div class="eyebrow">${esc(t.tone || 'Take ' + (k + 1))}</div>${(t.lines || []).map(l => `<div class="said">${esc(l)}</div>`).join('')}<div class="row" style="margin-top:8px"><button class="btn small cta" data-take="${k}">Use this take</button></div></div></div>`).join('')}</div>`;
+  out._takes = r.takes; out._node = n.nodeId;
+}
+async function reviewPhase() {
+  const p = phase(); if (!sample) return toast('Claude is not available in this view.');
+  const prompt = `${SYS()}
+
+Review this onboarding phase "${p.phaseName || p.assetName}" (designer notes: ${p.notes || 'none'}):
+${phaseText(p)}
+
+Check: does each step teach one thing; does every move follow the guided-path rule (show the one control, never carry); does the player always know what to press next; is any dialogue too long, repetitive or out of voice; is there a dead end or a wait that can hold forever; is the pacing right for a first-time player on a phone.
+Write at most six short findings, most important first, each naming the step number and a concrete fix. Plain text, one finding per line, no preamble.`;
+  await runSample(prompt, $('#reviewOut'), false);
+}
+
+// ---------- editing helpers ----------
+function blankPhase(name) {
+  const end = FTUE.newNode('QuestPhaseEndNode', { displayName: 'Phase Complete' });
+  const slug = name.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'Phase';
+  const p = { guid: FTUE.rndHex(32), graphFileId: '11400000', assetName: `${state.quest.assetName}_${slug}`, graphId: '', phaseName: name, enabled: 1, underUnlock: 0, notes: '', entry: end.nodeId, nodes: [end], inQuest: 1, canvasZoom: 1, canvasScroll: { x: 0, y: 0 } };
+  FTUE.layoutRows([end]);
+  return p;
+}
+function insertAt(idx, type) {
+  snapshot();
+  const p = phase(), path = FTUE.chain(p).path;
+  const n = FTUE.newNode(type);
+  p.nodes.push(n);
+  FTUE.relink(p, path.slice(0, idx).concat([n], path.slice(idx)));
+  selNode = n.nodeId; tab = 'step'; render(); persist();
+}
+function openAdd(idx) {
+  const groups = {};
+  for (const [t, s] of Object.entries(NODE_TYPES)) if (!s.legacy) (groups[s.cat] = groups[s.cat] || []).push([t, s]);
+  $('#addBody').innerHTML = `<h3>Add a step</h3>${Object.entries(groups).map(([c, list]) => `<div><h2>${c === 'Gate' ? 'Wait for the player' : c}</h2><div class="proposal">${list.map(([t, s]) => `<button class="pstep cat-${c}" data-addtype="${t}" data-idx="${idx}" style="border:0;text-align:left;cursor:pointer;color:inherit"><div class="stripe"></div><div><b>${esc(s.label)}</b><br><span class="muted">${esc(s.tip)}</span></div></button>`).join('')}</div></div>`).join('')}
+    <p class="tiny muted">Navigate and Enter Freestyle are left out: they carry the player, which the guided-path rule retired. Imported phases keep theirs.</p>
+    <div class="row"><button class="btn ghost" id="addCancel">Cancel</button></div>`;
+  $('#dlgAdd').showModal();
+}
+
+// ---------- export / import ----------
+function phaseFiles(p) { return { [`Phases/${p.assetName}.asset`]: FTUE.writePhaseAsset(p), [`Phases/${p.assetName}.asset.meta`]: FTUE.writeMeta(p.guid) }; }
+function questFiles() {
+  if (!state.quest.guid) state.quest.guid = FTUE.rndHex(32);
+  const files = { [`Quests/${state.quest.assetName}.asset`]: FTUE.writeQuestAsset(state.quest, state.phases), [`Quests/${state.quest.assetName}.asset.meta`]: FTUE.writeMeta(state.quest.guid) };
+  for (const p of state.phases) Object.assign(files, phaseFiles(p));
+  return files;
+}
+let downloads = null;
+window.claude?.use?.('downloads').then(d => { downloads = d; });
+async function save(filename, data) {
+  if (!downloads) { toast('Saving files is not available here. Use Copy instead.'); return; }
+  try { await downloads.save({ filename, data }); toast('Saved ' + filename); }
+  catch (e) { toast(e && e.code === 'declined' ? 'Save cancelled.' : e && e.code === 'rejected_extension' ? 'This file type cannot be saved here. Use the .zip or Copy.' : 'Could not save the file.'); }
+}
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); toast('Copied.'); } catch (e) { const pre = $('#exportPre'); if (pre) { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } toast('Press Ctrl+C to copy the selected text.'); }
+}
+function openExport() {
+  const p = phase(), errs = state.phases.reduce((a, ph) => a + FTUE.validate(ph).filter(f => f.level === 'error').length, 0);
+  const yaml = p ? FTUE.writePhaseAsset(JSON.parse(JSON.stringify(p))) : '';
+  $('#exportBody').innerHTML = `<h3>Export to Unity</h3>
+    <p class="tiny muted" style="margin:0">Files go in <code>Assets/FTUE/DataContainer/</code>. Existing phases keep their guid and every node's fileID and nodeId, so the diff shows only what you changed and saved progress keeps pointing at the same nodes. Unity reads them on the next focus; open <b>FrogletTools ▸ FTUE ▸ Quest Graph Editor</b> to check.</p>
+    ${errs ? `<p class="flag err" style="margin:0">${errs} error${errs > 1 ? 's' : ''} across the phases. They export, but those phases will not run cleanly.</p>` : ''}
+    <div class="row"><button class="btn cta" id="exZip">Download the quest (.zip, ${state.phases.length} phases + quest)</button><button class="btn" id="exPhase">This phase (.asset)</button><button class="btn" id="exMeta">Its .meta</button><button class="btn ghost" id="exJson">Project JSON</button></div>
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(p ? p.assetName : '')}.asset</h2><button class="btn small" id="exCopy">Copy YAML</button></div>
+    <pre class="code" id="exportPre">${esc(yaml)}</pre>
+    <div class="row"><button class="btn ghost" id="exClose">Close</button></div>`;
+  $('#dlgExport').showModal();
+}
+async function doImport() {
+  const files = Array.from($('#importFiles').files || []);
+  const paste = $('#importPaste').value.trim();
+  const texts = {};
+  for (const f of files) texts[f.name] = await f.text();
+  if (paste) texts['pasted.asset'] = paste;
+  let added = 0, replaced = 0, questSet = false;
+  const errs = [];
+  snapshot();
+  for (const [name, text] of Object.entries(texts)) {
+    if (!name.endsWith('.asset')) continue;
+    try {
+      if (/CosmicShore\.Core\.QuestSO\b|guid: 5624c2ba33ab44b8af6d26dbf100d099/.test(text) && !/QuestPhaseGraphSO/.test(text)) {
+        const q = FTUE.parseQuestAsset(text); const meta = texts[name + '.meta'];
+        const order = q.phaseGuids; delete q.phaseGuids;
+        state.quest = Object.assign(q, { guid: meta ? (/guid: (\w+)/.exec(meta) || [])[1] : state.quest.guid });
+        state.phases.forEach(p => { p.inQuest = order.includes(p.guid) ? 1 : 0; });
+        state.phases.sort((a, b) => (order.indexOf(a.guid) + 1 || 999) - (order.indexOf(b.guid) + 1 || 999));
+        questSet = true; continue;
+      }
+      const meta = texts[name + '.meta'];
+      const guid = meta ? (/guid: (\w+)/.exec(meta) || [])[1] : null;
+      const p = FTUE.parsePhaseAsset(text, guid);
+      const at = state.phases.findIndex(x => (guid && x.guid === guid) || x.assetName === p.assetName);
+      if (at >= 0) { p.guid = guid || state.phases[at].guid; p.inQuest = state.phases[at].inQuest; state.phases[at] = p; selPhase = at; replaced++; }
+      else { p.inQuest = 1; state.phases.push(p); selPhase = state.phases.length - 1; added++; }
+    } catch (e) { errs.push(`${name}: ${e.message}`); }
+  }
+  selNode = null; render(); persist();
+  toast(errs.length ? errs[0] : `Imported: ${added} new, ${replaced} replaced${questSet ? ', run order set from the quest' : ''}.`);
+}
+
+// ---------- team drafts (shared db) ----------
+let db = null, user = null, drafts = [];
+window.claude?.use?.('db').then(d => { db = d; if (db) db.collection('drafts').orderBy('updatedAt', 'desc').limit(40).onSnapshot(s => { drafts = s.docs.map(x => ({ id: x.id, ...x.data() })); if ($('#dlgTeam').open) renderTeam(); }, () => {}); });
+window.claude?.use?.('user').then(u => { user = u; });
+async function renderTeam() {
+  const el = $('#teamBody');
+  if (!db) { el.innerHTML = `<h3>Team drafts</h3><div class="empty">Team drafts need a signed-in claude.ai view. Your work is still kept in this browser.</div><div class="row"><button class="btn ghost" data-close="1">Close</button></div>`; return; }
+  let names = {};
+  try { if (user) { const ids = [...new Set(drafts.map(d => d.by).filter(Boolean))]; const ps = await user.profiles(ids); for (const id of ids) names[id] = (ps[id] && ps[id].name) || 'Someone'; } } catch (e) {}
+  el.innerHTML = `<h3>Team drafts</h3><p class="tiny muted" style="margin:0">Shared with everyone who can open this page. Saving under an existing name replaces that draft.</p>
+    <div class="row"><input type="text" id="draftName" value="${esc(state.name || '')}" placeholder="Draft name" style="flex:1"><button class="btn cta" id="draftSave">Save my draft</button></div>
+    <div class="drafts">${drafts.length ? drafts.map(d => `<div class="draft"><span><b>${esc(d.name)}</b> <span class="muted tiny">${names[d.by] ? esc(names[d.by]) + ' · ' : ''}${d.updatedAt ? new Date(d.updatedAt).toLocaleString() : ''}</span></span><button class="btn small" data-loaddraft="${esc(d.id)}">Open</button></div>`).join('') : '<div class="empty">No team drafts yet. Save yours to start the list.</div>'}</div>
+    <div class="row"><button class="btn ghost" data-close="1">Close</button></div>`;
+}
+async function saveDraft() {
+  const name = $('#draftName').value.trim(); if (!name) return toast('Name the draft first.');
+  state.name = name;
+  const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'draft';
+  let by = ''; try { by = user ? await user.id() : ''; } catch (e) {}
+  try { await db.collection('drafts').doc(id).set({ name, by, updatedAt: Date.now(), project: JSON.stringify(state) }); toast('Saved to team drafts.'); persist(); }
+  catch (e) { toast(e && e.code === 'permission_denied' ? 'You can read team drafts but not save them here.' : 'Could not save the draft.'); }
+}
+
+// ---------- events ----------
+document.addEventListener('click', async e => {
+  const t = e.target.closest('button, .phase, .card, .finding, .chip');
+  if (!t) return;
+  const d = t.dataset;
+  if (t.classList.contains('tab')) { tab = d.tab; renderRight(); return; }
+  if (d.up || d.down) { e.stopPropagation(); const i = Number(d.up || d.down), j = i + (d.up ? -1 : 1); if (j < 0 || j >= state.phases.length) return; snapshot(); [state.phases[i], state.phases[j]] = [state.phases[j], state.phases[i]]; selPhase = j; render(); persist(); return; }
+  if (t.classList.contains('phase')) { selPhase = Number(d.i); selNode = null; render(); return; }
+  if (d.mv) { e.stopPropagation(); const p = phase(), path = FTUE.chain(p).path, i = Number(d.mv), j = i + Number(d.d); if (j < 0 || j >= path.length) return; snapshot(); [path[i], path[j]] = [path[j], path[i]]; FTUE.relink(p, path); render(); persist(); return; }
+  if (d.dup) { e.stopPropagation(); const p = phase(), path = FTUE.chain(p).path, src = path[Number(d.dup)]; snapshot(); const n = JSON.parse(JSON.stringify(src)); n.nodeId = FTUE.rndHex(32); n.fileId = ''; n.objName = ''; n.displayName += ' (copy)'; n.outputs = n.outputs.filter(o => o.port === 'next'); p.nodes.push(n); FTUE.relink(p, path.slice(0, Number(d.dup) + 1).concat([n], path.slice(Number(d.dup) + 1))); selNode = n.nodeId; render(); persist(); return; }
+  if (d.del) { e.stopPropagation(); const p = phase(), path = FTUE.chain(p).path, n = path[Number(d.del)]; snapshot(); p.nodes = p.nodes.filter(x => x !== n); FTUE.relink(p, path.filter(x => x !== n)); if (selNode === n.nodeId) selNode = null; render(); persist(); toast('Step deleted. Undo puts it back.'); return; }
+  if (d.deloff) { e.stopPropagation(); snapshot(); const p = phase(); p.nodes = p.nodes.filter(x => x.nodeId !== d.deloff); render(); persist(); return; }
+  if (d.attach) { e.stopPropagation(); const p = phase(), path = FTUE.chain(p).path, n = p.nodes.find(x => x.nodeId === d.attach); snapshot(); const at = path.length && NODE_TYPES[path[path.length - 1].type].terminal ? path.length - 1 : path.length; n.enabled = 1; FTUE.relink(p, path.slice(0, at).concat([n], path.slice(at))); render(); persist(); return; }
+  if (t.classList.contains('card')) { selNode = d.node; tab = 'step'; render(); return; }
+  if (d.insert) { openAdd(Number(d.insert)); return; }
+  if (d.addtype) { $('#dlgAdd').close(); insertAt(Number(d.idx), d.addtype); return; }
+  if (t.id === 'addCancel') { $('#dlgAdd').close(); return; }
+  if (d.goto !== undefined && t.classList.contains('finding')) { if (d.goto) { selNode = d.goto; tab = 'step'; render(); document.querySelector(`.card[data-node="${d.goto}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }); } return; }
+  if (d.chip) { const p = phase(), n = p.nodes.find(x => x.nodeId === selNode), v = Number(d.v), arr = n.fields[d.chip]; snapshot(); const k = arr.indexOf(v); if (k >= 0) arr.splice(k, 1); else arr.push(v); renderStep(); renderCenter(); persist(); return; }
+  if (d.idea) { $('#aiAsk').value = d.idea; return; }
+  if (d.lmv) { const n = phase().nodes.find(x => x.nodeId === selNode), i = Number(d.lmv); if (i < 1) return; snapshot(); const L = n.fields.lines; [L[i - 1], L[i]] = [L[i], L[i - 1]]; renderStep(); renderCenter(); persist(); return; }
+  if (d.ldel) { const n = phase().nodes.find(x => x.nodeId === selNode); snapshot(); n.fields.lines.splice(Number(d.ldel), 1); renderStep(); renderCenter(); persist(); return; }
+  if (d.place !== undefined) { placeProposal(d.place); return; }
+  if (d.take !== undefined) { const out = $('#aiOut'), n = phase().nodes.find(x => x.nodeId === out._node); if (!n) return; snapshot(); n.fields.lines = (out._takes[Number(d.take)].lines || []).map(String); selNode = n.nodeId; tab = 'step'; render(); persist(); toast('Lines replaced. Undo puts the old ones back.'); return; }
+  if (d.loaddraft) { const dr = drafts.find(x => x.id === d.loaddraft); if (!dr) return; try { snapshot(); state = JSON.parse(dr.project); selPhase = 0; selNode = null; $('#dlgTeam').close(); render(); persist(); toast('Opened ' + dr.name + '.'); } catch (err) { toast('That draft could not be read.'); } return; }
+  if (d.close) { t.closest('dialog').close(); return; }
+  switch (t.id) {
+    case 'btnUndo': undo(); break;
+    case 'btnAddPhase': snapshot(); state.phases.push(blankPhase('New phase')); selPhase = state.phases.length - 1; selNode = null; render(); persist(); break;
+    case 'btnDraftPhase': tab = 'claude'; renderRight(); $('#aiAsk')?.focus(); if ($('#aiDraft')) $('#aiDraft').dataset.whole = 1, $('#aiDraft').textContent = 'Draft a whole phase'; break;
+    case 'btnDelPhase': if (state.phases.length) { snapshot(); state.phases.splice(selPhase, 1); selPhase = Math.max(0, selPhase - 1); selNode = null; render(); persist(); toast('Phase deleted. Undo puts it back.'); } break;
+    case 'addLine': { const n = phase().nodes.find(x => x.nodeId === selNode); snapshot(); n.fields.lines.push(''); renderStep(); persist(); document.querySelector(`[data-line="${n.fields.lines.length - 1}"]`)?.focus(); break; }
+    case 'aiLines': writeLines(); break;
+    case 'aiDraft': { const ask = $('#aiAsk').value.trim(); if (!ask) { toast('Describe the beat first.'); return; } const whole = !!t.dataset.whole; draftSteps(ask, $('#aiSpeaker').value, whole); break; }
+    case 'aiAgain': { const out = $('#aiOut'); draftSteps(out.dataset.ask, $('#aiSpeaker').value, !!out.dataset.whole); break; }
+    case 'aiStop': aiCtl?.abort(); break;
+    case 'aiReview': reviewPhase(); break;
+    case 'bibleReset': snapshot(); state.bible = DEFAULT_BIBLE; renderStory(); persist(); break;
+    case 'btnImport': $('#dlgImport').showModal(); break;
+    case 'importGo': e.preventDefault(); $('#dlgImport').close(); doImport(); break;
+    case 'importReset': e.preventDefault(); $('#dlgImport').close(); snapshot(); state = freshFromSeed(); selPhase = 0; selNode = null; render(); persist(); toast('Reloaded: ' + SEED_NOTE + '.'); break;
+    case 'btnExport': openExport(); break;
+    case 'exClose': $('#dlgExport').close(); break;
+    case 'exCopy': copy($('#exportPre').textContent); break;
+    case 'exPhase': save(phase().assetName + '.asset', FTUE.writePhaseAsset(phase())); persist(); break;
+    case 'exMeta': save(phase().assetName + '.asset.meta', FTUE.writeMeta(phase().guid)); break;
+    case 'exJson': save((state.quest.assetName || 'quest') + '.ftue.json', JSON.stringify(state, null, 1)); break;
+    case 'exZip': {
+      if (!window.JSZip) { toast('The zip library did not load. Save the phases one at a time.'); break; }
+      const z = new JSZip(), files = questFiles();
+      for (const [k, v] of Object.entries(files)) z.file('DataContainer/' + k, v);
+      z.file('README.txt', `Exported by FTUE Creator ${new Date().toISOString()}\nCopy DataContainer/ over Assets/FTUE/DataContainer/ and let Unity import.\nPhases in run order: ${state.phases.filter(p => p.inQuest).map(p => p.assetName).join(', ')}\n`);
+      save((state.quest.assetName || 'Quest') + '_FTUE.zip', await z.generateAsync({ type: 'blob' })); persist(); break;
+    }
+    case 'btnTeam': renderTeam(); $('#dlgTeam').showModal(); break;
+    case 'draftSave': saveDraft(); break;
+  }
+});
+document.addEventListener('input', e => {
+  const t = e.target, p = phase();
+  if (t.id === 'questName') { state.quest.assetName = t.value.trim() || 'Quest'; persist(); return; }
+  if (t.id === 'bible') { state.bible = t.value; persist(); return; }
+  if (!p) return;
+  const map = { phName: 'phaseName', phAsset: 'assetName', phNotes: 'notes' };
+  if (map[t.id]) { p[map[t.id]] = t.value; if (t.id === 'phAsset' && !p.graphId) p.graphId = ''; renderLeft(); persist(); return; }
+  const n = p.nodes.find(x => x.nodeId === selNode); if (!n) return;
+  if (t.id === 'nDisp') { n.displayName = t.value; n.objName = t.value; }
+  else if (t.id === 'nDelay') { let ed = n.outputs.find(o => o.port === 'next'); if (ed) ed.delay = Math.max(0, Number(t.value) || 0); }
+  else if (t.dataset.line !== undefined) n.fields.lines[Number(t.dataset.line)] = t.value;
+  else if (t.dataset.f && t.dataset.k !== 'bool' && t.dataset.k !== 'enum') { const k = t.dataset.k; n.fields[t.dataset.f] = k === 'int' ? Math.round(Number(t.value) || 0) : k === 'float' ? Number(t.value) || 0 : t.value; }
+  else return;
+  renderCenter(); persist();
+  if (t.dataset.line !== undefined || t.dataset.f === 'speakerName' || t.dataset.f === 'arcadeCaption') { const pv = $('#tab-step .comms'); if (pv) pv.outerHTML = commsPreview(n); }
+});
+document.addEventListener('change', e => {
+  const t = e.target, p = phase();
+  if (t.id === 'questEnabled') { state.quest.enabled = t.checked ? 1 : 0; persist(); return; }
+  if (t.id === 'questUnlock') { state.quest.underUnlock = t.checked ? 1 : 0; persist(); return; }
+  if (!p) return;
+  if (t.id === 'phInQuest') { p.inQuest = t.checked ? 1 : 0; renderLeft(); persist(); return; }
+  if (t.id === 'phEnabled') { p.enabled = t.checked ? 1 : 0; persist(); return; }
+  if (t.id === 'phUnlock') { p.underUnlock = t.checked ? 1 : 0; render(); persist(); return; }
+  const n = p.nodes.find(x => x.nodeId === selNode); if (!n) return;
+  if (t.id === 'nEnabled') n.enabled = t.checked ? 1 : 0;
+  else if (t.dataset.k === 'bool') n.fields[t.dataset.f] = t.checked ? 1 : 0;
+  else if (t.dataset.k === 'enum') n.fields[t.dataset.f] = Number(t.value);
+  else if (t.dataset.k === 'str' && t.tagName === 'SELECT') n.fields[t.dataset.f] = t.value;
+  else return;
+  snapshot(); renderCenter(); renderCheck(); persist();
+});
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); undo(); }
+  if (e.key === 'Enter' && document.activeElement.matches('.card, .phase')) document.activeElement.click();
+});
+document.addEventListener('focusin', e => { if (e.target.matches('textarea, input[type=text], input[type=number]')) snapshot(); }, true);
+render();
+</script>
