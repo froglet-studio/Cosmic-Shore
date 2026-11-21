@@ -33,6 +33,14 @@
   prop:
     s: change
     note: The result screen says what the round trained, and lights a petal on the vessel's flower.
+  measure:
+    in: x
+    event: game_completed
+    params: [mode, genre, intensity, placing, seconds, first_time]
+    target: A round lasts about 90 seconds for an experienced pilot, and a run is 3 to 5 rounds.
+    first: 1
+    expect: 'A new pilot reaches and finishes the card the spotlight leads to, unaided: the first meaningful match Docs/ACTIVATION.md
+      defines activation by.'
   holes:
   - 'on': np
     q: Rounds per run are not measured, and nothing but the player's own wish moves them from a card to the next card.

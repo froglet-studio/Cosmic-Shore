@@ -727,6 +727,7 @@ class Builder:
         self.say(f"docs done ({time.time() - t0:.1f}s)")
         self.loops_pass()
         self.say(f"loops done ({time.time() - t0:.1f}s)")
+        self.human_first()
         self.imagery()
         self.say(f"imagery done ({time.time() - t0:.1f}s)")
         return self
@@ -785,7 +786,7 @@ class Builder:
                     kw = {"tk": mb["kind"], "l": mb["line"], "ty": mb.get("type"), "v": mb.get("value"),
                           "sig": mb.get("sig"), "tip": mb.get("tip"), "hd": mb.get("header"),
                           "ser": mb.get("ser"), "mods": " ".join(mb.get("mods", [])) or None,
-                          "doc": mb.get("doc"), "rng": mb.get("rng")}
+                          "doc": mb.get("doc"), "rng": mb.get("rng"), "was": mb.get("was")}
                     g.node("m:" + mid[2:], "member", mb["name"], tid, **kw)
                     self.stats["member " + mb["kind"]] += 1
                 self.stats["type " + t["kind"]] += 1
@@ -1270,7 +1271,8 @@ class Builder:
             vid = "L:vessel/" + V
             g.node(vid, "loop", f["label"], "L:fleet", tier=2, lid="fleet/" + V)
             for E, v in (f.get("verbs") or {}).items():
-                g.node(f"L:verb/{V}/{E}", "loop", v.get("ability") or E, vid, tier=1, el=E)
+                g.node(f"L:verb/{V}/{E}", "loop", v.get("ability") or E, vid, tier=1, el=E, d=v.get("does"),
+                       tr=v.get("trigger"), sc=v.get("scales"))
         # automatic links: every repo path a loop cites
         def cite(lid, text):
             for path in re.findall(r"((?:Docs|Assets|Tools)/[^\s,;()]+?\.(?:md|cs|asset|prefab|unity|json|py))", text or ""):
@@ -1286,6 +1288,8 @@ class Builder:
             vid = "L:vessel/" + V
             for E, v in (f.get("verbs") or {}).items():
                 cite(f"L:verb/{V}/{E}", v.get("source"))
+                for fpath in self.ability_assets(V, v.get("ability") or ""):
+                    g.link(f"L:verb/{V}/{E}", "code", fpath, "loops")
             cite(vid, f.get("doc"))
             for oid in so_vessel:
                 if re.search(r"(^|[^A-Za-z])" + re.escape(V) + r"([^A-Za-z]|$)", oid.split("#")[0].rsplit("/", 1)[-1]):
@@ -1380,6 +1384,47 @@ class Builder:
                 for fa in binds.get(key, []):
                     if fa in g.recs:
                         g.link(vid, "ability", fa, "abilityOf")
+    def ability_assets(self, vessel: str, ability: str) -> list[str]:
+        """The ScriptableObjects a person tunes for one ability: its Ability asset (`Ability<Vessel><Name>`) and the
+        vessel's action assets whose name shares a word with the ability's name."""
+        def norm(s):
+            return re.sub(r"[^a-z0-9]", "", s.lower())
+        if not hasattr(self, "_abil"):
+            self._abil = {}
+            for i, r in self.g.recs.items():
+                if i.startswith("f:Assets/_SO_Assets/Abilities/") and i.endswith(".asset"):
+                    self._abil[norm(i.rsplit("/", 1)[-1][:-6])] = i
+        out = []
+        key = norm("ability" + vessel + ability)
+        if key in self._abil:
+            out.append(self._abil[key])
+        words = [w for w in re.findall(r"[a-z]{4,}", ability.lower()) if w not in ("mode", "shot", "with", "your")]
+        pre = f"f:Assets/_SO_Assets/VesselActions/{vessel}/"
+        for i in self.g.recs:
+            if i.startswith(pre) and i.endswith(".asset") and any(w in norm(i[len(pre):]) for w in words):
+                out.append(i)
+        return out[:8]
+
+    def human_first(self):
+        """A loop's code in the order a person inspects it: abilities, tuned assets, docs, prefabs, then code, tests last
+        (Garrett, 2026-11-21: deep code should not read like a generated API)."""
+        g = self.g
+
+        def rank(nid: str) -> tuple:
+            r = g.recs.get(nid, {})
+            k, path = r.get("k"), nid[2:] if nid[:2] in ("f:", "o:") else r.get("path", "")
+            if "/Tests/" in path or ".Tests." in nid:
+                return (11, nid)
+            if "/_SO_Assets/Abilities/" in path or "/ElementalAbilityMaps/" in path:
+                return (0, nid)
+            if "/_SO_Assets/VesselActions/" in path or "/_SO_Assets/VesselStats/" in path:
+                return (1, nid)
+            order = {"md": 2, "sec": 2, "asset": 3, "comp": 3, "prefab": 4, "img": 5, "type": 6, "cs": 7, "unity": 8,
+                     "dir": 9}
+            return (order.get(k, 10), nid)
+        for i, r in g.recs.items():
+            if r.get("k") == "loop" and r.get("r", {}).get("code"):
+                r["r"]["code"].sort(key=rank)
 
     def write_atlases(self, out: Path):
         """Thumbnails of every picture, packed SHEET x SHEET per sheet (webp, alpha kept). Image i is sheet i // 256,
@@ -1411,7 +1456,9 @@ class Builder:
         for r in g.recs.values():
             if "r" in r:
                 for k in list(r["r"]):
-                    r["r"][k] = sorted(set(r["r"][k]))
+                    # a loop's code keeps the human-first order human_first() gave it; the rest sort by id
+                    r["r"][k] = (list(dict.fromkeys(r["r"][k])) if k == "code" and r.get("k") == "loop"
+                                 else sorted(set(r["r"][k])))
         # each record carries its children's kinds (one letter each) and, where the id does not say it, their names,
         # so the page can group and label a ring's children before it loads their records
         for r in g.recs.values():

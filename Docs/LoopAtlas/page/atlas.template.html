@@ -237,6 +237,8 @@ body { background: var(--ground); color: var(--text); }
   function tierOf(n) { return M.tiers[n.tier]; }
   function termOf(n) { return n.kind === 'kit' || n.kind === 'vessel' ? 'Kit' : M.tiers[n.tier].term; }
   function driver(id) { for (var i = 0; i < M.drivers.length; i++) if (M.drivers[i].id === id) return M.drivers[i]; return null; }
+  function senseOf(id) { for (var i = 0; i < (M.senses || []).length; i++) if (M.senses[i].id === id) return M.senses[i]; return null; }
+  function sightOf(id) { for (var i = 0; i < (M.sights || []).length; i++) if (M.sights[i].id === id) return M.sights[i]; return null; }
   function handoff(id) { for (var i = 0; i < M.handoffs.length; i++) if (M.handoffs[i].id === id) return M.handoffs[i]; return null; }
 
   // ---------- the tree for one layer and one vessel ----------
@@ -276,7 +278,7 @@ body { background: var(--ground); color: var(--text); }
       out.push({ id: host.id + '/combo/' + i, name: c.name, tier: 2, kind: 'combo', t: c.t, is: c.is,
         phases: c.chain.map(function (s) { return { n: s[1], e: s[0] }; }), drivers: c.drivers || [], feel: c.feel,
         invented: cin === 'x', holes: [], src: [c.src || 'invented from the kit text (proposal P3)'], children: [], vessel: V,
-        propS: cin === 'x' ? 'add' : null });
+        propS: cin === 'x' ? 'add' : null, gene: c.gene && (c.gene.in || 'x').indexOf(L) >= 0 ? c.gene : null });
       // a loop inside the combo: it opens at one step of the chain and is one more layer of depth
       var cn = out[out.length - 1];
       (c.sub || []).forEach(function (s, j) {
@@ -363,9 +365,13 @@ body { background: var(--ground); color: var(--text); }
     if (CODE.shards[s] === 'on' || CODE.shards[s] === 'failed') return CODE.recs[id] || { k: 'missing', n: nameOf(id) };
     loadShard(s, ping); return null;
   }
+  var ALIAS = {};
   function valueRec(id, ping) {
     var o = recIdOf(id), key = id.slice(id.indexOf('|') + 1), r = rec(o, ping); if (!r) return null;
-    var rows = (r.f || []).filter(function (x) { return x[0] === key || x[0].indexOf(key + '.') === 0 || x[0].indexOf(key + '[') === 0; });
+    var pick = function (k) { return (r.f || []).filter(function (x) { return x[0] === k || x[0].indexOf(k + '.') === 0 || x[0].indexOf(k + '[') === 0; }); };
+    var rows = pick(key);
+    // a field renamed with [FormerlySerializedAs] is still stored under its old name in assets nobody re-saved
+    if (!rows.length && ALIAS[key]) for (var ai = 0; ai < ALIAS[key].length && !rows.length; ai++) { rows = pick(ALIAS[key][ai]); if (rows.length) key = ALIAS[key][ai]; }
     var exact = rows.length === 1 && rows[0][0] === key ? rows[0] : null;
     return { k: 'value', n: key.split('.').pop(), key: key, v: exact ? exact[1] : rows.length ? rows.length + ' values' : 'not set here',
       ref: exact ? exact[2] : null, sub: exact ? null : rows, o: o, script: r.r && r.r.script ? r.r.script[0] : null };
@@ -482,6 +488,7 @@ body { background: var(--ground); color: var(--text); }
   var CODE_ORDER = [['v:', 0, 'What a designer reads'], ['.asset', 1, 'Tuning assets'], ['.md', 2, 'Docs'], ['s:', 2, 'Docs'],
     ['.prefab', 3, 'Prefabs and scenes'], ['.unity', 3, 'Prefabs and scenes'], ['t:', 4, 'Scripts'], ['.cs', 4, 'Scripts']];
   function codeRank(id) {
+    if (/\/Tests?\/|\.Tests?\.|Tests?\.cs$/.test(id)) return [null, 6, 'Tests'];
     for (var i = 0; i < CODE_ORDER.length; i++) { var c = CODE_ORDER[i]; if (c[0].charAt(0) === '.' ? id.slice(0, 2) === 'f:' && id.slice(-c[0].length) === c[0] : id.slice(0, c[0].length) === c[0]) return c; }
     return [null, 5, 'Other'];
   }
@@ -583,6 +590,7 @@ body { background: var(--ground); color: var(--text); }
       } else inside = kids;
     }
     if (r.k === 'member' && (r.tk === 'field') && r.p) {
+      if (r.was) ALIAS[r.n] = r.was;
       var tr = rec(r.p, ping); if (!tr) return null;
       var inst2 = tr.r && tr.r.instances || [];
       if (inst2.length) out.push({ box: 'Its value in each asset (' + inst2.length + ')', items: inst2.map(function (o) { return { id: 'v:' + o.slice(2) + '|' + r.n, label: nameOf(o).replace(' ›', '') }; }), tone: 'value' });
@@ -753,15 +761,15 @@ body { background: var(--ground); color: var(--text); }
     if (pl.box) {
       if (pl.conn) return { kick: 'CONNECTIONS', name: pl.box, what: 'Everything else this node touches: ' + pl.items.map(function (b) { return b.box || b.label || ''; }).join(', ') + '.', params: [], rows: [], foot: 'Each neighbour is the node itself, the same wherever it appears.' };
       if (pl.tone === 'human' && pl.items.length && pl.items[0].id) {
-        var ps2 = [];
+        var ps2 = [], allP = true;
         pl.items.slice(0, 9).forEach(function (it) {
           var x = it.id.slice(0, 2) === 'v:' ? valueRec(it.id, function () {}) : CODE.recs[it.id];
           if (!x) return;
           if (x.k === 'value') ps2.push([it.label || nice(x.n), x.sub ? x.sub.length + ' values' : shown(null, x.v), '']);
           else if (x.k === 'member') ps2.push([it.label || nice(x.n), x.v != null ? dflt(x.v) : (x.ty || ''), x.tip ? x.tip.slice(0, 70) + (x.tip.length > 70 ? '…' : '') : '']);
-          else ps2.push([it.label || x.n, KIND_WORD[x.k] || x.k, '']);
+          else { ps2.push([it.label || x.n, x.k === 'type' && x.role ? ROLE_WORD[x.role] : KIND_WORD[x.k] || x.k, '']); allP = false; }
         });
-        return { kick: /^(Assets made|On prefabs)/.test(pl.box) ? 'WHERE A DESIGNER TUNES IT' : 'PARAMETERS', name: pl.box, what: '', params: ps2, rows: pl.items.length > 9 ? [(pl.items.length - 9) + ' more inside'] : [], foot: '' };
+        return { kick: /^(Assets made|On prefabs)/.test(pl.box) ? 'WHERE A DESIGNER TUNES IT' : allP ? 'PARAMETERS' : 'WHAT IS HERE', name: pl.box, what: '', params: ps2, rows: pl.items.length > 9 ? [(pl.items.length - 9) + ' more inside'] : [], foot: '' };
       }
       if (pl.tone === 'near' || pl.tone === 'value') return { kick: pl.tone === 'value' ? 'VALUES' : 'NEIGHBOURS', name: pl.box, what: '', params: [], rows: [pl.items.length + (pl.items.length === 1 ? ' neighbour' : ' neighbours') + '. Each is the node itself, the same wherever it appears: zoom in instead of following a link.'], foot: '' };
       return { kick: pl.tone === 'bucket' ? 'BY NAME' : 'INSIDE', name: pl.box, what: '', params: [], rows: [pl.items.length + ' inside'], foot: '' };
@@ -769,7 +777,10 @@ body { background: var(--ground); color: var(--text); }
     if (!r) return { kick: '…', name: nameOf(pl.id), what: '', params: [], rows: [], foot: '' };
     if (!pl.parent && r.k === 'loop') {
       var nc = ((r.r && r.r.code) || []).length + ((r.r && r.r.ability) || []).length;
-      return { kick: 'THE CODE OF ' + r.n.toUpperCase(), name: 'Code', what: nc + ' places implement this loop, opened in the order a person inspects them: what a designer reads, the assets they tune, the docs, then the scripts.', params: [], rows: [], foot: 'Every neighbour of a node sits beside it, so the whole codebase is reachable from here without a link.' };
+      // an ability opens on what it does, its trigger and what its element scales (the map's own words)
+      var vp = []; if (r.tr) vp.push(['Trigger', r.tr, '']); if (r.sc) vp.push(['Scaling', r.sc, '']);
+      return { kick: 'THE CODE OF ' + r.n.toUpperCase(), name: r.d ? r.n : 'Code', what: r.d || (nc + ' places implement this loop, opened in the order a person inspects them: what a designer reads, the assets they tune, the docs, then the scripts.'), params: vp,
+        rows: r.d ? [nc + ' places implement it, in the order a person inspects them: what a designer reads, the assets they tune, the docs, then the scripts.'] : [], foot: 'Every neighbour of a node sits beside it, so the whole codebase is reachable from here without a link.' };
     }
     var kw = KIND_WORD[r.k] || r.k, rows = [], nm = r.n, what = '', params = [], foot = '';
     if (r.k === 'member') kw = ({ field: r.ser === true ? 'Parameter (serialized field)' : 'Field', const: 'Constant', property: 'Property', method: 'Method', ctor: 'Constructor', event: 'Event', enum: 'Enum value' })[r.tk] || 'Member';
@@ -800,7 +811,8 @@ body { background: var(--ground); color: var(--text); }
       nm = r.ser === true ? nice(r.n) : r.n;
       what = r.tip || firstSentences(r.doc, 2);
       if (r.tip && r.doc) rows.push(firstSentences(r.doc, 1));
-      if (r.v != null) params.push([r.tk === 'field' ? 'Default in code' : 'Value', r.v, '']);
+      if (r.v != null) params.push([r.tk === 'field' ? 'Default in code' : 'Value', dflt(r.v), '']);
+      if (r.was) rows.push('stored in older assets as ' + r.was.join(', '));
       if (r.rng) params.push(['Range', r.rng, '']);
       if (r.ty) params.push(['Type', r.ty, '']);
       if (r.hd) rows.push('under the header “' + r.hd + '”');
@@ -812,8 +824,9 @@ body { background: var(--ground); color: var(--text); }
       if (r.menu) rows.push('Create › ' + r.menu.replace(/\//g, ' › '));
       if (r.ps && r.ps.length) {
         var ser = r.ps.filter(function (x) { return x[2]; }).slice(0, 4);
-        ser.forEach(function (x) { params.push([nice(x[0]), x[3] != null ? x[3] : '', x[2]]); });
-        rows.push(r.ps.length + ' parameters in the Inspector' + (r.r && r.r.instances ? ', ' + r.r.instances.length + (r.role === 'config' ? ' assets' : ' placed') : ''));
+        ser.forEach(function (x) { params.push([nice(x[0]), x[3] != null ? dflt(x[3]) : '', x[2].length > 90 ? x[2].slice(0, 88) + '…' : x[2]]); });
+        var ni = r.r && r.r.instances ? r.r.instances.length : 0;
+        rows.push(r.ps.length + ' parameters in the Inspector' + (ni ? ', ' + ni + (r.role === 'config' ? (ni === 1 ? ' asset' : ' assets') : ' placed') + ' made from it' : ''));
       }
       foot = r.path ? r.path + (r.l ? ':' + r.l : '') : '';
     } else if (obj && obj.f) {
@@ -862,7 +875,7 @@ body { background: var(--ground); color: var(--text); }
       }
       var n = { id: s.id, name: s.name, tier: s.tier, kind: s.kind, t: s.t, is: s.is, phases: s.phases || [], drivers: s.drivers || [],
         reps: s.reps, repsOf: s.repsOf, at: s.at, core: !!s.core, ghost: ghost, kitKind: s.kit, element: s.element,
-        now: s.now, plan: s.plan, prop: s.prop, inL: s.in || 'npx', holes: holesFor(s.holes, L), src: s.src || [], children: [], parentId: s.parent };
+        now: s.now, plan: s.plan, prop: s.prop, inL: s.in || 'npx', measure: s.measure && has(s.measure, L) ? s.measure : null, holes: holesFor(s.holes, L), src: s.src || [], children: [], parentId: s.parent };
       byId[n.id] = n; list.push(n);
     });
     list.forEach(function (n) {
@@ -1810,6 +1823,20 @@ body { background: var(--ground); color: var(--text); }
         if (n.scales) vs.rows.push({ lead: 'More of the element:', t: n.scales });
         if (n.games && n.games.length) vs.rows.push({ lead: 'Its arcade game:', t: n.games.join(', ') });
         if (n.board) vs.rows.push({ lead: 'Elemental loop steps:', t: boardWords(n.board) });
+      }
+      if (n.gene) {
+        var gn = n.gene, gs = sec('As an AI gene');
+        gs.rows.push({ lead: 'Genome:', t: 'the ' + M.fleet[n.vessel].label + '’s ' + gn.genome + ' AI (one per vessel and element)' });
+        gs.rows.push({ lead: 'Starts when:', t: gn.cue.map(function (c, i) { var s = senseOf(c), w = s ? s.is.replace(/\.$/, '') : c; return i ? w.charAt(0).toLowerCase() + w.slice(1) : w; }).join('; and ') + '.' });
+        gn.dials.forEach(function (d) { gs.rows.push({ lead: d[0] + ':', t: d[1] + ', learned between ' + d[2] + ' and ' + d[3] + (d[4] ? ' ' + d[4] : ''), st: 'soft' }); });
+        gs.rows.push({ lead: 'Done when:', t: gn.done, st: 'prop', leadSt: 'prop' });
+        if (gn.sight) { var sg = sightOf(gn.sight); gs.rows.push({ lead: 'Pilot bias:', t: gn.sight + (sg ? ', who sees ' + sg.sees + ', leans into it.' : '') }); }
+      }
+      if (n.measure) {
+        var ms = n.measure, act = S.tree.all['arc.activation'], mm = sec('Measured by');
+        mm.rows.push({ lead: 'Event:', t: ms.event + (ms.params ? ' (' + ms.params.join(', ') + ')' : '') });
+        mm.rows.push({ lead: 'Target:', t: ms.target });
+        mm.rows.push({ lead: 'Activation:', t: (act && act.phases[ms.first] ? 'met at “' + act.phases[ms.first].n + '”. ' : '') + ms.expect, st: 'prop', leadSt: 'prop', go: act ? act.id : null });
       }
       if (n.kind === 'role' || n.kind === 'kit' || n.kind === 'vessel') {
         var f = M.fleet[n.vessel], rs = sec('The ' + f.label);
