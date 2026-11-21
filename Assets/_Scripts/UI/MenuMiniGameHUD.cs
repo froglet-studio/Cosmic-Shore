@@ -196,8 +196,12 @@ namespace CosmicShore.UI
             if (!crystalClickHandler)
             {
                 // The voyage scene: Escape / Select opens the pause menu (Shombith, 2026-11-17), the same gesture every
-                // game scene uses. Not while the end board is up (its B / Escape is Finish) or the intro plays.
-                if (VoyageScoreboard.Current == null && !VoyageIntro.IsPlaying && OverviewGesture.RequestedThisFrame())
+                // game scene uses, and so does the pad's Start, the pause button's own key on every other game scene's
+                // GameCanvas (ControllerButtonPress, Start; Shombith, 2026-11-21: "it should be Start as everywhere
+                // else"). Pressed again it resumes (PauseMenu.OnClickPauseGameButton toggles). Not while the end board
+                // is up (its B / Escape is Finish) or the intro plays.
+                if (VoyageScoreboard.Current == null && !VoyageIntro.IsPlaying &&
+                    (OverviewGesture.RequestedThisFrame() || StartPressed()))
                     Exit();
                 return;
             }
@@ -205,6 +209,9 @@ namespace CosmicShore.UI
             if (OverviewGesture.RequestedThisFrame())
                 Exit();
         }
+
+        static bool StartPressed() =>
+            UnityEngine.InputSystem.Gamepad.current is { } pad && pad.startButton.wasPressedThisFrame;
 
         void OnVolumePauseClicked() => Exit();
 

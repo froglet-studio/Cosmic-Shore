@@ -105,8 +105,13 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Voyage - which voyages can sail (Milestone 1)")]
         [SerializeField, Tooltip("Lock the crew's job voyages, except the ones listed below (Shombith, 2026-11-16: make one " +
-                                 "voyage good before the others open). The Ark escort is never locked. Off = every job sails.")]
+                                 "voyage good before the others open). A locked job is left off the board: no pilot recommends it. " +
+                                 "Off = every job sails.")]
         bool lockJobs = true;
+
+        [SerializeField, Tooltip("Lock the Ark escort (Shombith, 2026-11-21: Beta Phase 1 sails the Crystal Run only). " +
+                                 "Locked, its card still shows in the crew's locked voyages but cannot be opened or sailed.")]
+        bool lockEscort = true;
 
         [SerializeField, Tooltip("The job templates that still sail while jobs are locked (VoyageJob.TemplateId). Milestone 1 " +
                                  "keeps Sail home (job.return) and the crew's Crystal Run (job.raid.crystals, authored in " +
@@ -434,6 +439,16 @@ namespace CosmicShore.ScriptableObjects
             foreach (var id in openJobs)
                 if (!string.IsNullOrEmpty(id) && id == job.TemplateId) return true;
             return false;
+        }
+
+        /// <summary>True when the Ark escort may set sail (<see cref="lockEscort"/> off).</summary>
+        public bool IsEscortOpen => !lockEscort;
+
+        /// <summary><see cref="IsEscortOpen"/> on the shipped settings; with no settings asset the escort is open.</summary>
+        public static bool EscortSails()
+        {
+            var settings = Load();
+            return !settings || settings.IsEscortOpen;
         }
 
         /// <summary><see cref="IsJobOpen"/> on the shipped settings; with no settings asset every job is open.</summary>
