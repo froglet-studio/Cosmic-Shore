@@ -29,7 +29,7 @@ namespace CosmicShore.Core
     /// Replay / restart is owned by MiniGameControllerBase.RequestReplay() - both
     /// the scoreboard and the pause menu call it directly.
     /// </summary>
-    public class SceneLoader : MonoBehaviour
+    public partial class SceneLoader : MonoBehaviour
     {
         [Tooltip("Seconds the opaque splash shows before the load starts - long enough for it to reach the screen " +
                  "ahead of the blocking collect and load. Both callers make the splash opaque instantly " +
@@ -186,6 +186,7 @@ namespace CosmicShore.Core
                 _holdVeilForMenuSettle = IsGameplayScene(_lastLoadedSceneName);
 
                 ArmSplashFadeOnNextClientReady();
+                RevealBootMenuBeforeHostAsync(_holdVeilForMenuSettle).Forget();
             }
 
             _lastLoadedSceneName = scene.name;
@@ -312,6 +313,8 @@ namespace CosmicShore.Core
         {
             // A return to the menu keeps its after-load collect: that one frees the finished match.
             bool menuReturn = _holdVeilForMenuSettle;
+            // The boot menu may already be on screen, its input held, waiting for this vessel (SceneLoader.BootReveal).
+            bool shownEarly = TakeEarlyBootReveal();
             // Game→menu return only: hold the opaque veil for a short settle window so
             // the previous session's cleanup (late despawns, pooled-prism churn, painting
             // regrow snap) finishes out of sight instead of visibly clearing after the
@@ -349,7 +352,7 @@ namespace CosmicShore.Core
             // Let the frames that carried the collect (and the veil's release work) END while the splash is still
             // opaque. The fade reads each frame's time, so starting it on the frame after a long one let that frame
             // eat the fade, and the menu banged open instead of dissolving in.
-            for (int i = 0; i < revealSettleFrames; i++)
+            for (int i = 0; i < revealSettleFrames && !shownEarly; i++)
                 await UniTask.NextFrame(PlayerLoopTiming.Update);
 
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
@@ -358,14 +361,14 @@ namespace CosmicShore.Core
             // The menu becomes visible now: stamp it, so the load report keeps the true "shown" moment while its
             // file is written after the reveal instead of on the reveal's first frame.
             bool recordingMenu = LoadInsights.IsRecordingMenuLoad;
-            if (recordingMenu) LoadInsights.MarkVisualReady();
+            if (recordingMenu && !shownEarly) LoadInsights.MarkVisualReady();
 
             // The lava lamp is up: from now on this player is listed online on every other machine
             // (LavaLampPresence; before this they were still booting and could not be invited).
             if (intoMenu)
                 LavaLampPresence.MarkShown();
 
-            if (_sceneTransitionManager != null)
+            if (_sceneTransitionManager != null && !shownEarly)
             {
                 if (intoMenu) await _sceneTransitionManager.RevealAsync();
                 else await _sceneTransitionManager.FadeFromBlack();

@@ -24880,6 +24880,22 @@ Measured in `Docs/PartySystem/BUGS.md`, "B45 on the return to the menu".
 - [ ] Play Again (the same scene reloads) and a Maelstrom round back to the hub still work.
 - [ ] `FrogletTools`: nothing new. The two numbers are on the SceneLoader in Bootstrap ("Scene exit drain").
 
+## 🟡 The boot shows the menu before the Relay host (2026-11-21, Yash, COMPILED and PLAYED by a session)
+
+`Cell.BootBuild.cs` (the boot world lays while nothing listens), `SceneLoader.BootReveal.cs` (the menu revealed once its
+world stands, UI input held until the vessel), `SceneTransitionManager.IsCovering`. Affects: Shombith's boot reveal
+(Docs/MENU_REDESIGN_B.md sections 25-26; queued for his `/approve`). `unity recompile`: 0 errors;
+`BootRevealBeforeHostTests` 8/8, `SceneTransitionManagerTests` 14/14, `PresenceIdentityRepublishTests` 5/5 by
+reflection; `check_console_logging`, `check_conditional_compilation` pass (`check_agent_first` fails on `Fauna.cs`,
+not this change). Measured in `Docs/Multiplayer/BUGS.md` (the 41% row).
+
+- [x] Solo online boots in the editor: the Garland is laid during "Creating session"; the menu shows 6.8-7.5 s after Menu_Main loads (about 10.5 s before).
+- [x] When the host is slower than the lay: the menu fades in with UI input off; input comes back when the vessel spawns.
+- [ ] A focused editor or a build: the menu dissolves smoothly while the session is still being created (the background editor here ran at about 4 fps, so its fades crawled).
+- [ ] Click ARCADE, TOY BOX and the cell during the early menu: nothing happens until the vessel is in.
+- [ ] Block the network after sign-in (or a Relay failure): about 12 s after the early reveal the loading screen comes back with the retry, then "Starting offline".
+- [ ] A first-time player (FTUE): the guided path starts only once the vessel is in.
+
 ## 🟡 The boot's 41% "Creating session": no redundant identity republish on the party create (2026-11-21, Yash, COMPILED and PLAYED by a session)
 
 `HostConnectionService.IdentityDiffersFromLobby` / `IdentityDiffers`, timing lines in `PresenceLobbyService`,
