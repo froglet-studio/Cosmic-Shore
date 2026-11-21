@@ -10,6 +10,9 @@ the collider budget. **This skill owns the CREATURE**: what one animal has to be
 what makes it move, where its heart goes, and the specific ways a species has shipped
 looking finished while being dead.
 
+**Measuring a shipped creature? `python3 Tools/Build/fauna_kit/dossier.py <creature> --sheet <png>`** reads its body
+and numbers from the assets (2026-11-15), and `Docs/Studios/FaunaLab.html` lets a person ride it as a Jewel Wasp does.
+
 **Designing a NEW creature, or reshaping a body? Load `/fauna-creation` first.** A creature here is a celestial,
 Etherion-based lifeform, not an Earth animal: a wireframe of braid spindles grown from its Etherion, health prisms round
 it, a long skinny danger-prism stinger, no sense of up (Garrett, 2026-11-01). That skill holds the laws and the
@@ -300,7 +303,9 @@ Load **`/asset-surgery`** for the general rules. These are the fauna-specific on
   `propertyPath: m_LocalPosition.*` / `m_LocalScale.*` rows inside the instance's own
   `m_Modifications`, and those rows **WRAP** — a one-line regex over the block matches
   nothing and reads as "no overrides". Walk lines.
-- **You cannot derive an FBX sub-object's fileID headlessly.** Anything that needs one —
+- **(Narrowed 2026-11-15: a model's MESH fileID is `xxHash64("Type:Mesh-><name>0")`, `fauna_kit/fbx_model.mesh_file_id`,
+  and a bone a rig constrains is named by that constraint, `fauna_kit/prefab_read.py`; /fauna-creation section 5.)**
+  **You cannot derive an FBX sub-object's fileID headlessly.** Anything that needs one —
   binding `Spindle.RenderedObject` to a renderer inside a model instance, overriding a
   nested model's material by fileID — is an **editor** step. Say so rather than guessing.
   (An FBX's **material remap** in its `.meta` `externalObjects` is the one exception: it is

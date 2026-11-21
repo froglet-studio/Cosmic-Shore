@@ -189,6 +189,25 @@ def rot_z(v, ang):
 
 # ------------------------------------------------------------------ the laws
 
+def polyline(s):
+    """A spindle's centreline as points: its `path` when it is grown, else its two ends."""
+    return s["path"] if s.get("path") else [s["from"], s["to"]]
+
+
+def line_dist(p, s):
+    pts = polyline(s)
+    return min(seg_dist(p, a, b) for a, b in zip(pts, pts[1:]))
+
+
+# Relaxed by Garrett, 2026-11-16 ("Relax the fauna rules a bit, so you can get us some fauna that are more lifelike"):
+# L1 wire may reach ahead of the heart by a `lead` the spec states (a quarter of the body's length at most: a bell
+#    over the Etherion, lobes round a mouth); prisms still trail it.
+# L2 a limb may be GROWN (organic.py: curved, tapered, woven wire and membranes), not only the straight braid.
+# L6 a body may be two-fold: flat, with two identical faces. It still has no up.
+LEAD_SHARE = 0.25
+MIN_SYMMETRY = 2
+
+
 def check(spec):
     """Every law the spec breaks, as plain sentences (empty = celestial)."""
     errs = []
@@ -198,9 +217,13 @@ def check(spec):
     heart_r = HEART_WORLD / 2
 
     # L1 the Etherion heart leads; the body trails behind it
+    body_len = -min([q[2] for s in spindles.values() for q in polyline(s)] + [0.0])
+    lead = float(spec.get("lead", 0.0))
+    want(lead <= LEAD_SHARE * body_len + 1e-6, f"L1 lead {lead} is more than a quarter of the body's length ({body_len:.1f})")
     for s in spindles.values():
-        want(max(s["from"][2], s["to"][2]) <= 0.0 + 1e-6,
-             f"L1 spindle '{s['name']}' reaches ahead of the heart (z > 0): the Etherion leads and the body trails")
+        want(max(q[2] for q in polyline(s)) <= lead + 1e-6,
+             f"L1 spindle '{s['name']}' reaches {max(q[2] for q in polyline(s)):.2f} ahead of the heart: the Etherion leads "
+             f"(a spec may state a `lead`, a quarter of the body's length at most)")
     for p in prisms:
         ahead = max(c[2] for c in box_corners(p))
         want(ahead <= -heart_r, f"L1 prism '{p['name']}' reaches ahead of the heart's back face: the body trails the heart")
@@ -210,7 +233,7 @@ def check(spec):
     # L2 the body is a wireframe of spindles, every one with a spindle path back to the heart
     want(len(spindles) >= 3, f"L2 the body has {len(spindles)} spindles: a celestial body is a wireframe of spindles (3 at least)")
     for s in spindles.values():
-        want(s.get("mesh", "braid") in ("braid",), f"L2 spindle '{s['name']}' is not the braid: every living limb is the braid spindle")
+        want(s.get("mesh", "braid") in ("braid", "grown"), f"L2 spindle '{s['name']}' is neither the braid nor grown wire")
         par = s.get("parent")
         if par is None:
             want(norm(s["from"]) <= heart_r + ROOT_REACH,
@@ -220,7 +243,7 @@ def check(spec):
             errs.append(f"L2 spindle '{s['name']}' names a parent '{par}' that does not exist")
             continue
         P = spindles[par]
-        want(seg_dist(s["from"], P["from"], P["to"]) <= ROOT_REACH,
+        want(line_dist(s["from"], P) <= ROOT_REACH,
              f"L2 spindle '{s['name']}' does not start on its parent '{par}': every limb has a spindle path to the heart")
     seen = set()
     for s in spindles.values():   # no cycles
@@ -241,7 +264,7 @@ def check(spec):
         if not s:
             errs.append(f"L3 prism '{p['name']}' names no spindle: a body prism is a direct child of the limb it rides")
             continue
-        near = min(seg_dist(c, s["from"], s["to"]) for c in box_corners(p) + [p["at"]])
+        near = min(line_dist(c, s) for c in box_corners(p) + [p["at"]])
         want(near <= PRISM_REACH, f"L3 prism '{p['name']}' is {near:.2f} u from its spindle '{s['name']}': it must sit on its limb")
 
     # L4 health prisms around the body
@@ -273,10 +296,10 @@ def check(spec):
 
     # L6 no sense of up: the body is n-fold symmetric about its travel axis, n >= 3
     n = spec.get("symmetry", 0)
-    want(n >= 3, f"L6 symmetry {n}: a celestial body has no up, so it repeats round its travel axis at least 3 times")
-    if n >= 3:
+    want(n >= MIN_SYMMETRY, f"L6 symmetry {n}: a celestial body has no up, so it repeats round its travel axis (twice at least: two identical faces)")
+    if n >= MIN_SYMMETRY:
         ang = 2 * math.pi / n
-        pts = [("s", s["from"]) for s in spindles.values()] + [("s", s["to"]) for s in spindles.values()] + \
+        pts = [("s", q) for s in spindles.values() for q in polyline(s)] + \
               [(p.get("kind"), p["at"]) for p in prisms]
         for kind, x in pts:
             y = rot_z(x, ang)
@@ -313,6 +336,9 @@ def check(spec):
         want(el["Mass"].get("body_scale", 0) >= need - 1e-3,
              f"L8 Mass body_scale {el['Mass'].get('body_scale')} is under {need:.3f}: a Mass heart's swing needs {MASS_SWING} u "
              f"(ElementalArmour.HeartSwingClearance) to every shield octahedron (1.5 x a prism's size)")
+        want(el["Mass"].get("body_scale", 0) >= 1.0 - 1e-6,
+             f"L8 Mass body_scale {el['Mass'].get('body_scale')} is under 1: Mass has SIZE (Docs/ECOSYSTEM.md 64.8); a body is grown "
+             "to hold the heart's swing, never shrunk to it")
         if "Space" in el:
             want(abs(el["Space"].get("body_scale", 0) - el["Mass"].get("body_scale", 0) * SPACE_OVER_MASS) < 1e-3,
                  f"L8 Space body_scale must be Mass's x {SPACE_OVER_MASS} (= {el['Mass'].get('body_scale', 0) * SPACE_OVER_MASS:.4f})")
@@ -326,13 +352,78 @@ def check(spec):
         if bad:
             errs.append(f"L9 part '{thing['name']}' is named for Earth anatomy ({bad[0]}): name it for what it is in the HyperSea")
 
+    # L11 what a rider gets (the Jewel Wasp possesses any creature): the numbers its possession reads, and an attack
+    # the body can actually play. FaunaAttackDriver whips a body whose hub carries three limb chains or more and
+    # lunges any other, whatever the spec hopes; a species with an attack of its own (the worm's lunge) says 'charge'.
+    pos = spec.get("possession")
+    want(isinstance(pos, dict), "L11 no possession block: say what a rider gets (top_speed, mouth_reach, attack)")
+    if isinstance(pos, dict):
+        want(pos.get("top_speed", 0) > 0 and pos.get("mouth_reach", 0) > 0,
+             "L11 possession needs top_speed (Fauna.PossessionTopSpeed, u/s) and mouth_reach (PossessionMouthReach, u)")
+        want(pos.get("attack") in ("whip", "lunge", "charge"), "L11 possession.attack is whip, lunge or charge (its own)")
+        limbs = limb_chains(spec)
+        if pos.get("attack") == "whip":
+            want(limbs >= 3, f"L11 attack 'whip' but the body has {limbs} limb chain(s) under one hub: the game whips three or "
+                             "more (FaunaAttackDriver.Scan) and lunges anything else")
+        if pos.get("attack") == "lunge":
+            want(limbs < 3, f"L11 attack 'lunge' but the body has {limbs} limb chains under one hub: the game will whip it")
+        want(pos.get("for") in (None, "duel", "brawl", "siege", "graze", "sprint", "slalom"),
+             "L11 possession.for names the lab column the creature is designed to win (duel / brawl / siege / graze / sprint / slalom)")
+
     # L10 the premise and the role are written
     want(bool(spec.get("premise")), "L10 no premise: say what this lifeform is and the feeling it is for")
     want(spec.get("role") in ("herbivore", "predator", "pollinator", "omnivore"), "L10 no role (herbivore / predator / pollinator / omnivore)")
     return errs
 
 
+def limb_chains(spec):
+    """How many limb chains the game's FaunaAttackDriver would find: the most child spindles any one spindle carries
+    (build.py gives every spindle a Braid child, so every child spindle is a chain: a child with a child)."""
+    count = {}
+    for s in spec.get("spindles", []):
+        if s.get("parent") is not None:
+            count[s["parent"]] = count.get(s["parent"], 0) + 1
+    return max(count.values()) if count else 0
+
+
 # ------------------------------------------------------------------ loading and the self-test
+
+def check_shipped(spec):
+    """The laws a SHIPPED creature's transcription breaks (specs/shipped/): what can be read off a body that was not
+    written in the generative language. A report for the redesign list, never a gate."""
+    if not spec.get("shipped"):
+        return check(spec)
+    errs = []
+    parts = list(spec["segments"].values()) if "segments" in spec else [spec]
+    heart_r = HEART_WORLD / 2
+    for part in parts:
+        scale = part.get("root_scale", 1.0) or 1.0
+        prisms = part["prisms"]
+        if any(sk["mesh"] != "Assets/_Models/Fauna/bonita.fbx#BezierCurve.001" for sk in part["skin"]):
+            errs.append("L2 the body wears a sculpted model (" + ", ".join(sorted({sk["mesh"].split("#")[1] for sk in part["skin"]}))
+                        + "), not braid spindles from the Etherion")
+        if part.get("heart"):
+            h = part["heart"]["at"]
+            ahead = [p["name"] for p in prisms if (p["at"][2] - h[2]) * scale > -heart_r]
+            if ahead:
+                errs.append(f"L1 {len(ahead)} prism(s) sit level with or ahead of the heart: {ahead[:4]}")
+            # no up: every prism needs a partner a third of a turn (or less) round the travel axis
+            for n in (3, 4, 5, 6):
+                ang = 2 * math.pi / n
+                if all(any(q["kind"] == p["kind"] and norm(sub(rot_z(sub(p["at"], h), ang), sub(q["at"], h))) <= 0.05 * max(1.0, norm(p["at"]))
+                           for q in prisms) for p in prisms):
+                    break
+            else:
+                errs.append("L6 the prisms repeat round the travel axis in no order from 3 to 6: the body has an up")
+        if sum(1 for p in prisms if p["kind"] == "health") < 3:
+            errs.append(f"L4 {sum(1 for p in prisms if p['kind'] == 'health')} health prism(s): a body needs three at least")
+        st = [p for p in prisms if p["kind"] == "danger" and max(p["size"]) >= STINGER_MIN_LENGTH / scale
+              and max(p["size"]) >= STINGER_ASPECT * sorted(p["size"])[1]]
+        if not st:
+            errs.append("L5 no long skinny danger prism (a stinger)")
+    errs.append("L6 steers with world up (SafeLookRotation's default), not a carried one" if spec.get("klass") != "BeeFauna" else "")
+    return [e for e in errs if e]
+
 
 def load(name):
     path = os.path.join(SPECS, name + ".py")
@@ -371,12 +462,18 @@ def self_test():
     planted("a Time body resized", lambda s: s["elements"]["Time"].update(body_scale=2.0), "L8")
     planted("a stinger that keeps its size on Space", lambda s: s["elements"]["Space"].update(stinger_thins=False), "L8")
     planted("a Mass heart inside its shields", lambda s: s["elements"]["Mass"].update(body_scale=2.5), "L8")
+    planted("a Mass body shrunk under the base body", lambda s: (s["elements"]["Mass"].update(body_scale=0.6),
+                                                                  s["elements"]["Space"].update(body_scale=0.6 * SPACE_OVER_MASS)), "L8")
     planted("a leg by name", lambda s: s["spindles"][1].update(name="Leg1") or [p.update(spindle="Leg1") for p in s["prisms"] if p["spindle"] == base["spindles"][1]["name"]], "L9")
 
     def overlap(s):
         h = [p for p in s["prisms"] if p.get("kind") == "health"][0]
         s["prisms"].append(dict(h, name=h["name"] + "Twin", at=list(h["at"])))
     planted("two prisms in one place", overlap, "L7")
+    planted("no possession block", lambda s: s.pop("possession"), "L11")
+    planted("a lunge on a body the game will whip", lambda s: s["possession"].update(attack="lunge"), "L11")
+    planted("a whip on a body with no limbs",
+            lambda s: [sp.update(parent=None, **{"from": [0.0, 0.0, -1.5]}) for sp in s["spindles"] if sp["name"].startswith("Vane")], "L11")
     planted("a limb floating free", lambda s: s["spindles"][-1].update(**{"from": [0.0, 0.0, -40.0], "to": [0.0, 0.0, -42.0]}), "L2")
     return fails
 
@@ -388,6 +485,14 @@ def main(argv):
             print("FAIL:", f)
         print("celestial self-test:", "ok" if not fails else f"{len(fails)} problem(s)")
         return 1 if fails else 0
+    if "--shipped" in argv:   # the redesign list: the laws each creature the game already ships breaks (a report)
+        import recreate
+        for key in recreate.dossier_keys():
+            errs = check_shipped(recreate.load_spec(key))
+            print(f"{key}: " + ("celestial" if not errs else f"{len(errs)} law(s) broken"))
+            for e in errs:
+                print("   ", e)
+        return 0
     names = sorted(f[:-3] for f in os.listdir(SPECS) if f.endswith(".py") and not f.startswith("_")) if "--all" in argv \
         else [a for a in argv if not a.startswith("-")]
     if not names:
