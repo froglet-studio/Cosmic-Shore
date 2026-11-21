@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
 using UnityEngine;
@@ -18,10 +19,12 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed partial class OrcaCrew
     {
-        // The lab's helmAI shield: raise it when a rival missile is closing inside the range this skill notices.
+        // The lab's helmAI shield: raise it when a rival missile is closing inside the range this skill notices, or (the
+        // config's aiShieldWhenReady, in a Mass-Space mode) whenever it is ready, so each cooldown's shell drops as standing mass.
         bool HelmAIWantsShield()
         {
             if (Time.time < _shieldReadyAt) return false;
+            if (_cfg.AIShieldWhenReady && InMassSpaceMode()) return true;   // on cooldown: every shell drops as standing mass
             var hullPos = N(transform.position);
             foreach (var other in Live)
             {
@@ -35,6 +38,23 @@ namespace CosmicShore.Gameplay
                 }
             }
             return false;
+        }
+
+        // aiShieldWhenReady is for the games about mass (the mode's arcade category is Mass-Space: Ice Shelf, Depth Charge,
+        // Brood Rush). In a race the shell's prisms catch on the course (Breach measured 7% slower), so there the helm keeps
+        // the lab's rule. Cached per mode: the category is a library lookup.
+        GameModes _shieldModeSeen = (GameModes)(-1);
+        bool _shieldModeIsMassSpace;
+        bool InMassSpaceMode()
+        {
+            var data = _cfg.GameData;
+            if (!data) return false;
+            if (data.GameMode != _shieldModeSeen)
+            {
+                _shieldModeSeen = data.GameMode;
+                _shieldModeIsMassSpace = ModePreviewLibrarySO.CategoryOf(data.GameMode) == ArcadeCategory.MassSpace;
+            }
+            return _shieldModeIsMassSpace;
         }
 
         // The helm AI's burn, wherever no race coaches it (Breach found the shipped AI helm never burned, so an AI Orca flew

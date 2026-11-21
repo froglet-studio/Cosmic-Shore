@@ -25914,3 +25914,12 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
+
+## Orca AI helm shields on cooldown in Mass-Space modes (2026-11-21)
+
+`OrcaCrewConfigSO.aiShieldWhenReady` (on in `OrcaCrewConfig.asset`) and `OrcaCrewAI.HelmAIWantsShield` /
+`InMassSpaceMode`. Compiled and run only in Amoebius (the race judge's player build); `unity_refcompile` did not finish
+(the box ran out of disk), and no Unity editor ran.
+- [ ] Unity compiles with no new `error CS`.
+- [ ] Ice Shelf and Depth Charge with an AI Orca: its helm raises the shield about every 9 s with no missile near.
+- [ ] Breach with an AI Orca: the helm still shields only against an incoming missile (no shell on the course).

@@ -147,6 +147,7 @@ MonoBehaviour:
   aiBurnAlignDegrees: 8
   aiBurnMinDistance: 250
   aiBurnMinTank: 1
+  aiShieldWhenReady: 1
   turretFov: 75
   sniperScopeFov: 22
   sniperCamBack: 12

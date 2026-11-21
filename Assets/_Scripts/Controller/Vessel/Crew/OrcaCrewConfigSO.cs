@@ -239,6 +239,12 @@ namespace CosmicShore.Gameplay
                  "Holding the burn on an empty tank keeps it empty, so the AI lets go and refills (Breach's 1).")]
         [SerializeField, Min(0f)] float aiBurnMinTank = 1f;
 
+        [Header("AI helm: the shield")]
+        [Tooltip("Off: the AI helm raises its shield only against a closing rival missile (the lab's helmAI). On: it also " +
+                 "raises it whenever it is ready, so every cooldown lays a shell that drops as standing danger mass (a " +
+                 "person at the helm who shields on cooldown builds the same). The cooldown and the shell are the kit's.")]
+        [SerializeField] bool aiShieldWhenReady;
+
         [Header("Cameras (round 7: every gun looks over its turret; the sniper also keeps the Serpent's pip scope open)")]
         [Tooltip("lab turretFov: every gunner's view (deg).")]
         [SerializeField, Range(20f, 120f)] float turretFov = 75f;
@@ -308,6 +314,7 @@ namespace CosmicShore.Gameplay
         public float AIBurnAlignDegrees => aiBurnAlignDegrees;
         public float AIBurnMinDistance => aiBurnMinDistance;
         public float AIBurnMinTank => aiBurnMinTank;
+        public bool AIShieldWhenReady => aiShieldWhenReady;
         public float BoostRefillAt(IVesselStatus status) => boostRefill.EvaluateLive(status);
         public float ChargeMultiplier => chargeMultiplier;
         public float ChargeRamReach => chargeRamReach;
