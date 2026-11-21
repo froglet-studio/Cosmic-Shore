@@ -29,7 +29,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Stoat | `b b b` | `b b .` | `- - -` | `b b .` | - | Broadside |
 | Swordfish | `b b .` | `b b .` | `b b b` | `b b b` | - | Regatta, BroodRush |
 | Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta |
-| TigerMoth | `R b .` | `b b .` | `b b .` | `b b .` | - | Regatta |
+| TigerMoth | `R b .` | `b b .` | `b b b` | `b b b` | - | Regatta |
 | Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta |
 | Wrasse | `R b b` | `b b .` | `b b .` | `b b .` | - | - |
 
@@ -119,6 +119,8 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Swordfish Space | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread |
 | Thresher Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | ThresherAIBoostPolicy_ThresherTime from threshertime-thresher-time-lead, model only, editor soak pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
 | TigerMoth Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-18 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 levers cannot bring it within 1.10x of the five; gap and mechanism in Docs/ElementalLoop/REDESIGN.md |
+| TigerMoth Mass | 3 AI on I1-I4 | built | Claude | 2026-11-21 |  | Tapestry AI trained on the volume books: TapestrySettings aiRaidDeficitFraction 0.1->0.5, aiLateRaidSeconds 25->0, aiCrystalReach 450->900, raiders fly the nearest rival's wake (TapestryController), plus ThrottleScale 1.67 via the Mass-Space AI row; VC+VD I2-I4 91k->231k, 93k->216k, 91k->211k, I1 22k->30k, fresh seeds (TAPESTRY.md). |
+| TigerMoth Space | 3 AI on I1-I4 | built | Claude | 2026-11-21 |  | Sirocco searched (dust hover, retarget, overshoot): settings unchanged; ThrottleScale 1.67 via the Mass-Space AI row +10% at I2 (noisy, +-15%); the 600-prism target is never reached 1v1 in 200 s (SIROCCO.md). |
 | Urchin Time | 1 fun (abilities + game, one intensity) | built | Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest | 2026-11-17 |  | fun call: I2 is the fun rung (AI 125-150 s, headless judge, 3 courses); the AI flies at cruise for half the race, 13 rail-seek variants swept, shipped numbers best; nothing changed at I2 (SKEIN.md 18) |
 | Urchin Time | 2 intensities I1-I4 | built | Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest | 2026-11-17 |  | ladder call: AI 85/141/209/328 s after I4 at 5 laps (#2107); rivals by difficulty via rail-seek gain (SKEIN.md 19) |
 | Urchin Time | 3 AI on I1-I4 | doing | Regatta plan threads | 2026-11-08 |  | Skein aim, rail seek and genome (#1845); not yet well trained: Docs/Reports/SKEIN_URCHIN_AI.md |

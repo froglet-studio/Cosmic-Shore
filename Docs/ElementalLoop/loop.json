@@ -339,6 +339,22 @@
      "date": "2026-11-18",
      "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 levers cannot bring it within 1.10x of the five; gap and mechanism in Docs/ElementalLoop/REDESIGN.md"
     }
+   },
+   "Mass": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-21",
+     "evidence": "Tapestry AI trained on the volume books: TapestrySettings aiRaidDeficitFraction 0.1->0.5, aiLateRaidSeconds 25->0, aiCrystalReach 450->900, raiders fly the nearest rival's wake (TapestryController), plus ThrottleScale 1.67 via the Mass-Space AI row; VC+VD I2-I4 91k->231k, 93k->216k, 91k->211k, I1 22k->30k, fresh seeds (TAPESTRY.md)."
+    }
+   },
+   "Space": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-21",
+     "evidence": "Sirocco searched (dust hover, retarget, overshoot): settings unchanged; ThrottleScale 1.67 via the Mass-Space AI row +10% at I2 (noisy, +-15%); the 600-prism target is never reached 1v1 in 200 s (SIROCCO.md)."
+    }
    }
   },
   "Jacks": {
