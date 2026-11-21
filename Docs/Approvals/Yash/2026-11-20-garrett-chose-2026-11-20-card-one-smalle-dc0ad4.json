@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-20-garrett-chose-2026-11-20-card-one-smalle-dc0ad4",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-20T18:05:49+00:00",
+  "area": "Grizzly bomb, Grizzly Time and Standoff",
+  "summary": "Garrett chose (2026-11-20 card) one smaller Grizzly bomb radius for Broadside: blast 20-80 (40 u reach) with selfLaunchMultiplier 11.25 so every launch is as hard as before, bomb 2-4. Grizzly Time's keg blow stand-off and AI keg pass point move to 30 u (inside the blast), Standoff's aiPassOffset ladder to 34/29/24/19, and the Grizzly Time AI is retrained against the new blast (time_ai_search, aiFreezeDistance/aiDetonateBehindDistance now searched). PR #2263.",
+  "branch": "gz",
+  "commit": "225ab0871"
+}

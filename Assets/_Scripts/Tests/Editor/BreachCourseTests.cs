@@ -351,7 +351,8 @@ namespace CosmicShore.Tests
             }
             Assert.AreEqual(BreachCourse.MinimumSpeed, Field(hull, "DefaultMinimumSpeed"), 0.01f, "DefaultMinimumSpeed");
             Assert.AreEqual(BreachCourse.ThrottleScaler, Field(hull, "DefaultThrottleScaler"), 0.01f, "DefaultThrottleScaler");
-            Assert.AreEqual(BreachCourse.BoostMultiplier, Field(hull, "boostMultiplier"), 0.01f, "boostMultiplier");
+            float charge = Field(cfg, "chargeMultiplier");
+            Assert.AreEqual(BreachCourse.BoostMultiplier, charge > 0f ? charge : Field(hull, "boostMultiplier"), 0.01f, "the charge's multiplier");
             Assert.AreEqual(BreachCourse.TurnScaler, Field(hull, "YawScaler"), 0.01f, "YawScaler");
             Assert.AreEqual(BreachCourse.TurnScaler, Field(hull, "PitchScaler"), 0.01f, "PitchScaler");
             Assert.AreEqual(BreachCourse.RotationThrottleScaler, Field(hull, "RotationThrottleScaler"), 0.0001f, "RotationThrottleScaler");

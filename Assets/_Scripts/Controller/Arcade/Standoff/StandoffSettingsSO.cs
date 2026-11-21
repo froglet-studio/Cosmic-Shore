@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far (u) to one side of the rival the AI aims its pass. The hull's own bomb-jump drops a full " +
                  "bomb ahead on a straight stick and blows it once past it; a full blast reaches 100 u, so a pass " +
                  "nearer than that catches the rival in it.")]
-        public float[] aiPassOffset = { 70f, 55f, 40f, 28f };
+        public float[] aiPassOffset = { 34f, 29f, 24f, 19f };
 
         [Tooltip("Chance the AI breaks off to cover (behind the nearest post) when it is SILENCED (its blasts score " +
                  "nothing until the silence ends) instead of pressing on.")]
