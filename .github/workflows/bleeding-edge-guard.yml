@@ -513,13 +513,28 @@ jobs:
           key: unity-refcompile-${{ hashFiles('Packages/packages-lock.json', 'Tools/Build/unity_refcompile/fetch.py', 'Tools/Build/unity_refcompile/source_patches.json') }}
           restore-keys: unity-refcompile-
 
+      # "Free disk space" deleted the runner's .NET in unity mode, so the fallback
+      # installs its own (to ~/.dotnet) before the reference compile.
+      - name: Install .NET for the fallback
+        id: fallbackdotnet
+        if: always() && steps.fallback.outputs.use == 'true'
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '8.0.x'
+
       - name: Reference compile (no Unity licence)
         if: always() && (steps.mode.outputs.mode == 'refcompile' || steps.fallback.outputs.use == 'true')
+        env:
+          FALLBACK_DOTNET: ${{ steps.fallback.outputs.use == 'true' && 'true' || 'false' }}
         run: |
           set +e
           set -uo pipefail
           export UNITY_REFCOMPILE_CACHE="$HOME/.cache/unity_refcompile"
-          export DOTNET_ROOT=/usr/share/dotnet
+          if [ "$FALLBACK_DOTNET" = true ]; then
+            export DOTNET_ROOT="$(dirname "$(readlink -f "$(command -v dotnet)")")"
+          else
+            export DOTNET_ROOT=/usr/share/dotnet
+          fi
           bash Tools/Build/unity_refcompile/run.sh --quiet-buckets 2>&1 | tee unity-editmode.log
           echo "${PIPESTATUS[0]}" > unity-exit-code.txt
           echo "Reference compile exited with $(cat unity-exit-code.txt)."

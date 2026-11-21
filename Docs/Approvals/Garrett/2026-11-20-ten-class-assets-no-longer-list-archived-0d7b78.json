@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-20-ten-class-assets-no-longer-list-archived-0d7b78",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-20T17:07:05+00:00",
+  "area": "the vessel class assets (SO_Class_*)",
+  "summary": "Ten class assets no longer list archived game cards whose scenes were deleted on 2026-10-13: 12 entries out of their Games lists (Elimination, Block Bandit, Dolphin Darts, Shooting Gallery) and the eight training entries of the Dolphin, Manta, Serpent and Squirrel. Nothing else in the assets changed; no code reads SO_Vessel.Games.",
+  "why": "A development build logged \"Scene 'MinigameElimination' couldn't be loaded\": the class assets kept the archived cards in the build.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "eff4fb33e",
+  "paths": [
+    "Assets/_SO_Assets/Classes"
+  ]
+}
