@@ -134,6 +134,31 @@ the Amoebius build of these files was not run here.
    join from the new one shows the same toast with "an older version".
 6. Revert the bump in step 3 before committing anything.
 
+### 🔴 Every Stoat AI flies the swing; no AI Stoat draws a line; the old slingshots deleted (`Ys-bleeding-edge`, 2026-11-21, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** Yash: "I see the pathfinding dotted line in Stoat AIs while playing slingshot, make sure all AI uses our
+latest slingshot mechanics, and delete all other old pathfinding and other mechanics". The dotted line on the AI Stoats was
+Time 5's **Foresight** (the old field pathfinder's predicted path drawn in front of every rival): deleted. The swing's reach
+ring and exit line are drawn only for the local human pilot (`StoatPathfinderExecutor.IsLocalHumanPilot`: local owner, no
+AI seat, no autopilot). `StoatSlingExecutor` has one press (the swing) and one autopilot (`AutopilotSwing`); the catch
+orbit, aimed exit, skim sling, trampoline, crystal style and the field dipole (`StoatDipoleExecutor`, unwired from
+`Stoat.prefab` and the HUD) are deleted, with their configs, assets, tests and sound slots (`R_VesselActions/STOAT_DIPOLE.md`
+§6). The element map's Time 5 is open. Compiled with Unity's Roslyn (Assembly-CSharp + Assembly-CSharp-Editor, 0 errors)
+from a worktree; the generators' and tools' gates no worse than before. **Not run in the editor:** B: was on `4e5df7090a`,
+without the change, and was not pulled.
+
+1. Run the EditMode tests `StoatSlingTests`, `StoatRippleTests`, `SlingshotOrreryTests`, `SwitchbackAISteeringTests`,
+   `RegattaDriveTuningTests`. **Pass:** all green (new: `EveryStoatAI_FliesTheSwing_NoOtherSlingshotPathIsLeft`,
+   `NoAIOrRemoteStoatDrawsAPath_TheLocalHumanOnly`).
+2. Open `Stoat.prefab`. **Pass:** no "missing script" on the ShipActions object; the HUD controller has no `dipole` field.
+3. Slingshot, a Stoat with 3+ AI Stoats, Time to level 5 or more. **Pass:** no dotted line or ring on any AI Stoat; your
+   own reach ring and exit line show when you press LT / RT.
+4. Same race: watch the AIs. **Pass:** they lay a small black hole beside their line and swing round it (no white hole, no
+   orbit, no shell), and finish the race.
+5. Toybox (lava lamp), the AI Stoat in the menu, then take the hull. **Pass:** nothing stays pressed; no hole is left up
+   that throws you.
+6. Shockfront (the Stoat's Charge duel). **Pass:** an AI's swing hole collapses and its ripple strips rivals as before.
+
 ### 🟡 Meerkat: a real wormhole, and nothing inside touches outside (`Ys-bleeding-edge`, 2026-11-20, Yash) — COMPILED AND TESTED IN THE EDITOR, NOT FLOWN
 
 **What landed:** the Soliton Tunnel's look is a real wormhole (`Docs/Shaders/WORMHOLE_SHADERS.md` §17: a mouth shows

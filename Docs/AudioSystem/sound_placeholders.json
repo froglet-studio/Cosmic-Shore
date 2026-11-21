@@ -479,97 +479,6 @@
    ]
   },
   {
-   "sound": "Stoat skip",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "The Stoat skips off the surface.",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
-   "target": "event:/SFX/Vessels/Stoat/Skip",
-   "brief": "A light skipping-stone slap.",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:skipEvent"
-   ]
-  },
-  {
-   "sound": "Stoat graze",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "The Stoat grazes the line.",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
-   "target": "event:/SFX/Vessels/Stoat/Graze",
-   "brief": "A softer, longer brush than the skip.",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:grazeEvent"
-   ]
-  },
-  {
-   "sound": "Stoat plunk",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "The Stoat plunks in (a bad skip).",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
-   "target": "event:/SFX/Vessels/Stoat/Plunk",
-   "brief": "A dull, dropped stone.",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:plunkEvent"
-   ]
-  },
-  {
-   "sound": "Stoat capture",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "The Stoat captures a Skimline.",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
-   "target": "event:/SFX/Vessels/Stoat/Capture",
-   "brief": "A latch: the line is yours.",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:captureEvent"
-   ]
-  },
-  {
-   "sound": "Stoat launch",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "The Stoat launches off its line.",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
-   "target": "event:/SFX/Vessels/Stoat/Launch",
-   "brief": "A springing launch.",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:launchEvent"
-   ]
-  },
-  {
-   "sound": "Stoat chain break",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "The skip chain breaks.",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
-   "target": "event:/SFX/Vessels/Stoat/Chain break",
-   "brief": "A deflating stop.",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:chainBreakEvent"
-   ]
-  },
-  {
-   "sound": "Stoat skim sweet spot",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "A skim lands in the sweet spot.",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Menu/Confirmed",
-   "target": "event:/SFX/Vessels/Stoat/Skim sweet spot",
-   "brief": "A small, satisfying chime.",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:sweetSpotEvent"
-   ]
-  },
-  {
    "sound": "Stoat sling wind-up",
    "owner": "Stoat",
    "tier": "P2",
@@ -586,100 +495,6 @@
    ]
   },
   {
-   "sound": "Stoat sling",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "The pair is slung.",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
-   "target": "event:/SFX/Vessels/Stoat/Sling",
-   "brief": "The release of the wind-up: a slingshot snap. (Also fills the three AI-policy copies of the sling config.)",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:slingEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:slingEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:slingEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:slingEvent"
-   ]
-  },
-  {
-   "sound": "Stoat sling sweet spot",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "A release lands inside the full window (every peer).",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Menu/Confirmed",
-   "target": "event:/SFX/Vessels/Stoat/Sling sweet spot",
-   "brief": "A clear reward ping layered on the sling. (Also fills the three AI-policy copies of the sling config.)",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:sweetSpotEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:sweetSpotEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:sweetSpotEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:sweetSpotEvent"
-   ]
-  },
-  {
-   "sound": "Stoat trampoline touch",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "The hull touches the shell.",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
-   "target": "event:/SFX/Vessels/Stoat/Trampoline touch",
-   "brief": "A soft membrane press. (Also fills the three AI-policy copies of the sling config.)",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:trampolineTouchEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:trampolineTouchEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:trampolineTouchEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:trampolineTouchEvent"
-   ]
-  },
-  {
-   "sound": "Stoat trampoline bounce",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "The shell throws the hull off.",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Vessel impact",
-   "target": "event:/SFX/Vessels/Stoat/Trampoline bounce",
-   "brief": "A deep, elastic boing without the cartoon. (Also fills the three AI-policy copies of the sling config.)",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:trampolineBounceEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:trampolineBounceEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:trampolineBounceEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:trampolineBounceEvent"
-   ]
-  },
-  {
-   "sound": "Stoat dipole open",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "A squeeze opens the pair of poles.",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
-   "target": "event:/SFX/Vessels/Stoat/Dipole open",
-   "brief": "Two charges pulling apart. (Also fills the two AI-policy copies of the dipole config.)",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset:openEvent",
-    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset:openEvent",
-    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset:openEvent"
-   ]
-  },
-  {
-   "sound": "Stoat dipole annihilate",
-   "owner": "Stoat",
-   "tier": "P2",
-   "act": "The poles meet and annihilate.",
-   "kind": "one-shot",
-   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip",
-   "target": "event:/SFX/Vessels/Stoat/Dipole annihilate",
-   "brief": "A bright, short cancellation. (Also fills the two AI-policy copies of the dipole config.)",
-   "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset:annihilateEvent",
-    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset:annihilateEvent",
-    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset:annihilateEvent"
-   ]
-  },
-  {
    "sound": "Stoat warp",
    "owner": "Stoat",
    "tier": "P2",
@@ -689,9 +504,7 @@
    "target": "event:/SFX/Vessels/Stoat/Warp",
    "brief": "A warp-in rush. (Also fills the two AI-policy copies of the dipole config.)",
    "slots": [
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset:warpEvent",
-    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset:warpEvent",
-    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset:warpEvent"
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset:warpEvent"
    ]
   },
   {

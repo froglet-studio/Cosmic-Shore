@@ -81,7 +81,10 @@ namespace CosmicShore.Gameplay
             NetworkVariableWritePermission.Owner);
 
         /// <summary>
-        /// The Stoat's live FIELD DIPOLE (<c>R_VesselActions/STOAT_DIPOLE.md</c>): the sink's world
+        /// UNUSED since 2026-11-21: the Stoat's field dipole that wrote it was deleted. Kept, with
+        /// <see cref="NetStoatDipoleSource"/>, only so the wire layout (and with it the protocol version) does not change;
+        /// remove both with the next protocol bump. What it carried:
+        /// the Stoat's live FIELD DIPOLE (<c>R_VesselActions/STOAT_DIPOLE.md</c>): the sink's world
         /// position in xyz and both poles' horizon radius in w, or <see cref="Vector4.zero"/> when the
         /// pair is closed. With <see cref="NetStoatDipoleSource"/> it is the whole pair. Owner-write, for
         /// the <see cref="NetEchoSightShape"/> reason: the poles' separation IS the analog squeeze of

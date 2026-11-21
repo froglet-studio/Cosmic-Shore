@@ -12,51 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 84eb4c6b05a348e193602462d620198f, type: 3}
   m_Name: StoatDipoleConfig
   m_EditorClassIdentifier: 
-  holdExponent: 1.5
-  holdRampSeconds: 1.5
-  keySqueeze: 0.5
-  aheadDistance: 250
-  sidewaysMax: 200
-  lengthwaysMax: 120
-  followRate: 6
-  poleGM: 50000
-  poleHorizon: 2.1
-  sinkSofteningHorizons: 14
-  poleSize:
-    Enabled: 1
-    Value: 1
-    Min: 1
-    Max: 2
-    element: 3
-    UseFloor: 1
-    Floor: 0.5
-  sourcePush: 1
-  sourceSofteningHorizons: 2
-  accelerationCap: 3000
-  annihilateSeconds: 0.3
-  sinkGrowSeconds: 0.9
-  sourceGrowSeconds: 1.1
-  dieSeconds: 0.7
-  sourceSizeX: 1
-  annihilationWaves: 1
-  birthWave: 0
-  throughZoneRadius: 135
-  throughDegrees: 200
-  turnCap: 12
-  grip: 0.5
-  gravitySpeedCeilingCruises: 4
-  gravityFadeSeconds: 2
-  domainTintAmount: 0
-  crystalStripShare: 1
-  faunaSwallowHorizons: 1.5
-  accretionPerPrism: 0.04
-  accretionMax: 1
-  pathLength: 1200
-  pathStep: 3
-  pathNoseOffset: 8
-  loopMargin: 8
-  minLoop: 60
-  warpDegrees: 3
   boost:
     Enabled: 1
     Value: 2.5
@@ -67,44 +22,9 @@ MonoBehaviour:
     Floor: 1.25
   boostRise: 20
   boostFadeSeconds: 0.6
-  dotPixels: 4
-  dotGap: 2.5
-  dotDepthMinScale: 0.75
-  dotDepthFade: 0.15
-  dotsInWorld: 1
-  worldDotSize: 0.7
-  worldDotSpacing: 3
   worldDotMinPixels: 2.5
   openColor: {r: 0.5882353, g: 0.6509804, b: 0.7607843, a: 1}
   warpedColor: {r: 0.6156863, g: 1, b: 0.1803922, a: 1}
-  foresightLength: 500
-  foresightRange: 1500
-  foresightMaxRivals: 3
-  autopilotHold01: 1
-  autopilotMinDistance: 300
-  autopilotHoldSeconds: 4
-  autopilotIntervalSeconds: 2
-  autopilotWatchPath: 1
-  autopilotLetGoNear: 60
-  autopilotDrySeconds: 0.5
-  autopilotMinHoldSeconds: 0.8
-  autopilotMaxHoldSeconds: 15
-  autopilotRelaySeconds: 0.25
-  autopilotMaxOrbitDegrees: 360
-  openEvent:
-    Guid:
-      Data1: -922617308
-      Data2: 1092038894
-      Data3: -167764571
-      Data4: -698904471
-    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Activate
-  annihilateEvent:
-    Guid:
-      Data1: 1232779908
-      Data2: 1241063617
-      Data3: 1702576795
-      Data4: -1248198021
-    Path: event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip
   warpEvent:
     Guid:
       Data1: -80347349

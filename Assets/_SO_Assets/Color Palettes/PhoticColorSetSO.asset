@@ -824,9 +824,6 @@ MonoBehaviour:
   - Id: world:030476
     Color: {r: 0.0116292508, g: 0.0176246036, b: 0.46226418, a: 1}
     Note: '1 use: Assets/_Prefabs/Environment/Materials/FX/fx_BlueCrackle.prefab ParticleSystem'
-  - Id: world:040614
-    Color: {r: 0.0156862754, g: 0.0235294122, b: 0.0784313753, a: 1}
-    Note: '1 use: Assets/_Scripts/Controller/Vessel/R_VesselActions/StoatPathfinderDots.cs code'
   - Id: world:040EF8
     Color: {r: 0.0152781736, g: 0.0537269339, b: 0.971698105, a: 1}
     Note: '1 use: Assets/_Graphics/Materials/Shaders/TrailViewerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)'
@@ -1279,7 +1276,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Graphics/Materials/Graphs/CloakGhost.mat Material(CosmicShore/CloakGhost)'
   - Id: world:96A6C2
     Color: {r: 0.589999974, g: 0.649999976, b: 0.75999999, a: 1}
-    Note: '5 uses: Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset StoatDipoleConfigSO; Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset StoatDipoleConfigSO'
+    Note: '3 uses: Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController; Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset StoatDipoleConfigSO'
   - Id: world:96EB29
     Color: {r: 0.589999974, g: 0.920000017, b: 0.159999996, a: 1}
     Note: '4 uses: Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO; Assets/_Graphics/Materials/CrystalMaterials/ChargeCrystalArcs.mat Material(Custom/CrystalChargeArcsShader)'
@@ -1309,7 +1306,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Graphics/Materials/SwordfishSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)'
   - Id: world:9DFF2E
     Color: {r: 0.615686297, g: 1, b: 0.180392161, a: 1}
-    Note: '10 uses: Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset StoatDipoleConfigSO; Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset StoatDipoleConfigSO'
+    Note: '8 uses: Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController; Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset GobyPistolConfigSO'
   - Id: world:9E6BF0
     Color: {r: 0.620000005, g: 0.419999987, b: 0.939999998, a: 1}
     Note: '27 uses: Assets/Resources/Codex.asset CodexSO'

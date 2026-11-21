@@ -86,28 +86,6 @@ namespace CosmicShore.Tests
             finally { Object.DestroyImmediate(go); }
         }
 
-        [Test]
-        public void Warpline_TheAIStoatLetsGoOfItsWarpWellBeforeTheRing()
-        {
-            // Tools/Build/switchback_dolphin_sim.py --mode Warpline (2026-10-27): warped to 120-170 u/s at a fixed 48 deg/s
-            // the Stoat needs ~200 u to line up on a 26-48 u ring; let go at the base 60 u it missed 180-280 rings over
-            // Yash's 15 courses, at 250 u none.
-            var tuned = Resources.Load<StoatDipoleConfigSO>("AIBoostPolicies/StoatDipoleConfig_Warpline");
-            Assert.IsNotNull(tuned, "Warpline's Stoat autopilot variant is missing");
-            Assert.GreaterOrEqual(tuned.AutopilotLetGoNear, 200f);
-        }
-
-        [Test]
-        public void Slingshot_TheAIStoatLetsGoOfItsWarpWellBeforeTheRing()
-        {
-            // Slingshot's variants start from Warpline's (2026-10-27): the same hull, the same warp, the same turn.
-            var tuned = Resources.Load<StoatDipoleConfigSO>("AIBoostPolicies/StoatDipoleConfig_Slingshot");
-            Assert.IsNotNull(tuned, "Slingshot's Stoat autopilot variant is missing");
-            Assert.GreaterOrEqual(tuned.AutopilotLetGoNear, 200f);
-            Assert.IsNotNull(Resources.Load<StoatSlingConfigSO>("AIBoostPolicies/StoatSlingConfig_Slingshot"),
-                "Slingshot's Stoat sling variant is missing");
-        }
-
         static T Field<T>(object o, string name)
         {
             var f = o.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
