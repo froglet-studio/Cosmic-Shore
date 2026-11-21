@@ -2482,6 +2482,59 @@
       "h": 900,
       "page": "voyages-playtest",
       "title": "Rev 120 - notes: what each option changes, what is shared, what differs from the build"
+    },
+    "R121A.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "what-s-new",
+      "title": "Rev 121 A - Poster: one window, the Ark over the HyperSea, three lines and Set sail (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R121B.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "what-s-new",
+      "title": "Rev 121 B - Pages: one feature a page, paged with LB / RB, Set sail on the last - interactive",
+      "is_interactive": true
+    },
+    "R121C.dc.html": {
+      "x": 4200,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "what-s-new",
+      "title": "Rev 121 C - Changelog: the updates listed on the left, the picked one on the right - interactive",
+      "is_interactive": true
+    },
+    "R121D.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "what-s-new",
+      "title": "Rev 121 D - Card: a small card slides in over Home and opens into the window - interactive",
+      "is_interactive": true
+    },
+    "R121Settings.dc.html": {
+      "x": 2100,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "what-s-new",
+      "title": "Rev 121 Settings - Settings: the What's new row under Other opens the same window - interactive",
+      "is_interactive": true
+    },
+    "R121Notes.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 900,
+      "page": "what-s-new",
+      "title": "Rev 121 - notes: what each option does, where it opens from, what the build needs"
     }
   },
   "createdOnFiles": {
@@ -2490,7 +2543,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "voyages-playtest",
+    "page": "what-s-new",
     "view": "canvas"
   },
   "noteOrder": [
@@ -2565,6 +2618,7 @@
     "sec-rev117",
     "sec-rev120",
     "sec-rev120-2",
+    "sec-rev121",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -2650,7 +2704,8 @@
     "grp-116e-edges-t",
     "grp-116f-blocks-t",
     "rev117",
-    "rev120"
+    "rev120",
+    "rev121"
   ],
   "notes": {
     "hud_end": {
@@ -4607,6 +4662,30 @@
         "border-radius": "0px 0px 40px 40px"
       },
       "page": "voyages-playtest"
+    },
+    "rev121": {
+      "kind": "title1",
+      "text": "Rev 121 - What's new: the pop-up after an update and from Settings, four ways, featuring Voyages",
+      "x": 0,
+      "y": -400,
+      "w": 240,
+      "maxW": 6120,
+      "page": "what-s-new"
+    },
+    "sec-rev121": {
+      "kind": "rect",
+      "x": -160,
+      "y": -560,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "what-s-new"
     }
   },
   "order": [
@@ -4909,7 +4988,13 @@
     "R120Escort.dc.html",
     "R120Score.dc.html",
     "R120Lost.dc.html",
-    "R120Notes.dc.html"
+    "R120Notes.dc.html",
+    "R121A.dc.html",
+    "R121B.dc.html",
+    "R121C.dc.html",
+    "R121D.dc.html",
+    "R121Settings.dc.html",
+    "R121Notes.dc.html"
   ],
   "pages": [
     {
@@ -4967,6 +5052,10 @@
     {
       "id": "voyages-playtest",
       "name": "Voyages playtest"
+    },
+    {
+      "id": "what-s-new",
+      "name": "What's New"
     }
   ],
   "title": "Frogma"

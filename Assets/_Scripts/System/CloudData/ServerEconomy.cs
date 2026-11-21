@@ -16,6 +16,12 @@ namespace CosmicShore.Core
     public static class ServerEconomyGate
     {
         public static readonly bool Enabled = false;
+
+        /// <summary>
+        /// What every call site reads: the compiled gate above AND not killed by the live flags' <c>economy</c> kill
+        /// switch (Docs/LAUNCH/LIVE_FLAGS.md). A kill switch only ever turns it off.
+        /// </summary>
+        public static bool IsActive => LaunchFlags.Gate(Enabled, LaunchKillSwitch.Economy);
     }
 
     /// <summary>The wallet as the server holds it after a request. Field names match Tools/UGS/CloudCode/economy.js.</summary>

@@ -65,6 +65,75 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+
+## 🔴 Voyages launch fixes: follow the host, the Ark's one domain, the Escort lock, Start pauses (2026-11-21, Shombith, NOT RUN IN EDITOR)
+`claude/project-thread-zobeo0` into `launch-check`. `VoyageLobbyLink` + `ScreenSwitcher.VoyageLobby.cs` (protocol 38, `Docs/Voyages/PARTY.md` §7), `VoyageArkPage` (domain chips, uncropped faces, the Fill button), `VoyageKit.Commit` (ruby Set sail / Open voyage / Ready), `VoyageToyDefinitionSO.lockEscort`, `VoyageJobsView` (locked jobs off the board), `MenuMiniGameHUD` (Start pauses in the voyage), `MenuServerPlayerVesselInitializer` (the voyage scene spawns everyone in the Ark's domain), the Crystal Run's kind Raid -> Salvage. Verified: `unity_refcompile` has no errors in the changed files (the UGS package errors on launch-check are the sandbox's); `author_voyage_assets.py --check` clean; colour_trace, console logging, conditional compilation OK. Not compiled or run in Unity.
+- [ ] Compiles; EditMode `VoyageMilestoneOneTests`, `VoyageBoardTests`, `VoyageLobbyTests`, `VoyageShellTests` pass.
+- [ ] Voyages tab: only the Crystal Run (and Sail home when away) is on offer; Escort the Ark shows locked and its Open voyage is greyed; no other job (Iri Whistlebell) shows. The Crystal Run's kind reads Salvage.
+- [ ] Set sail, Open voyage and the brief's Ready are ruby with white words.
+- [ ] Your Ark page: the three pilot faces are whole (not cropped); "Fill the AI seats from a saved squad" is not shown (hidden for now, `VoyageToyDefinitionSO.offerFillFromSquad` off).
+- [ ] In a voyage, the pad's Start opens the pause window and closes it again; Select still opens it.
+- [ ] Two machines: friend flying freestyle, host opens the Voyage window and the Crystal Run: the friend leaves freestyle and lands on it; the host moves to the voyage and Ark pages, the friend follows; the host closes the window, the friend's closes.
+- [ ] Two machines: the friend presses Ruby on Your Ark (their chip outlined, the host's Ruby chip says "Ruby - 1"); the host presses Ruby: both show Ruby picked. Set sail: both vessels, the AI wingmates and the Ark's hull and model are Ruby.
+- [ ] Two machines: on the friend's Your Ark, the host's seat shows the host's hull, pilot portrait, pilot name and element (sent with the lobby, `VoyageLobbyState.Seats`); the host changes pilot and the friend's page follows within a few seconds.
+
+## 🔴 iOS privacy manifest in the Xcode project (2026-11-06, Shombith, NOT BUILT FOR iOS)
+
+Branch `claude/launch-ios-privacy-manifest`; launch blocker #14 (`Docs/IOS_BUILD.md` "Privacy manifest"). The manifest and
+its merge are tested outside Unity (5/5, negative control fails); `IosPrivacyManifestPostprocess`'s `UNITY_IOS` body has
+not been compiled, because the Xcode API ships only with iOS Build Support.
+
+1. **Export an iOS Xcode project** (iOS Build Support installed). The console shows no error from
+   `IosPrivacyManifestPostprocess`.
+2. **In the export folder:** `PrivacyInfo.xcprivacy` sits next to `Info.plist` and lists UserDefaults CA92.1,
+   FileTimestamp C617.1 and SystemBootTime 35F9.1.
+3. **In Xcode:** the file is in the Unity-iPhone target's Copy Bundle Resources, once. The build has no "Multiple commands
+   produce PrivacyInfo.xcprivacy" error.
+4. **Archive, then Organizer > Generate Privacy Report:** the app's entries show the three categories and the five
+   collected data types.
+5. **Export again with Append:** the file is unchanged and still listed once.
+6. **First TestFlight upload:** no ITMS-91053 email. If one names `LofeltHaptics.framework`, that framework needs a
+   manifest of its own (`IOS_BUILD.md`).
+
+### 🔴 Protocol version gates matchmaking: old and new clients never meet (`claude/launch-protocol-filter`, 2026-11-06, launch blocker 6) — NOT EDITOR-VERIFIED
+
+**What landed:** `NetProtocol` (`Assets/_Scripts/Controller/Multiplayer/NetProtocol.cs`) reads the running build's
+`NetworkConfig.ProtocolVersion` from the live NetworkManager (no second constant). Every session the game makes carries
+it as the indexed session property `protocol` (String3): the matchmaking session (`MultiplayerSetup`), the presence lobby
+(`PresenceLobbyService`) and the party session (`PartySessionService`, also as a player property). The matchmaking and
+presence queries filter on it, and their String1 game mode is scoped by it (`SkimRace@p24`, `PRESENCE_LOBBY@p24`), so a
+build from before the gate (bare game mode, no protocol) and a new build never list each other. Each protocol converges to
+its own presence lobby. A join by id (invite Accept, Join, Spectate, Rejoin) reads the protocol of the members it lands
+among as the join returns; on a different or missing one it leaves the session and shows
+`PartyInviteController.protocolMismatchToast` (authored, tokens `{name}` `{otherVersion}` `{yourVersion}`) instead of the
+generic bounce. Affects: Yash's multiplayer; Shombith's UGS (session properties and queries only; no new UGS calls).
+
+**Verified without the editor:** `unity_refcompile` player and editor configs: 0 errors in project code.
+`NetProtocolTests` (16) passed in a stand-alone harness (the file compiled with stand-ins for the Netcode and Sessions
+types and a minimal NUnit); negative controls: flipping `Decide`'s comparison failed 5 of them, and dropping the protocol
+scope from the game mode failed 5 (including "a build from before the gate must not find it"). Nothing run in Play mode;
+the Amoebius build of these files was not run here.
+
+**Test in the editor (two editors: MPPM with a virtual player, or two builds; each player its own tag/profile):**
+1. `NetProtocolTests` pass in the Test Runner.
+2. Same versions still match. Both on the shipped `ProtocolVersion` (24): both list each other ONLINE, an invite
+   Accept and a direct Join both seat the guest, and a matchmade game of the same mode and seat count joins one
+   session. Party log (Logging > Party on): the presence lobby is queried and created under `PRESENCE_LOBBY@p24`.
+3. Bump one. In the second editor (or a second build) set `NetworkManager.prefab` > NetworkConfig > Protocol Version
+   to 25 (do NOT commit it). Start both:
+   - neither lists the other ONLINE (each sits in its own presence lobby: `PRESENCE_LOBBY@p24` / `@p25`);
+   - a matchmade game of the same mode makes two sessions, never one (`[MultiplayerSetup] Queried 0 sessions` on the
+     second one in);
+   - no `NetworkConfig mismatch` warning appears in either host's console.
+4. The direct-join message. With the bump still in place, force the 25 player into the 24 host's party session through
+   the join path (an invite sent before the bump, or a debugger call to `PartyInviteController.JoinPartyAsync` with that
+   host's row): the joiner leaves at once and lands on Home with "<host name> is on a different version of the game
+   (24; yours is 25). Update your game to play together."; the host's console shows no `NetworkConfig mismatch`;
+   `net_logs.py show 1` has a `protocolMismatch` mark.
+5. An old build: one build from `bleeding-edge` before this branch and one with it. They do not list each other; a forced
+   join from the new one shows the same toast with "an older version".
+6. Revert the bump in step 3 before committing anything.
+
 ### 🟡 Meerkat: a real wormhole, and nothing inside touches outside (`Ys-bleeding-edge`, 2026-11-20, Yash) — COMPILED AND TESTED IN THE EDITOR, NOT FLOWN
 
 **What landed:** the Soliton Tunnel's look is a real wormhole (`Docs/Shaders/WORMHOLE_SHADERS.md` §17: a mouth shows
@@ -714,6 +783,47 @@ clean 0.5 of the mouth, redhot 0.8 of full Soar, redline 1362 u/s; flare 1.6x / 
 
 ---
 
+
+## 🔴 Live flags: remote kill switches and the update-required screen (2026-11-06, Shombith, NOT RUN IN EDITOR)
+`LaunchFlags` / `LaunchFlagsService` (the `launch-flags` Cloud Code script read once after sign-in through `UgsRequestPolicy`, saved in PlayerPrefs `LaunchFlags.Json` / `LaunchFlags.FetchedAtUnix`), each server gate's `IsActive` (compiled `Enabled` AND not killed), `UpdateNoticeOverlay`, `Resources/LaunchFlagsConfig.asset`. Why: `Docs/LAUNCH/LIVE_FLAGS.md`; READINESS.md §10 #6 (second half) and #11. Affects: Yash's Cloud Code.
+Verified: `node Tools/UGS/CloudCode/launch-flags.test.cjs` 14 passed, with three negative controls (bad semver, kill-switch typo, unknown mode) failing as they should; every other UGS script test passes; `unity_refcompile` (player) RESULT OK. Not compiled or run in a Unity editor; `LaunchFlagsTests` (EditMode) has not run. Nothing deployed to UGS.
+- [ ] The project compiles; EditMode `LaunchFlagsTests` pass, and `FairPlayPhaseBTests` / `PlatformSignInAndEntitlementsTests` still pass.
+- [ ] `Assets/Resources/LaunchFlagsConfig.asset` opens in the inspector with every line filled (it was written as YAML).
+- [ ] With the script NOT deployed (today): boot to Menu_Main signed in. One `[LaunchFlags] The flags could not be fetched` warning, nothing else, the game plays as before.
+- [ ] Deploy `launch-flags.js` to **development** only, with `minimumVersion` set above this build's version (e.g. `9.0.0`; `recommendedVersion` at least as high). Boot a development build: after sign-in the blocking **update required** screen covers the menu, its reason line is in the danger colour, UPDATE opens the platform's link, QUIT (desktop) closes the game, Escape / B do nothing, the pad cannot move the selection onto the menu behind it, and a scene change keeps it up.
+- [ ] Same deploy, then boot with the network off: no wall (a saved answer never walls), offline play works.
+- [ ] Set `minimumVersion` back to `0.0.0` and `recommendedVersion` above the build: a dismissible **update available** notice; LATER (or B / Escape) closes it, it does not come back that run.
+- [ ] Set `message.title` / `.body`: the notice shows once, and not again on the next launch.
+- [ ] Kill economy: in a test build with `ServerEconomyGate.Enabled = true`, set `killSwitches.economy: true`, deploy to development, relaunch: no `economy` Cloud Code calls (Dashboard > Cloud Code > logs), the wallet answers locally; set it back to `false`, relaunch: the server's balance comes back.
+- [ ] Put the development script back to the defaults (`0.0.0`, every switch `false`) when done.
+
+### 🔴 Build stamp: version, build, commit on screen; release builds sign into UGS production (`claude/launch-build-stamp`, 2026-11-05) — NOT EDITOR-VERIFIED
+
+**What landed:** `BuildStampProcessor` writes `Assets/Resources/Generated/build_stamp.json` into every player build
+and removes it afterwards; `BuildStamp.Current` reads it; `AuthenticationServiceFacade` initializes UGS with
+`SetEnvironmentName` (release player → `production`, development build and Editor → `development`, an explicit
+`-ugsEnvironment` / `CS_UGS_ENVIRONMENT` wins, anything else fails the build); the settings version line, crash
+metadata and PostHog person properties carry the stamp; the Windows pipeline puts `bundleVersion` back and passes
+`WINDOWS_BUILD` for the build only. Proven offline: `unity_refcompile` player + editor configs OK. **Not compiled or
+run in the Unity editor; the EditMode tests have not run.** Docs/LAUNCH/BUILD_STAMP.md.
+
+1. Test Runner, EditMode: `BuildStampTests`, `AnalyticsWaveCohortTests`, `ReleaseBuildKindTests`. **Pass:** green.
+2. Play Menu_Main in the Editor, open Settings > General. **Pass:** the version line reads `Version 0.2.0 (editor) editor
+   development`. With Logging > Boot on, one `[Auth] UGS environment 'development'` line.
+3. `FrogletTools > Build > Windows x64 (Development)`. **Pass:** the build succeeds; afterwards `git status` shows no
+   change to `ProjectSettings/ProjectSettings.asset` and no `Assets/Resources/Generated`; `build_manifest.txt` has
+   `ugsEnvironment=development` and the commit. Run the player: Settings shows `(local) <8-char sha> development`.
+4. `Tools/Build/build_windows.sh --version 0.2.1 --build-number 7 --channel internal` (a release build). **Pass:**
+   Settings shows `Version 0.2.1 (7) <sha> production`; `ProjectSettings.asset` still says `bundleVersion: 0.2.0` and
+   its Standalone defines carry no `WINDOWS_BUILD`; signing in creates (or finds) the player in the UGS dashboard's
+   **production** environment Player Management list, not development. (Production must be set up first: READINESS #1.)
+5. Negative: `build_windows.sh --ugs-environment staging`. **Pass:** the build fails with
+   `UGS environment 'staging' is not one this game has`, and nothing is left modified.
+6. Android: `FrogletTools > Build > Android APK (Development)`. **Pass:** the APK installs, Settings shows its
+   versionCode as the build number and `development`; Player Settings' Bundle Version Code is unchanged afterwards.
+7. With analytics consent on, force a crash in a development player (Cloud Diagnostics). **Pass:** the report's
+   metadata carries `build_number`, `build_commit`, `release_channel`, `ugs_environment`.
+
 ### 🔴 Harvest, the Thresher's Space game (GameModes 88) (`claude/keen-rubin-rw7p6q`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/HARVEST.md` (plan: `Docs/MassAndSpaceGames/THRESHER_SPACE.md`). A Thresher
@@ -775,6 +885,62 @@ reaper laps a wheel in its plane, climbs the axle and dives down it. Offline: `-
     Count stays at or under 23.
 17. AI at I3/I4: it takes its own team's Space crystals, laps wheels in plane rather than orbiting at the tips, climbs and
     dives along the axle. Watch whether it ever gets stuck at the axle point.
+
+---
+
+
+## 🔴 In-app account deletion: Settings > Account > Delete account (2026-11-06, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/launch-backend-in-app-deletion`; launch blocker #15 (`Docs/LAUNCH/READINESS.md` §3, §10). Compiled with
+`unity_refcompile` (player, editor, webgl: OK; a planted error fails each). `AccountDeletionServiceTests` (8 cases) passed
+in a stand-alone .NET harness against the real UniTask, and a mutant that wipes the device before the account is
+deleted fails two of them. Nothing here has called UGS: the Cloud Save `DeleteAllAsync`, `DeleteAccountAsync` and the
+reboot are proven only by these steps. Use a throwaway guest, never your own pilot.
+
+1. **Fresh guest.** Play Menu_Main from a clean machine (FrogletTools > Player Data Wipe, everything but the account),
+   earn a few crystals, set a display name. Note the Player ID on Settings > Account.
+2. **Settings > Account shows Delete account** for the guest (it did not before: the button was hidden). Sign out is
+   still hidden for a guest.
+3. **Delete account > the confirmation > Delete account.** The buttons lock, the screen fades, the boot chain runs and
+   the menu returns as a NEW guest: a different Player ID, no crystals, the first-run screens (privacy, age) again.
+4. **UGS dashboard, development environment:** Player Management no longer finds the old Player ID; Cloud Save has no
+   default or public keys for it; the display name is free again (set the same name on the new guest: it is accepted).
+5. **Offline:** turn the network off, Delete account. "Your account was not deleted" appears with Close; Player ID,
+   crystals and name are unchanged; network back on, Delete account works.
+6. **Console:** one warning on the failed attempt (`[AccountDeletion] Deletion did not complete...`), and PostHog's
+   "flagged for deletion" warning on the successful one; no errors.
+7. **Browser Toybox:** Delete account is not shown (no online account there).
+
+### 🔴 Mode smoke test: every rostered mode from Bootstrap, all-AI, to the game-over event (`claude/launch-mode-smoke`, 2026-11-05) — NOT EDITOR-VERIFIED
+
+**What landed:** `Assets/_Scripts/Editor/Launch/` (`ModeSmokeLauncher`, `ModeSmokeDriver`, `ModeSmokeReport`),
+`Assets/_Scripts/ScriptableObjects/ModeSmokeConfigSO.cs`, the config `Assets/_SO_Assets/Launch/ModeSmokeConfig.asset` (hand-authored YAML: rosters
+ArcadeGames + ArenaGames, Maelstrom excluded, quick set SkimRace / Joust / Switchback),
+`Assets/_Scripts/Tests/Editor/ModeSmokeReportTests.cs`, `Tools/Launch/smoke_report.py`. Doc: `Docs/LAUNCH/SMOKE_TEST.md`.
+Verified offline only: the reference compile (editor config) and `smoke_report.py self-test` (negative control: a
+result with an exception publishes a failure). Nothing has played a mode with it: no Unity editor in that session.
+
+1. Open the project. **Pass:** it compiles; `ModeSmokeConfig.asset` opens in the Inspector with two rosters, one
+   exclusion (Maelstrom, with its reason) and three quick modes (Skim Race, Joust, Switchback). If the asset shows
+   a missing script, re-create it from `Create > Cosmic Shore > Launch > Mode Smoke Config` with those values.
+2. Test Runner, EditMode: run `ModeSmokeReportTests`. **Pass:** all green.
+3. `FrogletTools > Build > Mode Smoke Test > Run Quick Set`, hands off the editor. **Pass:** for each of Skim Race,
+   Joust and Switchback the editor enters Play from Bootstrap, reaches the menu, loads the mode with 3 hulls, every
+   hull flies itself at 4x, the end screen comes up, Play exits and the next mode starts; the Console ends with
+   `[ModeSmoke] done: 3 passed, 0 failed`. Open `Logs/ModeSmoke/summary.json`: `aiSeats` = `seats` = 3,
+   `movingSeats` >= 1, `gameEnded` true, `errors` and `exceptions` 0, `gameSeconds` near the mode's usual length. A
+   mode that fails names its first failed check in `failure` and its errors in `firstErrors`: report what it shows,
+   do not loosen the check.
+4. Negative control: duplicate the config (`Assets/_SO_Assets/Launch/ModeSmokeConfig.asset` -> a scratch copy), add an
+   override for Joust with `Match Budget Seconds` 30, and run headless (step 5) with `-smokeModes Joust -smokeConfig
+   <the copy's path>`. **Pass:** exit code 1, Joust `failed` with "the game-over event never fired within 30 game
+   seconds", `smoke_report.py check` prints a `failure` row. Delete the copy.
+5. Close the editor and run the same three headless, from a terminal in the checkout:
+   `Unity -batchmode -projectPath . -executeMethod CosmicShore.Editor.ModeSmokeLauncher.Run -smokeModes quick -smokeOut Logs/ModeSmokeBatch -smokeQuit -logFile -`.
+   **Pass:** exit code 0, `Logs/ModeSmokeBatch/junit.xml` lists 3 testcases with no failure; then
+   `python3 Tools/Launch/smoke_report.py check Logs/ModeSmokeBatch` prints three `success` rows. Try once more with
+   `-nographics` and record whether any mode fails only there (CI will run that way).
+6. Afterwards: `PlayerPrefs` `CosmicShore.OfflinePreferred` is back to what it was before the run.
 
 ---
 
@@ -25715,3 +25881,36 @@ packages this machine lacks). Seen in Amoebius on a Crystal Run, offline.
 - [ ] The chip top left shows crystals, hull and, while anchored, the clock; toasts stack under it as a feed, and a
       long toast line widens the band instead of being cut off.
 - [ ] Escort the Ark: the plate shows the hull and the way home; Ruby and the other domains read correctly.
+
+## What's new window, Rev 121 C (2026-11-21)
+
+The What's new window from Frogma Rev 121 C (`Docs/MENU_REDESIGN_B.md` section 216, spec
+`Docs/UI/specs/rev121-c-whats-new.md`). Not run in the Unity editor: none in this session. The reference compile (player
+and editor) has 0 errors in the changed files (30 in untouched files, from packages this machine cannot fetch); a
+planted error in `WhatsNewModal.cs` was caught, so the files are compiled. The window is built in code, so there is no
+render of it beside the board yet.
+
+- [ ] Clear the pref `WhatsNew.SeenId` (or use a fresh install), open Menu_Main: once the menu is ready, the What's new
+      window opens by itself on Update 0.3 Voyages. Close it and reload the scene: it does not open again.
+- [ ] It does not open by itself during the first-time guided path, in freestyle, over another window, or when coming
+      back from a match to a card's launch panel.
+- [ ] Settings > General: a WHAT'S NEW button beside CREDITS opens the window over Settings; B goes back to Settings.
+      In a match's pause menu the button is not shown.
+- [ ] The window matches the board: the list on the left with "New" on 0.3, the HyperSea picture, the version and date,
+      Voyages, three features side by side, the three "Also in this update" lines; Close and Set sail at the foot.
+- [ ] Set sail closes the window and opens the Voyage window.
+- [ ] Gamepad: up and down walk the list, right reaches Close and Set sail, A presses them.
+- [ ] Phone and iPad: the window fits the screen with nothing cut off.
+
+## Show FPS setting, every build (2026-11-21)
+
+Settings > Display > Show FPS turns on a small FPS counter (`FpsCounter`, words and look in
+`Assets/Resources/FpsCounterConfig.asset`) in every build, release included; the diagnostics overlay stays dev-only. Not
+run in the Unity editor: none in this session. The reference compile has 0 errors in the changed files (the rest are in
+untouched files, from packages this machine cannot fetch); a planted error in `FpsCounter.cs` was caught.
+
+- [ ] Settings > Display: a Show FPS row under V-Sync, OFF by default. Turn it ON: "60 FPS" (or the real rate) appears
+      top left, inside the safe area, and updates twice a second. OFF hides it at once.
+- [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
+- [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
+- [ ] Phone with a notch: the number is not under the notch or a rounded corner.

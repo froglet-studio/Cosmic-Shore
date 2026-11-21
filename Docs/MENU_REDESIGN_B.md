@@ -8907,3 +8907,39 @@ a fallen Ark. `VoyageObjectiveBox` is the chip (`VoyageGlyph` draws its gem, Ark
 `ArkwayVoyageHud` lays toasts out as a feed under the chip while it shows, widening to a long line. Every word is a
 `VoyageLines` field (`Plate*`, `Chip*`). Seen in Amoebius on a Crystal Run (calm, under attack, assault, anchored); not
 yet run in the Unity editor.
+
+## 216. Rev 121 mockups: What's new, after an update and from Settings, four ways (2026-11-21, C picked, built)
+
+**Asked** (Shombith, 2026-11-21): "open a frogma board and create a new UI on main menu a pop up called what's new it
+can be accessed from settings or after an update this shows up. Create 4 mock-ups screens for this". Read as four
+options for the pop-up, each working, plus the Settings way in. The update featured is Voyages (Update 0.3).
+
+**On the canvas:** a new tab, **What's New**, round "Rev 121 - What's new: the pop-up after an update and from Settings,
+four ways, featuring Voyages". Copies in `Docs/MenuRedesignB/board/R121*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r121_whats_new.py <root> 121`.
+- **A Poster (recommended):** one window over Home: the Ark on the HyperSea, three features under it (Take a job,
+  Rival crews, Sagas and relics), the fixes folded under "Also in this update", Close and Set sail. One look tells
+  what is new.
+- **B Pages:** one feature a page with large art, LB / RB and dots to page, Skip, Set sail on the last page.
+- **C Changelog:** every update listed on the left, the picked one on the right with its features and fixes; Set
+  sail only on the newest. Update 0.2 and 0.1 are placeholders showing how the list grows.
+- **D Card:** a small card slides in at Home's lower right ("New in Update 0.3, Voyages", Later / See it) and opens
+  a tall drawer on the right.
+- **Settings:** Settings, Other, About: a "What's new" row (a mark until opened once), Credits, Version. Open shows A's
+  window with Back in place of Close.
+- **Notes:** when it opens (once, on the first Home visit after an update with an entry; never over a match or the
+  start flow), and that closing it says where it lives.
+
+**Differs from the build:** nothing exists yet. The build would add one authored What's new entry per update
+(version, name, line, features, fixes, art; every word a field), a seen-version flag saved on the device, the row on
+Settings' Other tab, and the window of the picked option on Menu_Main.
+
+**Picked (Shombith, 2026-11-21):** "I like C build C".
+
+**Built (2026-11-21, not yet run in the editor):** the window C as `WhatsNewModal` (modal type `WHATS_NEW = 22`), built
+in code beside the Quests window with the Voyage window's kit; its words in `Assets/Resources/WhatsNew.asset`
+(`WhatsNewSO`, one entry per update, newest first); it opens once by itself after an update (`WhatsNewRules`, the
+pref `WhatsNew.SeenId`) and from a WHAT'S NEW button beside CREDITS in Settings' General links
+(`author_menu_settings.py`). Spec `Docs/UI/specs/rev121-c-whats-new.md`, which lists where it differs from the board
+(no Ark picture yet, the door on General not Other, only Update 0.3 listed). Hand test in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`.

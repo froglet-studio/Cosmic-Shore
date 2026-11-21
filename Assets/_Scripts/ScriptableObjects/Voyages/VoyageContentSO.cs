@@ -820,6 +820,18 @@ namespace CosmicShore.ScriptableObjects
         public string ArkLobbyLineGuest = "Pick your own seat. The host picks the voyage, fills the AI seats and sets sail.";
         [Tooltip("The Set sail button's words on a friend's machine: only the host sets sail.")]
         public string ArkHostSails = "THE HOST SETS SAIL";
+        [Tooltip("Over the Ark's domain chips on the host's (or a solo pilot's) Ark page: the host picks the one domain every seat and the Ark fly.")]
+        public string ArkDomainHead = "ARK DOMAIN";
+        [Tooltip("Over the domain chips on a friend's Ark page: the host picks, a friend's press is a vote.")]
+        public string ArkDomainHeadGuest = "VOTE FOR THE ARK'S DOMAIN";
+        [Tooltip("The Jade chip.")]
+        public string ArkDomainJade = "Jade";
+        [Tooltip("The Ruby chip.")]
+        public string ArkDomainRuby = "Ruby";
+        [Tooltip("The Gold chip.")]
+        public string ArkDomainGold = "Gold";
+        [Tooltip("A chip some friends voted for: {domain} the chip's name, {votes} how many voted for it.")]
+        public string ArkDomainVotes = "{domain} - {votes}";
         [Tooltip("Under your seat on the Ark page (Rev 115 A): opens the seat picker.")]
         public string ArkChangeSeat = "CHANGE YOUR SEAT";
         [Tooltip("Change your seat's keycap.")]
