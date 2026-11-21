@@ -7,7 +7,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 
 | Loop or item | Tier or area | State | Since | Branch | What to build |
 | --- | --- | --- | --- | --- | --- |
-| era.tide | Era | queued | 2026-11-20 |  | This and the quest chain should take over the two little windows under the profile on the home screen. |
+| era.tide | Era | building | 2026-11-20 | claude/build-era.tide | This and the quest chain should take over the two little windows under the profile on the home screen. |
 
 ## Planning: decided, not yet building (2)
 
@@ -77,10 +77,11 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | arc.support | 0 | What an episode gives the player is not defined in loop terms: it opens no loop on this map. | An episode is a Tide's content, sold once the Tide has run free for its season: its saga, its arena environments, its colour set. |
 | era.meta | 0 | The schedule is not set, and nothing tells a player that the meta turned or why their vessel flies differently. | One turn per Tide, six weeks. The Tide's news says in authored words which vessels changed and which arena environments are new. |
 
-## Recent moves (4)
+## Recent moves (5)
 
 | Date | Step | Loop or item | By | What |
 | --- | --- | --- | --- | --- |
+| 2026-11-20 | start | era.tide | Claude |  |
 | 2026-11-20 | idea | kit-drift | Claude | Kit drift check: Add a report check that flags a vessel whose abilities changed in the game while its kit in model/fleet/ did not. On 2026-11-19 the Rhino (Time is now Momentum with oversteer, Unstoppable and the Momentum ward are base, L5s Avalanche and Slingshot), the Shrike (trail almost nothing, a nest walled in super-shielded plates) and the Jewel Wasp (a possessed creature is stolen for good) all changed, and their fleet YAML still describes the old kits. The element-ability-table reader already reads the shipped ability maps, so the check can compare against it. |
 | 2026-11-20 | propose | arc.crew | Claude | Since 2026-11-19 every account holds one crew of 18 dealt from the 126 painted pilots (commit 5a34332f9). Make that dealt crew the start of this loop: recruiting becomes choosing which of your 18 to seat, and standing is earned per pilot of that crew, so the device-side standing stand-in and the dealt crew are one roster instead of two. |
 | 2026-11-20 | propose | round.broodrush | Claude | Seat the twelve hulls the trail-volume lever already balanced (Meerkat, Wrasse, Urchin, Honeyguide, Stoat, Sparrow, Scarab, Squirrel, Dolphin, Orca, Tiger Moth, Thresher: each within 10% of the mean on net control of space over 124 real-game matches) as Brood Rush's roster now, and hold the ten flagged hulls (Manta, Serpent, Grizzly, Jewel Wasp, Angler, Rhino, Jacks, Goby, Swordfish, Brittle Star) out until the redesign brings each in range. The Shrike's nest rework measured 1.09, so it may join first. Source: commits 2b94a1fda and b8f578023, Docs/ElementalLoop/REDESIGN.md. |
