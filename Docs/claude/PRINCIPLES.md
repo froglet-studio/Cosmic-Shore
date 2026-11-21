@@ -375,12 +375,13 @@ record and are the ones to read with care.
 | P-ftue-06 | unattributed |  | Once a feature is revealed it stays unlocked across sessions; unlocks never regress. | C4 — UNLOCKS PERSISTENT & MONOTONIC. Once revealed, a feature stays unlocked across sessions | `Docs/QUEST_TRACK_AND_BREADCRUMB.md:39` |
 | P-ftue-07 | unattributed |  | To send a player somewhere, spotlight the one control to press next, dim and disable everything else except Settings, and let the player press each step themselves; nothing opens a screen, selects a card, presses a button or flies the vessel on their behalf. | GUIDE A PLAYER BY SHOWING THE PATH, NEVER BY WALKING IT (LOCKED rule — every quest, tutorial and onboarding... | `Docs/claude/FTUE_DIALOGUE_AI.md:47` |
 
-### process (2)
+### process (3)
 
 | id | owner | date | rule | words | source |
 |---|---|---|---|---|---|
 | P-process-01 | unattributed |  | Unity CLI verification — the verify rule gates every C# commit (LOCKED rule) | Unity CLI verification — the verify rule gates every C# commit (LOCKED rule) | `CLAUDE.md:278` |
 | P-process-02 | unattributed |  | Editor Tooling (LOCKED convention — read `Docs/TOOLING.md` before adding any `[MenuItem]`) | Editor Tooling (LOCKED convention — read `Docs/TOOLING.md` before adding any `[MenuItem]`) | `CLAUDE.md:302` |
+| P-process-03 | Yash | 2026-11-10 | Code is designed for the session that writes it: the codebase explains itself to a cold-start session and a wrong change fails a machine check (seven rules, three of them gated by check_agent_first.py). | all I want you is to use the best code practices that can benefit both you and us, but you as priority, as ... | `Docs/claude/AGENT_FIRST_ARCHITECTURE.md:3` |
 
 ### other (17)
 

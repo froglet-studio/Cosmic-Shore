@@ -35,6 +35,13 @@ namespace CosmicShore.Gameplay
     /// tunnels, <see cref="MeerkatSolitonNetworkRelay"/>), so each machine moves the prisms and loose crystals it simulates,
     /// as the Jacks' net does; the machine that decides the hull puts the cell's omni crystal where it comes to rest for
     /// everyone (<see cref="CrystalManager.RelocateCrystal"/>).</para>
+    ///
+    /// <para><b>Sealed in the tube</b> (Yash, 2026-11-20: "anything inside a wormhole won't interact with anything outside
+    /// the hole"). From the way in to the way out a carried prism is <see cref="Prism.SetSealed"/>: its collider is held off
+    /// and no blast, round, ram, creature or steal changes it; a carried crystal is <see cref="SolitonIsolation.Seal"/>ed, so
+    /// no hull or skimmer outside collects it and no other tunnel takes it. Both are let out where they leave the tube
+    /// (fired, set down by <see cref="Release"/>, or their tunnel gone). A prism some other carrier holds
+    /// (<see cref="Prism.IsCarried"/>) is not swallowed.</para>
     /// </summary>
     sealed class MeerkatSwallow
     {
@@ -130,6 +137,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _bodies.Count; i++)
             {
                 var b = _bodies[i];
+                if (b.Prism && b.Stage == Stage.Tube) b.Prism.SetSealed(false);
                 if (!b.Prism || b.Prism.destroyed || b.Stage != Stage.Tube) continue;
                 b.Prism.transform.localScale = b.Scale;
                 b.Prism.NotifyPositionChanged();
@@ -140,6 +148,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _crystals.Count; i++)
             {
                 var c = _crystals[i];
+                SolitonIsolation.Unseal(c.Crystal);
                 if (!c.Crystal) continue;
                 c.Crystal.transform.localScale = c.Scale;
                 if (c.Omni && decides && !c.Crystal.IsExploding && c.Crystal.CrystalManager)
@@ -167,6 +176,7 @@ namespace CosmicShore.Gameplay
                 var p = _found[i];
                 if (!p || p.destroyed || p.SpatialIndexId < 0 || _taken.Contains(p)) continue;
                 if (!p.IsCreationComplete || p.IsGrowing || p.prismProperties is { IsSuperShielded: true }) continue;
+                if (p.IsCarried || p.IsSealed) continue;   // a parcel on a hull, or in another Meerkat's tube: not ours to move
                 if (status != null && SelfTrailContactConfigSO.SuppressesHullContact(p, status)) continue;
                 var living = p as HealthPrism;
                 if (living && living.ResolveOwnerFauna()) continue;   // a creature's body: the creature owns it
@@ -190,6 +200,7 @@ namespace CosmicShore.Gameplay
             {
                 var b = _bodies[i];
                 if (b.Prism && !b.Prism.destroyed && b.Prism.SpatialIndexId >= 0) continue;
+                if (b.Prism && b.Stage == Stage.Tube) b.Prism.SetSealed(false);   // gone from under us (a pool return)
                 _taken.Remove(b.Prism);
                 _bodies.RemoveAt(i);
             }
@@ -297,6 +308,7 @@ namespace CosmicShore.Gameplay
             var maker = ex.Status;
             if ((t.Kit & MeerkatSolitonKit.KitSteal) != 0 && maker != null && b.Prism.Domain != maker.Domain)
                 b.Prism.Steal(maker.PlayerName, maker.Domain);
+            b.Prism.SetSealed(true);   // in the tube: out of the world's reach until it is fired (after the steal, which is ours)
         }
 
         static Vector3 Across(Vector3 p, SolitonTunnel t)
@@ -329,6 +341,7 @@ namespace CosmicShore.Gameplay
             var tr = b.Prism.transform;
             tr.position = exit + b.Off * t.Radius(t.L);
             tr.localScale = b.Scale;
+            b.Prism.SetSealed(false);   // out of the way out: in the world again
             float speed = Mathf.Max(0f, cfg.FireSpeed);
             b.V = heading * speed;
             if (b.Off.sqrMagnitude > 1e-6f) b.V += b.Off.normalized * (0.06f * speed);
@@ -350,6 +363,7 @@ namespace CosmicShore.Gameplay
                 if (i >= active.Count) continue;
                 var c = active[i];
                 if (!c || !c.isActiveAndEnabled || c.IsExploding || c.IsEmbedded || Carrying(c)) continue;
+                if (SolitonIsolation.Sealed(c)) continue;   // in another Meerkat's tube
                 if ((c.transform.position - t.A).sqrMagnitude > rs2) continue;
                 var impactor = ImpactorOf(c);
                 bool omni = impactor is OmniCrystalImpactor;
@@ -376,6 +390,7 @@ namespace CosmicShore.Gameplay
                 if (!cr || !cr.isActiveAndEnabled || cr.IsExploding || (cr.transform.position - c.Placed).sqrMagnitude > ExternalMoveSqr)
                 {
                     if (cr) cr.transform.localScale = c.Scale;
+                    SolitonIsolation.Unseal(cr);
                     _crystals.RemoveAt(i);
                     continue;
                 }
@@ -390,6 +405,7 @@ namespace CosmicShore.Gameplay
                         c.S = 0f;
                         c.V = Vector3.zero;
                         c.Stage = Stage.Tube;
+                        SolitonIsolation.Seal(cr, t);   // in the tube: nobody outside collects it
                     }
                     else c.V = SolitonTunnelShapeMath.PullVelocity(t.A, t.T0, tr.position, cfg.SuckSpeed, cfg.SuckRadius, t.Config ? t.Config.MaxSpeed : cfg.SlideMaxSpeed);
                 }
@@ -402,6 +418,7 @@ namespace CosmicShore.Gameplay
                         var exit = t.At(t.L, out var heading);
                         tr.position = exit + c.Off * t.Radius(t.L);
                         tr.localScale = c.Scale;
+                        SolitonIsolation.Unseal(cr);
                         c.V = heading * (0.5f * Mathf.Max(0f, cfg.FireSpeed));
                         c.Stage = Stage.Glide;
                     }

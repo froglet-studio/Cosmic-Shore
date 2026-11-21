@@ -141,6 +141,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
+      propertyPath: bootBareCanvas
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
       propertyPath: CellConfigs.Array.size
       value: 14
       objectReference: {fileID: 0}
@@ -1043,6 +1048,7 @@ MonoBehaviour:
   handOverSeconds: 1.5
   returnDelaySeconds: 6
   sailTimeoutSeconds: 90
+  pauseButton: {fileID: 1960000012}
 --- !u!1 &1564324324
 GameObject:
   m_ObjectHideFlags: 0

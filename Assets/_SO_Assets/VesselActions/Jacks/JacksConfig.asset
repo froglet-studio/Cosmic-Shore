@@ -68,8 +68,8 @@ MonoBehaviour:
   travelMaxSeconds: 1.2
   dangerShare:
     Enabled: 1
-    Value: 0.25
-    Min: 0.25
+    Value: 0.06
+    Min: 0.06
     Max: 0.75
     element: 1
     UseFloor: 1

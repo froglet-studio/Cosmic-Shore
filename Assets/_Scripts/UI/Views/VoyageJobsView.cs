@@ -87,6 +87,7 @@ namespace CosmicShore.UI
         VoyageBoard _board;
         VoyageLockedStrip _lockedStrip;
         readonly List<VoyageBoard.Offer> _offers = new();
+        readonly List<VoyageJob> _sailing = new();
         // Who is in the player's lobby: the Ark page's lobby view reads it.
         [Inject] HostConnectionDataSO _party;
 
@@ -324,8 +325,14 @@ namespace CosmicShore.UI
             }
 
             var gameData = VoyageLaunch.ResolveGameData();
-            var jobs = harbour ? harbour.Board(out VoyageState state)
+            var board = harbour ? harbour.Board(out VoyageState state)
                 : VoyageHarbour.Board(style, VoyageRun.ActiveSquad(gameData), VoyageRun.LiveDomain(gameData), out state);
+            // A locked job is not on offer (VoyageToyDefinitionSO.IsJobOpen; Shombith, 2026-11-21: the crew recommends
+            // only what sails, the Crystal Run, so no other voyage can be opened).
+            _sailing.Clear();
+            foreach (var j in board)
+                if (VoyageToyDefinitionSO.JobSails(j)) _sailing.Add(j);
+            var jobs = _sailing;
             string here = state?.At;
             int count = jobs.Count + (escort ? 1 : 0);
             _destinations.Clear();
@@ -349,7 +356,8 @@ namespace CosmicShore.UI
             if (escort)
             {
                 var course = VoyageRules.EscortRoute(state, content);
-                _offers.Add(EscortOffer(content, lines, escort, Difficulty, course, sail: true));
+                _offers.Add(EscortOffer(content, lines, escort, Difficulty, course, sail: true,
+                    locked: !VoyageToyDefinitionSO.EscortSails()));
                 if (_open == jobs.Count)
                 {
                     if (course is { Count: >= 2 }) Map(content, lines, style, course[0], course, CourseLine(content, lines, course));
@@ -366,7 +374,7 @@ namespace CosmicShore.UI
         {
             if (!map) return;
             if (_openAtGalaxy) map.FrameGalaxy();
-            else map.FrameOn(course);
+            else map.FrameOn(course, minWidth: VoyageSeaPage.CourseFrameLy);
         }
 
         void PickBoardRow(int index)
@@ -536,7 +544,7 @@ namespace CosmicShore.UI
         /// <summary>The Ark escort as the board offers it: its title and line at the last picked difficulty, its course, and,
         /// before it sails, Set sail at the difficulty picked on the voyage page (its own 1-9).</summary>
         VoyageBoard.Offer EscortOffer(VoyageContent content, VoyageLines lines, ArkEscortSO escort, int difficulty,
-            IReadOnlyList<string> course, bool sail)
+            IReadOnlyList<string> course, bool sail, bool locked = false)
         {
             string legs = escort.Legs.Count.ToString(CultureInfo.InvariantCulture);
             string d = difficulty.ToString(CultureInfo.InvariantCulture);
@@ -566,6 +574,8 @@ namespace CosmicShore.UI
                         offer.Stops.Add(new VoyageBoard.Stop { Name = place.Name, Line = place.Blurb, At = VoyageMapGraphic.PlacePoint(place) });
                 }
             }
+            // Locked (VoyageToyDefinitionSO.IsEscortOpen): no Set sail and no label, so the board shows it locked.
+            if (locked) return offer;
             if (sail)
                 offer.SetSail = picked =>
                 {

@@ -65,6 +65,124 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+
+## 🔴 Voyages launch fixes: follow the host, the Ark's one domain, the Escort lock, Start pauses (2026-11-21, Shombith, NOT RUN IN EDITOR)
+`claude/project-thread-zobeo0` into `launch-check`. `VoyageLobbyLink` + `ScreenSwitcher.VoyageLobby.cs` (protocol 38, `Docs/Voyages/PARTY.md` §7), `VoyageArkPage` (domain chips, uncropped faces, the Fill button), `VoyageKit.Commit` (ruby Set sail / Open voyage / Ready), `VoyageToyDefinitionSO.lockEscort`, `VoyageJobsView` (locked jobs off the board), `MenuMiniGameHUD` (Start pauses in the voyage), `MenuServerPlayerVesselInitializer` (the voyage scene spawns everyone in the Ark's domain), the Crystal Run's kind Raid -> Salvage. Verified: `unity_refcompile` has no errors in the changed files (the UGS package errors on launch-check are the sandbox's); `author_voyage_assets.py --check` clean; colour_trace, console logging, conditional compilation OK. Not compiled or run in Unity.
+- [ ] Compiles; EditMode `VoyageMilestoneOneTests`, `VoyageBoardTests`, `VoyageLobbyTests`, `VoyageShellTests` pass.
+- [ ] Voyages tab: only the Crystal Run (and Sail home when away) is on offer; Escort the Ark shows locked and its Open voyage is greyed; no other job (Iri Whistlebell) shows. The Crystal Run's kind reads Salvage.
+- [ ] Set sail, Open voyage and the brief's Ready are ruby with white words.
+- [ ] Your Ark page: the three pilot faces are whole (not cropped); "Fill the AI seats from a saved squad" is not shown (hidden for now, `VoyageToyDefinitionSO.offerFillFromSquad` off).
+- [ ] In a voyage, the pad's Start opens the pause window and closes it again; Select still opens it.
+- [ ] Two machines: friend flying freestyle, host opens the Voyage window and the Crystal Run: the friend leaves freestyle and lands on it; the host moves to the voyage and Ark pages, the friend follows; the host closes the window, the friend's closes.
+- [ ] Two machines: the friend presses Ruby on Your Ark (their chip outlined, the host's Ruby chip says "Ruby - 1"); the host presses Ruby: both show Ruby picked. Set sail: both vessels, the AI wingmates and the Ark's hull and model are Ruby.
+- [ ] Two machines: on the friend's Your Ark, the host's seat shows the host's hull, pilot portrait, pilot name and element (sent with the lobby, `VoyageLobbyState.Seats`); the host changes pilot and the friend's page follows within a few seconds.
+
+## 🔴 iOS privacy manifest in the Xcode project (2026-11-06, Shombith, NOT BUILT FOR iOS)
+
+Branch `claude/launch-ios-privacy-manifest`; launch blocker #14 (`Docs/IOS_BUILD.md` "Privacy manifest"). The manifest and
+its merge are tested outside Unity (5/5, negative control fails); `IosPrivacyManifestPostprocess`'s `UNITY_IOS` body has
+not been compiled, because the Xcode API ships only with iOS Build Support.
+
+1. **Export an iOS Xcode project** (iOS Build Support installed). The console shows no error from
+   `IosPrivacyManifestPostprocess`.
+2. **In the export folder:** `PrivacyInfo.xcprivacy` sits next to `Info.plist` and lists UserDefaults CA92.1,
+   FileTimestamp C617.1 and SystemBootTime 35F9.1.
+3. **In Xcode:** the file is in the Unity-iPhone target's Copy Bundle Resources, once. The build has no "Multiple commands
+   produce PrivacyInfo.xcprivacy" error.
+4. **Archive, then Organizer > Generate Privacy Report:** the app's entries show the three categories and the five
+   collected data types.
+5. **Export again with Append:** the file is unchanged and still listed once.
+6. **First TestFlight upload:** no ITMS-91053 email. If one names `LofeltHaptics.framework`, that framework needs a
+   manifest of its own (`IOS_BUILD.md`).
+
+### 🔴 Protocol version gates matchmaking: old and new clients never meet (`claude/launch-protocol-filter`, 2026-11-06, launch blocker 6) — NOT EDITOR-VERIFIED
+
+**What landed:** `NetProtocol` (`Assets/_Scripts/Controller/Multiplayer/NetProtocol.cs`) reads the running build's
+`NetworkConfig.ProtocolVersion` from the live NetworkManager (no second constant). Every session the game makes carries
+it as the indexed session property `protocol` (String3): the matchmaking session (`MultiplayerSetup`), the presence lobby
+(`PresenceLobbyService`) and the party session (`PartySessionService`, also as a player property). The matchmaking and
+presence queries filter on it, and their String1 game mode is scoped by it (`SkimRace@p24`, `PRESENCE_LOBBY@p24`), so a
+build from before the gate (bare game mode, no protocol) and a new build never list each other. Each protocol converges to
+its own presence lobby. A join by id (invite Accept, Join, Spectate, Rejoin) reads the protocol of the members it lands
+among as the join returns; on a different or missing one it leaves the session and shows
+`PartyInviteController.protocolMismatchToast` (authored, tokens `{name}` `{otherVersion}` `{yourVersion}`) instead of the
+generic bounce. Affects: Yash's multiplayer; Shombith's UGS (session properties and queries only; no new UGS calls).
+
+**Verified without the editor:** `unity_refcompile` player and editor configs: 0 errors in project code.
+`NetProtocolTests` (16) passed in a stand-alone harness (the file compiled with stand-ins for the Netcode and Sessions
+types and a minimal NUnit); negative controls: flipping `Decide`'s comparison failed 5 of them, and dropping the protocol
+scope from the game mode failed 5 (including "a build from before the gate must not find it"). Nothing run in Play mode;
+the Amoebius build of these files was not run here.
+
+**Test in the editor (two editors: MPPM with a virtual player, or two builds; each player its own tag/profile):**
+1. `NetProtocolTests` pass in the Test Runner.
+2. Same versions still match. Both on the shipped `ProtocolVersion` (24): both list each other ONLINE, an invite
+   Accept and a direct Join both seat the guest, and a matchmade game of the same mode and seat count joins one
+   session. Party log (Logging > Party on): the presence lobby is queried and created under `PRESENCE_LOBBY@p24`.
+3. Bump one. In the second editor (or a second build) set `NetworkManager.prefab` > NetworkConfig > Protocol Version
+   to 25 (do NOT commit it). Start both:
+   - neither lists the other ONLINE (each sits in its own presence lobby: `PRESENCE_LOBBY@p24` / `@p25`);
+   - a matchmade game of the same mode makes two sessions, never one (`[MultiplayerSetup] Queried 0 sessions` on the
+     second one in);
+   - no `NetworkConfig mismatch` warning appears in either host's console.
+4. The direct-join message. With the bump still in place, force the 25 player into the 24 host's party session through
+   the join path (an invite sent before the bump, or a debugger call to `PartyInviteController.JoinPartyAsync` with that
+   host's row): the joiner leaves at once and lands on Home with "<host name> is on a different version of the game
+   (24; yours is 25). Update your game to play together."; the host's console shows no `NetworkConfig mismatch`;
+   `net_logs.py show 1` has a `protocolMismatch` mark.
+5. An old build: one build from `bleeding-edge` before this branch and one with it. They do not list each other; a forced
+   join from the new one shows the same toast with "an older version".
+6. Revert the bump in step 3 before committing anything.
+
+### 🟡 Meerkat: a real wormhole, and nothing inside touches outside (`Ys-bleeding-edge`, 2026-11-20, Yash) — COMPILED AND TESTED IN THE EDITOR, NOT FLOWN
+
+**What landed:** the Soliton Tunnel's look is a real wormhole (`Docs/Shaders/WORMHOLE_SHADERS.md` §17: a mouth shows
+its far side, the ride is a streaked throat with a clear, growing way ahead, the ring flares as it forms, leaving throws
+a ripple; the ridden tube is no longer marched). A rider, and the prisms and crystals a tunnel carries, interact with
+nothing outside the tube, on every machine (`R_VesselActions/MEERKAT.md` §11, `SolitonIsolation`).
+
+**Verified:**
+- The open Unity editor (6000.3.17f1) compiled it: 0 errors.
+- EditMode in that editor: `SolitonIsolationTests` 6 of 6, `MeerkatSolitonMathTests` 6 of 6,
+  `SolitonTunnelShapeMathTests` 51 of 51, `MeerkatRiftTests` 6 of 6.
+- The shader compiles with `fxc` (`ps_5_0`) in both variants and drew in Play mode: stills of a test tunnel from outside,
+  facing a mouth and along a ride were captured before and after and sent to Yash.
+- The lens pass's GPU cost was measured in the editor before and after (`WORMHOLE_SHADERS.md` §17.3): riding fell from
+  5.9 ms to 0.5-0.7 ms per 1080p frame on an RTX 4070 Ti; the outside views did not move.
+- `author_meerkat_assets.py --check` and `--self-test`: ok. `studio_to_unity.py --vessel meerkat --check`: 81 mapped,
+  0 drift. `check_agent_first.py`: ok. `check_console_logging.py`: 0 problems.
+- `colour_trace.py --check` was already failing on this branch (Switchback debug colours, three font assets). None of
+  the findings it printed names a file this change touched; the change adds no colour literal in C#, no material and no
+  colour field.
+
+**NOT done:** nobody has flown it. The look was captured on a test tunnel made by script in Menu_Main, not on one a
+Meerkat formed. No multiplayer session was run, so the peer-side read (a remote rider's place against the tubes) is
+tested as arithmetic only. No phone was measured.
+
+**Verify in editor:**
+1. Toybox (Lava Lamp), Vessel Changer: the Meerkat. Form a wormhole with RT near some prisms.
+   - **Pass:** its rings flare as it opens. Inside the ring round each mouth you see the scenery at the other end, not
+     the local scene turned over.
+2. Ride it.
+   - **Pass:** the world outside smears into streaks running to a clear disk ahead; the disk grows as the way out
+     nears and swallows the view as you leave; one ripple runs out from the middle. Nothing pops as you cross the mouth.
+   - **Judge:** comfort. If it is too much, lower `InsideStreak` or `ExitPop` on `SolitonTunnel.asset` (FrogletTools >
+     Environment > Environmental Fundamentals).
+3. Form a wormhole through a wall of prisms and ride it. Have a rival (an AI Sparrow or Rhino) fire at you and ram
+   you while you are inside.
+   - **Pass:** the wall stands, you lose no petal, you are not knocked, slowed or silenced, and the camera does not
+     rock. The moment you are out, hits land again.
+4. Form a wormhole next to prisms and an omni crystal so they are swallowed, then shoot or ram them while they are in
+   the tube.
+   - **Pass:** carried prisms take no damage and are not stolen; the carried crystal is not collected until it is
+     fired out of the far mouth.
+5. Y for Sentinel Mode, then have a rival Meerkat ride through your guarded wormhole.
+   - **Pass:** your sentinel does not zap it while it is inside.
+6. Burrow Run or Warpline with rings inside a tube.
+   - **Pass:** a ring threaded inside still counts.
+7. Two machines (or MPPM): one player rides, the other watches and shoots.
+   - **Pass:** on the WATCHER'S machine too the rider takes no hit and collects no crystal while inside.
+
 ### 🔴 Mass-Space volume books on the Brood Rush scoreboard (`claude/project-thread-e9yath`, 2026-11-18, Garrett) — NOT EDITOR-VERIFIED
 
 New `VolumeLedger` on `GameDataSO`, fed by `StatsManager` (create, restore, grow/shrink, destroy, steal) and the
@@ -665,6 +783,47 @@ clean 0.5 of the mouth, redhot 0.8 of full Soar, redline 1362 u/s; flare 1.6x / 
 
 ---
 
+
+## 🔴 Live flags: remote kill switches and the update-required screen (2026-11-06, Shombith, NOT RUN IN EDITOR)
+`LaunchFlags` / `LaunchFlagsService` (the `launch-flags` Cloud Code script read once after sign-in through `UgsRequestPolicy`, saved in PlayerPrefs `LaunchFlags.Json` / `LaunchFlags.FetchedAtUnix`), each server gate's `IsActive` (compiled `Enabled` AND not killed), `UpdateNoticeOverlay`, `Resources/LaunchFlagsConfig.asset`. Why: `Docs/LAUNCH/LIVE_FLAGS.md`; READINESS.md §10 #6 (second half) and #11. Affects: Yash's Cloud Code.
+Verified: `node Tools/UGS/CloudCode/launch-flags.test.cjs` 14 passed, with three negative controls (bad semver, kill-switch typo, unknown mode) failing as they should; every other UGS script test passes; `unity_refcompile` (player) RESULT OK. Not compiled or run in a Unity editor; `LaunchFlagsTests` (EditMode) has not run. Nothing deployed to UGS.
+- [ ] The project compiles; EditMode `LaunchFlagsTests` pass, and `FairPlayPhaseBTests` / `PlatformSignInAndEntitlementsTests` still pass.
+- [ ] `Assets/Resources/LaunchFlagsConfig.asset` opens in the inspector with every line filled (it was written as YAML).
+- [ ] With the script NOT deployed (today): boot to Menu_Main signed in. One `[LaunchFlags] The flags could not be fetched` warning, nothing else, the game plays as before.
+- [ ] Deploy `launch-flags.js` to **development** only, with `minimumVersion` set above this build's version (e.g. `9.0.0`; `recommendedVersion` at least as high). Boot a development build: after sign-in the blocking **update required** screen covers the menu, its reason line is in the danger colour, UPDATE opens the platform's link, QUIT (desktop) closes the game, Escape / B do nothing, the pad cannot move the selection onto the menu behind it, and a scene change keeps it up.
+- [ ] Same deploy, then boot with the network off: no wall (a saved answer never walls), offline play works.
+- [ ] Set `minimumVersion` back to `0.0.0` and `recommendedVersion` above the build: a dismissible **update available** notice; LATER (or B / Escape) closes it, it does not come back that run.
+- [ ] Set `message.title` / `.body`: the notice shows once, and not again on the next launch.
+- [ ] Kill economy: in a test build with `ServerEconomyGate.Enabled = true`, set `killSwitches.economy: true`, deploy to development, relaunch: no `economy` Cloud Code calls (Dashboard > Cloud Code > logs), the wallet answers locally; set it back to `false`, relaunch: the server's balance comes back.
+- [ ] Put the development script back to the defaults (`0.0.0`, every switch `false`) when done.
+
+### 🔴 Build stamp: version, build, commit on screen; release builds sign into UGS production (`claude/launch-build-stamp`, 2026-11-05) — NOT EDITOR-VERIFIED
+
+**What landed:** `BuildStampProcessor` writes `Assets/Resources/Generated/build_stamp.json` into every player build
+and removes it afterwards; `BuildStamp.Current` reads it; `AuthenticationServiceFacade` initializes UGS with
+`SetEnvironmentName` (release player → `production`, development build and Editor → `development`, an explicit
+`-ugsEnvironment` / `CS_UGS_ENVIRONMENT` wins, anything else fails the build); the settings version line, crash
+metadata and PostHog person properties carry the stamp; the Windows pipeline puts `bundleVersion` back and passes
+`WINDOWS_BUILD` for the build only. Proven offline: `unity_refcompile` player + editor configs OK. **Not compiled or
+run in the Unity editor; the EditMode tests have not run.** Docs/LAUNCH/BUILD_STAMP.md.
+
+1. Test Runner, EditMode: `BuildStampTests`, `AnalyticsWaveCohortTests`, `ReleaseBuildKindTests`. **Pass:** green.
+2. Play Menu_Main in the Editor, open Settings > General. **Pass:** the version line reads `Version 0.2.0 (editor) editor
+   development`. With Logging > Boot on, one `[Auth] UGS environment 'development'` line.
+3. `FrogletTools > Build > Windows x64 (Development)`. **Pass:** the build succeeds; afterwards `git status` shows no
+   change to `ProjectSettings/ProjectSettings.asset` and no `Assets/Resources/Generated`; `build_manifest.txt` has
+   `ugsEnvironment=development` and the commit. Run the player: Settings shows `(local) <8-char sha> development`.
+4. `Tools/Build/build_windows.sh --version 0.2.1 --build-number 7 --channel internal` (a release build). **Pass:**
+   Settings shows `Version 0.2.1 (7) <sha> production`; `ProjectSettings.asset` still says `bundleVersion: 0.2.0` and
+   its Standalone defines carry no `WINDOWS_BUILD`; signing in creates (or finds) the player in the UGS dashboard's
+   **production** environment Player Management list, not development. (Production must be set up first: READINESS #1.)
+5. Negative: `build_windows.sh --ugs-environment staging`. **Pass:** the build fails with
+   `UGS environment 'staging' is not one this game has`, and nothing is left modified.
+6. Android: `FrogletTools > Build > Android APK (Development)`. **Pass:** the APK installs, Settings shows its
+   versionCode as the build number and `development`; Player Settings' Bundle Version Code is unchanged afterwards.
+7. With analytics consent on, force a crash in a development player (Cloud Diagnostics). **Pass:** the report's
+   metadata carries `build_number`, `build_commit`, `release_channel`, `ugs_environment`.
+
 ### 🔴 Harvest, the Thresher's Space game (GameModes 88) (`claude/keen-rubin-rw7p6q`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/HARVEST.md` (plan: `Docs/MassAndSpaceGames/THRESHER_SPACE.md`). A Thresher
@@ -726,6 +885,62 @@ reaper laps a wheel in its plane, climbs the axle and dives down it. Offline: `-
     Count stays at or under 23.
 17. AI at I3/I4: it takes its own team's Space crystals, laps wheels in plane rather than orbiting at the tips, climbs and
     dives along the axle. Watch whether it ever gets stuck at the axle point.
+
+---
+
+
+## 🔴 In-app account deletion: Settings > Account > Delete account (2026-11-06, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/launch-backend-in-app-deletion`; launch blocker #15 (`Docs/LAUNCH/READINESS.md` §3, §10). Compiled with
+`unity_refcompile` (player, editor, webgl: OK; a planted error fails each). `AccountDeletionServiceTests` (8 cases) passed
+in a stand-alone .NET harness against the real UniTask, and a mutant that wipes the device before the account is
+deleted fails two of them. Nothing here has called UGS: the Cloud Save `DeleteAllAsync`, `DeleteAccountAsync` and the
+reboot are proven only by these steps. Use a throwaway guest, never your own pilot.
+
+1. **Fresh guest.** Play Menu_Main from a clean machine (FrogletTools > Player Data Wipe, everything but the account),
+   earn a few crystals, set a display name. Note the Player ID on Settings > Account.
+2. **Settings > Account shows Delete account** for the guest (it did not before: the button was hidden). Sign out is
+   still hidden for a guest.
+3. **Delete account > the confirmation > Delete account.** The buttons lock, the screen fades, the boot chain runs and
+   the menu returns as a NEW guest: a different Player ID, no crystals, the first-run screens (privacy, age) again.
+4. **UGS dashboard, development environment:** Player Management no longer finds the old Player ID; Cloud Save has no
+   default or public keys for it; the display name is free again (set the same name on the new guest: it is accepted).
+5. **Offline:** turn the network off, Delete account. "Your account was not deleted" appears with Close; Player ID,
+   crystals and name are unchanged; network back on, Delete account works.
+6. **Console:** one warning on the failed attempt (`[AccountDeletion] Deletion did not complete...`), and PostHog's
+   "flagged for deletion" warning on the successful one; no errors.
+7. **Browser Toybox:** Delete account is not shown (no online account there).
+
+### 🔴 Mode smoke test: every rostered mode from Bootstrap, all-AI, to the game-over event (`claude/launch-mode-smoke`, 2026-11-05) — NOT EDITOR-VERIFIED
+
+**What landed:** `Assets/_Scripts/Editor/Launch/` (`ModeSmokeLauncher`, `ModeSmokeDriver`, `ModeSmokeReport`),
+`Assets/_Scripts/ScriptableObjects/ModeSmokeConfigSO.cs`, the config `Assets/_SO_Assets/Launch/ModeSmokeConfig.asset` (hand-authored YAML: rosters
+ArcadeGames + ArenaGames, Maelstrom excluded, quick set SkimRace / Joust / Switchback),
+`Assets/_Scripts/Tests/Editor/ModeSmokeReportTests.cs`, `Tools/Launch/smoke_report.py`. Doc: `Docs/LAUNCH/SMOKE_TEST.md`.
+Verified offline only: the reference compile (editor config) and `smoke_report.py self-test` (negative control: a
+result with an exception publishes a failure). Nothing has played a mode with it: no Unity editor in that session.
+
+1. Open the project. **Pass:** it compiles; `ModeSmokeConfig.asset` opens in the Inspector with two rosters, one
+   exclusion (Maelstrom, with its reason) and three quick modes (Skim Race, Joust, Switchback). If the asset shows
+   a missing script, re-create it from `Create > Cosmic Shore > Launch > Mode Smoke Config` with those values.
+2. Test Runner, EditMode: run `ModeSmokeReportTests`. **Pass:** all green.
+3. `FrogletTools > Build > Mode Smoke Test > Run Quick Set`, hands off the editor. **Pass:** for each of Skim Race,
+   Joust and Switchback the editor enters Play from Bootstrap, reaches the menu, loads the mode with 3 hulls, every
+   hull flies itself at 4x, the end screen comes up, Play exits and the next mode starts; the Console ends with
+   `[ModeSmoke] done: 3 passed, 0 failed`. Open `Logs/ModeSmoke/summary.json`: `aiSeats` = `seats` = 3,
+   `movingSeats` >= 1, `gameEnded` true, `errors` and `exceptions` 0, `gameSeconds` near the mode's usual length. A
+   mode that fails names its first failed check in `failure` and its errors in `firstErrors`: report what it shows,
+   do not loosen the check.
+4. Negative control: duplicate the config (`Assets/_SO_Assets/Launch/ModeSmokeConfig.asset` -> a scratch copy), add an
+   override for Joust with `Match Budget Seconds` 30, and run headless (step 5) with `-smokeModes Joust -smokeConfig
+   <the copy's path>`. **Pass:** exit code 1, Joust `failed` with "the game-over event never fired within 30 game
+   seconds", `smoke_report.py check` prints a `failure` row. Delete the copy.
+5. Close the editor and run the same three headless, from a terminal in the checkout:
+   `Unity -batchmode -projectPath . -executeMethod CosmicShore.Editor.ModeSmokeLauncher.Run -smokeModes quick -smokeOut Logs/ModeSmokeBatch -smokeQuit -logFile -`.
+   **Pass:** exit code 0, `Logs/ModeSmokeBatch/junit.xml` lists 3 testcases with no failure; then
+   `python3 Tools/Launch/smoke_report.py check Logs/ModeSmokeBatch` prints three `success` rows. Try once more with
+   `-nographics` and record whether any mode fails only there (CI will run that way).
+6. Afterwards: `PlayerPrefs` `CosmicShore.OfflinePreferred` is back to what it was before the run.
 
 ---
 
@@ -1713,6 +1928,26 @@ not blasting; I4 Legendary 205 -> 175 s; `SWITCHBACK.md` "Step 2"). NOT run: the
    `missed-key`. A/B on one build by ticking `aiStrikeSetupLeg`.
 3. Switchback I3 with AI Dolphins (AI Diagnose panel, "AI plan" overlay): a blasting AI flies at its key without
    swinging out behind it, and its nose turns onto the door as it reaches the key.
+
+### 🔴 Fulmen burns every prism on the bolt's path - the Stoat's and the Meerkat's omni crystal (`Ys-bleeding-edge`, 2026-11-20, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** `FulmenSystem.BurnAlong` burns in two passes: prisms within `pathRadius` (16 u, new on `FulmenConfig`)
+of a stream always burn (a spent ignite budget makes the segment wait a frame; `PrismBurnManager`'s 192 cap does not
+refuse them, `Ignite(.., overCap)`), and the halo out to `burnRadius` (200 u) burns while the burn manager has room.
+Before, segments past the frame's 96 ignites were skipped and the 192 cap refused the rest. `IgniteRemote` (a client's
+replay) no longer applies the cap. Compiled with Unity's Roslyn (player + editor) from a worktree. **Step 1 ran
+2026-11-20 in the open editor on `68e610bdeb` (pipeline `run_tests`): `FulmenMathTests` 18 of 18 and
+`PrismBurnSpreadTests` 5 of 5 pass.** The game has not been played: steps 2-6 are still owed. Affects: the Meerkat (same `FulmenConfig`); the Grizzly's claw burn is unchanged.
+
+1. ~~Run the EditMode tests `FulmenMathTests` and `PrismBurnSpreadTests`.~~ Done 2026-11-20: 18 + 5 green.
+2. Toybox, Stoat, rival trails or flora in the cell: collect an omni crystal. **Pass:** one bolt from the cell's centre;
+   every rival prism a stream visibly crosses catches fire (none left standing on the line) and is gone about 12 s later.
+3. Collect three omni crystals within 12 s in dense rival mass. **Pass:** each bolt still burns the prisms on its own
+   path (before: the second and third burnt almost nothing while the first 192 were still burning).
+4. Same strike with the Profiler on (`Fulmen.Tick`, `Fulmen.Burn`). **Pass:** no frame above a few ms; `Prisms Burnt` on
+   the `FulmenConfig` inspector reads the strike's count.
+5. Host + one client, the host's Stoat collects an omni crystal. **Pass:** the client sees the same prisms burn and go.
+6. Your own trail and your team's prisms on the bolt's path. **Expected:** they do NOT burn (own-domain rule, unchanged).
 
 ### 🔴 Wide-radius prism queries run as one Burst pass - Fulmen's burn freeze (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
@@ -3196,6 +3431,41 @@ SWITCHBACK.md; `StationSpacing` 280 u; key lead 0.62 x leg in 230-400 u; key cor
 
 **Known minimal:** reverse-threading a blocked ring at I1-I3 is not prevented; the AI does not aim blasts at doors;
 frame time not measured.
+
+---
+
+### 🔴 Replays: crystals, plants, creatures and cytoplasm shards stand where the match had them (`replay/crystal-fidelity`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/REPLAYS.md` §6.4; Yash: "everyone's position, orientation, to mimic the whole game"):
+- Stream 4 of a `.cstheater` (`TheaterActors`): per-actor pose tracks (crystals by id, plants and creatures by species)
+  and per-cell shard fields (positions at Go plus each dying limb's shard). `TheaterActorRecorder` records them on the
+  vessel samples (`ReplayConfigSO` **Record Actors**, on).
+- `ReplayActorSync` (from `ReplayMatchDirector`) places them every frame: crystals by id (far jumps through
+  `CrystalManager.RelocateCrystal`), plants and creatures by species and nearness (unpaired ones hidden), shard fields
+  stood at their recorded positions and limb shards added on time (live limbs add none during a replay).
+- Additive hooks: `SnowChanger` (`CopyShardPositions`, `ApplyShardPositions`, `AddRecordedMorphedShard`,
+  `MorphedShardAdded`, `ReplayHoldsMorphs`), `Cell.SpawnedLifeForms`, `TheaterRecorder.RecordActors`.
+
+**Verified without the editor:** the format and the pure playback maths (`TheaterActorsTests`, 13 tests) compiled and
+run with dotnet against Unity stubs, beside `TheaterRecordingTests` (whose `Duration_SpansEveryTrack` fails on the base
+branch too: its data ends at 12.5, so the duration is 2.5, not 2.1). The Unity-dependent files were checked against the
+project's APIs by reading, not compiled. **Compile first.**
+
+**Verify in editor:**
+1. Play Regatta (or any mode with a cell ecology) to the end; the `.cstheater` is larger than before and the log has no
+   errors. WATCH it.
+2. Crystals: each stands where it stood in the match at every moment, including after it is taken and respawns
+   (snaps, no glide across the cell); the cell's crystal-facing shards point at it.
+3. Plants and creatures: each visible one stands and faces as in the match; extra live ones are hidden and come back
+   after leaving the replay.
+4. Cytoplasm: the shard field matches the match's (compare a screenshot at Go); dying limbs leave shards at the moments
+   they did, and no extra ones.
+5. Leave mid-replay and play a normal match: dying limbs leave shards again (`ReplayHoldsMorphs` cleared); nothing
+   stays hidden.
+6. An older `.cstheater` (no stream 4) still watches as before.
+
+**First-pass tuning:** `ReplayConfigSO.ActorJumpDistance` 8; `TheaterActorThinning` 1 cm / 0.25 deg / 0.001 scale;
+life-form pairing every 6 frames.
 
 ---
 
@@ -23704,9 +23974,10 @@ compile of the controller partial, which the harness does not build), `unity_ref
    every ring. Freeze a full bomb by one and blow it: the keg bursts, the gate clears (the lime ring moves on), and the
    blast throws you away from the bomb. Threading the ring mouth still clears the gate. The hint toast shows once.
 3. **Regrow.** An opened keg grows back as a live ribbon about 3 s later, never on top of a hull.
-4. **I2 bank shot.** A rail of 6 chalk dots marks each keg's exit lane, on the corner's inside. Blow a keg from its far
-   side (keg between you and the next ring): you are thrown down the lane and "Bank shot (1)" shows; a straight blow
-   throws you wide and shows nothing. Fly the ring-to-ring line: you never hit a chalk dot.
+4. **I2 bank shot.** A rail of 6 chalk dots marks each keg's exit lane, on the corner's inside. Blow a keg from its EXIT
+   side (YOU between the keg and the next ring, the bomb in the keg behind you): you are thrown down the lane and "Bank
+   shot (1)" shows; a straight blow throws you wide and shows nothing. Fly the ring-to-ring line: you never hit a chalk
+   dot. (Corrected 2026-11-20: this step said "keg between you and the next ring", which throws you backwards.)
 5. **I3 shielded cores.** The first blast only strips the core's shield (no burst); a second opens it. Leave a stripped
    keg alone: it shields itself again about 2.5 s later. Confirm a Grizzly blast damages these Blue `GrizzlyTimeKeg`
    prisms at all (the spec's reading of `PrismSpatialIndex`, unverified).
@@ -23717,8 +23988,54 @@ compile of the controller partial, which the harness does not build), `unity_ref
 8. **Two clients (MPPM).** Both see the same kegs and chalk; a keg one client opens opens on the other; a gate is
    credited once.
 9. **Feedback and cost.** A crown of debris bursts off each ring you clear; the burst doubles in speed on your final
-   lap. On a phone-class device the bursts and regrow cost no visible hitch. The four sound slots are empty (by design).
+   lap. On a phone-class device the bursts and regrow cost no visible hitch. The four keg sounds play their ledger
+   placeholders since 2026-11-16 (`Docs/AudioSystem/sound_placeholders.json`); only `kegRammedEvent` (2026-11-20) is empty.
 10. **Kegs off.** Untick `kegsAtGates` on the scene's controller: the race is rings only, as before.
+
+### 🔴 Grizzly Time, the fun pass: the bank shot fixed, a Rush rams a keg open, the AI Rushes (2026-11-20, Yash, NOT PLAYED)
+
+`GRIZZLYTIME.md` §0.1. `GrizzlyTimeKegs.BlowPoint` moved to the keg's exit side; every peer opens a keg a Rushing hull
+rams (`GrizzlyTimeController.Kegs.cs`: `SyncRamWatches`, `TryRammer`; toast 302, the empty `kegRammedEvent` slot); the
+AI presses Rush on a straight and its stall clock runs on the machine that flies it (`GrizzlyTimeController.AI.cs`).
+Ran: `grizzly_time_course_harness/run.sh` (33 tests pass; `--self-test`, 13 negative controls fire; `--sweep`),
+`author_grizzly_time_assets.py --check` (26 files match), `check_ai_no_state_writes.py`, `check_console_logging.py`. The
+open editor compiled the final code, runtime and tests (its `Assembly-CSharp.dll` and `Assembly-CSharp-Editor.dll` of
+2026-11-20 21:40 hold the new members; the recompile was another session's), and the EditMode tests ran in it at
+22:10: `GrizzlyTimeKegsTests` 19 of 19, `GrizzlyTimeCourseTests` 14 of 14. Nothing was flown. Not run:
+`unity_refcompile` (cannot run on this Windows box).
+
+1. ~~**EditMode tests** `GrizzlyTimeKegsTests` and `GrizzlyTimeCourseTests` pass in the editor.~~ Done 2026-11-20
+   (33 of 33, through the editor's Pipeline `run_tests`).
+2. **The side.** I1 or I2: freeze a full bomb in a keg, fly round so you are between the keg and the next ring, let go.
+   You are thrown at the next ring and "Bank shot (1)" shows. From the other side you are thrown away from it. If this
+   is the wrong way round in play, the sign in `GrizzlyTimeKegs.BlowPoint` is the one thing to revert.
+3. **A Rush opens a keg.** Rush through a keg's core (through the hoop, or across the three cubes; either way opens
+   it): the keg bursts, the gate clears and "Rammed open (1)" shows. At I3 one Rush opens a SHIELDED keg in one pass,
+   where a bomb only strips it. A Rush that passes more than about 20 u from the core opens nothing; if it broke hoop
+   slabs, they grow back about 3 s after you leave.
+4. **Rush, then bomb-jump.** In a fresh race (the toast shows on the 1st and every 4th bank shot), freeze a bomb just
+   short of a keg, Rush through the hoop TOWARD THE NEXT RING, and let the bomb go within about 1.5 s while you are
+   still within 100 u of the keg: you are thrown down the lane and "Bank shot" shows. It is read only when the throw
+   points within 30 degrees of the lane to the next ring, so the same jump after ramming ACROSS the cubes shows
+   nothing, by design. A Rush alone never shows it.
+5. **Silenced.** While silenced (a rival's blast caught you), your Rush opens no keg.
+6. **Two clients (MPPM), I3.** The guest Rushes through a shielded keg: it opens on the HOST's screen too, and the
+   other way round. A third client sees it open as well. Before this change it stayed standing on any machine that
+   was neither the rammer's nor the host. Then the two known misses, to COUNT them: (a) mash Rush through kegs the
+   instant the card comes ready, and note how often a keg stays standing on the other screen (each machine keeps its
+   own Energy and cooldown for the hull, so it can refuse a press the owner made); (b) Rush from about 100 u out, so
+   the keg is reached at the very end of the burst. If either is common, the fix is an owner-decided open sent over
+   the wire (`GRIZZLYTIME.md` section 0.1), which needs a protocol-version bump.
+7. **AI, every seat, I1-I4.** AI Grizzlies visibly Rush on straights (the burst, and the Rush sound), at I3-I4 too
+   (on the leg into the approach point, before the turn-in), and still finish every level. None Rushes into a turn
+   and misses a ring because of it; if one does, raise `GrizzlyTimeKegs.AIRushMinRun` (150) or untick `aiRushes` on
+   the scene's controller. On two machines, an AI's Rush shows on the guest as well.
+8. **A guest hands its own hull to the AI** (dev build, the Pilot control): the hull is NOT steered back to a run-up
+   every 18 s while it is clearing gates. A hull truly stuck at one ring for 18 s still is.
+9. **Text.** The start hint reads "Open a keg and its gate is yours: bomb it, or Rush through it. Freeze a bomb in
+   the keg, fly just past it toward the next ring and let go: the blast throws you down the leg."; the card says the
+   same. The new `kegRammedEvent` slot is empty by design.
+10. **Match length.** Time an I2 race flown well with Rush: the offline models say 78-100 s for two laps.
 ## 🔴 The colour trace: every colour the game draws comes from the worn colour set (2026-11-10, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/nifty-cray-41hy43`. Docs/VesselModels/COLOR_TRACE.md. Every colour authored outside the palette blocks is
@@ -24653,10 +24970,15 @@ nucleus or the membrane). The Unity editor and the `unity` CLI did not run. Owed
 `MatchRejoin.DroppedThisRun` / `GiveUpSaysHostLeft`; `DisconnectNotice.CheckRejoin` uses it. The Unity editor was in Play for
 another test when this was written, so nothing was compiled or run.
 
-- [ ] The project compiles; `MatchRejoinTests` pass (the new `GiveUp_SaysHostLeftOnlyForADropSeenInThisRun` among them).
-- [ ] MPPM, Player 2 a guest in a match: stop Play, press Play again. Player 2 sits on the menu 30 s: no "The host left".
+- [ ] `MatchRejoinTests` pass (the new `GiveUp_SaysHostLeftOnlyForADropSeenInThisRun` among them). Not run; the project compiles (2026-11-20).
+- [x] MPPM, Player 2 a guest in a match: stop Play, press Play again. Player 2 sits on the menu 30 s: no "The host left".
+      **Passed 2026-11-20** (session-driven, editor "Lion" + Player 2 "Tiger", `7788ad036d`): the host stopped mid-Bloomrush,
+      Player 2 bounced "Host disconnected"; after Play again its menu showed no notice for 55 s. A drop record planted as
+      "dropped two minutes ago in an earlier run" was given up after 20 s with no notice on either player.
 - [ ] A guest whose host quits while the guest keeps running still gets "The host left" on its menu after about 20 s.
-- [ ] A guest that restarts while the match is still running is still offered the rejoin.
+      Not run: Player 2 stops with the main editor, so this needs a second machine or a build.
+- [x] A guest that restarts while the match is still running is still offered the rejoin. **Passed 2026-11-20** as a link
+      drop: REJOIN offered on the menu, seat back 15 s after the press, no READY, race finished, both scoreboards agree.
 
 ## 🔴 A guest hands its own hull to the AI, and an idle guest in the editor is handed over by itself (2026-11-17, Yash, COMPILED in the open editor, NOT PLAYED)
 
@@ -24664,17 +24986,76 @@ another test when this was written, so nothing was compiled or run.
 guest's own row, and the editor-only `IdleGuestAutopilot` (FrogletTools > Multiplayer > Idle Guest Flies On AI, on by default).
 `unity recompile`: 0 errors. No match was played with it.
 
-- [ ] Two players, any gate race (Switchback, Skim Race, Redline): leave Player 2 alone. About 4 s after the turn starts its
-      hull flies the rings and finishes; the host sees it move.
+Run of 2026-11-20 (session-driven, editor "Lion" + MPPM Player 2 "Tiger", `7788ad036d`; nobody watched a screen):
+- [x] Two players, any gate race: leave Player 2 alone. **Passed in Switchback**: its hull was on the AI within 11 s of
+      the start and threaded 20 gates (16 and 11 in two later races); the host saw the same count. In a Maelstrom:
+      Breakwater 24 stations, Serpent Time 14 gates.
+      It was not reliable in Switchback: some races 20, 16 or 11 gates, three others 0, 1 and 2 while the host's AI
+      hull threaded all 26. **Cause and fix (same day):** Switchback's blast AI (the key it takes, the blast that opens
+      the door, the prism sense) was built on the server only, so a guest's own AI hull flew the plain ring steering
+      and stopped at the first closed door. A guest now builds it when it arms its own hull
+      (`SwitchbackController.BuildBlastAI`, `OnRacerArmed`; `SwitchbackBlastRunRuntime.TrackAllPrisms`). The host's AI
+      is unchanged. Replayed: two races in a fresh Play, 25 and 21 gates with the blast AI
+      built and its keys seen on the guest (a race ends when the host's hull threads its 26th). A third could not be run: Player 2's
+      editor hung when the PC ran out of memory.
 - [ ] Touch Player 2's pad or keyboard: control comes back at once; leave it again and the AI takes over after 4 s.
-- [ ] A mode that is not a gate race (Joust, Cleave, Bloomrush): the idle guest hull flies the platform autopilot.
-- [ ] Maelstrom, several rounds: the guest hull is handed over again in each round.
-- [ ] The host's own hull is never handed over by idling; the menu toggle off stops it on the guest too.
-- [ ] Third Eye on the guest: the AI / You toggle works on its own row and stays disabled on every other row.
+      Not run: a key event queued from a script lands in the editor's input state, not the player's. Needs a person.
+- [x] A mode that is not a gate race: **passed in Bloomrush and Dog Fight** (autopilot on, about 162 u/s in Bloomrush).
+- [x] Maelstrom, several rounds: **passed**, three rounds (Dog Fight, Breakwater, Serpent Time), handed over in each.
+- [x] The host's own hull is never handed over by idling: **passed** (Bloomrush, host idle: autopilot off, speed 0).
+      The menu toggle off was not tried.
+- [ ] Third Eye on the guest: the AI / You toggle works on its own row and stays disabled on every other row. Not run.
+
+## 🟡 A pilot who rejoined or left is no longer skipped or left behind on the menu (2026-11-20, Yash, COMPILED and PLAYED by a session)
+
+`ServerPlayerVesselInitializer.PersistentPlayerOf` and `ReleaseDepartedHumans`. Found by the run above; before the fix:
+after a drop and REJOIN the host's menu listed only itself (the reclaimed Player is owned by the new connection but is
+not its player object, so the scene pass skipped it), and a guest who then left the party stayed on the host as a
+server-owned Player. Joining again made two "Tiger"s, one named "Tiger (2)" (seen as "Lion (2)" in the test with Garrett
+of 2026-11-20), and the leftover showed in the other machine's roster and on its scoreboard.
+`unity recompile`: 0 errors. EditMode tests not run.
+
+- [x] Drop and REJOIN in Switchback, finish, Main Menu: the host lists both pilots and Player 2 has its menu hull.
+- [x] Launch the next match from there (Bloomrush): both pilots are seated and Player 2's hull flies.
+- [x] Player 2 leaves the party on the menu: the host has one Player. Player 2 joins again: both machines list
+      "Lion, Tiger", no "(2)".
+- [x] Player 2 leaves the party while the match is returning to the menu: no Player left behind; joins again, no "(2)".
+- [ ] The same with three or four players, and in a Maelstrom hub (a pilot who leaves between rounds).
+- [ ] By hand: after a rejoin and a return to the menu, Player 2 can change hull and the party panel shows both.
+
+## 🟡 The return to the menu takes the match's world down before the load (B45, 2026-11-20, Yash, COMPILED and PLAYED by a session, solo host)
+
+`SceneLoader.DrainSceneForExitAsync`, `Cell.RetireWorldIntoPoolForSceneExit` (`requireEnvironment`,
+`rootDestroyPrismsPerFrame`, `returnPooledTrail`), `Cell.ReleaseRetiredWorldByRoot`, and the guest's start in
+`MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc`. Affects: the cell's owners (ecology); a cell swap
+and the Maelstrom hub call the retire exactly as before. `unity recompile`: 0 errors; `check_agent_first`,
+`check_console_logging`, `check_conditional_compilation` pass. `MaelstromArenaHandOverTests` 11/11 by reflection in the editor. The scene-exit code then moved into `Cell.SceneExit.cs` (Cell.cs is over the size limit and may not grow): compiled and those tests re-run after the move, the Play measurements are from before it.
+Measured in `Docs/PartySystem/BUGS.md`, "B45 on the return to the menu".
+
+- [x] Solo online host, Bloomrush 90 s, Main Menu: the load's frame is 5.7-6.5 s (9.5-10.5 s before), the menu comes
+      up normally, no red error, and the test log has a `sceneExitDrain` mark.
+- [ ] Two players, the same: the guest also reaches the menu, nobody bounces, and both logs carry the mark. Compare
+      each player's longest freeze with the 8.7-10.0 s of the test with Garrett of 2026-11-20.
+- [ ] By eye: after pressing Main Menu the splash is up for longer than before (up to about 8 s more after a very
+      heavy match) and nothing of the match shows through it.
+- [ ] A match with a cell environment (Cleave, Dog Fight), return to the menu, then launch it again: the arena lays
+      normally (environment prisms were parked in the pool on the way out, not destroyed).
+- [ ] Play Again (the same scene reloads) and a Maelstrom round back to the hub still work.
+- [ ] `FrogletTools`: nothing new. The two numbers are on the SceneLoader in Bootstrap ("Scene exit drain").
+
+## 🟡 Maelstrom seats its AI where the host placed them (2026-11-20, Yash, COMPILED and PLAYED by a session, solo host)
+
+`ServerPlayerVesselInitializerWithAI.PlacedOrBalancedDomain`, used by the match spawner and by
+`MaelstromController.DealAISeats`. `PlacedAIDomainTests` (4) pass in the editor (run by reflection, not the Test Runner).
+
+- [x] Solo host, Maelstrom, three AI placed on Ruby: the hub deals and spawns all three on Ruby.
+- [ ] Two players as in the report: both on Jade, two AI placed on Ruby. The hub shows both AI on Ruby on BOTH
+      machines, and every round keeps them there.
+- [ ] Nothing placed (the default): the AI are spread as before (one per empty domain first).
 
 ## 🟡 Stoat: one slingshot - the swing's speed-up, no second push at the exit (2026-11-19, Yash, NOT PLAYED)
 `Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "One slingshot". `StoatSlingConfig`: swingKickShare 0.
-- [ ] EditMode `StoatSlingTests`: all pass (`SlingConfig_ShipsTheSwing` reads swingKickShare 0).
+- [x] EditMode `StoatSlingTests`: all pass (`SlingConfig_ShipsTheSwing` reads swingKickShare 0). 2026-11-19, real editor on B: at 08b67d4d76: filter `Stoat` 141/141, `Slingshot` 19/19.
 - [ ] Swing round the black hole: one surge of speed as it swings you, then you leave along the dotted line with no second shove.
 - [ ] Aim the dotted line at the next ring with the stick: you reach it without overshooting.
 - [ ] Slingshot I1-I4: AI Stoats finish (model: 62-76 s, no rings missed).
@@ -25170,6 +25551,18 @@ I1 at rest is now the slowest rung after I4 from rest, so the ladder still runs 
 Not run in Unity: the reference compile shows 0 errors in the changed files.
 - [ ] Fly Burrow Run against a Legendary Meerkat AI: it should commit late, tunnel down each leg and finish faster than before.
 
+## Voyage phone pass: budget, background, loading, squad, touch, run length, story (2026-11-20, Shombith)
+Branch claude/project-thread-chvxox into voyages. Spec: Docs/Voyages/CRYSTAL_RUN.md section 17.
+Not run in Unity: the reference compile shows 0 errors in the changed files (and an Android dev-define pass showed none in DeviceLogCapture).
+- [ ] Start a voyage: the loading screen no longer builds Garland first (Voyage.unity's cell boots the bare canvas).
+- [ ] First voyage on a fresh profile: the Ark seats you in the Sparrow with AI in the Squirrel and the Dolphin.
+- [ ] Crystal Run sets off: the goal toast, then "<PILOT> ON THE COMMS" with why the Ark wants crystals.
+- [ ] A kaiju in open water: "SPAWN OF THE LEVIATHAN".
+- [ ] Each scoreboard (met, missed, lost, docked) shows the run's pilot's line under the title.
+- [ ] Sail home: the Ark crosses about twice as fast; on docking a short "HOME" shot with the pilot's line plays, then the board.
+- [ ] Phone build: the scoreboard stays clear of the notch; the intro hint reads "Hold here to skip" and only a touch held bottom-right skips.
+- [ ] Phone build: send the app to the background mid-voyage and come back: the pause window is open.
+- [ ] Phone dev build with the diagnostics HUD on: a stretch under 20 fps sends a Voyage-slow capture.
 ## Spearline AI ramps between rings (2026-11-17, elemental loop step 3, Regatta flywheel)
 
 Not run in the Unity editor. The change is one asset, `Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Spearline.asset`
@@ -25381,3 +25774,73 @@ lining of plain pads round the hull. Not run in the Unity editor. Unity referenc
       hoops inside them, green pads round the hull, nothing clipping, and the nose side open.
 - [ ] The cruising trail is a thin thread; the sling trail is a thin line, not a wall.
 - [ ] Thornbush I2: a rival AI still finds your nest and its missiles break the twigs and pads behind the plates.
+
+## Bug ledger fixes (2026-11-20)
+
+Nine console-error fixes from the Bug Ledger, one commit each (`Docs/Reports/BUG_HUNT.md` section 3). Not run in the
+Unity editor: it was in Play mode for a multiplayer test. Assembly-CSharp was compiled with Unity 6000.3.17f1's own
+compiler from the editor's response file: 0 errors. No EditMode tests ran.
+
+- [ ] Arkway / a voyage leg: fly until a cell stands, then leave to the menu and stop Play. The console has no
+      "Some objects were not cleaned up when closing the scene" naming `Cell0_RetiringWorld` (`d391dc761d`).
+- [ ] Voyages map, zoomed in to the cells: drag the slice bar on the edge strip up, down and off the strip. The
+      label rides the handle and hides off the strip; no "rebuild list" error (`e357fbad6c`).
+- [ ] Serpent and Jacks, any mode: no `[PrismOcclusion] could not measure` error, and prisms between the camera and
+      the hull fade as on other vessels (`ba3ad0569a`).
+- [ ] Wear another colour set from the menu with a screen showing text that uses a fallback font: the sea lines
+      change colour and the console stays clean (`c0ef0c8281`).
+- [ ] Manta: collect an elemental crystal. The decoy stands where the crystal was the same frame, cannot be
+      collected as a real crystal by the Manta's own team, and springs on a rival (`dedc985d2a`).
+- [ ] In a multiplayer match, after the host drops and before the menu returns, hit an omni crystal: it explodes,
+      and no "Rpc methods can only be invoked" error (`e56a9f1d5d`).
+- [ ] Urchin: spawn into any mode and swap to it in the Toybox. No NullReferenceException from `UrchinAnimation`,
+      and the jets still scale when not attached (`d8a7763cd0`).
+- [ ] Hangar > Upgrades on a vessel with an open element slot, then claim a Daily Toy reward: the page redraws with
+      the open-slot text (`79f1ff888b`).
+- [ ] Trigger a toast, change scene, trigger another: it shows, with no MissingReferenceException (`540bac6a24`).
+
+## Voyage HUD, Rev 120 B: the plate over the Ark (2026-11-20)
+
+The plate, chip and toast feed from Frogma Rev 120 (`Docs/MENU_REDESIGN_B.md` section 215). Not run in the Unity
+editor: none in this session. The reference compile has 0 errors in the changed files (29 in untouched files, from
+packages this machine lacks). Seen in Amoebius on a Crystal Run, offline.
+
+- [ ] Crystal Run: a lit plate floats over the Ark with the crystal count, 16 hull segments and a state line; it reads
+      at the same size near and far, and hides during the intro and the end board.
+- [ ] Get the Ark hit: the plate turns red ("Under attack", then "Assault: n of m"); reach the goal: it turns lime.
+- [ ] The chip top left shows crystals, hull and, while anchored, the clock; toasts stack under it as a feed, and a
+      long toast line widens the band instead of being cut off.
+- [ ] Escort the Ark: the plate shows the hull and the way home; Ruby and the other domains read correctly.
+
+## What's new window, Rev 121 C (2026-11-21)
+
+The What's new window from Frogma Rev 121 C (`Docs/MENU_REDESIGN_B.md` section 216, spec
+`Docs/UI/specs/rev121-c-whats-new.md`). Not run in the Unity editor: none in this session. The reference compile (player
+and editor) has 0 errors in the changed files (30 in untouched files, from packages this machine cannot fetch); a
+planted error in `WhatsNewModal.cs` was caught, so the files are compiled. The window is built in code, so there is no
+render of it beside the board yet.
+
+- [ ] Clear the pref `WhatsNew.SeenId` (or use a fresh install), open Menu_Main: once the menu is ready, the What's new
+      window opens by itself on Update 0.3 Voyages. Close it and reload the scene: it does not open again.
+- [ ] It does not open by itself during the first-time guided path, in freestyle, over another window, or when coming
+      back from a match to a card's launch panel.
+- [ ] Settings > General: a WHAT'S NEW button beside CREDITS opens the window over Settings; B goes back to Settings.
+      In a match's pause menu the button is not shown.
+- [ ] The window matches the board: the list on the left with "New" on 0.3, the HyperSea picture, the version and date,
+      Voyages, three features side by side, the three "Also in this update" lines; Close and Set sail at the foot.
+- [ ] Set sail closes the window and opens the Voyage window.
+- [ ] Gamepad: up and down walk the list, right reaches Close and Set sail, A presses them.
+- [ ] Phone and iPad: the window fits the screen with nothing cut off.
+
+## Show FPS setting, every build (2026-11-21)
+
+Settings > Display > Show FPS turns on a small FPS counter (`FpsCounter`, words and look in
+`Assets/Resources/FpsCounterConfig.asset`) in every build, release included; the diagnostics overlay stays dev-only. Not
+run in the Unity editor: none in this session. The reference compile has 0 errors in the changed files (the rest are in
+untouched files, from packages this machine cannot fetch); a planted error in `FpsCounter.cs` was caught.
+
+- [ ] Settings > Display: a Show FPS row under V-Sync, OFF by default. Turn it ON: "60 FPS" (or the real rate) appears
+      top left, inside the safe area, and updates twice a second. OFF hides it at once.
+- [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
+- [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
+- [ ] Phone with a notch: the number is not under the notch or a rounded corner.

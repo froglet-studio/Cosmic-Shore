@@ -52,6 +52,9 @@ namespace CosmicShore.Player
         readonly string _outPath;
         readonly JsonObject _spec;
         readonly List<VesselClassType> _hulls = new();
+        /// <summary>Each seat's team (<c>"domain": "Jade"</c>), placed through <see cref="GameDataSO.SetRequestedAIDomains"/>;
+        /// Blue = unset, which the game balances as usual.</summary>
+        readonly List<Domains> _domains = new();
         readonly List<int> _seeds = new();
         readonly bool _field;
         readonly bool _trace;
@@ -62,6 +65,16 @@ namespace CosmicShore.Player
         /// the mode's crystal count (GameDataSO.CrystalTargetCount, EndConditionOverrides). "gates" and "gate_s" then
         /// count crystals; "crystals" and "crystals_total" say so.</summary>
         bool IsSkim => _mode == "SkimRace";
+        /// <summary>Broadside: a brawl, not a race. Every seat fights in one match (always a field); a seat's progress is
+        /// its <c>RoundStats.CombatPoints</c> and the match ends at the mode's own point target or at <c>limit_s</c>. A
+        /// timed match (no domain reaches the target) is what a balance judge wants: <c>"points_per_pilot"</c> raises the
+        /// target for the run. The idle host is parked far outside the arena so nobody farms a pilot that never moves.</summary>
+        bool IsBroadside => _mode == "Broadside";
+        /// <summary>Pod Hunt (the Orca's Charge game): scored like Broadside (CombatPoints, the shared combat-point turn
+        /// monitor, the Boneyard), but the first domain to its blast target ends the turn, so "race_s" is the time to win.</summary>
+        bool IsPodHunt => _mode == "PodHunt";
+        /// <summary>A combat-point game: Broadside or Pod Hunt.</summary>
+        bool IsCombat => IsBroadside || IsPodHunt;
         /// <summary>Brood Rush (the Mass-Space arena game): no gates and no finish. <c>"teams": [["Rhino", "Manta"], ["Serpent",
         /// "Sparrow"]]</c> seats each team on its own domain (Jade, Ruby, Gold in order); the match runs to the mode's own end
         /// (first team to the brood target) or <c>limit_s</c>, and every seat reports its volume books (VolumeLedger: VC
@@ -96,6 +109,9 @@ namespace CosmicShore.Player
                 string ai = s["ai"]?.GetValue<string>() ?? "shipped";
                 if (ai != "shipped") throw new InvalidOperationException($"seat {hull}: only ai \"shipped\" is supported, not '{ai}'");
                 _hulls.Add(v);
+                string dom = s["domain"]?.GetValue<string>();
+                _domains.Add(dom == null ? Domains.Blue
+                    : Enum.TryParse(dom, out Domains dv) ? dv : throw new InvalidOperationException($"seat {hull}: not a domain: {dom}"));
             }
             int teamIndex = 0;
             foreach (var t in _spec["teams"]?.AsArray() ?? new JsonArray())
@@ -111,6 +127,7 @@ namespace CosmicShore.Player
             }
             if (_hulls.Count == 0) throw new InvalidOperationException("the spec has no seats");
             _field = _spec["field"]?.GetValue<bool>() ?? _seatTeam.Count > 0;
+            if ((_spec["mode"]?.GetValue<string>() ?? "Regatta") is "Broadside" or "PodHunt") _field = true;
             if (!_field && _hulls.Count != 1)
                 throw new InvalidOperationException("an alone race seats one hull per process; set \"field\": true or run one process per hull");
             foreach (var n in _spec["seeds"]?.AsArray() ?? new JsonArray { 1 }) _seeds.Add(n!.GetValue<int>());
@@ -209,10 +226,16 @@ namespace CosmicShore.Player
             var genome = _spec["genome"] as JsonObject;
             int intensity = Math.Clamp(_spec["intensity"]?.GetValue<int>() ?? genome?["intensity"]?.GetValue<int>() ?? 1, 1, 4);
             if (IsRegatta) ApplyCourse(genome, intensity);
+            else if (IsBroadside) ApplyBroadsideTarget();
             else ApplyTrainingOverlay(genome);
 
             SeatOffCardHulls(card);
             var hostHull = IsBrood ? BroodHostHull(card) : HostHull(_hulls);
+            // Broadside's card lists few hulls: the idle host's hull goes on it too, or the spawn clamps the host INTO a
+            // card hull and the seat that asked for that hull is re-drawn as another one (arena seating, one pilot a hull).
+            if (IsCombat && !card.Vessels.Any(v => v != null && v.Class == hostHull)
+                && TrainingHost.LoadAsset(_runtime, $"Assets/_SO_Assets/Classes/SO_Class_{hostHull}.asset") is SO_Vessel hostClass)
+                card.Vessels.Add(hostClass);
             gameData.SyncFromArcadeGame(card);
             ApplyStart(gameData);
             ApplyCrystalGenes();
@@ -225,9 +248,10 @@ namespace CosmicShore.Player
                 host.NetDefaultVesselType.Value = hostHull;
             if (gameData.SelectedIntensity != null) gameData.SelectedIntensity.Value = intensity;
             gameData.ConfigurePlayerCounts(1 + _hulls.Count, 1);
-            gameData.RequestedDomainCount = 2;
+            gameData.RequestedDomainCount = Math.Clamp(_spec["domains"]?.GetValue<int>() ?? 2, 2, 3);
             gameData.RequestedAIDifficulty = AIDifficultyRules.Resolve(_difficulty);
             gameData.SetRequestedAIVessels(_hulls);
+            gameData.SetRequestedAIDomains(_domains);
             if (IsBrood) SeatTeams(gameData);
             CosmicShore.Engine.Random.InitState(_seeds[0]);
             ForceCourse(0);
@@ -286,6 +310,13 @@ namespace CosmicShore.Player
                 // draws (AI risk rolls, mistakes, spawns) follow this race's seed.
                 CosmicShore.Engine.Random.InitState(unchecked(seed * 7919 + 17));
                 int total = controller is GateRaceController gates ? gates.AuthoritativeGateCount : 0;
+                if (IsCombat)
+                {
+                    double targetBy = Now + 5;
+                    while (gameData.CombatPointTargetCount <= 0 && Now < targetBy) yield return null;
+                    total = gameData.CombatPointTargetCount;
+                    race["points_total"] = total;
+                }
                 if (IsSkim)
                 {
                     // The turn monitor publishes the crystal count as the turn starts.
@@ -318,9 +349,22 @@ namespace CosmicShore.Player
                 float nextSample = 0f;
                 string outcome;
                 var noseFollow = _spec["ai_nose_follow"] as JsonObject;
+                var hostVessel = IsCombat ? gameData.LocalPlayer?.Vessel : null;
+                var pointsAt = ais.Select(_ => new List<float>()).ToArray();
+                float nextPointSample = 0f;
                 while (true)
                 {
                     bool someoneFinished = false;
+                    if (IsCombat)
+                    {
+                        // Park the idle host far outside the Boneyard every frame: a pilot that never moves is free points.
+                        if (hostVessel?.Transform != null) hostVessel.Transform.position = HostParking;
+                        if (Time.time - start >= nextPointSample)
+                        {
+                            nextPointSample = Time.time - start + 5f;
+                            for (int k = 0; k < ais.Count; k++) pointsAt[k].Add(ais[k].RoundStats?.CombatPoints ?? 0);
+                        }
+                    }
                     // "ai_nose_follow": {hull: rate/s} - a search's AI nose follow rate for hulls whose mode has no knob
                     // (Switchback and Redline set their own as the AI is armed; this wins over both, every frame).
                     if (noseFollow != null)
@@ -332,6 +376,7 @@ namespace CosmicShore.Player
                         }
                     for (int k = 0; k < ais.Count; k++)
                     {
+                        if (IsCombat) continue;
                         int now = IsSkim ? ais[k].RoundStats?.CrystalsCollected ?? 0 : ais[k].RoundStats?.SwitchesThreaded ?? 0;
                         while (gateTimes[k].Count < now) gateTimes[k].Add(Time.time - start);
                         if (now >= total) someoneFinished = true;
@@ -419,6 +464,17 @@ namespace CosmicShore.Player
                         ["start_levels"] = startLevels[k],
                         ["dnf_reason"] = done ? null : outcome == "finished" ? "race-ended" : outcome,
                     });
+                    if (IsCombat)
+                    {
+                        var seat = seats[seats.Count - 1]!.AsObject();
+                        foreach (var key in new[] { "finish_s", "gates", "laps", "lap_s", "gate_s", "dnf_reason" }) seat.Remove(key);
+                        seat["points"] = stats?.CombatPoints ?? 0;
+                        seat["bullet_hits"] = stats?.BulletHitsLanded ?? 0;
+                        seat["strike_hits"] = stats?.StrikeHitsLanded ?? 0;
+                        seat["debuff_hits"] = stats?.DebuffHitsLanded ?? 0;
+                        seat["missile_hits"] = stats?.MissileHitsLanded ?? 0;
+                        seat["points_every_5s"] = new JsonArray(pointsAt[k].Select(t => (JsonNode)t).ToArray());
+                    }
                     if (_trace)
                     {
                         seats[seats.Count - 1]!["trace_columns"] = "t,x,y,z,speed,phase,ring,ox,oy,oz,tx,ty,tz,fx,fy,fz,flags,cx,cy,cz,follow";
@@ -428,7 +484,9 @@ namespace CosmicShore.Player
                 }
                 race["seats"] = seats;
                 Console.WriteLine($"[race-judge] seed {seed}: {outcome} {Time.time - start:0.0} s sim in {_wall.Elapsed.TotalSeconds - raceWall:0.0} s wall - " +
-                                  string.Join(", ", seats.Select(s => $"{s!["hull"]} {s["gates"]}/{total} {s["finish_s"]}")));
+                                  (IsCombat
+                                      ? string.Join(", ", seats.Select(s => $"{s!["hull"]}/{s["domain"]} {s["points"]}"))
+                                      : string.Join(", ", seats.Select(s => $"{s!["hull"]} {s["gates"]}/{total} {s["finish_s"]}"))));
                 Flush(running: true);
 
                 if (r + 1 >= _seeds.Count) break;
@@ -529,16 +587,37 @@ namespace CosmicShore.Player
             _notes.Add("crystal_genes: " + genes.ToJsonString());
         }
 
-        /// <summary>The scene's race controller: a gate race's, or Skim Race's (the one MiniGameControllerBase a scene has).</summary>
+        static readonly Vector3 HostParking = new(20000f, 20000f, 20000f);
+
+        /// <summary><c>"points_per_pilot": 100000</c>: Broadside's point target for this run (EndConditionOverridesSO, in
+        /// memory, both the editor and the build field), so a match runs to <c>limit_s</c> and every seat's points are a
+        /// rate over the same time. Absent = the shipped target.</summary>
+        void ApplyBroadsideTarget()
+        {
+            if (_spec["points_per_pilot"]?.GetValue<int>() is not int perPilot) return;
+            var so = TrainingHost.LoadAsset(_runtime, "Assets/Resources/EndConditionOverrides.asset")
+                ?? throw new InvalidOperationException("EndConditionOverrides.asset not found");
+            foreach (var name in new[] { "broadsidePointsPerPilot", "broadsidePointsPerPilotBuild" })
+                if (so.GetType().GetField(name, Any) is { } f) f.SetValue(so, perPilot);
+            _notes.Add($"points_per_pilot: {perPilot}");
+        }
+
+        /// <summary>The scene's game controller: a gate race's, Skim Race's or Broadside's (the one MiniGameControllerBase a scene has).</summary>
         MiniGameControllerBase FindController() => IsSkim
             ? CosmicShore.Engine.Object.FindAnyObjectByType<SkimRaceController>()
-            : CosmicShore.Engine.Object.FindAnyObjectByType<GateRaceController>();
+            : IsBroadside
+                ? CosmicShore.Engine.Object.FindAnyObjectByType<BroadsideController>()
+                : IsPodHunt
+                ? CosmicShore.Engine.Object.FindAnyObjectByType<PodHuntController>()
+                : CosmicShore.Engine.Object.FindAnyObjectByType<GateRaceController>();
 
         /// <summary>The course is laid: a gate race knows its gates; Skim Race has drawn its track seed.</summary>
         static bool CourseReady(MiniGameControllerBase controller) => controller switch
         {
             GateRaceController g => g.AuthoritativeGateCount > 0,
             SkimRaceController s => s.TrackSeed != 0,
+            BroadsideController => true,
+            PodHuntController => true,
             _ => false,
         };
 

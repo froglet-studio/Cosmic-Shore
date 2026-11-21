@@ -311,6 +311,11 @@ namespace CosmicShore.Gameplay
                  "with a JacksExecutor is touched.")]
         [SerializeField] RegattaJacksCoach aiJacksCoach = new();
 
+        [Header("AI Orca")]
+        [Tooltip("The Orca's race coach: the helm charges every leg its nose is on and coasts into sharp rings. Only a hull " +
+                 "with an OrcaCrew is touched.")]
+        [SerializeField] RegattaOrcaCoach aiOrcaCoach = new();
+
         /// <summary>The <paramref name="ahead"/>-th ring <paramref name="pilot"/> has still to thread (0 the next), on the
         /// course the platform's own gate aiming reads; null past the race's end.</summary>
         RaceGate? RingAhead(IPlayer pilot, int ahead)
@@ -474,6 +479,7 @@ namespace CosmicShore.Gameplay
         {
             ArmGobyDart(pilot);
             aiJacksCoach.Arm(pilot, RingAhead);
+            aiOrcaCoach.Arm(pilot, RingAhead);
             // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot (GateRaceController.HeldByAutopilot).
             if (pilot?.Vessel?.VesselStatus is not Component status || !status ||
                 !status.TryGetComponent(out AIPilot autopilot)) return;
@@ -736,6 +742,7 @@ namespace CosmicShore.Gameplay
             _gobyPilots.Clear();
             aiGobyDart.Clear();
             aiJacksCoach.ReleaseAll();
+            aiOrcaCoach.ReleaseAll();
             aiShrikeSling.ReleaseAll();
             _urchinAI?.Clear();
             _pilotLines.Clear();

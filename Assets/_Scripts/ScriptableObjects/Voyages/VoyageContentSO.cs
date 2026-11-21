@@ -820,6 +820,18 @@ namespace CosmicShore.ScriptableObjects
         public string ArkLobbyLineGuest = "Pick your own seat. The host picks the voyage, fills the AI seats and sets sail.";
         [Tooltip("The Set sail button's words on a friend's machine: only the host sets sail.")]
         public string ArkHostSails = "THE HOST SETS SAIL";
+        [Tooltip("Over the Ark's domain chips on the host's (or a solo pilot's) Ark page: the host picks the one domain every seat and the Ark fly.")]
+        public string ArkDomainHead = "ARK DOMAIN";
+        [Tooltip("Over the domain chips on a friend's Ark page: the host picks, a friend's press is a vote.")]
+        public string ArkDomainHeadGuest = "VOTE FOR THE ARK'S DOMAIN";
+        [Tooltip("The Jade chip.")]
+        public string ArkDomainJade = "Jade";
+        [Tooltip("The Ruby chip.")]
+        public string ArkDomainRuby = "Ruby";
+        [Tooltip("The Gold chip.")]
+        public string ArkDomainGold = "Gold";
+        [Tooltip("A chip some friends voted for: {domain} the chip's name, {votes} how many voted for it.")]
+        public string ArkDomainVotes = "{domain} - {votes}";
         [Tooltip("Under your seat on the Ark page (Rev 115 A): opens the seat picker.")]
         public string ArkChangeSeat = "CHANGE YOUR SEAT";
         [Tooltip("Change your seat's keycap.")]
@@ -1106,6 +1118,42 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>The caption on the Ark's hull rail down the left edge (Frogma Rev 116 A).</summary>
         public string ObjectiveRailLabel = "Ark hull";
         public string ObjectiveStripLeaking = "Hull below {line}%: the hold is losing crystals.";
+        [Tooltip("The Ark's plate (Frogma Rev 120 B): the crystals aboard, big. {done}.")]
+        public string PlateCount = "{done}";
+        [Tooltip("The Ark's plate: the goal, small beside the count. {goal}.")]
+        public string PlateGoal = "/ {goal}";
+        [Tooltip("The Ark's plate on the way home: the word beside what is aboard.")]
+        public string PlateAboard = "aboard";
+        [Tooltip("The Ark's plate on an escort: the hull is the score. {hull}.")]
+        public string PlateHull = "{hull}%";
+        [Tooltip("The Ark's plate on an escort: the word beside the hull.")]
+        public string PlateHullTag = "hull";
+        [Tooltip("The Ark's plate: crystals the pilot carries unbanked. {count}.")]
+        public string PlateCarried = "+{count} to bank";
+        [Tooltip("The Ark's plate: the raid window at anchor. {time}.")]
+        public string PlateSails = "Sails in {time}";
+        [Tooltip("The Ark's plate: the Ark is losing plates.")]
+        public string PlateUnderAttack = "Under attack";
+        [Tooltip("The Ark's plate: the hull is under the leak line.")]
+        public string PlateLeaking = "Leaking: guard the hold";
+        [Tooltip("The Ark's plate: an assault under way. {kills}, {needed}.")]
+        public string PlateAssault = "Assault: {kills} of {needed}";
+        [Tooltip("The Ark's plate: an assault announced. {seconds}.")]
+        public string PlateIncoming = "Assault in {seconds}";
+        [Tooltip("The Ark's plate: the goal is met.")]
+        public string PlateGoalMet = "Goal met. Bring them home.";
+        [Tooltip("The Ark's plate on the way home.")]
+        public string PlateHome = "Docking banks it all";
+        [Tooltip("The Ark's plate when nothing else is up: where the Ark is. {place}, {cell}, {cells}.")]
+        public string PlatePlace = "{place}, {cell} of {cells}";
+        [Tooltip("The chip top left (Rev 120 B): the crystals aboard. {done}, {goal}.")]
+        public string ChipCount = "{done}/{goal}";
+        [Tooltip("The chip: crystals carried unbanked. {count}.")]
+        public string ChipCarried = "+{count}";
+        [Tooltip("The chip: the Ark's hull. {hull}.")]
+        public string ChipHull = "{hull}%";
+        [Tooltip("The chip: the raid clock. {time}.")]
+        public string ChipClock = "{time}";
         public string ToastHullLeaking = "THE HOLD IS LEAKING";
         public string ToastHullLeakingSub = "The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.";
         public string ToastRaiders = "RAIDERS IN OPEN WATER";
@@ -1113,8 +1161,24 @@ namespace CosmicShore.ScriptableObjects
         public string ToastGoalMissed = "GOAL MISSED: {done} / {goal}";
         public string ToastGoalMissedSub = "This run's haul is lost. Try again, or sail home.";
         public string ScoreRetryRaid = "Same goal: {goal} crystals in {cells} cells";
-        public string ToastKaiju = "KAIJU IN OPEN WATER";
-        public string ToastKaijuSub = "A giant waits between the cells for the Ark's hull. Bring it down.";
+        [Tooltip("Toast: a kaiju waits in the open water between two cells ({kaiju}: the HyperSea's apex creature, the " +
+                 "content's kaiju name).")]
+        public string ToastKaiju = "SPAWN OF THE {kaiju}";
+        [Tooltip("Toast: the line under the kaiju toast ({kaiju}).")]
+        public string ToastKaijuSub = "It smells the crystal in the Ark's hold. Bring it down before it reaches the hull.";
+        [Tooltip("Toast: the run's pilot on the comms as a Crystal Run sets off, after its goal toast ({pilot}: the pilot " +
+                 "whose job it is). Empty shows nothing; so does a run with no pilot named.")]
+        public string PilotBriefTitle = "{pilot} ON THE COMMS";
+        [Tooltip("Toast: the line under the pilot's set-off toast ({pilot}, {goal}, {to}).")]
+        public string PilotBrief = "Her hold is nearly dry. Every creature out here carries crystal: bring {goal} to the Ark and she sails us home.";
+        [Tooltip("The scoreboard: the run's pilot, under the kicker, when a Crystal Run met its goal ({pilot}).")]
+        public string ScoreQuoteMet = "{pilot}: \"That is enough crystal to cross half the sea. Your call.\"";
+        [Tooltip("The scoreboard: the run's pilot when a Crystal Run fell short ({pilot}).")]
+        public string ScoreQuoteMissed = "{pilot}: \"Not enough to fill her. The sea keeps what we could not carry.\"";
+        [Tooltip("The scoreboard: the run's pilot when the Ark docked home ({pilot}).")]
+        public string ScoreQuoteDocked = "{pilot}: \"Home. Every crystal in her hold is ours.\"";
+        [Tooltip("The scoreboard: the run's pilot when the Ark was lost ({pilot}).")]
+        public string ScoreQuoteLost = "{pilot}: \"She is gone, and her hold with her. We sail again.\"";
         [Tooltip("Toast: the pilot is past the stray radius; held while the countdown runs ({seconds}: 5, 4, 3, 2, 1).")]
         public string ToastStray = "RETURN TO THE ARK: {seconds}";
         [Tooltip("Toast: the line under the stray countdown when the pilot carries nothing ({seconds}).")]

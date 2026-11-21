@@ -1,0 +1,11 @@
+{
+  "id": "2026-11-21-merging-2263-grizzly-blast-20-80-full-bl-4cf64a",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-21T01:45:21+00:00",
+  "area": "Grizzly Time kegs (GrizzlyTimeKegs.cs)",
+  "summary": "Merging #2263 (Grizzly blast 20-80, full blast 40 u) with your exit-side blow point: BlowStandOff 60 -> 30 and AIKegPassOffset 30 so both stand inside the smaller blast, and RamCreditReach slack 20 -> 10 u (29 u) so your RamCreditReach < BlowStandOff invariant still holds. The bank-shot worth medians and the Grizzly Time AI need a re-measure against the merged tree.",
+  "branch": "claude/project-thread-ge80ea",
+  "pr": 2263,
+  "commit": "5be10f3f6"
+}

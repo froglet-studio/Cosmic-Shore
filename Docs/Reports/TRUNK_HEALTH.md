@@ -57,6 +57,18 @@ Output of `trunk_doctor.py history --pages 9 --diagnose`, 2026-11-12 16:50 UTC:
 One entry per incident `/trunk-doctor` handled, newest first. Shape: went red, cause, introduced by, red for, fix,
 pushes while red, notes.
 
+### 2026-11-21 12:32 UTC: the first hosted Unity compile cannot activate a licence
+
+- **Went red:** run 44903288768, `9ea0a6396`, #2309 (`launch-check`: every open launch PR, #1695's hosted compile among
+  them), merged with Shombith's go. Last green: `8289353c07`.
+- **Cause (class: infra, licence):** the `unity-ci` environment holds only `UNITY_EMAIL` and `UNITY_PASSWORD`, and that
+  account has no headless editor entitlement (`'com.unity.editor.headless' was not found`, four attempts). The compile
+  never ran, so nothing about the code was learned. Before #1695 the job was skipped, so this was the first try.
+- **Fix:** Shombith chose a fallback (2026-11-21): when activation fails, the guard runs the reference compile
+  (`Tools/Build/unity_refcompile`) and says it was not a Unity compile. A serial or a `.ulf` in `unity-ci` turns the
+  real compile on with no further change.
+- **Tracking issue:** #2311.
+
 ### 2026-11-09 23:38 UTC: three generators crash on the runner (numpy missing)
 
 - **Went red:** run 764, `7d3ad2790d`, #1863 (`claude/great-rubin-rur3xs`, the Flatline mode), merged by Shombith.

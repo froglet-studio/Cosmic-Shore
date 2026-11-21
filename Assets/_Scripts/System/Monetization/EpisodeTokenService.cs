@@ -111,7 +111,7 @@ namespace CosmicShore.Core
         /// <returns>True when the receipt was accepted (granted now, or already granted before).</returns>
         public static bool GrantTokens(OrderReceipt receipt)
         {
-            if (ServerEntitlementGate.Enabled)
+            if (ServerEntitlementGate.IsActive)
             {
                 CSDebug.LogError($"[EpisodeToken] Order '{receipt.OrderId}' sent to the local wallet while the server owns it; " +
                                  "use GrantTokensAsync.");
@@ -171,7 +171,7 @@ namespace CosmicShore.Core
         /// </summary>
         public static bool TryUnlockEpisode(string episodeId, SO_EpisodeTokenConfig config)
         {
-            if (ServerEntitlementGate.Enabled)
+            if (ServerEntitlementGate.IsActive)
             {
                 CSDebug.LogError($"[EpisodeToken] Local unlock of '{episodeId}' while the server owns the wallet; use UnlockEpisodeAsync.");
                 return false;
@@ -225,7 +225,7 @@ namespace CosmicShore.Core
         /// </summary>
         public static async UniTask<bool> GrantTokensAsync(OrderReceipt receipt)
         {
-            if (!ServerEntitlementGate.Enabled) return GrantTokens(receipt);
+            if (!ServerEntitlementGate.IsActive) return GrantTokens(receipt);
 
             var before = TokenBalance;
             var result = await ServerEntitlements.RedeemOrderAsync(receipt.Provider, receipt.OrderId, receipt.ProductId);
@@ -238,7 +238,7 @@ namespace CosmicShore.Core
         /// <summary>Spends tokens on an episode. With the server on, the server decides and records it.</summary>
         public static async UniTask<bool> UnlockEpisodeAsync(string episodeId, SO_EpisodeTokenConfig config)
         {
-            if (!ServerEntitlementGate.Enabled) return TryUnlockEpisode(episodeId, config);
+            if (!ServerEntitlementGate.IsActive) return TryUnlockEpisode(episodeId, config);
 
             bool ownedBefore = OwnsEpisode(episodeId);
             var result = await ServerEntitlements.UnlockEpisodeAsync(episodeId);
@@ -250,7 +250,7 @@ namespace CosmicShore.Core
         /// <summary>Loads the server's record into the profile. Called once the profile is loaded at sign-in.</summary>
         public static async UniTaskVoid RefreshFromServer()
         {
-            if (!ServerEntitlementGate.Enabled) return;
+            if (!ServerEntitlementGate.IsActive) return;
             var result = await ServerEntitlements.StateAsync();
             if (result != null) Mirror(result);
         }

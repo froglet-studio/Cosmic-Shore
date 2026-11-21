@@ -558,17 +558,29 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        /// <summary>B on a pad, Escape or B on a keyboard, the right mouse button, a held touch.</summary>
-        static bool SkipHeld()
+        /// <summary>B on a pad, Escape or B on a keyboard, the right mouse button, or a touch held on the skip hint (the
+        /// bottom-right of the screen, where it is drawn): a thumb resting anywhere else to fly never skips.</summary>
+        bool SkipHeld()
         {
             var k = Keyboard.current;
             if (k != null && (k.escapeKey.isPressed || k.bKey.isPressed)) return true;
             var mouse = Mouse.current;
             if (mouse != null && mouse.rightButton.isPressed) return true;
             var touch = Touchscreen.current;
-            if (touch != null && touch.primaryTouch.press.isPressed) return true;
+            if (touch != null)
+                foreach (var t in touch.touches)
+                    if (t.press.isPressed && OnSkipHint(t.position.ReadValue()))
+                        return true;
             var g = Gamepad.current;
             return g != null && g.buttonEast.isPressed;
+        }
+
+        /// <summary>Is a screen point (pixels, from the bottom left) on the skip hint's corner: the right part of the bottom
+        /// letterbox bar, with a little slack above it for a thumb.</summary>
+        bool OnSkipHint(Vector2 p)
+        {
+            float bar = Mathf.Max(0.05f, _script.LetterboxShare) * Screen.height;
+            return p.x >= Screen.width * 0.55f && p.y <= bar * 1.6f;
         }
 
         // ── The overlay ──────────────────────────────────────────────────────
@@ -636,7 +648,8 @@ namespace CosmicShore.Gameplay
             _goText.text = _script.GoWord ?? string.Empty;
             _go.alpha = 0f;
 
-            if (_skipAllowed && !string.IsNullOrEmpty(_script.SkipHint))
+            string skipHint = KitInputDevice.IsTouchPrimary ? _script.TouchSkipHint : _script.SkipHint;
+            if (_skipAllowed && !string.IsNullOrEmpty(skipHint))
             {
                 _hint = Group("Skip", new Vector2(0.7f, share * 0.25f), new Vector2(0.96f, share * 0.75f));
                 _hintText = _kit.Label(_hint.transform, 14, _kit.Sub, TextAlignmentOptions.Right);
@@ -644,7 +657,7 @@ namespace CosmicShore.Gameplay
                 hrt.anchorMin = new Vector2(0f, 0.3f);
                 hrt.anchorMax = Vector2.one;
                 hrt.offsetMin = hrt.offsetMax = Vector2.zero;
-                _hintText.text = _script.SkipHint;
+                _hintText.text = skipHint;
                 var fill = new GameObject("Held", typeof(RectTransform), typeof(Image));
                 fill.transform.SetParent(_hint.transform, false);
                 _skipFill = (RectTransform)fill.transform;

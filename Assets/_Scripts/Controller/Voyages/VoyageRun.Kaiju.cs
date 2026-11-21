@@ -66,11 +66,14 @@ namespace CosmicShore.Gameplay
             var kaiju = CellLifeSpawnerBase.SpawnFaunaWithDomain(host, cfg.FaunaPrefab, ark.Position,
                 host.ControllingDomain, at, cfg);
             if (!kaiju) return;
-            kaiju.GrowBody(_def.KaijuScale);
+            kaiju.GrowBody(_def.KaijuScale, _def.KaijuPrismScale);   // the frame huge, its plates not
             RaidLeash.Hold(kaiju);
             _kaiju.Add(kaiju);
             if (_kaijuThisCrossing++ > 0 || Lines == null) return;   // one toast per crossing
-            VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Threat, Lines.ToastKaiju, Lines.ToastKaijuSub);
+            // Named for the HyperSea's apex creature (the content's kaiju, DEPTH.md §3): this one is its spawn.
+            string name = (Content?.Kaiju?.Name ?? string.Empty).ToUpperInvariant();
+            VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Threat, TemplateText.Fill(Lines.ToastKaiju, "kaiju", name),
+                TemplateText.Fill(Lines.ToastKaijuSub, "kaiju", name));
         }
 
         /// <summary>True while the Ark anchors at a cell's core for a raid window.</summary>

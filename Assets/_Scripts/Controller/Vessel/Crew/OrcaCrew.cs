@@ -170,6 +170,7 @@ namespace CosmicShore.Gameplay
             Helm => 1f - BoostTank01,
             SniperSeat => _cfg && _cfg.SniperCooldown > 0f ? Mathf.Clamp01(_gunCd[SniperSeat] / _cfg.SniperCooldown) : 0f,
             FastGunSeat => _fast.Hot ? 1f : _fast.Heat,
+            BombSeat => _cfg && _cfg.BombRearmSeconds > 0f && !_bomb ? Mathf.Clamp01(_gunCd[BombSeat] / _cfg.BombRearmSeconds) : 0f,
             _ => 0f,
         };
         /// <summary>A bomb is in the air (the bomb seat's next press bursts it).</summary>
@@ -464,8 +465,12 @@ namespace CosmicShore.Gameplay
                 // Time 5 Afterburner: the tank keeps refilling under the burn, so it drains at (1 - refill) per second.
                 float refill = _cfg.AfterburnerActive(_status) ? _cfg.BoostRefillAt(_status) : 0f;
                 _tank = Mathf.Clamp(_tank - dt + refill * dt, 0f, _cfg.BoostTank);
+                if (!_boosting) BeginCharge();
                 _boosting = true;
-                _status.IsBoosting = true;   // what a boost executor writes; the hull's own boostMultiplier applies
+                // the charge: its own speed (0 = the hull's boostMultiplier), and a nose that rams what it passes
+                if (_cfg.ChargeMultiplier > 0f) _status.BoostMultiplier = _cfg.ChargeMultiplier;
+                _status.IsBoosting = true;   // what a boost executor writes; the hull's own transformer applies it
+                StepRam(dt);
                 if (_tank <= 0f) StopBoost();
             }
             else
@@ -518,7 +523,72 @@ namespace CosmicShore.Gameplay
         {
             if (!_boosting) return;
             _boosting = false;
-            if (UnityLiveness.Alive(_status)) _status.IsBoosting = false;
+            if (!UnityLiveness.Alive(_status)) return;
+            _status.IsBoosting = false;
+            if (_cfg && _cfg.ChargeMultiplier > 0f && _hullBoost > 0f) _status.BoostMultiplier = _hullBoost;
+        }
+
+        void BeginCharge()
+        {
+            _hullBoost = _status.BoostMultiplier;
+            _ramPrevSet = false;
+        }
+
+        // ------------------------------------------------------------------ helm: the charge's ram
+
+        // Garrett 2026-11-20: "the helm seat should be able to join the fight by charging things like a real orca". While
+        // the helm charges, a rival hull the nose passes within chargeRamReach of (past the hull's radius: the charge's one
+        // radius) is rammed: a Strike under the LOCKED PvP rule, petals only and no shove (ThresherExecutor.TryHitVessel),
+        // decided on the machine that owns this hull. The path since last frame is tested, so a fast charge cannot step over
+        // a hull. A ram is a Strike only (Garrett 2026-11-20): it refills nothing and ploughs nothing.
+        float _hullBoost;
+        Vector3 _ramPrev;
+        bool _ramPrevSet;
+
+        /// <summary>Rams landed by this crew's charge (for the HUD, tests and judges).</summary>
+        public int RamsLanded { get; private set; }
+
+        void StepRam(float dt)
+        {
+            var pos = transform.position;
+            var prev = _ramPrevSet ? _ramPrev : pos;
+            _ramPrev = pos;
+            _ramPrevSet = true;
+            if (_cfg.ChargeRamReach <= 0f || !ElementalTransfer.IsDecidedHere(_status)) return;
+            if (_status.Player is { IsNetworkOwner: false }) return;
+            var players = _cfg.GameData ? _cfg.GameData.Players : null;
+            if (players == null) return;
+            float r = _s.HullRadius + _cfg.ChargeRamReach;
+            var velocity = dt > 0f ? (pos - prev) / dt : transform.forward;
+            foreach (var player in players)
+            {
+                if (player == null || player == _player) continue;
+                var vessel = player.Vessel;
+                var victim = vessel?.VesselStatus;
+                if (victim == null || ReferenceEquals(victim, _status) || victim.Domain == _status.Domain) continue;
+                if (!UnityLiveness.Alive(vessel.Transform)) continue;
+                if (SegmentPointSqr(prev, pos, vessel.Transform.position) > r * r) continue;
+                Ram(victim, velocity);
+            }
+        }
+
+        void Ram(IVesselStatus victim, Vector3 velocity)
+        {
+            if (!CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Strike, _cfg.ChargeRamCooldown,
+                    ElementalDebuffSources.VesselContact, out int superseded))
+                return;
+            ElementalTransfer.ApplyAllAuthoritative(CombatHitDrain.FormFor(CombatHitClass.Strike), victim, _status,
+                _cfg.ChargeRamPetals * CombatHitDrain.NormalizedPerLevel, velocity, ElementalDebuffSources.VesselContact);
+            if (_cfg.OnCombatHitLanded)
+                _cfg.OnCombatHitLanded.Raise(new CombatHitStats
+                {
+                    ShooterName = _status.PlayerName,
+                    VictimName = victim.PlayerName,
+                    HitClass = CombatHitClass.Strike,
+                    SupersededRank = superseded,
+                });
+            RamsLanded++;
+            Play(_cfg.ChargeRamSound, transform.position);
         }
 
         void RaiseShield()
@@ -803,7 +873,7 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the guns (round 5: one per seat, each different)
 
-        bool GunReady(int s) => s == FastGunSeat ? !_fast.Hot : s == BombSeat ? !_bomb : _gunCd[s] <= 0f;   // round 6: the bomb has no cooldown, one in the air
+        bool GunReady(int s) => s == FastGunSeat ? !_fast.Hot : s == BombSeat ? !_bomb && _gunCd[s] <= 0f : _gunCd[s] <= 0f;   // one bomb in the air, then its re-arm (0 = none, round 6)
 
         float GunRange(int s) => s == SniperSeat ? Mathf.Min(_cfg.SniperRange, 600f)
             : s == FastGunSeat ? _cfg.FastGunRoundSpeed * 2f * _cfg.FastGunRoundSeconds / Mathf.PI * 0.8f
@@ -831,7 +901,7 @@ namespace CosmicShore.Gameplay
                     break;
                 case BombSeat:
                     if (_bomb) { if (human ? edge : AIBurstsBomb()) DetonateBomb(); }
-                    else if (human ? edge : hold) ThrowBomb(fromBarrel ? muzzleTip - aim * 4f : mount, aim);
+                    else if ((human ? edge : hold) && _gunCd[s] <= 0f) ThrowBomb(fromBarrel ? muzzleTip - aim * 4f : mount, aim);
                     break;
             }
         }
@@ -1092,6 +1162,7 @@ namespace CosmicShore.Gameplay
             }
             if (_cfg.ChainBurstActive(_status)) ChainFrom(at, _cfg.BombBlastRadiusAt(_status));
             LastBurstAt = _burstAt[BombSeat] = Time.time;
+            _gunCd[BombSeat] = _cfg.BombRearmSeconds;   // the re-arm before the next bomb (Garrett 2026-11-19; 0 = none)
             Play(_cfg.BombBurstSound, at);
         }
 

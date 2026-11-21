@@ -6,16 +6,18 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The POWDER KEGS of Grizzly Time (Docs/GrizzlyTime/POWDER_KEGS_SPEC.md): a small cage of prisms beside every ring,
-    /// placed so the Grizzly's own kit becomes the race. Freeze a bomb in the keg, get round to its far side, blow it: the
-    /// keg bursts, the gate is yours (you were beside an open keg), and the blast throws you down the next leg - because
-    /// a Grizzly inside its own blast is launched AWAY FROM THE BOMB (<c>GrizzlyTriggerBombExecutor.LaunchSelf</c>), so
-    /// where you stand when you blow it is how you steer. The ring mouth still counts, so the old line is never closed.
+    /// placed so the Grizzly's own kit becomes the race. Freeze a bomb in the keg, get round to its EXIT side (between
+    /// the keg and the next ring), blow it: the keg bursts, the gate is yours (you were beside an open keg), and the
+    /// blast throws you down the next leg - because a Grizzly inside its own blast is launched AWAY FROM THE BOMB
+    /// (<c>GrizzlyTriggerBombExecutor.LaunchSelf</c>), so where you stand when you blow it is how you steer. A RUSH
+    /// through the keg rams it open too, shielded or not (<see cref="RamOpens"/>). The ring mouth still counts, so the
+    /// old line is never closed.
     /// <list type="bullet">
     /// <item><b>I1 KEGS</b>: one plain keg on each corner's inside. One bomb is both key and engine.</item>
     /// <item><b>I2 BANK SHOT</b>: a chalk rail marks each keg's exit lane; blow it from that side and the push points
     /// at the next gate.</item>
     /// <item><b>I3 TWO KEYS</b>: the core is shielded - one blast strips it (from range, no push), a second opens it. A
-    /// stripped core shields itself again.</item>
+    /// stripped core shields itself again. One Rush through it opens it in a single pass.</item>
     /// <item><b>I4 BREAK YOUR OWN</b>: the tightest credit radius and the fastest regrow - a rival's open keg is gone
     /// before you reach it. (I4 was designed as twin kegs, inside and outside; the throw-chain sweep found the inside keg
     /// right at 99% of gates and reading the choice worth 0.1%, so the twins were dropped as the spec's bar said.)</item>
@@ -39,8 +41,9 @@ namespace CosmicShore.Gameplay
         /// <see cref="HullClear"/>).</summary>
         public static readonly float[] RegrowSecondsByIntensity = { 3f, 3f, 2.5f, 2f };
 
-        /// <summary>The core's armour: a plain core opens to one blast or one ram; a shielded core sheds its shield to the
-        /// first and opens to the second.</summary>
+        /// <summary>The core's armour: a plain core opens to one blast, one touch of the hull or one Rush; a shielded core
+        /// sheds its shield to the first blast or touch and opens to the second, or opens at once to a Rush (the ram is
+        /// devastating).</summary>
         public static readonly PrismKind[] CoreKindByIntensity =
             { PrismKind.Plain, PrismKind.Plain, PrismKind.Shielded, PrismKind.Shielded };
 
@@ -104,7 +107,7 @@ namespace CosmicShore.Gameplay
         public const float AIKegAimRange = 600f;
         /// <summary>The AI aims this far (u) past the keg down its exit lane, so it passes BESIDE the core (inside every
         /// credit radius and every full blast) instead of ramming the cage.</summary>
-        public const float AIKegPassOffset = 40f;
+        public const float AIKegPassOffset = 30f;
         /// <summary>Within this distance (u) of its keg aim point with the keg still standing, the AI gives that keg up
         /// for this gate and threads the mouth.</summary>
         public const float AIKegGiveUp = 50f;
@@ -121,7 +124,8 @@ namespace CosmicShore.Gameplay
         {
             public readonly int Ring;
             public readonly Vector3 Centre;
-            /// <summary>Unit: from the keg toward the next ring - the way a blast from the keg's far side throws you.</summary>
+            /// <summary>Unit: from the keg toward the next ring - the way a bomb in the keg throws a hull standing on its
+            /// exit side.</summary>
             public readonly Vector3 ExitDir;
             /// <summary>Unit, in the ring's plane: from the ring centre toward this corner's inside.</summary>
             public readonly Vector3 InsideNormal;
@@ -285,20 +289,96 @@ namespace CosmicShore.Gameplay
 
         // ── Reading a keg ──────────────────────────────────────────────────
 
-        /// <summary>Where to stand to blow a keg so its blast throws you down its exit lane: behind the core, opposite the
-        /// next ring, <paramref name="standOff"/> u out (inside a full blast).</summary>
-        public static Vector3 BlowPoint(in Keg keg, float standOff = 60f) => keg.Centre - keg.ExitDir * standOff;
+        /// <summary>How far (u) from the core the blow point stands: inside a full blast (40 u since the 20-80 blast), clear of
+        /// the hoop and its 6 u margin (22 u).</summary>
+        public const float BlowStandOff = 30f;
+
+        /// <summary>Where to stand to blow a keg so its blast throws you down its exit lane: on the keg's EXIT side, between
+        /// the core and the next ring, <paramref name="standOff"/> u out (inside a full blast). A Grizzly is launched AWAY
+        /// from its bomb, so with the bomb in the keg the hull must be on the side it wants to be thrown toward. (Until
+        /// 2026-11-20 this stood on the entry side, which throws the hull away from the next ring.)</summary>
+        public static Vector3 BlowPoint(in Keg keg, float standOff = BlowStandOff) => keg.Centre + keg.ExitDir * standOff;
+
+        /// <summary>The least push (u/s) that reads as a bomb's launch. A Rush adds 80 u/s (120 at the peak of its ease)
+        /// under the transformer's shared 100 u/s ceiling; a launch from inside a full blast is 375 u/s or more under its
+        /// own 300 u/s ceiling. So a Rush alone is never a bank shot.</summary>
+        public const float BankShotMinPush = 150f;
 
         /// <summary>
         /// Was a keg breaking beside the hull a BANK SHOT? The hull was inside a full blast of the keg and the launch it got
-        /// (<paramref name="shiftDir"/>: the transformer's world-space push) points within <paramref name="maxDeg"/> of the
-        /// keg's exit lane. The local feedback's test (the bank-shot toast and sound); it scores nothing.
+        /// (<paramref name="shiftDir"/>: the transformer's world-space push) is a bomb's (at least
+        /// <paramref name="minPush"/> u/s) and points within <paramref name="maxDeg"/> of the keg's exit lane. The local
+        /// feedback's test (the bank-shot toast and sound); it scores nothing.
         /// </summary>
-        public static bool IsBankShot(Vector3 kegPos, Vector3 hullPos, Vector3 shiftDir, Vector3 exitDir, float maxDeg = 30f)
+        public static bool IsBankShot(Vector3 kegPos, Vector3 hullPos, Vector3 shiftDir, Vector3 exitDir, float maxDeg = 30f,
+                                      float minPush = BankShotMinPush)
         {
             if ((hullPos - kegPos).sqrMagnitude > FullReach * FullReach) return false;
-            if (shiftDir.sqrMagnitude < 1f || exitDir.sqrMagnitude < 1e-6f) return false;
+            if (shiftDir.sqrMagnitude < Mathf.Max(1f, minPush * minPush) || exitDir.sqrMagnitude < 1e-6f) return false;
             return Vector3.Angle(shiftDir, exitDir) <= maxDeg;
+        }
+
+        // ── Rush: the ram (the Grizzly's Time ability; read, never changed) ──
+
+        /// <summary>The Rush ram's radius round the hull (u): <c>GrizzlyRushAction.asset</c> ramRadius.
+        /// <c>GrizzlyTimeKegsTests</c> reads it back off the shipped asset.</summary>
+        public const float RamRadius = 16f;
+        /// <summary>Seconds one Rush rams for: <c>GrizzlyRushAction.asset</c> duration (read back by the same test).</summary>
+        public const float RamSeconds = 1f;
+        /// <summary>How near (u) the hull must come to the core's line for its ram to open the keg: the ram's radius plus
+        /// half a core cube. This is the MODE's rule, 3 u more forgiving than the vessel's own sweep (which tests prism
+        /// centres within <see cref="RamRadius"/>), on purpose: every peer reads a ramming hull's position once a frame,
+        /// most of them a replica that trails its owner, and a reach exactly the vessel's would leave a keg standing on
+        /// a peer where the real ram broke the core at just under 16 u.</summary>
+        public static float RamReach => RamRadius + CoreCube * 0.5f;
+        /// <summary>A keg that broke with a ramming hull this near its core (u) was that pilot's ram (the feedback's
+        /// reading where the vessel's own ram broke the core first). The slack is 10 u, so it stays inside
+        /// <see cref="BlowStandOff"/>: a hull waiting at the blow point never reads as the rammer.</summary>
+        public static float RamCreditReach => RamReach + 10f;
+
+        /// <summary>
+        /// Does a ramming hull at <paramref name="hull"/> open <paramref name="keg"/>? It does when it is within
+        /// <paramref name="reach"/> of the core: the <see cref="CoreBlocks"/> cubes on a line across the lane. The Rush
+        /// ram itself runs only where the vessel has authority (<c>GrizzlyRushActionExecutor</c>) and prism deaths are not
+        /// replicated, so every peer asks this for every ramming hull and opens its own copy of the keg: one Rush through
+        /// a keg opens it everywhere, shielded cores included (the ram is devastating), as a bomb's blast does.
+        /// </summary>
+        public static bool RamOpens(Vector3 hull, in Keg keg, float reach)
+        {
+            Vector3 across = Lateral(keg);
+            float half = (CoreBlocks - 1) * 0.5f * CoreSpacing;
+            float along = Mathf.Clamp(Vector3.Dot(hull - keg.Centre, across), -half, half);
+            return (keg.Centre + across * along - hull).sqrMagnitude <= reach * reach;
+        }
+
+        // ── AI: Rush on a straight (input only; one rule for every difficulty) ──
+
+        /// <summary>The AI Rushes only with its nose this near (deg) the point it is steering at.</summary>
+        public const float AIRushNoseDegrees = 8f;
+        /// <summary>The AI Rushes only with at least this much straight (u) ahead of it: a Rush covers about 125 u.</summary>
+        public const float AIRushMinRun = 150f;
+        /// <summary>The AI holds its Rush while a launch is still pushing it (u/s): the push would swallow the burst.</summary>
+        public const float AIRushMaxPush = 30f;
+        /// <summary>Seconds the AI waits past the Rush's own cooldown before it presses again.</summary>
+        public const float AIRushCooldownMargin = 0.25f;
+
+        /// <summary>
+        /// Should an AI Grizzly press Rush now? Speed before breaking (Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md 6.2): the
+        /// AI spends its Rush for pace on a straight it is lined up on, never to detour to a keg it can fly past. True when
+        /// the nose is within <see cref="AIRushNoseDegrees"/> of the point it is steering at, at least
+        /// <see cref="AIRushMinRun"/> u of straight is left, no launch is pushing the hull, the Energy is there with
+        /// <paramref name="energyHeadroom"/> to spare and its own last press has cooled down.
+        /// <para>The headroom is one tick of the vessel's Energy gain: a press is run again on every peer against that
+        /// peer's own Energy, which gains once a second on its own phase, so a press made the instant the Energy reaches
+        /// the cost is refused on any peer one tick behind.</para>
+        /// </summary>
+        public static bool AIShouldRush(float noseDegrees, float runToAim, float push, float energy, float energyCost,
+                                        float energyHeadroom, float sinceLastPress, float cooldownSeconds)
+        {
+            if (noseDegrees > AIRushNoseDegrees || runToAim < AIRushMinRun) return false;
+            if (push > AIRushMaxPush) return false;
+            if (energy < energyCost + Mathf.Max(0f, energyHeadroom) - 1e-4f) return false;
+            return sinceLastPress >= cooldownSeconds + AIRushCooldownMargin;
         }
 
         /// <summary>Where a full throw from <paramref name="keg"/> lands you: its blow point plus one carry down its lane.</summary>

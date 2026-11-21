@@ -8835,3 +8835,111 @@ claude.ai Design type sets and nothing in the repo can raise). On Shombith's pic
 (222 on Menu Redesign, 6 on Compute Console) came off the canvas with their 96 title notes and section frames
 (canvas version `1794949812-dbeb`): 283 boards are left, 228 files free. Their copies stay in
 `Docs/MenuRedesignB/board/R3*` to `R40*`; the repo index and README were rewritten from the live canvas.
+
+## 213. Rev 118 mockups: every in-game voyage screen, one HUD for every device (2026-11-20; set aside, removed from the canvas; regenerate from its round script)
+
+**Asked** (Shombith, 2026-11-20): "We can definitely improve the in game hud lets do that I guess", then, after a
+phone-sized mockup page: "HUD should be same accross all devices, I was asking you to draw in game mockups for all in
+game HUD." and "Use frogma".
+
+**On the canvas**: the Voyages playtest tab, round `rev118`, sixteen boards in the order a run meets them plus a notes
+board, all one family: Rev 116 A (Marquee, picked and built) sized up so the one 1920 x 1080 layout reads on every
+device (a phone shows it at about 0.40, `Docs/UI_STYLE_GUIDE.md` section 8, D6), with no word under 28 units. Generator:
+`Docs/MenuRedesignB/rounds/r118_voyage_hud_all.py <root> 118`; copies `Docs/MenuRedesignB/board/R118*.dc.html`.
+- **R118Intro**: the intro reel's title shot, no HUD, hold to skip.
+- **R118SetOff**: setting off, STEAL 50 CRYSTALS in the toast spot, the Ark's hull top left.
+- **R118Raid** (the main screen): 23 / 50 with +7 carried beside it, the route, the place and the raid clock on one row;
+  the toast spot holds the next thing to do, dimmed, when no toast is up.
+- **R118Pickup**, **R118Banked**: the running +1 toast; the BANKED toast carrying what was banked by element (the flower
+  split left the marquee).
+- **R118Attack**, **R118Leak**: the hull block turns red with UNDER ATTACK; ArkAttackerMarks' diamonds and edge arrow
+  (built) mark the raiders in the world.
+- **R118Sail**: the countdown ring with "Bank the +7 or lose it" under it.
+- **R118Kaiju**, **R118Stray**: between cells (no clock, "Ark bound for"), and the recall countdown.
+- **R118Goal**, **R118Pause**: the goal met (count in Lime), and the pause sheet drawn at the new sizes.
+- **R118Home**: on the way home the score is what is aboard and at stake.
+- **R118Escort**: an escort's score is its hull, so the marquee carries the hull and its bar and the top-left block is
+  not drawn.
+- **R118Score**, **R118Lost**: the met board (Finish here X, Sail home B, Venture further A) and the Ark lost.
+
+**Differs from the build**: the built Marquee (212.1) has a 54-unit count, 20-unit lines (about 8 pt on a phone), the
+hull as a tall rail at mid left, a Carrying chip mid screen, the flower split in the marquee and 28 / 19 toasts. The
+sized-up HUD is already written on branch `claude/project-thread-xnd2ma` (not merged, not run in Unity) and waits on
+this pick; Pickup's and Pause's sizes and the escort / home marquee are not in it yet.
+
+## 214. Rev 119 mockups: four HUD directions without the marquee, at normal text sizes (2026-11-20; Shombith picked B; removed from the canvas after Rev 120)
+
+**Asked.** Shombith on Rev 118: "Why are the texts so big. I do not want big texts what the hell", then "Yes I want
+different mockups not just marquee, I didnt like marquee and how it looks in game".
+
+**Drawn.** Tab "Voyages playtest", sixteen boards and notes (`Docs/MenuRedesignB/rounds/r119_voyage_hud_directions.py`).
+The game's own text sizes again (labels 15, body 18, toasts 24 / 17, numbers 18-34). Four families, each on Raid,
+Banked, Attack and Sail, none with the objective at top centre and each unlike Rev 116's B-F:
+- **A Tracker**: an open-world quest tracker on the right (Steal crystals 23 / 50 +7, Keep the Ark above 10% 64%,
+  The Ark sails 0:18); toasts a slim line in the lower third.
+- **B On the Ark**: a lit plate over the Ark in the world holds the crystals aboard and the hull as lit segments, red
+  when hit; a small chip top left carries the same numbers when the Ark is off screen; toasts a feed under the chip.
+- **C Reticle**: two thin arcs around the aim point, hull left and crystals right; route and clock a hairline at the
+  top; toasts are words over the aim point.
+- **D Card**: one small card top left with everything in it; toasts slide out under it.
+
+**Picked.** B, On the Ark (Shombith, 2026-11-20: "I like B with the HUD above the ark, thats cool"). Drawn on every screen in 215. The Rev 118 sized-up HUD code parked on
+`claude/project-thread-xnd2ma` is not built and will be replaced by the pick.
+
+## 215. Rev 120 mockups: B On the Ark on every in-game voyage screen (2026-11-20, built)
+
+**Asked.** Shombith picked Rev 119 B: "I like B with the HUD above the ark, thats cool".
+
+**Drawn.** Tab "Voyages playtest", sixteen screens and notes (`Docs/MenuRedesignB/rounds/r120_voyage_hud_ark.py`), at the
+game's own text sizes: Intro, SetOff, Raid, Pickup, Banked, Attack, Leak, Sail, Kaiju, Stray, Goal, Pause, Home, Escort,
+Score, Lost. A lit plate over the Ark in the world carries the crystals aboard, the hull as 16 lit segments and one
+state line (+7 to bank, Sails in 5, Under attack, Leaking, Goal met); sea blue at rest, red when hit, lime at the goal.
+On an escort its number is the hull; on the way home, what is aboard. A one-line chip top left repeats the numbers for
+when the Ark is off screen (outlined on Stray), and toasts are a feed under it. Pause and the end board are the shared
+windows at normal sizes.
+
+**To build.** VoyageHud's objective box becomes the chip and toast feed; a world-space plate parented to the Ark shows
+the rest. Replaces the Rev 118 code parked on `claude/project-thread-xnd2ma`.
+
+**Built (2026-11-20).** `ArkHudPlate` (Controller/Voyages) is the plate: a faceted slab with 16 segments, the count and
+one state line in 3D text, a sixth of the screen wide at any camera distance, hidden during the intro, the end board and
+a fallen Ark. `VoyageObjectiveBox` is the chip (`VoyageGlyph` draws its gem, Ark and clock marks), and
+`ArkwayVoyageHud` lays toasts out as a feed under the chip while it shows, widening to a long line. Every word is a
+`VoyageLines` field (`Plate*`, `Chip*`). Seen in Amoebius on a Crystal Run (calm, under attack, assault, anchored); not
+yet run in the Unity editor.
+
+## 216. Rev 121 mockups: What's new, after an update and from Settings, four ways (2026-11-21, C picked, built)
+
+**Asked** (Shombith, 2026-11-21): "open a frogma board and create a new UI on main menu a pop up called what's new it
+can be accessed from settings or after an update this shows up. Create 4 mock-ups screens for this". Read as four
+options for the pop-up, each working, plus the Settings way in. The update featured is Voyages (Update 0.3).
+
+**On the canvas:** a new tab, **What's New**, round "Rev 121 - What's new: the pop-up after an update and from Settings,
+four ways, featuring Voyages". Copies in `Docs/MenuRedesignB/board/R121*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r121_whats_new.py <root> 121`.
+- **A Poster (recommended):** one window over Home: the Ark on the HyperSea, three features under it (Take a job,
+  Rival crews, Sagas and relics), the fixes folded under "Also in this update", Close and Set sail. One look tells
+  what is new.
+- **B Pages:** one feature a page with large art, LB / RB and dots to page, Skip, Set sail on the last page.
+- **C Changelog:** every update listed on the left, the picked one on the right with its features and fixes; Set
+  sail only on the newest. Update 0.2 and 0.1 are placeholders showing how the list grows.
+- **D Card:** a small card slides in at Home's lower right ("New in Update 0.3, Voyages", Later / See it) and opens
+  a tall drawer on the right.
+- **Settings:** Settings, Other, About: a "What's new" row (a mark until opened once), Credits, Version. Open shows A's
+  window with Back in place of Close.
+- **Notes:** when it opens (once, on the first Home visit after an update with an entry; never over a match or the
+  start flow), and that closing it says where it lives.
+
+**Differs from the build:** nothing exists yet. The build would add one authored What's new entry per update
+(version, name, line, features, fixes, art; every word a field), a seen-version flag saved on the device, the row on
+Settings' Other tab, and the window of the picked option on Menu_Main.
+
+**Picked (Shombith, 2026-11-21):** "I like C build C".
+
+**Built (2026-11-21, not yet run in the editor):** the window C as `WhatsNewModal` (modal type `WHATS_NEW = 22`), built
+in code beside the Quests window with the Voyage window's kit; its words in `Assets/Resources/WhatsNew.asset`
+(`WhatsNewSO`, one entry per update, newest first); it opens once by itself after an update (`WhatsNewRules`, the
+pref `WhatsNew.SeenId`) and from a WHAT'S NEW button beside CREDITS in Settings' General links
+(`author_menu_settings.py`). Spec `Docs/UI/specs/rev121-c-whats-new.md`, which lists where it differs from the board
+(no Ark picture yet, the door on General not Other, only Update 0.3 listed). Hand test in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`.

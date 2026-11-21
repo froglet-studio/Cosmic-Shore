@@ -3413,6 +3413,13 @@
    "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
   },
   {
+   "file": "Assets/_Scripts/UI/Screens/UpdateNoticeOverlay.cs",
+   "line": 392,
+   "literal": "new Color(0.7f, 0.7f, 0.7f, 1f)",
+   "bucket": "INERT",
+   "why": "ColorBlock multiplier (ColorTint state): white = identity, grey = darken, alpha = fade; the Graphic's own colour carries the hue"
+  },
+  {
    "file": "Assets/_Scripts/UI/Privacy/PrivacyConsentOverlay.cs",
    "line": 519,
    "literal": "new Color(1f, 1f, 1f, 0f)",

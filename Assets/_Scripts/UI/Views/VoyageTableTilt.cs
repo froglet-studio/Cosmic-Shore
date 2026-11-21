@@ -53,7 +53,10 @@ namespace CosmicShore.UI
         {
             if (!Active || vh.currentVertCount == 0) return;
             var r = ((RectTransform)transform).rect;
-            Subdivide(vh, MaxEdge);
+            // Clipped to the table first: a lane or a wall that runs past the table's far edge would be laid back toward the
+            // horizon and drawn as a long ray across it (Shombith, 2026-11-20, white lines at Neighbourhood), and one past
+            // its near edge thrown out past the eye.
+            Subdivide(vh, MaxEdge, r);
             Apply(vh, r, _angle);
         }
 
@@ -122,14 +125,31 @@ namespace CosmicShore.UI
         /// large triangle stays true. A triangle with one uv at every corner (a solid shape) is kept whole. Colours and the
         /// first uv are carried along.
         /// </summary>
-        public static void Subdivide(VertexHelper vh, float maxEdge)
+        public static void Subdivide(VertexHelper vh, float maxEdge) => Subdivide(vh, maxEdge, null);
+
+        /// <summary><see cref="Subdivide(VertexHelper, float)"/>, keeping only what lies inside <paramref name="clip"/>
+        /// (every triangle cut to it first; colours and uvs carried along).</summary>
+        public static void Subdivide(VertexHelper vh, float maxEdge, Rect? clip)
         {
             s_Stream.Clear();
             vh.GetUIVertexStream(s_Stream);
             s_Out.Clear();
             float max2 = maxEdge * maxEdge;
             for (int i = 0; i + 2 < s_Stream.Count; i += 3)
-                Cut(s_Stream[i], s_Stream[i + 1], s_Stream[i + 2], max2, 5);
+            {
+                UIVertex a = s_Stream[i], b = s_Stream[i + 1], c = s_Stream[i + 2];
+                if (clip is not { } r || Inside(r, a) && Inside(r, b) && Inside(r, c))
+                {
+                    Cut(a, b, c, max2, 5);
+                    continue;
+                }
+                s_Poly.Clear();
+                s_Poly.Add(a);
+                s_Poly.Add(b);
+                s_Poly.Add(c);
+                ClipTo(r);
+                for (int k = 1; k + 1 < s_Poly.Count; k++) Cut(s_Poly[0], s_Poly[k], s_Poly[k + 1], max2, 5);
+            }
             // One UI mesh holds fewer than 65,000 vertices; past that Unity draws none of it. The map budgets its sky to
             // stay well under (VoyageMapSky), and this keeps the rest from ever crossing it: the last triangles go.
             if (s_Out.Count > MaxListVertices) s_Out.RemoveRange(MaxListVertices, s_Out.Count - MaxListVertices);
@@ -139,6 +159,40 @@ namespace CosmicShore.UI
 
         /// <summary>The most vertices the laid-back mesh carries (a whole number of triangles under Unity's 65,000).</summary>
         public const int MaxListVertices = 64995;
+
+        static readonly List<UIVertex> s_Poly = new(), s_Clip = new();
+
+        static bool Inside(Rect r, UIVertex v) =>
+            v.position.x >= r.xMin && v.position.x <= r.xMax && v.position.y >= r.yMin && v.position.y <= r.yMax;
+
+        /// <summary>Cut the polygon in <see cref="s_Poly"/> to <paramref name="r"/>, one side at a time (Sutherland-Hodgman).</summary>
+        static void ClipTo(Rect r)
+        {
+            for (int side = 0; side < 4 && s_Poly.Count >= 3; side++)
+            {
+                s_Clip.Clear();
+                int n = s_Poly.Count;
+                for (int k = 0; k < n; k++)
+                {
+                    var p = s_Poly[k];
+                    var q = s_Poly[(k + 1) % n];
+                    float fp = Outside(r, side, p), fq = Outside(r, side, q);
+                    if (fp <= 0f) s_Clip.Add(p);
+                    if ((fp < 0f && fq > 0f) || (fp > 0f && fq < 0f)) s_Clip.Add(Lerp(p, q, fp / (fp - fq)));
+                }
+                s_Poly.Clear();
+                s_Poly.AddRange(s_Clip);
+            }
+        }
+
+        // How far past side 0-3 (left, right, bottom, top) of r the vertex lies; negative inside.
+        static float Outside(Rect r, int side, UIVertex v) => side switch
+        {
+            0 => r.xMin - v.position.x,
+            1 => v.position.x - r.xMax,
+            2 => r.yMin - v.position.y,
+            _ => v.position.y - r.yMax,
+        };
 
         static void Cut(UIVertex a, UIVertex b, UIVertex c, float max2, int depth)
         {
@@ -170,13 +224,15 @@ namespace CosmicShore.UI
             Cut(mab, mbc, mca, max2, depth - 1);
         }
 
-        static UIVertex Mid(UIVertex a, UIVertex b)
+        static UIVertex Mid(UIVertex a, UIVertex b) => Lerp(a, b, 0.5f);
+
+        static UIVertex Lerp(UIVertex a, UIVertex b, float t)
         {
             var m = a;
-            m.position = (a.position + b.position) * 0.5f;
-            m.uv0 = (a.uv0 + b.uv0) * 0.5f;
-            m.uv1 = (a.uv1 + b.uv1) * 0.5f;
-            m.color = (Color32)Color.Lerp(a.color, b.color, 0.5f);
+            m.position = Vector3.Lerp(a.position, b.position, t);
+            m.uv0 = Vector4.Lerp(a.uv0, b.uv0, t);
+            m.uv1 = Vector4.Lerp(a.uv1, b.uv1, t);
+            m.color = (Color32)Color.Lerp(a.color, b.color, t);
             m.normal = a.normal;
             m.tangent = a.tangent;
             return m;
