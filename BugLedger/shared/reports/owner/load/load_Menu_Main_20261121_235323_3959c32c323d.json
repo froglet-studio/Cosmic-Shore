@@ -1,0 +1,948 @@
+{
+    "schemaVersion": 1,
+    "reportId": "3959c32c323d",
+    "timestamp": "2026-11-21T23:53:23.1773249Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "83DN (LENOVO)",
+        "unityVersion": "6000.4.11f1"
+    },
+    "gitBranch": "bleeding-edge",
+    "gitCommitHash": "2477604a45",
+    "trigger": "Return to menu — Voyage → Menu_Main",
+    "loadKind": "menuReturn",
+    "completionReason": "Aborted: play session ended",
+    "interrupted": false,
+    "sceneFrom": "Voyage",
+    "sceneTo": "Menu_Main",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Local",
+    "connectedClients": 0,
+    "totalMs": 705734.0625,
+    "visualReadyMs": -1.0,
+    "waitMs": 7419.51953125,
+    "humanWaitMs": 0.0,
+    "workMs": 698314.5625,
+    "unattributedMs": 170.5625,
+    "framesDuringLoad": 23284,
+    "avgFpsDuringLoad": 32.99259948730469,
+    "worstFrameMs": 14034.0966796875,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 170.5625,
+            "endMs": 4407.35791015625,
+            "durationMs": 4236.79541015625,
+            "exclusiveMs": 115.58489990234375,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Scene load → activation (Menu_Main)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 286.14739990234377,
+            "endMs": 705734.0625,
+            "durationMs": 705447.9375,
+            "exclusiveMs": 687439.0625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Scene exit drain behind the splash",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 4407.36474609375,
+            "endMs": 4407.36669921875,
+            "durationMs": 0.001953125,
+            "exclusiveMs": 0.001953125,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Scene load → activation (Menu_Main)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 4407.3701171875,
+            "endMs": 11906.3203125,
+            "durationMs": 7498.9501953125,
+            "exclusiveMs": 7489.71240234375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Flora spawn (GyroidFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "startMs": 6280.50927734375,
+            "endMs": 6283.1728515625,
+            "durationMs": 2.66357421875,
+            "exclusiveMs": 2.66357421875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Flora spawn (QuasicrystalFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "startMs": 6291.80126953125,
+            "endMs": 6294.88134765625,
+            "durationMs": 3.080078125,
+            "exclusiveMs": 3.080078125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Flora spawn (SchwarzPFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "startMs": 6295.166015625,
+            "endMs": 6298.66015625,
+            "durationMs": 3.494140625,
+            "exclusiveMs": 3.494140625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 1,
+            "depth": 2,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 11947.4150390625,
+            "endMs": 19253.470703125,
+            "durationMs": 7306.0556640625,
+            "exclusiveMs": 7303.9326171875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 7,
+            "depth": 3,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 18512.55078125,
+            "endMs": 18513.9140625,
+            "durationMs": 1.36328125,
+            "exclusiveMs": 1.36328125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 7,
+            "depth": 3,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 18513.9296875,
+            "endMs": 18514.689453125,
+            "durationMs": 0.759765625,
+            "exclusiveMs": 0.759765625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 10,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Cell environment spawn (cell 0, SpawnableGarland)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 21632.294921875,
+            "endMs": 21650.72265625,
+            "durationMs": 18.427734375,
+            "exclusiveMs": 8.08203125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 11,
+            "parentId": 10,
+            "depth": 3,
+            "label": "Spawnable node: SpawnableGarland (SpawnableGarland)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 21640.376953125,
+            "endMs": 21649.2734375,
+            "durationMs": 8.896484375,
+            "exclusiveMs": 0.0546875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 12,
+            "parentId": 11,
+            "depth": 4,
+            "label": "Streamed prism lay (SpawnableGarland::BLOCK, 4259 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 21640.431640625,
+            "endMs": 23156.888671875,
+            "durationMs": 1516.45703125,
+            "exclusiveMs": 1516.45703125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 13,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 23180.591796875,
+            "endMs": 24859.810546875,
+            "durationMs": 1679.21875,
+            "exclusiveMs": 1679.21875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 694928.8125,
+            "percent": 98.46893310546875,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 7419.51953125,
+            "percent": 1.0513194799423218,
+            "spanCount": 3,
+            "waitMs": 7419.51953125
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 3205.935546875,
+            "percent": 0.4542696475982666,
+            "spanCount": 6,
+            "waitMs": 0.0
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 170.5625,
+            "percent": 0.024168098345398904,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 6,
+            "name": "Flora",
+            "attributedMs": 9.23779296875,
+            "percent": 0.0013089623535051942,
+            "spanCount": 3,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Scene load → activation (Menu_Main)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 2,
+            "totalMs": 712946.875,
+            "exclusiveMs": 694928.75,
+            "maxSingleMs": 705447.9375,
+            "isWait": false
+        },
+        {
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 7306.0556640625,
+            "exclusiveMs": 7303.9326171875,
+            "maxSingleMs": 7306.0556640625,
+            "isWait": true
+        },
+        {
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1679.21875,
+            "exclusiveMs": 1679.21875,
+            "maxSingleMs": 1679.21875,
+            "isWait": false
+        },
+        {
+            "label": "Streamed prism lay (SpawnableGarland::BLOCK, 4259 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1516.45703125,
+            "exclusiveMs": 1516.45703125,
+            "maxSingleMs": 1516.45703125,
+            "isWait": false
+        },
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 4236.79541015625,
+            "exclusiveMs": 115.58489990234375,
+            "maxSingleMs": 4236.79541015625,
+            "isWait": true
+        },
+        {
+            "label": "Cell environment spawn (cell 0, SpawnableGarland)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 18.427734375,
+            "exclusiveMs": 8.08203125,
+            "maxSingleMs": 18.427734375,
+            "isWait": false
+        },
+        {
+            "label": "Flora spawn (SchwarzPFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "count": 1,
+            "totalMs": 3.494140625,
+            "exclusiveMs": 3.494140625,
+            "maxSingleMs": 3.494140625,
+            "isWait": false
+        },
+        {
+            "label": "Flora spawn (QuasicrystalFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "count": 1,
+            "totalMs": 3.080078125,
+            "exclusiveMs": 3.080078125,
+            "maxSingleMs": 3.080078125,
+            "isWait": false
+        },
+        {
+            "label": "Flora spawn (GyroidFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "count": 1,
+            "totalMs": 2.66357421875,
+            "exclusiveMs": 2.66357421875,
+            "maxSingleMs": 2.66357421875,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1.36328125,
+            "exclusiveMs": 1.36328125,
+            "maxSingleMs": 1.36328125,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.759765625,
+            "exclusiveMs": 0.759765625,
+            "maxSingleMs": 0.759765625,
+            "isWait": false
+        },
+        {
+            "label": "Spawnable node: SpawnableGarland (SpawnableGarland)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 8.896484375,
+            "exclusiveMs": 0.0546875,
+            "maxSingleMs": 8.896484375,
+            "isWait": false
+        },
+        {
+            "label": "Scene exit drain behind the splash",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 0.001953125,
+            "exclusiveMs": 0.001953125,
+            "maxSingleMs": 0.001953125,
+            "isWait": true
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 20636.240234375,
+            "durationMs": 14034.0966796875,
+            "during": "preSpawnDelayMs before vessel spawn (200ms)"
+        },
+        {
+            "atMs": 19341.939453125,
+            "durationMs": 6308.84619140625,
+            "during": "preSpawnDelayMs before vessel spawn (200ms)"
+        },
+        {
+            "atMs": 283438.34375,
+            "durationMs": 1403.099609375,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 171.44329833984376,
+            "durationMs": 1295.3046875,
+            "during": "SceneLoader splash cover before load (0.1s)"
+        },
+        {
+            "atMs": 705356.4375,
+            "durationMs": 1289.5902099609375,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 427127.125,
+            "durationMs": 1133.466064453125,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 431867.4375,
+            "durationMs": 777.8723754882813,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 265835.3125,
+            "durationMs": 711.521484375,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 427627.625,
+            "durationMs": 592.9534912109375,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 283966.1875,
+            "durationMs": 586.80419921875,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 424700.1875,
+            "durationMs": 586.6839599609375,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 23157.384765625,
+            "durationMs": 556.38037109375,
+            "during": "Streamed prism lay (SpawnableGarland::BLOCK, 4259 prisms)"
+        },
+        {
+            "atMs": 700917.5625,
+            "durationMs": 555.138916015625,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 540848.25,
+            "durationMs": 535.8110961914063,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 6245.3671875,
+            "durationMs": 523.2886962890625,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 21281.416015625,
+            "durationMs": 505.015625,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 292612.8125,
+            "durationMs": 483.29949951171877,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 405615.84375,
+            "durationMs": 482.4964904785156,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 22403.67578125,
+            "durationMs": 451.40631103515627,
+            "during": "Streamed prism lay (SpawnableGarland::BLOCK, 4259 prisms)"
+        },
+        {
+            "atMs": 290164.03125,
+            "durationMs": 445.4031982421875,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 21629.89453125,
+            "durationMs": 434.3981018066406,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 293978.25,
+            "durationMs": 432.81439208984377,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 292130.5,
+            "durationMs": 427.4375915527344,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 282919.8125,
+            "durationMs": 424.7052917480469,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 293644.4375,
+            "durationMs": 424.0151062011719,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 414418.09375,
+            "durationMs": 407.052490234375,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 277466.78125,
+            "durationMs": 400.8345947265625,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 22253.119140625,
+            "durationMs": 400.6089782714844,
+            "during": "Streamed prism lay (SpawnableGarland::BLOCK, 4259 prisms)"
+        },
+        {
+            "atMs": 290704.34375,
+            "durationMs": 396.98529052734377,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 288487.78125,
+            "durationMs": 386.0621032714844,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 281607.8125,
+            "durationMs": 373.9757080078125,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 288757.40625,
+            "durationMs": 372.7040100097656,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 417410.1875,
+            "durationMs": 368.2257080078125,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 401652.96875,
+            "durationMs": 360.07342529296877,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 417124.59375,
+            "durationMs": 353.11358642578127,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 408920.8125,
+            "durationMs": 350.7821960449219,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 422458.4375,
+            "durationMs": 349.601806640625,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 414095.53125,
+            "durationMs": 349.0391845703125,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 303141.3125,
+            "durationMs": 348.8968811035156,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 295431.3125,
+            "durationMs": 348.7558898925781,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 303776.9375,
+            "durationMs": 344.706298828125,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 362444.46875,
+            "durationMs": 325.9844970703125,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 413328.71875,
+            "durationMs": 324.0290832519531,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 296543.625,
+            "durationMs": 320.1994934082031,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 360888.59375,
+            "durationMs": 317.7472839355469,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 302488.53125,
+            "durationMs": 317.0625915527344,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 409982.75,
+            "durationMs": 312.4642028808594,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 306769.34375,
+            "durationMs": 310.29449462890627,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 701121.75,
+            "durationMs": 306.4072265625,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 422647.3125,
+            "durationMs": 303.6632080078125,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 301832.96875,
+            "durationMs": 303.07159423828127,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 408175.875,
+            "durationMs": 301.6200866699219,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 299531.6875,
+            "durationMs": 299.4685974121094,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 306561.40625,
+            "durationMs": 298.1624755859375,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 626672.4375,
+            "durationMs": 297.21099853515627,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 409108.6875,
+            "durationMs": 296.3755187988281,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 541037.8125,
+            "durationMs": 295.8343811035156,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 302808.75,
+            "durationMs": 295.52069091796877,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 303473.5625,
+            "durationMs": 293.1669006347656,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 300035.84375,
+            "durationMs": 292.7226257324219,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 631172.3125,
+            "durationMs": 289.8446960449219,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 274162.84375,
+            "durationMs": 288.00909423828127,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 424887.78125,
+            "durationMs": 287.70220947265627,
+            "during": "Scene load → activation (Menu_Main)"
+        },
+        {
+            "atMs": 466206.875,
+            "durationMs": 287.1800842285156,
+            "during": "Scene load → activation (Menu_Main)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Return to menu — Voyage → Menu_Main"
+        },
+        {
+            "atMs": 4407.29833984375,
+            "label": "Netcode scene load begins: Menu_Main"
+        },
+        {
+            "atMs": 11907.8623046875,
+            "label": "Unity scene loaded: Menu_Main (Single)"
+        },
+        {
+            "atMs": 11957.9013671875,
+            "label": "Netcode scene load complete: Menu_Main (client 0)"
+        },
+        {
+            "atMs": 11958.384765625,
+            "label": "Netcode scene load completed on ALL clients: Menu_Main"
+        },
+        {
+            "atMs": 17665.6953125,
+            "label": "Unity scene loaded: Menu_Main (Single)"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Flora spawned during load",
+            "value": 3
+        },
+        {
+            "name": "Prisms reused from the environment pool",
+            "value": 101
+        },
+        {
+            "name": "Prisms cloned by InstantiateAsync",
+            "value": 4158
+        },
+        {
+            "name": "Frames an async clone batch waited to integrate",
+            "value": 4
+        },
+        {
+            "name": "Prisms laid during load",
+            "value": 4259
+        },
+        {
+            "name": "Active prisms when load ended",
+            "value": 4259
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism clone: InstantiateAsync batch, call to integrated (wall time)",
+            "count": 3,
+            "totalMs": 1403.585205078125,
+            "maxSingleMs": 565.7103881835938
+        },
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 4291,
+            "totalMs": 212.38209533691407,
+            "maxSingleMs": 8.400799751281739
+        },
+        {
+            "label": "Prism lay: Initialize (reset + grow coroutine start)",
+            "count": 4259,
+            "totalMs": 42.64820098876953,
+            "maxSingleMs": 1.7532999515533448
+        },
+        {
+            "label": "Prism lay: team + pose",
+            "count": 4259,
+            "totalMs": 28.303300857543947,
+            "maxSingleMs": 0.262800008058548
+        },
+        {
+            "label": "Prism lay: kind + trail.Add",
+            "count": 4259,
+            "totalMs": 7.469799995422363,
+            "maxSingleMs": 0.23389999568462373
+        },
+        {
+            "label": "Prism lay: TargetScale (scale-manager registration)",
+            "count": 4259,
+            "totalMs": 3.4377999305725099,
+            "maxSingleMs": 0.04050000011920929
+        }
+    ],
+    "errors": [
+        {
+            "timeSeconds": 268.77984619140627,
+            "type": "Error",
+            "message": "[ArcadeConfigModal] Vessel selection DROPPED - no owned local Player resolved. NetDefaultVesselType not updated; spawn would use a stale class."
+        },
+        {
+            "timeSeconds": 268.8014831542969,
+            "type": "Exception",
+            "message": "NullReferenceException: Object reference not set to an instance of an object"
+        },
+        {
+            "timeSeconds": 313.76226806640627,
+            "type": "Error",
+            "message": "[ArcadeConfigModal] Vessel selection DROPPED - no owned local Player resolved. NetDefaultVesselType not updated; spawn would use a stale class."
+        },
+        {
+            "timeSeconds": 313.767333984375,
+            "type": "Exception",
+            "message": "NullReferenceException: Object reference not set to an instance of an object"
+        },
+        {
+            "timeSeconds": 416.69561767578127,
+            "type": "Error",
+            "message": "[ArcadeConfigModal] Vessel selection DROPPED - no owned local Player resolved. NetDefaultVesselType not updated; spawn would use a stale class."
+        },
+        {
+            "timeSeconds": 416.7334899902344,
+            "type": "Exception",
+            "message": "NullReferenceException: Object reference not set to an instance of an object"
+        },
+        {
+            "timeSeconds": 430.9716491699219,
+            "type": "Error",
+            "message": "[ArcadeConfigModal] Domain pick 'Jade' DROPPED - no owned local Player resolved (pair-init incomplete after scene return?). Pick not sent to server; tile selection unchanged."
+        },
+        {
+            "timeSeconds": 433.16607666015627,
+            "type": "Error",
+            "message": "[ArcadeConfigModal] Vessel selection DROPPED - no owned local Player resolved. NetDefaultVesselType not updated; spawn would use a stale class."
+        },
+        {
+            "timeSeconds": 433.1799621582031,
+            "type": "Exception",
+            "message": "NullReferenceException: Object reference not set to an instance of an object"
+        },
+        {
+            "timeSeconds": 702.8984985351563,
+            "type": "Error",
+            "message": "[ArcadeConfigModal] Vessel selection DROPPED - no owned local Player resolved. NetDefaultVesselType not updated; spawn would use a stale class."
+        },
+        {
+            "timeSeconds": 702.9061279296875,
+            "type": "Exception",
+            "message": "NullReferenceException: Object reference not set to an instance of an object"
+        }
+    ],
+    "hints": [
+        {
+            "id": "load-very-long",
+            "severity": 2,
+            "title": "Load exceeds a minute",
+            "finding": "This load took 705.7s — most players force-quit long before this.",
+            "fixAdvice": "Attack the biggest slices below; anything over ~15s needs structural fixes, not tuning.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "scripted-delays",
+            "severity": 1,
+            "title": "Hardcoded delays are on the critical path",
+            "finding": "7.4s (1%) of this load is fixed UniTask.Delay-style gates.",
+            "fixAdvice": "These are free wins — replace fixed delays with event-driven readiness (SOAP events / NetworkVariable callbacks) or shrink the constants.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "single-dominator",
+            "severity": 1,
+            "title": "One cost dominates this load",
+            "finding": "\"Scene load → activation (Menu_Main)\" alone is 98% of the load (694.9s).",
+            "fixAdvice": "See the hot-path breakdown for its per-stage costs. Cut its workload (content/intensity tuning), pool or pre-instantiate its prefabs, or spread the work across frames.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 14.0s during \"preSpawnDelayMs before vessel spawn (200ms)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "errors-during-load",
+            "severity": 1,
+            "title": "Errors fired during the load",
+            "finding": "11 error(s)/exception(s) during load — failures often add retry waits.",
+            "fixAdvice": "Fix the errors first; they may be the hidden cause of the slow path.",
+            "matchedMarker": ""
+        }
+    ]
+}
