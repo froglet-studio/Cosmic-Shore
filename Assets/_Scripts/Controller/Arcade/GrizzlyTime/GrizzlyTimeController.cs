@@ -43,8 +43,8 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Grizzly Time";
 
-        /// <summary>The AI commits to a ring from its approach point (Regatta's steering): the scene's approach lead (420)
-        /// sits outside its commit distance (549 and 522 since the 2026-11-20 retrain), which without this is the orbit shape (an AI circling a ring it
+        /// <summary>The AI commits to a ring from its approach point (Regatta's steering): the scene's approach lead (549)
+        /// sits outside its commit distance (522 since the 2026-11-20 retrain), which without this is the orbit shape (an AI circling a ring it
         /// cannot quite line up). Redline went from 10/24 to 24/24 offline finishes on this one switch.</summary>
         protected override bool AICommitFromApproachPoint => true;
 
