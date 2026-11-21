@@ -343,6 +343,10 @@ namespace CosmicShore.Gameplay
         /// is queued for its (off-screen-gated) retirement.</summary>
         public const float DepartedRetireMargin = 600f;
 
+        /// <summary>The margin this conveyor uses (<see cref="DepartedRetireMargin"/> unless its owner sets one: a voyage on a
+        /// phone retires the cell behind sooner, VoyageToyDefinitionSO.RetireMargin).</summary>
+        public float RetireMargin { get; set; } = DepartedRetireMargin;
+
         /// <summary>
         /// Queue the cell the Ark departed for its off-screen retirement once the Ark is
         /// <see cref="DepartedRetireMargin"/> clear of its membrane, instead of only when the Ark reaches the NEXT core.
@@ -357,7 +361,7 @@ namespace CosmicShore.Gameplay
             var record = _cells[_targetIndex - 1];
             if (record.RetireQueued || !record.Root) return;
             float r = record.Cell && record.Cell.MembraneRadius > 1f ? record.Cell.MembraneRadius : MembraneRadiusFloor;
-            float clear = r + DepartedRetireMargin;
+            float clear = r + Mathf.Max(0f, RetireMargin);
             if ((arkPosition - record.Centre).sqrMagnitude > clear * clear) record.RetireQueued = true;
         }
 
@@ -862,13 +866,19 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
-            // Scene teardown: the drain coroutine dies with us - strike synchronously, pool-safe,
-            // and let the scene unload take the instantiated remainder in one sweep (the unload
-            // pays that cost anyway).
+            // The toybox root torn down while the scene lives: the drain coroutine dies with us, so
+            // strike synchronously, pool-safe.
+            // The scene itself closing is different: a strike gathers the world under a NEW
+            // GameObject, and one made while a scene closes is left behind ("Some objects were not
+            // cleaned up when closing the scene", Cell0_RetiringWorld, six machines) and re-parents
+            // creatures whose NetworkManager is already gone. The unload destroys every cell and
+            // its world in the same sweep, and Cell.OnDestroy retires the cell's own books, so
+            // there is nothing for a strike to do.
+            bool sceneClosing = !gameObject.scene.isLoaded;
             for (int i = 0; i < _cells.Count; i++)
             {
                 var record = _cells[i];
-                if (record.Cell) record.Cell.StrikeSatelliteWorld();
+                if (record.Cell && !sceneClosing) record.Cell.StrikeSatelliteWorld();
                 if (record.Runtime) Destroy(record.Runtime);
             }
             _cells.Clear();

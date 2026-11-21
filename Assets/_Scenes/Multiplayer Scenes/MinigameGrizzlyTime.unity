@@ -840,10 +840,14 @@ MonoBehaviour:
   chalkRegrowSeconds: 3
   crownPrisms: 16
   crownOutset: 14
+  aiRushes: 1
   hintToast: 300
   bankShotToast: 301
   bankShotEveryN: 4
   bankShotMaxDegrees: 30
+  bankShotWindowSeconds: 1.5
+  ramKeyToast: 302
+  ramKeyEveryN: 4
   kegBurstEvent:
     Guid:
       Data1: -159591309
@@ -858,6 +862,13 @@ MonoBehaviour:
       Data3: -1187393100
       Data4: -416318210
     Path: event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate
+  kegRammedEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   bankShotEvent:
     Guid:
       Data1: 1870893843

@@ -58,6 +58,7 @@ namespace CosmicShore.Gameplay
         ArkwayRun _sea;
         CellConveyor _corridor;
         ArkwayConfig _arkCfg;
+        float _baseArkSpeed;
         int _worlds;
         /// <summary>The corridor's worlds by name, in route-index order (<see cref="CellConveyor.TraversalWorlds"/>), so a
         /// job can name the world each cell stands.</summary>
@@ -197,6 +198,7 @@ namespace CosmicShore.Gameplay
             _escort.Install();
             _legCell = null;
             _arkCfg = _def.BuildArkConfig(_content);
+            _baseArkSpeed = _arkCfg.ArkSpeed;
             _sea.Configure(_arkCfg, _context, _context?.Container, _corridor, OnSeaEnded);
             _worlds = CountWorlds(local.Transform.position);
             BeginParty(course);
@@ -206,6 +208,7 @@ namespace CosmicShore.Gameplay
             PauseMenuAction.Current = this;
             (_alarms ??= new ArkAlarmToasts(this, () => _sea)).Hook();
             if (!_attackerMarks) _attackerMarks = ArkAttackerMarks.Create(transform, this, () => Ark);
+            if (!_plate) _plate = ArkHudPlate.Create(transform, () => Ark);
 
             ArkFall.Settled -= OnFallSettled;
             ArkFall.Settled += OnFallSettled;
@@ -495,6 +498,9 @@ namespace CosmicShore.Gameplay
         void PrepareLeg(VoyageJob job)
         {
             _profile = VoyageRules.CorridorProfile(_state, Content, job.From, job.To);
+            // The way home sails faster (nothing is stolen on it; Voyage.asset, Homeward Ark Speed Factor).
+            if (_arkCfg != null && _baseArkSpeed > 0f)
+                _arkCfg.ArkSpeed = _baseArkSpeed * (job.IsReturn && _def ? Mathf.Max(1f, _def.HomewardArkSpeedFactor) : 1f);
             _hostileWorld = VoyageRules.HostileWorld(_state, Content, job.To);
             BeginLegAssaults();
             BeginLegCount(job);
@@ -515,6 +521,8 @@ namespace CosmicShore.Gameplay
             // Plants at their own scale (Cell Flora Scale, with the leg's per-cell pacing): the cell's prism mass grows
             // with them.
             cell.RuntimeFloraShare = _def ? Mathf.Max(0.1f, _profile[routeIndex]) * Mathf.Max(0.1f, _def.CellFloraScale) / creatures : 1f;
+            // A phone stills its creatures' rigs off screen (Voyage.asset, "Voyage - phones").
+            cell.CullOffscreenAnimation = _def && _def.StillOffscreenCreatures;
             // The job's hostile cells (VoyageRun.Assault.cs); without a pattern, the destination when its place is hostile.
             if (PrepareAssaultCell(cell, routeIndex))
                 cell.SetReplicatedStartingController(CellControlRules.Opposing(LiveDomain(_context)));
@@ -559,7 +567,7 @@ namespace CosmicShore.Gameplay
                 if (job.CountsUnderway) VoyageRaid.Owe(_state, _raid);
                 if (!job.IsReturn) Resolve(VoyageRules.WorkDone(job, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
                 else VoyageRules.Resolve(_state, Content, JobOutcome.Succeeded);
-                Dock();
+                DockAfterOutro();   // the docking ending first, then the bank and the scoreboard
                 return;
             }
 
@@ -1187,6 +1195,8 @@ namespace CosmicShore.Gameplay
             corridor.transform.SetParent(_root, false);
             _corridor = corridor.AddComponent<CellConveyor>();
             _corridor.PrepareCell = OnPrepareCell;
+            // A phone retires the cell behind the Ark sooner (Voyage.asset, "Voyage - phones").
+            if (_def && _def.RetireMargin >= 0f) _corridor.RetireMargin = _def.RetireMargin;
             var sea = new GameObject("VoyageArkwayRun");
             sea.transform.SetParent(_root, false);
             _sea = sea.AddComponent<ArkwayRun>();
@@ -1257,8 +1267,16 @@ namespace CosmicShore.Gameplay
             if (!string.IsNullOrEmpty(line)) _sea?.ShowBanner(line, BannerSeconds);
         }
 
+        /// <summary>The app goes to the background (a phone call, the home button): the voyage's record is written now, so
+        /// whatever happens to the app next, the galaxy, the jobs and what is owed are as they were this moment.</summary>
+        void OnApplicationPause(bool paused)
+        {
+            if (paused && _active) SaveState();
+        }
+
         void OnDestroy()
         {
+            _tearingDown = true;   // a docking ending cut short by the scene going never docks from here
             StopIntro();
             ArkFall.Settled -= OnFallSettled;
             if (_killHooked) Fauna.Killed -= OnFaunaKilled;

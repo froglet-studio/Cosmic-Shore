@@ -105,7 +105,7 @@ not an Arkway mode: the Arkway is a toy, a taste of a freestyle voyage. Voyages 
   - Config goes in ScriptableObjects.
   - A generator that writes assets owns them: `--check` diffs disk, with negative controls.
   - Editor tools live under `FrogletTools/` and record their output.
-- **Never assign tickets.** Suggest hand-offs through `/team-tasks` only with the person's approval.
+- **Never assign work.** Hand off a lane (`/handoff-*`) only with the person's approval.
 
 ## Decisions still open (ask; do not invent)
 

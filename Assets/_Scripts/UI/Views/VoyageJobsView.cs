@@ -366,7 +366,7 @@ namespace CosmicShore.UI
         {
             if (!map) return;
             if (_openAtGalaxy) map.FrameGalaxy();
-            else map.FrameOn(course);
+            else map.FrameOn(course, minWidth: VoyageSeaPage.CourseFrameLy);
         }
 
         void PickBoardRow(int index)

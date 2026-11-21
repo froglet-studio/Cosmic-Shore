@@ -213,6 +213,11 @@ namespace CosmicShore.Gameplay
 
         void ProcessPreExistingPlayers()
         {
+            // A scene that adopts nobody keeps nobody: release what the last scene held on to, before anything
+            // below queues it (2026-11-20).
+            if (!ConvertDepartedPlayersToAI && NetworkManager.Singleton != null)
+                ReleaseDepartedHumans(NetworkManager.Singleton);
+
             // Stage 1: Check gameData.Players (catches players spawned in THIS scene,
             // e.g. AI players whose OnNetworkSpawn() already added them).
             foreach (var p in gameData.Players)
@@ -234,13 +239,74 @@ namespace CosmicShore.Gameplay
 
             foreach (var kvp in nm.ConnectedClients)
             {
-                var playerObj = kvp.Value.PlayerObject;
-                if (playerObj == null || !playerObj.TryGetComponent<Player>(out var player))
-                    continue;
-                if (!player.IsSpawned || _processedPlayers.Contains(player.NetworkObjectId))
+                var player = PersistentPlayerOf(nm, kvp.Key);
+                if (player == null || _processedPlayers.Contains(player.NetworkObjectId))
                     continue;
 
                 HandlePlayerNetworkSpawned(player.OwnerClientId);
+            }
+        }
+
+        /// <summary>
+        /// The human Player a connected client flies: its Netcode player object, or the human Player it OWNS. The
+        /// second case is a pilot who dropped and took their seat back (<see cref="TryReclaimSeat"/>): that connection
+        /// was approved with no player object of its own, so the reclaimed Player is owned by it without being its
+        /// player object. Reading only the player object skipped that pilot in every scene after the rejoin: no menu
+        /// vessel, no seat in the next match, and a Player still flagged to outlive its owner (2026-11-20).
+        /// </summary>
+        static Player PersistentPlayerOf(NetworkManager nm, ulong clientId)
+        {
+            if (!nm.ConnectedClients.TryGetValue(clientId, out var client)) return null;
+
+            if (client.PlayerObject != null
+                && client.PlayerObject.TryGetComponent<Player>(out var own) && own.IsSpawned)
+                return own;
+
+            // Every AI seat is the server's as well: the host's own Player is only ever its player object.
+            if (clientId == NetworkManager.ServerClientId || nm.SpawnManager == null) return null;
+
+            foreach (var owned in nm.SpawnManager.GetClientOwnedObjects(clientId))
+                if (owned && owned.TryGetComponent<Player>(out var player) && player.IsSpawned && !player.NetIsAI.Value)
+                    return player;
+            return null;
+        }
+
+        /// <summary>
+        /// For a scene that does not adopt leavers (the menu, the Maelstrom hub). A game scene flags each remote
+        /// human's Player to outlive its owner, so the AI can take the seat. That flag is re-decided here per player,
+        /// but only after the pre-spawn wait, and only for a Player this scene's pass reaches. A guest who left before
+        /// that (during the return to the menu) stayed behind as a server-owned Player that is neither a person nor an
+        /// AI: when they joined again there were two of them, one named "Name (2)", and the leftover showed on the
+        /// other machine's roster and scoreboard. So at this scene's start, at once: every human Player still owned by
+        /// its client goes back to leaving with its owner, and one already left behind is removed.
+        /// </summary>
+        void ReleaseDepartedHumans(NetworkManager nm)
+        {
+            if (nm.SpawnManager == null) return;
+
+            // Without the host's own Player to tell apart, nothing server-owned is safe to remove.
+            var hostPlayer = nm.LocalClient != null ? nm.LocalClient.PlayerObject : null;
+
+            List<Player> leftBehind = null;
+            foreach (var networkObject in nm.SpawnManager.SpawnedObjectsList)
+            {
+                if (!networkObject || !networkObject.TryGetComponent<Player>(out var player) || player.NetIsAI.Value)
+                    continue;
+
+                if (networkObject.OwnerClientId != NetworkManager.ServerClientId)
+                    networkObject.DontDestroyWithOwner = false;
+                else if (hostPlayer != null && networkObject != hostPlayer)
+                    (leftBehind ??= new List<Player>()).Add(player);
+            }
+
+            if (leftBehind == null) return;
+
+            foreach (var player in leftBehind)
+            {
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                    $"[ServerVesselInit] Removing '{player.NetName.Value}': its pilot left before this scene and nothing here adopts it.");
+                if (player.Vessel != null) DespawnVessel(player.Vessel);
+                player.NetworkObject.Despawn(true);
             }
         }
 
@@ -1112,14 +1178,8 @@ namespace CosmicShore.Gameplay
             var nm = NetworkManager.Singleton;
             if (nm == null) return null;
 
-            if (!nm.ConnectedClients.TryGetValue(ownerClientId, out var client))
-                return null;
-
-            var playerObj = client.PlayerObject;
-            if (playerObj == null || !playerObj.TryGetComponent<Player>(out var player))
-                return null;
-
-            if (!player.IsSpawned || _processedPlayers.Contains(player.NetworkObjectId))
+            var player = PersistentPlayerOf(nm, ownerClientId);
+            if (player == null || _processedPlayers.Contains(player.NetworkObjectId))
                 return null;
 
             return player;
@@ -1128,10 +1188,9 @@ namespace CosmicShore.Gameplay
         bool IsOwnersPlayerAlreadyProcessed(ulong ownerClientId)
         {
             var nm = NetworkManager.Singleton;
-            return nm != null
-                   && nm.ConnectedClients.TryGetValue(ownerClientId, out var client)
-                   && client.PlayerObject != null
-                   && _processedPlayers.Contains(client.PlayerObject.NetworkObjectId);
+            if (nm == null) return false;
+            var player = PersistentPlayerOf(nm, ownerClientId);
+            return player != null && _processedPlayers.Contains(player.NetworkObjectId);
         }
 
         /// <summary>

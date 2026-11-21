@@ -18,8 +18,14 @@ namespace CosmicShore.Gameplay
     /// <see cref="FulmenMath.Segment.EndDistance"/> as its front passes them, so each segment is queried against
     /// <see cref="PrismSpatialIndex.QuerySegment"/> exactly once. Per frame: at most
     /// <see cref="FulmenConfigSO.SegmentQueriesPerFrame"/> segment queries, <see cref="FulmenConfigSO.IgnitesPerFrame"/>
-    /// ignites and <see cref="FulmenConfigSO.MaxChildSpawnsPerFrame"/> child bolts; past a budget the work waits a frame.
+    /// ignites and <see cref="FulmenConfigSO.MaxChildSpawnsPerFrame"/> child bolts; past a budget the work waits a frame
+    /// (a segment with prisms still unlit is kept and asked again, never dropped).
     /// A chain ignites a prism at most once and strikes a crystal at most once; crystals are never consumed.</para>
+    ///
+    /// <para><b>What burns</b> (<see cref="BurnAlong"/>). Every prism a stream passes through
+    /// (<see cref="FulmenConfigSO.PathRadius"/>) burns: no budget and no cap skips one. The halo out to
+    /// <see cref="FulmenConfigSO.BurnRadius"/> burns while <see cref="PrismBurnManager"/> has room. Never burnt: the
+    /// collector's own domain and super-shielded prisms.</para>
     ///
     /// <para><b>Network</b> (<see cref="FulmenNetSync"/>). The server decides and strikes with <c>authority</c>: it alone
     /// ignites prisms and strikes crystals. A networked strike (<c>netId</c> != 0) reports its children
@@ -257,6 +263,7 @@ namespace CosmicShore.Gameplay
                 {
                     var c = live[i];
                     if (c == null || !c.isActiveAndEnabled || c.IsExploding) continue;
+                    if (SolitonIsolation.Sealed(c)) continue;   // carried through a Soliton Tunnel: not in the world
                     if (cfg.OmniCrystalsOnly && c.crystalProperties.Element != Element.Omni) continue;
                     if (chain.Struck.Contains(c.Id)) continue;
                     if ((c.transform.position - origin).sqrMagnitude > reachSq) continue;
@@ -331,15 +338,21 @@ namespace CosmicShore.Gameplay
                 while (b.Next < b.Count && b.Keys[b.Next] <= b.Front && queries < cfg.SegmentQueriesPerFrame)
                 {
                     var seg = b.Segments[b.Order[b.Next]];
-                    b.Next++;
                     queries++;
 
-                    if (b.Chain.Authority && index != null && ignites < cfg.IgnitesPerFrame)
+                    bool burnt = true;
+                    if (b.Chain.Authority && index != null)
                     {
                         if (burn == null) burn = PrismBurnManager.EnsureInstance();
-                        ignites += BurnAlong(index, burn, b.Chain, cfg, seg, cfg.IgnitesPerFrame - ignites);
+                        burnt = BurnAlong(index, burn, b.Chain, cfg, seg, ref ignites);
                     }
-                    if (b.CandidateCount > 0) StrikeCrystals(b, seg);
+                    if (b.CandidateCount > 0) StrikeCrystals(b, seg);   // safe to repeat: a struck candidate is cleared
+
+                    // Out of this frame's ignites with prisms of this segment still unlit: the segment WAITS (it is asked
+                    // again next frame; chain.Burned skips what is already lit). It used to be consumed, so every prism
+                    // past the budget - whole segments of them - never burnt.
+                    if (!burnt) break;
+                    b.Next++;
                 }
 
                 // the flash clock starts when the bolt is fully drawn; it is released only once every segment has also
@@ -349,24 +362,58 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        int BurnAlong(PrismSpatialIndex index, PrismBurnManager burn, Chain chain, FulmenConfigSO cfg,
-            in FulmenMath.Segment seg, int budget)
+        /// <summary>
+        /// Burns the prisms round one segment, in two passes (the rule is <see cref="FulmenMath.Decide"/>):
+        /// <list type="number">
+        /// <item><b>On the path</b> (<see cref="FulmenConfigSO.PathRadius"/>): every prism the stream passes through burns.
+        /// The burn manager's cap never refuses one, and past the frame's ignite budget the segment waits.</item>
+        /// <item><b>The halo</b> (out to <see cref="FulmenConfigSO.BurnRadius"/>): catches fire while the burn manager has
+        /// room; once it is full the rest of this segment's halo is left (the wide query is not even asked).</item>
+        /// </list>
+        /// False: the frame's ignite budget ran out with prisms of this segment still unlit - ask again next frame.
+        /// </summary>
+        bool BurnAlong(PrismSpatialIndex index, PrismBurnManager burn, Chain chain, FulmenConfigSO cfg,
+            in FulmenMath.Segment seg, ref int ignites)
         {
             using var _ = s_mBurn.Auto();
-            index.QuerySegment(seg.Start, seg.End, cfg.BurnRadius, _hits);
-            int lit = 0;
-            for (int i = 0; i < _hits.Count && lit < budget; i++)
+            float path = cfg.PathRadius;
+            index.QuerySegment(seg.Start, seg.End, path, _hits);
+            bool done = Light(burn, chain, cfg, true, ref ignites);
+
+            if (done && cfg.BurnRadius > path && burn.HasRoom)
             {
-                var prism = _hits[i];
-                if (prism == null || prism.destroyed || prism.Domain == chain.Domain) continue;
-                if (!chain.Burned.Add(prism)) continue;
-                if (burn.Ignite(prism, chain.Igniter, chain.Domain, cfg.ConvertOnBurnout, cfg.BurnSeconds, chain.NetId,
-                        cfg.BurnSpread, PrismBurnStyle.Laser, 0))
-                    if (chain.Stats) chain.Stats.LastPrismsBurnt++;
-                lit++;
+                if (ignites >= cfg.IgnitesPerFrame) done = false;   // no ignites left to spend: wait before asking wide
+                else
+                {
+                    index.QuerySegment(seg.Start, seg.End, cfg.BurnRadius, _hits);
+                    done = Light(burn, chain, cfg, false, ref ignites);
+                }
             }
             _hits.Clear();
-            return lit;
+            return done;
+        }
+
+        /// <summary>Lights <see cref="_hits"/>. False when the frame's ignite budget ran out before the list did.</summary>
+        bool Light(PrismBurnManager burn, Chain chain, FulmenConfigSO cfg, bool onPath, ref int ignites)
+        {
+            for (int i = 0; i < _hits.Count; i++)
+            {
+                var prism = _hits[i];
+                if (prism == null || prism.destroyed || prism.Domain == chain.Domain) continue;   // never your own volume
+                if (chain.Burned.Contains(prism)) continue;
+                switch (FulmenMath.Decide(onPath, burn.HasRoom, ignites, cfg.IgnitesPerFrame))
+                {
+                    case FulmenMath.BurnVerdict.Wait: return false;
+                    case FulmenMath.BurnVerdict.Drop: return true;
+                }
+                chain.Burned.Add(prism);
+                if (!burn.Ignite(prism, chain.Igniter, chain.Domain, cfg.ConvertOnBurnout, cfg.BurnSeconds, chain.NetId,
+                        cfg.BurnSpread, PrismBurnStyle.Laser, 0, onPath))
+                    continue;   // already burning, or super-shielded: costs nothing
+                ignites++;
+                if (chain.Stats) chain.Stats.LastPrismsBurnt++;
+            }
+            return true;
         }
 
         void StrikeCrystals(Bolt b, in FulmenMath.Segment seg)

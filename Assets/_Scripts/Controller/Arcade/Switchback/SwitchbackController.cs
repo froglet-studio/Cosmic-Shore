@@ -154,7 +154,7 @@ namespace CosmicShore.Gameplay
         protected override bool TryOverrideAim(IPlayer pilot, out Vector3 target)
         {
             target = default;
-            if (!IsServer || _blastAI == null) return false;
+            if (_blastAI == null) return false;
             long t = SwitchbackAIClock.Begin();
             bool r = _blastAI.TryAim(pilot, out target);
             SwitchbackAIClock.End(t);
@@ -164,7 +164,7 @@ namespace CosmicShore.Gameplay
         protected override bool TryOverrideDriftLook(IPlayer pilot, out Vector3 look)
         {
             look = default;
-            if (!IsServer || _blastAI == null) return false;
+            if (_blastAI == null) return false;
             long t = SwitchbackAIClock.Begin();
             bool r = _blastAI.TryDriftLook(pilot, out look);
             SwitchbackAIClock.End(t);
@@ -177,7 +177,7 @@ namespace CosmicShore.Gameplay
             {
                 steerTo = default;
                 if (aiSenseDebug) SwitchbackBlastAI.DebugSense = true;
-                if (!IsServer || _blastAI == null) return false;
+                if (_blastAI == null) return false;
                 long t = SwitchbackAIClock.Begin();
                 bool r = _blastAI.Emergency(pilot, position, velocity, forward, out steerTo);
                 SwitchbackAIClock.End(t);
@@ -186,7 +186,7 @@ namespace CosmicShore.Gameplay
 
         protected override Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate)
         {
-            if (!IsServer || _blastAI == null) return Vector3.zero;
+            if (_blastAI == null) return Vector3.zero;
             long t = SwitchbackAIClock.Begin();
             var r = _blastAI.LaneOffset(pilot, ringNo, gate);
             SwitchbackAIClock.End(t);
@@ -213,6 +213,13 @@ namespace CosmicShore.Gameplay
 
         protected override void OnRacerArmed(IPlayer pilot)
         {
+            // A guest arming its own hull: build the blast AI now (the hooks above are installed right after this).
+            if (!IsServer && _blastAI == null && aiBlastPlanner && _blastLayout != null && _runtime)
+            {
+                if (_blastLayout.Stations.Count > 0) _runtime.TrackAllPrisms();
+                BuildBlastAI(_blastLayout);
+            }
+
             var transformer = pilot?.Vessel?.VesselStatus?.VesselTransformer;
             if (transformer == null) return;
             transformer.AINoseFollowPerSecond = NoseFollowFor(AINoseFollowTable, aiNoseFollowGauntlet, BlastRunGauntlet,
@@ -406,31 +413,41 @@ namespace CosmicShore.Gameplay
                 SwitchbackAIClock.Reset();
             }
             _blastAI?.Dispose();
-            _blastAI = planAI
-                ? new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, intensity, BlastRunGauntlet), _runtime, _course,
-                                        RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed, AvoidSkillFor,
-                                        p => (int)gameData.AIDifficultyFor(p))
-                {
-                    DodgeDangerOnly = aiDodgeDangerOnly,
-                    NoDodgeNearRing = AINoDodgeNearRing,
-                    StrikeSetupLeg = aiStrikeSetupLeg,
-                    SpeedOverBreaking = aiSpeedOverBreaking,
-                }
-                : null;
-            if (_blastAI != null)
-            {
-                var ai = _blastAI;
-                _runtime.LateTick += () =>
-                {
-                    long t = SwitchbackAIClock.Begin();
-                    ai.LateTick();
-                    SwitchbackAIClock.End(t);
-                };
-            }
+            _blastAI = null;
+            if (planAI) BuildBlastAI(layout);
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[Switchback] BLAST RUN intensity {intensity}: {_course.Count} gates, {layout.Stations.Count} blocked gates, " +
                 $"{layout.Movers.Count} movers, {layout.Prisms.Count} prisms.");
+        }
+
+        /// <summary>
+        /// The blast AI of this machine's AI-flown hulls: the key it takes, the blast that opens the door, the prism sense
+        /// and each pilot's lane. The server builds it with the course (every AI seat is the server's). A guest builds it
+        /// the first time it arms its OWN hull (<see cref="OnRacerArmed"/>; PilotControl and the idle-guest aid): all it
+        /// reads is on every peer (the layout, the laid prisms, the key crystals, the server clock). Without it a guest's
+        /// AI hull flew the plain ring steering with no key, no blast and no sense, and stopped at the first closed door:
+        /// 0, 1 and 2 gates in three of nine two-player races while the host's hull threaded all 26 (2026-11-20).
+        /// </summary>
+        void BuildBlastAI(SwitchbackFeatureLayout layout)
+        {
+            _blastAI?.Dispose();
+            _blastAI = new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, Intensity, BlastRunGauntlet), _runtime, _course,
+                                             RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed, AvoidSkillFor,
+                                             p => (int)gameData.AIDifficultyFor(p))
+            {
+                DodgeDangerOnly = aiDodgeDangerOnly,
+                NoDodgeNearRing = AINoDodgeNearRing,
+                StrikeSetupLeg = aiStrikeSetupLeg,
+                SpeedOverBreaking = aiSpeedOverBreaking,
+            };
+            var ai = _blastAI;
+            _runtime.LateTick += () =>
+            {
+                long t = SwitchbackAIClock.Begin();
+                ai.LateTick();
+                SwitchbackAIClock.End(t);
+            };
         }
 
         /// <summary>

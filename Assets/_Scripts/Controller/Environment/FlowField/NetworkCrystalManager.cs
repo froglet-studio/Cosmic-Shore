@@ -389,8 +389,20 @@ namespace CosmicShore.Gameplay
             CreditRingThreaded(crystalId, ringPosition, collector);
         }
 
-        public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams) =>
+        public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams)
+        {
+            // No session (the host dropped, or the frames of leaving a match while the arena still stands): there
+            // is nobody to tell, and Netcode refuses the ServerRpc ("Rpc methods can only be invoked after starting
+            // the NetworkManager!"), so the crystal was taken with no explosion. This peer plays it for itself,
+            // the same split ReportRingThreaded makes.
+            if (!IsSpawned)
+            {
+                if (cellData.TryGetCrystalById(crystalId, out var crystal)) crystal.Explode(explodeParams);
+                return;
+            }
+
             ExplodeCrystal_ServerRpc(crystalId, NetworkExplodeParams.FromExplodeParams(explodeParams));
+        }
 
         [ServerRpc(RequireOwnership = false)]
         private void ExplodeCrystal_ServerRpc(int crystalId, NetworkExplodeParams explodeParams)

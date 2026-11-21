@@ -2346,6 +2346,142 @@
       "h": 900,
       "page": "launch-console",
       "title": "Rev 117 - notes: what each page reads, what is sample data, the open questions"
+    },
+    "R120Intro.dc.html": {
+      "x": 0,
+      "y": 22530,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Intro - The intro: course title and objective, no HUD"
+    },
+    "R120SetOff.dc.html": {
+      "x": 2100,
+      "y": 22530,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 SetOff - Setting off: the plate lights, the goal toast"
+    },
+    "R120Raid.dc.html": {
+      "x": 4200,
+      "y": 22530,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Raid - Raiding a hostile cell: the plate over the Ark, the chip"
+    },
+    "R120Pickup.dc.html": {
+      "x": 0,
+      "y": 23790,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Pickup - A crystal picked up: +1 toast, the plate's to-bank line"
+    },
+    "R120Banked.dc.html": {
+      "x": 2100,
+      "y": 23790,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Banked - Banked at the Ark: the plate counts up, the split in the toast"
+    },
+    "R120Attack.dc.html": {
+      "x": 4200,
+      "y": 23790,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Attack - The Ark under attack: the plate turns red"
+    },
+    "R120Leak.dc.html": {
+      "x": 0,
+      "y": 25050,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Leak - The hold leaking: hull under 30%"
+    },
+    "R120Sail.dc.html": {
+      "x": 2100,
+      "y": 25050,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Sail - The raid countdown on the plate"
+    },
+    "R120Kaiju.dc.html": {
+      "x": 4200,
+      "y": 25050,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Kaiju - Between cells: a kaiju in open water"
+    },
+    "R120Stray.dc.html": {
+      "x": 0,
+      "y": 26310,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Stray - Too far from the Ark: the plate small and far, the chip outlined"
+    },
+    "R120Goal.dc.html": {
+      "x": 2100,
+      "y": 26310,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Goal - Goal met: the plate turns lime"
+    },
+    "R120Pause.dc.html": {
+      "x": 4200,
+      "y": 26310,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Pause - Pause, goal met: Complete and set sail"
+    },
+    "R120Home.dc.html": {
+      "x": 0,
+      "y": 27570,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Home - Sailing home: what is aboard"
+    },
+    "R120Escort.dc.html": {
+      "x": 2100,
+      "y": 27570,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Escort - Escort the Ark: the hull is the score"
+    },
+    "R120Score.dc.html": {
+      "x": 4200,
+      "y": 27570,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Score - The end board: Finish here, Sail home, Venture further"
+    },
+    "R120Lost.dc.html": {
+      "x": 0,
+      "y": 28830,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 120 Lost - The Ark lost"
+    },
+    "R120Notes.dc.html": {
+      "x": 0,
+      "y": 30090,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages-playtest",
+      "title": "Rev 120 - notes: what each option changes, what is shared, what differs from the build"
     }
   },
   "createdOnFiles": {
@@ -2354,7 +2490,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "launch-console",
+    "page": "voyages-playtest",
     "view": "canvas"
   },
   "noteOrder": [
@@ -2427,6 +2563,8 @@
     "sec-rev116-3",
     "sec-rev116-4",
     "sec-rev117",
+    "sec-rev120",
+    "sec-rev120-2",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -2511,7 +2649,8 @@
     "grp-116d-corners-t",
     "grp-116e-edges-t",
     "grp-116f-blocks-t",
-    "rev117"
+    "rev117",
+    "rev120"
   ],
   "notes": {
     "hud_end": {
@@ -4429,6 +4568,45 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "launch-console"
+    },
+    "rev120": {
+      "kind": "title1",
+      "text": "Rev 120 - B On the Ark on every in-game voyage screen",
+      "x": 0,
+      "y": 22130,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages-playtest"
+    },
+    "sec-rev120": {
+      "kind": "rect",
+      "x": -160,
+      "y": 21970,
+      "w": 6440,
+      "h": 4590,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 0px 3px",
+        "border-radius": "40px 40px 0px 0px"
+      },
+      "page": "voyages-playtest"
+    },
+    "sec-rev120-2": {
+      "kind": "rect",
+      "x": -160,
+      "y": 26560,
+      "w": 6440,
+      "h": 4590,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "0px 3px 3px 3px",
+        "border-radius": "0px 0px 40px 40px"
+      },
+      "page": "voyages-playtest"
     }
   },
   "order": [
@@ -4714,7 +4892,24 @@
     "R116F_Pause.dc.html",
     "R116F_Score.dc.html",
     "R117Console.dc.html",
-    "R117Notes.dc.html"
+    "R117Notes.dc.html",
+    "R120Intro.dc.html",
+    "R120SetOff.dc.html",
+    "R120Raid.dc.html",
+    "R120Pickup.dc.html",
+    "R120Banked.dc.html",
+    "R120Attack.dc.html",
+    "R120Leak.dc.html",
+    "R120Sail.dc.html",
+    "R120Kaiju.dc.html",
+    "R120Stray.dc.html",
+    "R120Goal.dc.html",
+    "R120Pause.dc.html",
+    "R120Home.dc.html",
+    "R120Escort.dc.html",
+    "R120Score.dc.html",
+    "R120Lost.dc.html",
+    "R120Notes.dc.html"
   ],
   "pages": [
     {

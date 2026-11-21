@@ -1,5 +1,13 @@
 # Grizzly Time: Powder Kegs, the final build spec
 
+> **Corrected 2026-11-20 (the fun pass, `GRIZZLYTIME.md` section 0.1).** Where this spec says "far side", read the keg's
+> EXIT side: the pilot between the keg and the next ring. The first build put `BlowPoint` on the entry side, which
+> throws the hull away from the next ring; it is `Centre + ExitDir x 60` now, and the bank-shot medians are 198 / 243 /
+> 281 / 335 u (were 101 / 137 / 157 / 199, measured on the wrong side). Section 2's "one blast or one ram opens it"
+> and "Time only cheapens Rush" predate the Rush ram (2026-11-16): a Rush opens any keg in one pass, on every peer whose
+> copy of the hull accepted the press (charges, cooldown and Energy are per peer, so a peer can miss one), and the AI
+> Rushes on straights. The rest of the spec stands as history.
+
 > **As built, 2026-11-11** (`GrizzlyTimeKegs.cs`, `GrizzlyTimeController.Kegs.cs`, GRIZZLYTIME.md §0). The offline
 > harness (`Tools/Build/grizzly_time_course_harness`, 28 tests over 400 seeds x I1-I4, 6 negative controls) changed
 > four things below, each by measurement:

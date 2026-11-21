@@ -97,9 +97,11 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("The vessels the Ark page seats on a player's first voyage, before they have picked any: " +
                                  "yours first (the port seat), then the AI wingmates (starboard, then on top). After the " +
                                  "first pick the Ark opens on the player's last line-up instead (VoyageSeatRecord.Remember). " +
-                                 "Shombith, 2026-11-17: you in the Sparrow, AI in the Butterfly (the Tiger Moth flies its " +
-                                 "airframe) and AI in the Serpent.")]
-        VesselClassType[] firstLineUp = { VesselClassType.Sparrow, VesselClassType.TigerMoth, VesselClassType.Serpent };
+                                 "Shombith, 2026-11-20: hulls that fly well on both a phone and a PC (Docs/Reports/" +
+                                 "MOBILE_VESSELS.md: every ability reachable by touch) - you in the Sparrow, AI in the " +
+                                 "Squirrel and AI in the Dolphin, the starter squad's hulls. Until then the Butterfly and " +
+                                 "the Serpent, whose Fold and scope do not work on touch.")]
+        VesselClassType[] firstLineUp = { VesselClassType.Sparrow, VesselClassType.Squirrel, VesselClassType.Dolphin };
 
         [Header("Voyage - which voyages can sail (Milestone 1)")]
         [SerializeField, Tooltip("Lock the crew's job voyages, except the ones listed below (Shombith, 2026-11-16: make one " +
@@ -257,6 +259,11 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(1f), Tooltip("A kaiju's body is this many times its species' size (\"pretty huge\").")]
         float kaijuScale = 14f;
 
+        [SerializeField, Min(1f), Tooltip("A kaiju's body PRISMS grow this many times, not Kaiju Scale (its frame does): a body " +
+                                          "prism is a thin plate, and one grown 12-14x read as a flat featureless square " +
+                                          "bigger than the Ark's plates (Shombith 2026-11-20).")]
+        float kaijuPrismScale = 3f;
+
         [SerializeField, Min(0f), Tooltip("The crossing (and its kaiju) starts this far, u, before the Ark leaves the cell " +
                                           "behind it, so the kaiju is already waiting in the gap when the Ark comes out.")]
         float kaijuLeadDistance = 900f;
@@ -313,6 +320,24 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0), Tooltip("Homeward Raider Max on a phone or tablet.")]
         int mobileRaiderMax = 3;
 
+        [SerializeField, Range(0.1f, 4f), Tooltip("Cell Flora Scale on a phone or tablet: a voyage cell's PLANT populations " +
+                                                  "(seed floors and caps). Plants are a cell's growing prism mass (Hesperides " +
+                                                  "stood 222 plants and 36,656 prisms on 2026-11-17), which every draw, sense " +
+                                                  "and sweep pays for, so a phone grows half the authored plants (Shombith " +
+                                                  "2026-11-20, the phone pass). Production gating only: nothing living is culled.")]
+        float mobileCellFloraScale = 0.5f;
+
+        [SerializeField, Min(0f), Tooltip("On a phone or tablet, the open water, u, the Ark puts between itself and the " +
+                                          "membrane of the cell it left before that cell is queued for its off-screen " +
+                                          "retirement (the desktop keeps CellConveyor.DepartedRetireMargin, 600). Sooner " +
+                                          "means one fewer world standing behind the Ark.")]
+        float mobileRetireMargin = 150f;
+
+        [SerializeField, Tooltip("On a phone or tablet, a voyage creature's rig stops animating while no camera sees it " +
+                                 "(Animator culling Cull Completely). Its body still swims where its code steers it; only " +
+                                 "the off-screen pose stops. The 2026-11-18 captures spent 2 ms a frame in Animators.Update.")]
+        bool mobileStillOffscreenCreatures = true;
+
         [Header("Voyage - Crystal Run goal missed (Shombith 2026-11-17)")]
         [SerializeField, Tooltip("A Crystal Run that reaches its stop short of its goal loses this run's haul (crystals " +
                                  "earlier legs owe are kept), and the board offers Try again (the same goal from here) or " +
@@ -330,6 +355,13 @@ namespace CosmicShore.ScriptableObjects
                                                   "them) times this, over the Arkway's own (Wander_WithArk). Shombith " +
                                                   "2026-11-17: \"make the ark fly faster\".")]
         float arkSpeedScale = 1.5f;
+
+        [SerializeField, Range(1f, 4f), Tooltip("On the way home (Sail home, the return job) the Ark sails this many times " +
+                                                "faster again: nothing is stolen on the way home, so its crossings are only " +
+                                                "the escort. Shombith 2026-11-20 (a run in 6-10 minutes): read from the code, " +
+                                                "a 4-cell Crystal Run reaches its stop in about 8 minutes, and at 1 the way " +
+                                                "home added about 6 more; at 2 it adds about 3. 1 keeps the outbound speed.")]
+        float homewardArkSpeedFactor = 2f;
 
         [Header("Voyage - AI wingmates in a Crystal Run (a light nudge, Shombith 2026-11-17; his own AI plan comes later)")]
         [SerializeField, Min(0), Tooltip("An AI wingmate carrying this many crystals flies to the Ark to bank them before it " +
@@ -454,6 +486,7 @@ namespace CosmicShore.ScriptableObjects
         public int KaijuPerCrossing => kaijuPerCrossing;
         public int KaijuMax => kaijuMax;
         public float KaijuScale => OnMobile ? Mathf.Min(kaijuScale, mobileKaijuScale) : kaijuScale;
+        public float KaijuPrismScale => Mathf.Min(kaijuPrismScale, KaijuScale);
         public float KaijuLeadDistance => kaijuLeadDistance;
         public float KaijuSideOffset => kaijuSideOffset;
         public float CellScale => cellScale;
@@ -461,7 +494,13 @@ namespace CosmicShore.ScriptableObjects
         public bool ScatterLifeSpawns => scatterLifeSpawns;
         public float CellLifeScale => OnMobile ? Mathf.Min(cellLifeScale, mobileCellLifeScale) : cellLifeScale;
         public float CellLifeMax => OnMobile ? Mathf.Min(cellLifeMax, mobileCellLifeMax) : cellLifeMax;
-        public float CellFloraScale => OnMobile ? Mathf.Min(cellFloraScale, mobileCellLifeScale) : cellFloraScale;
+        public float CellFloraScale => OnMobile ? Mathf.Min(cellFloraScale, mobileCellFloraScale) : cellFloraScale;
+        /// <summary>How far past the departed cell's membrane the Ark sails before that cell retires; negative keeps the
+        /// conveyor's own (<c>CellConveyor.DepartedRetireMargin</c>).</summary>
+        public float RetireMargin => OnMobile ? mobileRetireMargin : -1f;
+        /// <summary>A voyage creature's rig stops animating off screen (phones only).</summary>
+        public bool StillOffscreenCreatures => OnMobile && mobileStillOffscreenCreatures;
+        public float MobileCellFloraScale => mobileCellFloraScale;
 
         /// <summary>The desktop numbers, whatever the platform (tests and the kaiju page read these).</summary>
         public float DesktopKaijuScale => kaijuScale;
@@ -476,6 +515,7 @@ namespace CosmicShore.ScriptableObjects
         public int WingmateBankAt => wingmateBankAt;
         public float HomeEscortRewardScale => homeEscortRewardScale;
         public float ArkSpeedScale => arkSpeedScale;
+        public float HomewardArkSpeedFactor => homewardArkSpeedFactor;
         public float WingmateSeekSeconds => wingmateSeekSeconds;
         public float WingmateSeekPeriod => wingmateSeekPeriod;
         public Color PortColor => ColorTrace.Retrace(ColorTrace.Ui, portColor);

@@ -54,6 +54,12 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(5f), Tooltip("A request that has not set sail after this long returns to the menu.")]
         float sailTimeoutSeconds = 90f;
 
+        [Header("Leaving the app (phones)")]
+        [SerializeField, Tooltip("The flight HUD's pause button (Volume / Pause Button). A phone that comes back from the " +
+                                 "background mid-voyage presses it, so the pilot returns to the pause window, not straight " +
+                                 "into a fight (Shombith 2026-11-20). Empty: the voyage resumes as it was.")]
+        UnityEngine.UI.Button pauseButton;
+
         [Inject] GameDataSO _gameData;
         [Inject] MenuFreestyleEventsContainerSO _flightEvents;
         [Inject] Reflex.Core.Container _container;
@@ -345,6 +351,20 @@ namespace CosmicShore.Gameplay
                 group.interactable = show;
                 group.blocksRaycasts = show;
             }
+        }
+
+        bool _wentToBackground;
+
+        /// <summary>A phone sent to the background (a call, the home button) comes back to the pause window. The run saves
+        /// its record as the app leaves (<see cref="VoyageRun"/>'s own OnApplicationPause).</summary>
+        void OnApplicationPause(bool paused)
+        {
+            if (!Application.isMobilePlatform) return;
+            if (paused) { _wentToBackground = true; return; }
+            if (!_wentToBackground) return;
+            _wentToBackground = false;
+            if (!_flying || _leaving || VoyageIntro.IsPlaying || VoyageScoreboard.IsOpen || PauseSystem.Paused) return;
+            if (pauseButton && pauseButton.isActiveAndEnabled && pauseButton.interactable) pauseButton.onClick.Invoke();
         }
 
         static bool IsHost()
