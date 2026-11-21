@@ -1,0 +1,357 @@
+{
+    "schemaVersion": 1,
+    "reportId": "70196e651850",
+    "timestamp": "2026-11-20T17:52:32.1473564Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "Ys-bleeding-edge",
+    "gitCommitHash": "fbb1961a48",
+    "trigger": "Netcode scene load (client) — Maelstrom",
+    "loadKind": "launch",
+    "completionReason": "Superseded by new load (Cell swap -> Serpentine - Grazing Grounds)",
+    "interrupted": false,
+    "sceneFrom": "MinigameBreakwater",
+    "sceneTo": "Maelstrom",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Client",
+    "connectedClients": 0,
+    "totalMs": 2154.32958984375,
+    "visualReadyMs": 1646.1451416015625,
+    "waitMs": 103.2366943359375,
+    "humanWaitMs": 0.0,
+    "workMs": 2051.0927734375,
+    "unattributedMs": 481.57037353515627,
+    "framesDuringLoad": 4,
+    "avgFpsDuringLoad": 1.8567261695861817,
+    "worstFrameMs": 1778.4222412109375,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Client scene load (Maelstrom)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 0.8863000273704529,
+            "endMs": 1510.515380859375,
+            "durationMs": 1509.6290283203125,
+            "exclusiveMs": 1450.03564453125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 1450.9219970703125,
+            "endMs": 1673.6455078125,
+            "durationMs": 222.7235107421875,
+            "exclusiveMs": 103.2366943359375,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pair init - inject + vessel.Initialize (Shomboss)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 1511.8707275390625,
+            "endMs": 1553.52978515625,
+            "durationMs": 41.6590576171875,
+            "exclusiveMs": 41.6590576171875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pair init - inject + vessel.Initialize (TheRealCaleb)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 1568.401123046875,
+            "endMs": 1596.5260009765625,
+            "durationMs": 28.1248779296875,
+            "exclusiveMs": 28.1248779296875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pair init - inject + vessel.Initialize (ys1)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 1597.203369140625,
+            "endMs": 1620.23876953125,
+            "durationMs": 23.035400390625,
+            "exclusiveMs": 23.035400390625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pair init - inject + vessel.Initialize (YS2)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 1620.32275390625,
+            "endMs": 1646.141357421875,
+            "durationMs": 25.818603515625,
+            "exclusiveMs": 25.818603515625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1652.08251953125,
+            "endMs": 1652.8260498046875,
+            "durationMs": 0.7435302734375,
+            "exclusiveMs": 0.7435302734375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1652.83349609375,
+            "endMs": 1652.9388427734375,
+            "durationMs": 0.1053466796875,
+            "exclusiveMs": 0.1053466796875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 1450.03564453125,
+            "percent": 67.30797576904297,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 481.57037353515627,
+            "percent": 22.353607177734376,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 1,
+            "name": "Netcode & Sync",
+            "attributedMs": 103.2366943359375,
+            "percent": 4.792056560516357,
+            "spanCount": 1,
+            "waitMs": 103.2366943359375
+        },
+        {
+            "category": 4,
+            "name": "AI Backfill",
+            "attributedMs": 69.783935546875,
+            "percent": 3.239241361618042,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 3,
+            "name": "Vessels & Players",
+            "attributedMs": 48.85400390625,
+            "percent": 2.2677125930786135,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 0.848876953125,
+            "percent": 0.03940330073237419,
+            "spanCount": 2,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Client scene load (Maelstrom)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 1509.6290283203125,
+            "exclusiveMs": 1450.03564453125,
+            "maxSingleMs": 1509.6290283203125,
+            "isWait": false
+        },
+        {
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "count": 1,
+            "totalMs": 222.7235107421875,
+            "exclusiveMs": 103.2366943359375,
+            "maxSingleMs": 222.7235107421875,
+            "isWait": true
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Shomboss)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 1,
+            "totalMs": 41.6590576171875,
+            "exclusiveMs": 41.6590576171875,
+            "maxSingleMs": 41.6590576171875,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (TheRealCaleb)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 1,
+            "totalMs": 28.1248779296875,
+            "exclusiveMs": 28.1248779296875,
+            "maxSingleMs": 28.1248779296875,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (YS2)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 25.818603515625,
+            "exclusiveMs": 25.818603515625,
+            "maxSingleMs": 25.818603515625,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (ys1)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 23.035400390625,
+            "exclusiveMs": 23.035400390625,
+            "maxSingleMs": 23.035400390625,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.7435302734375,
+            "exclusiveMs": 0.7435302734375,
+            "maxSingleMs": 0.7435302734375,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.1053466796875,
+            "exclusiveMs": 0.1053466796875,
+            "maxSingleMs": 0.1053466796875,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 2144.311767578125,
+            "durationMs": 1778.4222412109375,
+            "during": "Client scene load (Maelstrom)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Netcode scene load (client) — Maelstrom"
+        },
+        {
+            "atMs": 0.8823999762535095,
+            "label": "Netcode scene load begins: Maelstrom"
+        },
+        {
+            "atMs": 1432.0732421875,
+            "label": "Unity scene loaded: Maelstrom (Single)"
+        },
+        {
+            "atMs": 1510.512451171875,
+            "label": "Netcode scene load complete: Maelstrom (client 1)"
+        },
+        {
+            "atMs": 1646.145751953125,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 1646.173095703125,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 1652.946044921875,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 2139.16650390625,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 2139.402587890625,
+            "label": "Netcode scene load completed on ALL clients: Maelstrom"
+        }
+    ],
+    "counters": [],
+    "accumulators": [],
+    "errors": [],
+    "hints": [
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 1.8s during \"Client scene load (Maelstrom)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        }
+    ]
+}

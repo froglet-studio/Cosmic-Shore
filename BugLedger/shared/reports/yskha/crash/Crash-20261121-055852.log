@@ -1,0 +1,198 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-11-21 05:58:52 (next editor launch after the abnormal exit)
+session:        20261120-161025811  (pid 11956, Unity 6000.3.17f1)
+started:        2026-11-20T16:10:25.811Z UTC
+last heartbeat: 2026-11-21T00:22:55.752Z UTC
+last state:     EditMode
+main thread:    responsive at the last heartbeat — the process ended abruptly (hard crash or kill)
+hang dump:      B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261120-161025811.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261120-161025811
+started: 2026-11-20T16:10:25.811Z UTC
+unity:   6000.3.17f1
+pid:     11956
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[21:40:39.590] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[21:41:19.705] ---- entering play mode ----
+[21:41:25.769] ---- play mode running ----
+[21:41:43.555] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-11-16'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007fff67654e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff68e8f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff68e8fbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff6760587f (Unity) DebugStringToFile
+        0x00007fff674c1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000016ed730a51e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000016ed730a343 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000016ed730a01b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:52:50.621] ---- leaving play mode ----
+[21:52:53.375] ---- edit mode restored ----
+[21:55:36.667] ---- domain reload begins (script compilation / play-mode transition) ----
+[21:55:47.517] ---- domain reload complete — session re-adopted ----
+[21:55:49.869] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[21:57:50.090] ---- entering play mode ----
+[21:57:55.471] ---- play mode running ----
+[21:58:13.841] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-11-16'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007fff67654e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff68e8f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff68e8fbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff6760587f (Unity) DebugStringToFile
+        0x00007fff674c1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000016fcb24ed1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000016fcb24eb23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000016fcb24e7db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:02:20.973] ---- leaving play mode ----
+[22:02:23.032] ---- edit mode restored ----
+[22:06:16.593] ---- domain reload begins (script compilation / play-mode transition) ----
+[22:06:27.545] ---- domain reload complete — session re-adopted ----
+[22:06:30.242] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[22:09:01.307] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261120-161025811.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[22:09:15.072] ---- main thread stalled ~60s and RECOVERED — slow, not hung ----
+[22:10:30.996] ---- main thread stalled ~56s and RECOVERED — slow, not hung ----
+[22:34:25.443] ---- domain reload begins (script compilation / play-mode transition) ----
+[22:34:34.519] ---- domain reload complete — session re-adopted ----
+[22:34:36.899] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[23:14:36.698] ---- entering play mode ----
+[23:14:43.583] ---- play mode running ----
+[23:15:00.552] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-11-16'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007fff67654e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff68e8f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff68e8fbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff6760587f (Unity) DebugStringToFile
+        0x00007fff674c1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000016ed5158a1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000016ed5158843 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000016ed515851b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:22:47.053] ---- leaving play mode ----
+[23:22:48.950] ---- edit mode restored ----
+[23:23:28.018] [EditMode] Error: ExecuteCommandByName: No command named 'list' is available. Available: [get_build_settings, clear_occlusion_culling, editor_focus, clear_navmesh, set_input_settings, screenshot, package_resolve, set_tags_layers, get_graphics_settings, set_audio_settings, write_text_file, get_performance_stats, get_console_logs, create_folder, set_active_scene, create_scene, open_scene, set_time_settings, lighting_bake_status, cancel_lighting_bake, search, set_graphics_settings, get_authoring_root, add_animator_parameter, set_autotick, instantiate_prefab, get_physics_settings, build, audit, find_assets, set_animation_curve, audit_status, read_text_file, move_asset, get_serialized_fields, add_animator_transition, get_audio_settings, get_import_settings, package_remove, run_tests, add_scene_to_build, build_status, bake_lighting, set_authoring_root, set_material_properties, create_prefab_variant, cancel_navmesh_bake, set_tag, list_build_profiles, set_transform, cancel_occlusion_bake, add_timeline_track, find_gameobjects, unpack_prefab, create_prefab, capture_game_view, get_quality_settings, set_parent, revert_prefab_overrides, package_status, get_scene_hierarchy, clear_console, save_scene, create_asset, package_add, get_animator_controller, create_animation_clip, package_search, list_tests, get_lighting_settings, menu, recompile, rename_asset, rename_gameobject, test_status, get_tags_layers, create_gameobject, copy_asset, remove_animation_curve, set_navmesh_settings, get_shader_properties, import_asset, list_shaders, list_build_targets, editor_play, clear_baked_lighting, editor_status, get_input_settings, remove_scene_from_build, bake_occlusion_culling, capture_scene_view, get_animation_clip, remove_component, create_gameobjects, navmesh_bake_status, create_timeline, bake_navmesh, editor_pause, package_list, set_build_settings, get_navmesh_settings, add_animator_layer, delete_asset, set_selection, set_quality_settings, save_all, create_animator_controller, attach_script, switch_build_target_status, add_component, bake_navmesh_surfaces, add_animator_state, editor_stop, create_script, apply_prefab_overrides, get_component_properties, list_open_scenes, delete_gameobject, set_active, switch_build_target, set_layer, set_lighting_settings, get_time_settings, occlusion_bake_status, set_serialized_field, add_timeline_clip, get_timeline, get_selection, get_material_properties, set_component_properties, set_player_settings, set_physics_settings, set_import_settings, get_player_settings, recompile_status, save_prefab_contents, cancel_tests, eval, reload_file_override, set_timescale, runtime_status, eval_file, simulate_key, simulate_pointer, console, cleanup_hotreload, hotreload_status, log, set_target_framerate, reload_file, quit]
+        0x00007fff67654e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff68e8f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff68e8fbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff6760587f (Unity) DebugStringToFile
+        0x00007fff674c1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000016ed5158a1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000016ed5158843 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000016ed515851b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:44:29.327] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:44:42.612] ---- domain reload complete — session re-adopted ----
+[00:44:44.638] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[01:53:06.637] ---- domain reload begins (script compilation / play-mode transition) ----
+[01:53:15.655] ---- domain reload complete — session re-adopted ----
+[01:53:17.572] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[03:42:10.828] ---- domain reload begins (script compilation / play-mode transition) ----
+[03:42:48.485] ---- domain reload complete — session re-adopted ----
+[03:42:50.874] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[04:25:11.531] ---- entering play mode ----
+[04:25:17.577] ---- play mode running ----
+[04:25:35.638] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-11-16'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007fff67654e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff68e8f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff68e8fbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff6760587f (Unity) DebugStringToFile
+        0x00007fff674c1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000016ed72f8dce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000016ed72f8bf3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000016ed72f88cb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[05:11:23.535] ---- leaving play mode ----
+[05:11:26.594] ---- edit mode restored ----
+[05:29:24.688] ---- domain reload begins (script compilation / play-mode transition) ----
+[05:30:05.074] ---- domain reload complete — session re-adopted ----
+[05:30:07.693] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[05:39:26.406] ---- domain reload begins (script compilation / play-mode transition) ----
+[05:39:34.097] ---- domain reload complete — session re-adopted ----
+[05:39:36.103] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Dedicated client disconnected
+
