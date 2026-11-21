@@ -31,7 +31,31 @@ namespace CosmicShore.Core
     /// </summary>
     public class OfflineModeService
     {
+        /// <summary>
+        /// The port the offline host listens on: the authored one when it is free, else any free port. A second copy of
+        /// the game on the same computer (an editor beside a build, two test players) already holds the authored port,
+        /// and the transport then fails to bind and the host shuts down, leaving that copy with no session at all.
+        /// Nobody joins an offline host, so which port it holds does not matter.
+        /// </summary>
+        static ushort ResolveLocalHostPort()
+        {
+            try
+            {
+                using var probe = new System.Net.Sockets.UdpClient(
+                    new System.Net.IPEndPoint(System.Net.IPAddress.Any, LOCAL_HOST_PORT));
+                return LOCAL_HOST_PORT;
+            }
+            catch (System.Net.Sockets.SocketException)
+            {
+                CSDebug.LogVerbose(CSLogChannel.Boot,
+                    $"[OfflineModeService] Port {LOCAL_HOST_PORT} is in use; the offline host takes any free port.");
+                return ANY_FREE_PORT;
+            }
+        }
+
         const ushort LOCAL_HOST_PORT = 7777;
+        /// <summary>Port 0 asks the system for any free port.</summary>
+        const ushort ANY_FREE_PORT = 0;
         const float HOST_START_TIMEOUT_SECONDS = 10f;
         const float DATA_INIT_TIMEOUT_SECONDS = 5f;
 
@@ -162,7 +186,7 @@ namespace CosmicShore.Core
             if (UsesInMemoryTransport)
                 UseSinglePlayerTransport(nm);
             else if (nm.TryGetComponent<UnityTransport>(out var transport))
-                transport.SetConnectionData("127.0.0.1", LOCAL_HOST_PORT, "0.0.0.0");
+                transport.SetConnectionData("127.0.0.1", ResolveLocalHostPort(), "0.0.0.0");
 
             // 6. The flag goes up before StartHost and comes down again on failure - see
             //    TryStartOfflineHost.
