@@ -31,7 +31,8 @@ namespace CosmicShore.Editor
     /// (<see cref="EmbedDebugSymbols"/>).</para>
     ///
     /// <para><b>Nothing persists.</b> The version, version code, keystore fields, app category, debug
-    /// symbol settings and the App Bundle switch are put back after the build, so it never leaves
+    /// symbol settings, the App Bundle switch and Split Application Binary (on for the bundle, off for
+    /// the development APK) are put back after the build, so it never leaves
     /// <c>ProjectSettings.asset</c> modified, and never writes a keystore path into it. Its only
     /// output is under the git-ignored <c>Builds/</c>, so it is not a writer tool in the
     /// <c>Docs/TOOLING.md</c> sense and carries no ship panel.</para>
@@ -127,6 +128,9 @@ namespace CosmicShore.Editor
 
                 EditorUserBuildSettings.buildAppBundle = true;
                 EditorUserBuildSettings.exportAsGoogleAndroidProject = false;
+                // The game data goes into an install-time asset pack that Play downloads with the
+                // app, so the base module stays under Play's 200 MB limit (0.3.0's was ~335 MB).
+                PlayerSettings.Android.splitApplicationBinary = true;
 
                 Directory.CreateDirectory(outputFolder);
                 string outputPath = Path.Combine(outputFolder,
@@ -226,6 +230,8 @@ namespace CosmicShore.Editor
 
                 EditorUserBuildSettings.buildAppBundle = false;
                 EditorUserBuildSettings.exportAsGoogleAndroidProject = false;
+                // A split APK writes its data to a separate .obb that a Drive sideload never carries.
+                PlayerSettings.Android.splitApplicationBinary = false;
 
                 Directory.CreateDirectory(outputFolder);
                 string outputPath = Path.Combine(outputFolder,
@@ -471,7 +477,7 @@ namespace CosmicShore.Editor
             string _keystoreName, _keystorePass, _keyaliasName, _keyaliasPass;
             object _appCategory;
             object _debugSymbolLevel, _debugSymbolFormat;
-            bool _buildAppBundle, _exportProject;
+            bool _buildAppBundle, _exportProject, _splitApplicationBinary;
 
             public static AndroidBuildSettingsSnapshot Capture() => new()
             {
@@ -487,6 +493,7 @@ namespace CosmicShore.Editor
                 _debugSymbolFormat = DebugSymbolFormatProperty?.GetValue(null),
                 _buildAppBundle = EditorUserBuildSettings.buildAppBundle,
                 _exportProject = EditorUserBuildSettings.exportAsGoogleAndroidProject,
+                _splitApplicationBinary = PlayerSettings.Android.splitApplicationBinary,
             };
 
             public void Restore()
@@ -506,6 +513,7 @@ namespace CosmicShore.Editor
                     DebugSymbolFormatProperty.SetValue(null, _debugSymbolFormat);
                 EditorUserBuildSettings.buildAppBundle = _buildAppBundle;
                 EditorUserBuildSettings.exportAsGoogleAndroidProject = _exportProject;
+                PlayerSettings.Android.splitApplicationBinary = _splitApplicationBinary;
             }
         }
     }

@@ -241,7 +241,7 @@ App bundle explorer > the version > Downloads > Native debug symbols.
 | Play: "Version code … has already been used" | Build again (a new minute), or pass `-buildVersionCode` |
 | Play warning: "contains native code, and you've not uploaded debug symbols" | Only a recommendation; the release can go out. The bundle was built without the menu (or before 2026-10-14). The check warns about this too. Rebuild with FrogletTools > Build > Android App Bundle (Release) |
 | Gradle fails during the build | Most Android Gradle failures trace to `Assets/Plugins/Android/*.gradle` and the EDM4U block; see `Docs/PLATFORM_UNIFICATION.md` §2.1. Send the Console error to Claude |
-| The check says the base module is over 200 MB | Player Settings > Android > Publishing Settings > **Split Application Binary**, then rebuild |
+| The check says the base module is over 200 MB | The release menu turns on **Split Application Binary** itself since 2026-11-21 (0.3.0's base was ~335 MB without it): the game data ships as an install-time asset pack. If the base is still over, it is the code of the two architectures; send the check.txt to Claude |
 
 ## 8. A development build that plays like release (Patch And Run)
 
