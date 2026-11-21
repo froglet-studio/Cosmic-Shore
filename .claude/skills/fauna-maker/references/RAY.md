@@ -102,6 +102,10 @@ What went wrong on the way:
 | Mass at x 0.58 | the kit took the SMALLEST body that clears the shields | Mass is never under the base body (law L8) |
 | the body only rotated ("its rotations just happen") | Garrett flew it | the body reads its own angular velocity and answers it, mirrored left to right (the lab's Body tab tunes it) |
 | Mass unshielded, Charge not dangerous | running the game's spawn order in Amoebius: 0 of 8 shielded. The shipped QuadFish was the same | the game armed a body before it rolled its element; `Fauna.AssignLineage` arms it after (a fix for every light fauna) |
+| a dead creature's skeleton would have jumped to its cell's centre | a second reader, told to break it: on death the prisms are handed to the cell, and the driver kept writing their local positions | the driver moves a prism only while the body still holds it (its parent is the one it was authored under) |
+| the prefab stated the Spindle's `additionalRenderedObjects` twice (the skins, then the donor's `[]`) | the same reader | the tool replaces the donor's line; `--check` fails on any object that states a field twice (a planted defect holds it) |
+| a rider on a creature that aims all round (Nettle, Plume) could not feed with a rival anywhere within 126 u | the same reader: the aim looked three strike-reaches out, and a 180 degree cone is every direction | an all-round aim looks no farther than it strikes |
+| the turn response vanished in the hardest turns | the same reader: a rate over 6 rad/s was thrown away as a teleport | the rate is clamped; a placed body is told by how far it moved |
 
 ## 5.5 The four that followed (Plume, Lantern, Ammon, Nettle), and what each added to the method
 

@@ -2060,3 +2060,12 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: when the second instance of a hand-made thing arrives, look for the data that already states the intent (the lab's own numbers, the rule the lab already runs) and make the tool read it, before writing a second copy of the hand-made thing. A port that needs per-instance code will not be repeated by a smaller model.
 - Evidence: `GrownFauna.cs`; `unity_port.whip_limbs`, `joints_of` (the `along` cut); `Docs/Studios/FAUNA_LAB.md` round 11.
 - Promoted: `/fauna-maker` Into Unity
+
+### L-STU-196 — A check you wrote proves what you thought of: before shipping, hand the code to a reader told to break it
+
+- Lab: Fauna Possession Lab, the grown creatures in Unity · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-21
+- What happened: five creatures passed every gate the kit has, a clang proof of the shader and a run of the game's own code on all twenty configs. A second reader, given only the diff and told to find what breaks, found four things none of those could: a dead creature's prisms are handed to the cell and the driver kept writing their local positions (the skeleton would have jumped to the cell's centre); the prefab stated one field twice (the tool inserted a list beside the donor's empty one); an all-round aim cone kept a rider from feeding whenever a rival was within three strike-reaches; and the turn response was thrown away, not clamped, in the hardest turns. Each was in a state the checks never visited: death, a second reading of a YAML key, a rival out of reach, a turn faster than the test's.
+- Do instead: after the checks pass, give the diff to a reader with no stake in it and ask what breaks at the lifecycle edges (death, pooling, reparenting, the hardest input, the widest setting). Then turn each finding that a file can show into a check with a planted defect (here: `unity_port.py --check` fails on any object that states a field twice), and each that needs the running game into a hand test.
+- Evidence: `GrownLimbDriver.CarryRiders` (the parent test), `AnswerTheTurn` (`FastestTurn`, `placed`); `JewelWaspExecutor.HostRight`; `unity_port.verify` (duplicate keys) and `self_test` (six planted defects); `.claude/skills/fauna-maker/references/RAY.md` section 5.
+- Promoted: `/fauna-maker` Into Unity
+

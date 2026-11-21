@@ -123,6 +123,8 @@ a second time, the attack finds 15 / 0 / 8 / 4 limbs (Plume / Lantern / Ammon / 
    coast. If it feels like stuttering, the numbers are `pulsePeriod`, `pulseKickSpeed`, `pulseGlideSpeed` on the
    prefab's `GrownFauna` (from `"motion"` in the spec).
 5. **Eating on every side** (Plume, Nettle): RT at prisms takes mass behind and beside it, not only ahead.
+   **With a rival vessel 70 to 120 u away** (out of strike reach, any side) RT must still eat: before the review fix
+   it aimed at that rival, whiffed and never fed.
 6. **Draw calls.** A Plume is 16 renderers and each carries a property block for the turn (not SRP-batched): eight
    Plumes is about 130 draws. Not measured. If it shows in a frame-time A/B, whip joints can drop to five arms.
 7. **Every other creature under a wasp is unchanged** (the new hooks' defaults are the old constants; the attack's
@@ -213,8 +215,14 @@ it is zero when the Ray flies straight.
     Space drifts.
 18. **Nothing else moved.** Every other spindle in the cell is as it was (the six new shader inputs are 0 on every
     material and on every renderer without this driver).
-19. **Cost to know about:** a Ray's ten renderers each carry a MaterialPropertyBlock every frame, so they are not
-    SRP-batched (about 80 draws for eight Rays). Not measured.
+19. **Cost to know about:** a Ray's ten renderers each carry a MaterialPropertyBlock while it is turning, so they are
+    not SRP-batched then (about 80 draws for eight Rays). Swimming straight, the driver writes zeros once and stops.
+    Not measured.
+20. **A dead one leaves its skeleton where it died.** Starve a Ray or kill it (any grown creature): the prisms it
+    leaves behind stay in place and do not move. Before the review fix they would have jumped to the cell's centre
+    and waved there.
+21. **The hardest turns.** A wild one that reverses on the spot still leans and trails through the whole turn (its
+    answer used to cut out above 6 radians a second and snap in at the end).
 
 The numbers are on the prefab's `GrownLimbDriver` (Lag, Stroke, Twist, Bank, each with its cap, and the spring); they
 come from the `turn` block of the form (`elements.TURN`, with an element's weight). Tune them in the lab's Body tab

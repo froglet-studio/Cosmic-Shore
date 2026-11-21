@@ -51,6 +51,8 @@ give me a vessel, ark, and prism cluster to attack."
 | Amoebius does not build on bleeding-edge (`UIThemeLive.cs` line 272 against the engine's `Shadow : MonoBehaviour`) | `Port/src/CosmicShore.Engine/UI/PackageComponents.cs:261` | Shombith's (queued in his `/approve`) |
 | The Manta is still the braid kit's body with no forms of its own; the five archived round-1 creatures were never brought up | `specs/manta.py`, `lab_export.ARCHIVED` | `elements.py` lists only grown creatures |
 | No Codex page for any grown creature | - | - |
+| A ridden pulse swimmer's kick is timed from `Time.time` and the spec's pulse period (Ammon 1.2 s, Nettle 1.8 s); the bell's visible beat is the wave's own (1.59 s, 1.30 s). The kick drifts against the contraction a rider sees. A design call: one of the two periods has to give | `GrownFauna.PossessedSuction` and `LeashSpeedScale`, the specs' `"motion"` | ride an Ammon for ten seconds and watch the shells against the surge |
+| `GrownLimbDriver` takes each prism's seat in `Awake`, before the game could erode the body. Safe today (every grown Space prefab is authored eroded, which `unity_port.py --check` holds). A grown prefab eroded by the game would have its prisms put back on the un-eroded seats | `GrownLimbDriver.Awake`, `Fauna.ErodeSpindle` | `grep -L "spindleAuthoredEroded: 1" Assets/_Prefabs/FloraAndFauna/*Space.prefab` lists no grown creature |
 
 ## Round 11 (2026-11-21): the other four brought to the Ray's standard, and into Unity
 

@@ -458,8 +458,10 @@ def prefab(key, spec, made):
         once(r"(--- !u!4 &%d\n(?:.*\n)*?  m_Children:\n)((?:  - \{fileID: -?\d+\}\n)*)" % BODY_TR,
              lambda m: m.group(1) + "".join(f"  - {{fileID: {k}}}\n" for k in roots) + m.group(2), "the body's children (joints)")
     if skins:
-        once(r"(  RenderedObject: \{fileID: \d+\}\n)", lambda m: m.group(1) + "  additionalRenderedObjects:\n" + "".join(f"  - {{fileID: {k}}}\n" for k in skins),
-             "the Spindle's rendered object")
+        # REPLACE the donor's empty list: a second key of the same name is one Unity may read instead of this one
+        once(r"(  RenderedObject: \{fileID: \d+\}\n(?:(?!---).*\n)*?)  additionalRenderedObjects: \[\]\n",
+             lambda m: m.group(1) + "  additionalRenderedObjects:\n" + "".join(f"  - {{fileID: {k}}}\n" for k in skins),
+             "the Spindle's rendered objects")
     unity = spec.get("unity") or {}
     # GrownLimbDriver. With the wave in the shader ("gpu", the default) it turns no joint: it carries each prism along
     # the wave of the limb it sits on, from the same clock the shader reads. In "joints" mode it beats the joints.
@@ -717,6 +719,11 @@ def verify(key, spec, made, mesh, out):
             problems.append(f"the game's Space erosion would tear this body {tear:.1f} u at its joints: author the form eroded (elements.py)")
     if "GlobalObjectIdHash" in pf:
         problems.append("the prefab carries a network rig: no fauna species is network-synced, and the list is part of the protocol")
+    # one component, one field of each name: a second key is one Unity may read in place of the one this tool wrote
+    for doc in re.split(r"^--- ", pf, flags=re.M)[1:]:
+        keys = re.findall(r"^  (\w+):", doc, flags=re.M)
+        for k in sorted({k for k in keys if keys.count(k) > 1}):
+            problems.append(f"the prefab's object {doc.split()[1]} states '{k}' {keys.count(k)} times")
     return problems
 
 
@@ -753,6 +760,10 @@ def self_test():
     bad[pf] = bad[pf].replace(guid("mesh:ray"), "0123456789abcdef0123456789abcdef", 1)
     if not any("no asset owns" in p for p in verify(key, spec, made, mesh, bad)):
         fails.append("a prefab naming a mesh guid nobody owns verified")
+    bad = dict(out)
+    bad[pf] = bad[pf].replace("  parentSpindle: {fileID: 0}\n", "  additionalRenderedObjects: []\n  parentSpindle: {fileID: 0}\n", 1)
+    if not any("additionalRenderedObjects" in p for p in verify(key, spec, made, mesh, bad)):
+        fails.append("a prefab stating one field twice verified")
     return fails
 
 

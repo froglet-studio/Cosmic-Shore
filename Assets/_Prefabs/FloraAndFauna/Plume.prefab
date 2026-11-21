@@ -208,7 +208,6 @@ MonoBehaviour:
   - {fileID: 779685829290973310}
   - {fileID: 812914449975910470}
   - {fileID: 384264844200985297}
-  additionalRenderedObjects: []
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 0}
   retainSpindle: 0

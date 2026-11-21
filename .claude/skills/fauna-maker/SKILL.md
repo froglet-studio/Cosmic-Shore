@@ -356,6 +356,13 @@ Space root at its scale with its meshes' vertex counts unchanged; `PlayPossessio
 whips. The Ray's first run found a fault in the game itself. Amoebius is not Unity: it does not draw the spindle
 shader, so say so.
 
+**Then have it READ by someone told to break it** (only when the port needed new C#, shader or tool code; a
+creature made from a spec alone adds none). The checks and the run visit the states you thought of. A reader with only
+the diff found four faults they could not: at death, on a second reading of a prefab field, with a rival out of reach,
+in a turn faster than the test's (`references/RAY.md` section 5). Ask what breaks when the creature dies, is pooled,
+is reparented, turns its hardest, or uses the widest setting. A finding a file can show becomes a check with a planted
+defect in `unity_port.py --self-test`; one that needs the running game becomes a hand test in the entry below.
+
 **Last, write the entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`** (copy the four creatures' entry): what each
 element should look like, how it should feel under a rider, and what the engine run showed. Nothing here opens Unity.
 
@@ -365,6 +372,7 @@ element should look like, how it should feel under a rider, and what the engine 
 | `the donor moved` | the creature prefabs are made from `QuadFish.prefab`, and someone changed it. Read what changed (`git log -3 -- Assets/_Prefabs/FloraAndFauna/QuadFish.prefab`) and follow it in `unity_port.py`; never patch the generated prefabs by hand |
 | `the spec's attack is 'whip' and the game's attack finds N limb(s)` | fewer than three limbs grow from one limb. Make the attack `"lunge"`, or grow the limbs from one hub |
 | `... is in two moving parts` | a `"unity"` block names one limb twice |
+| `the prefab's object ... states '<field>' N times` | the tool wrote a field beside the donor's own. Fix the tool to REPLACE the donor's line (`unity_port.prefab`); never delete the line from a prefab by hand |
 | the body is still, or pink, in the editor | `"unity": {"sway": "joints"}` in the spec and run the tool again: the body goes back to the shared SpindleMaterial (and, with a plane-cut `"unity"` block, beats at its joints). Tell the person which one is in the build |
 
 **Not available yet for any grown creature:** a Codex page. The lab's light running down a limb is the lab's stand-in

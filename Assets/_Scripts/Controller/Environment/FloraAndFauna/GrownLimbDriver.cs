@@ -125,6 +125,7 @@ namespace CosmicShore.Gameplay
 
         Quaternion[] _rest;
         Vector3[] _seat;
+        Transform[] _seatParent;
         Quaternion _bankRest = Quaternion.identity;
         Quaternion _lastRotation;
         Vector3 _omega, _lag, _lagVelocity;
@@ -135,6 +136,13 @@ namespace CosmicShore.Gameplay
         bool _wavePhaseKnown;
         Vector3 _lastPosition;
         float _clock;
+        bool _skinsAtRest;
+
+        /// <summary>Above this many radians a second a measured rate is held here: the hardest turns still get an answer.</summary>
+        const float FastestTurn = 6f;
+
+        /// <summary>A body that moved faster than this many full-beat speeds in one frame was placed, not swum.</summary>
+        const float PlacedSpeeds = 10f;
 
         void Awake()
         {
@@ -145,8 +153,12 @@ namespace CosmicShore.Gameplay
 
             int r = riders != null ? riders.Length : 0;
             _seat = new Vector3[r];
+            _seatParent = new Transform[r];
             for (int i = 0; i < r; i++)
+            {
                 _seat[i] = riders[i] ? riders[i].localPosition : Vector3.zero;
+                _seatParent[i] = riders[i] ? riders[i].parent : null;
+            }
             _spindle = GetComponentInChildren<Spindle>(true);
             if (bankRoot) _bankRest = bankRoot.localRotation;
         }
@@ -158,6 +170,7 @@ namespace CosmicShore.Gameplay
             _omega = _lag = _lagVelocity = Vector3.zero;
             _stroke = Vector2.zero;
             _twist = _bank = 0f;
+            _skinsAtRest = false;
             // a pooled body starts its next life from rest, and each individual on its own beat
             _clock = (transform.position.x + transform.position.z) * 0.37f;
         }
@@ -173,7 +186,7 @@ namespace CosmicShore.Gameplay
             _lastPosition = position;
 
             float effort = Mathf.Clamp01(speed / speedForFullBeat);
-            AnswerTheTurn(dt, effort);
+            AnswerTheTurn(dt, effort, speed > speedForFullBeat * PlacedSpeeds);
             _clock += dt * Mathf.Lerp(idleHz, fastHz, effort) * (Mathf.PI * 2f);
             float sweep = Mathf.Lerp(idleSweepShare, 1f, effort);
 
@@ -206,7 +219,8 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < count; i++)
             {
                 var rider = riders[i];
-                if (!rider) continue;
+                // a prism the body no longer holds (left behind as its skeleton when it died) is not this body's to move
+                if (!rider || rider.parent != _seatParent[i]) continue;
                 Vector3 offset = riderSin[i] * sin + riderCos[i] * cos;
                 if (turning)
                 {
@@ -225,7 +239,7 @@ namespace CosmicShore.Gameplay
         /// body's frame (z ahead, x to one side): a turn toward +x is a positive y rate, so the INSIDE of that turn is
         /// +x and the stroke on +x drops; a roll that takes +x down is a negative z rate, and +x's hind edge lifts.
         /// </summary>
-        void AnswerTheTurn(float dt, float effort)
+        void AnswerTheTurn(float dt, float effort, bool placed)
         {
             var rotation = transform.rotation;
             var step = rotation * Quaternion.Inverse(_lastRotation);
@@ -235,8 +249,8 @@ namespace CosmicShore.Gameplay
             Vector3 omega = Vector3.zero;
             if (!float.IsNaN(axis.x) && !float.IsInfinity(axis.x) && Mathf.Abs(degrees) > 1e-4f)
                 omega = transform.InverseTransformDirection(axis) * (degrees * Mathf.Deg2Rad / dt);
-            // a teleport or a snap is not a turn
-            if (omega.sqrMagnitude > 36f) omega = Vector3.zero;
+            // a body that was placed did not turn; one that turns very hard is answered as the hardest turn
+            omega = placed ? Vector3.zero : Vector3.ClampMagnitude(omega, FastestTurn);
             _omega = Vector3.Lerp(_omega, omega, 1f - Mathf.Exp(-dt * 10f));
 
             // the lag is a spring toward "this far behind the rotation": it trails, overshoots a little and settles
@@ -254,7 +268,12 @@ namespace CosmicShore.Gameplay
             if (bankRoot) bankRoot.localRotation = _bankRest * Quaternion.AngleAxis(_bank, Vector3.forward);
 
             if (skins == null || skins.Length == 0) return;
-            float inv = 1f / reach;
+            // swimming straight: hand the renderers zeros once, then leave them alone (the spindle clears its own block
+            // when it settles, and a renderer with no block batches again)
+            bool rest = _lag.sqrMagnitude < 1e-6f && _stroke.sqrMagnitude < 1e-6f && Mathf.Abs(_twist) < 1e-3f;
+            if (rest && _skinsAtRest) return;
+            _skinsAtRest = rest;
+            float inv = rest ? 0f : 1f / reach;
             s_block ??= new MaterialPropertyBlock();
             for (int i = 0; i < skins.Length; i++)
             {

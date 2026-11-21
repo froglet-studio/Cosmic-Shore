@@ -612,7 +612,11 @@ namespace CosmicShore.Gameplay
             var host = _host;
             if (!host) return;
             float reach = config.AttackReach + host.PossessionBodyRadius;
-            var victim = NearestRival(host.PossessionNestPoint, _frame * Vector3.forward, reach * config.AttackAimReaches, host.PossessionAimConeDegrees);
+            // a creature that aims ahead may aim farther than it strikes; one that aims all round (a cone toward 180) aims
+            // no farther than it strikes, or a rival anywhere near it would keep it from feeding
+            float cone = host.PossessionAimConeDegrees;
+            float aimReaches = Mathf.Lerp(config.AttackAimReaches, 1f, Mathf.InverseLerp(90f, 180f, cone));
+            var victim = NearestRival(host.PossessionNestPoint, _frame * Vector3.forward, reach * aimReaches, cone);
             if (victim != null)
             {
                 if (Time.time < _attackReadyAt) return;
