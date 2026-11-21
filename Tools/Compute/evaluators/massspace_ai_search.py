@@ -134,24 +134,26 @@ def random_genome(hull, rng):
 _lock = threading.Lock()
 
 
-def evaluate(hull, g, seeds, intensities, workdir, limit_s=200):
-    """{(game, intensity): [per-seat rate]} for genome g."""
+def evaluate(hull, g, seeds, intensities, workdir, limit_s=200, workers=1):
+    """{"game@intensity": {"rates": per-seat (VC+VD)/s, "presses": per-seat press counts}} for genome g."""
     ov = overrides(hull, g)
-    out = {}
-    for game in HULLS[hull][2]:
-        for inten in intensities:
-            res = BJ.judge([[[hull], [hull]]], seeds_per_roster=len(seeds), seed0=seeds[0], limit_s=limit_s, mode=game,
-                           intensity=inten, workers=1, overrides=ov, workdir=tempfile.mkdtemp(dir=workdir))
-            rates, presses = [], []
-            for m in res["matches"]:
-                if not BJ.good(m):
-                    continue
-                t = max(10.0, m.get("race_s") or limit_s)
-                for s in m["seats"]:
-                    rates.append(BJ.score(s) / t)
-                    presses.append(sum((s.get("presses") or {}).values()))
-            out[f"{game}@{inten}"] = {"rates": [round(r, 2) for r in rates], "presses": presses}
-    return out
+
+    def one(game, inten):
+        res = BJ.judge([[[hull], [hull]]], seeds_per_roster=len(seeds), seed0=seeds[0], limit_s=limit_s, mode=game,
+                       intensity=inten, workers=1, overrides=ov, workdir=tempfile.mkdtemp(dir=workdir))
+        rates, presses = [], []
+        for m in res["matches"]:
+            if not BJ.good(m):
+                continue
+            t = max(10.0, m.get("race_s") or limit_s)
+            for s in m["seats"]:
+                rates.append(BJ.score(s) / t)
+                presses.append(sum((s.get("presses") or {}).values()))
+        return f"{game}@{inten}", {"rates": [round(r, 2) for r in rates], "presses": presses}
+
+    jobs = [(game, inten) for game in HULLS[hull][2] for inten in intensities]
+    with concurrent.futures.ThreadPoolExecutor(max(1, workers)) as ex:
+        return dict(ex.map(lambda j: one(*j), jobs))
 
 
 def loss(ev, base):
@@ -204,10 +206,8 @@ def main():
         g = json.load(open(a.genome)) if a.genome else min(
             (json.loads(l) for l in open(os.path.join(a.out, "evals.jsonl")) if json.loads(l)["loss"] is not None),
             key=lambda r: r["loss"])["genome"]
-        with concurrent.futures.ThreadPoolExecutor(2) as ex:
-            fb = ex.submit(evaluate, a.hull, shipped_genome(a.hull), seeds, ints, work)
-            fc = ex.submit(evaluate, a.hull, g, seeds, ints, work)
-            base, cand = fb.result(), fc.result()
+        base = evaluate(a.hull, shipped_genome(a.hull), seeds, ints, work, workers=a.workers)
+        cand = evaluate(a.hull, g, seeds, ints, work, workers=a.workers)
         rec("confirm-shipped", shipped_genome(a.hull), base, base)
         rec("confirm-best", g, cand, base)
         return
