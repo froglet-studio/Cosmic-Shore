@@ -7,6 +7,10 @@ checks; every headline row marked **✔ re-checked** was read again by hand befo
 - **Milestones (Shombith, 2026-11-06; replaces the working "Invite build v1, 2026-12-03"):** **mobile first** (iOS,
   Android, with the Web Toybox), as soon as **activation** is ready, date set then; **Steam second**, with Steam keys
   by **March 2027, before GDC**. See §11.
+- **Launch stages (Shombith, 2026-11-17):** Beta Phase 1, 2 and 3, Early access ($15), Full release (free to play),
+  then Game 2 and beyond, each closed by a measured stage gate, each running Bleeding Edge -> Development -> Master ->
+  Release. The stage table, the four gates and what is not decided yet: `.claude/skills/launch-flow/references/STAGES.md`
+  (picture: `Docs/LAUNCH/launch_stages.png`).
 - **Platforms:** Windows / Steam, iOS, Android, Web Toybox. **macOS: recommended out** (§2). **Amoebius: out of the
   launch** (Shombith, 2026-11-05: "No launch from amoebius"); it ships nothing and no launch gate depends on it.
 - **What this file is not:** a fix. Nothing here was changed. Every row names its evidence so it can be re-measured;
