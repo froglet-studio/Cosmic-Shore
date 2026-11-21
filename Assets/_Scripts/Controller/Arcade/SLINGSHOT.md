@@ -1,5 +1,7 @@
 # Slingshot (`GameModes.Slingshot = 64`)
 
+> **Flown on the swing since 2026-11-11, one slingshot since 2026-11-19** (Yash): one small black hole per press, the stick picks the exit angle, the swing's speed-up is the only push. The source of truth is `Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md` (the banner at its top) and `STOAT_DIPOLE.md` ("The swing", "One slingshot"). The orbit described in the note below is the earlier flight.
+>
 > **Flown on the orbit alone since 2026-11-02** (Yash; `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`): Mass and Gate mode are removed from
 > the Stoat, so the notes below about the field dipole and the B switch are history. **How it flies:** press LT for
 > the left orbit or RT for the right (on a phone, the two orbit discs round your right thumb; any other thumb

@@ -14,6 +14,34 @@ bolt (struck crystals are not consumed), so crystal clusters chain-react.
 
 Assets: `_SO_Assets/Environment/FulmenConfig.asset`, `_SO_Assets/Effects/Vessel Crystal Effects/FulmenByCrystalEffect.asset`.
 
+## What the Stoat's omni crystal does (checked 2026-11-20, Yash: "no giant white hole, just fulmen lightning from center, burning any prisms it passes through")
+
+Every omni crystal the Stoat collects (`crystalsToFire` 1) fires one bolt from the centre of the cell it is in: 5 root
+streams out to 60% of the cell's radius (at least 200 u), forking to at most 24 streams / 160 segments, drawn in 0.12 s
+and gone 0.38 s later. Up to 6 smaller bolts (40% the range, 2 generations deep) chain from omni crystals a stream
+passes within 12 u of. The Meerkat fires the same bolt from the same `FulmenConfig`.
+
+**What burns.** `FulmenSystem.BurnAlong` asks the prism index twice for each segment:
+
+| Pass | Radius round the stream | Rule |
+|---|---|---|
+| On the path | `pathRadius` 16 u | **Always burns.** A spent `ignitesPerFrame` (96) makes the segment wait a frame; `PrismBurnManager`'s `maxConcurrentBurning` (192) never refuses it. |
+| The halo | out to `burnRadius` 200 u | Burns while the burn manager has room (192 burning at once, spreads included), then stops. |
+
+Each lit prism burns for `burnSeconds` 12 s (the Laser look) and spreads by `burnSpread`: 4 generations, 50 u, chance
+0.73 halving each generation, at most 20 per prism, every 0.8 s, only while the burn manager has room.
+
+Never burnt, by rule: prisms of the collector's own domain ("never burn your own volume", `PrismBurnManager.Ignite`)
+and super-shielded prisms.
+
+**Fixed 2026-11-20.** Before, a prism on the path could be skipped three ways: (1) once a frame's 96 ignites were spent,
+every further segment that frame was consumed without a burn query, and with a 200 u radius the first segment's query
+alone spends them; (2) a segment's hits past the budget were dropped; (3) with 192 prisms already burning (12 s each),
+`Ignite` refused the rest and the chain never retried them. The prisms that did burn were the lowest index slots within
+200 u, not the ones on the stream. On a client, `IgniteRemote` also applied the 192 cap to burns the server had already
+decided, leaving those prisms standing on that peer; it no longer does. The rule is `FulmenMath.Decide`
+(`FulmenMathTests`).
+
 ## Swapping the ability
 
 * **Give Fulmen to another vessel (e.g. Gareet):** open its `…ImpactorDataContainer` asset
@@ -26,8 +54,9 @@ code are kept, so it can be added back). The container now holds the haptics and
 
 The Meerkat had shared `StoatImpactorDataContainer` since it was first built (b8d6ef57a), so it would have fired Fulmen
 and Overclock too. It now has its own `MeerkatImpactorDataContainer`: the same prism effects, haptics only for crystals.
-Its omni-crystal ability is the Soliton Network, which `MeerkatSolitonExecutor` grows from
-`OmniCrystalImpactor.CollectedByVessel` (MEERKAT.md section 9), not a container entry.
+Since 2026-11-11 (Yash: "replace meerkat's networked tunnel with this fulmen") its omni-crystal ability is FULMEN:
+`FulmenByCrystalEffect` is in `MeerkatImpactorDataContainer`. The soliton's own omni abilities (the Rift and the Soliton
+Network) are parked behind `MeerkatSolitonConfig.omniOn` = 0, code and assets kept for reuse (`author_meerkat_assets.py`).
 * **Different tuning per vessel:** duplicate `FulmenConfig` + `FulmenByCrystalEffect`, point the copy's *Config* at the new
   config, and reference the copy from that vessel's container.
 
@@ -35,11 +64,11 @@ No code changes are needed for any of these.
 
 ## Activation, flash and burn (round 2)
 
-- **Activation:** `FulmenConfigSO.crystalsToFire` (default 3). Counted per collector (`VesselImpactor`) in
+- **Activation:** `FulmenConfigSO.crystalsToFire` (code default 3; `FulmenConfig.asset` 1 = every crystal). Counted per collector (`VesselImpactor`) in
   `FulmenByCrystalEffectSO`, reset when it fires and on scene unload.
 - **Flash timing:** `growSeconds` (0.12) → `holdSeconds` (0.08) → `fadeSeconds` (0.3) with a seeded stepped
-  flicker (`flickerRate`, `flickerDepth`). Prisms on the path ignite as the front passes and burn for `burnSeconds` (5) within `burnRadius` (10 u) and spread to neighbours by the bounded,
-  decaying `burnSpread` rule (≤ 12 extra prisms per struck prism).
+  flicker (`flickerRate`, `flickerDepth`). Prisms on the path ignite as the front passes and burn for `burnSeconds` (code default 5; asset 12) within `burnRadius` (code default 10 u; asset 200) and spread to neighbours by the bounded,
+  decaying `burnSpread` rule (asset: ≤ 20 extra prisms per struck prism). What burns and what a budget can hold back: the section at the top.
 - **Stats:** the config inspector (`FulmenConfigSOEditor`) shows *Prisms Burnt / Crystals Struck / Bolts* for the
   last strike in play mode; the Environmental Fundamentals window shows a `BURNT` pill.
 - **Bolt look:** `Assets/_Graphics/Materials/Fulmen/FulmenBolt.mat` (`CosmicShore/FulmenBolt`): thin cool core,

@@ -64,6 +64,25 @@ different wired cards of the draw element (fewer if the element wires fewer), ea
 there was one strategy, always take Time; now the choice is which element to dig into and which of its five cards to
 take. An AI Starling picks a random card 2 s after a hand arrives, then draws its next hand from a random element.
 
+### 2.1 The four elements (Garrett, 2026-11-17: every vessel scales with every element and has an L5 upgrade in each)
+
+The swarm collects elemental crystals through its own skimmer, so its element levels rise and fall like any hull's.
+They now reach the card play, the same way in all four elements, because the four abilities are one shape:
+
+- **Scaling: card level** (Garrett, 2026-11-18: "+3 at L9 and +5 at L15"). A drawn card of an element gains one level
+  per three levels of that element, rounded down and never clamped at 10: +1 at L3, +2 at L6, +3 at L9, +4 at L12,
+  +5 at L15, held to 1..15 overall. The parameter is `arrivalLevelX`, an `ElementalFloat` on `StarlingConfig` read as
+  one plus the gain (1 at rest, 1 + 10/3 at level 10, extrapolated past it, floored at 0.5). At rest nothing changes.
+- **Level-5 upgrade: Encore.** While an element's upgrade is active (`IsUpgradeActive`, level 5, relocks below 4),
+  picking a card of that element leaves the rest of the hand up for one more pick, once per hand. A spread hand keeps
+  its slots (the taken one is empty); an element hand closes up. The AI takes the second pick the same way it takes
+  the first.
+- **Omnicrystal ability:** an omnicrystal deals a hand (it ends the Omnicrystal phase early, or deals one in any other).
+
+Pure rules in `StarlingRules` (`ArrivalLevel`, `EncoreActive`), wired by `StarlingSwarmExecutor`; tests in
+`StarlingRulesTests`. Garrett chose Encore and the +1 per 3 levels scaling on 2026-11-18
+(`/mnt/project-files/regatta-flywheel/step5/STARLING_ELEMENTS.md`).
+
 ## 3. What the swarm does (the game's own things)
 
 - **Crystals** are collected through this vessel's own skimmer and vessel impactor, so every crystal effect, score and
@@ -86,7 +105,7 @@ take. An AI Starling picks a random card 2 s after a hand arrives, then draws it
 | Rival shots kill starlings | Only opposing danger prisms kill starlings | No rival vessel fires at a swarm in the game. |
 | A replicated swarm | Single player first: peers draw the owner's results | Picks replicate; only the deciding peer touches the world. |
 | Fusion entries | Copied from the Angler's | Pending a Starling-specific design. |
-| L5 upgrades | None in `ElementalAbilityMaps/Starling.asset` | Never invented; Garrett decides them. |
+| L5 upgrades | Encore on all four (§2.1) | The lab has none; proposed to Garrett 2026-11-18. |
 
 ## 5. The HUD
 

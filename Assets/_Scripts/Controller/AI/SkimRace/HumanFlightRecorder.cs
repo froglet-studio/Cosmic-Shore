@@ -160,6 +160,7 @@ namespace CosmicShore.Gameplay
         StoatModeExecutor _stoatMode;
         ScriptableEventInputEvents _pressed, _released;
         GameDataSO _gameData;
+        GameDataSO[] _gameDataAssets;
         Player _player;
         float _nextSample, _nextLook, _raceStart, _frameSum, _prevSampleT;
         Quaternion _prevRot;
@@ -169,6 +170,11 @@ namespace CosmicShore.Gameplay
         // the retired Classic ladder, so the learners keep them apart (learn_drives_from_flights.py SHIPPED_FAMILY).
         // Empty in a mode without families. The JSON key stays "funType" so old and new flights read the same.
         string _funType = "";
+        // The build the race was flown on (git HEAD of this editor, read once a session): the learners keep a race only
+        // when its build has the hull's current kit (learn_drives_from_flights.py KIT_SINCE: the Stoat's trampoline
+        // reached bleeding-edge two days after it was committed, so a flight's date cannot say which kit it raced).
+        // Editor only: a player build has no checkout, and a device must not spawn git.
+        static string s_buildCommit, s_buildBranch;
         bool _recording, _turnWasRunning;
         // A match that ended by its own rules is stored once its RESULT is in (GameDataSO.Results, which the mode fills at
         // game end, a frame or a ClientRpc after the turn stops), or after ResultWaitSeconds without one.
@@ -274,7 +280,11 @@ namespace CosmicShore.Gameplay
         {
             if (_gameData && _gameData.Players != null && _gameData.Players.Count > 0) return;
             _gameData = null;
-            var all = Resources.FindObjectsOfTypeAll<GameDataSO>();
+            // The search walks every loaded object (about 190 ms with a scene's prisms alive, measured 2026-11-21), so it
+            // runs once and the assets it found are kept: a GameDataSO is an asset that outlives every scene.
+            if (_gameDataAssets == null || _gameDataAssets.Length == 0 || !_gameDataAssets[0])
+                _gameDataAssets = Resources.FindObjectsOfTypeAll<GameDataSO>();
+            var all = _gameDataAssets;
             for (int i = 0; i < all.Length && !_gameData; i++)
                 if (all[i] && all[i].LocalPlayer != null) _gameData = all[i];
             for (int i = 0; i < all.Length && !_gameData; i++)
@@ -843,6 +853,7 @@ namespace CosmicShore.Gameplay
             // no longer picks Regatta's circuit, so this plus courseSeed / courseIntensity (the laid prefab's) names it.
             sb.Append("\"courseVariant\":").Append(_gameData ? _gameData.CourseVariant : -1).Append(',');
             if (_funType.Length > 0) sb.Append("\"funType\":\"").Append(_funType).Append("\",");
+            AppendBuild(sb);
             sb.Append("\"date\":\"").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", c)).Append("\",");
             sb.Append("\"ended\":\"").Append(why).Append("\",");
             sb.Append("\"raceTarget\":").Append(target).Append(",\"rings\":").Append(rings).Append(',');
@@ -1108,6 +1119,21 @@ namespace CosmicShore.Gameplay
                     sb.Append('"').Append(Esc(p.Name)).Append("\":\"").Append(_gameData.AIDifficultyFor(p).ToString()).Append('"');
                 }
             sb.Append("},");
+        }
+
+        /// <summary>Writes "gitCommitHash" and "gitBranch" (the editor's checkout) once read; nothing in a player build or when
+        /// git cannot answer, so a learner treats the race as one with no known build.</summary>
+        static void AppendBuild(StringBuilder sb)
+        {
+            if (!Application.isEditor) return;
+            if (s_buildCommit == null)
+            {
+                s_buildCommit = BenchmarkReport.TryRunGit("rev-parse --short=10 HEAD");
+                s_buildBranch = BenchmarkReport.TryRunGit("rev-parse --abbrev-ref HEAD");
+            }
+            if (string.IsNullOrEmpty(s_buildCommit) || s_buildCommit == "unknown") return;
+            sb.Append("\"gitCommitHash\":\"").Append(Esc(s_buildCommit)).Append("\",");
+            sb.Append("\"gitBranch\":\"").Append(Esc(s_buildBranch ?? "")).Append("\",");
         }
 
         static string Esc(string s) => string.IsNullOrEmpty(s) ? "" : s.Replace("\\", "\\\\").Replace("\"", "\\\"");

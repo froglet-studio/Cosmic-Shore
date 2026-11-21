@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 116 A Marquee - The raid countdown: the Ark sails in 5, bank what you carry</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+
+.soft-cta{clip-path:none;background:linear-gradient(90deg,rgba(153,255,128,0) 0,#99FF80 18%,#99FF80 82%,rgba(153,255,128,0) 100%);color:#00041F}
+.soft{clip-path:none;color:#E6E9FF;background:linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(230,233,255,.7) 20%,rgba(230,233,255,.7) 80%,rgba(230,233,255,0) 100%) top/100% 1px no-repeat,linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(230,233,255,.7) 20%,rgba(230,233,255,.7) 80%,rgba(230,233,255,0) 100%) bottom/100% 1px no-repeat,linear-gradient(90deg,rgba(0,4,31,0) 0,rgba(0,4,31,.86) 20%,rgba(0,4,31,.86) 80%,rgba(0,4,31,0) 100%)}
+.tier{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .55s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+.pips{display:inline-block;width:124px;height:8px;background:repeating-linear-gradient(90deg,#434C89 0 12px,rgba(0,0,0,0) 12px 14px)}
+.pips>span{display:block;height:100%;background:repeating-linear-gradient(90deg,#E6E9FF 0 12px,rgba(0,0,0,0) 12px 14px);transition:width .4s ease}
+.rise{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+.pop{animation:pop .45s cubic-bezier(.3,1.4,.5,1) both}
+.draw{stroke-dasharray:1400;stroke-dashoffset:1400;animation:draw 2.4s .3s cubic-bezier(.4,0,.2,1) forwards}
+.slide{transition:max-height .5s cubic-bezier(.2,.7,.2,1),opacity .4s ease;overflow:hidden}
+.spin{animation:spin 240s linear infinite}
+.sailer{offset-rotate:auto;animation:sail 3.2s .4s cubic-bezier(.4,0,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes sail{from{offset-distance:0%}to{offset-distance:100%}}
+
+.glass{position:relative;background:linear-gradient(170deg,rgba(67,76,137,.36),rgba(0,4,31,.88) 55%);transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s ease}
+.glass::before{content:'';position:absolute;inset:0;padding:1px;pointer-events:none;background:linear-gradient(155deg,rgba(185,201,250,.75),rgba(67,76,137,.15) 38%,rgba(67,76,137,.15) 62%,rgba(0,212,255,.55));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.glass:hover{transform:translateY(-8px);box-shadow:0 0 0 1px rgba(0,212,255,.9),0 18px 60px rgba(0,212,255,.22)}
+.glass .ship{transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+.glass:hover .ship{transform:translateY(-10px) scale(1.05)}
+.glass.on{box-shadow:0 0 0 1px #00D4FF,0 0 48px rgba(0,212,255,.28)}
+.chipq{transition:background .25s,color .25s,box-shadow .25s}
+.chipq:hover{box-shadow:inset 0 0 0 1px #00D4FF}
+.tile{transition:transform .25s cubic-bezier(.2,.7,.2,1),box-shadow .25s,opacity .25s}
+.tile:hover{transform:translateY(-4px);box-shadow:0 0 0 1px rgba(0,212,255,.8),0 10px 30px rgba(0,212,255,.18)}
+.float{animation:float 9s ease-in-out infinite alternate}
+.drift{animation:drift 90s linear infinite}.drift2{animation:drift 150s linear infinite reverse}
+@keyframes drift{from{transform:translateX(0)}to{transform:translateX(-1920px)}}
+.sheen::after{content:'';position:absolute;top:0;bottom:0;width:40%;pointer-events:none;background:linear-gradient(100deg,rgba(230,233,255,0),rgba(230,233,255,.10),rgba(230,233,255,0));animation:sheen 11s ease-in-out infinite}
+.breathe{animation:breathe 2.8s ease-in-out infinite}
+.modal{animation:modal .45s cubic-bezier(.2,.7,.2,1) both}
+.fade{animation:fade .35s ease both}
+@keyframes float{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+@keyframes sheen{0%{transform:translateX(-120%)}55%,100%{transform:translateX(160%)}}
+@keyframes breathe{0%,100%{box-shadow:0 0 0 4px rgba(0,212,255,.25)}50%{box-shadow:0 0 0 12px rgba(0,212,255,0)}}
+@keyframes modal{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.glass{background:url(/_blob/54569e7d13034451941746e7057f92b0) 0 -40px/1100px 570px repeat-x,url(/_blob/cb1328da13e08b834c8ef0150bf33b83) 0 20px/1400px 726px repeat-x,linear-gradient(170deg,rgba(34,38,69,.96),rgba(0,4,31,.94) 55%,rgba(0,1,10,.97));animation:cardsea 40s linear infinite}
+.glass:not(.modal):hover{animation-duration:14s}
+.glass.modal{background-color:#00041F}
+@keyframes cardsea{from{background-position:0 -40px,0 20px,0 0}to{background-position:-1100px -40px,1400px 20px,0 0}}
+.toast{position:absolute;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 140px;white-space:nowrap}
+.toast b{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:28px;letter-spacing:.18em}
+.toast i{font-style:normal;font-size:18px;color:#E6E9FF}
+.t-event{background:linear-gradient(90deg,rgba(0,4,31,0),rgba(0,4,31,.9) 22%,rgba(0,4,31,.9) 78%,rgba(0,4,31,0))}
+.t-event b{color:#E6E9FF}
+.t-threat{background:linear-gradient(90deg,rgba(80,10,20,0),rgba(80,10,20,.88) 22%,rgba(80,10,20,.88) 78%,rgba(80,10,20,0))}
+.t-threat b{color:#FF8A7C}
+.t-good{background:linear-gradient(90deg,rgba(0,4,31,0),rgba(0,4,31,.9) 22%,rgba(0,4,31,.9) 78%,rgba(0,4,31,0));box-shadow:inset 0 -2px 0 rgba(153,255,128,.0)}
+.t-good b{color:#99FF80}
+.obj{position:absolute;left:40px;top:40px;width:600px;padding:22px 26px;box-sizing:border-box;background:rgba(0,4,31,.84);box-shadow:inset 2px 0 0 #E6E9FF}
+.bar{position:relative;height:12px;background:rgba(67,76,137,.45)}
+.bar>span{position:absolute;left:0;top:0;bottom:0}
+.breach{position:absolute;top:-5px;bottom:-5px;width:2px;background:#FF4B3A}
+.tag{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase}
+.frame{position:absolute;overflow:hidden;background:#00010A}
+.frame>img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cap2{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.note{font-size:15px;line-height:1.55;color:#B8C0F0}
+.mini{background:rgba(0,4,31,.82);box-shadow:inset 2px 0 0 #E6E9FF}
+.row{display:flex;align-items:center}
+.scr{position:absolute;overflow:hidden;background:#00010A}
+.big{font-family:'Chakra Petch',sans-serif;font-weight:700;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.hd{font-family:'Chakra Petch',sans-serif;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+.skew{clip-path:polygon(28px 0,100% 0,calc(100% - 28px) 100%,0 100%)}
+.tin{animation:tin .5s cubic-bezier(.2,.9,.25,1) both}
+@keyframes tin{from{opacity:0;transform:translateY(-14px) scale(.96)}to{opacity:1;transform:none}}
+.slot{position:absolute;box-shadow:inset 0 0 0 1px rgba(0,212,255,.55);background:repeating-linear-gradient(135deg,rgba(0,212,255,.05) 0 10px,rgba(0,0,0,0) 10px 20px)}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<img src="/_blob/0a182592352006ab83b412f19abf1294" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 50%"><div class="abs" style="inset:0;background:rgba(0,1,10,0.14)"></div><img src="/_blob/f2a0a3e9c284a960c539d417b46cd1eb" alt="The Ark" style="position:absolute;left:720px;top:340px;width:500px;height:235px;object-fit:contain;transform:rotate(3deg);opacity:1"><svg class="abs" style="left:1180px;top:640px" width="26" height="36" viewBox="0 0 26 36" fill="rgba(230,233,255,.2)" stroke="#E6E9FF" stroke-width="2" aria-hidden="true"><path d="M13 1l12 17-12 17L1 18z"></path></svg><svg class="abs" style="left:560px;top:600px" width="21" height="29" viewBox="0 0 26 36" fill="rgba(230,233,255,.2)" stroke="#E6E9FF" stroke-width="2" aria-hidden="true"><path d="M13 1l12 17-12 17L1 18z"></path></svg><span aria-hidden="true" class="abs" style="left:1267.8px;top:327.8px;width:64px;height:64px;border-radius:50%;background:radial-gradient(circle,rgba(255,75,58,.42),rgba(255,75,58,0) 65%)"></span><svg class="abs" style="left:1285px;top:352px" width="31" height="17" viewBox="0 0 44 24" aria-hidden="true"><path d="M0 12L16 2l6 6 6-6 16 10-16 10-6-6-6 6z" fill="#FF4B3A" stroke="#FF8A7C" stroke-width="1.5"></path></svg><div class="abs" style="left:0px;top:26px;width:1920px;display:flex;flex-direction:column;gap:10px;align-items:center;"><div class="row" style="gap:16px"><svg width="30" height="39" viewBox="0 0 20 26" fill="none" stroke="#E6E9FF" stroke-width="2" aria-hidden="true"><path d="M10 1l8 12-8 12-8-12z"></path><path d="M2 13h16" opacity=".5"></path></svg><span class="big" style="font-size:72px;line-height:1;color:#E6E9FF">23</span><span class="big" style="font-size:28px;color:#747BAD;align-self:flex-end;margin-bottom:8px">/ 50</span></div><div style="position:relative;width:520px;height:14px"><span class="abs" style="left:6px;right:6px;top:6px;height:2px;background:rgba(67,76,137,.8)"></span><span class="abs" style="left:6px;top:6px;height:2px;width:249px;background:#E6E9FF"></span><span class="abs" style="left:0px;top:0;width:14px;height:14px;border-radius:50%;background:#E6E9FF"></span><span class="abs" style="left:101px;top:0;width:14px;height:14px;border-radius:50%;background:#E6E9FF"></span><span class="abs" style="left:202px;top:0;width:14px;height:14px;border-radius:50%;background:#00041F;box-shadow:inset 0 0 0 3px #E6E9FF"></span><span class="abs" style="left:304px;top:0;width:14px;height:14px;border-radius:50%;background:#00041F;box-shadow:inset 0 0 0 2px #747BAD"></span><span class="abs" style="left:405px;top:0;width:14px;height:14px;border-radius:50%;background:#00041F;box-shadow:inset 0 0 0 2px #747BAD"></span><span class="abs" style="left:506px;top:0;width:14px;height:14px;border-radius:50%;background:#00041F;box-shadow:inset 0 0 0 2px #B8C0F0"></span><span class="abs" style="left:239px;top:-10px"><svg width="22" height="11" viewBox="0 0 40 20" fill="none" stroke="#E6E9FF" stroke-width="2" aria-hidden="true"><path d="M1 12h38l-6 7H7z"></path><path d="M10 12V6h14l5 6"></path><path d="M15 6V2"></path></svg></span></div><div class="row" style="gap:22px;font-size:18px;color:#B8C0F0"><span>Cell 3 of 6  ·  Scarab Reef  ·  <span style="color:#FB8E7E">hostile</span></span><span class="row" style="gap:8px"><svg width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="#B8C0F0" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="9"></circle><path d="M11 6v5l3 2"></path></svg>Raid 0:05</span></div></div><div class="abs" style="left:40px;top:300px;width:90px;display:flex;flex-direction:column;align-items:center;gap:10px"><svg width="40" height="20" viewBox="0 0 40 20" fill="none" stroke="#E6E9FF" stroke-width="2" aria-hidden="true"><path d="M1 12h38l-6 7H7z"></path><path d="M10 12V6h14l5 6"></path><path d="M15 6V2"></path></svg><span class="big" style="font-size:28px;color:#E6E9FF">64<span style="font-size:15px">%</span></span></div><div class="abs" style="left:75px;top:400px;width:20px;height:380px;background:rgba(67,76,137,.4)"><span class="abs" style="left:0;right:0;bottom:0;height:243px;background:#E6E9FF"></span><span class="abs" style="left:-6px;right:-6px;bottom:38px;height:2px;background:#FF4B3A"></span><span class="abs" style="left:-6px;right:-6px;bottom:114px;height:0;border-top:2px dashed #747BAD"></span></div><span class="abs cap2" style="left:40px;top:796px;color:#E6E9FF">Ark hull</span><div class="abs tin" style="left:0;right:0;top:228px;display:flex;justify-content:center"><div class="skew" style="display:flex;align-items:center;gap:22px;padding:14px 64px;background:rgba(0,4,31,.9);box-shadow:inset 0 -3px 0 #E6E9FF"><svg width="30" height="30" viewBox="0 0 22 22" fill="none" stroke="#E6E9FF" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="9"></circle><path d="M11 6v5l3 2"></path></svg><span style="display:flex;flex-direction:column;gap:4px"><span class="hd" style="font-size:28px;color:#E6E9FF">THE ARK SAILS IN 5</span><span style="font-size:18px;color:#E6E9FF;max-width:640px">Bank what you carry or lose it.</span></span></div></div><div class="abs" style="left:810px;top:330px;width:300px;height:300px"><svg width="300" height="300" viewBox="0 0 300 300" aria-hidden="true"><circle cx="150" cy="150" r="140" fill="rgba(0,4,31,.55)" stroke="rgba(67,76,137,.6)" stroke-width="8"></circle><circle cx="150" cy="150" r="140" fill="none" stroke="#E6E9FF" stroke-width="8" stroke-dasharray="147 880" transform="rotate(-90 150 150)"></circle></svg><span class="abs big" style="inset:0;display:flex;align-items:center;justify-content:center;font-size:150px">5</span></div><div class="abs" style="left:0;right:0;top:640px;display:flex;justify-content:center"><span class="row" style="gap:10px;padding:8px 16px;background:rgba(0,4,31,.7);font-size:18px"><svg width="16" height="21" viewBox="0 0 20 26" fill="none" stroke="#E6E9FF" stroke-width="2" aria-hidden="true"><path d="M10 1l8 12-8 12-8-12z"></path><path d="M2 13h16" opacity=".5"></path></svg>Carrying 7. Bank them at the Ark.</span></div><div class="abs" style="right:40px;bottom:40px;width:380px;height:130px;box-shadow:inset 0 0 0 1px rgba(67,76,137,.5);display:flex;align-items:center;justify-content:center"><span class="cap2" style="color:#747BAD">Vessel HUD, as today</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+
+</script>
+</body>
+</html>

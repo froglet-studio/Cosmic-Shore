@@ -72,6 +72,10 @@ namespace CosmicShore.Gameplay
             var harbour = go.AddComponent<VoyageHarbour>();
             harbour._def = definition;
             harbour._context = context;
+            // The voyage's own screen-space HUD: the objective box and the end-of-voyage scoreboard.
+            go.AddComponent<CosmicShore.UI.VoyageObjectiveBox>().Configure(harbour);
+            go.AddComponent<CosmicShore.UI.VoyageScoreboardView>().Configure(harbour);
+            ArkEscortRun.Finished += harbour.OnEscortFinished;
             s_current = harbour;
             RaiseChanged();
             return harbour;
@@ -123,15 +127,16 @@ namespace CosmicShore.Gameplay
             var content = settings ? settings.Content : VoyageContentSO.Load();
             if (!content || content.Content == null) return new List<VoyageJob>();
             state = VoyageRun.LoadOrBegin(content.Content, home);
-            // The seated pilots lead the board; the rest of the Ark's crew fills it (DEPTH.md §4).
-            return VoyageRules.Board(state, content.Content, VoyageRun.SeatedPilots(squad), VoyageRun.CrewPilots());
+            // The board is the active squad's three pilots, one job each, and nobody else's (Shombith, 2026-11-16).
+            return VoyageRules.Board(state, content.Content, VoyageRun.SeatedPilots(squad));
         }
 
-        /// <summary>Set sail on <paramref name="job"/>: the squad deploys and the Ark sails for the job's destination.</summary>
-        public void SetSail(VoyageJob job)
+        /// <summary>Set sail on <paramref name="job"/> with <paramref name="squad"/> (null: the active squad): the squad deploys
+        /// and the Ark sails for the job's destination.</summary>
+        public void SetSail(VoyageJob job, SavedSquad squad = null)
         {
             if (job == null || IsUnderway) return;
-            Sail(job);
+            Sail(job, squad);
         }
 
         /// <summary>
@@ -142,7 +147,67 @@ namespace CosmicShore.Gameplay
         public void SetSailEscort(int difficulty, SavedSquad squad = null, bool aiLocal = false)
         {
             if (IsUnderway || !_def || !_def.ArkEscort) return;
+            // In a host's session only the host sets sail; a friend sails the host's escort (FollowEscort).
+            if (VoyageCourseLink.IsFollower) return;
             SailEscort(difficulty, squad, aiLocal);
+        }
+
+        /// <summary>
+        /// The host set sail on an escort (Docs/Voyages/PARTY.md): this friend's machine sails the same one, in the seat
+        /// the host gave it, from its own lobby seat. A friend still holding at the end of the last escort ends it first.
+        /// </summary>
+        void FollowEscort(VoyageCourse course)
+        {
+            if (!_def || !_def.ArkEscort || course == null) return;
+            if (_run && _run.IsActive) _run.GiveUp("the host set sail on an escort");
+            if (_escort && _escort.IsActive) _escort.GiveUp("the host set sail again");
+            StartCoroutine(WhenIdle(() =>
+            {
+                var squad = VoyageSeatRecord.Get(VoyageSeatRecord.PartyKey) ?? VoyageRun.ActiveSquad(_context);
+                SailEscort(course.Difficulty, squad, false, course);
+                // The last escort's board (a friend's has no choice to make) gives way to the new escort.
+                if (IsEscorting && VoyageScoreboard.IsOpen) VoyageScoreboard.Hide();
+            }));
+        }
+
+        /// <summary>A toast on whichever voyage is out (nothing when none is).</summary>
+        public void Toast(ArkwayVoyageHud.Mood mood, string line)
+        {
+            if (IsEscorting) _escort.Toast(mood, line);
+            else if (_run && _run.IsActive) _run.Toast(mood, line);
+        }
+
+        /// <summary>
+        /// Try again after a lost Ark (the scoreboard's Try again): once the fallen voyage has ended, sail the job of
+        /// <paramref name="templateId"/> the board offers now. False when the board offers none.
+        /// </summary>
+        public bool TryAgain(string templateId)
+        {
+            var content = Content ? Content.Content : null;
+            if (content == null || string.IsNullOrEmpty(templateId)) return false;
+            StartCoroutine(WhenIdle(() =>
+            {
+                foreach (var job in Board(out _))
+                    if (job != null && job.TemplateId == templateId)
+                    {
+                        SetSail(job);
+                        return;
+                    }
+            }));
+            return true;
+        }
+
+        /// <summary>Try the Ark escort again at <paramref name="difficulty"/>, once the fallen one has ended.</summary>
+        public void TryAgainEscort(int difficulty) =>
+            StartCoroutine(WhenIdle(() => SetSailEscort(difficulty, _escortSquad, _escortAiLocal)));
+
+        /// <summary>Run <paramref name="then"/> once no voyage is out (a fall settles before the sea ends), giving up after
+        /// a few seconds.</summary>
+        System.Collections.IEnumerator WhenIdle(System.Action then)
+        {
+            float until = Time.unscaledTime + 10f;
+            while (IsUnderway && Time.unscaledTime < until) yield return null;
+            if (!IsUnderway) then?.Invoke();
         }
 
         /// <summary>End whatever voyage is out (the player left the voyage scene).</summary>
@@ -152,7 +217,7 @@ namespace CosmicShore.Gameplay
             if (_run && _run.IsActive) _run.GiveUp(reason);
         }
 
-        void SailEscort(int difficulty, SavedSquad squad, bool aiLocal)
+        void SailEscort(int difficulty, SavedSquad squad, bool aiLocal, VoyageCourse course = null)
         {
             var vessel = Alive(_context?.GameData?.LocalPlayer?.Vessel);
             if (vessel?.Transform == null)
@@ -167,11 +232,13 @@ namespace CosmicShore.Gameplay
                 _escort = go.AddComponent<ArkEscortRun>();
                 _escort.Configure(_def, _def.ArkEscort, _context, transform.parent, RaiseChanged);
             }
-            _escort.SetSail(vessel, squad ?? VoyageRun.ActiveSquad(_context), difficulty, aiLocal);
+            _escortSquad = squad ?? VoyageRun.ActiveSquad(_context);
+            _escortAiLocal = aiLocal;
+            _escort.SetSail(vessel, _escortSquad, difficulty, aiLocal, course);
             RaiseChanged();
         }
 
-        void Sail(VoyageJob job)
+        void Sail(VoyageJob job, SavedSquad squad)
         {
             var vessel = Alive(_context?.GameData?.LocalPlayer?.Vessel);
             if (vessel?.Transform == null)
@@ -180,7 +247,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
             EnsureRun();
-            _run.SetSail(vessel, job);
+            _run.SetSail(vessel, job, squad);
             RaiseChanged();
         }
 
@@ -195,6 +262,15 @@ namespace CosmicShore.Gameplay
 
         void OnCourse(VoyageCourse course)
         {
+            switch (course.Kind)
+            {
+                case VoyageCourseKind.EscortSail:
+                    FollowEscort(course);
+                    return;
+                case VoyageCourseKind.EscortEnd:
+                    if (_escort) _escort.EndWithHost(course);
+                    return;
+            }
             EnsureRun();
             _run.Follow(course);
         }
@@ -210,6 +286,128 @@ namespace CosmicShore.Gameplay
 
         Domains LiveDomain() => VoyageRun.LiveDomain(_context);
 
+        // ── The escort's end: the scoreboard (Docs/Voyages/CRYSTAL_RUN.md section 5) ──────────────────────────────────
+
+        SavedSquad _escortSquad;
+        bool _escortAiLocal;
+
+        /// <summary>
+        /// The Ark escort ended. Came through: its pay (crystals by difficulty) is owed in the galaxy's record, at stake
+        /// until the Ark docks home, and the board offers Venture further (the same escort one difficulty up) or Finish
+        /// (the Ark sails home with the squad escorting it; docking banks it). Fell: the board says so. Given up, or
+        /// the escort sim: no board.
+        /// </summary>
+        void OnEscortFinished(ArkEscortReport report)
+        {
+            if (report == null || _escortAiLocal || !_def) return;
+            if (report.Result is not (ArkEscortReport.Outcome.Survived or ArkEscortReport.Outcome.Fallen)) return;
+            bool survived = report.Result == ArkEscortReport.Outcome.Survived;
+            // A party friend's board: the host's outcome and the host's rows (every seat), and no choice of its own.
+            bool following = report.Following;
+            var content = Content ? Content.Content : null;
+
+            int pay = 0;
+            if (survived && content != null)
+            {
+                pay = Mathf.Max(0, report.Difficulty * _def.EscortCrystalsPerDifficulty);
+                var state = VoyageStore.Load();
+                if (state != null)
+                {
+                    state.Normalize();
+                    VoyageRaid.Owe(state, _def.EscortRewardElement, pay);
+                    state.SavedAtMs = UniqueId.NowMs();
+                    VoyageStore.Save(state);
+                }
+            }
+
+            var last = report.LegReports is { Count: > 0 } ? report.LegReports[^1] : null;
+            var board = new VoyageScoreboard
+            {
+                Board = survived ? VoyageScoreboard.Kind.Escort : VoyageScoreboard.Kind.Lost,
+                Succeeded = survived,
+                To = !string.IsNullOrEmpty(report.To) && content?.Location(report.To) is { } place ? place.Name : last?.Name ?? string.Empty,
+                Difficulty = report.Difficulty,
+                Worlds = report.ReachedLegs,
+                Legs = report.Legs,
+                Seconds = Mathf.Max(0f, report.EndedAt - report.UnderwayAt),
+                Hull = survived && last != null && report.HullTotal > 0 ? Mathf.Clamp01((float)last.HullAtExit / report.HullTotal) : 0f,
+                Breach = report.BreachHull,
+                Pay = pay,
+                NextDifficulty = Mathf.Min(report.Difficulty + 1, ArkEscortSO.MaxDifficulty),
+                Following = following,
+            };
+            string me = _context?.GameData?.LocalPlayer?.Vessel?.VesselStatus?.PlayerName;
+            if (following && _escort && _escort.HostRows.Count > 0)
+                foreach (var seat in _escort.HostRows)
+                {
+                    if (seat == null) continue;
+                    board.Rows.Add(new VoyageScoreboard.Row
+                    {
+                        Name = seat.PlayerName, You = !string.IsNullOrEmpty(me) && seat.PlayerName == me,
+                        Vessel = (VesselClassType)seat.Vessel, Kills = seat.Kills, Guarded = seat.Guarded,
+                    });
+                }
+            else
+                foreach (var seat in report.RunSeats)
+                {
+                    if (seat == null) continue;
+                    System.Enum.TryParse(seat.Vessel, true, out VesselClassType hull);
+                    board.Rows.Add(new VoyageScoreboard.Row
+                    {
+                        Name = seat.PlayerName, You = !string.IsNullOrEmpty(me) && seat.PlayerName == me, Vessel = hull,
+                        Kills = seat.Kills,
+                        Guarded = seat.KillsOnArk,
+                    });
+                }
+            if (following)
+            {
+                VoyageScoreboard.Show(board);
+                return;
+            }
+            if (survived)
+            {
+                if (report.Difficulty < ArkEscortSO.MaxDifficulty)
+                    board.Venture = () => SetSailEscort(board.NextDifficulty, _escortSquad);
+                board.Finish = SailHomeAfterEscort;
+            }
+            else
+            {
+                int again = report.Difficulty;
+                board.TryAgain = () => TryAgainEscort(again);
+                // Back to Voyages ends what is left of the escort, so the scene returns to the menu.
+                board.Close = () => GiveUp("back to Voyages after the Ark fell");
+            }
+            VoyageScoreboard.Show(board);
+        }
+
+        /// <summary>Finish after an escort: the Ark sails home from where the escort left it (a job voyage home), or,
+        /// already home, banks what is owed here and now.</summary>
+        void SailHomeAfterEscort()
+        {
+            var content = Content ? Content.Content : null;
+            if (content == null) return;
+            var state = VoyageRun.LoadOrBegin(content, LiveDomain());
+            if (!state.IsHome())
+            {
+                SetSail(VoyageRules.ReturnJob(state, content));
+                return;
+            }
+            var x = VoyageRules.Extract(state, content);
+            if (x != null)
+                for (int e = 0; e < x.Crystals.Length; e++)
+                    if (x.Crystals[e] > 0) PilotLoadoutStore.AddCrystals((Element)e, x.Crystals[e], "voyage");
+            state.SavedAtMs = UniqueId.NowMs();
+            VoyageStore.Save(state);
+            var board = new VoyageScoreboard
+            {
+                Board = VoyageScoreboard.Kind.Docked, Succeeded = true, Banked = true,
+                To = content.Location(state.At)?.Name ?? string.Empty,
+            };
+            if (x != null)
+                for (int e = 0; e < x.Crystals.Length && e < board.Crystals.Length; e++) board.Crystals[e] = x.Crystals[e];
+            VoyageScoreboard.Show(board);
+        }
+
         static IVesselStatus Alive(IVessel vessel)
         {
             if (vessel == null) return null;
@@ -219,6 +417,8 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            ArkEscortRun.Finished -= OnEscortFinished;
+            VoyageScoreboard.Hide();
             VoyageCourseLink.Stop(OnCourse);
             if (s_current == this) s_current = null;
         }

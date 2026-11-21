@@ -193,6 +193,7 @@ namespace CosmicShore.Gameplay
             GameModes.Waystation      => new WaystationCourseSource(),
             GameModes.Breach          => new BreachCourseSource(),
             GameModes.Thornline       => new ThornlineCourseSource(),
+            GameModes.Spearline       => new SpearlineCourseSource(),
             GameModes.ThresherTime    => new ThresherTimeCourseSource(),
             GameModes.GrizzlyTime     => new GrizzlyTimeCourseSource(),
             GameModes.ScarabRally     => new ScarabRallyCourseSource(),
@@ -217,7 +218,7 @@ namespace CosmicShore.Gameplay
             GameModes.Breach, GameModes.Thornline, GameModes.ThresherTime, GameModes.GrizzlyTime,
             GameModes.ScarabRally, GameModes.DecoyRun, GameModes.BurrowRun, GameModes.PerchRun,
             GameModes.WrasseRun, GameModes.LanternRun, GameModes.Warpline, GameModes.SlipLine,
-            GameModes.BrittleStarTime, GameModes.Slingshot, GameModes.SerpentTime,
+            GameModes.BrittleStarTime, GameModes.Slingshot, GameModes.SerpentTime, GameModes.Spearline,
         };
     }
 }

@@ -430,7 +430,7 @@ namespace CosmicShore.Tests
             var entries = so.FindProperty("entries");
             var labels = new List<string>();
             for (int i = 0; i < entries.arraySize; i++) labels.Add(entries.GetArrayElementAtIndex(i).FindPropertyRelative("AbilityLabel").stringValue);
-            CollectionAssert.AreEquivalent(new[] { "Vortex Sting", "Dens", "Undertow", "Quick Jump" }, labels);
+            CollectionAssert.AreEquivalent(new[] { "Vortex Sting", "Dens", "Undertow", "Dart" }, labels);
             CollectionAssert.DoesNotContain(labels, "Boost Ring", "the Squirrel's kit is gone");
         }
 

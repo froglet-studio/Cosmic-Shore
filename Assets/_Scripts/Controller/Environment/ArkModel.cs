@@ -107,6 +107,15 @@ namespace CosmicShore.Gameplay
         public float ReleaseAmount => _release;
         public float HangarAmount => _hangar;
 
+        /// <summary>While true the hangar's doors stand open whoever is in reach: the squad is launching from it
+        /// (<c>ArkSortie</c>, the voyage's opening).</summary>
+        public bool HoldHangarOpen { get; set; }
+
+        /// <summary>One of the model's bones by name (the hangar's pads <c>hangar.slot.0..2</c>, its doors
+        /// <c>hangar.door.T/B</c>, ...); false when the model has none of that name.</summary>
+        public bool TryGetBone(string boneName, out Transform bone) =>
+            _bones.TryGetValue(boneName ?? string.Empty, out bone) && bone;
+
         /// <summary>
         /// Instantiate <paramref name="def"/>'s model under <paramref name="ark"/> and bind its rig table. Null (with a
         /// warning naming what is missing) when the definition cannot draw an Ark - the caller keeps the spindle hull.
@@ -503,7 +512,7 @@ namespace CosmicShore.Gameplay
             if (now >= _nextHangarScanAt)
             {
                 _nextHangarScanAt = now + HangarScanSeconds;
-                _hangarWanted = !_ark.IsHullLost && SquadmateInReach();
+                _hangarWanted = !_ark.IsHullLost && (HoldHangarOpen || SquadmateInReach());
             }
             float follow = 1f - Mathf.Exp(-dt / _def.ActionResponse);
             _release += ((now < _releaseUntil && !_ark.IsHullLost ? 1f : 0f) - _release) * follow;

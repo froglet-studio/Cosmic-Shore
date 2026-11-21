@@ -4,7 +4,8 @@
 > Time game that suits it. The course, the AI's rail choice and their tests were compiled and RUN outside the editor
 > (400 seeds per intensity for the tests, 200 for the clock sweep, `Tools/Build/slip_line_harness/run.sh`), against the
 > real Ratel AI (`DynamoCore.AIPlan`, its skills read off `HoneyguideConfig.asset`). The mode compiles against Unity's
-> reference assemblies. **Nothing here has been run in the Unity editor, and nobody has flown it.**
+> reference assemblies. **Garrett flew I1 on 2026-11-13** (fun card: "fun almost, rung right, weakest: Rivals"); the
+> Rivals pass that followed (2026-11-16, section 10) is modelled offline and not yet run in the editor.
 
 `GameModes.SlipLine = 82` is the **Honeyguide's Time card**.
 
@@ -110,6 +111,16 @@ The AI flies the gate race's own steering, except while it means to ride:
    onto the rail already running along it, inside the aim cone.
 3. The Honeyguide's own slip catches the rail and spends the charge. The coach only says where.
 4. If the charge goes (a Ratel card spent it) or the hull runs past the rail without catching it, the AI flies the leg.
+5. **Between rides it flies the race line** (2026-11-16, `SlipLineCourse.RaceLineAim`, `aiRaceLineLead` 60): a lead
+   point down the straight ring-to-ring line, the one line `The_line_flown_ring_to_ring_never_touches_a_rail` holds
+   clear of every rail, instead of the gate way's approach point on the ring's axis. Once its foot is past a ring it
+   has not threaded, the race line gives up and the gate way re-attacks.
+6. **The gate way is the Regatta steering** (`AICommitFromApproachPoint => true`, as ten other gate races have it):
+   commit no earlier than the approach point, aim through the centre from where it is, and after a miss outside the
+   mouth re-latch and break off at once. A ring missed, or crossed without counting, is threaded back from either side.
+7. **Its throttle has a floor by difficulty** (`aiThrottleFloorByDifficulty`, Redline's 0.7 / 0.85 / 1 / 1): on its
+   skill throttle the Medium AI cruised at 35-37 u/s in Garrett's race, where a person flies 60 and the clock above
+   assumes 60. Medium now cruises at 52.5.
 
 The Ratel seat is the shipped `DynamoCore.AIPlan`; its difficulty (`engineerLevel`) is the vessel's.
 
@@ -121,6 +132,8 @@ The Ratel seat is the shipped `DynamoCore.AIPlan`; its difficulty (`engineerLeve
 | the ladder | `SlipLineCourse.ForIntensity` | §2 |
 | Honeyguide numbers the cut depends on | `SlipLineCourse` constants, read back off `HoneyguideConfig.asset` and the prefab by `The_course_is_cut_for_the_shipped_honeyguide` | reach 400, zip 480, ramp 0.15, exit 8, contact 5.5, cone 45, min trail 6, cruise 60 |
 | the AI's lead | scene > `aiRailLead` | **40** |
+| the AI's race-line lead | scene > `aiRaceLineLead` | **60** |
+| the AI's throttle floor (Easy, Medium, Hard, Legendary) | scene > `aiThrottleFloorByDifficulty` | **0.7, 0.85, 1, 1** |
 | detection clamp | scene > `maxPlausibleSpeed` | **1400** (a 480 u/s zip plus its exit boost, twice, with room) |
 | comeback rate | `ArcadeGameSlipLine.asset` | **0.25** (a Time level does not change a ride; the Slip is base kit) |
 
@@ -143,6 +156,10 @@ is the drift gate. Card art: `render_card_backgrounds.py SlipLine` (an I4 course
 7. Two AI Honeyguides: they ride rails and finish; note any leg where one circles a rail without catching it (the lead
    `aiRailLead` is the knob).
 8. MPPM two clients: both see the same rails in the same colours.
+9. (2026-11-16) I1 against one Medium AI: the rival keeps up at about 52 u/s, flies ring to ring without bumping rails,
+   and never circles a ring for more than a few seconds; it finishes near a person's time (model: 106 s median).
+10. (2026-11-16) A Ratel Eyelet Jet or Thruster Swarm whose ride ends just past a ring's plane still counts the ring
+    (VesselTransformer no longer counts the ride's zero-length landing pose as a teleport).
 
 ## 9. Known limitations
 
@@ -154,3 +171,42 @@ is the drift gate. Card art: `render_card_backgrounds.py SlipLine` (an I4 course
   the Hard AI's 4.3 a minute.
 - **Ratel cards that spend or recolour charges** (Void Jumper, Reality Detangler, Plankter Sail) are the kit and are
   left on; they change what a leg can ride.
+
+## 10. Fun pass 1: Rivals (2026-11-16, elemental loop step 1)
+
+**The card.** Garrett, I1, 2026-11-13: fun almost, rung right, weakest Rivals. I1 is kept exactly as it is.
+
+**What his flight shows** (`bugledger/gradi`, `flight_SlipLine_Honeyguide_20261113_203852.json`, rails rebuilt from
+its rings with `slip_line_harness/run.sh --rails`):
+
+- The Medium rival cruised at 35-37 u/s (its skill throttle), where Garrett flies 60.
+- It crossed the tenth ring's mouth (ring index 9) in one 98 u step the race did not count: a ride's last frame. Every
+  Honeyguide ride (slip, Eyelet Jet, Thruster Swarm, lasso) lands with a zero-length `SetPose`, which counted as a
+  teleport, and every ring watcher drops a teleport frame's step.
+- Then it circled that ring's far-side point for 65 s in the shipped gate steering (commit at 135 u, the through point
+  on the axis on the side latched when the leg began), broke off four times onto the same circle, and twice slid back
+  along the next ring's Jade rail toward the ring it was circling, spending a charge each time.
+- Garrett's own hull sat on the same ring for 70 s with no input (the autopilot held it for about 35 s of that), so the race
+  read as "won" by a minute without a contest.
+
+**What changed** (the vessel kit is untouched): the AI steering of section 5 (race line, Regatta steering, throttle
+floor), and `VesselTransformer.SetPose` no longer counts a pose write that does not move the hull as a teleport.
+
+**Measured offline** (`Tools/Build/slip_line_ai_sim.py`: the AI's steering, its rail coach, the slip and its AI guard,
+the rails as walls, a Medium Ratel; 60 shipped courses per intensity). Median race seconds and races finished:
+
+| | shipped | new steering at 37 u/s | new steering + floor (52.5 u/s) |
+|---|---|---|---|
+| I1 | 139.5 (60/60) | 136.2 (60/60) | **106.5** (60/60) |
+| I2 | 163.9 (60/60) | 160.1 (60/60) | **119.6** (60/60) |
+| I3 | 170.9 (60/60) | 169.4 (60/60) | **123.0** (60/60) |
+| I4 | 166.4 (60/60) | 164.1 (60/60) | **120.8** (60/60) |
+| I1-I4, ring 9's first threading not counted | **0/60** at every intensity (circles 300+ s) | 60/60 | 60/60, the slowest ring 12-15 s |
+
+On Garrett's own course: shipped 141.9 s, new 104.9 s; with the uncounted ring, shipped never finishes, new 114.6 s.
+The model is harsher than the game on the shipped steering (in the game the rival got out after 65 s, in the model it
+does not), and kinder on the catch (every planned ride is caught once the hull is on the rail).
+
+**Fun (step 1), re-scored:** Verb 8, Flow 6, Ladder 6 (I1 "right"), Feedback 6, Rivals 2 -> **5** (est., until flown),
+Fairness 3 -> **4** (a ride no longer loses a ring). Fun 5.2 -> **5.8** est.; the floor is now Fairness 4. The sign-off is
+Garrett's next flight: one more I1 race against a Medium AI and the fun card.

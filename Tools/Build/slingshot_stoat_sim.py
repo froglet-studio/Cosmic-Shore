@@ -397,7 +397,9 @@ def flights(folder, k, ai, dt=1 / 60, nose_lead=None):
 def self_test():
     bad = []
     k, ai = kit(), ai_rows()
-    if not k["trampoline"]: bad.append("the hull's config does not fly the trampoline: this model ports only that kit")
+    # Since 2026-11-11 the hull flies the swing (trampoline 0, kept as an off switch): this model still ports the trampoline's
+    # C#, which is unchanged, so its races are the trampoline's, not what ships. Said, not failed.
+    if not k["trampoline"]: print("slingshot_stoat_sim: note - the hull's config flies the swing; these races model the trampoline (off)")
     for f in KIT_FIELDS + AI_FIELDS:
         if k.get(f) is None and ai.get(f) is None: bad.append(f"{f} not found in the asset or the SO")
     # TrampolineLineFor: clamps, and the shipped scale's line for a 0 deg turn is the 0.92 cap

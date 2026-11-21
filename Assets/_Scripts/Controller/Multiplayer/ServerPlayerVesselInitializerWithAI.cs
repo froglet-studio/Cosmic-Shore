@@ -271,19 +271,7 @@ namespace CosmicShore.Gameplay
                     // A placed domain is never written into a count dict that lacks its key:
                     // GetBalancedDomain requires a domain in BOTH dicts, and a half-known key sets a
                     // minTotal no listed domain can then match, starving the pick to its error path.
-                    var placed = i < gameData.RequestedAIDomains.Count
-                        ? gameData.RequestedAIDomains[i]
-                        : Domains.Blue;
-                    if (placed != Domains.Blue)
-                    {
-                        aiDomain = placed;
-                        if (totalCounts.ContainsKey(aiDomain)) totalCounts[aiDomain]++;
-                    }
-                    else
-                    {
-                        aiDomain = GetBalancedDomain(totalCounts, humanCounts);
-                        totalCounts[aiDomain]++;
-                    }
+                    aiDomain = PlacedOrBalancedDomain(i, gameData.RequestedAIDomains, totalCounts, humanCounts);
 
                     // Deal the seat so every later round of this tournament replays it. Appended
                     // in loop order, which is the order it is read back in.
@@ -321,6 +309,26 @@ namespace CosmicShore.Gameplay
                 gameData.SetAIPilotDifficulty(aiPlayer.PlayerNetId, difficulty);
                 ConfigureAIPilot(aiVesselNO, difficulty);
             }
+        }
+
+        /// <summary>
+        /// The domain AI seat <paramref name="ordinal"/> flies, counted into <paramref name="totalCounts"/>: the one
+        /// the host PLACED for it on the launch panel (<c>GameDataSO.RequestedAIDomains</c>, entry i is bot i), else
+        /// the balanced pick. Blue, and anything past the end of the list, means not placed.
+        ///
+        /// <para>ONE rule for every dealer of AI seats. The Maelstrom deals its seats in the hub
+        /// (<c>MaelstromController.DealAISeats</c>) and had only the balanced half: a host who put both AI on Ruby
+        /// got one on Ruby and one on Gold in every round (Garrett and Yash, 2026-11-19).</para>
+        /// </summary>
+        public static Domains PlacedOrBalancedDomain(int ordinal, IReadOnlyList<Domains> placedDomains,
+            Dictionary<Domains, int> totalCounts, Dictionary<Domains, int> humanCounts)
+        {
+            var placed = placedDomains != null && ordinal >= 0 && ordinal < placedDomains.Count
+                ? placedDomains[ordinal]
+                : Domains.Blue;
+            var domain = placed != Domains.Blue ? placed : GetBalancedDomain(totalCounts, humanCounts);
+            if (totalCounts.ContainsKey(domain)) totalCounts[domain]++;
+            return domain;
         }
 
         /// <summary>

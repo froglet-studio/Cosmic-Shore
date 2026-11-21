@@ -1,0 +1,88 @@
+# Loop Atlas model: vessel BrittleStar. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Brittle Star
+verbs:
+  Time:
+    ability: Speed Mode
+    does: Ignite every thruster for a big jump in cruise speed. The trail spreads out and stretches so it still joins up,
+      without laying more prisms per second.
+    trigger: Tap to switch mode
+    scales: More Time makes Speed Mode faster still.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+    arch: mode
+    t: [5, 30]
+  Charge:
+    ability: Charge Mode
+    does: 'Five cords, one per turret, slice prisms and strike rival hulls for petals: loose whips, or stiff sabers while
+      you fire. With a spare ring, throw the ring to burst a spinning disk that wrecks every prism in its plane.'
+    trigger: Tap to switch mode
+    scales: More Charge widens the cords' cut, grows the rounds and thickens the thrown ring's blast disk.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+    arch: mode
+    t: [5, 30]
+  Mass:
+    ability: Creation Mode
+    does: 'Lay a trail behind each of the ring''s five corners instead of one behind the cockpit, the five lines turning
+      with the ring. The slowest mode: you cruise at half speed.'
+    trigger: Tap to switch mode
+    scales: More Mass makes every block you lay wider and taller, never longer.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+    arch: mode
+    t: [5, 30]
+  Space:
+    ability: Space Mode
+    does: All five guns fire together, converged ahead or splayed by your aim, and rounds that hit rival hulls take petals.
+      Firing heats the guns; overheated they stop, and your trail lays danger prisms.
+    trigger: Tap to switch mode, hold to fire
+    scales: More Space gives every gun longer range and lets the guns hold more heat before they overheat.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+    arch: mode
+    t: [5, 30]
+  Omni:
+    ability: Ring Charge
+    does: Adds a spare ring to your stock, up to two, so you can throw your ring for a ring explosion.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: [Regatta]
+games:
+  Time: [Brittle Star Time]
+  Charge: [Flatline]
+  Mass: [Starweave]
+  Space: [Shatterplane]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The shift line
+  t: [10, 40]
+  is: Four modes, each the answer to the last one's cost.
+  chain:
+  - [Time, Speed Mode to get there]
+  - - Space
+    - 'Space Mode: five guns until they overheat'
+  - - Mass
+    - 'Creation Mode: five trails while the guns cool'
+  - - Charge
+    - Charge Mode when a rival comes close
+  drivers: [mastery, make, break]
+  feel: Always in the right gear.
+- name: The ring throw
+  t: [10, 30]
+  is: A spare ring is a thrown saw.
+  chain:
+  - - Omni
+    - An omni crystal adds a spare ring
+  - - Charge
+    - 'Throw it: a disk wrecks every prism in its plane'
+  drivers: [break, joy]
+  feel: One huge flat cut.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md

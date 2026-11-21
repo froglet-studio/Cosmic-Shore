@@ -98,9 +98,12 @@ namespace CosmicShore.Gameplay
             _rideArriveStrike = arriveStrike;
             _rideLeft = maxSeconds;
 
+            // A ride that starts on top of one still under way (a trigger's dart, then a slip in the same frame) inherits that
+            // ride's hold: the transformer is already off, and reading IsActive here would leave it off for good when this
+            // ride ends (the hull froze mid-course until the clock ran out, 2026-11-17 race judge, about 1 Slip Line race in 10).
             var tr = _status?.VesselTransformer;
-            _zipTookTransformer = tr && tr.IsActive;
-            if (_zipTookTransformer) tr.ToggleActive(false);
+            if (!_zipping) _zipTookTransformer = tr && tr.IsActive;
+            if (_zipTookTransformer && tr) tr.ToggleActive(false);
             _zipping = true;
         }
 

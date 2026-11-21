@@ -42,7 +42,7 @@ What each level asks:
 - **I2, hard turns.** Every other leg turns 90-120 degrees and is short. A hull misses a ring when the leg is shorter
   than about `2r sin(turn)`, and r is 131 u burning against 38 at cruise: **burn into a hard turn and you overshoot the
   ring**. Coast the turn, burn out of it.
-- **I3, walls.** A **wall** of danger prisms stands square across the line into every other ring, wider than the ring,
+- **I3, walls.** A see-through **wall** of danger prisms (a checkerboard, §3) stands square across the line into every other ring, wider than the ring,
   so the hull has to dog-leg round its edge and back in. The wall is rounded on the **inside of the turn** (the side
   the previous leg comes from), so the shortest line is also the one that makes the dog-leg. A danger prism stops the
   hull dead and the throttle takes 3 s to recover. At cruise the dog-leg is easy; burning, the hull cannot turn back in
@@ -83,7 +83,14 @@ Read honestly:
 ## 3. The walls
 
 Laid by `BreachController.OnCourseRaised` from the broadcast rings: environment prisms (`SpawnablePrism`) in the **Blue
-danger** domain, a hex disc of them every 9 u in the wall's plane, each 7 x 7 x 1.5 and turned square to the ring's axis.
+danger** domain, a **checkerboard** disc of them in the wall's plane (`IsWallCell`: every other cell of a 7 u grid), each
+7 x 7 x 1.5 and turned square to the ring's axis. Neighbours touch at their corners, so every hole is a closed 7 u square
+(9.9 u corner to corner, under the hull's `WallClear`): **you see the next ring through the wall and cannot fly through
+it** (Garrett, 2026-11-15: "make the ring visible and maintain the spirit of the level"). Until then the wall was a solid
+hex disc (every 9 u) and, from the ring before, hid the lime ring on 39% of I3 legs and 22% of I4's
+(`Docs/Reports/SIGHT_LINES.md`); now 1% and 0, with 27% fewer prisms and the same burn lesson (the helm sweep: the burn
+still saves 10.5% at I3 and 17.1% at I4). Tests: `No_hole_in_a_wall_admits_the_hull`,
+`The_ring_shows_through_its_wall_from_the_ring_before` (46% of lines clear on average, the solid wall 27%).
 A broken wall prism grows back **6 s** later, once no hull is at its wall, so every racer meets the wall and a crew that
 breaches it breaches it for itself. Which rings are walled is the ring's index, and the wall stands on the ring's axis, so
 every peer lays the same walls from the broadcast rings wherever the cell is (a test holds it). Nothing new is replicated.
@@ -112,6 +119,21 @@ The AI flies the gate race's own steering, with two things from the coach:
 
 The Orca's own helm spends the tank. The gunners are the shipped AI gunners.
 
+### 5.1 Re-attack after a missed ring, from the real game (2026-11-17, elemental loop step 2)
+
+The race judge (`Tools/Build/time_ladder_judge.py --mode Breach --hull Orca`, Amoebius headless) showed the AI Orca
+timing out at I3 and I4. Only 1 of 8 Medium and Legendary races at those rungs finished on seeds 1-2. The trace showed
+it missing a walled ring by a few units and then wandering 50-150 u past it until the clock ran out. Breach now turns on
+the gate race's Regatta steering (`AICommitFromApproachPoint`: commit at the approach point and re-attack after a missed
+mouth), as Spearline, Grizzly Time, Burrow Run and Lantern Run already do.
+
+| Fresh seeds 4-6 | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Legendary, median s | 120 | 116 | 160 | 141 |
+| Medium, median s | 126 | 121 | 167 | 150 |
+
+All 24 races finished. Still open: I4 is easier than I3 (0.88x), and Medium is only about 1.05x slower than Legendary.
+
 ## 6. Numbers, and where they are authored
 
 | Knob | Where | Shipped |
@@ -135,7 +157,8 @@ drift gate. Card art: `render_card_backgrounds.py Breach` (an I4 course with its
 1. Open the scene once and save it (it is a text clone); then `author_breach_assets.py --check`.
 2. I1, one Orca with AI crew: hold the burn and watch the tank empty and stay empty; let go and it refills.
 3. I2: burn into a hard turn and the hull swings wide of the ring; coast it and the ring is easy.
-4. I3: the walls stand before every other ring, rounded on the inside of the turn. Fly into one: the hull stops dead.
+4. I3: the walls stand before every other ring, rounded on the inside of the turn. From the ring before, the lime ring
+   shows through the checkerboard. Fly into one: the hull stops dead (no hole lets it through).
    Watch the gunners shoot a breach; the wall grows back 6 s after.
 5. I4: a wall on the ring after each hard turn; neither ever meets the other.
 6. Two AI Orcas: they burn the straights, coast the turns and walls, and finish. Note any wall an AI hits.

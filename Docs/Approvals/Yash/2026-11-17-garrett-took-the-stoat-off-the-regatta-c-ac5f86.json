@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-17-garrett-took-the-stoat-off-the-regatta-c-ac5f86",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T21:46:14+00:00",
+  "area": "Regatta card: the Stoat",
+  "summary": "Garrett took the Stoat off the Regatta card and out of the polished set (decision card 2026-11-17 21:42 UTC) because it will be reworked a lot. It is judge-only in author_regatta_assets.py (keeps its race line, loses its StartingElements rows) and leaves the engine judge's default pools.",
+  "branch": "claude/project-thread-iqvkw9",
+  "commit": "502fa3f51"
+}

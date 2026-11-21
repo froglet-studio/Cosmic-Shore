@@ -1,0 +1,12 @@
+{
+ "about": "SHA-256 (hex) of 'cosmic-shore/crew-code/' + a dealt crew's claim code (upper case, letters and digits only), one per dealt crew in roster.py's deal order. The codes are private and never in this repository (Garrett, 2026-11-19). author_pilot_scene_assets.py writes them into PaintedCrew.asset.",
+ "hashes": [
+  "eae85ef741dcf5687e0bffd53180acd02d198f30df2c5ac9c896aabfea1679a4",
+  "8c7f6372a588bb047531040f79c957d944eecf319af75c316335969f48d40c32",
+  "b3ba1a57cb47e7f3b49912bf5df092b58fa661d0dd995598c106b9865d918065",
+  "6fec496da5eb51ee813783731d54506d9b7db370bbaaf2765e35aa5b5e145918",
+  "5536dc1a63695af23d4371949c3c9ab4020bd8c646649d15b1b3dfc9567fd285",
+  "4eb8ab2e4414548769ef4013d51ff7f7f017a032a0fa2e6e3b374a466f88f9de",
+  "538673ab4d3c7f47fea9ef3dd5bcd6b1ea7a4980529e3cc27fb7c00a419f2d4c"
+ ]
+}

@@ -52,7 +52,7 @@ SPINDLE_MATERIAL = "4f44fa5c7514a2c45b5af7f45bc51acd"      # SpindleMaterial.mat
 PRISM_TR, PRISM_GO = 5222650486365209692, 5776304996075792891   # a prism prefab's root Transform and GameObject
 DANGER_BLOCK = "aad956930fb933f4b82b992b1bc2b773"           # Trails/DangerBlock.prefab
 # the donor's own ids (read from QuadFish.prefab; verify() checks they are still there)
-ROOT_GO, BODY_TR, NETOBJ, SWIM = 6455206541193087406, 9092437090346515695, 841515063310731916, 680405309579507621
+ROOT_GO, BODY_TR, SWIM = 6455206541193087406, 9092437090346515695, 680405309579507621
 ELEMENTS = ("Charge", "Mass", "Space", "Time")
 
 
@@ -364,9 +364,8 @@ def prefab(key, spec, made):
     once(r"m_Mesh: \{fileID: -?\d+, guid: \w+, type: 3\}", f"m_Mesh: {{fileID: 4300000, guid: {guid('mesh:' + key)}, type: 2}}", "the body's mesh")
     once(r"(m_Materials:\n  - \{fileID: 2100000, guid: )\w+", r"\g<1>" + (guid("material:" + key) if gpu else SPINDLE_MATERIAL), "the body's material")
     once(r"(  data: \{fileID: 11400000, guid: )\w+", r"\g<1>" + guid("data:" + key.split(":")[0]), "LightFauna.data")
-    import author_stoat_assets as stoat      # the one GlobalObjectId hash implementation (self-tested there)
-    once(r"(--- !u!114 &%d\n(?:.*\n)*?  GlobalObjectIdHash: )\d+" % NETOBJ,
-         r"\g<1>%d" % stoat.global_object_id_hash(guid("prefab:" + key), NETOBJ), "the network identity")
+    if "GlobalObjectIdHash" in t:
+        raise SystemExit(f"{DONOR}: the donor carries a network rig again; a grown creature has none (see network())")
     # the jointed body: each joint a plain transform (so the attack finds it as a limb), its skin a child that draws
     # its piece of the mesh, the next joint its FIRST child (the attack follows first children down a limb). A skin is
     # set BACK by its joint's place, so its mesh stays in the body's own space (joints_of).
@@ -493,21 +492,15 @@ def form_key(key, e):
 
 
 def network(text, key):
+    """The network prefab list WITHOUT this creature. A grown creature carries no network rig: no fauna species is
+    network-synced, and the rig was taken off the donor for that reason (3d802353d3, 2026-11-02: every birth paid to
+    destroy it). The list is also part of the protocol (a prefab joining or leaving it bumps ProtocolVersion), so this
+    tool keeps a creature OUT of it and removes what an earlier version of itself added."""
     for e in ELEMENTS:
-        text = _network_one(text, form_key(key, e))
+        pg = guid("prefab:" + form_key(key, e))
+        text = re.sub(r"  - Override: 0\n    Prefab: \{fileID: \d+, guid: %s,\n      type: 3\}\n"
+                      r"    SourcePrefabToOverride: \{fileID: 0\}\n    SourceHashToOverride: 0\n    OverridingTargetPrefab: \{fileID: 0\}\n" % pg, "", text)
     return text
-
-
-def _network_one(text, key):
-    pg = guid("prefab:" + key)
-    if pg in text:
-        return text
-    entry = (f"  - Override: 0\n    Prefab: {{fileID: {ROOT_GO}, guid: {pg},\n      type: 3}}\n"
-             "    SourcePrefabToOverride: {fileID: 0}\n    SourceHashToOverride: 0\n    OverridingTargetPrefab: {fileID: 0}\n")
-    m = re.search(r"(?m)^  List:\n", text)
-    if not m:
-        raise SystemExit(NETWORK + ": no List")
-    return text[:m.end()] + entry + text[m.end():]
 
 
 def emit(key):
@@ -648,8 +641,8 @@ def verify(key, spec, made, mesh, out):
         tear = erosion.runtime(sp)[1]
         if tear > erosion.GAP:
             problems.append(f"the game's Space erosion would tear this body {tear:.1f} u at its joints: author the form eroded (elements.py)")
-    if "GlobalObjectIdHash: 2720972683" in pf:
-        problems.append("the prefab still carries the donor's network identity")
+    if "GlobalObjectIdHash" in pf:
+        problems.append("the prefab carries a network rig: no fauna species is network-synced, and the list is part of the protocol")
     return problems
 
 

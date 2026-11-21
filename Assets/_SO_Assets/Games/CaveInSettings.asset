@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be32261aa678100febde42e8a20cd813, type: 3}
+  m_Name: CaveInSettings
+  m_EditorClassIdentifier:
+  aiRetargetSeconds:
+  - 3
+  - 2.4
+  - 1.8
+  - 1.3
+  aiChoicesPerPlate:
+  - 2
+  - 3
+  - 4
+  - 5
+  aiLineUpChance:
+  - 0.2
+  - 0.4
+  - 0.6
+  - 0.8
+  aiRaidChance:
+  - 0.05
+  - 0.1
+  - 0.15
+  - 0.2
+  aiRaidRange:
+  - 250
+  - 350
+  - 450
+  - 550
+  aiRaidBehindSeconds:
+  - 0.5
+  - 1
+  - 1.5
+  - 2
+  aiAimError:
+  - 120
+  - 80
+  - 45
+  - 20
+  aiCrystalReach: 300
+  aiFaceSpread: 0.8
+  aiPlateRange: 900

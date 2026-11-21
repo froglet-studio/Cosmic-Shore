@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-17-the-squad-now-opens-a-voyage-side-by-sid-a41399",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-17T17:11:07+00:00",
+  "area": "Voyage escort code (ArkEscortRun, VoyageRun, ArkModel)",
+  "summary": "The squad now opens a voyage side by side with the Ark: seat 1 off port, seat 2 off starboard, seat 3 over the back (ArkFormation), instead of strung out abeam-and-astern. A straying wingmate is brought back to its own slot. The intro launches the squad from the hangar pads out past the jaws into those slots (ArkSortie), holding the vessels stationary with colliders and trail off meanwhile; ArkModel gained HoldHangarOpen and TryGetBone for it. Shombith asked for it 2026-11-17.",
+  "branch": "claude/project-thread-hbaktl",
+  "commit": "760008b3e"
+}

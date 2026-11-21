@@ -53,7 +53,6 @@ Transform:
   m_Children:
   - {fileID: 4785963160405140657}
   - {fileID: 6167652258310247765}
-  - {fileID: 878149464122343524}
   - {fileID: 1044916945384916742}
   - {fileID: 530293167561801255}
   m_Father: {fileID: 0}
@@ -204,6 +203,13 @@ MonoBehaviour:
   spreadBlendSeconds: 1.2
   foldClosedAngle: 88
   foldBlendSeconds: 0.35
+  wingbeatEvent:
+    Guid:
+      Data1: 175162526
+      Data2: 1078581788
+      Data3: 1171656846
+      Data4: 200696093
+    Path: event:/SFX/Oneshots/Gameplay sfx/Skim
 --- !u!114 &1534008662347306781
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -218,7 +224,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.VesselPrismController
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
-  skimmer: {fileID: 281340694002912670}
+  skimmer: {fileID: 92358954707176188}
   BaseScale: {x: 26, y: 1.2, z: 3.4}
   prismType: 4
   initialWavelength: 9
@@ -398,7 +404,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.VesselCameraCustomizer
-  settings: {fileID: 11400000, guid: 2bd6a6d58dbefa346b5b51b78a9c82a8, type: 2}
+  settings: {fileID: 11400000, guid: 085bebe09734406e8fc75553a8daa8a9, type: 2}
   OnInitializePlayerCamera: {fileID: 11400000, guid: dfc4b3d01080dac408975d4a25c6c1ea, type: 2}
 --- !u!114 &1404834681197234611
 MonoBehaviour:
@@ -483,7 +489,7 @@ MonoBehaviour:
   inertia: 1
   _name: JewelWasp
   vesselType: 31
-  _nearFieldSkimmer: {fileID: 281340694002912670}
+  _nearFieldSkimmer: {fileID: 0}
   _farFieldSkimmer: {fileID: 92358954707176188}
   orientationHandle: {fileID: 0}
 --- !u!114 &7771659394208071225
@@ -833,11 +839,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.Audio.ShipAudioController
   engineEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1809053689
+      Data2: 1230251534
+      Data3: 566434957
+      Data4: -1286293035
+    Path: event:/Engine stuff/space ship engine main
   additionalEngineLayers: []
   speedParameterName: Speed
   tiltParameterName: Tilt Acel
@@ -1006,112 +1012,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed3564c108193831916c65436763196a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.JewelWaspHUDView
---- !u!1001 &7526780584530545883
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 9012526572693406291}
-    m_Modifications:
-    - target: {fileID: 4816621673548213744, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_Name
-      value: ButterflyDustSkimmer
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalScale.x
-      value: 24
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalScale.y
-      value: 60
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 24
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7603142481619829103, guid: 744c7a43f1156e7bde213ac0f51abc71,
-        type: 3}
-      propertyPath: skimmerImpactorDataContainer
-      value: 
-      objectReference: {fileID: 11400000, guid: ca0090d317580ae40946b74c619c9123, type: 2}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 744c7a43f1156e7bde213ac0f51abc71, type: 3}
---- !u!114 &281340694002912670 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7751815150560592197, guid: 744c7a43f1156e7bde213ac0f51abc71,
-    type: 3}
-  m_PrefabInstance: {fileID: 7526780584530545883}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!4 &878149464122343524 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 7231566422788689087, guid: 744c7a43f1156e7bde213ac0f51abc71,
-    type: 3}
-  m_PrefabInstance: {fileID: 7526780584530545883}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2994112254822560421
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1270,18 +1170,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &7700000000000002001 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1958240267839501301, guid: 744c7a43f1156e7bde213ac0f51abc71,
-    type: 3}
-  m_PrefabInstance: {fileID: 7526780584530545883}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2e669e8d4897fc831070dfe1ae8cfaf3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &7741000000000003101

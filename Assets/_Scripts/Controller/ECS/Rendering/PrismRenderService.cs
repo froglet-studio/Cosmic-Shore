@@ -799,6 +799,7 @@ namespace CosmicShore.ECS
                 // component lookup the transform flush takes.
                 FlushVisibility();
                 FlushTransforms();
+                FlushGrowStampClears();
             }
         }
 
@@ -1355,6 +1356,7 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismGrowStartTimeOverride { Value = startTime });
             em.SetComponentData(handle.Entity, new PrismGrowRateOverride { Value = rate });
             em.SetComponentData(handle.Entity, new PrismGrowStartFracOverride { Value = startFrac });
+            EnqueueGrowStampClear(in handle, startTime, rate, in startFrac);
             return true;
         }
 
@@ -1368,6 +1370,88 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismGrowStartTimeOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismGrowRateOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismGrowStartFracOverride { Value = new float3(1f) });
+        }
+
+        // ------------------------------------------------------------------
+        // The settled-bloom clear (Docs/PRISM_ANIMATION.md C23). Every grow stamp pushes ONE entry
+        // onto one shared due-queue (PrismGrowStampClearQueue: a min-heap, no per-entry allocation),
+        // drained by the LateUpdate flush host at most GrowClearBudgetPerFrame pops a frame. Entries
+        // are never cancelled: each pop re-reads the entity's current stamp, so a retarget, a restore
+        // or a pool reuse makes an older entry a no-op, and a same-instant re-stamp with a later end
+        // pushes itself again. A clear late by frames is invisible (the factor is already exactly 1).
+        // ------------------------------------------------------------------
+
+        static readonly PrismGrowStampClearQueue s_growClears = new();
+        static readonly PrismGrowStampClearQueue.Entry[] s_dueGrowClears =
+            new PrismGrowStampClearQueue.Entry[GrowClearBudgetPerFrame];
+        static readonly Unity.Profiling.ProfilerMarker s_growClearMarker = new("PrismRender.GrowStampClear");
+        static bool s_warnedGrowClearFull;
+
+        /// <summary>Most settled-bloom clears applied in one frame (~0.3 us each: one Exists, three reads,
+        /// three writes on the EntityManager). The rest stay due for the next frame.</summary>
+        internal const int GrowClearBudgetPerFrame = 1024;
+
+        /// <summary>Clears waiting in the queue (diagnostics/tests).</summary>
+        public static int PendingGrowStampClearCount => s_growClears.Count;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetGrowClears()
+        {
+            s_growClears.Clear();
+            s_warnedGrowClearFull = false;
+        }
+
+        static void EnqueueGrowStampClear(in PrismRenderHandle handle, float startTime, float rate, in float3 startFrac)
+        {
+            // No host can exist in edit mode or teardown: nothing would drain the queue, so the stamp
+            // simply stays (the pre-C23 cost, never a wrong picture).
+            if (s_quitting || !Application.isPlaying || rate <= 0f) return;
+            EnsureFlushHost();
+            if (s_flushHost == null) return;
+            float fire = startTime + PrismGrowStampClearQueue.ExactDelay(rate, in startFrac);
+            if (!s_growClears.TryPush(fire, startTime, in handle) && !s_warnedGrowClearFull)
+            {
+                s_warnedGrowClearFull = true;
+                CSDebug.LogWarning($"[PrismRenderService] Grow-stamp clear queue is full ({PrismGrowStampClearQueue.MaxCapacity}); " +
+                                   "further blooms keep their stamp (correct picture, full vertex cost) until it drains.");
+            }
+        }
+
+        /// <summary>Applies up to <see cref="GrowClearBudgetPerFrame"/> due clears. O(1) when none is due.</summary>
+        internal static void FlushGrowStampClears()
+        {
+            if (s_growClears.Count == 0) return;
+            if (_world == null || !_world.IsCreated)
+            {
+                s_growClears.Clear(); // every handle in it belongs to a dead world
+                return;
+            }
+            float now = PrismClock.Now;
+            int n = s_growClears.PopDue(now, s_dueGrowClears, GrowClearBudgetPerFrame);
+            if (n == 0) return;
+            using (s_growClearMarker.Auto())
+            {
+                var em = _world.EntityManager;
+                for (int i = 0; i < n; i++)
+                {
+                    ref readonly var e = ref s_dueGrowClears[i];
+                    if (!IsUsable(in e.Handle) || !em.HasComponent<PrismGrowStartTimeOverride>(e.Handle.Entity)) continue;
+                    var entity = e.Handle.Entity;
+                    float start = em.GetComponentData<PrismGrowStartTimeOverride>(entity).Value;
+                    if (start != e.StampTime) continue; // cheap reject before the other two reads
+                    float rate = em.GetComponentData<PrismGrowRateOverride>(entity).Value;
+                    float3 s0 = em.GetComponentData<PrismGrowStartFracOverride>(entity).Value;
+                    switch (PrismGrowStampClearQueue.Decide(e.StampTime, start, rate, in s0, now, out float refire))
+                    {
+                        case PrismGrowStampClearQueue.Verdict.Clear:
+                            ClearGrowStamp(in e.Handle);
+                            break;
+                        case PrismGrowStampClearQueue.Verdict.Refire:
+                            s_growClears.TryPush(refire, start, in e.Handle);
+                            break;
+                    }
+                }
+            }
         }
 
         /// <summary>Settles just the color-transition stamp (visual snaps to the bound

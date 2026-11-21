@@ -568,7 +568,7 @@ def errors() -> list:
     need(f"  vesselClass: {CLASS_ID}\n" in mp and "AbilityLabel: 'Energize'" in mp and "UpgradeLabel: 'Shield Breaker'" in mp,
          "the Swordfish map is not the sword kit on class 30")
     rm = read(RHINO_MAP)
-    for label in ("'Gore'", "'Gore Steal'", "'Heft'", "'Berm'", "'Blade'", "'Unstoppable'", "'Ramp Spool'", "'Momentum'"):
+    for label in ("'Gore'", "'Gore Steal'", "'Heft'", "'Berm'", "'Blade'", "'Avalanche'", "'Momentum'", "'Slingshot'"):   # 2026-11-19 kit
         need(label in rm, f"the Rhino's map has no {label}")
     need("'Energize'" not in rm and "'Afterimage'" not in rm and "'Blade Reach'" not in rm, "a sword card is on the Rhino's map")
     need(f"  Class: {CLASS_ID}\n" in read(CLASS_ASSET), "SO_Class_Swordfish is not class 30")

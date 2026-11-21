@@ -1,0 +1,20 @@
+{
+  "id": "2026-11-16-new-tools-build-sound-placeholders-py-ap-da12bc",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-16T22:35:21+00:00",
+  "area": "tooling: sound_slots.py, the /sound-brief skill, CLAUDE.md's audio rule",
+  "summary": "New Tools/Build/sound_placeholders.py (apply / check / promote the placeholder ledger); sound_slots.py now reads banked events from the .bank bytes instead of the stale GUIDs.txt (14 failures to 3); CLAUDE.md and the LOCKED FMOD convention gain one exception: a placeholder listed in the ledger; the mode and kit generators that own those assets (arcade_mode_lib.drift / Generator.finish, and bee, brittle star time, grizzly time, jewel wasp, manta kit, payload, pilot, skein, stoat, thornline) now lay the listed placeholders over their output through sound_placeholders.fill_text / lib.event_yaml, so a re-run keeps them and --check stays green",
+  "why": "Garrett 2026-11-16 asked for recycled placeholders in every empty vessel slot; the ledger keeps the old rule's reason (a temp event nobody can find).",
+  "branch": "cece/zealous-davinci-wnqfli",
+  "commit": "b0cb93ba0",
+  "paths": [
+    ".claude/skills/sound-brief/SKILL.md",
+    "CLAUDE.md",
+    "Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md",
+    "Tools/Build/sound_placeholders.py",
+    "Tools/Build/sound_slots.py",
+    "Tools/Build/arcade_mode_lib.py",
+    "Tools/Build/author_*_assets.py (10 generators)"
+  ]
+}

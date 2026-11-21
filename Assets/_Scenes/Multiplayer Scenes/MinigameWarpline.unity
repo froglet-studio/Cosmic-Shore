@@ -832,6 +832,20 @@ MonoBehaviour:
   aiCrystalScanSeconds: 0.5
   maxPlausibleSpeed: 1400
   reportResyncSeconds: 3
+  gateThreadedEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  courseFinishedEvent:
+    Guid:
+      Data1: 2069810760
+      Data2: 1198659685
+      Data3: -604450419
+      Data4: -805011495
+    Path: event:/SFX/Oneshots/Menu/BigReward
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0

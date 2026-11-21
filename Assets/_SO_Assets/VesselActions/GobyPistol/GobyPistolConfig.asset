@@ -17,6 +17,14 @@ MonoBehaviour:
   dartChargeSeconds: 0.8
   dartSeconds: 1
   dartCooldown: 1.2
+  dartPace:
+    Enabled: 1
+    Value: 1.45
+    Min: 1.45
+    Max: 1.75
+    element: 4
+    UseFloor: 1
+    Floor: 0.725
   hullRadius: 3
   queryReach: 6
   ownPerchBlocks: 5
@@ -56,13 +64,13 @@ MonoBehaviour:
   pLaunchSpeed: 30
   pLaunchCharges: 1
   jumpCooldown:
-    Enabled: 1
-    Value: 9
-    Min: 9
-    Max: 3
-    element: 4
-    UseFloor: 1
-    Floor: 1
+    Enabled: 0
+    Value: 6
+    Min: 6
+    Max: 6
+    element: 0
+    UseFloor: 0
+    Floor: 0
   pGhostTime: 2.5
   pGhostCd: 8
   pSlingPull: 0.22
@@ -76,7 +84,7 @@ MonoBehaviour:
     Max: 2.5
     element: 2
     UseFloor: 1
-    Floor: 0.25
+    Floor: 0.5
   denMax: 80
   denShieldedShare: 0.4
   denDangerShare: 0.15
@@ -91,7 +99,7 @@ MonoBehaviour:
     Max: 200
     element: 3
     UseFloor: 1
-    Floor: 10
+    Floor: 20
   pullSpeed: 60
   pullWindow: 320
   pullMaxPerFrame: 96
@@ -104,14 +112,22 @@ MonoBehaviour:
   pVortexCd: 4
   pVortexCollapse: 1
   homingTurnRate: 240
-  ringPetals:
+  ringHomingScale:
     Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 1
+    UseFloor: 1
+    Floor: 0.5
+  ringPetals:
+    Enabled: 0
     Value: 1
     Min: 1
     Max: 3
     element: 1
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   ringHitPad: 4
   ringHitClass: 1
   hitCooldown: 0.25
@@ -151,7 +167,7 @@ MonoBehaviour:
   aiCruiseSpeed: 100
   aiTurnRate: 90
   aiRethinkSeconds: 2.5
-  aiHomeRadius: 4000
+  aiHomeRadius: 2000
   aiBackAfter: 4
   dartButtonIcon: {fileID: 21300000, guid: 173cce5c2e60d5fe47fe15cfb2bfa249, type: 3}
   dartButtonLabel: 
@@ -163,3 +179,31 @@ MonoBehaviour:
   snapButtonLabel: 
   backButtonIcon: {fileID: 21300000, guid: ca1ac713c24158d9f2895b8311bac0cb, type: 3}
   backButtonLabel: 
+  growEvent:
+    Guid:
+      Data1: 1401307610
+      Data2: 1312586406
+      Data3: 1271773619
+      Data4: -1226988235
+    Path: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
+  shieldEvent:
+    Guid:
+      Data1: -922617308
+      Data2: 1092038894
+      Data3: -167764571
+      Data4: -698904471
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Activate
+  restoreEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  fallThroughEvent:
+    Guid:
+      Data1: -1163572034
+      Data2: 1312051193
+      Data3: -1732454749
+      Data4: 1656763241
+    Path: event:/SFX/Oneshots/Gameplay sfx/Space Joust

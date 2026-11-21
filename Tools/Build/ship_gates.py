@@ -48,6 +48,10 @@ STATIC = [
     ('colour_set_catalog', 'Tools/Build/author_colour_set_catalog.py', ['--check']),
     ('colour_set_catalog_self_test', 'Tools/Build/author_colour_set_catalog.py', ['--self-test']),
     ('gamelist_scenes', 'Tools/Build/check_gamelist_scenes.py', []),
+    # Every arcade card is playable in exactly one Maelstrom intensity tier (Garrett, 2026-11-16;
+    # Docs/MaelstromSystem/INTENSITY_TIERS.md). A new card fails until `maelstrom_tiers.py --write` puts it in the Floor.
+    ('maelstrom_tiers', 'Tools/Build/maelstrom_tiers.py', ['--check']),
+    ('maelstrom_tiers_self_test', 'Tools/Build/maelstrom_tiers.py', ['--self-test']),
     ('hud_onscreen', 'Tools/Build/check_hud_onscreen.py', []),
     ('junie_skills', 'Tools/Build/check_junie_skills.py', []),
     ('retire_call_to_action', 'Tools/Build/retire_call_to_action.py', ['--check']),

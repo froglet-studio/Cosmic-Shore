@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-16-a-friend-following-the-host-now-deploys-ca3b7b",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-16T18:59:58+00:00",
+  "area": "the voyage launch",
+  "summary": "A friend following the host now deploys the seat they picked in the host's lobby (VoyageSeatRecord.PartyKey) instead of their active squad; VoyageLaunch.SeatLocalHull is now the public SeatLocal, called from a friend's Ark page.",
+  "why": "Shombith: friends pick their own vessel, pilot and element for the voyage",
+  "branch": "claude/project-thread-ga37fg",
+  "commit": "54b13eaa7",
+  "paths": [
+    "Assets/_Scripts/Controller/Voyages/VoyageLaunch.cs",
+    "Assets/_Scripts/Controller/Voyages/VoyageRun.cs"
+  ]
+}

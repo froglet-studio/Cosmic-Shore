@@ -31,7 +31,19 @@ namespace CosmicShore.Game
         [Tooltip("Radius of the membrane sphere.")]
         [SerializeField] float radius = 500f;
 
-        public float Radius => radius;
+        public float Radius => radius * _runtimeScale;
+
+        // A runtime size over the authored one (a voyage's bigger cells): offsets, capsules and bounds all grow with it,
+        // and the baked wobble plays back unchanged. Not serialized: the authored radius stays the bake's signature.
+        float _runtimeScale = 1f;
+
+        /// <summary>Draw this membrane at <paramref name="factor"/> times its authored size (1 = as authored).</summary>
+        public void SetRuntimeScale(float factor)
+        {
+            _runtimeScale = Mathf.Max(0.01f, factor);
+            renderParams.worldBounds = new Bounds(transform.position, Vector3.one * (Radius * 2.5f));
+            if (matrices != null) UpdateMatrices();
+        }
 
         [Header("Capsule Shape")]
         [Tooltip("Mesh to instance. Leave null to use Unity's built-in capsule.")]
@@ -204,7 +216,7 @@ namespace CosmicShore.Game
 
             renderParams = new RenderParams(membraneMaterial)
             {
-                worldBounds = new Bounds(transform.position, Vector3.one * (radius * 2.5f)),
+                worldBounds = new Bounds(transform.position, Vector3.one * (Radius * 2.5f)),
                 shadowCastingMode = ShadowCastingMode.Off,
                 receiveShadows = false,
                 renderingLayerMask = renderingLayerMask,
@@ -236,7 +248,7 @@ namespace CosmicShore.Game
                 _lastCenter = center;
                 using (s_updateMatrices.Auto())
                     UpdateMatrices();
-                renderParams.worldBounds = new Bounds(center, Vector3.one * (radius * 2.5f));
+                renderParams.worldBounds = new Bounds(center, Vector3.one * (Radius * 2.5f));
             }
             using (s_submit.Auto())
                 Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices, _drawCount);
@@ -287,7 +299,7 @@ namespace CosmicShore.Game
             for (int i = 0; i < _drawCount; i++)
             {
                 Quaternion rot = Quaternion.Lerp(presetRotations[baseA + i], presetRotations[baseB + i], blend);
-                matrices[i] = Matrix4x4.TRS(center + presetOffsets[i], rot, capsuleScale);
+                matrices[i] = Matrix4x4.TRS(center + presetOffsets[i] * _runtimeScale, rot, capsuleScale * _runtimeScale);
             }
         }
 
@@ -314,7 +326,7 @@ namespace CosmicShore.Game
                 Quaternion eulerNoise = Quaternion.Euler(noiseAmplitude * noiseVec);
                 Quaternion rot = Quaternion.LookRotation(
                     eulerNoise * baseDirections[i], eulerNoise * perpendiculars[i]);
-                matrices[i] = Matrix4x4.TRS(center + baseOffsets[i], rot, capsuleScale);
+                matrices[i] = Matrix4x4.TRS(center + baseOffsets[i] * _runtimeScale, rot, capsuleScale * _runtimeScale);
             }
         }
 

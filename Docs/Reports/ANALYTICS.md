@@ -97,6 +97,22 @@ saved views (#1777), match setups (#1778). On `claude/sweet-mayer-se51r6` (the P
 3. **The first nightly self-update** (2026-11-07 04:20 UTC): it logs to
    `journalctl -u froglet-analytics-update`, and its test log is `/var/lib/froglet-analytics/last-update-tests.log`.
 
+## 4.5 Decisions, 2026-11-17 (Shombith, answering the round-up's checklist)
+
+| # | Decision | What it means |
+|---|---|---|
+| 1 | **Close PostHog on Monday 23 Nov 2026.** | Before closing: run `import-posthog` once more (it adds only what is missing), then delete the PostHog personal API key and shut the project down. |
+| 2 | **Update the privacy policy and store labels now.** | Done: `Docs/Legal/PRIVACY_POLICY_TEMPLATE.md` §3b/§6/§9, `Docs/Legal/STORE_PRIVACY_LABELS.md` (analytics rows), and the web page (`privacy.html`, `delete-my-data.html` in cosmic-shore-landing-page). The Oracle region is still a placeholder to confirm. |
+| 3 | Read keys for Ian, Garrett and Caleb: **done** (Shombith). | |
+| 4 | **Declare the three FTUE events in the UGS Event Manager.** | The rows are in `ugs_step1_parameters.csv` (4 new parameters) and `ugs_step2_events.csv` (3 events); declaring them is a click-through on cloud.unity.com (ANALYTICS_HANDOFF.md §6.1). |
+| 5 | **Stay on sslip.io**; no `analytics.froglet.studio`. | `serverUrl` is unchanged. |
+| 6 | **Froglet Compute stays paused.** | |
+| 7 | **Build Rev 66 A: Funnels and Release compare.** | Built: `Tools/Analytics/server/analytics_compare.py` (`POST /v1/funnel`, `GET /v1/funnel/steps`, `GET /v1/releases`), `console/compare.js`; the other Rev 66 screens stay parked. |
+| 8 | The two hand checks (an editor match, a web Toybox visit against the live server): **Ian's.** | Ian's 2026-11-17 email shows editor events arriving since Nov 7; the web check is still open. |
+
+**Branch rule (Shombith, 2026-11-17):** every analytics thread works through `analytics-and-backend` (cut from
+`bleeding-edge`); analytics PRs target it.
+
 ## 5. Open tasks and the decisions they wait on
 
 - **Read keys for Ian, Garrett and Caleb**: printed on the VM with `analytics_server.py key read <name>`; sent to each

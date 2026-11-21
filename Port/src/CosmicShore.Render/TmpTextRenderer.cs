@@ -125,6 +125,61 @@ namespace CosmicShore.Render
             _gl.BlendFuncSeparate(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha, BlendingFactor.One, BlendingFactor.OneMinusSrcAlpha);
         }
 
+        /// <summary>
+        /// Draws a 3D TextMeshPro (one with no canvas) in the world: its layout placed by the text's own transform and
+        /// projected by <paramref name="viewProj"/>, so it is depth-tested against the scene the caller just drew. The
+        /// shader's coverage term comes from screen-space derivatives, so a tilted or distant text stays sharp.
+        /// </summary>
+        public void DrawWorld(TMP_Text text, System.Numerics.Matrix4x4 viewProj)
+        {
+            if (string.IsNullOrEmpty(text.text) || text.transform is not RectTransform rt) return;
+            var layout = Layout(text, rt.rect);
+            if (layout == null || layout.quads.Count == 0) return;
+            TextsDrawn++;
+
+            _program.Use();
+            _program.Set("uMvp", viewProj);
+            _program.Set("uAtlas", 0);
+            _program.Set("uClipEnabled", 0);
+            _program.Set("uClipRect", -1e9f, -1e9f, 1e9f, 1e9f);
+            _gl.ActiveTexture(TextureUnit.Texture0);
+            _gl.BlendFuncSeparate(BlendingFactor.One, BlendingFactor.OneMinusSrcAlpha, BlendingFactor.One, BlendingFactor.OneMinusSrcAlpha);
+
+            TMP_FontAsset runFont = null;
+            Material runMat = null;
+            int runAtlas = -1;
+            const float alpha = 1f; // the vertex colours carry the text's own alpha already
+            foreach (var q in layout.quads)
+            {
+                if (q.font == null) continue;
+                if (!ReferenceEquals(q.font, runFont) || !ReferenceEquals(q.material, runMat) || q.atlasIndex != runAtlas)
+                {
+                    Flush(runFont, runMat, runAtlas);
+                    runFont = q.font; runMat = q.material; runAtlas = q.atlasIndex;
+                }
+                uint b = (uint)(_verts.Count / Floats);
+                PushWorld(rt, q.bl, alpha);
+                PushWorld(rt, q.tl, alpha);
+                PushWorld(rt, q.tr, alpha);
+                PushWorld(rt, q.br, alpha);
+                _idx.Add(b); _idx.Add(b + 1); _idx.Add(b + 2);
+                _idx.Add(b + 2); _idx.Add(b + 3); _idx.Add(b);
+            }
+            Flush(runFont, runMat, runAtlas);
+            _gl.BlendFuncSeparate(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha, BlendingFactor.One, BlendingFactor.OneMinusSrcAlpha);
+        }
+
+        void PushWorld(Transform t, in TmpVertex v, float alpha)
+        {
+            var p = t.TransformPoint(new Vector3(v.position.x, v.position.y, 0f));
+            Color c = v.color;
+            _verts.Add(p.x); _verts.Add(p.y); _verts.Add(p.z);
+            _verts.Add(v.uv.x); _verts.Add(v.uv.y);
+            _verts.Add(ColorSpace.ToLinear(c.r)); _verts.Add(ColorSpace.ToLinear(c.g)); _verts.Add(ColorSpace.ToLinear(c.b));
+            _verts.Add(c.a * alpha);
+            _verts.Add(v.scale);
+        }
+
         TmpLayoutResult Layout(TMP_Text text, Rect rect)
         {
             long sig = Signature(text, rect);

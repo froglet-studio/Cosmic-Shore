@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-the-coach-s-legendary-nose-column-is-now-42e341",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T10:15:37+00:00",
+  "area": "Brittle Star Time's race coach",
+  "summary": "The coach's Legendary nose column is now 13.66 / 13.66 / 15.04 / 15.04 (was 4.13 / 8 / 1.83 / 8), from the real-game search BrittleStar run1. Confirmed on 4 fresh seeds: loss 2.36 -> 2.06, I3 84.8 -> 32.6 s, I4 73.2 -> 56.3 s. Easy to Hard unchanged.",
+  "why": "Regatta flywheel step 3: the Legendary AI was held back by its nose rate. Also: I3 now runs faster than I2 (33 vs 54 s), a ladder question.",
+  "branch": "claude/project-thread-sl73tv",
+  "lane": "brittlestartime",
+  "commit": "c39815ba1",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeCoach.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "BrittleStar"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

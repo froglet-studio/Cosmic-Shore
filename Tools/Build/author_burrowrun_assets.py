@@ -87,10 +87,11 @@ LAPS = 2
 RINGS_PER_LAP = 8                 # Slingshot's 600 u circle, the studio's eight rings
 GATE_TARGET = LAPS * RINGS_PER_LAP
 
-# AI approach geometry: Warpline's (the Meerkat turns at 120 deg/s on one thumb - tighter than the Stoat).
-AI_COMMIT_DISTANCE = 160
-AI_APPROACH_LEAD = 180
-AI_THROUGH_DISTANCE = 120
+# AI approach geometry: Meerkat run1 (time_ai_search.py, Amoebius real-game judge, 2026-11-17; was Warpline's
+# 160 / 180 / 120): commit late, aim far down the leg, short through-distance.
+AI_COMMIT_DISTANCE = 42
+AI_APPROACH_LEAD = 702
+AI_THROUGH_DISTANCE = 74
 
 # Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn. Warpline's, kept: the
 # Meerkat's ride tops out at 2.5 x its entry speed, a few hundred u/s.
@@ -134,7 +135,7 @@ g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameBurrowRu
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Meerkat']}, type: 2}}
   MinPlayersAllowed: 1
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 1
   MaxDomainsAllowed: 3
   MinIntensity: 1

@@ -67,6 +67,10 @@ namespace CosmicShore.Gameplay
 
         Vector3 Centre => arenaCell ? arenaCell.transform.position : Vector3.zero;
 
+        /// <summary>The once-a-match hint posted to the local pilot. A mode that reuses this heap with another hull
+        /// (Riposte, the Swordfish's) names its own.</summary>
+        protected virtual GameToastSituation HintSituation => GameToastSituation.JackstrawHint;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -140,7 +144,7 @@ namespace CosmicShore.Gameplay
             {
                 _hintPosted = true;
                 var local = gameData.LocalPlayer;
-                if (local != null) GameToastAPI.Post(GameToastSituation.JackstrawHint, local.Domain);
+                if (local != null) GameToastAPI.Post(HintSituation, local.Domain);
             }
 
             if (settings != null && Time.time >= _nextCrystalCheck)

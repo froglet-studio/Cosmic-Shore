@@ -1043,14 +1043,14 @@ namespace CosmicShore.UI
             ShowAIDifficultyForEditedSeat();
         }
 
-        /// <summary>Total seats a match holds, humans included - the house party size. The old
-        /// fill toggle used the same four; a lobby of twelve bots is not what Add AI means.</summary>
-        const int MaxMatchSeats = 4;
+        /// <summary>Total seats a match holds, humans included. Nine since 2026-11-17 (Garrett: every game opens to
+        /// nine vessels, at most three a team, Docs/ArcadeRestructure/PLAN.md); it was four.</summary>
+        const int MaxMatchSeats = 9;
 
-        /// <summary>The house size for an ARENA card (<see cref="SO_ArcadeGame.ArenaRules"/>), whose
-        /// cards go to six. Also what <c>ArcadeConfigSyncManager.LobbySnapshot.MaxAiSlots</c> is
-        /// sized against (one seat is always the host, so six AI slots is one spare).</summary>
-        const int MaxArenaSeats = 6;
+        /// <summary>The house size for an ARENA card (<see cref="SO_ArcadeGame.ArenaRules"/>): nine, as every card.
+        /// <c>ArcadeConfigSyncManager.LobbySnapshot.MaxAiSlots</c> is sized against it (one seat is always the
+        /// host, so eight AI slots).</summary>
+        const int MaxArenaSeats = 9;
 
         /// <summary>
         /// How many seats Add AI (and a remembered roster) may fill on the open card: the card's own
@@ -1064,6 +1064,8 @@ namespace CosmicShore.UI
             {
                 if (!_selectedGame) return MaxMatchSeats;
                 int house = _selectedGame.ArenaRules ? MaxArenaSeats : MaxMatchSeats;
+                if (config != null && config.DomainCount > 0)
+                    house = Mathf.Min(house, SO_ArcadeGame.TeamSeatCap(config.DomainCount));
                 return Mathf.Min(Mathf.Min(_selectedGame.MaxSeats, MaxSupportedPlayers), house);
             }
         }
@@ -2916,6 +2918,17 @@ namespace CosmicShore.UI
             {
                 CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                     "[ArcadeConfigModal] Start refused - no vessel confirmed yet.");
+                return;
+            }
+
+            // Ready-up is a round trip through the host. With no host listening (a Relay drop whose
+            // recovery failed) the ServerRpc goes nowhere and latching would strand the player on
+            // "Waiting for others..." for good - so refuse, loudly, and keep the button.
+            var nm = NetworkManager.Singleton;
+            if (arcadeConfigSyncManager && (nm == null || !nm.IsListening))
+            {
+                CSDebug.LogWarning("[ArcadeConfigModal] Start refused - no network host is running " +
+                                   "(the connection dropped and was not recovered). Reconnect or restart, then try again.");
                 return;
             }
 

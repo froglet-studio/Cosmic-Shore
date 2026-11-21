@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 121 - notes: what each option does, where it opens from, what the build needs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+.soft{clip-path:none;box-shadow:none;color:#E6E9FF;background:linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(230,233,255,.8) 20%,rgba(230,233,255,.8) 80%,rgba(230,233,255,0) 100%) top/100% 1px no-repeat,linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(230,233,255,.8) 20%,rgba(230,233,255,.8) 80%,rgba(230,233,255,0) 100%) bottom/100% 1px no-repeat,linear-gradient(90deg,rgba(0,4,31,0) 0,rgba(0,4,31,.86) 20%,rgba(0,4,31,.86) 80%,rgba(0,4,31,0) 100%)}
+.softcta{clip-path:none;color:#00041F;background:linear-gradient(90deg,rgba(153,255,128,0) 0,#99FF80 20%,#99FF80 80%,rgba(153,255,128,0) 100%)}
+.softwait{clip-path:none;color:#747BAD;background:linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(67,76,137,.9) 20%,rgba(67,76,137,.9) 80%,rgba(230,233,255,0) 100%) top/100% 1px no-repeat,linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(67,76,137,.9) 20%,rgba(67,76,137,.9) 80%,rgba(230,233,255,0) 100%) bottom/100% 1px no-repeat}
+.dia{display:inline-block;box-sizing:border-box;transform:rotate(45deg);flex:none}
+.lit{fill:none;stroke:#E6E9FF;stroke-opacity:.75;stroke-width:2;transition:stroke-dashoffset 1.1s ease}
+.win{background:rgba(0,4,31,.96)}
+.edge{background:#434C89;padding:1px;box-sizing:border-box}
+.mask-b{-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent 100%);mask-image:linear-gradient(180deg,#000 55%,transparent 100%)}
+.mask-r{-webkit-mask-image:radial-gradient(ellipse 60% 60% at 50% 50%,#000 45%,transparent 100%);mask-image:radial-gradient(ellipse 60% 60% at 50% 50%,#000 45%,transparent 100%)}
+.body{font-size:18px;line-height:1.5;color:#B8C0F0}
+.new{display:inline-block;width:8px;height:8px;background:#E6E9FF;transform:rotate(45deg);flex:none}
+@keyframes slideIn{from{transform:translateX(56px);opacity:0}to{transform:none;opacity:1}}
+@keyframes rise{from{transform:translateY(18px);opacity:0}to{transform:none;opacity:1}}
+.in{animation:slideIn .7s cubic-bezier(.22,1,.36,1) both}
+.rise{animation:rise .45s cubic-bezier(.22,1,.36,1) both}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="abs" style="left:64px;top:56px;display:flex;flex-direction:column;gap:10px"><span class="lab">Rev 121 notes</span><span style="font-size:36px">What&#8217;s new: after an update, and from Settings</span></div><div class="abs" style="left:64px;right:64px;top:170px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:56px"><div style="display:flex;flex-direction:column;gap:14px"><span class="lab" style="color:#E6E9FF">Asked (Shombith, 2026-11-21)</span><span style="font-size:18px;line-height:1.55;color:#B8C0F0">&#8220;Create a new UI on main menu a pop up called what&#8217;s new it can be accessed from settings or after an update this shows up. Create 4 mock-ups screens for this.&#8221;</span><span style="font-size:18px;line-height:1.55;color:#B8C0F0">Read as four ways to draw it, each one working, plus the Settings way in. This update is Voyages, so every option features it.</span></div><div style="display:flex;flex-direction:column;gap:14px"><span class="lab" style="color:#E6E9FF">The four</span><span style="font-size:18px;line-height:1.55;color:#B8C0F0"><b>A Poster (recommended).</b> One window over Home: the Ark on the HyperSea, three features under it, the fixes folded away, Set sail. One look and you know what is new.</span><span style="font-size:18px;line-height:1.55;color:#B8C0F0"><b>B Pages.</b> One feature a page, LB / RB to page, Set sail on the last. Bigger art, more presses.</span><span style="font-size:18px;line-height:1.55;color:#B8C0F0"><b>C Changelog.</b> Every update in a list, the picked one beside it. Also the page Settings opens; older entries are placeholders.</span><span style="font-size:18px;line-height:1.55;color:#B8C0F0"><b>D Card.</b> A small card slides in at Home&#8217;s corner; it opens into a tall drawer on the right. The quietest after an update.</span></div><div style="display:flex;flex-direction:column;gap:14px"><span class="lab" style="color:#E6E9FF">When it opens</span><span style="font-size:18px;line-height:1.55;color:#B8C0F0">After an update: once, on the first visit to Home, only when the update has a What&#8217;s new entry. Never over a match, the start flow or a hand-off.</span><span style="font-size:18px;line-height:1.55;color:#B8C0F0">From Settings: Other, About, What&#8217;s new. The green mark stays on the row until it has been opened once.</span><span style="font-size:18px;line-height:1.55;color:#B8C0F0">Closing it says where it lives (&#8220;stays in Settings, under Other&#8221;). Set sail opens Voyages on the Ark.</span></div><div style="display:flex;flex-direction:column;gap:14px"><span class="lab" style="color:#E6E9FF">For the build</span><span style="font-size:18px;line-height:1.55;color:#B8C0F0">Every word is an authored field: one What&#8217;s new entry per update (version, name, line, features, fixes, art), so the next update is data, not code.</span><span style="font-size:18px;line-height:1.55;color:#B8C0F0">The one motion is the window rising (A, B, C) or the card sliding in (D). Lime only on Set sail; the selection line only on the picked row.</span><span style="font-size:18px;line-height:1.55;color:#B8C0F0">Nothing built yet; the build waits on a pick.</span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

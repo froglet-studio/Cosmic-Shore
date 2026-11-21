@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-17-risky-merge-pr-2193-went-in-without-wait-efe58f",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-17T22:35:09+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2193 went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/VesselActions/Serpent/ConsumeBoostAction.asset",
+  "branch": "claude/project-thread-iqvkw9",
+  "pr": 2193,
+  "commit": "186faa96f",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/Serpent/ConsumeBoostAction.asset",
+    "Assets/_Scripts/Controller/Arcade/REGATTA.md"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/VesselActions/Serpent/ConsumeBoostAction.asset"
+    }
+  ]
+}

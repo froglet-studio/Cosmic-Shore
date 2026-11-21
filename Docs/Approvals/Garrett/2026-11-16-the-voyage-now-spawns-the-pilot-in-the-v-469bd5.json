@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-the-voyage-now-spawns-the-pilot-in-the-v-469bd5",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-16T17:59:56+00:00",
+  "area": "Voyage scene launch (VoyageLaunch, VoyageScene)",
+  "summary": "The voyage now spawns the pilot in the vessel their squad seat names (written to NetDefaultVesselType before Voyage.unity loads), not the menu's attract hull; still no swap after spawn, so the 2026-10-31 Manta hand-off problem is not reintroduced. VoyageScene also ends a voyage still out when the scene loader starts leaving, before vessels despawn. Milestone 1 (Shombith, 2026-11-16).",
+  "branch": "claude/project-thread-an0opw",
+  "commit": "89bfa4956"
+}

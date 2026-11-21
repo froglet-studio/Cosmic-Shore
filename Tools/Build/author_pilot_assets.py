@@ -545,6 +545,8 @@ def main():
             print("SPEC:", p)
         return 1
     files = build(spec)
+    import sound_placeholders  # listed placeholder sounds (Docs/AudioSystem/sound_placeholders.json) survive a re-run
+    files = {rel: sound_placeholders.fill_file(rel, text) for rel, text in files.items()}
     problems = check_guid_ownership(files)
     changed = drift(files)
 

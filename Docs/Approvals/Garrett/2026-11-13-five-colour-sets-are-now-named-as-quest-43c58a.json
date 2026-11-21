@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-13-five-colour-sets-are-now-named-as-quest-43c58a",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-13T22:50:25+00:00",
+  "area": "Colour sets",
+  "summary": "Five colour sets are now named as quest rewards (SO_UnlockData.RewardColorSet: Scurry Ukiyo-e, Skim Race Dusk, Joust Neon Noir, Maelstrom Blue-ringed Octopus, Vessel Hangar Nacre) and shown in the new Quests window. Every set stays unlocked for everyone; whether claiming should be what unlocks them is still open. MENU_REDESIGN_B section 200.",
+  "branch": "claude/project-thread-ytvai5",
+  "commit": "ab0917f27"
+}

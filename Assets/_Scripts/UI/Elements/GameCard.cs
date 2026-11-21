@@ -147,10 +147,9 @@ namespace CosmicShore.UI
 
         void Start()
         {
-            if (gameMode == GameModes.Random)
-                gameMode = GameModes.BlockBandit;
-
-            UpdateCardView();
+            // A card no view has given a mode yet draws nothing: the GameMode setter draws it when it is assigned. The old
+            // fallback named BlockBandit, which has no card, and logged 70 warnings (about 0.5 s) on every menu load.
+            if (gameMode != GameModes.Random) UpdateCardView();
             ShowPartyPicks(null, false);
         }
 

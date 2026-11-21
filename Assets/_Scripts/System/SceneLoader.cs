@@ -29,13 +29,37 @@ namespace CosmicShore.Core
     /// Replay / restart is owned by MiniGameControllerBase.RequestReplay() - both
     /// the scoreboard and the pause menu call it directly.
     /// </summary>
-    public class SceneLoader : MonoBehaviour
+    public partial class SceneLoader : MonoBehaviour
     {
         [Tooltip("Seconds the opaque splash shows before the load starts - long enough for it to reach the screen " +
                  "ahead of the blocking collect and load. Both callers make the splash opaque instantly " +
                  "(SetFadeImmediate), so this covers no fade; it was 0.5 s of nothing on every launch " +
                  "(Docs/MENU_REDESIGN_B.md section 99.1).")]
         [SerializeField, Min(0f)] float waitBeforeLoading = 0.1f;
+
+        [Header("Scene exit drain")]
+        [Tooltip("Longest the host holds a scene load while the scene it is leaving is taken down in slices behind " +
+                 "the splash: plants destroyed a slice a frame, environment prisms parked in the pool, trail " +
+                 "returned to its pool. What is not done by then is destroyed inside the load's own frame, as " +
+                 "before. That frame also loads the next scene, and Relay drops a player silent for about 10 s " +
+                 "(Docs/PartySystem/BUGS.md B45). 0 turns the drain off.")]
+        [SerializeField, Min(0f)] float sceneExitDrainMaxSeconds = 8f;
+
+        [Tooltip("The most prisms' worth of plants and creatures the drain destroys in one frame, a whole plant at " +
+                 "a time. With a frame budget below, the slice starts at 1,000 and grows or shrinks to that budget, " +
+                 "never past this.")]
+        [SerializeField, Min(100)] int sceneExitDestroysPerFrame = 15000;
+
+        [Tooltip("How long one drain frame may take, in milliseconds: the slice is resized every frame to fit it, " +
+                 "so a phone takes smaller slices than a desktop. 0 = a fixed slice of the count above (1-2 s " +
+                 "frames on a desktop at 15,000, measured 2026-11-21). A destroy during play costs about 2.6 times " +
+                 "the scene unload's, so a slower drain leaves more for the load's own frame when it is cut short. " +
+                 "Off by default: at 200 ms a desktop return took 4-5 s longer with more 0.5 s hitches, because " +
+                 "those frames cost 0.3-0.5 s whatever the slice (measured 2026-11-21).")]
+        [SerializeField, Min(0f)] float sceneExitFrameBudgetMs = 0f;
+
+        /// <summary>Milliseconds of pool-return work a frame during the drain (the Maelstrom hub's own slice).</summary>
+        const double SceneExitSliceMs = 24.0;
 
         [Tooltip("Frames rendered under the opaque splash between the covered garbage collection and the reveal, so " +
                  "a long frame ends out of sight instead of being spent inside the fade.")]
@@ -162,6 +186,7 @@ namespace CosmicShore.Core
                 _holdVeilForMenuSettle = IsGameplayScene(_lastLoadedSceneName);
 
                 ArmSplashFadeOnNextClientReady();
+                RevealBootMenuBeforeHostAsync(_holdVeilForMenuSettle).Forget();
             }
 
             _lastLoadedSceneName = scene.name;
@@ -288,6 +313,8 @@ namespace CosmicShore.Core
         {
             // A return to the menu keeps its after-load collect: that one frees the finished match.
             bool menuReturn = _holdVeilForMenuSettle;
+            // The boot menu may already be on screen, its input held, waiting for this vessel (SceneLoader.BootReveal).
+            bool shownEarly = TakeEarlyBootReveal();
             // Game→menu return only: hold the opaque veil for a short settle window so
             // the previous session's cleanup (late despawns, pooled-prism churn, painting
             // regrow snap) finishes out of sight instead of visibly clearing after the
@@ -306,8 +333,11 @@ namespace CosmicShore.Core
             // LOADING bar reads the same build) until the veil lets go, so the player sees one screen
             // and then the finished world, never the veil as a second screen. Capped: a build the
             // veil itself has stopped waiting on never holds the splash for good.
+            // A scene that builds its opening after the client is ready (the voyage scene: its corridor and Ark) holds
+            // the splash itself until that opening stands (SceneRevealHold); each claim carries its own deadline.
             float holdUntil = Time.unscaledTime + MaxBootWorldHoldSeconds;
-            while (CosmicShore.Gameplay.EnvironmentLoadVeil.IsCovering && Time.unscaledTime < holdUntil)
+            while (SceneRevealHold.IsHeld
+                   || CosmicShore.Gameplay.EnvironmentLoadVeil.IsCovering && Time.unscaledTime < holdUntil)
                 await UniTask.Yield(PlayerLoopTiming.Update);
 
             // Runs on EVERY peer (clients never reach LoadSceneAsync's pre-load
@@ -322,7 +352,7 @@ namespace CosmicShore.Core
             // Let the frames that carried the collect (and the veil's release work) END while the splash is still
             // opaque. The fade reads each frame's time, so starting it on the frame after a long one let that frame
             // eat the fade, and the menu banged open instead of dissolving in.
-            for (int i = 0; i < revealSettleFrames; i++)
+            for (int i = 0; i < revealSettleFrames && !shownEarly; i++)
                 await UniTask.NextFrame(PlayerLoopTiming.Update);
 
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
@@ -331,14 +361,14 @@ namespace CosmicShore.Core
             // The menu becomes visible now: stamp it, so the load report keeps the true "shown" moment while its
             // file is written after the reveal instead of on the reveal's first frame.
             bool recordingMenu = LoadInsights.IsRecordingMenuLoad;
-            if (recordingMenu) LoadInsights.MarkVisualReady();
+            if (recordingMenu && !shownEarly) LoadInsights.MarkVisualReady();
 
             // The lava lamp is up: from now on this player is listed online on every other machine
             // (LavaLampPresence; before this they were still booting and could not be invited).
             if (intoMenu)
                 LavaLampPresence.MarkShown();
 
-            if (_sceneTransitionManager != null)
+            if (_sceneTransitionManager != null && !shownEarly)
             {
                 if (intoMenu) await _sceneTransitionManager.RevealAsync();
                 else await _sceneTransitionManager.FadeFromBlack();
@@ -553,6 +583,11 @@ namespace CosmicShore.Core
 
             gameData.ResetRuntimeData();
 
+            // Take the old scene's world down in slices while the splash covers it, so the load's frame has
+            // less to destroy. Started here and awaited after the cover below, so the two run together.
+            // The trail stays with its pools here: InvokeSceneTransition above has already started their release.
+            var sceneExitDrain = DrainSceneForExitAsync(returnPooledTrail: false);
+
             // Normally a short cover for the fade; a between-game tournament transition extends it
             // (minSplashDwell) so the running standings on the splash are readable before the next scene
             // loads. Unscaled so a paused / zero timescale can't stall the hold.
@@ -564,6 +599,12 @@ namespace CosmicShore.Core
                     TimeSpan.FromSeconds(wait),
                     DelayType.UnscaledDeltaTime
                 );
+            }
+
+            using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                       "Scene exit drain behind the splash", isWait: true))
+            {
+                await sceneExitDrain;
             }
 
             _sceneLoadSpan = LoadInsights.Begin(LoadInsightCategory.SceneLoad,
@@ -596,6 +637,75 @@ namespace CosmicShore.Core
                 CSDebug.LogWarning("[SceneLoader] No active server - falling back to local scene load.");
                 SceneManager.LoadScene(sceneName);
             }
+        }
+
+        /// <summary>
+        /// A guest's half of the scene exit drain: the host's veil RPC calls it
+        /// (<c>MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc</c>), because a SOAP raise is local
+        /// and a guest never runs <see cref="LoadSceneAsync"/>. A guest cannot hold the load: the host's own hold is
+        /// the time it gets, and what it has not drained when the load arrives dies in that frame as before.
+        /// </summary>
+        public void BeginSceneExitDrain() => DrainSceneForExitAsync(returnPooledTrail: true).Forget();
+
+        /// <summary>
+        /// Retire every cell's world in the scene being left, a slice a frame, and wait for it up to
+        /// <see cref="sceneExitDrainMaxSeconds"/>. Call only with the splash opaque: the world is not eased away.
+        ///
+        /// <para>Why: a Single scene load destroys the old scene and wakes the new one in ONE frame. Measured on a
+        /// return from a 90 s Bloomrush (73,500 prisms, 60,000 of them plants): 9.5 and 10.5 s, of which 3.4-3.7 s
+        /// was the destroy. Relay drops a player it has not heard from for about 10 s, and a frozen frame sends
+        /// nothing (B36 / B45). The work is the same; it is spread over frames that still answer the network.</para>
+        /// </summary>
+        /// <param name="returnPooledTrail">True on a guest: the cell hands the trail back to its pool in slices,
+        /// so the pool's own release at the scene change has little left to do in the load's frame. False on the
+        /// host, whose pools are already releasing (see <c>Cell.RetireWorldIntoPoolForSceneExit</c>).</param>
+        async UniTask DrainSceneForExitAsync(bool returnPooledTrail)
+        {
+            if (sceneExitDrainMaxSeconds <= 0f) return;
+
+            // Leaving the menu is not drained: a launch's frame is short while the menu's world is small
+            // (2.1-2.6 s), and holding every launch for it cost about 5 s (measured 2026-11-20).
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+            if (SceneManager.GetActiveScene().name == menuScene) return;
+
+            System.Collections.Generic.List<Cell> draining = null;
+            foreach (var cell in FindObjectsByType<Cell>(FindObjectsSortMode.None))
+            {
+                if (cell && cell.RetireWorldIntoPoolForSceneExit(SceneExitSliceMs, 0f, requireEnvironment: false,
+                        rootDestroyPrismsPerFrame: sceneExitDestroysPerFrame, returnPooledTrail: returnPooledTrail,
+                        rootDestroyFrameBudgetMs: sceneExitFrameBudgetMs))
+                    (draining ??= new System.Collections.Generic.List<Cell>()).Add(cell);
+            }
+            if (draining == null) return;
+
+            float startedAt = Time.unscaledTime;
+            float deadline = startedAt + sceneExitDrainMaxSeconds;
+            bool running = true, sceneLeft = false;
+            while (running && Time.unscaledTime < deadline)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                running = false;
+                foreach (var cell in draining)
+                {
+                    if (!cell) { sceneLeft = true; continue; }
+                    if (cell.IsRetiringForSceneExit) { running = true; break; }
+                }
+            }
+
+            int destroyed = 0, parked = 0;
+            foreach (var cell in draining)
+            {
+                if (!cell) continue;
+                destroyed += cell.LastSceneExitDestroyedCount;
+                parked += cell.LastSceneExitParkedCount;
+            }
+
+            // One mark per exit in the test log, so a run shows whether the drain finished before the load.
+            float took = Time.unscaledTime - startedAt;
+            NetSessionRecorder.Mark("sceneExitDrain",
+                running ? $"cut short at {sceneExitDrainMaxSeconds:0.0}s"
+                : sceneLeft ? $"the scene left first, after {took:0.0}s"
+                : $"{destroyed} destroyed, {parked} parked in {took:0.0}s");
         }
 
         void ClearPlayerVesselReferences()

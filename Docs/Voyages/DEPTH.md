@@ -287,9 +287,12 @@ The old content's numbers (§0) are the baseline; the new content's are recorded
 5. **Days pass while away** (default: real days since the last save, at most five ticks), or the galaxy waits.
 6. **The thief's lift** takes a port's freshest news (default) rather than copying it.
 7. **Sport's exhibition run** stays a voyage (default), or sport pilots bring nothing and belong to the Arena alone.
-8. **The board is about six** (default, the 2026-10-30 meeting): the seated pilots' jobs lead it, one each, and the rest
-   of the crew fills it with its most interesting work (a saga chapter first, then news-grown work, then by standing).
-   The slice offered the seated three alone.
+8. **The board is the active squad's three pilots** (DECIDED, Shombith 2026-11-16, replacing the 2026-10-30 default of
+   about six): one job from each pilot seated in the active squad, plus the Ark escort and the way home. The rest of the
+   crew no longer fills the board: with every pilot unlocked it filled every board and the squad stopped deciding what
+   was offered. A player with no squad is given a starter squad (`VoyageToyDefinitionSO` starter seats: a Guardian in
+   Charge with TALON, a Squirrel in Mass with ANVIL, a Dolphin in Space with CITADEL), saved into their squad book
+   (`VoyageRun.ActiveSquad`). `VoyageRules.Board` still takes a crew list; the game passes none.
 9. **A saga's chapter stands at every port** (default), so the crew reads its own story wherever it docks; or only at
    the port nearest the last chapter's place, which the harness showed loses most crews the thread.
 10. **A new galaxy is awake on day 0** (default): the hoard is stocked, the pens and distress calls are heard, the

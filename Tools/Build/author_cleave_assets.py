@@ -375,7 +375,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameCleave.asset",
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Swordfish']}, type: 2}}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1

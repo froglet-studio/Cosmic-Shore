@@ -48,7 +48,7 @@ LEARN_FINISH_SLACK = 0.10
 def _head(text, n=6000):
     """The flight's header fields (they come first; samples follow)."""
     out = {}
-    for key in ("schema", "mode", "hull", "intensity", "pilot", "finished", "raceSeconds", "date", "ended", "funType"):
+    for key in ("schema", "mode", "hull", "intensity", "pilot", "finished", "raceSeconds", "date", "ended", "funType", "raceTarget", "youWon"):
         i = text.find(f'"{key}":', 0, n)
         if i < 0:
             continue
@@ -61,6 +61,10 @@ def _head(text, n=6000):
                 k += 1
             raw = text[j:k]
             out[key] = True if raw == "true" else False if raw == "false" else float(raw) if raw else None
+    # A race with no gate target (Skim Race: first to collect every crystal) writes "finished": false always, because
+    # the recorder keys it on rings; the race ends when the first racer clears its crystals, so finishing is winning.
+    if out.get("raceTarget") == 0 and isinstance(out.get("youWon"), bool):
+        out["finished"] = out["youWon"]
     return out
 
 
@@ -231,6 +235,12 @@ def self_test():
     expect(_head('{"mode":"Switchback","hull":"Dolphin","intensity":2,"finished":true,"raceSeconds":221.18,')
            == {"mode": "Switchback", "hull": "Dolphin", "intensity": 2.0, "finished": True, "raceSeconds": 221.18},
            "the header reader reads a flight's fields")
+    skim = '{"mode":"SkimRace","hull":"Squirrel","intensity":2,"raceTarget":0,"finished":false,"raceSeconds":93.5,' \
+           '"result":{"winnerDomain":"Jade","youWon":%s,'
+    expect(_head(skim % "true")["finished"] is True and _head(skim % "false")["finished"] is False,
+           "a race with no gate target (Skim Race) finishes when you won it")
+    expect(_head('{"mode":"Switchback","raceTarget":26,"finished":false,"youWon":true,')["finished"] is False,
+           "a gate race keeps its own finished field")
 
     def fl(rung, finished=True, secs=100.0, hull="Dolphin", mode="Switchback", pilot="human", name=None):
         return {"mode": mode, "hull": hull, "intensity": rung, "finished": finished, "raceSeconds": secs, "pilot": pilot,

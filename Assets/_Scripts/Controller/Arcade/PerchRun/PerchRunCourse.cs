@@ -381,7 +381,14 @@ namespace CosmicShore.Gameplay
         /// threads, clamped to the charge's range: no further, so a hairpin after it is one dart.
         /// Length 0: no line clears (cruise: the Goby's own flight passes through coral).
         /// </summary>
-        public static Vector3 PlanDart(Vector3 hull, IReadOnlyList<RaceGate> rings, int next, IReadOnlyList<Coral> coral, out float length)
+        public static Vector3 PlanDart(Vector3 hull, IReadOnlyList<RaceGate> rings, int next, IReadOnlyList<Coral> coral, out float length) =>
+            PlanDart(hull, rings, next, coral, Overshoot, out length);
+
+        /// <summary><see cref="PlanDart(Vector3, IReadOnlyList{RaceGate}, int, IReadOnlyList{Coral}, out float)"/> with
+        /// the coach's own <paramref name="overshoot"/> past the last ring (the AI search's gene; shipped
+        /// <see cref="Overshoot"/>).</summary>
+        public static Vector3 PlanDart(Vector3 hull, IReadOnlyList<RaceGate> rings, int next, IReadOnlyList<Coral> coral,
+            float overshoot, out float length)
         {
             length = 0f;
             var g = rings[next];
@@ -390,19 +397,41 @@ namespace CosmicShore.Gameplay
                 Vector3 d2 = far - hull;
                 float l2 = d2.magnitude;
                 Vector3 u = d2 / Mathf.Max(1e-3f, l2);
-                if (l2 + Overshoot <= DartRange && Threads(hull, far, g, HullRadius + RimMargin))
+                if (l2 + overshoot <= DartRange && Threads(hull, far, g, HullRadius + RimMargin))
                 {
-                    length = Mathf.Clamp(l2 + Overshoot, DartMinRange, DartRange);
-                    return far + u * Overshoot;
+                    length = Mathf.Clamp(l2 + overshoot, DartMinRange, DartRange);
+                    return far + u * overshoot;
                 }
             }
             if (!TryRimShot(hull, rings, next, coral, out Vector3 through)) return g.Position;
             Vector3 to = through - hull;
             float dist = to.magnitude;
             Vector3 dir = to / Mathf.Max(1e-3f, dist);
-            Vector3 aim = through + dir * Overshoot;
-            length = Mathf.Clamp(dist + Overshoot, DartMinRange, DartRange);
+            Vector3 aim = through + dir * overshoot;
+            length = Mathf.Clamp(dist + overshoot, DartMinRange, DartRange);
             return aim;
+        }
+
+        /// <summary>
+        /// The AI's turning circle at <paramref name="speed"/>: the Goby AI turns at <see cref="AiTurnRate"/> while it
+        /// cruises, so a point closer beside its nose than this circle is one it can only orbit.
+        /// </summary>
+        public static float TurnRadius(float speed) => Mathf.Max(speed, AiCruiseSpeed) / (AiTurnRate * Mathf.Deg2Rad);
+
+        /// <summary>
+        /// True when <paramref name="aim"/> lies inside the turning circle on its side of the nose (with
+        /// <paramref name="margin"/>): turning at full rate toward it settles into a circle round it, the nose never
+        /// comes within the dart's 0.5 degrees, and the race stalls (measured in the real game, 2026-11-17: an AI Goby
+        /// orbited one ring for 400 s). The coach then flies the Goby straight on until the ring is outside the circle.
+        /// </summary>
+        public static bool InsideTurn(Vector3 hull, Vector3 forward, Vector3 aim, float turnRadius, float margin = 1.25f)
+        {
+            Vector3 f = forward.normalized, to = aim - hull;
+            Vector3 lateral = to - Vector3.Dot(to, f) * f;
+            if (lateral.sqrMagnitude < 1e-6f) return false;   // dead ahead or dead behind: a turn reaches it
+            float r = turnRadius * margin;
+            Vector3 centre = hull + lateral.normalized * r;
+            return (aim - centre).sqrMagnitude < r * r;
         }
 
         public static float DistanceToSegment(Vector3 p, Vector3 a, Vector3 b)

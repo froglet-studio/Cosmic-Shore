@@ -151,8 +151,9 @@ at most every 3 s, never while a trigger is held, through the replicated press.
 
 ## 1b. Time mode — the catch and the 90° slingshot (2026-10-14)
 
-**Since 2026-11-04 Time mode is the TRAMPOLINE** (`StoatSlingConfigSO.trampoline` on; "The trampoline" below). The catch,
-the orbit and the aimed exit in this section are its fallback: `trampoline` 0 flies them as they shipped in PR #1733.
+**Since 2026-11-11 Time mode is the SWING** (`StoatSlingConfigSO.swing` on; "The swing" below). Off, the trampoline
+(`trampoline`, 2026-11-04, shipped off since) and then the catch, the orbit and the aimed exit in this section fly as they
+shipped.
 
 The design call, after the first cut was played: *"Mass mode [should] be like what we had before I tried to split into
 modes. Time mode would have less mass and reflect the way we had it working before the pathfinding and instead of
@@ -257,6 +258,45 @@ lets it go on the release. The catch and the orbit fly on the simulating machine
   model (`stoat_orbit_sim.py --earned`): 78-91 s a Slingshot race at 11-12 presses a minute with 63-78% of releases timed,
   where the press-spam AI ran 55-58 s at 19-28 a minute with almost none timed before, and 80-85 s under earned speed.
 - **On a phone** two orbit discs (LT left, RT right) sit round the right thumb; a thumb anywhere else steers.
+- **The swing (Yash, 2026-11-11: "it's worse, try smaller hole size, change it to a black hole only as before, then make the
+  slingshot angle dynamic based on our controller's axis like before... try a better approach this time... the black hole
+  looks more better than the white hole").** `swing` on (Unity-first, not in the studio yet). One black hole, no white
+  hole, no orbit, no shell:
+  - **The press** lays a lone BLACK HOLE `swingAhead` 150 u ahead and `swingSide` 35 u to the pressed side (RT right, LT
+    left; `StoatSlingMath.SwingHole`), its horizon `swingHorizon` 0.8 u: half the orbit's poles (1.6). It is owned by the
+    Stoat that laid it, so it pulls no vessel (`BlackHoleVesselPull`), and it steals prisms for Space 5 Accretion as the
+    orbit's attractor did.
+  - **The swing.** Pass within `swingReach` 55 u (× Space's reach) with the hole at least `swingCatchDegrees` 40° off your nose
+    (beside it, not into it: `SwingStarts`) and it swings you toward itself: your heading turns about the axis fixed at
+    that moment (`SwingAxis`) at your speed over your distance (ω = v / d), never faster than `swingDegreesPerSecond` 150°/s
+    (`SwingRate`). No radius is held and nothing pulls you: only the heading turns.
+  - **The stick picks the angle, live** (`SwingTurnDegrees`, read every frame): the stick's share toward the hole maps
+    `swingMinDegrees` 15° (away) .. 52.5° (at rest) .. `swingMaxDegrees` 90° (toward). The moment you have turned that far
+    you are FLUNG: the kick along your new heading (`slingBoostMin`..`slingBoostMax` of the engine by the hold's deepest
+    squeeze, × Mass's `launchPower`, under `speedCapShare` and `warpKickCapCruise`) and the warp kept as momentum. Every
+    fling is timed: no window. Letting go of the trigger while it swings you flings you at once; before it, nothing.
+  - **One slingshot (Yash, 2026-11-19: "there are two slingshots happening when a stoat orbits the blackhole, one that
+    time, one after that, I want only one slingshot, the first one, then player should be able to reach their target
+    destinations more accurately and comfortably").** The swing gave two pushes: the flight clock leaping to the orbit's
+    full warp (about x3.1) the moment the swing starts, then a KICK at the exit (the hold's squeeze x Mass, up to 0.6 x
+    the speed, fading over 1.5 s) that overshot the target. The kick is now `swingKickShare` of itself, shipped 0: the
+    swing's own speed-up is the one slingshot, kept as momentum (fading over `momentumSeconds` 6 s), and you leave on the
+    dotted line's heading with nothing more added. Model (`stoat_orbit_sim.py --swing`): Slingshot's trained AI 62 / 71 /
+    74 / 76 s with no rings missed (61 / 71 / 72 / 76 with the kick); the hull's rows 106 / 104 / 101 / 98 s. Mass's
+    `launchPower` scaled that kick, so on the swing Mass now scales nothing (a follow-up for the element map).
+  - **Drawn** (world dots, `StoatPathfinderExecutor.AddSwingRings`): a faint ring at the reach round the hole, and the EXIT
+    LINE from your nose along the heading the swing would fling you on right now, so moving the stick moves the line;
+    lime while it swings you. A lime ripple grows out of the hole at each fling. The Time card fills through the swing.
+  - **The end.** Passed untouched (moving away beyond the reach) or after `swingSeconds` 4 s, the hole collapses; flung, it
+    collapses at once. Either way it throws the Charge ripple, as the pair's annihilation did. A press over a live hole
+    collapses it first. A hull that came within the reach lays its trail shielded for the kick's length (Mass 5).
+  - **The AI** presses toward a turn (the hole lands on that side, so steering for its target it passes beside it) and
+    lets go at once; it is flung once it faces its target within `aiSwingFaceDegrees` 8° (after 15°), once its target is
+    no longer on the swing's side (`OnSwingSide`: a press for the warp alone), or at 90°. Model (`stoat_orbit_sim.py
+    --swing`, 6 courses): the hull's own rows (`aiSlingMinTurnDegrees` 50 → 20) 103 / 100 / 96 / 96 s at I1-I4, 0-0.7 rings
+    missed; Slingshot's own copy keeps Garrett's trained rows (c39317a6b6: warp presses on long legs) and races 61 / 71 /
+    72 / 76 s. The aimed exit ran 115 / 124 / 111 / 133 s, cruising 142 / 138 / 143 / 149 s. `--swing-grid` chose the reach
+    and the cap (a 70 u reach or a 300°/s cap bounced the AI off its line).
 - **The trampoline (Yash, 2026-11-04: "Make the slingshot mechanics in a different way, now while bouncing, it's getting
   sucked in some orbit, and then they gets puished, what if we remove the whole orbit, and make a soft tampoline like 3D surface
   above the black hole, or remove the black hole, just keep white hole, make it so that vessels can bounce off with extra
@@ -287,6 +327,17 @@ lets it go on the release. The catch and the orbit fly on the simulating machine
     flies at the flank as deep as the turn it wants (`TrampolineLineFor`, `trampolineAiTurnScale` 100). Model
     (`stoat_orbit_sim.py --trampoline`, 6 courses): 125 / 113 / 111 / 121 s at I1-I4, every shell touched, 0-8 rings missed a
     race; the aimed exit ran 115 / 124 / 111 / 133 s. Without the borrowed aim the AI touched only 12-38% of its shells.
+  - **The smaller shell (Yash, 2026-11-07: "the slingshot is still very wacky, like it moves the vessel too much, make the
+    radius of white hole smaller by 50 percent so the slingshot is manageable").** `trampolineRadius` 60 → 30 u (the white
+    hole is laid the same way, 0.75 × the radius off your line). A small shell is relatively softer, so the same graze
+    turns you less: the shipped line now turns you about 23° at 150 u/s (17-30° at 120-190; was 45°), a 0.5 graze about 49°,
+    0.9 about 8°, and a bounce lasts 0.15-0.28 s (was 0.23-0.32). Head-on is still straight back: the spring alone let a
+    190 u/s hull through the 30 u shell, so it has a HARD CORE now - still moving in at `StoatSlingMath.TrampolineCoreShare`
+    0.2 × the radius from the centre, the hull is reflected out. **The AI gains little from the small shell:** it presses
+    only for a turn of 50° or more (`aiSlingMinTurnDegrees` 35 → 50, both configs) and grazes deep (`trampolineAiTurnScale`
+    100 → 55); model 135 / 133 / 141 / 145 s at I1-I4, every race finished, 0-3 rings missed - about cruise pace (142 / 138
+    / 143 / 149 s), where the 60 u shell ran 111-125 s. At 35° it bounced itself off its line (3 of 6 races unfinished at
+    I3). The learning sweep relearns it from people's races.
   - **Not carried over:** Space 5 Accretion (the black hole stole prisms; a white hole takes none, so Accretion is dormant),
     and the flick launch (nothing to launch out of).
 - **The aimed exit (Yash, 2026-11-03: "I want to get into the orbit, and then I want to be slingshot at 30-45degrees from angle
@@ -348,11 +399,12 @@ so a pair held wide is a wide ripple — the dipole moment becomes the threat. A
 | a **creature** | killed (`Fauna.Predated`, the platform's death: heart released, mass conserved) on the fauna's simulating machine |
 | a **prism**, the owner, a teammate | nothing |
 
-Each victim is struck once per ripple. **Where it runs:** every peer, from its own copy of the pair (each peer's copy
+**A strip is a scored hit** (2026-11-15, for Shockfront): before stripping, the deciding machine admits it through `CombatHitDrain.TryAdmitPetals` (Debuff class, four petals, `ElementalDebuffSources.Explosion`, a per-victim cooldown of `StoatRippleConfigSO.hitCooldownSeconds`, 0.5 s) and raises `Event_CombatHitStats`, so the ripple scores CombatPoints like every other Debuff and silences its victim (`Docs/ElementalAbilitySystem/SILENCE.md`). A silenced Stoat's ripple strips nothing. Each victim is struck once per ripple. **Where it runs:** every peer, from its own copy of the pair (each peer's copy
 collapses / meets); the strip runs on each peer's copy of the rival's petals, the per-peer stance the wormhole toll and
 the sink's own crystal strip take, with Charge and Siphon read off replicated state so every peer sweeps the same sphere.
 
-**The picture** (`StoatRipple` + `StoatRipple.shader`): a back-faced sphere drawn by the black-hole lens pass
+**The picture** — superseded on 2026-11-21 by "The drawn wave" at the end of this section; kept as the record.
+(`StoatRipple` + `StoatRipple.shader`): a back-faced sphere drawn by the black-hole lens pass
 (`LightMode = BlackHoleLens`) from its copy of the camera colour. Per pixel, the view ray's closest approach to the
 centre picks the ring the shell projects to; within a band either side the ray is BENT — toward the centre outside the
 front (the scene pushed out), away inside it (pulled in), a derivative-of-Gaussian profile — with a red / blue split
@@ -398,6 +450,32 @@ ring (black) and a bright soft core (white); the annihilation throws a faint loc
 own waveform, gone by `mobileWaveReach` 220 u) instead of bending the view; the hull no longer stretches near a hole,
 and `gwShake` stretches nothing. The REACH, the strip and the kill are unchanged.
 
+**The drawn wave — a space-time ripple with no colour (2026-11-21).** Yash, on the swing hole going back to nothing:
+*"The ripple wave that comes out after the annihilation of blackhole back to nothing, is very bright and like a domain
+color ring enlarging throughout, very ugly. I want a near-realistic space-time ripple wave, no domain color, just a wave
+of disturbance created from the point of annihilation of the black hole diminishing to distance."* What he saw was the
+Mobile look's ring above (`BlackHoleGlow.DrawRing` in the owner's domain colour); the Studio look's bending sphere had
+never reached the screen. Both are gone. Now:
+- **No colour, only a disturbance.** `StoatRipplePass` copies the camera colour after the transparents (just after the
+  black-hole lens) and redraws, in one full-screen triangle, every pixel a wave crosses from that copy, **bent** along
+  the wave's radius; on a crest the scene's own light is raised and in a trough lowered by `shimmer` (0.05). Nothing is
+  added, so bloom has nothing to blow up. Pixels no wave reaches are discarded.
+- **A front that rings down.** The shape across the front is `StoatRippleMath.Profile` (= `StoatRippleProfile` in the
+  shader): a sharp leading edge, then about three crests trailing it, `wavelength` (9 u) apart, each weaker.
+- **Diminishing to distance.** The bend (`bend` 0.012 rad, about a hundredth of the screen's height) holds inside
+  `nearRadius` (22 u) and then falls as `nearRadius` / front, 1/r as a real spreading wave does, and fades with the wave
+  (`expandSeconds` 0.9, `fadeSeconds` 0.5: the clock the strip runs on, unchanged).
+- **It passes through you.** When the front runs through the camera the whole view swells and settles by `passShare`
+  (0.35) of the front's bend: a few pixels at the screen's edge.
+- **Both looks, briefly.** It runs in the Mobile and the Studio look alike; the pass is enqueued only while a ripple
+  lives (about 1.4 s), so a frame without one pays nothing. Stated limit: the URP asset keeps no depth texture, so an
+  opaque in front of the wave inside its band is bent with what is behind it (D7).
+- **Retired:** `bandWidth`, `chromaticSplit` and `rimGlow` (`author_stoat_assets.py` writes the new rows). Held by
+  `StoatRippleTests` (the profile, the 1/r falloff, the projection, the swell, the shipped colourless rows) and
+  `Tools/Shaders/verify_stoat_ripple.py` (both stages compile, no tint in the program, a negative control).
+- **Not touched:** a dipole PAIR's annihilation also throws the black-hole system's own waves (`annihilationWaves`,
+  `BlackHoleWaves`), which the Mobile look draws as faint pale rings; the swing hole throws only this ripple.
+
 ## 1d. The HUD — four cards, four gauges
 
 `StoatHUDVariant.prefab` (a true variant of `VesselHUDPrefab`, copied once from the Thresher's: authored petal bars, a
@@ -441,6 +519,7 @@ The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--
   `foresightRange` (1500 u), `foresightLength` (500 u) long, in their domain colours: each flown forward on the turn
   and speed it is holding NOW — its rotation's change since last frame, in its own axes — through the same
   `StoatDipoleMath.PredictPath`. Rivals rescanned once a second. Local pilot only; presentation only.
+- **The omni crystal is FULMEN (Yash, 2026-10-29; kept 2026-11-20: "no giant white hole, just fulmen lightning from center, burning any prisms it passes through").** Every omni crystal fires one bolt from the cell's centre (`FulmenByCrystalEffect` in `StoatImpactorDataContainer`, `FulmenConfig.asset`: `crystalsToFire` 1, reach 60% of the cell radius and at least 200 u). Every prism a stream passes through (`pathRadius` 16 u) burns for 12 s; no budget or cap skips one (fixed 2026-11-20, `FulmenSystem.BurnAlong`). The halo out to `burnRadius` 200 u burns while the burn manager has room (192 at once). The Stoat's own domain and super-shielded prisms never burn. The white hole asked for on 2026-11-11 was dropped and is not in the repo. Numbers and the fix: `Controller/Environment/Fulmen/README.md`.
 - **Retired as the omni-crystal ability 2026-10-29:** Yash made Fulmen (`Controller/Environment/Fulmen/README.md`) the Stoat's omni-crystal ability; Overclock was taken out of `StoatImpactorDataContainer` (code and asset kept). Note `Tools/Build/author_stoat_assets.py` still writes Overclock into the container if re-run.
 - **Overclock (PARKED — the omni crystal, proposal O1).** Not in any container; the asset and script stay because the generators reference their guid. `StoatOverclockByCrystalEffectSO`, the only Stoat entry in
   `vesselCrystalEffects`: 6 s in which the boost holds full and the line stays lime, warped or not.

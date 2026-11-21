@@ -101,10 +101,51 @@ float2 VortexRingLensNearestQuadrant(float y0, float y1, float a, float b)
     return float2(a, 0.0);
 }
 
+// STAND-IN (lens worker, 2026-11-10): the same nearest point by a fixed-point curvature iteration instead of the
+// 32-step bisection. Each step puts the point on the ellipse's osculating circle at the current guess (centre e on
+// the evolute, radius |q - e|) and moves the guess to where the line from e to the pixel crosses that circle,
+// renormalised onto the ellipse (the trig-free method popularised by Chou, "Distance to an ellipse", 2017).
+// It converges cubically from (1/sqrt2, 1/sqrt2) for every eccentricity; VORTEX_RING_LENS_NEAREST_ITERS steps (3 by
+// default) agree with the bisection far below a pixel at 1280x720 (README: lens/). Set
+// VORTEX_RING_LENS_NEAREST_ITERS to 0 to get the shipped bisection back.
+#ifndef VORTEX_RING_LENS_NEAREST_ITERS
+#define VORTEX_RING_LENS_NEAREST_ITERS 3
+#endif
+
+float2 VortexRingLensNearestQuadrantFast(float y0, float y1, float a, float b)
+{
+    if (b <= a * VORTEX_RING_LENS_SEGMENT) return float2(min(y0, a), 0.0);
+    float tx = 0.70710678;
+    float ty = 0.70710678;
+    float k = a * a - b * b;
+    float ia = 1.0 / a;
+    float ib = 1.0 / b;
+    for (int i = 0; i < VORTEX_RING_LENS_NEAREST_ITERS; i++)
+    {
+        float ex = k * tx * tx * tx * ia;
+        float ey = -k * ty * ty * ty * ib;
+        float rx = a * tx - ex;
+        float ry = b * ty - ey;
+        float qx = y0 - ex;
+        float qy = y1 - ey;
+        float s = sqrt(rx * rx + ry * ry) / max(sqrt(qx * qx + qy * qy), 1e-12);
+        tx = saturate((qx * s + ex) * ia);
+        ty = saturate((qy * s + ey) * ib);
+        float n = 1.0 / max(sqrt(tx * tx + ty * ty), 1e-12);
+        tx *= n;
+        ty *= n;
+    }
+    return float2(a * tx, b * ty);
+}
+
 // The nearest point in the ellipse's own frame (x along the major axis), any quadrant.
 float2 VortexRingLensNearest(float2 l, float a, float b)
 {
+#if VORTEX_RING_LENS_NEAREST_ITERS > 0
+    float2 q = VortexRingLensNearestQuadrantFast(abs(l.x), abs(l.y), a, b);
+#else
     float2 q = VortexRingLensNearestQuadrant(abs(l.x), abs(l.y), a, b);
+#endif
     return float2(l.x < 0.0 ? -q.x : q.x, l.y < 0.0 ? -q.y : q.y);
 }
 

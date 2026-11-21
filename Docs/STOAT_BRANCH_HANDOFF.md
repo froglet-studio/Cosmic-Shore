@@ -1,5 +1,7 @@
 # `claude/peaceful-rubin-hhw49n`: start here
 
+> **History, not the current Stoat (marked 2026-11-20, Yash).** What ships is the swing: one small black hole, the stick picks the exit angle, one slingshot. The source of truth is `Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md` (the banner at its top) and `STOAT_DIPOLE.md` ("The swing", "One slingshot"). Kept as a record: this hand-over describes the Stoat as it was on 2026-10-09, before the swing.
+
 The handoff for anyone picking this branch up: what is on it, where each piece is documented, what is
 decided, what is open, and how to check it. Written 2026-10-09, after merging the latest
 **bleeding-edge** and **Ys-bleeding-edge** (neither has a commit this branch lacks).

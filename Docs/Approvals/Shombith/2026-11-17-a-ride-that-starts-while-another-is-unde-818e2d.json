@@ -1,0 +1,20 @@
+{
+  "id": "2026-11-17-a-ride-that-starts-while-another-is-unde-818e2d",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-17T09:44:11+00:00",
+  "area": "the Honeyguide crew's ride (zip) hold",
+  "summary": "A ride that starts while another is under way (a trigger's dart, then a slip in the same frame) now inherits that ride's hold on the transformer, and contacts wait while any ride is under way; before, the transformer stayed off for good and the hull froze mid-race (about 1 Slip Line race in 10 timed out). No ability changed.",
+  "why": "Overnight stall trace for the Regatta flywheel (race judge: 8 timeouts in 96 races before, 0 after).",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "433607e47",
+  "paths": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideCrew.Pilot.cs",
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideCrew.Zip.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Honeyguide"
+    ]
+  }
+}

@@ -448,14 +448,15 @@ and "again" every month so a repeat is seen.
 |---|---|---|
 | 3.1 See the real game | R0 the real editor compiles every PR | `claude/ci-hosted-unity-compile` exists (2026-11-01); waits on the licence secrets and a merge (D1) |
 | 3.1 See the real game | R1-R2 the look-sheet kit | **built 2026-11-07 night**, not yet run in Unity: `Docs/LOOK_SHEET.md`, `/unity-look`, the CI job `look-sheet.yml`; the first run is a checklist entry |
-| 3.2 The world's look | R0 the audit, the baseline gate, the language, the vocabulary, the lessons, the skill | **built 2026-11-07 night**: `/world-look`, `Tools/Build/look_kit/audit.py` (67 effects, 72 signals on 25 as the baseline), `Docs/Shaders/WORLD_LOOK_SKILL_PLAN.md`; the language is a draft for Garrett (D2) |
-| 3.3 Decide before building | R0 the ledger, the check, the brief, the brief step in four skills | **built 2026-11-07 night**: `Docs/claude/PRINCIPLES.md` (271 entries, every one verified at its source line by `principles.py --check`), `DESIGN_BRIEF.md`; every entry drafted, waiting on its owner (D3) |
+| 3.2 The world's look | R0 the audit, the baseline gate, the language, the vocabulary, the lessons, the skill | **built 2026-11-07 night**: `/world-look`, `Tools/Build/look_kit/audit.py` (67 effects, 72 signals on 25 as the baseline), `Docs/Shaders/WORLD_LOOK_SKILL_PLAN.md`; the language is a draft for Garrett (D2). **2026-11-16**: the gate is rename-safe (a moved offender passes as `moved`, fingerprinted in the baseline, three negative controls in `--self-test`) and the baseline rewritten after the Swordfish rename turned it red; 68 effects, 72 signals |
+| 3.3 Decide before building | R0 the ledger, the check, the brief, the brief step in four skills | **built 2026-11-07 night**: `Docs/claude/PRINCIPLES.md` (271 entries, every one verified at its source line by `principles.py --check`), `DESIGN_BRIEF.md`. **R1 under way (D3)**: on 2026-11-16 Garrett answered 15 AI, economy and modes entries one card at a time (13 confirmed, P-ai-15 merged into P-ai-14, P-economy-01 rewritten, P-modes-04 struck as covered by P-ecology-08); the ledger is 267 entries, 35 confirmed, 232 drafted |
 | 3.4 UI | R0 `UI_LESSONS.md`; R1 the mockup gate | **built 2026-11-07 night**: `.claude/skills/frogma/references/UI_LESSONS.md` + `ui_lessons.py`, `check_mockup.py` (measured on five boards: the noise gate tells a rejected round from a picked one in four cases of five); the parity sheet (R2) waits on 3.1 (D4) |
 | 3.5 Sound | R0 the audit and the language; R1 the Meerkat briefs | **R0 built 2026-11-07 night**: `sound_slots.py` (13 real failures on the tree: three one-shots in loop slots, seven unbanked events, one renamed, no mobile banks), `SOUND_LANGUAGE.md` (draft), `/sound-brief`; the tool's self-test has one open assertion; the Meerkat briefs are owed (D5) |
 | 3.6 Multiplayer | R0 the skill; R1 the scenario scaffold | **built 2026-11-07 night**: `/multiplayer` + `references/HAND_TESTS.md`, `net_scenarios.py` (rows 2-5 as data, a judge over `net_logs.py`, `--run` unverified: no port build here); B48 is claimed twice, next free B50 (D6) |
 | 3.7 Near-A skills | the measurement and the owed negative controls | **measured 2026-11-07 night** for fauna-creation, cardart and prism-morph (a 'Round status and what each gate still owes' section each); flora and ecology not reached |
 | ledger | `Tools/Build/rework_ledger.py` | built 2026-11-07, the numbers in section 2 |
-| elemental loop | scaffolding 1-2: the one-minute fun card and the per-rung bars | **built 2026-11-12** (Garrett picked each design choice on a card): `FunCard.cs` after every arcade match, `fun_cards.py` (sign-offs), `rung_bars.py` + `rung_bars.json` (defaults, then learned); the card has not been answered in the editor yet |
+| elemental loop | scaffolding 1-2: the one-minute fun card and the per-rung bars | **built 2026-11-12** (Garrett picked each design choice on a card): `FunCard.cs` after every arcade match, `fun_cards.py` (sign-offs), `rung_bars.py` + `rung_bars.json` (defaults, then learned); **first card answered 2026-11-13** (Garrett, Honeyguide Slip Line I1: fun almost, rung right, weakest Rivals), no sign-off yet |
+| elemental loop | step 1 fun pass driven by a card: Honeyguide Time (Slip Line) | **built 2026-11-16, PR open**: the Rivals floor raised from Garrett's recorded race (race line clear of the rails, Regatta steering, throttle floor; a ride's landing no longer un-counts a ring), measured in `slip_line_ai_sim.py`; waits on Garrett flying I1 again and answering the card |
 
 ## 7. What each step taught (append; newest last)
 
@@ -483,6 +484,24 @@ and "again" every month so a repeat is seen.
   (3) **Count only races run to the end**: 175 of the 521 were left early (Play stopped), which made Switchback I1 look
   like a 39% finish instead of 47%. (4) **One question per card worked**: three decision cards answered in about ten
   minutes settled the design.
+
+- 2026-11-16, the first fun pass from a card: (1) **the card names the dimension, the flight record names the cause**:
+  "weakest: Rivals" alone would have sent the work to AI tuning; the recorded race showed a ring the race never counted
+  (a ride's zero-length landing pose read as a teleport), a far-side circle the Regatta steering already fixes in ten
+  other races, and an AI on its skill throttle at 60% of a person's speed. (2) **Rebuild the world from the record**: the
+  flight carries the rings, and the shipped course code rebuilt the rails from them (`slip_line_harness/run.sh
+  --rails`), so the rival's 0.3 u rail touches and its backward slides could be read without the editor. (3) **Model the
+  failure you saw before the fix you want**: the offline model's `--miss` reproduces the uncounted ring, and the shipped
+  steering fails it 0/60 where the new one finishes 60/60; without it the steering change measured as 2-3 s and would
+  have looked unnecessary. (4) **A person going idle on a ring is data too**: Garrett's hull sat 70 s on the same ring
+  with the autopilot holding it, so his "won" was not a contest; the card cannot say that, the record can.
+
+- 2026-11-16, Garrett's AI, economy and modes principles: (1) **one card per rule gets real edits, not rubber
+  stamps**: of 15 asked, 11 were confirmed as written, but two near-duplicates were merged, one clause was cut because it
+  came from a retired mechanic and not from Garrett's words ("control theft"), and one rule written around a single
+  case (Tandava) was struck as already covered. (2) **Offer "strike as covered" when a rule repeats another**: the
+  owner sees the overlap faster from the option than from the rule text. (3) **Put the owner's own quote next to a
+  clause the owner questions**: the source's `words` settled what the clause meant in one message.
 
 ## 8. Appendix A: the skills, hand-audited (2026-11-07)
 
@@ -532,3 +551,11 @@ Of the C skills, the ones that MAKE content and would gain from the shape are `b
 - The hand-offs: the `team-task` issues with their `kind:` and `area:` labels (`python3 Tools/Build/team_tasks.py list`,
   or the GitHub API), the last 80 PRs' titles and bodies for revert / again / fix-after / follow-up.
 - The skills' line counts and reference files: `wc -l .claude/skills/*/SKILL.md`; `ls .claude/skills/*/references`.
+
+- 2026-11-16, the look gate after the Swordfish rename: (1) **a gate keyed on a file path goes red on every rename**:
+  the five sword trails moved from `Rhino.prefab` to `Swordfish.prefab` (#1968) and `--check` reported 10 new and
+  10 fixed, the same ten, so bleeding-edge carried a red look gate that said nothing about the look. (2) **Key an
+  offender on what it is, keep the path to name it**: a fingerprint of the renderer with every path left out pairs a
+  moved signal with the one that left. (3) **A forgiving gate needs its negative controls more than a strict one**: the
+  pairing is one to one, so a copy still fails, and a move that changed the material still fails; both are in the
+  self-test beside the move that passes.

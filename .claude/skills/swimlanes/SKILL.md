@@ -52,7 +52,7 @@ About 15-20 s. It prints five groups, in this order:
 | Group | What puts a lane there |
 |---|---|
 | **The elemental loop** (top, never cut: Garrett 2026-11-12, the top priority) | Every vessel nobody occupies is its own **parallel lane through the loop** (`Docs/ElementalLoop/PLAYBOOK.md`): its progress per element (steps 1 fun / 2 intensities / 3 AI as board marks), the arenas that seat it, and its **next loop step**, from `Tools/Build/elemental_loop.py`. Ranked as `elemental_loop.py next` ranks: Time first, arena-seated vessels first, earliest step. Take one vessel and advance it one step (`/elemental-loop`); the next session takes another, so every vessel moves at once. An occupied vessel stays under Occupied and shows its next loop step for its occupant. |
-| **Open - work waiting** (when every loop lane is held) | Nobody is in it, and there is obvious work: open, untaken Froglet Tasks tickets that name it; editor hand tests not yet run (`Docs/UNITY_VERIFICATION_CHECKLIST.md`); open Bug Ledger errors thrown from its files; placeholder files; level-5 upgrades named but not gated. Ranked by score (a P0 ticket weighs 5, P3 2; each other item 1, capped per kind). |
+| **Open - work waiting** (when every loop lane is held) | Nobody is in it, and there is obvious work: editor hand tests not yet run (`Docs/UNITY_VERIFICATION_CHECKLIST.md`); open Bug Ledger errors thrown from its files; placeholder files; level-5 upgrades named but not gated. Ranked by score (each item 1, capped per kind; a hand-off sent back from test weighs 9, one handed off open 6). |
 | **Occupied** | An unmerged branch has pushed work focused on it in the last 7 days. Shows who, the branch, its PR, the last push and the newest commit. Newest first. |
 | **Open - needs polish** | No obvious work, but measured gaps: undesigned level-5 upgrades, no model dossier, no arcade card of its own, one of the style guide's five worst screens, no edit-mode test names it, five or more TODOs - or a person said "rough". |
 | **Open - polished** (bottom) | None of that, or a person said "polished". |
@@ -65,12 +65,12 @@ Options:
 
 | Ask | Flag |
 |---|---|
-| one lane in full: every occupant, every work item with its ticket number, every polish gap | `--lane <key>` (e.g. `--lane thresher`, `--lane voyages`) |
+| one lane in full: every occupant, every work item, every polish gap | `--lane <key>` (e.g. `--lane thresher`, `--lane voyages`) |
 | every item on the board, not the top three | `--full` |
 | one kind of lane only | `--kind vessel` / `game` / `shell` / `system` |
 | a page or another tool | `--md` / `--json` |
 | a shorter or longer occupancy window | `--days N` |
-| no GitHub (no tickets, no PR authors) | `--no-github` |
+| no GitHub (no PR authors) | `--no-github` |
 | skip the Bug Ledger scan | `--no-bugs` |
 | prove it | `--self-test` |
 
@@ -127,7 +127,7 @@ reads it as **quiet**, and only the last branch in a lane counts, asked of that 
 - **"What's waiting for me?"**: alongside the board, `python3 Tools/Build/approvals.py list --person <them>` is their
   approval queue (`/approve`): mention how many entries wait, in one line.
 - **After you push**: nothing to do. The lane shows you as its occupant while your branch is unmerged; when it merges
-  the lane opens, and whatever your work left (a hand test in the checklist, a ticket) puts it back on top for the
+  the lane opens, and whatever your work left (a hand test in the checklist, a hand-off) puts it back on top for the
   next person.
 
 ## 4. Polished or rough is a person's call

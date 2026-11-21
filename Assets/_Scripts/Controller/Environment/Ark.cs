@@ -116,7 +116,9 @@ namespace CosmicShore.Gameplay
     ///     into something else, so a destroyed or taken hull prism grows back into its own slot at a FIXED RATE, one
     ///     prism a beat, nearest the reactor first (<see cref="ArkReactor"/>). The mass law's fourth sign-off fences it
     ///     (Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): only an Ark, only into its own empty slots, at the fixed rate,
-    ///     each prism growing in. A fallen Ark (no hull left) never regrows.
+    ///     each prism growing in. A fallen Ark (no hull left) never regrows. It heals only inside a cell nucleus its own
+    ///     domain holds (<see cref="InOwnNucleus"/>; Garrett, 2026-11-16), unless a run applies a stricter reading
+    ///     (<see cref="RegrowOverride"/>).
     ///
     /// The Ark itself never removes mass and never runs a timer over anyone else's - the one
     /// clock it owns is its own unhurried course.
@@ -589,11 +591,32 @@ namespace CosmicShore.Gameplay
         Transform ReactorTransform => _model ? _model.ReactorPivot : transform;
 
         /// <summary>
-        /// Whether the reactor may regrow right now (default true). The Ark escort gates it (Garrett, 2026-10-31): the Ark
-        /// heals only inside the nucleus of a world the squad controls. A closed gate is not saved up: beats that fall
-        /// while closed are lost, exactly as a beat with nothing to regrow is.
+        /// A run's own, stricter reading of where the Ark heals, replacing the fleet rule while it is set (null: the
+        /// fleet rule, <see cref="InOwnNucleus"/>). The Ark escort sets it (Garrett, 2026-10-31): the Ark heals only
+        /// inside the nucleus of a world the squad has pacified or kept, which its own hull alone never earns; the run
+        /// clears it when it ends. A closed gate is not saved up: beats that fall while closed are lost, exactly as a
+        /// beat with nothing to regrow is.
         /// </summary>
-        public bool RegrowAllowed { get; set; } = true;
+        public bool? RegrowOverride { get; set; }
+
+        /// <summary>
+        /// The fleet rule (<see cref="ArkReactor.MayRegrowIn"/>): the Ark is inside the nucleus of the cell it is in,
+        /// and its own domain holds that nucleus.
+        /// </summary>
+        public bool InOwnNucleus()
+        {
+            var at = Position;
+            var cell = Cell.FindCellContaining(at);
+            if (!cell) return false;
+            bool claimed = cell.TryGetNucleusClaim(out var claimant);
+            return ArkReactor.MayRegrowIn(Domain, cell.HasNucleusControlZone, cell.IsInsideNucleus(at), claimed, claimant);
+        }
+
+        /// <summary>
+        /// Whether the reactor may regrow a prism right now: the run's <see cref="RegrowOverride"/> when set, otherwise the
+        /// fleet rule (<see cref="InOwnNucleus"/>). The voyage HUD reads it for its "healing" mark.
+        /// </summary>
+        public bool RegrowAllowed => RegrowOverride ?? InOwnNucleus();
 
         /// <summary>
         /// The fixed rate: one beat every <see cref="CosmicShore.ScriptableObjects.ArkReactorSO.RegrowSeconds"/>, and a
@@ -953,6 +976,28 @@ namespace CosmicShore.Gameplay
         public bool HasArrived(float within) =>
             _hasDestination && (transform.position - _destination).sqrMagnitude <= within * within;
 
+        /// <summary>True once <see cref="SetUnderway"/> has let the Ark sail (and until it is stopped).</summary>
+        public bool IsUnderway => _underWay;
+
+        bool _followPending;
+        Vector3 _followPosition;
+        Quaternion _followRotation;
+        float _followBlend;
+
+        /// <summary>
+        /// A party friend's Ark is kept where the host's is (Docs/Voyages/PARTY.md §2, <c>VoyageArkSync</c>): each machine
+        /// sails its own Ark through its own worlds, and this pulls this one a share <paramref name="blend"/> (0-1) of the way
+        /// toward <paramref name="position"/> and <paramref name="rotation"/> on its next step. The hull follows the move as it
+        /// follows the Ark's own course (the mover contract). A fallen hull is not moved.
+        /// </summary>
+        public void FollowPose(Vector3 position, Quaternion rotation, float blend)
+        {
+            _followPending = true;
+            _followPosition = position;
+            _followRotation = rotation;
+            _followBlend = Mathf.Clamp01(blend);
+        }
+
         void Update()
         {
             if (_retiring) return;
@@ -988,6 +1033,18 @@ namespace CosmicShore.Gameplay
                     transform.rotation = Quaternion.RotateTowards(transform.rotation,
                         Quaternion.LookRotation(dir, Vector3.up),
                         TurnDegreesPerSecond * Time.deltaTime);
+                    moved = true;
+                }
+            }
+
+            // A party friend's Ark pulled toward the host's (FollowPose): after the course step, so the two add.
+            if (_followPending)
+            {
+                _followPending = false;
+                if (!_hullLost && _followBlend > 0f)
+                {
+                    transform.position = Vector3.Lerp(transform.position, _followPosition, _followBlend);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, _followRotation, _followBlend);
                     moved = true;
                 }
             }

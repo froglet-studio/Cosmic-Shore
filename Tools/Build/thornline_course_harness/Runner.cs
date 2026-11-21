@@ -17,6 +17,8 @@ public static class Runner
     {
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
         if (args.Length > 0 && args[0] == "--sweep") { Sweep(); return 0; }
+        if (args.Length > 0 && args[0] == "--ai") return AiSweep(args);
+        if (args.Length > 0 && args[0] == "--read") { Read(args.Length > 1 ? int.Parse(args[1]) : 100); return 0; }
 
         int pass = 0, fail = 0;
         var asm = Assembly.GetExecutingAssembly();
@@ -63,6 +65,151 @@ public static class Runner
             k = to;
         }
         return t;
+    }
+
+    /// <summary>
+    /// run.sh --ai [--seeds N] [--pack] [--fps F] [--lead e,m,h,l] [--follow e,m,h,l] [--extra deg]
+    ///             [--centre] [--norescue] [--lance R] [--check]
+    /// AI Shrikes race whole courses through the shipped plan and aim law (RaceReplica). Solo: one AI per race, every
+    /// difficulty on the same seeds. --pack: the four difficulties race together (trails, wakes, the lance). --check
+    /// exits 1 unless every claim of THORNLINE.md section 4 holds (the self-test runs it and its negative controls).
+    /// </summary>
+    static int AiSweep(string[] args)
+    {
+        int seeds = 100; bool pack = false, check = false;
+        float fps = 60f, lance = RaceReplica.LanceRadiusCharge0;
+        float[] lead = null, follow = null;
+        bool centre = false, norescue = false;
+        for (int i = 1; i < args.Length; i++)
+        {
+            string a = args[i];
+            float[] F(string v) => v.Split(',').Select(x => float.Parse(x, CultureInfo.InvariantCulture)).ToArray();
+            if (a == "--seeds") seeds = int.Parse(args[++i]);
+            else if (a == "--pack") pack = true;
+            else if (a == "--check") check = true;
+            else if (a == "--fps") fps = float.Parse(args[++i], CultureInfo.InvariantCulture);
+            else if (a == "--lead") lead = F(args[++i]);
+            else if (a == "--follow") follow = F(args[++i]);
+            else if (a == "--centre") centre = true;
+            else if (a == "--norescue") norescue = true;
+            else if (a == "--lance") lance = float.Parse(args[++i], CultureInfo.InvariantCulture);
+            else if (a == "--extra") ThornlineAIPlan.NoseLeadMaxExtraDegrees = float.Parse(args[++i], CultureInfo.InvariantCulture);
+            else if (a == "--trace")
+            {
+                int ti = int.Parse(args[++i]), ts = int.Parse(args[++i]), td = int.Parse(args[++i]);
+                var tr = new RaceReplica { Dt = 1f / fps, LanceRadius = lance, Trace = true };
+                tr.Lay(ts, ti);
+                tr.Seat(new[] { ThornlineAIPlan.RowFor(td, lead, follow) });
+                var res = tr.Run()[0];
+                Console.WriteLine($"finish {res.Finish:F1} threaded {res.Threaded}");
+                return 0;
+            }
+        }
+        string[] names = { "Easy", "Medium", "Hard", "Legendary" };
+        var fails = new List<string>();
+        var medians = new float[5, 5];
+        for (int intensity = 1; intensity <= 4; intensity++)
+        {
+            var times = new List<float>[4]; var over = new List<float>[4];
+            var finished = new int[4]; var space = new float[4]; var rescues = new int[4]; var detach = new int[4];
+            var snipes = new int[4]; var crystals = new int[4]; var wakes = new int[4]; var slings = new int[4];
+            for (int d = 0; d < 4; d++) { times[d] = new List<float>(); over[d] = new List<float>(); }
+            for (int seed = 1; seed <= seeds; seed++)
+            {
+                var results = new RaceReplica.Result[4];
+                if (pack)
+                {
+                    var rep = Make(seed, intensity);
+                    rep.Seat(Enumerable.Range(1, 4).Select(l => ThornlineAIPlan.RowFor(l, lead, follow)).ToList());
+                    var all = rep.Run();
+                    for (int d = 0; d < 4; d++) results[d] = all[d];
+                }
+                else
+                    for (int d = 0; d < 4; d++)
+                    {
+                        var rep = Make(seed, intensity);
+                        rep.Seat(new[] { ThornlineAIPlan.RowFor(d + 1, lead, follow) });
+                        results[d] = rep.Run()[0];
+                    }
+                for (int d = 0; d < 4; d++)
+                {
+                    var r = results[d];
+                    if (r.Finish >= 0f) { finished[d]++; times[d].Add(r.Finish); }
+                    else Console.WriteLine($"DNF I{intensity} {names[d]} seed {seed}: {r.Threaded} rings");
+                    if (r.Slings > 0) over[d].Add(r.OverheadSeconds / r.Slings);
+                    space[d] += r.SpaceSeconds; rescues[d] += r.Rescues; detach[d] += r.Detaches;
+                    snipes[d] += r.Snipes; crystals[d] += r.Crystals; wakes[d] += r.WakeDocks; slings[d] += r.Slings;
+                }
+            }
+            for (int d = 0; d < 4; d++)
+            {
+                float med = RaceReplica.Median(times[d]);
+                medians[intensity, d + 1] = med;
+                float p90 = times[d].Count > 0 ? times[d].OrderBy(x => x).ElementAt(Math.Min(times[d].Count - 1, (int)(times[d].Count * 0.9f))) : float.NaN;
+                Console.WriteLine($"I{intensity} {names[d],-9} finished {finished[d],4}/{seeds}  median {med,6:F1} s  p90 {p90,6:F1} s  " +
+                                  $"aim over reload {RaceReplica.Median(over[d]),5:F2} s/sling  lance {space[d] / seeds,5:F1} s/race  " +
+                                  $"rescues {rescues[d] / (float)seeds:F2}  detaches {detach[d] / (float)seeds:F1}  snipes {snipes[d] / (float)seeds:F1}  " +
+                                  $"crystals {crystals[d] / (float)seeds:F1}  wake docks {wakes[d] / (float)Math.Max(1, slings[d]) * 100f:F1}%");
+                if (finished[d] < seeds) fails.Add($"I{intensity} {names[d]}: {finished[d]}/{seeds} finished");
+                if (!(med <= RungBar[intensity])) fails.Add($"I{intensity} {names[d]}: median {med:F1} s over the rung bar {RungBar[intensity]} s");
+            }
+            // Ordered by what the rows differ in: Easy, Medium and Hard by their aim, every rung; Legendary over Hard by
+            // the crystal shots, from I2 (the rung that has crystals). At I1 the two aim alike (both converge inside the
+            // reload) and Legendary must only not be slower.
+            for (int d = 1; d < 4; d++)
+            {
+                bool strict = d < 3 || intensity >= 2;
+                float gap = strict ? OrderGap : -0.01f;
+                if (!(medians[intensity, d + 1] < medians[intensity, d] * (1f - gap)))
+                    fails.Add($"I{intensity}: {names[d]} ({medians[intensity, d + 1]:F1} s) not {gap * 100:F0}% under {names[d - 1]} ({medians[intensity, d]:F1} s)");
+            }
+        }
+        foreach (var f in fails) Console.WriteLine("CLAIM FAILS: " + f);
+        Console.WriteLine(fails.Count == 0 ? "every AI claim holds" : $"{fails.Count} AI claim(s) fail");
+        return check && fails.Count > 0 ? 1 : 0;
+
+        RaceReplica Make(int seed, int intensity)
+        {
+            var rep = new RaceReplica { Dt = 1f / fps, LanceRadius = lance, CentreAim = centre, NoRescue = norescue };
+            rep.Lay(seed, intensity);
+            return rep;
+        }
+    }
+
+    /// <summary>The rung bars (rung_bars.json's ceilings: an AI that cannot beat these is not racing), seconds.</summary>
+    static readonly float[] RungBar = { 0f, 240f, 300f, 360f, 420f };
+
+    /// <summary>Each harder difficulty's median is at least this much faster than the one below it.</summary>
+    const float OrderGap = 0.05f;
+
+    /// <summary>run.sh --read [seeds]: what reading the course is worth with the aim modelled. Legendary's aim flies four
+    /// fixed habits (dock every thorn; take every snipe; every crystal; both) on the same seeds, solo. The reader the
+    /// plan ships takes a snipe or a crystal whenever its line is there, so it IS the "both" habit: the strict metric
+    /// (best fixed habit - reader) / best is 0 by construction, and the saving over docking every thorn is reported.</summary>
+    static void Read(int seeds)
+    {
+        string[] habit = { "dock every thorn", "snipes", "crystals", "snipes + crystals" };
+        for (int intensity = 2; intensity <= 4; intensity++)
+        {
+            var med = new float[4];
+            for (int h = 0; h < 4; h++)
+            {
+                var t = new List<float>();
+                for (int seed = 1; seed <= seeds; seed++)
+                {
+                    var rep = new RaceReplica();
+                    rep.Lay(seed, intensity);
+                    var row = ThornlineAIPlan.RowFor(4);
+                    row.Snipes = (h & 1) != 0; row.Crystals = (h & 2) != 0;
+                    rep.Seat(new[] { row });
+                    var r = rep.Run()[0];
+                    if (r.Finish >= 0f) t.Add(r.Finish);
+                }
+                med[h] = RaceReplica.Median(t);
+            }
+            Console.WriteLine($"I{intensity}: " + string.Join("  ", Enumerable.Range(0, 4).Select(h => $"{habit[h]} {med[h]:F1} s")) +
+                              $"  | reading saves {(med[0] - med[3]) / med[0] * 100f:F0}% over docking every thorn");
+        }
     }
 
     static void Sweep()

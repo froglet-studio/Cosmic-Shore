@@ -59,8 +59,8 @@ files the roster does not know yet. It only reads; merging is a separate, delibe
   it slows), so it was not shipped.
 - **Ring geometry for the Python learners** comes from the flight's own `ringList`; a flight without one falls back to
   `Tools/Build/regatta_course_harness/course.js`. Re-run `export_course.sh` there after any Regatta course change.
-- **Opponent seats are pinned to the Squirrel** (`SO_ArcadeGame.OpponentAIVessel`, `author_regatta_assets.py`). Other hulls
-  race as ally or host picks, or through the Third Eye's You / AI toggle.
+- **Opponent seats draw from the card like allies** (the Squirrel pin, `SO_ArcadeGame.OpponentAIVessel`, retired
+  2026-11-17; `author_regatta_assets.py --check` keeps it empty).
 - **What is where.** Since PR #1712 (2026-11-02) `bleeding-edge` has everything `Ys-bleeding-edge` had, the Switchback
   steps and difficulty table included; Garrett's `AI_PLAN.md` (#1704) came back into `Ys-bleeding-edge` the same day.
   `SYNC_LOG.md` has the rows.

@@ -16,14 +16,15 @@ MonoBehaviour:
     Enabled: 1
     Value: 1
     Min: 1
-    Max: 1.6
+    Max: 2.8
     element: 4
     UseFloor: 1
-    Floor: 0.25
-  boostMultiplier: 3
+    Floor: 0.5
+  boostMultiplier: 2.7
   boostDuration: 6
   resourceIndex: 1
   resourceCost: 0.25
   upgradeResourceCost: 0.2
-  secondsOfWallBuildingPerPellet: 2
+  secondsOfWallBuildingPerPellet: 1.5
   wallBuildingGapSeconds: 0.4
+  refillWhileStopped: 0

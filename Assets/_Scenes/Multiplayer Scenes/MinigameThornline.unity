@@ -835,6 +835,105 @@ MonoBehaviour:
   thornRegrowSeconds: 3
   crystalRegrowSeconds: 5
   aiTakesSnipes: 1
+  aiNoseLeadByDifficulty:
+  - 2.5
+  - 3
+  - 8
+  - 9.2
+  aiNoseFollowByDifficulty:
+  - -1
+  - -1
+  - -1
+  - 1.6
+  aiNoseLeadMaxExtraDegrees: 10
+  hintToast: 420
+  snipeToast: 421
+  crystalResetToast: 422
+  crystalTakenToast: 423
+  caughtShortToast: 424
+  passedToast: 425
+  overtakenToast: 426
+  caughtShortToastsPerRace: 2
+  passToastSeconds: 1.5
+  snipeEvent:
+    Guid:
+      Data1: 1870893843
+      Data2: 1090302803
+      Data3: -531107708
+      Data4: -1787684942
+    Path: event:/SFX/Oneshots/Gameplay sfx/Projectile Launch
+  crystalResetEvent:
+    Guid:
+      Data1: 1401307610
+      Data2: 1312586406
+      Data3: 1271773619
+      Data4: -1226988235
+    Path: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
+  crystalTakenEvent:
+    Guid:
+      Data1: -1103610945
+      Data2: 1108376032
+      Data3: -1187393100
+      Data4: -416318210
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate
+  cleanDockEvent:
+    Guid:
+      Data1: 413717435
+      Data2: 1238803703
+      Data3: 1704894129
+      Data4: 1814326255
+    Path: event:/SFX/Oneshots/Menu/Confirmed
+  caughtShortEvent:
+    Guid:
+      Data1: 1646059356
+      Data2: 1119933905
+      Data3: 176281535
+      Data4: 614675135
+    Path: event:/SFX/Oneshots/Menu/Denied
+  sightReadyEvent:
+    Guid:
+      Data1: 724249746
+      Data2: 1213064519
+      Data3: 1634220168
+      Data4: -897979471
+    Path: event:/SFX/Oneshots/Menu/Option Click
+  passedEvent:
+    Guid:
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
+  overtakenEvent:
+    Guid:
+      Data1: -1103610945
+      Data2: 1108376032
+      Data3: -1187393100
+      Data4: -416318210
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate
+  thornRegrowEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  sightReloadingScale: 0.35
+  rivalThornGlow: 0.35
+  gateThreadedEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  courseFinishedEvent:
+    Guid:
+      Data1: 2069810760
+      Data2: 1198659685
+      Data3: -604450419
+      Data4: -805011495
+    Path: event:/SFX/Oneshots/Menu/BigReward
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0

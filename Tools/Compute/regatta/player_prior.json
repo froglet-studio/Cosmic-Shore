@@ -1,0 +1,1814 @@
+{
+ "by_intensity": {
+  "1": {
+   "legs": [
+    {
+     "hits_per_pass": 0.0,
+     "leg": 0,
+     "line": [
+      {
+       "bearing": 82.9,
+       "radius": 10.96,
+       "spread": 21.21,
+       "u": 0.125
+      },
+      {
+       "bearing": 126.2,
+       "radius": 11.19,
+       "spread": 22.82,
+       "u": 0.375
+      },
+      {
+       "bearing": 106.9,
+       "radius": 10.1,
+       "spread": 24.74,
+       "u": 0.625
+      },
+      {
+       "bearing": 32.4,
+       "radius": 9.16,
+       "spread": 28.12,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.1915,
+     "passes": 146,
+     "ratio": 0.9329,
+     "role": "even",
+     "weight": 1.149
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 1,
+     "line": [
+      {
+       "bearing": 244.6,
+       "radius": 8.97,
+       "spread": 22.45,
+       "u": 0.125
+      },
+      {
+       "bearing": 207.2,
+       "radius": 10.13,
+       "spread": 25.26,
+       "u": 0.375
+      },
+      {
+       "bearing": 193.8,
+       "radius": 10.81,
+       "spread": 24.24,
+       "u": 0.625
+      },
+      {
+       "bearing": 184.7,
+       "radius": 11.45,
+       "spread": 21.39,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.1522,
+     "passes": 146,
+     "ratio": 0.6964,
+     "role": "skill",
+     "weight": 2.0618
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 2,
+     "line": [
+      {
+       "bearing": 233.9,
+       "radius": 10.67,
+       "spread": 24.17,
+       "u": 0.125
+      },
+      {
+       "bearing": 323.2,
+       "radius": 14.86,
+       "spread": 28.08,
+       "u": 0.375
+      },
+      {
+       "bearing": 301.5,
+       "radius": 12.26,
+       "spread": 26.69,
+       "u": 0.625
+      },
+      {
+       "bearing": 261.3,
+       "radius": 10.4,
+       "spread": 24.57,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.218,
+     "passes": 145,
+     "ratio": 0.6319,
+     "role": "skill",
+     "weight": 2.5043
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 3,
+     "line": [
+      {
+       "bearing": 138.1,
+       "radius": 13.8,
+       "spread": 21.01,
+       "u": 0.125
+      },
+      {
+       "bearing": 160.3,
+       "radius": 13.49,
+       "spread": 24.71,
+       "u": 0.375
+      },
+      {
+       "bearing": 185.7,
+       "radius": 12.7,
+       "spread": 25.86,
+       "u": 0.625
+      },
+      {
+       "bearing": 184.7,
+       "radius": 11.12,
+       "spread": 22.84,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.1329,
+     "passes": 141,
+     "ratio": 0.6462,
+     "role": "skill",
+     "weight": 2.3947
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 4,
+     "line": [
+      {
+       "bearing": 95.0,
+       "radius": 11.15,
+       "spread": 19.25,
+       "u": 0.125
+      },
+      {
+       "bearing": 116.5,
+       "radius": 10.12,
+       "spread": 18.88,
+       "u": 0.375
+      },
+      {
+       "bearing": 109.0,
+       "radius": 7.78,
+       "spread": 20.22,
+       "u": 0.625
+      },
+      {
+       "bearing": 61.0,
+       "radius": 9.06,
+       "spread": 19.42,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.1338,
+     "passes": 134,
+     "ratio": 0.6582,
+     "role": "skill",
+     "weight": 2.3084
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 5,
+     "line": [
+      {
+       "bearing": 169.6,
+       "radius": 8.64,
+       "spread": 23.36,
+       "u": 0.125
+      },
+      {
+       "bearing": 193.4,
+       "radius": 8.52,
+       "spread": 25.28,
+       "u": 0.375
+      },
+      {
+       "bearing": 197.6,
+       "radius": 8.88,
+       "spread": 27.12,
+       "u": 0.625
+      },
+      {
+       "bearing": 185.0,
+       "radius": 7.88,
+       "spread": 26.01,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.1168,
+     "passes": 132,
+     "ratio": 0.843,
+     "role": "skill",
+     "weight": 1.407
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 6,
+     "line": [
+      {
+       "bearing": 168.2,
+       "radius": 9.48,
+       "spread": 20.01,
+       "u": 0.125
+      },
+      {
+       "bearing": 163.7,
+       "radius": 11.61,
+       "spread": 21.18,
+       "u": 0.375
+      },
+      {
+       "bearing": 155.2,
+       "radius": 9.58,
+       "spread": 24.54,
+       "u": 0.625
+      },
+      {
+       "bearing": 151.2,
+       "radius": 7.96,
+       "spread": 22.25,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.1593,
+     "passes": 98,
+     "ratio": 0.7916,
+     "role": "skill",
+     "weight": 1.5959
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 7,
+     "line": [
+      {
+       "bearing": 228.2,
+       "radius": 9.09,
+       "spread": 21.22,
+       "u": 0.125
+      },
+      {
+       "bearing": 205.5,
+       "radius": 9.54,
+       "spread": 23.19,
+       "u": 0.375
+      },
+      {
+       "bearing": 195.3,
+       "radius": 8.37,
+       "spread": 27.56,
+       "u": 0.625
+      },
+      {
+       "bearing": 351.0,
+       "radius": 10.37,
+       "spread": 23.53,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.1378,
+     "passes": 94,
+     "ratio": 0.8761,
+     "role": "skill",
+     "weight": 1.3029
+    }
+   ]
+  },
+  "2": {
+   "legs": [
+    {
+     "hits_per_pass": 0.0,
+     "leg": 0,
+     "line": [
+      {
+       "bearing": 350.0,
+       "radius": 72.65,
+       "spread": 59.15,
+       "u": 0.125
+      },
+      {
+       "bearing": 353.2,
+       "radius": 80.61,
+       "spread": 82.97,
+       "u": 0.375
+      },
+      {
+       "bearing": 3.7,
+       "radius": 75.61,
+       "spread": 55.45,
+       "u": 0.625
+      },
+      {
+       "bearing": 324.0,
+       "radius": 62.59,
+       "spread": 33.6,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.8757,
+     "passes": 40,
+     "ratio": 1.0163,
+     "role": "even",
+     "weight": 0.9682
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 1,
+     "line": [
+      {
+       "bearing": 301.5,
+       "radius": 70.19,
+       "spread": 57.86,
+       "u": 0.125
+      },
+      {
+       "bearing": 65.8,
+       "radius": 74.67,
+       "spread": 65.84,
+       "u": 0.375
+      },
+      {
+       "bearing": 104.5,
+       "radius": 73.06,
+       "spread": 47.62,
+       "u": 0.625
+      },
+      {
+       "bearing": 135.9,
+       "radius": 67.56,
+       "spread": 29.17,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.893,
+     "passes": 38,
+     "ratio": 1.1738,
+     "role": "even",
+     "weight": 0.7258
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 2,
+     "line": [
+      {
+       "bearing": 266.6,
+       "radius": 70.13,
+       "spread": 50.8,
+       "u": 0.125
+      },
+      {
+       "bearing": 256.0,
+       "radius": 88.16,
+       "spread": 74.31,
+       "u": 0.375
+      },
+      {
+       "bearing": 247.3,
+       "radius": 86.09,
+       "spread": 73.91,
+       "u": 0.625
+      },
+      {
+       "bearing": 247.4,
+       "radius": 70.76,
+       "spread": 49.95,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.9008,
+     "passes": 36,
+     "ratio": 1.1004,
+     "role": "even",
+     "weight": 0.8259
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 3,
+     "line": [
+      {
+       "bearing": 185.9,
+       "radius": 67.92,
+       "spread": 35.86,
+       "u": 0.125
+      },
+      {
+       "bearing": 181.8,
+       "radius": 81.14,
+       "spread": 59.18,
+       "u": 0.375
+      },
+      {
+       "bearing": 187.5,
+       "radius": 86.47,
+       "spread": 51.46,
+       "u": 0.625
+      },
+      {
+       "bearing": 180.8,
+       "radius": 75.36,
+       "spread": 26.66,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.9192,
+     "passes": 34,
+     "ratio": 1.1412,
+     "role": "even",
+     "weight": 0.7678
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 4,
+     "line": [
+      {
+       "bearing": 178.6,
+       "radius": 70.76,
+       "spread": 27.66,
+       "u": 0.125
+      },
+      {
+       "bearing": 172.2,
+       "radius": 92.65,
+       "spread": 56.06,
+       "u": 0.375
+      },
+      {
+       "bearing": 150.8,
+       "radius": 104.13,
+       "spread": 58.64,
+       "u": 0.625
+      },
+      {
+       "bearing": 157.6,
+       "radius": 72.18,
+       "spread": 36.19,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.9177,
+     "passes": 28,
+     "ratio": 1.0605,
+     "role": "even",
+     "weight": 0.8891
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 5,
+     "line": [
+      {
+       "bearing": 192.6,
+       "radius": 63.68,
+       "spread": 58.44,
+       "u": 0.125
+      },
+      {
+       "bearing": 178.3,
+       "radius": 67.69,
+       "spread": 54.76,
+       "u": 0.375
+      },
+      {
+       "bearing": 160.9,
+       "radius": 83.44,
+       "spread": 45.11,
+       "u": 0.625
+      },
+      {
+       "bearing": 173.4,
+       "radius": 79.57,
+       "spread": 35.03,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.8352,
+     "passes": 27,
+     "ratio": 1.1667,
+     "role": "even",
+     "weight": 0.7347
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 6,
+     "line": [
+      {
+       "bearing": 201.8,
+       "radius": 67.37,
+       "spread": 27.3,
+       "u": 0.125
+      },
+      {
+       "bearing": 200.2,
+       "radius": 97.73,
+       "spread": 46.38,
+       "u": 0.375
+      },
+      {
+       "bearing": 155.3,
+       "radius": 77.05,
+       "spread": 53.01,
+       "u": 0.625
+      },
+      {
+       "bearing": 137.4,
+       "radius": 65.02,
+       "spread": 44.38,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.8541,
+     "passes": 23,
+     "ratio": 1.1619,
+     "role": "even",
+     "weight": 0.7407
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 7,
+     "line": [
+      {
+       "bearing": 165.6,
+       "radius": 89.52,
+       "spread": 45.08,
+       "u": 0.125
+      },
+      {
+       "bearing": 152.2,
+       "radius": 83.9,
+       "spread": 44.07,
+       "u": 0.375
+      },
+      {
+       "bearing": 163.3,
+       "radius": 84.31,
+       "spread": 30.25,
+       "u": 0.625
+      },
+      {
+       "bearing": 185.4,
+       "radius": 65.58,
+       "spread": 17.73,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.9417,
+     "passes": 22,
+     "ratio": 1.3086,
+     "role": "pain",
+     "weight": 0.584
+    }
+   ]
+  },
+  "3": {
+   "legs": [
+    {
+     "hits_per_pass": 0.0,
+     "leg": 0,
+     "line": [
+      {
+       "bearing": 30.5,
+       "radius": 32.38,
+       "spread": 44.12,
+       "u": 0.125
+      },
+      {
+       "bearing": 44.0,
+       "radius": 33.71,
+       "spread": 74.49,
+       "u": 0.375
+      },
+      {
+       "bearing": 40.3,
+       "radius": 34.15,
+       "spread": 60.87,
+       "u": 0.625
+      },
+      {
+       "bearing": 55.7,
+       "radius": 39.34,
+       "spread": 303.04,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.5561,
+     "passes": 66,
+     "ratio": 0.8527,
+     "role": "skill",
+     "weight": 1.3755
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 1,
+     "line": [
+      {
+       "bearing": 176.7,
+       "radius": 38.78,
+       "spread": 32.16,
+       "u": 0.125
+      },
+      {
+       "bearing": 193.7,
+       "radius": 33.4,
+       "spread": 48.03,
+       "u": 0.375
+      },
+      {
+       "bearing": 187.2,
+       "radius": 30.61,
+       "spread": 35.72,
+       "u": 0.625
+      },
+      {
+       "bearing": 184.1,
+       "radius": 39.63,
+       "spread": 22.48,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.5547,
+     "passes": 66,
+     "ratio": 1.079,
+     "role": "even",
+     "weight": 0.8589
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 2,
+     "line": [
+      {
+       "bearing": 81.8,
+       "radius": 41.47,
+       "spread": 45.01,
+       "u": 0.125
+      },
+      {
+       "bearing": 16.5,
+       "radius": 32.52,
+       "spread": 64.49,
+       "u": 0.375
+      },
+      {
+       "bearing": 18.6,
+       "radius": 31.16,
+       "spread": 58.83,
+       "u": 0.625
+      },
+      {
+       "bearing": 28.6,
+       "radius": 34.58,
+       "spread": 30.58,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.5354,
+     "passes": 66,
+     "ratio": 1.0991,
+     "role": "even",
+     "weight": 0.8278
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 3,
+     "line": [
+      {
+       "bearing": 208.7,
+       "radius": 35.51,
+       "spread": 35.18,
+       "u": 0.125
+      },
+      {
+       "bearing": 209.7,
+       "radius": 34.72,
+       "spread": 39.89,
+       "u": 0.375
+      },
+      {
+       "bearing": 210.2,
+       "radius": 34.74,
+       "spread": 29.89,
+       "u": 0.625
+      },
+      {
+       "bearing": 195.3,
+       "radius": 29.09,
+       "spread": 33.39,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.4993,
+     "passes": 63,
+     "ratio": 0.7208,
+     "role": "skill",
+     "weight": 1.9249
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 4,
+     "line": [
+      {
+       "bearing": 211.6,
+       "radius": 36.21,
+       "spread": 19.49,
+       "u": 0.125
+      },
+      {
+       "bearing": 5.0,
+       "radius": 38.98,
+       "spread": 45.05,
+       "u": 0.375
+      },
+      {
+       "bearing": 122.5,
+       "radius": 36.83,
+       "spread": 47.16,
+       "u": 0.625
+      },
+      {
+       "bearing": 94.5,
+       "radius": 37.44,
+       "spread": 26.36,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.6256,
+     "passes": 58,
+     "ratio": 0.7649,
+     "role": "skill",
+     "weight": 1.7094
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 5,
+     "line": [
+      {
+       "bearing": 173.6,
+       "radius": 33.26,
+       "spread": 29.74,
+       "u": 0.125
+      },
+      {
+       "bearing": 143.2,
+       "radius": 36.88,
+       "spread": 49.73,
+       "u": 0.375
+      },
+      {
+       "bearing": 131.1,
+       "radius": 41.88,
+       "spread": 46.23,
+       "u": 0.625
+      },
+      {
+       "bearing": 146.3,
+       "radius": 36.12,
+       "spread": 26.1,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.5769,
+     "passes": 57,
+     "ratio": 0.7302,
+     "role": "skill",
+     "weight": 1.8756
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 6,
+     "line": [
+      {
+       "bearing": 245.1,
+       "radius": 33.61,
+       "spread": 29.27,
+       "u": 0.125
+      },
+      {
+       "bearing": 40.6,
+       "radius": 31.79,
+       "spread": 39.75,
+       "u": 0.375
+      },
+      {
+       "bearing": 78.0,
+       "radius": 28.95,
+       "spread": 37.33,
+       "u": 0.625
+      },
+      {
+       "bearing": 72.9,
+       "radius": 34.12,
+       "spread": 24.41,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.5075,
+     "passes": 46,
+     "ratio": 0.8043,
+     "role": "skill",
+     "weight": 1.5457
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 7,
+     "line": [
+      {
+       "bearing": 183.2,
+       "radius": 32.71,
+       "spread": 23.65,
+       "u": 0.125
+      },
+      {
+       "bearing": 178.2,
+       "radius": 38.83,
+       "spread": 31.5,
+       "u": 0.375
+      },
+      {
+       "bearing": 168.0,
+       "radius": 34.76,
+       "spread": 37.17,
+       "u": 0.625
+      },
+      {
+       "bearing": 164.5,
+       "radius": 39.68,
+       "spread": 28.21,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.6057,
+     "passes": 43,
+     "ratio": 0.6626,
+     "role": "skill",
+     "weight": 2.2777
+    }
+   ]
+  },
+  "4": {
+   "legs": [
+    {
+     "hits_per_pass": 0.0,
+     "leg": 0,
+     "line": [
+      {
+       "bearing": 21.6,
+       "radius": 41.65,
+       "spread": 70.1,
+       "u": 0.125
+      },
+      {
+       "bearing": 75.1,
+       "radius": 48.72,
+       "spread": 96.93,
+       "u": 0.375
+      },
+      {
+       "bearing": 95.4,
+       "radius": 48.56,
+       "spread": 59.09,
+       "u": 0.625
+      },
+      {
+       "bearing": 109.3,
+       "radius": 38.08,
+       "spread": 42.46,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.6674,
+     "passes": 31,
+     "ratio": 1.2732,
+     "role": "even",
+     "weight": 0.6169
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 1,
+     "line": [
+      {
+       "bearing": 93.5,
+       "radius": 41.38,
+       "spread": 27.32,
+       "u": 0.125
+      },
+      {
+       "bearing": 124.1,
+       "radius": 54.03,
+       "spread": 40.18,
+       "u": 0.375
+      },
+      {
+       "bearing": 141.2,
+       "radius": 65.06,
+       "spread": 36.69,
+       "u": 0.625
+      },
+      {
+       "bearing": 155.1,
+       "radius": 47.5,
+       "spread": 23.91,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.8154,
+     "passes": 31,
+     "ratio": 0.8789,
+     "role": "skill",
+     "weight": 1.2946
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 2,
+     "line": [
+      {
+       "bearing": 190.2,
+       "radius": 46.11,
+       "spread": 44.27,
+       "u": 0.125
+      },
+      {
+       "bearing": 187.6,
+       "radius": 67.57,
+       "spread": 59.0,
+       "u": 0.375
+      },
+      {
+       "bearing": 192.8,
+       "radius": 72.75,
+       "spread": 43.46,
+       "u": 0.625
+      },
+      {
+       "bearing": 220.1,
+       "radius": 65.49,
+       "spread": 25.91,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.8258,
+     "passes": 29,
+     "ratio": 0.8495,
+     "role": "skill",
+     "weight": 1.3856
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 3,
+     "line": [
+      {
+       "bearing": 280.3,
+       "radius": 41.33,
+       "spread": 32.09,
+       "u": 0.125
+      },
+      {
+       "bearing": 274.4,
+       "radius": 54.98,
+       "spread": 32.54,
+       "u": 0.375
+      },
+      {
+       "bearing": 231.5,
+       "radius": 56.25,
+       "spread": 28.65,
+       "u": 0.625
+      },
+      {
+       "bearing": 220.3,
+       "radius": 39.2,
+       "spread": 21.55,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.7263,
+     "passes": 29,
+     "ratio": 0.9592,
+     "role": "even",
+     "weight": 1.0869
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 4,
+     "line": [
+      {
+       "bearing": 323.3,
+       "radius": 42.75,
+       "spread": 55.17,
+       "u": 0.125
+      },
+      {
+       "bearing": 39.9,
+       "radius": 72.23,
+       "spread": 59.64,
+       "u": 0.375
+      },
+      {
+       "bearing": 26.3,
+       "radius": 49.85,
+       "spread": 43.07,
+       "u": 0.625
+      },
+      {
+       "bearing": 24.8,
+       "radius": 44.99,
+       "spread": 19.66,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.7103,
+     "passes": 27,
+     "ratio": 0.9023,
+     "role": "even",
+     "weight": 1.2283
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 5,
+     "line": [
+      {
+       "bearing": 307.1,
+       "radius": 39.81,
+       "spread": 22.82,
+       "u": 0.125
+      },
+      {
+       "bearing": 225.2,
+       "radius": 60.36,
+       "spread": 42.36,
+       "u": 0.375
+      },
+      {
+       "bearing": 197.7,
+       "radius": 69.08,
+       "spread": 43.25,
+       "u": 0.625
+      },
+      {
+       "bearing": 206.6,
+       "radius": 50.09,
+       "spread": 21.97,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.8157,
+     "passes": 23,
+     "ratio": 0.657,
+     "role": "skill",
+     "weight": 2.317
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 6,
+     "line": [
+      {
+       "bearing": 315.1,
+       "radius": 41.29,
+       "spread": 55.31,
+       "u": 0.125
+      },
+      {
+       "bearing": 345.8,
+       "radius": 75.42,
+       "spread": 58.9,
+       "u": 0.375
+      },
+      {
+       "bearing": 45.3,
+       "radius": 60.98,
+       "spread": 32.69,
+       "u": 0.625
+      },
+      {
+       "bearing": 36.3,
+       "radius": 48.5,
+       "spread": 17.76,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.7772,
+     "passes": 19,
+     "ratio": 0.9098,
+     "role": "even",
+     "weight": 1.2081
+    },
+    {
+     "hits_per_pass": 0.0,
+     "leg": 7,
+     "line": [
+      {
+       "bearing": 192.5,
+       "radius": 44.81,
+       "spread": 41.76,
+       "u": 0.125
+      },
+      {
+       "bearing": 183.5,
+       "radius": 69.58,
+       "spread": 40.22,
+       "u": 0.375
+      },
+      {
+       "bearing": 189.1,
+       "radius": 72.74,
+       "spread": 40.2,
+       "u": 0.625
+      },
+      {
+       "bearing": 199.1,
+       "radius": 42.39,
+       "spread": 21.45,
+       "u": 0.875
+      }
+     ],
+     "off_line_share": 0.7571,
+     "passes": 16,
+     "ratio": 0.8164,
+     "role": "skill",
+     "weight": 1.5002
+    }
+   ]
+  }
+ },
+ "flights": [
+  {
+   "flight": "flight_Regatta_Manta_20261105_160318.json",
+   "hull": "Manta",
+   "intensity": 2,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_110728.json",
+   "hull": "Squirrel",
+   "intensity": 3,
+   "legs": 11
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_110924.json",
+   "hull": "Squirrel",
+   "intensity": 3,
+   "legs": 11
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_111150.json",
+   "hull": "Squirrel",
+   "intensity": 3,
+   "legs": 12
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_111450.json",
+   "hull": "Squirrel",
+   "intensity": 3,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_111703.json",
+   "hull": "Squirrel",
+   "intensity": 3,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_111936.json",
+   "hull": "Squirrel",
+   "intensity": 3,
+   "legs": 23
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_152129.json",
+   "hull": "Squirrel",
+   "intensity": 3,
+   "legs": 23
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_152404.json",
+   "hull": "Squirrel",
+   "intensity": 3,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_152634.json",
+   "hull": "Squirrel",
+   "intensity": 3,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261105_154728.json",
+   "hull": "Squirrel",
+   "intensity": 4,
+   "legs": 12
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261105_154925.json",
+   "hull": "Squirrel",
+   "intensity": 4,
+   "legs": 10
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261105_155819.json",
+   "hull": "Squirrel",
+   "intensity": 2,
+   "legs": 12
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261105_160022.json",
+   "hull": "Squirrel",
+   "intensity": 2,
+   "legs": 17
+  },
+  {
+   "flight": "flight_Regatta_Stoat_20261105_160150.json",
+   "hull": "Stoat",
+   "intensity": 2,
+   "legs": 6
+  },
+  {
+   "flight": "flight_Regatta_Urchin_20261016_131131.json",
+   "hull": "Urchin",
+   "intensity": 3,
+   "legs": 4
+  },
+  {
+   "flight": "flight_Regatta_Urchin_20261016_131401.json",
+   "hull": "Urchin",
+   "intensity": 3,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Urchin_20261016_135105.json",
+   "hull": "Urchin",
+   "intensity": 3,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Urchin_20261030_170817.json",
+   "hull": "Urchin",
+   "intensity": 3,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Dolphin_20261030_200816.json",
+   "hull": "Dolphin",
+   "intensity": 3,
+   "legs": 16
+  },
+  {
+   "flight": "flight_Regatta_Dolphin_20261105_184727.json",
+   "hull": "Dolphin",
+   "intensity": 4,
+   "legs": 13
+  },
+  {
+   "flight": "flight_Regatta_Dolphin_20261105_184924.json",
+   "hull": "Dolphin",
+   "intensity": 4,
+   "legs": 13
+  },
+  {
+   "flight": "flight_Regatta_Dolphin_20261106_141754.json",
+   "hull": "Dolphin",
+   "intensity": 4,
+   "legs": 10
+  },
+  {
+   "flight": "flight_Regatta_Dolphin_20261106_151008.json",
+   "hull": "Dolphin",
+   "intensity": 4,
+   "legs": 12
+  },
+  {
+   "flight": "flight_Regatta_Dolphin_20261107_222751.json",
+   "hull": "Dolphin",
+   "intensity": 1,
+   "legs": 15
+  },
+  {
+   "flight": "flight_Regatta_Dolphin_20261113_153720.json",
+   "hull": "Dolphin",
+   "intensity": 2,
+   "legs": 14
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261105_185818.json",
+   "hull": "Manta",
+   "intensity": 2,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261105_175122.json",
+   "hull": "Squirrel",
+   "intensity": 4,
+   "legs": 23
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261106_154403.json",
+   "hull": "Squirrel",
+   "intensity": 4,
+   "legs": 13
+  },
+  {
+   "flight": "flight_Regatta_Dolphin_20261022_235559.json",
+   "hull": "Dolphin",
+   "intensity": 1,
+   "legs": 21
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_171401.json",
+   "hull": "Manta",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_171520.json",
+   "hull": "Manta",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_171631.json",
+   "hull": "Manta",
+   "intensity": 1,
+   "legs": 23
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_172059.json",
+   "hull": "Manta",
+   "intensity": 4,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_172322.json",
+   "hull": "Manta",
+   "intensity": 4,
+   "legs": 14
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_172515.json",
+   "hull": "Manta",
+   "intensity": 4,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_172722.json",
+   "hull": "Manta",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_173225.json",
+   "hull": "Manta",
+   "intensity": 1,
+   "legs": 4
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_173322.json",
+   "hull": "Manta",
+   "intensity": 1,
+   "legs": 23
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_174124.json",
+   "hull": "Manta",
+   "intensity": 4,
+   "legs": 23
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_174508.json",
+   "hull": "Manta",
+   "intensity": 4,
+   "legs": 5
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_174710.json",
+   "hull": "Manta",
+   "intensity": 3,
+   "legs": 20
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261020_174826.json",
+   "hull": "Manta",
+   "intensity": 3,
+   "legs": 23
+  },
+  {
+   "flight": "flight_Regatta_Rhino_20261020_175412.json",
+   "hull": "Rhino",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Rhino_20261020_175626.json",
+   "hull": "Rhino",
+   "intensity": 3,
+   "legs": 16
+  },
+  {
+   "flight": "flight_Regatta_Rhino_20261020_175755.json",
+   "hull": "Rhino",
+   "intensity": 3,
+   "legs": 20
+  },
+  {
+   "flight": "flight_Regatta_Rhino_20261020_175922.json",
+   "hull": "Rhino",
+   "intensity": 3,
+   "legs": 21
+  },
+  {
+   "flight": "flight_Regatta_Rhino_20261020_180051.json",
+   "hull": "Rhino",
+   "intensity": 3,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Rhino_20261020_180216.json",
+   "hull": "Rhino",
+   "intensity": 3,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Sparrow_20261022_235807.json",
+   "hull": "Sparrow",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Urchin_20261020_175110.json",
+   "hull": "Urchin",
+   "intensity": 3,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Manta_20261106_053142.json",
+   "hull": "Manta",
+   "intensity": 2,
+   "legs": 11
+  },
+  {
+   "flight": "flight_Regatta_Scarab_20261025_215307.json",
+   "hull": "Scarab",
+   "intensity": 2,
+   "legs": 9
+  },
+  {
+   "flight": "flight_Regatta_Scarab_20261025_215451.json",
+   "hull": "Scarab",
+   "intensity": 2,
+   "legs": 20
+  },
+  {
+   "flight": "flight_Regatta_Scarab_20261025_215642.json",
+   "hull": "Scarab",
+   "intensity": 2,
+   "legs": 15
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_045407.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_050810.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 13
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_164052.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_164302.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_164455.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_164652.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_164851.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_165102.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_165314.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_165515.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_165721.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_165931.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_170359.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_170612.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_170823.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_171036.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_171401.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_171646.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_171912.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_172134.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_172431.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 20
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_172627.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_172851.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 23
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_173102.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_173300.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_173506.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_173721.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_174153.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_174448.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_174719.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_174934.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_175139.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_225122.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 20
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261016_225303.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 19
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261017_013039.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 20
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261017_013236.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 20
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261017_013424.json",
+   "hull": "Squirrel",
+   "intensity": 1,
+   "legs": 19
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261017_014131.json",
+   "hull": "Squirrel",
+   "intensity": 3,
+   "legs": 22
+  },
+  {
+   "flight": "flight_Regatta_Squirrel_20261017_014401.json",
+   "hull": "Squirrel",
+   "intensity": 3,
+   "legs": 12
+  },
+  {
+   "flight": "flight_Regatta_Stoat_20261025_224822.json",
+   "hull": "Stoat",
+   "intensity": 2,
+   "legs": 12
+  },
+  {
+   "flight": "flight_Regatta_Stoat_20261026_001356.json",
+   "hull": "Stoat",
+   "intensity": 2,
+   "legs": 21
+  },
+  {
+   "flight": "flight_Regatta_Stoat_20261031_053816.json",
+   "hull": "Stoat",
+   "intensity": 3,
+   "legs": 11
+  },
+  {
+   "flight": "flight_Regatta_Stoat_20261106_051721.json",
+   "hull": "Stoat",
+   "intensity": 4,
+   "legs": 7
+  },
+  {
+   "flight": "flight_Regatta_Stoat_20261106_051918.json",
+   "hull": "Stoat",
+   "intensity": 4,
+   "legs": 6
+  },
+  {
+   "flight": "flight_Regatta_Stoat_20261106_052811.json",
+   "hull": "Stoat",
+   "intensity": 2,
+   "legs": 12
+  },
+  {
+   "flight": "flight_Regatta_Stoat_20261106_053014.json",
+   "hull": "Stoat",
+   "intensity": 2,
+   "legs": 11
+  },
+  {
+   "flight": "flight_Regatta_Stoat_20261106_053310.json",
+   "hull": "Stoat",
+   "intensity": 2,
+   "legs": 10
+  },
+  {
+   "flight": "flight_Regatta_Stoat_20261106_053428.json",
+   "hull": "Stoat",
+   "intensity": 2,
+   "legs": 12
+  },
+  {
+   "flight": "flight_Regatta_Stoat_20261106_053548.json",
+   "hull": "Stoat",
+   "intensity": 2,
+   "legs": 10
+  },
+  {
+   "flight": "flight_Regatta_Stoat_20261106_053701.json",
+   "hull": "Stoat",
+   "intensity": 2,
+   "legs": 12
+  },
+  {
+   "flight": "flight_Regatta_Unknown_20261016_170144.json",
+   "hull": "Unknown",
+   "intensity": 1,
+   "legs": 20
+  },
+  {
+   "flight": "flight_Regatta_Unknown_20261016_171143.json",
+   "hull": "Unknown",
+   "intensity": 1,
+   "legs": 3
+  },
+  {
+   "flight": "flight_Regatta_Unknown_20261016_172221.json",
+   "hull": "Unknown",
+   "intensity": 1,
+   "legs": 4
+  },
+  {
+   "flight": "flight_Regatta_Unknown_20261016_173924.json",
+   "hull": "Unknown",
+   "intensity": 1,
+   "legs": 18
+  },
+  {
+   "flight": "flight_Regatta_Urchin_20261017_031620.json",
+   "hull": "Urchin",
+   "intensity": 1,
+   "legs": 3
+  }
+ ],
+ "hulls": {
+  "Dolphin": 8,
+  "Manta": 16,
+  "Rhino": 6,
+  "Scarab": 3,
+  "Sparrow": 1,
+  "Squirrel": 54,
+  "Stoat": 12,
+  "Unknown": 4,
+  "Urchin": 6
+ },
+ "version": 1
+}

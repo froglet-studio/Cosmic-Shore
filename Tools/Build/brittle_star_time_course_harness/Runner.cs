@@ -39,6 +39,9 @@ public static class Runner
                 string.Join(",", c.Select(g => $"{{\"p\":{V(g.Position)},\"a\":{V(g.Axis)},\"r\":{F(g.Radius)}}}")) + "]}");
             return 0;
         }
+        if (args.Length > 0 && args[0] == "--race") return RaceSweep.Run(args);
+        if (args.Length > 0 && args[0] == "--tune") return RaceSweep.Tune(args);
+        if (args.Length > 0 && args[0] == "--check-race") return RaceSweep.CheckRace(args);
         if (args.Length > 0 && args[0] == "--sweep")
         {
             float cruise = BrittleStarTimeCourse.CruiseRadius, speed = BrittleStarTimeCourse.SpeedModeRadius;

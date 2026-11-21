@@ -261,7 +261,7 @@ def build(theme_asset: dict | None = None, dom: dict | None = None) -> dict:
         "purchase-fill": t["purchase"], "control": t["controlActive"], "tooltip": t["tooltip"],
         # Shombith 2026-11-05 (D3): Jade is the family of what you can pick and change again, so the selection and the
         # focus ring are Jade (controlActive); Ruby is what you cannot take back (Ready), so a commit is Ruby. The game's
-        # UITheme.selection is still the old sky blue until the Unity change lands (Docs/UI_STYLE_GUIDE.md section 13).
+        # UITheme.selection is that Jade too since 2026-11-17 (Docs/UI_STYLE_GUIDE.md section 13).
         "selection": t["controlActive"], "commit": t["tooltip"], "commit-fill": t["tooltip"], "on-commit": "#FFFFFF",
         "jade": d["jade"], "ruby": d["ruby"], "gold": d["gold"], "gold-fill": d["gold"],
         "on-fill": t["surfaceVeryDark"],

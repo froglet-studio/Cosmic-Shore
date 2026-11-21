@@ -58,15 +58,15 @@ namespace CosmicShore.Gameplay
 
         /// <summary>`minBlastScale` / `maxBlastScale` on GrizzlyTriggerBombConfig.asset - a tap's
         /// blast and a full squeeze's.</summary>
-        public const float MinBlastScale = 50f;
-        public const float MaxBlastScale = 200f;
+        public const float MinBlastScale = 20f;
+        public const float MaxBlastScale = 80f;
 
         /// <summary>`ExplosionDuration` on AOEGrizzlyExplosion.prefab. An AOE's impulse speed is
         /// <c>MaxScale / ExplosionDuration</c> (<c>AOEExplosion</c>, Inertia 1).</summary>
         public const float ExplosionDuration = 1.2f;
 
         /// <summary>`selfLaunchMultiplier` on GrizzlyTriggerBombConfig.asset.</summary>
-        public const float SelfLaunchMultiplier = 4.5f;
+        public const float SelfLaunchMultiplier = 11.25f;
 
         /// <summary>`selfLaunchSeconds` on GrizzlyTriggerBombConfig.asset - seconds a launch lives
         /// (cosine ease-out).</summary>
@@ -201,10 +201,11 @@ namespace CosmicShore.Gameplay
                 AngularSpread = new[] { 1.2f, 4.0f, 2.0f, 4.0f }[i - 1],
                 // Headlong's out-of-plane swing: the legs are Headlong's length now.
                 LateralPerturbation = new[] { 120f, 170f, 215f, 260f }[i - 1],
-                // The mouth - Headlong's (the Rhino's), because the Grizzly now arrives at a
-                // Rhino's pace and, worse, on a launch it cannot steer: the push keeps the
-                // direction it was thrown in, so the approach is aimed before the bomb goes off.
-                RingRadius = new[] { 96f, 72f, 58f, 46f }[i - 1],
+                // The mouth. The Grizzly arrives on a launch it cannot steer (the push keeps the
+                // direction it was thrown in), and from 2026-11-11 the gate has a second way in -
+                // the powder keg beside it (GrizzlyTimeKegs) - so the mouth is the SAFE line, not
+                // the level's demand: 96 / 84 / 74 / 66 (was 96 / 72 / 58 / 46), no step over 15%.
+                RingRadius = new[] { 96f, 84f, 74f, 66f }[i - 1],
                 AxisJitterDegrees = new[] { 20f, 28f, 36f, 44f }[i - 1],
                 // Must COVER half the level's hardest turn (a gate faces its corner's bisector,
                 // so the jitter budget is `cap - halfTurn` and clamps to zero past it).

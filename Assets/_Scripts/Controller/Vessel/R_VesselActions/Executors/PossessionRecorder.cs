@@ -50,11 +50,11 @@ namespace CosmicShore.Gameplay
         float _distance;
 
         /// <summary>True while a ride is being recorded.</summary>
-        public bool Recording => _host;
+        public bool Recording => !ReferenceEquals(_host, null);   // a ride whose creature was destroyed is still ending
 
         public void Begin(Fauna host, IVesselStatus rider)
         {
-            if (_host) End("re-stung");
+            if (Recording) End("re-stung");
             if (!host || rider == null) return;
             _host = host;
             _samples.Clear();
@@ -117,9 +117,16 @@ namespace CosmicShore.Gameplay
         public void End(string why)
         {
             var host = _host;
+            if (!ReferenceEquals(host, null) && !host) host = null;   // destroyed mid-ride: still this ride's end
+            bool riding = !ReferenceEquals(_host, null);
             _host = null;
+            // once per ride: the executor's leave paths can each end it (leave, then let go), and a second End used to
+            // write the same ride twice
+            if (!riding) return;
             float seconds = Time.time - _start;
-            if (_count == 0 || seconds < MinRideSeconds) return;
+            int count = _count;
+            _count = 0;
+            if (count == 0 || seconds < MinRideSeconds) return;
             try
             {
                 var sb = new StringBuilder(_samples.Length + _events.Length + 1024);

@@ -27,8 +27,12 @@ namespace CosmicShore.Gameplay
                  "VesselTransformer already consumes for boost SPEED - reading both would drive " +
                  "two unrelated parameters off one number.")]
         [SerializeField] float chargeRateMultiplierAtFullTime = 1.5f;
+        [Tooltip("TIME -> charge RATE at the RESTING level (Time 0). 1 keeps the old shape (Time only " +
+                 "adds); above 1 the fill is faster from the first second, so the lever reaches a " +
+                 "hull that starts a race at Time 0 (the Dolphin's Regatta card start, 2026-11-17).")]
+        [SerializeField] float chargeRateMultiplierAtRestTime = 1f;
         [Tooltip("Floor for the Time charge-rate multiplier so a deficit can never stall the fill.")]
-        [SerializeField] float minChargeRateMultiplier = 0.25f;
+        [SerializeField] float minChargeRateMultiplier = 0.5f;
 
         [Header("Optional Safety")]
         [SerializeField] float rechargeCooldownSeconds = 1f;
@@ -43,6 +47,7 @@ namespace CosmicShore.Gameplay
         public float TickSeconds            => tickSeconds;
         public int BoostResourceIndex  => boostResourceIndex;
         public float ChargeRateMultiplierAtFullTime => chargeRateMultiplierAtFullTime;
+        public float ChargeRateMultiplierAtRestTime => chargeRateMultiplierAtRestTime;
         public float MinChargeRateMultiplier => Mathf.Max(0.01f, minChargeRateMultiplier);
         public float RechargeCooldownSeconds=> rechargeCooldownSeconds;
         public bool Verbose                 => verbose;

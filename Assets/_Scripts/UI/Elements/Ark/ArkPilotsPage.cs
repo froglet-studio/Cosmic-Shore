@@ -16,19 +16,24 @@ namespace CosmicShore.UI
     /// scene, their name and their callsign. Pressing a pilot opens their profile page
     /// (<see cref="ScreenSwitcher.OpenPilotProfile"/>, <see cref="PilotProfileModal"/>).
     ///
-    /// <para>The crew is the account's (<see cref="PilotLoadoutStore.GetCrew"/>, in the order they joined). It holds
-    /// at most one pilot a callsign (Docs/Pilots/INVENTORY.md §3), so the tab has as many cells as there are
-    /// callsigns and needs no scrolling. A cell is a <see cref="SquadPickChip"/>, the Squads tab's own.</para>
+    /// <para>The crew is the account's (<see cref="PilotLoadoutStore.GetCrew"/>, in the order they joined): all fifty
+    /// painted pilots for now (Garrett, 2026-11-16), and later a crew grown one pilot at a time, so the tab shows a page
+    /// of <c>cells</c> at a time and steps through the pages with PREVIOUS and NEXT (the Squads picker's way). A cell is
+    /// a <see cref="SquadPickChip"/>, the Squads tab's own.</para>
     ///
-    /// <para>The picture is the callsign's, not the person's (<see cref="PilotSceneCatalogSO"/>): the same face the
-    /// profile page shows full screen. A callsign with no scene shows the name and callsign alone.</para>
+    /// <para>The picture is the person's own close-up when they are a painted pilot, else their callsign's own painted
+    /// pilot's (<see cref="PilotSceneCatalogSO.TryGetFor"/>): the same face the profile page shows full screen.</para>
     /// </summary>
     public class ArkPilotsPage : MonoBehaviour, IArkTabPage
     {
         [Tooltip("Each callsign's scene and close-up (Tools/Build/author_pilot_scene_assets.py).")]
         [SerializeField] private PilotSceneCatalogSO scenes;
-        [Tooltip("One cell a pilot, in crew order. A crew holds one pilot a callsign, so one cell a callsign.")]
+        [Tooltip("One page of the crew, in crew order: one cell a pilot.")]
         [SerializeField] private SquadPickChip[] cells;
+        [Tooltip("Step to the previous and next page of the crew. Shown only while the crew fills more than one page.")]
+        [SerializeField] private KitButton previousButton;
+        [SerializeField] private KitButton nextButton;
+        [SerializeField] private TMP_Text pageText;
         [Tooltip("Shown while the crew is empty.")]
         [SerializeField] private CanvasGroup emptyGroup;
         [SerializeField] private TMP_Text countText;
@@ -42,10 +47,12 @@ namespace CosmicShore.UI
         [SerializeField] private string lineTemplate;
         [Tooltip("Beside the caption: {count} is the crew's size.")]
         [SerializeField] private string countTemplate;
+        [Tooltip("Between PREVIOUS and NEXT: {page} of {pages}. Shown only while the crew fills more than one page.")]
+        [SerializeField] private string pageTemplate;
 
         readonly List<PilotRecord> _crew = new();
         bool _shown;
-        bool _warnedOverflow;
+        int _page;
 
         void Awake()
         {
@@ -54,6 +61,18 @@ namespace CosmicShore.UI
                 int index = i;
                 if (cells[i] && cells[i].Button) cells[i].Button.onClick.AddListener(() => Open(index));
             }
+            if (previousButton) previousButton.onClick.AddListener(() => Step(-1));
+            if (nextButton) nextButton.onClick.AddListener(() => Step(1));
+        }
+
+        int Pages => cells.Length == 0 ? 1 : Mathf.Max(1, (_crew.Count + cells.Length - 1) / cells.Length);
+
+        void Step(int by)
+        {
+            PilotLoadoutStore.GetCrew(_crew);
+            int pages = Pages;
+            _page = ((_page + by) % pages + pages) % pages;
+            Refresh();
         }
 
         void OnEnable() => AccountInventoryStore.Changed += Refresh;
@@ -69,30 +88,35 @@ namespace CosmicShore.UI
         {
             if (!_shown) return;
             PilotLoadoutStore.GetCrew(_crew);
-            if (_crew.Count > cells.Length && !_warnedOverflow)
-            {
-                // A pilot the tab cannot show is a fault, not a state: the crew outgrew one pilot a callsign.
-                _warnedOverflow = true;
-                CSDebug.LogWarning($"[ArkPilotsPage] The crew has {_crew.Count} pilots and the tab {cells.Length} cells; " +
-                                   "the last are not shown (Tools/Build/author_menu_ark.py lays out one cell a callsign).", this);
-            }
+            int pages = Pages;
+            _page = Mathf.Clamp(_page, 0, pages - 1);
+            int first = _page * cells.Length;
 
             for (int i = 0; i < cells.Length; i++)
             {
                 var cell = cells[i];
                 if (!cell) continue;
-                if (i >= _crew.Count)
+                if (first + i >= _crew.Count)
                 {
                     cell.Draw(false, string.Empty, string.Empty, null, false);
                     continue;
                 }
 
-                var person = _crew[i];
+                var person = _crew[first + i];
                 PilotVision callsign = person.Vision();
                 var row = PilotSight.Set ? PilotSight.Set.For(callsign) : null;
-                Sprite closeUp = scenes && scenes.TryGet(callsign, out var scene) ? scene.closeUp : null;
+                Sprite closeUp = scenes && scenes.TryGetFor(person, out var scene) ? scene.closeUp : null;
                 cell.Draw(true, Fill(nameTemplate, person, row), Fill(lineTemplate, person, row), closeUp, false);
             }
+
+            bool several = pages > 1;
+            if (previousButton) previousButton.gameObject.SetActive(several);
+            if (nextButton) nextButton.gameObject.SetActive(several);
+            if (pageText)
+                pageText.text = several
+                    ? TemplateText.Fill(pageTemplate, "page", (_page + 1).ToString(CultureInfo.InvariantCulture),
+                        "pages", pages.ToString(CultureInfo.InvariantCulture))
+                    : string.Empty;
 
             KitVisibility.SetShown(emptyGroup, _crew.Count == 0);
             if (countText)
@@ -110,6 +134,7 @@ namespace CosmicShore.UI
             // The account's inventory can arrive from the cloud while the tab is up, and that raises no Changed: the
             // press opens (and the cells show) who the crew holds now, not who was drawn before it arrived.
             Refresh();
+            index += _page * cells.Length;
             if (index < 0 || index >= _crew.Count) return;
             if (!screenSwitcher) screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
             if (screenSwitcher) screenSwitcher.OpenPilotProfile(_crew[index].Id);

@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-the-regatta-course-genome-2036-made-spaw-2a4441",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-16T21:32:27+00:00",
+  "area": "card-art / prism bake / clip audit harness",
+  "summary": "The Regatta course genome (#2036) made SpawnableRegattaRails read new Regatta files, which broke the shared harness's compile. Added those sources to render_card_backgrounds.SOURCES and shimmed what they call (TextAsset, Resources.Load, AddComponent(Type), DestroyImmediate, PrismLayoutBake.Bypass; SpawnableBase.InvalidateCache made public in the shim, as it is in the game). bake_prism_layouts --check compiles again; it still reports Harvest and Shatterplane bakes stale from their own Nov changes.",
+  "branch": "claude/project-thread-cwavhz",
+  "commit": "ce61bdc88"
+}

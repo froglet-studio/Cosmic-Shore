@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-20-added-p-process-03-yash-2026-11-10-agent-96ea74",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-20T14:22:51+00:00",
+  "area": "the principles ledger and CLAUDE.md",
+  "summary": "Added P-process-03 (Yash, 2026-11-10: agent-first architecture) to principles.json and a non-LOCKED section at the end of CLAUDE.md with seven code rules; it changes no LOCKED rule and no design. Proposed to you: approve, or say which rule you would change.",
+  "why": "Yash asked for it; it is his rule until the other owners answer",
+  "branch": "Ys-bleeding-edge",
+  "commit": "950fffd9a",
+  "paths": [
+    "CLAUDE.md",
+    "Docs/claude/AGENT_FIRST_ARCHITECTURE.md",
+    "Docs/claude/principles.json",
+    "Tools/Build/agent_first_baseline.json",
+    "Tools/Build/check_agent_first.py"
+  ]
+}

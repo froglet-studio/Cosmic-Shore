@@ -183,6 +183,9 @@ namespace CosmicShore.Gameplay
             return teams;
         }
 
+        /// <summary>Harvest lays its own I3 crystals (the pattern the platform's ElementLadderCrystals generalised).</summary>
+        public override bool LaysOwnLadderCrystals => true;
+
         void LayTeamCrystals()
         {
             if (settings == null || gameData == null) return;

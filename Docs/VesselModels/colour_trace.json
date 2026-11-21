@@ -4,22 +4,23 @@
  "tool": "Tools/Build/colour_trace.py",
  "rule": "Every colour that reaches a pixel comes from the worn colour set. Photic holds the baked values; every other set computes its own from its pigments (colour_trace.py repaint). A colour is inert, a UI theme token, fixed (pure white, pure black), traced (an id below), or untraced (listed below: the work left).",
  "counts": {
-  "fixed": 2603,
-  "inert": 30365,
-  "token": 4088,
-  "traced": 1933
+  "fixed": 3374,
+  "inert": 31399,
+  "token": 4244,
+  "traced": 2099,
+  "untraced": 13
  },
  "inert": {
-  "ambient-mode": 180,
+  "ambient-mode": 291,
   "camera-no-clear": 8,
-  "code-fallback": 157,
-  "code-inert": 228,
-  "debug": 107,
+  "code-fallback": 152,
+  "code-inert": 220,
+  "debug": 91,
   "field-reviewed": 9,
-  "fog-off": 60,
+  "fog-off": 97,
   "gradient-key-unused": 78,
   "kit-legacy-field": 69,
-  "kit-selectable": 1530,
+  "kit-selectable": 1690,
   "material-stale": 840,
   "material-unused-prop": 20,
   "material-vector": 452,
@@ -27,18 +28,18 @@
   "post-inactive": 2,
   "ps-mode-unused": 491,
   "ps-module-off": 1206,
-  "scene-not-in-build": 433,
+  "scene-not-in-build": 448,
   "script-missing": 19,
-  "selectable-no-tint": 410,
+  "selectable-no-tint": 405,
   "shader-default": 274,
   "shader-node-dead": 31,
   "shader-not-drawn": 19,
   "stale-field": 17,
-  "subtractive-off": 60,
-  "tmp-colour-twin": 1674,
-  "tmp-face-cache": 1674,
+  "subtractive-off": 97,
+  "tmp-colour-twin": 1792,
+  "tmp-face-cache": 1792,
   "tmp-feature-off": 52,
-  "tmp-gradient-off": 6696,
+  "tmp-gradient-off": 7168,
   "unreachable": 13561
  },
  "inert_why": {
@@ -78,25 +79,24 @@
   "tmp-feature-off": "a TextMesh Pro material colour whose feature is off (no GLOW_ON, UNDERLAY_ON or BEVEL_ON keyword, outline width 0)"
  },
  "tokens": {
-  "ControlActive": 421,
-  "Cta": 295,
-  "Danger": 16,
+  "ControlActive": 557,
+  "Cta": 280,
+  "Danger": 18,
   "ElementCharge": 4,
   "ElementMass": 4,
   "ElementSpace": 4,
   "ElementTime": 4,
   "InactiveLight": 11,
-  "NeutralLightest": 784,
-  "Purchase": 32,
+  "NeutralLightest": 821,
+  "Purchase": 41,
   "Sea": 7,
-  "Selection": 137,
-  "SurfaceBlack": 221,
-  "SurfaceDark": 456,
-  "SurfaceLight": 226,
-  "SurfaceVeryDark": 298,
+  "SurfaceBlack": 213,
+  "SurfaceDark": 473,
+  "SurfaceLight": 229,
+  "SurfaceVeryDark": 327,
   "TextInactive": 1,
-  "TextLight": 1165,
-  "Tooltip": 2
+  "TextLight": 1233,
+  "Tooltip": 17
  },
  "ids": {
   "ui-token:ControlActive": {
@@ -435,15 +435,15 @@
     0.0,
     0.003921569,
     0.039215688,
-    1.0
+    0.97
    ],
    "family": "blue",
-   "uses": 222,
+   "uses": 214,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab Image",
-    "Assets/_Prefabs/CORE/GameCanvas.prefab TextMeshProUGUI",
     "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image",
-    "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab HexApertureGraphic"
+    "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab HexApertureGraphic",
+    "Assets/_Prefabs/UI Elements/In Game/DomainScorePanel.prefab Image"
    ],
    "token": "SurfaceBlack"
   },
@@ -484,7 +484,7 @@
     0.55
    ],
    "family": "blue",
-   "uses": 299,
+   "uses": 328,
    "where": [
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
@@ -505,6 +505,20 @@
    "uses": 1,
    "where": [
     "Assets/_Prefabs/UI Elements/In Game/ThreeButtonPanel.prefab Image"
+   ]
+  },
+  "ui:0006BF": {
+   "role": "ui",
+   "photic": [
+    0.0,
+    0.023529411764705882,
+    0.7490196078431373,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
    ]
   },
   "ui:005F78": {
@@ -544,7 +558,7 @@
     1.0
    ],
    "family": "jade",
-   "uses": 422,
+   "uses": 559,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
@@ -600,15 +614,14 @@
   "ui:050912": {
    "role": "ui",
    "photic": [
-    0.0196078431372549,
-    0.03529411764705882,
-    0.07058823529411765,
-    1.0
+    0.02,
+    0.035,
+    0.07,
+    0.8
    ],
    "family": "blue",
-   "uses": 7,
+   "uses": 6,
    "where": [
-    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code",
     "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs code",
     "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
    ]
@@ -807,7 +820,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 457,
+   "uses": 474,
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
     "Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab Image",
@@ -902,20 +915,6 @@
     "Assets/_Scripts/UI/UITheme.cs code"
    ],
    "token": "TextInactive"
-  },
-  "ui:2536A0": {
-   "role": "ui",
-   "photic": [
-    0.1450980392156863,
-    0.21176470588235294,
-    0.6274509803921569,
-    1.0
-   ],
-   "family": "blue",
-   "uses": 1,
-   "where": [
-    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
-   ]
   },
   "ui:272D76": {
    "role": "ui",
@@ -1064,20 +1063,6 @@
     "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow"
    ]
   },
-  "ui:3C5AD2": {
-   "role": "ui",
-   "photic": [
-    0.23529411764705882,
-    0.35294117647058826,
-    0.8235294117647058,
-    1.0
-   ],
-   "family": "blue",
-   "uses": 1,
-   "where": [
-    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
-   ]
-  },
   "ui:3CC35C": {
    "role": "ui",
    "photic": [
@@ -1098,17 +1083,14 @@
     0.23921569,
     0.69803923,
     1.0,
-    1.0
+    0.0
    ],
    "family": "band~blue",
-   "uses": 138,
+   "uses": 31,
    "where": [
-    "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab TextMeshProUGUI",
-    "Assets/_Prefabs/UI Elements/Kit/KitTopNavTab.prefab Image",
-    "Assets/_Prefabs/UI Elements/Kit/KitTopNavTab.prefab TextMeshProUGUI",
-    "Assets/_Prefabs/UI Elements/Main Menu Screens/Arcade/ArcadeView.prefab Image"
-   ],
-   "token": "Selection"
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Arcade/ArcadeView.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab Button"
+   ]
   },
   "ui:3ED121": {
    "role": "ui",
@@ -1175,7 +1157,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 227,
+   "uses": 230,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
@@ -1240,6 +1222,20 @@
     "Assets/_Scripts/UI/ObjectiveArrowGraphic.cs code"
    ]
   },
+  "ui:500A14": {
+   "role": "ui",
+   "photic": [
+    0.314,
+    0.039,
+    0.078,
+    0.88
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageHud.cs code"
+   ]
+  },
   "ui:508900": {
    "role": "ui",
    "photic": [
@@ -1266,6 +1262,20 @@
    "uses": 1,
    "where": [
     "Assets/_Graphics/Fonts/LiberationSans SDF Glowing.asset Material(TextMeshPro/Distance Field)"
+   ]
+  },
+  "ui:5359C0": {
+   "role": "ui",
+   "photic": [
+    0.3254901960784314,
+    0.34901960784313724,
+    0.7529411764705882,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
    ]
   },
   "ui:545454": {
@@ -1413,7 +1423,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 785,
+   "uses": 822,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab TextMeshProUGUI",
     "Assets/_Graphics/Materials/Shaders/UI/Presence_Orb.mat Material(CosmicShore/UI/Presence)",
@@ -1507,9 +1517,10 @@
     1.0
    ],
    "family": "blue",
-   "uses": 2,
+   "uses": 3,
    "where": [
     "Assets/_Prefabs/UI Elements/Main Menu Screens/Settings/SettingsView.prefab GameSettingsPanelController",
+    "Assets/_Scripts/UI/MiniGameHUD.cs code",
     "Assets/_Scripts/UI/Modals/GameSettingsPanelController.cs code"
    ]
   },
@@ -1718,6 +1729,20 @@
     "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab KitTwoToneGradient"
    ]
   },
+  "ui:96C8FF": {
+   "role": "ui",
+   "photic": [
+    0.5882352941176471,
+    0.7843137254901961,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
+   ]
+  },
   "ui:96EB29": {
    "role": "ui",
    "photic": [
@@ -1801,7 +1826,7 @@
     0.0
    ],
    "family": "lime",
-   "uses": 296,
+   "uses": 281,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
@@ -1893,10 +1918,12 @@
     1.0
    ],
    "family": "ruby",
-   "uses": 2,
+   "uses": 17,
    "where": [
-    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO",
-    "Assets/_Scripts/UI/UITheme.cs code"
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
+    "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab Image",
+    "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab TextMeshProUGUI",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab Image"
    ],
    "token": "Tooltip"
   },
@@ -2117,6 +2144,20 @@
     "Assets/_Prefabs/Spacevessels/Squirrel.prefab TextMeshProUGUI"
    ]
   },
+  "ui:B8C0F0": {
+   "role": "ui",
+   "photic": [
+    0.722,
+    0.753,
+    0.941,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageHud.cs code"
+   ]
+  },
   "ui:BB06FF": {
    "role": "ui",
    "photic": [
@@ -2130,6 +2171,20 @@
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
     "Assets/_Prefabs/UI Elements/Panels/MiniGameHUD.prefab Image"
+   ]
+  },
+  "ui:BED7FF": {
+   "role": "ui",
+   "photic": [
+    0.7450980392156863,
+    0.8431372549019608,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
    ]
   },
   "ui:BFBFC7": {
@@ -2158,7 +2213,7 @@
    "family": "blue",
    "uses": 3,
    "where": [
-    "Assets/_Scripts/UI/Views/VoyageBoard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageKit.cs code",
     "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code",
     "Assets/_Scripts/UI/Views/VoyageRoutePoster.cs code"
    ]
@@ -2186,7 +2241,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 296,
+   "uses": 350,
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab Button",
     "Assets/_Prefabs/Spacevessels/Serpent.prefab Button",
@@ -2219,7 +2274,7 @@
    "family": "lime",
    "uses": 3,
    "where": [
-    "Assets/_Scripts/UI/Views/VoyageBoard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageKit.cs code",
     "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code",
     "Assets/_Scripts/UI/Views/VoyageRoutePoster.cs code"
    ]
@@ -2249,12 +2304,12 @@
     1.0
    ],
    "family": "band~jade",
-   "uses": 16,
+   "uses": 10,
    "where": [
-    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
-    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab Image",
-    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureMaelstromView.prefab Image",
-    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab Image"
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Profile/ProfileWindowView.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Toybox/ToyConfigureView.prefab Image",
+    "Assets/_Prefabs/UI Elements/Panels/R_Pause_Menu_Panel.prefab Image",
+    "Assets/_Prefabs/UI Elements/Panels/ReplayPlaybackHud.prefab Image"
    ]
   },
   "ui:CE6DFF": {
@@ -2396,12 +2451,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 7,
+   "uses": 10,
    "where": [
     "Assets/_Prefabs/Spacevessels/Serpent.prefab Image",
     "Assets/_Prefabs/UI Elements/In Game/Wall Button.prefab Image",
     "Assets/_Prefabs/UI Elements/Panels/VesselHUD.prefab Image",
-    "Assets/_Prefabs/UI Elements/VesselHUD/ScarabHUDVariant.prefab Image"
+    "Assets/_Prefabs/UI Elements/VesselHUD/HoneyguideHUDVariant.prefab Image"
    ]
   },
   "ui:E3EBF5": {
@@ -2427,7 +2482,7 @@
     0.16
    ],
    "family": "blue",
-   "uses": 1166,
+   "uses": 1234,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/Resources/Pilots/PilotProfileView.prefab TextMeshProUGUI",
@@ -2435,6 +2490,20 @@
     "Assets/Resources/UI/ToastNotificationItem.prefab TextMeshProUGUI"
    ],
    "token": "TextLight"
+  },
+  "ui:EBF2FF": {
+   "role": "ui",
+   "photic": [
+    0.9215686274509803,
+    0.9490196078431372,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
+   ]
   },
   "ui:ECF13E": {
    "role": "ui",
@@ -2473,7 +2542,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 279,
+   "uses": 333,
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab Button",
     "Assets/_Prefabs/Spacevessels/Serpent.prefab Button",
@@ -2521,12 +2590,12 @@
     1.0
    ],
    "family": "fire",
-   "uses": 16,
+   "uses": 25,
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
-    "Assets/_Prefabs/UI Elements/VesselHUD/ScarabHUDVariant.prefab ResourceDisplay",
-    "Assets/_Prefabs/UI Elements/VesselHUD/SparrowHUDVariant.prefab ResourceDisplay",
-    "Assets/_Prefabs/UI Elements/VesselHUD/VesselHUDPrefab.prefab ResourceDisplay"
+    "Assets/_Prefabs/UI Elements/VesselHUD/HoneyguideHUDVariant.prefab ResourceDisplay",
+    "Assets/_Prefabs/UI Elements/VesselHUD/OrcaHUDVariant.prefab ResourceDisplay",
+    "Assets/_Prefabs/UI Elements/VesselHUD/ScarabHUDVariant.prefab ResourceDisplay"
    ]
   },
   "ui:FF1000": {
@@ -2566,7 +2635,7 @@
     1.0
    ],
    "family": "fire",
-   "uses": 17,
+   "uses": 19,
    "where": [
     "Assets/_Prefabs/UI Elements/Main Menu Screens/Ark/ArkView.prefab Image",
     "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab TextMeshProUGUI",
@@ -2613,7 +2682,7 @@
     1.0
    ],
    "family": "fire",
-   "uses": 13,
+   "uses": 12,
    "where": [
     "Assets/_Scripts/UI/View/AnglerHUDView.cs code",
     "Assets/_Scripts/UI/View/ButterflyHUDView.cs code",
@@ -2658,10 +2727,26 @@
     1.0
    ],
    "family": "fire",
-   "uses": 2,
+   "uses": 5,
    "where": [
+    "Assets/_Prefabs/UI Elements/VesselHUD/HoneyguideHUDVariant.prefab Image",
+    "Assets/_Prefabs/UI Elements/VesselHUD/OrcaHUDVariant.prefab Image",
     "Assets/_Prefabs/UI Elements/VesselHUD/ScarabHUDVariant.prefab Image",
     "Assets/_Prefabs/UI Elements/VesselHUD/SparrowHUDVariant.prefab Image"
+   ]
+  },
+  "ui:FF8A7C": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.541,
+    0.486,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageHud.cs code"
    ]
   },
   "ui:FF8C26": {
@@ -2715,7 +2800,7 @@
     1.0
    ],
    "family": "gold",
-   "uses": 33,
+   "uses": 42,
    "where": [
     "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab Image",
     "Assets/_Prefabs/UI Elements/In Game/ScoreboardRow.prefab Image",
@@ -2749,7 +2834,7 @@
    "family": "gold",
    "uses": 3,
    "where": [
-    "Assets/_Scripts/UI/Views/VoyageBoard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageKit.cs code",
     "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code",
     "Assets/_Scripts/UI/Views/VoyageRoutePoster.cs code"
    ]
@@ -2898,20 +2983,6 @@
     "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
    ]
   },
-  "ui:FFE0A0": {
-   "role": "ui",
-   "photic": [
-    1.0,
-    0.8784313725490196,
-    0.6274509803921569,
-    0.35
-   ],
-   "family": "gold",
-   "uses": 1,
-   "where": [
-    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
-   ]
-  },
   "ui:FFE2AA": {
    "role": "ui",
    "photic": [
@@ -2955,89 +3026,18 @@
     "Assets/_Scripts/UI/View/MantaVesselHUDView.cs code"
    ]
   },
-  "ui:FFECBE": {
-   "role": "ui",
-   "photic": [
-    1.0,
-    0.9254901960784314,
-    0.7450980392156863,
-    1.0
-   ],
-   "family": "band~gold",
-   "uses": 2,
-   "where": [
-    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
-   ]
-  },
   "ui:FFEEC4": {
    "role": "ui",
    "photic": [
     1.0,
     0.9333333333333333,
     0.7686274509803922,
-    0.45
+    1.0
    ],
    "family": "band~blue",
-   "uses": 2,
+   "uses": 1,
    "where": [
-    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code",
     "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
-   ]
-  },
-  "ui:FFF6DC": {
-   "role": "ui",
-   "photic": [
-    1.0,
-    0.9647058823529412,
-    0.8627450980392157,
-    0.95
-   ],
-   "family": "band~blue",
-   "uses": 1,
-   "where": [
-    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
-   ]
-  },
-  "ui:FFF8E2": {
-   "role": "ui",
-   "photic": [
-    1.0,
-    0.9725490196078431,
-    0.8862745098039215,
-    1.0
-   ],
-   "family": "blue",
-   "uses": 1,
-   "where": [
-    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
-   ]
-  },
-  "ui:FFFAEC": {
-   "role": "ui",
-   "photic": [
-    1.0,
-    0.9803921568627451,
-    0.9254901960784314,
-    1.0
-   ],
-   "family": "blue",
-   "uses": 1,
-   "where": [
-    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
-   ]
-  },
-  "ui:FFFCF0": {
-   "role": "ui",
-   "photic": [
-    1.0,
-    0.9882352941176471,
-    0.9411764705882353,
-    0.85
-   ],
-   "family": "blue",
-   "uses": 1,
-   "where": [
-    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
    ]
   },
   "ui:FFFFFFx1.10": {
@@ -3151,12 +3151,12 @@
     0.86
    ],
    "family": "blue",
-   "uses": 7,
+   "uses": 8,
    "where": [
     "Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO",
     "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
     "Assets/_Prefabs/CORE/GameCanvas.prefab LoadCrystalGraphic",
-    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code"
    ]
   },
   "world:000440": {
@@ -3501,8 +3501,9 @@
     1.0
    ],
    "family": "lime",
-   "uses": 1,
+   "uses": 3,
    "where": [
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs code",
     "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs code"
    ]
   },
@@ -3518,6 +3519,20 @@
    "uses": 1,
    "where": [
     "Assets/_Prefabs/Spacevessels/Manta.prefab MantaVesselHUDView"
+   ]
+  },
+  "world:00FFFF": {
+   "role": "world",
+   "photic": [
+    0,
+    1,
+    1,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs code"
    ]
   },
   "world:010201": {
@@ -3674,10 +3689,11 @@
     0.95
    ],
    "family": "blue",
-   "uses": 2,
+   "uses": 3,
    "where": [
     "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/SniperScopeOverlay.cs code",
-    "Assets/_Scripts/Controller/Vessel/ShrikeScopeOverlay.cs code"
+    "Assets/_Scripts/Controller/Vessel/ShrikeScopeOverlay.cs code",
+    "Assets/_Scripts/Controller/Voyages/VoyageIntro.cs code"
    ]
   },
   "world:058FCA": {
@@ -4180,6 +4196,20 @@
    ],
    "palette": "JadeColors.SpikeLightColor",
    "palette_scale": 1.001275
+  },
+  "world:172B5C": {
+   "role": "world",
+   "photic": [
+    0.09,
+    0.17,
+    0.36,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Voyages/ArkHudPlate.cs code"
+   ]
   },
   "world:17C8CF": {
    "role": "world",
@@ -4904,9 +4934,10 @@
     1.0
    ],
    "family": "blue",
-   "uses": 2,
+   "uses": 3,
    "where": [
     "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Scripts/Controller/Voyages/ArkHudPlate.cs code",
     "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
    ]
   },
@@ -5078,6 +5109,20 @@
     "Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonTunnelConfigSO.cs code"
    ]
   },
+  "world:500A14": {
+   "role": "world",
+   "photic": [
+    0.314,
+    0.039,
+    0.078,
+    0.88
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code"
+   ]
+  },
   "world:501016": {
    "role": "world",
    "photic": [
@@ -5147,6 +5192,20 @@
    "uses": 1,
    "where": [
     "Assets/_Prefabs/Environment/Materials/FX/fx_RedCrackle.prefab ParticleSystem"
+   ]
+  },
+  "world:5C0D0F": {
+   "role": "world",
+   "photic": [
+    0.36,
+    0.05,
+    0.06,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Voyages/ArkHudPlate.cs code"
    ]
   },
   "world:5C5F70": {
@@ -5598,11 +5657,12 @@
     0.5
    ],
    "family": "blue",
-   "uses": 3,
+   "uses": 7,
    "where": [
     "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
     "Assets/_Graphics/Skyboxes/BlackSkybox.mat Material(?)",
-    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs code",
+    "Assets/_Scripts/Controller/Toys/ToyFactory.cs code"
    ]
   },
   "world:8186F1": {
@@ -5897,11 +5957,12 @@
     1.0
    ],
    "family": "lime",
-   "uses": 3,
+   "uses": 5,
    "where": [
     "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
     "Assets/_Prefabs/CORE/GameCanvas.prefab LoadCrystalGraphic",
-    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code",
+    "Assets/_Scripts/Controller/Voyages/ArkHudPlate.cs code"
    ]
   },
   "world:99FF99": {
@@ -5993,6 +6054,20 @@
     "Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs code"
    ]
   },
+  "world:9FB4E6": {
+   "role": "world",
+   "photic": [
+    0.624,
+    0.706,
+    0.902,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Voyages/ArkHudPlate.cs code"
+   ]
+  },
   "world:9FE6FF": {
    "role": "world",
    "photic": [
@@ -6005,6 +6080,20 @@
    "uses": 1,
    "where": [
     "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:9FE8FF": {
+   "role": "world",
+   "photic": [
+    0.624,
+    0.91,
+    1.0,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Voyages/ArkHudPlate.cs code"
    ]
   },
   "world:9FFF97": {
@@ -6272,6 +6361,20 @@
    "uses": 1,
    "where": [
     "Assets/_Scripts/Utility/Tools/LogControlWindow.cs code"
+   ]
+  },
+  "world:B8C0F0": {
+   "role": "world",
+   "photic": [
+    0.722,
+    0.753,
+    0.941,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code"
    ]
   },
   "world:B900FF": {
@@ -6688,10 +6791,11 @@
     1.0
    ],
    "family": "blue",
-   "uses": 8,
+   "uses": 9,
    "where": [
     "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
     "Assets/_Prefabs/CORE/GameCanvas.prefab GoalRow",
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code",
     "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
    ]
   },
@@ -6708,6 +6812,20 @@
    "where": [
     "Assets/Resources/Codex.asset CodexSO",
     "Assets/_SO_Assets/Toys/Toy_ElementCharger.asset ElementChargerToyDefinitionSO"
+   ]
+  },
+  "world:E6F7FF": {
+   "role": "world",
+   "photic": [
+    0.902,
+    0.969,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Voyages/ArkHudPlate.cs code"
    ]
   },
   "world:E726AA": {
@@ -6972,6 +7090,20 @@
     "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
    ]
   },
+  "world:FB8E7E": {
+   "role": "world",
+   "photic": [
+    0.984,
+    0.557,
+    0.494,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Voyages/ArkHudPlate.cs code"
+   ]
+  },
   "world:FF0000": {
    "role": "world",
    "photic": [
@@ -6981,10 +7113,11 @@
     0.7058824
    ],
    "family": "fire",
-   "uses": 3,
+   "uses": 4,
    "where": [
     "Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO",
     "Assets/_Prefabs/Spacevessels/Components/VesselTail.prefab TrailRenderer",
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs code",
     "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs code"
    ]
   },
@@ -7013,8 +7146,9 @@
     1.0
    ],
    "family": "ruby",
-   "uses": 1,
+   "uses": 3,
    "where": [
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs code",
     "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs code"
    ]
   },
@@ -7200,6 +7334,21 @@
     "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnNear.mat Material(CosmicShore/PrismPaperBurn)"
    ]
   },
+  "world:FF4B3A": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.294,
+    0.227,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/Controller/Voyages/ArkAttackerMarks.cs code",
+    "Assets/_Scripts/Controller/Voyages/ArkHudPlate.cs code"
+   ]
+  },
   "world:FF4C33": {
    "role": "world",
    "photic": [
@@ -7345,6 +7494,48 @@
    "where": [
     "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
     "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
+   ]
+  },
+  "world:FF8000": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.5,
+    0.0,
+    1.0
+   ],
+   "family": "band~fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs code"
+   ]
+  },
+  "world:FF8A7C": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.541,
+    0.486,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code"
+   ]
+  },
+  "world:FF9900": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.6,
+    0.0,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs code"
    ]
   },
   "world:FF991A": {
@@ -7732,8 +7923,9 @@
     1.0
    ],
    "family": "band~lime",
-   "uses": 1,
+   "uses": 4,
    "where": [
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs code",
     "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs code"
    ]
   },
@@ -7831,9 +8023,10 @@
     1.0
    ],
    "family": "band~blue",
-   "uses": 1,
+   "uses": 2,
    "where": [
-    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code"
+    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code",
+    "Assets/_Scripts/Controller/Voyages/VoyageIntro.cs code"
    ]
   },
   "world:FFF9F1": {
@@ -7936,5 +8129,110 @@
    ]
   }
  },
- "untraced": []
+ "untraced": [
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 768,
+   "component": "code",
+   "field": "var tube = st.SenseBlocked ? Color.yellow : Color.green;",
+   "id": "world:00FF00",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 768,
+   "component": "code",
+   "field": "var tube = st.SenseBlocked ? Color.yellow : Color.green;",
+   "id": "world:FFEB04",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 771,
+   "component": "code",
+   "field": "var sweep = st.SweepHitAny ? Color.red : Color.cyan;",
+   "id": "world:00FFFF",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 771,
+   "component": "code",
+   "field": "var sweep = st.SweepHitAny ? Color.red : Color.cyan;",
+   "id": "world:FF0000",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 774,
+   "component": "code",
+   "field": "if (st.SweepHitAny) sink.WireSphere(st.SweepHit, 3f, Color.magenta);",
+   "id": "world:FF00FF",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 776,
+   "component": "code",
+   "field": "if (st.Avoid == SwitchbackAvoidAction.Avoid) sink.Line(st.SweepFrom, st.SweepFrom + st.AvoidAim, new Color(1f, 0.6f, 0f)",
+   "id": "world:FF9900",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 796,
+   "component": "code",
+   "field": "d.Plan == SwitchbackAIPlan.Thread ? new Color(1f, 0.5f, 0f) : Color.green);",
+   "id": "world:00FF00",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 796,
+   "component": "code",
+   "field": "d.Plan == SwitchbackAIPlan.Thread ? new Color(1f, 0.5f, 0f) : Color.green);",
+   "id": "world:FF8000",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 799,
+   "component": "code",
+   "field": "var keyCol = kv.Value.Phase == Phase.Done ? Color.gray : Color.magenta;",
+   "id": "world:808080",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 799,
+   "component": "code",
+   "field": "var keyCol = kv.Value.Phase == Phase.Done ? Color.gray : Color.magenta;",
+   "id": "world:FF00FF",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 802,
+   "component": "code",
+   "field": "sink.Line(d.Key, d.AimPoint, Color.yellow);",
+   "id": "world:FFEB04",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 803,
+   "component": "code",
+   "field": "sink.WireSphere(d.AimPoint, 8f, Color.yellow);",
+   "id": "world:FFEB04",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 804,
+   "component": "code",
+   "field": "sink.Line(d.Key - d.FireUp * 40f, d.Key + d.FireUp * 40f, Color.cyan);",
+   "id": "world:00FFFF",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  }
+ ]
 }

@@ -54,11 +54,11 @@ MonoBehaviour:
       thrust: 0
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 175162526
+        Data2: 1078581788
+        Data3: 1171656846
+        Data4: 200696093
+      Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   - sequence: LL
     energized: 0
     displayName: Rising Crescent
@@ -91,11 +91,11 @@ MonoBehaviour:
       thrust: 0
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 175162526
+        Data2: 1078581788
+        Data3: 1171656846
+        Data4: 200696093
+      Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   - sequence: RL
     energized: 0
     displayName: Scissor
@@ -128,11 +128,11 @@ MonoBehaviour:
       thrust: 0
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 175162526
+        Data2: 1078581788
+        Data3: 1171656846
+        Data4: 200696093
+      Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   - sequence: LR
     energized: 0
     displayName: Hook and Draw
@@ -165,11 +165,11 @@ MonoBehaviour:
       thrust: 0.1
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 175162526
+        Data2: 1078581788
+        Data3: 1171656846
+        Data4: 200696093
+      Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   - sequence: RRR
     energized: 0
     displayName: Cyclone
@@ -207,11 +207,11 @@ MonoBehaviour:
       thrust: 0
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 175162526
+        Data2: 1078581788
+        Data3: 1171656846
+        Data4: 200696093
+      Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   - sequence: LLL
     energized: 0
     displayName: Windmill
@@ -244,11 +244,11 @@ MonoBehaviour:
       thrust: 0
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 175162526
+        Data2: 1078581788
+        Data3: 1171656846
+        Data4: 200696093
+      Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   - sequence: RLR
     energized: 0
     displayName: Figure Eight
@@ -291,11 +291,11 @@ MonoBehaviour:
       thrust: 0
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 175162526
+        Data2: 1078581788
+        Data3: 1171656846
+        Data4: 200696093
+      Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   - sequence: LRL
     energized: 0
     displayName: Serpent Weave
@@ -333,11 +333,11 @@ MonoBehaviour:
       thrust: 0.3
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 175162526
+        Data2: 1078581788
+        Data3: 1171656846
+        Data4: 200696093
+      Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   - sequence: RRL
     energized: 0
     displayName: Rising Reversal
@@ -380,11 +380,11 @@ MonoBehaviour:
       thrust: 0
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 175162526
+        Data2: 1078581788
+        Data3: 1171656846
+        Data4: 200696093
+      Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   - sequence: LLR
     energized: 0
     displayName: Low Sweep Uppercut
@@ -427,11 +427,11 @@ MonoBehaviour:
       thrust: 0
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 175162526
+        Data2: 1078581788
+        Data3: 1171656846
+        Data4: 200696093
+      Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   - sequence: RLL
     energized: 0
     displayName: Crosscut Spiral
@@ -469,11 +469,11 @@ MonoBehaviour:
       thrust: 0
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 175162526
+        Data2: 1078581788
+        Data3: 1171656846
+        Data4: 200696093
+      Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   - sequence: LRR
     energized: 0
     displayName: Lunge
@@ -516,11 +516,11 @@ MonoBehaviour:
       thrust: 0.1
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 175162526
+        Data2: 1078581788
+        Data3: 1171656846
+        Data4: 200696093
+      Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   - sequence: RR
     energized: 1
     displayName: Thunder Fang
@@ -563,11 +563,11 @@ MonoBehaviour:
       thrust: 0.1
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   - sequence: LL
     energized: 1
     displayName: Eclipse Crescent
@@ -610,11 +610,11 @@ MonoBehaviour:
       thrust: 0.1
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   - sequence: RL
     energized: 1
     displayName: Shear Storm
@@ -657,11 +657,11 @@ MonoBehaviour:
       thrust: 0.1
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   - sequence: LR
     energized: 1
     displayName: Hook Lance
@@ -704,11 +704,11 @@ MonoBehaviour:
       thrust: 0.1
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   - sequence: RRR
     energized: 1
     displayName: Tempest
@@ -756,11 +756,11 @@ MonoBehaviour:
       thrust: 0.3
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   - sequence: LLL
     energized: 1
     displayName: Hurricane Wheel
@@ -808,11 +808,11 @@ MonoBehaviour:
       thrust: 0.3
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   - sequence: RLR
     energized: 1
     displayName: Infinity Blade
@@ -875,11 +875,11 @@ MonoBehaviour:
       thrust: 0
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   - sequence: LRL
     energized: 1
     displayName: Hydra Weave
@@ -927,11 +927,11 @@ MonoBehaviour:
       thrust: 0.6
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   - sequence: RRL
     energized: 1
     displayName: Meteor Reversal
@@ -989,11 +989,11 @@ MonoBehaviour:
       thrust: 0.2
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   - sequence: LLR
     energized: 1
     displayName: Skyfall Uppercut
@@ -1041,11 +1041,11 @@ MonoBehaviour:
       thrust: 0.5
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   - sequence: RLL
     energized: 1
     displayName: Vortex Spiral
@@ -1093,11 +1093,11 @@ MonoBehaviour:
       thrust: 0
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   - sequence: LRR
     energized: 1
     displayName: Piercing Charge
@@ -1145,8 +1145,8 @@ MonoBehaviour:
       thrust: 0
     sound:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst

@@ -80,6 +80,10 @@ namespace CosmicShore.Gameplay
             if (netObj.IsSpawned) return false;   // Netcode already owns it - never touch a live object.
 
             var go = netObj.gameObject;
+            // Read the prefab's hash BEFORE the NetworkObject is destroyed: read after, the destroyed component answers
+            // no hash, so the once-per-prefab report below fired on EVERY birth (a voyage profile, 2026-11-17: 10-11
+            // warnings per species, 7.9 ms of console logging in one spawn frame).
+            bool known = TryGetHash(netObj, out uint hash);
 
             // NetworkBehaviours first: a NetworkBehaviour whose NetworkObject vanished logs an
             // error on its next enable/disable, and they are inert on an object that will never
@@ -98,7 +102,7 @@ namespace CosmicShore.Gameplay
 
             UnityEngine.Object.DestroyImmediate(netObj);
 
-            if (TryGetHash(netObj, out uint hash) && !_reported.Add(hash))
+            if (known && !_reported.Add(hash))
                 return true;   // already reported this prefab once
 
             CSDebug.LogWarning(

@@ -18,13 +18,14 @@ namespace CosmicShore.Gameplay
     /// <item><b>In a creature</b>: the sticks fly it (<see cref="IFaunaLeash.TrySteer"/>, every frame). RT is its attack at a
     /// rival vessel ahead (a scored hit, PvP is petals only) or its own suction at the prisms ahead (Space reaches further).
     /// LT is a burst of speed (Time). A (on screen on a phone) leaves; at Charge 5 leaving bursts the host.</item>
-    /// <item><b>In a plant</b>: the plant grows faster with Mass, the camera stands far back and the sticks turn it, and
-    /// either trigger shoots the wasp out into the next host.</item>
+    /// <item><b>In a plant</b>: the plant grows faster with Mass while the camera orbits it (Garrett, 2026-11-15): the thumbs
+    /// together turn it round the plant about the camera's own axes (no lock, no flip), Y-diff rolls it about its view axis,
+    /// X-diff zooms. Either trigger chooses the next host from the view's middle and shoots the wasp out into it.</item>
     /// </list>
     ///
-    /// <para><b>One machine decides.</b> The presses round-trip to every peer; only the machine that owns the hull acts on
-    /// them, and possession needs that machine to simulate the creature too (the leash's rule): solo and a host's own hull
-    /// today. Every other peer sees the hull where its owner put it.</para>
+    /// <para><b>One machine decides</b>: the server in a networked match, because it simulates the creatures
+    /// (<see cref="JewelWaspNetworkRelay"/>); every other peer mirrors it. Inside a host the wasp still shows: it glows in
+    /// its pilot's colours and its tail streaks thin behind the host, for an observer who looks.</para>
     /// </summary>
     [DefaultExecutionOrder(-50)]   // the hull is placed on its host in LateUpdate before the chase camera reads it
     [DisallowMultipleComponent]
@@ -79,10 +80,38 @@ namespace CosmicShore.Gameplay
         float _curl;
         ButterflyAnimation _wings;           // the four wings, folded over the back while nested
 
-        // the chase camera's stand-back while riding
+        // the chase camera's stand-back while riding, and its orbit round a plant (a Spectate vantage)
         CustomCameraController _cam;
-        bool _camEngaged;
+        bool _camEngaged, _spectating;
         float _camWritten;
+        Vector3 _plantCentre;                // the plant's middle, eased as it grows
+        float _plantRadius = -1f;            // its reach from that middle (u), eased; < 0 until first measured
+        float _plantZoom = 1f;               // X-diff's zoom, a multiple of the resting stand-back
+        float _plantDistance;                // the stand-back decided this frame (published as the camera's view.w)
+        float _plantMeasureAt;
+        Flora _viewPlant;                    // the plant the view is measuring (a mirror finds its own)
+        static readonly List<Renderer> s_plantRenderers = new();
+
+        // the held trigger's choice: a flash when it changes
+        float _selectFlashFrom = -10f;
+        bool _selectFlashing;
+
+        // what others see of the wasp inside a host: its tail thinned, its hull lit in its pilot's colours
+        readonly List<TrailRenderer> _tails = new();
+        readonly List<float> _tailRestWidths = new();
+        bool _tailsFound;
+        float _tailScale = 1f;
+        float _flashAt = -10f, _lastAttack01;
+        bool _lastBursting, _glowing;
+        WaspMode _lastDressedMode;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // a client's own ride, recorded on its own machine (the server records only its own pilot's)
+        Fauna _mirrorHost;
+        bool _mirrorRide;   // a ride began this possession (it is not begun again when its creature dies first)
+        float _recAttack01;
+        bool _recBursting;
+#endif
 
         readonly List<VesselStatus> _vessels = new();
         float _vesselScanAt;
@@ -127,6 +156,13 @@ namespace CosmicShore.Gameplay
             _strikeFrom = _strikeUntil = -1f;
             _graceUntil = 0f;
             _aiLookAt = Time.time + (config ? config.AILookSeconds : 1.5f);
+            RestoreDress();
+            _tailsFound = false;   // a re-init may bring a new tail: found again, its own width the rest
+            _lastDressedMode = WaspMode.Free;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _mirrorHost = null;
+            _mirrorRide = false;
+#endif
             CaptureModel();
             if (!config)
                 CSDebug.LogError($"[JewelWasp] {name}: no JewelWaspConfig - the wasp cannot sting. Wire " +
@@ -137,6 +173,7 @@ namespace CosmicShore.Gameplay
         {
             LetGo(launch: false);
             ReleaseCamera();
+            RestoreDress();
         }
 
         // ------------------------------------------------------------------ the gates
@@ -166,7 +203,8 @@ namespace CosmicShore.Gameplay
         }
 
         bool IsLocalHuman => _status != null && _status.Player != null && !_status.IsInitializedAsAI && _status.IsLocalUser;
-        bool IsAI => _status != null && (_status.IsInitializedAsAI || _status.AutoPilotEnabled);
+        bool IsAI => _status != null && (_status.IsInitializedAsAI || _status.AutoPilotEnabled ||
+                                         (Relay && Relay.IsNetworked && !Relay.IsOwner && Relay.OwnerAutoPilot));
 
         // The four level-5 upgrades, each its own gate with its element written out (/element-ability-table reads them).
         R_VesselElementalAbilityHandler Abilities => _status?.ElementalAbilityHandler;
@@ -217,6 +255,7 @@ namespace CosmicShore.Gameplay
         {
             if (!config || _status == null || !_status.Transform) return;
             float dt = Time.deltaTime;
+            if (Relay && Relay.IsOwner) Relay.PublishOwnerAutoPilot(_status.AutoPilotEnabled);   // the server runs its AI
             if (!DecidesHere)
             {
                 if (Mirrors) StepMirror(dt);
@@ -242,6 +281,7 @@ namespace CosmicShore.Gameplay
             }
             if (_mode != WaspMode.InFauna && (_rightHeld || _leftHeld)) UpdateAim(_aimFauna);
             else if (_mode == WaspMode.InFauna) SetAim(null, true);
+            TickChoice();
             EaseModel(dt);
         }
 
@@ -278,21 +318,49 @@ namespace CosmicShore.Gameplay
 
         void UpdateAim(bool fauna)
         {
-            var origin = _status.Transform;
-            Component best = fauna ? (Component)FindFaunaAhead(origin.position, AimForward, config.AimConeDegrees, out _)
-                                   : FindFloraAhead(origin.position, AimForward, config.AimConeDegrees);
+            AimRay(out var origin, out var forward);
+            Component best = fauna ? (Component)FindFaunaAhead(origin, forward, config.AimConeDegrees, out _)
+                                   : FindFloraAhead(origin, forward, config.AimConeDegrees);
             SetAim(best, fauna);
         }
 
-        /// <summary>The aim: the hull's nose flying free, the camera's on a plant (it is the hull's frame there too).</summary>
-        Vector3 AimForward => _status.Transform.forward;
+        /// <summary>The aim: the hull's nose flying free; on a plant, the camera's view from its orbit, so what is chosen is
+        /// what sits in the middle of the screen.</summary>
+        void AimRay(out Vector3 origin, out Vector3 forward)
+        {
+            if (_mode == WaspMode.InFlora && PlantVantage(out origin, out _, out var frame))
+            {
+                forward = frame * Vector3.forward;
+                return;
+            }
+            origin = _status.Transform.position;
+            forward = _status.Transform.forward;
+        }
+
+        const float HeldGlow = 1.6f, HeldLean = 0.85f;
 
         void SetAim(Component target, bool fauna)
         {
             if (target == _aim) return;
             if (_aim) LifeformHighlight.Clear(_aim);
             _aim = target;
-            if (_aim && IsLocalHuman) LifeformHighlight.Light(_aim, _status.Domain, 0.85f, 1.6f);
+            _selectFlashing = false;
+            if (!_aim || !IsLocalHuman) return;
+            // a new choice flashes bright and settles (TickChoice), with its cue: the moment of choosing is felt
+            _selectFlashFrom = Time.time;
+            _selectFlashing = config.SelectPulseSeconds > 0f;
+            LifeformHighlight.Light(_aim, _status.Domain, HeldLean, _selectFlashing ? config.SelectPulseGlow : HeldGlow);
+            PlayCue(config.SelectEvent, _aim.transform.position);
+        }
+
+        /// <summary>The chosen creature or plant's flash, easing from the pulse to the held glow (this machine only).</summary>
+        void TickChoice()
+        {
+            if (!_selectFlashing || !_aim) return;
+            float k = (Time.time - _selectFlashFrom) / config.SelectPulseSeconds;
+            if (k >= 1f) _selectFlashing = false;
+            float glow = Mathf.Lerp(config.SelectPulseGlow, HeldGlow, Mathf.Clamp01(k) * (2f - Mathf.Clamp01(k)));
+            LifeformHighlight.Light(_aim, _status.Domain, HeldLean, glow);
         }
 
         float StingRange(Vector3 at)
@@ -342,7 +410,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < live.Count; i++)
             {
                 var p = live[i];
-                if (!p || p.IsDying || !p.HeartTransform || p == _plant) continue;
+                if (!p || p.IsDying || !p.HeartTransform || p == _plant || p == _viewPlant) continue;
                 Vector3 to = p.HeartTransform.position - from;
                 float sqr = to.sqrMagnitude;
                 if (sqr > rangeSqr || sqr < 1e-4f) continue;
@@ -444,12 +512,17 @@ namespace CosmicShore.Gameplay
             _host = host;
             _mode = WaspMode.InFauna;
             _hostSince = Time.time;
+            // the creature is the wasp's from now on (Garrett, 2026-11-19: "steal the prisms of any controlled fauna and
+            // convert it to its domain, even after leaving"): its body prisms, its diet's side and its offspring take the
+            // wasp's domain, and nothing gives them back when the wasp leaves. Fauna.StealInto, replicated by FaunaNetworkSync.
+            host.StealInto(_status.Domain);
             _burstUntil = 0f;
             _strikeFrom = _strikeUntil = -1f;
             Vector3 fwd = host.PossessionForward;
             _frame = SafeLookRotation.TryGet(fwd.sqrMagnitude > 1e-6f ? fwd : _status.Transform.forward, out var r, this)
                 ? r : _status.Transform.rotation;
             _throttle01 = 1f;
+            Flash();
             PlayCue(config.NestEvent, host.PossessionNestPoint);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (IsLocalHuman && !_status.AutoPilotEnabled) _record.Begin(host, _status);
@@ -462,7 +535,10 @@ namespace CosmicShore.Gameplay
             _plant = plant;
             _mode = WaspMode.InFlora;
             _hasteAt = 0f;
-            _frame = _status.Transform.rotation;
+            _frame = _status.Transform.rotation;   // the orbit starts looking the way the wasp flew in
+            _plantZoom = 1f;
+            BeginPlantView(plant);
+            Flash();
             PlayCue(config.NestEvent, plant.HeartTransform ? plant.HeartTransform.position : plant.transform.position);
         }
 
@@ -543,6 +619,7 @@ namespace CosmicShore.Gameplay
                 _attackTotal = Mathf.Max(0.05f, config.AttackCooldown.EvaluateLive(_status));
                 _attackReadyAt = Time.time + _attackTotal;
                 host.PlayPossessionAttack(victim.Transform.position, config.AttackSeconds);
+                Flash();
                 _strikeFrom = Time.time + config.AttackSeconds * FaunaAttackDriver.StrikeAt;
                 _strikeUntil = Time.time + config.AttackSeconds;
                 PlayCue(config.AttackEvent, host.PossessionNestPoint);
@@ -553,7 +630,11 @@ namespace CosmicShore.Gameplay
             }
             _suctionAt = Time.time + config.SuctionInterval;
             int bites = host.PossessedSuction(config.SuctionReachScale.EvaluateLive(_status), config.SuctionBites, SpaceUpgraded);
-            if (bites > 0) PlayCue(config.SuctionEvent, host.PossessionNestPoint);
+            if (bites > 0)
+            {
+                PlayCue(config.SuctionEvent, host.PossessionNestPoint);
+                Flash();
+            }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             _record.Suction(bites);
 #endif
@@ -583,15 +664,28 @@ namespace CosmicShore.Gameplay
                 LetGo(launch: true);
                 return;
             }
-            // the sticks turn the camera round the plant (yaw and pitch)
+            // the camera orbits the plant (Garrett, 2026-11-15): the thumbs together turn it about its OWN up and right
+            // (post-multiplied, so the turn never locks or flips over the top the way a world-up yaw does), Y-diff rolls it
+            // about its view axis, X-diff zooms (thumbs apart in, together out)
             var input = _status.InputStatus;
             if (input != null && !IsAI)
             {
                 float turn = config.FloraOrbitDegrees * dt;
-                _frame = Normalised(Quaternion.AngleAxis(input.XSum * turn, Vector3.up)
-                                    * Quaternion.AngleAxis(input.YSum * turn, _frame * Vector3.right) * _frame);
+                _frame = Normalised(_frame
+                                    * Quaternion.AngleAxis(input.XSum * turn, Vector3.up)
+                                    * Quaternion.AngleAxis(input.YSum * turn, Vector3.right)
+                                    * Quaternion.AngleAxis(input.YDiff * config.FloraRollDegrees * dt, Vector3.forward));
+                var range = config.FloraZoomRange;
+                _plantZoom = Mathf.Clamp(_plantZoom * Mathf.Pow(2f, -input.XDiff * config.FloraZoomRate * dt),
+                                         Mathf.Min(range.x, range.y), Mathf.Max(range.x, range.y));
+                // a held trigger's choice settles toward the middle of the view
+                if ((_rightHeld || _leftHeld) && _aim && config.FloraAimAssistDegrees > 0f &&
+                    PlantVantage(out var eye, out _, out _) &&
+                    SafeLookRotation.TryGet(_aim.transform.position - eye, _frame * Vector3.up, out var toward, this, logError: false))
+                    _frame = Quaternion.RotateTowards(_frame, toward, config.FloraAimAssistDegrees * dt);
             }
             else if (IsAI && Time.time >= _aiLookAt) StepAIFree();
+            MeasurePlant(plant, dt);
             // the plant grows with Mass (Flora.Hasten: it only shortens the wait between its own grow ticks)
             if (Time.time >= _hasteAt)
             {
@@ -611,6 +705,93 @@ namespace CosmicShore.Gameplay
                     }
                 }
             }
+        }
+
+        // ------------------------------------------------------------------ the view of a plant
+
+        void BeginPlantView(Flora plant)
+        {
+            _viewPlant = plant;
+            _plantRadius = -1f;
+            _plantMeasureAt = 0f;
+            MeasurePlant(plant, 0f);
+        }
+
+        /// <summary>The plant's middle and reach, read from what it has grown (its renderers' bounds) four times a second
+        /// and eased, so the view draws back smoothly as the plant grows. Its heart when nothing is drawn yet.</summary>
+        void MeasurePlant(Flora plant, float dt)
+        {
+            if (!plant) return;
+            var heart = plant.HeartTransform ? plant.HeartTransform : plant.transform;
+            if (_plantRadius < 0f || Time.time >= _plantMeasureAt)
+            {
+                _plantMeasureAt = Time.time + 0.25f;
+                Vector3 centre = heart.position;
+                float radius = HeartRadius(plant) * 4f;
+                plant.GetComponentsInChildren(false, s_plantRenderers);
+                bool any = false;
+                Bounds b = default;
+                for (int i = 0; i < s_plantRenderers.Count; i++)
+                {
+                    var r = s_plantRenderers[i];
+                    if (!r || !r.enabled) continue;
+                    if (!any) { b = r.bounds; any = true; }
+                    else b.Encapsulate(r.bounds);
+                }
+                s_plantRenderers.Clear();
+                if (any)
+                {
+                    b.Encapsulate(heart.position);
+                    centre = b.center;
+                    radius = Mathf.Max(radius, b.extents.magnitude);
+                }
+                if (_plantRadius < 0f)
+                {
+                    _plantCentre = centre;
+                    _plantRadius = radius;
+                }
+                _measuredCentre = centre;
+                _measuredRadius = radius;
+            }
+            float k = 1f - Mathf.Exp(-config.FloraFollowEase * dt);
+            _plantCentre = Vector3.Lerp(_plantCentre, _measuredCentre, k);
+            _plantRadius = Mathf.Lerp(_plantRadius, _measuredRadius, k);
+            _plantDistance = Mathf.Clamp(_plantRadius * config.FloraFitRadii * _plantZoom,
+                                         config.FloraMinDistance, config.FloraCameraDistance);
+        }
+
+        Vector3 _measuredCentre;
+        float _measuredRadius;
+        Quaternion _mirrorFrame = Quaternion.identity;   // a mirror's orbit, eased onto the server's (it arrives at tick rate)
+        float _mirrorDistance;
+
+        /// <summary>Where the camera sits on a plant: the plant's middle, backed off along the orbit's forward by the
+        /// stand-back. The decider's own orbit and zoom; a mirror's from the server's (the hull's rotation and view.w).</summary>
+        bool PlantVantage(out Vector3 eye, out Vector3 centre, out Quaternion frame)
+        {
+            eye = centre = default;
+            frame = Mirrors ? _mirrorFrame : _frame;
+            if (_mode != WaspMode.InFlora || _plantRadius < 0f) return false;
+            centre = _plantCentre;
+            float distance = Mirrors ? _mirrorDistance : _plantDistance;
+            eye = centre - frame * Vector3.forward * Mathf.Max(1f, distance);
+            return true;
+        }
+
+        /// <summary>A mirror's plant: the live one whose heart is nearest the nested hull.</summary>
+        Flora NearestPlant(Vector3 at)
+        {
+            Flora best = null;
+            float bestSqr = float.PositiveInfinity;
+            var live = FloraHeartRegistry.Live;
+            for (int i = 0; i < live.Count; i++)
+            {
+                var p = live[i];
+                if (!p || p.IsDying || !p.HeartTransform) continue;
+                float sqr = (p.HeartTransform.position - at).sqrMagnitude;
+                if (sqr < bestSqr) { bestSqr = sqr; best = p; }
+            }
+            return best;
         }
 
         // ------------------------------------------------------------------ leaving
@@ -648,6 +829,7 @@ namespace CosmicShore.Gameplay
                 host.Unpossess(this);
             }
             _plant = null;
+            _viewPlant = null;
             if (_mode == WaspMode.InFauna || _mode == WaspMode.InFlora)
             {
                 _mode = WaspMode.Free;
@@ -669,6 +851,7 @@ namespace CosmicShore.Gameplay
                 host.Unpossess(this);
             }
             _plant = null;
+            _viewPlant = null;
             _stingTarget = null;
             if (_aim) SetAim(null, _aimFauna);
             HoldHull(false);
@@ -977,6 +1160,89 @@ namespace CosmicShore.Gameplay
                                          _abdomenRest;
             }
             if (_wings) _wings.SetFolded(nested);
+            DressInHost(dt, nested);
+        }
+
+        /// <summary>Mark an ability's use: the wasp flashes in its pilot's colours (see <see cref="DressInHost"/>).</summary>
+        void Flash() => _flashAt = Time.time;
+
+        /// <summary>
+        /// What every machine shows of a wasp inside a host (Garrett, 2026-11-15). Its TAIL (<see cref="VesselTail"/>, the
+        /// streak other players find a ship by) thins to <see cref="JewelWaspConfigSO.NestedTailWidth"/> of its own width,
+        /// so a possessed creature trails a thread "to an astute observer". Its hull GLOWS in its own domain's colours
+        /// through the hull's flare (<see cref="VesselAnimation.FlareBody(float)"/>, the brightness lever the Dolphin's
+        /// Charge 5 lights pilots with): a slow breath while nested, a flash on every ability (an attack, a bite of
+        /// suction, a burst, taking a host). The flashes a mirror cannot be told of are read from what it is told: the
+        /// attack's recharge jumping full, the burst bit, a new host.
+        /// </summary>
+        void DressInHost(float dt, bool nested)
+        {
+            float attack01 = AttackCooldown01;
+            bool bursting = Bursting;
+            if (attack01 > _lastAttack01 + 0.5f) Flash();
+            if (bursting && !_lastBursting) Flash();
+            bool riding = _mode == WaspMode.InFauna || _mode == WaspMode.InFlora;
+            bool wasRiding = _lastDressedMode == WaspMode.InFauna || _lastDressedMode == WaspMode.InFlora;
+            if (riding && !wasRiding && Mirrors) Flash();
+            _lastAttack01 = attack01;
+            _lastBursting = bursting;
+            _lastDressedMode = _mode;
+
+            // the tail
+            float tailWant = nested ? config.NestedTailWidth : 1f;
+            if (!Mathf.Approximately(_tailScale, tailWant) || !_tailsFound)
+            {
+                _tailScale = Mathf.MoveTowards(_tailScale, tailWant, dt * 1.5f);
+                ApplyTails(_tailScale);
+            }
+
+            // the glow
+            float since = Time.time - _flashAt;
+            float glow = nested ? config.NestedGlow * (0.8f + 0.2f * Mathf.Sin(Time.time * 2.4f)) : 0f;
+            if (since < config.AbilityFlashSeconds)
+                glow = Mathf.Max(glow, config.AbilityFlashGlow * (1f - since / config.AbilityFlashSeconds));
+            if (!_wings) return;
+            if (glow > 0.01f)
+            {
+                _wings.FlareBody(glow);
+                _glowing = true;
+            }
+            else if (_glowing)
+            {
+                _wings.StopFlareBody();
+                _glowing = false;
+            }
+        }
+
+        void ApplyTails(float scale)
+        {
+            if (!_tailsFound && _status != null && _status.Transform)
+            {
+                _tailsFound = true;
+                _tails.Clear();
+                _tailRestWidths.Clear();
+                var markers = _status.Transform.GetComponentsInChildren<VesselTail>(true);
+                for (int m = 0; m < markers.Length; m++)
+                {
+                    foreach (var trail in markers[m].GetComponentsInChildren<TrailRenderer>(true))
+                    {
+                        _tails.Add(trail);
+                        _tailRestWidths.Add(trail.widthMultiplier);
+                    }
+                }
+            }
+            for (int i = 0; i < _tails.Count; i++)
+                if (_tails[i]) _tails[i].widthMultiplier = _tailRestWidths[i] * scale;
+        }
+
+        /// <summary>The tail at its own width and the hull unlit: a disable or a re-init leaves nothing borrowed behind.</summary>
+        void RestoreDress()
+        {
+            if (_tailsFound) ApplyTails(1f);
+            _tailScale = 1f;
+            if (_glowing && _wings) _wings.StopFlareBody();
+            _glowing = false;
+            _flashAt = -10f;
         }
 
         /// <summary>While the wasp rides, the hull's own flight stops (the fleet's stop, <see cref="IVesselStatus.IsStationary"/>,
@@ -1048,9 +1314,10 @@ namespace CosmicShore.Gameplay
                 return;
             }
             _cam = cam;
+            UpdatePlantOrbit(cam);
             float neutral = cam.NeutralOffsetZ;
             if (neutral >= 0f) return;   // not a chase camera
-            float back = CameraBack();
+            float back = _mode == WaspMode.InFlora ? 0f : CameraBack();   // on a plant the orbit frames it instead
             float want = back > 0f ? -Mathf.Max(-neutral, back) : neutral;
             if (!_camEngaged && Mathf.Approximately(want, neutral)) return;
             if (_camEngaged && !Mathf.Approximately(cam.GetCameraDistance(), _camWritten))
@@ -1066,13 +1333,49 @@ namespace CosmicShore.Gameplay
             _camEngaged = !Mathf.Approximately(next, neutral);
         }
 
-        /// <summary>How far the chase camera stands back while the wasp rides (0: the hull's own distance).</summary>
+        /// <summary>On a plant the camera leaves the chase and ORBITS: a still vantage (<see cref="CustomCameraController.Spectate"/>,
+        /// eased in and out by the camera) set every frame from the orbit, looking at the plant's middle with the orbit's up,
+        /// so the roll turns the whole view. Cleared the frame the wasp leaves.</summary>
+        void UpdatePlantOrbit(CustomCameraController cam)
+        {
+            if (Mirrors && _mode == WaspMode.InFlora)
+            {
+                // a mirror measures its own copy of the plant, the one its nested hull sits in
+                bool fresh = !_viewPlant || _viewPlant.IsDying;
+                if (fresh) BeginPlantView(NearestPlant(_status.Transform.position));
+                else MeasurePlant(_viewPlant, Time.deltaTime);
+                Quaternion served = _status.Transform.rotation;
+                float k = fresh ? 1f : 1f - Mathf.Exp(-15f * Time.deltaTime);
+                _mirrorFrame = fresh ? served : Quaternion.Slerp(_mirrorFrame, served, k);
+                _mirrorDistance = fresh ? Relay.View.w : Mathf.Lerp(_mirrorDistance, Relay.View.w, k);
+            }
+            else if (Mirrors && _viewPlant)
+            {
+                _viewPlant = null;
+                _plantRadius = -1f;
+            }
+            if (PlantVantage(out var eye, out var centre, out var frame))
+            {
+                cam.Spectate = new CustomCameraController.SpectateView
+                {
+                    Position = eye, LookAt = centre, Up = frame * Vector3.up,
+                };
+                _spectating = true;
+            }
+            else if (_spectating)
+            {
+                cam.Spectate = null;
+                _spectating = false;
+            }
+        }
+
+        /// <summary>How far the camera stands back while the wasp rides (0: the hull's own distance; on a plant the orbit's).</summary>
         float CameraBack()
         {
             if (Mirrors) return Relay.View.w;
             if (_mode == WaspMode.InFauna && _host)
-                return config.HostCameraBase + _host.PossessionBodyRadius * config.HostCameraBodies;
-            return _mode == WaspMode.InFlora ? config.FloraCameraDistance : 0f;
+                return Mathf.Max(config.HostCameraFloor, config.HostCameraBase + _host.PossessionBodyRadius * config.HostCameraBodies);
+            return _mode == WaspMode.InFlora ? _plantDistance : 0f;
         }
 
         // ------------------------------------------------------------------ the network (JewelWaspNetworkRelay)
@@ -1111,8 +1414,71 @@ namespace CosmicShore.Gameplay
             if (relay.IsOwner && mode != WaspMode.InFauna && mode != WaspMode.Stinging && (_rightHeld || _leftHeld))
                 UpdateAim(_aimFauna);
             else SetAim(null, true);
+            TickChoice();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            RecordMirrorRide();
+#endif
             EaseModel(dt);
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>A client's own ride, recorded on its own machine from what the server sends (the server's recorder only
+        /// hears its own pilot). The host is the creature whose nest the hull sits at. Suction bites and landed hits are
+        /// decided on the server and not sent, so a client's file counts the attacks and bursts only.</summary>
+        void RecordMirrorRide()
+        {
+            bool mine = Relay.IsOwner && IsLocalHuman && !_status.AutoPilotEnabled;
+            if (!mine || _mode != WaspMode.InFauna)
+            {
+                if (_record.Recording) _record.End(_mode == WaspMode.Free ? "left" : "re-stung");
+                _mirrorHost = null;
+                _mirrorRide = false;
+                return;
+            }
+            if (_mirrorRide && !_mirrorHost)
+            {
+                if (_record.Recording) _record.End("host died");   // the server throws the wasp free next
+                return;
+            }
+            if (!_mirrorRide)
+            {
+                _mirrorRide = true;
+                _mirrorHost = NearestHost(_status.Transform.position);
+                if (!_mirrorHost) return;
+                _record.Begin(_mirrorHost, _status);
+                _recAttack01 = AttackCooldown01;
+                _recBursting = Bursting;
+            }
+            float attack01 = AttackCooldown01;
+            bool bursting = Bursting;
+            if (attack01 > _recAttack01 + 0.5f) _record.Attack();
+            if (bursting && !_recBursting) _record.Burst();
+            _recAttack01 = attack01;
+            _recBursting = bursting;
+            var frame = _status.Transform.rotation;
+            var input = _status.InputStatus;
+            _record.Tick(_status, frame, input != null ? Mathf.Clamp01(input.XDiff) : 1f, _rightHeld, _leftHeld, bursting,
+                         NearestRival(_mirrorHost.PossessionNestPoint, frame * Vector3.forward, 2000f, 180f));
+        }
+
+        /// <summary>The possession host whose nest is nearest <paramref name="at"/> (a mirror's own copy of the creature).</summary>
+        static Fauna NearestHost(Vector3 at)
+        {
+            var cell = Cell.FindNearestActiveCell(at);
+            if (!cell) return null;
+            Fauna best = null;
+            float bestSqr = float.PositiveInfinity;
+            var live = cell.LiveFauna;
+            for (int i = 0; i < live.Count; i++)
+            {
+                var f = live[i] ? live[i].PossessionHost : null;
+                if (!f) continue;
+                float sqr = (f.PossessionNestPoint - at).sqrMagnitude;
+                if (sqr < bestSqr) { bestSqr = sqr; best = f; }
+            }
+            return best;
+        }
+#endif
 
         void HoldTriggerShown(JewelWaspControl control, bool down)
         {
@@ -1132,6 +1498,8 @@ namespace CosmicShore.Gameplay
 
         void ReleaseCamera()
         {
+            if (_spectating && _cam) _cam.Spectate = null;
+            _spectating = false;
             if (_camEngaged && _cam && Mathf.Approximately(_cam.GetCameraDistance(), _camWritten))
                 _cam.SetCameraDistance(_cam.NeutralOffsetZ);
             _camEngaged = false;

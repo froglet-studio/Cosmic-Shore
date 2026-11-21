@@ -159,7 +159,9 @@ namespace CosmicShore.Gameplay
         // replicated scored stat, run on every peer - see DomainRaceToasts. Feedback only.
         DomainRaceToasts _raceToasts;
 
-        void Update()
+        /// <summary>Virtual so a mode riding this yard can post its own beats (Railrush's hint); an
+        /// override calls base first.</summary>
+        protected virtual void Update()
         {
             if (_finalResultsSent || rule == null) return;
             _raceToasts ??= new DomainRaceToasts(rule);
@@ -364,8 +366,46 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < list.Count; i++)
             {
                 if (list[i] == null) continue;
-                list[i].PrismStolen = 0;
+                ZeroScoredStats(list[i]);
             }
+        }
+
+        // ── Seams for a mode that rides this yard and scores something else ──
+        // Railrush (the Urchin's Charge game, RAILRUSH.md) inherits this controller for the
+        // Switchyard, its replicated ownership and its rail-riding AI, and scores spike hits on
+        // rival hulls instead of steals. Each default below is exactly what Hijack did before the
+        // seam existed, so Hijack itself is unchanged.
+
+        /// <summary>The scored stat this mode zeroes at spawn, at the whistle and on replay.</summary>
+        protected virtual void ZeroScoredStats(IRoundStats stats) => stats.PrismStolen = 0;
+
+        /// <summary>The stat that picks the winning domain's representative pilot, and the first
+        /// number the final snapshot replicates.</summary>
+        protected virtual int ReadScoredStat(IRoundStats stats) => stats.PrismStolen;
+
+        /// <summary>Writes the replicated scored stat back on a client.</summary>
+        protected virtual void WriteScoredStat(IRoundStats stats, int value) => stats.PrismStolen = value;
+
+        /// <summary>A second replicated number for the results breakdown (a client that only
+        /// replicated the total shows every loser's breakdown as 0). Hijack's breakdown IS its
+        /// scored stat, so it replicates nothing extra.</summary>
+        protected virtual int ReadBreakdownStat(IRoundStats stats) => 0;
+
+        /// <summary>Writes the replicated breakdown stat back on a client.</summary>
+        protected virtual void WriteBreakdownStat(IRoundStats stats, int value) { }
+
+        /// <summary>
+        /// Gives a subclass the AI's steering for this frame before the heist plan runs. Return
+        /// true with a <paramref name="target"/> to steer there (the rail plan is paused, not
+        /// reset); false to fly the heist plan. <paramref name="onChosenRail"/> says whether the
+        /// pilot is grinding the rail it chose, so a subclass can keep the grind (and the launch
+        /// it builds) and only take over the aim once airborne. Hijack never hunts.
+        /// </summary>
+        protected virtual bool TryOverrideAITarget(IPlayer pilot, IVesselStatus self, Vector3 position,
+                                                   bool onChosenRail, out Vector3 target)
+        {
+            target = default;
+            return false;
         }
 
         protected override void OnCountdownTimerEnded()
@@ -447,6 +487,12 @@ namespace CosmicShore.Gameplay
                     bool onChosenRail = rail >= 0 && rail < yard.Rails.Count
                                         && self.IsAttached && self.AttachedPrism
                                         && self.AttachedPrism.Trail == yard.Rails[rail].Trail;
+
+                    if (TryOverrideAITarget(captured, self, pos, onChosenRail, out var overridden))
+                    {
+                        movingSince = Time.time;
+                        return overridden;
+                    }
 
                     if (!onChosenRail && Time.time >= nextRetarget)
                     {
@@ -548,7 +594,7 @@ namespace CosmicShore.Gameplay
         /// ~27k prism reads per pilot per refresh to answer 18 questions. The scratch array is a
         /// field rather than a local because this runs on a 3s cadence per AI, forever.</para>
         /// </summary>
-        int ChooseRail(HijackYard yard, Vector3 from, Domains domain, int excluded)
+        protected virtual int ChooseRail(HijackYard yard, Vector3 from, Domains domain, int excluded)
         {
             int burrCount = yard.Burrs.Count;
             if (_burrLoot == null || _burrLoot.Length < burrCount) _burrLoot = new int[burrCount];
@@ -594,7 +640,7 @@ namespace CosmicShore.Gameplay
         /// cadence and ammo floor. The driver owns the per-pilot interval, so the press-and-release
         /// is one call and can never charge a burst it does not release.
         /// </summary>
-        void SpikeVolley(IPlayer pilot) =>
+        protected void SpikeVolley(IPlayer pilot) =>
             UrchinAI.TrySpike(pilot, aiSpikeIntervalSeconds, aiMinSpikeAmmo);
 
         // ── Server-authoritative game end (the Rampage/Salvo shape) ──────────
@@ -611,7 +657,7 @@ namespace CosmicShore.Gameplay
 
             var winnerRep = gameData.RoundStatsList
                 .Where(s => s != null && s.Domain == winningDomain)
-                .OrderByDescending(s => s.PrismStolen)
+                .OrderByDescending(ReadScoredStat)
                 .ThenBy(s => s.Name, System.StringComparer.Ordinal)
                 .FirstOrDefault();
             if (winnerRep == null) return;
@@ -648,16 +694,18 @@ namespace CosmicShore.Gameplay
             var scoreArray = new float[count];
             var domainArray = new int[count];
             var stolenArray = new int[count];
+            var breakdownArray = new int[count];
 
             for (int i = 0; i < count; i++)
             {
                 nameArray[i] = new FixedString64Bytes(statsList[i].Name);
                 scoreArray[i] = statsList[i].Score;
                 domainArray[i] = (int)statsList[i].Domain;
-                stolenArray[i] = statsList[i].PrismStolen;
+                stolenArray[i] = ReadScoredStat(statsList[i]);
+                breakdownArray[i] = ReadBreakdownStat(statsList[i]);
             }
 
-            SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, stolenArray,
+            SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, stolenArray, breakdownArray,
                 new FixedString64Bytes(winnerName), (int)winnerDomain);
         }
 
@@ -667,6 +715,7 @@ namespace CosmicShore.Gameplay
             float[] scores,
             int[] domains,
             int[] prismsStolen,
+            int[] breakdown,
             FixedString64Bytes winnerName,
             int winnerDomain)
         {
@@ -682,7 +731,8 @@ namespace CosmicShore.Gameplay
                 }
                 stat.Score = scores[i];
                 stat.Domain = (Domains)domains[i];
-                stat.PrismStolen = prismsStolen[i];
+                WriteScoredStat(stat, prismsStolen[i]);
+                WriteBreakdownStat(stat, breakdown[i]);
             }
 
             gameData.WinnerName = winnerName.ToString();
@@ -706,7 +756,7 @@ namespace CosmicShore.Gameplay
             foreach (var s in gameData.RoundStatsList)
             {
                 if (s == null) continue;
-                s.PrismStolen = 0;
+                ZeroScoredStats(s);
                 s.Score = 0f;
             }
 

@@ -29,5 +29,5 @@ MonoBehaviour:
     Max: 2.5
     element: 2
     UseFloor: 1
-    Floor: 0.25
+    Floor: 0.5
   dangerUpgradeElement: 2

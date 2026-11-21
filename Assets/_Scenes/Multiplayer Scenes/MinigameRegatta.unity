@@ -836,6 +836,20 @@ MonoBehaviour:
   startLineStandoff: 260
   startLineRadius: 120
   aiRailLeadDistance: 260
+  gateThreadedEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  courseFinishedEvent:
+    Guid:
+      Data1: 2069810760
+      Data2: 1198659685
+      Data3: -604450419
+      Data4: -805011495
+    Path: event:/SFX/Oneshots/Menu/BigReward
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -978,10 +992,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ID: 0
   CellConfigs:
-  - {fileID: 11400000, guid: 1272c806f122444f525a000ccbcb472b, type: 2}
-  - {fileID: 11400000, guid: 6a8fdec94d8d7c1e55ce2b82f195fb2d, type: 2}
-  - {fileID: 11400000, guid: ff80f22ab0303ace7a1139de2f9f2222, type: 2}
-  - {fileID: 11400000, guid: 1fd418b9587960e42b0cbdb69f7cd2ec, type: 2}
+  - {fileID: 11400000, guid: 7fc59ba89af24bd423392e54e1692688, type: 2}
+  - {fileID: 11400000, guid: b331d4a3860aff8cd93fb11cd0102ffc, type: 2}
+  - {fileID: 11400000, guid: 65aff413873c2b50dccb97d0601b767c, type: 2}
+  - {fileID: 11400000, guid: 89ec70ade92c6edcd61b9ebdbe27b96a, type: 2}
+  - {fileID: 11400000, guid: 990476063f9591da21b377cc2a38dc88, type: 2}
+  - {fileID: 11400000, guid: f7da5e947b36af11154512cb1b00d7e0, type: 2}
+  - {fileID: 11400000, guid: 670f965a49bb827f9fc718ef447a2cb3, type: 2}
+  - {fileID: 11400000, guid: b4a170db9d53cc110baac5465cd9bd4b, type: 2}
   cellTypeChoiceOptions: 3
   retireSuctionSeconds: 0
   runtime: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}

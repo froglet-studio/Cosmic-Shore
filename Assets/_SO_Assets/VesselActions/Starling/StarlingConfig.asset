@@ -28,6 +28,38 @@ MonoBehaviour:
   lvTime: 1
   lvSpace: 1
   lvCharge: 1
+  arrivalLevelCharge:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 4.3333335
+    element: 1
+    UseFloor: 1
+    Floor: 0.5
+  arrivalLevelMass:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 4.3333335
+    element: 2
+    UseFloor: 1
+    Floor: 0.5
+  arrivalLevelSpace:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 4.3333335
+    element: 3
+    UseFloor: 1
+    Floor: 0.5
+  arrivalLevelTime:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 4.3333335
+    element: 4
+    UseFloor: 1
+    Floor: 0.5
   slab: 260
   viewSpan: 1400
   contactHz: 10
