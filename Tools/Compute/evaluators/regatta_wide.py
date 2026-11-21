@@ -64,6 +64,7 @@ FIELD = ["Urchin", "Scarab", "Sparrow", "Dolphin", "Squirrel", "Thresher", "Brit
 # the line-splitter and the skimmer) at one seed and the card start; only a course inside STAGE_A_BAR races the field.
 STAGE_A = ["Urchin", "Scarab", "Dolphin", "Squirrel"]
 STAGE_A_BAR = 1.8
+MIN_WORLD_PRISMS = 2000             # a course must lay at least this many placement prisms (a world, not an empty cell)
 SS_BINS = (0.0, 0.05, 0.35, 0.7)     # super-shielded share: none (< 5%), a little, some, mostly
 
 
@@ -124,7 +125,9 @@ def random_cell(rng, base_kind):
 
 
 def base_choices():
-    return ["none"] + world_kinds() + SHAPE_BASES
+    # No bare course: a course is a whole world with the loop through it (Garrett 2026-11-21, "a course that doesn't
+    # have that at all"); every world kind and shape base, never the empty cell that leaves only rails or extras.
+    return world_kinds() + SHAPE_BASES
 
 
 # ── Vector helpers (plain floats; the game's sight check is in float32, the margin here is a degree) ──────────────
@@ -257,7 +260,9 @@ def _random_genes(rng, base=None, ss=None):
         "base": random_base(rng, base, ss),
         "extras": [random_extra(rng, None, ss) for _ in range(rng.choice([0, 0, 1, 2, 3, 5]))],
         "cell": None,
-        "rails": "off" if rng.random() < 0.9 else "on",
+        # Rails are always off (2026-11-21): every confirmed rails-on course still looked like the old tracks, and the
+        # fleet's balance on them leaned on the rails. railKind is kept for old genomes' schema only.
+        "rails": "off",
         "railKind": rng.choice([1, 2, 3]),      # Shielded, Plain, Gap (never all super-shielded)
         "sight": rng.uniform(8.0, 30.0), "line": rng.uniform(14.0, 70.0),
         "crystals": rng.choice([0, 0, 1, 2, 3, 4]), "crystalPhase": rng.random(),
@@ -481,9 +486,12 @@ def _jiggle(rng, v, sd, lo, hi):
 
 def mutate(genes, rng):
     g = copy.deepcopy(genes)
+    g["rails"] = "off"          # an older rails-on elite's children are railless
+    if g["base"]["kind"] == "none":
+        g["base"] = random_base(rng, rng.choice(base_choices()), None)
     ops = rng.randint(1, 4)
     for _ in range(ops):
-        op = rng.choice(["loop", "loop", "ring", "ring", "base", "base", "basekind", "mix", "extra", "rails", "dials",
+        op = rng.choice(["loop", "loop", "ring", "ring", "base", "base", "basekind", "mix", "extra", "dials",
                          "cell", "cross"])
         L = g["loop"]
         if op == "loop":
@@ -599,6 +607,12 @@ def evaluate(genome, seeds_a=(1,), seeds_b=(1,), limit_s=300):
     if ra["holes"]:
         rec["score"], rec["stage"], rec["error"] = None, "A", f"judge holes {ra['holes']}"
         return rec
+    prisms = next((race.get("course_placement_prisms") for race in ra["races"] if race.get("course_placement_prisms") is not None), None)
+    rec["prisms"] = prisms
+    if prisms is not None and prisms < MIN_WORLD_PRISMS:
+        # A world the carves ate (2026-11-21: a confirmed LSystem course laid 0 base prisms) is an empty cell.
+        rec["score"], rec["stage"], rec["error"] = None, "A", f"thin world: {prisms} prisms laid"
+        return rec
     if a is None or a > STAGE_A_BAR:
         # A stage-A failure ranks below every stage-B course of the same spread.
         rec["score"] = None if a is None else 2.0 * field_score({"card": {"times": times_a}})
@@ -665,6 +679,10 @@ def field_score(field):
 
 
 def rescore(r):
+    genes = (r.get("genome") or {}).get("wide") or {}
+    if genes.get("rails") == "on" or (genes.get("base") or {}).get("kind") == "none" or \
+            (r.get("prisms") is not None and r["prisms"] < MIN_WORLD_PRISMS):
+        return dict(r, score=None)
     if r.get("stage") == "B" and r.get("field"):
         # A hull with no time at all (None; a DNF is 400) never raced: a hole, in records written before holes were named.
         holes = any(v.get("holes") or any(t is None for t in v["times"].values()) for v in r["field"].values())
