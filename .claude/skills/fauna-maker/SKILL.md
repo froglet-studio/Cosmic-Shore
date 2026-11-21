@@ -100,8 +100,24 @@ Use `K.elements(prisms)` for `"elements"`. Never type those numbers. (It gives t
 law: Time and Charge 1, Mass grown until the heart's swing clears its shields and never under 1, Space 1.6477 x Mass.
 Only when a person asks for a bigger Mass form: `K.elements(prisms, mass=1.25)`; the Ray's is.)
 
-`"possession"` needs `top_speed`, `mouth_reach`, `attack`. `attack` is `"whip"` only when three or more limbs grow
-from ONE limb; otherwise `"lunge"`.
+**`"possession"` is how the creature FEELS under a rider.** The lab flies these numbers and the game is given the
+same ones (the class `GrownFauna` reads them off the prefab; a new creature needs no code). Three are required; add
+the others only where the animal calls for it, and say what each is for in `"feel"`.
+
+| key | what it does | values |
+|---|---|---|
+| `top_speed` (required) | its speed, units a second | 18 (a bell) to 34 (a glider) |
+| `mouth_reach` (required) | how far its suction reaches | 30 to 46 |
+| `attack` (required) | `"whip"` only when three or more limbs grow from ONE limb (those limbs whip); otherwise `"lunge"` | |
+| `turn_rate` | how sharply it answers the sticks; 10 is every shipped creature | 3 a glider, 5 heavy, 7 nimble |
+| `speed_ease` | how fast it gains and loses speed; 2.5 is every shipped creature | 0.9 glides |
+| `suction` | where it eats from: leave it out for a mouthful ahead; `{"shape": "ram", "radius": 20.0}` eats what passes round its mouth with no wait (a filter feeder); `{"shape": "all"}` eats on every side through its whole reach (a body that is all arms) | |
+| `motion` | `{"kind": "pulse", "period": 1.8, "kick": 1.8, "glide": 0.55, "glide_turn": 9.0}`: it kicks (speed x `kick`) for the first 30% of each `period`, then glides (x `glide`) and turns in the glide at `glide_turn` | a bell, a jet swimmer |
+| `body_radius` | how big the body is to a rider (camera distance, attack reach); leave it out for a compact body | 20 to 22 for a body that is all reach |
+| `aim_cone` | the half-angle in which its attack finds a vessel; 50 by default | 180 for a body that attacks all round |
+| `feel` | one line the rider reads in the lab | |
+
+`"steering_up": "carried"` (outside the block) means it has no up and rolls with its rider; every grown creature has it.
 
 ## Step 5. Check, and do what it says
 
@@ -169,7 +185,7 @@ each element ONE feeling and one or two things only this creature grows for it:
 | element | the feeling to aim for | what to add (the Ray's answer) | what NOT to do |
 |---|---|---|---|
 | Time | quick, joyful | things that STREAM and show speed, flung OUT from the widest part (two wingtip streamers) | never change the body: a Time form may only ADD (the tool refuses a `"change"` on Time) |
-| Charge | beautiful and dangerous | points: thorns facing forward, a talon, a forked tail (`barbs` with a stated `"dir"`) | no blobs; danger is sharp |
+| Charge | beautiful and dangerous | ONE big sharp thing that changes the outline (a talon, a claw from the rim, a great horn, a trident tail), then thorns (`barbs` with a stated `"dir"`) | thorns alone: they do not show at a distance, and the form reads as another |
 | Mass | heavy, calm, old | structure: struts between two limbs (`to_limb`), a broad fan (a membrane between two short limbs) | nothing thin or fluttering |
 | Space | vast, thin, lonely | things that HANG and drift from the OUTER parts, with gaps between them | never one sheet across the whole body; a membrane the form adds is never bigger than the body |
 
@@ -229,6 +245,11 @@ seen from three sides, with every other creature and vessel. It measures filled 
   one way, or with a few far-flung parts. If it is a delta (the Sparrow), leave notches;
 - a membrane between two hanging strands is the usual culprit: narrow it, shorten it, or drop it.
 
+**The four forms must also differ from EACH OTHER.** The check prints `ALIKE` when two forms of the creature are
+nearer than 0.18 (the Ray's closest pair is 0.19). It always means one of the two has nothing that changes its
+outline: barbs, thorns and thin lines do not. Three of the four creatures made after the Ray failed this on Charge,
+each with thorns and one small pair of tines; a claw, a spur and a horn 15 to 25 u long fixed all three.
+
 A species whose BASE outline a person accepted under the bar (the Plume, the Nettle) is held to its base instead: the
 check prints the number each form must reach (reaching it exactly passes). Never buy a pass by stripping the body's
 own barbs or limbs. When the outline rule and the size rule pull against each other, the size rule wins: keep the form
@@ -254,7 +275,7 @@ python3 Tools/Build/fauna_kit/elements.py --self-test
 | `BREAKS A LAW: L1` | what you added reaches ahead of the spec's `"lead"` |
 | `BREAKS A LAW: L11` | you gave one limb a third child on a `"lunge"` body |
 | `Time is the base body` | remove `"change"` from the Time form; add instead |
-| two forms look the same on the sheet | one of them has nothing of its own that shows at that size. Make its one thing BIGGER, not more numerous |
+| `ALIKE: Charge and Mass`, or two forms look the same on the sheet | one of them has nothing of its own that changes the outline. Give it ONE thing 15 u or longer that leaves the body, not more small things |
 | `BREAKS A LAW: REACH` | the form is over 2.5 x the body. Shorten its longest parts |
 | a membrane the form adds is bigger than the body on the sheet | halve it. The creature must still be the creature |
 | you need to know what a limb costs | a long ribbon line (`whip`, `vein`) is about 4 vertices a unit of length; a tube strut 9; a barb 8. `fauna.py check` prints each form's total |
@@ -281,20 +302,23 @@ and NOT enough to ship: a creature that goes to Unity has its own anatomy for al
 | the body looks like sticks | each limb needs 4+ points with the middle ones OFF the straight line; add a membrane or barbs |
 | the lab page errors after export | run `verify_lab.cjs` and read the first error; a limb listed before its parent is the usual cause |
 
-## Into Unity (decided 2026-11-17: all five; the Ray is done, in four element prefabs)
+## Into Unity (all five grown creatures are in: Ray, Plume, Lantern, Ammon, Nettle)
 
-Garrett: all five grown creatures (Ray, Nettle, Plume, Lantern, Ammon) go to Unity. Only do this when a person asks.
-**`references/RAY.md` is the Ray taken the whole way, with what went wrong at each step: read it first.**
-The other four wait for a person to open the Ray in the editor once (the first asset of a new kind is looked at
-before the rest are made: `/asset-surgery` section 0).
-
-A creature goes to Unity only with its own four forms (step 6.5) and `elements.py --check <name>` passing.
-
-**Step A, the body in Unity (a tool does it):**
+Only do this when a person asks. **`references/RAY.md` is one creature taken the whole way, with what went wrong at
+each step: read it first.** A creature goes to Unity only with its own four forms (step 6.5) and
+`elements.py --check <name>` passing. It needs NO new code and NO `"unity"` block: three commands.
 
 ```bash
-python3 Tools/Build/fauna_kit/unity_port.py <name>           # writes the assets (and removes ones it no longer makes)
+python3 Tools/Build/fauna_kit/unity_port.py <name> --dry     # make and check everything in memory; write nothing
+python3 Tools/Build/fauna_kit/unity_port.py <name>           # write the assets (and remove ones it no longer makes)
 python3 Tools/Build/fauna_kit/unity_port.py <name> --check   # the assets are still what the spec makes
+```
+
+Then add its row and one description to `Tools/Build/author_spawn_matrix_roster.py` (copy the Plume's), run it, and
+run the gates:
+
+```bash
+python3 Tools/Build/author_spawn_matrix_roster.py && python3 Tools/Build/author_spawn_matrix_roster.py --check
 python3 Tools/Build/fauna_kit/unity_port.py --self-test
 python3 Tools/Build/check_network_prefab_hashes.py
 python3 Tools/Build/author_lifeform_heart_collection.py --check
@@ -302,56 +326,46 @@ python3 Tools/Build/verify_fauna_heart_seat.py
 python3 Tools/Build/colour_trace.py --check
 ```
 
-Then RUN it, because a file check cannot see behaviour: load `/amoebius`, build the engine, spawn each element's
+**What the tool writes**, so you can say it to a person: ONE PREFAB FOR EACH ELEMENT (the Time form keeps the
+creature's name; the others are `<Species>Charge`, `<Species>Mass`, `<Species>Space`), each with its own meshes and
+material; one data asset; the four element configs, each pointing at its own prefab with the body size from the
+spec's `"elements"`. It puts the creature in NO cell (the Spawn Matrix row is how a person looks at it; a cell's own
+spawn profile is `/ecology`'s, because it changes the collider budget) and NOT in the network prefab list (no fauna
+species is network-synced, and that list is part of the multiplayer protocol).
+
+**What makes it alive in the game, in five lines:**
+- **The wave is in the shader.** Every mesh vertex carries its own wave (the numbers the lab plays). Give limbs
+  `sway` in the spec (`/spindle` section 3); a limb with no sway is still.
+- **It answers its own turning** (stroke, twist, lag, bank). Automatic; `/spindle` section 3.
+- **Prisms ride both** on the CPU (`GrownLimbDriver`), because a prism is a collider.
+- **Its ridden feel is the spec's `"possession"` block** (step 4), read by the one class `GrownFauna`.
+- **Its attack is the spec's `"attack"`.** For `"whip"`, the tool cuts each limb the lab whips along its own path
+  and hangs the pieces from joints the game's attack turns; for `"lunge"` the body is whole. You write nothing.
+
+**The Space prefab is authored already thinned, and says so** (`spindleAuthoredEroded`): the game's own Space
+thinning would tear a jointed body (`python3 Tools/Build/fauna_kit/erosion.py <Species>` measures it). The tool does
+this and checks it.
+
+**Only for a body with flat wings that should whip as wings** (the Ray): a `"unity"` block cuts by planes instead of
+along a limb. Copy the Ray's; a form names the part each limb it adds rides (`"unity": {"wires": {"VaneA": [...]}}`).
+
+**Then RUN it, because a file check cannot see behaviour.** Load `/amoebius`, build the engine, spawn each element's
 config through the spawner's own calls (`BindSpeciesData`, `Initialize`, `AssignLineage`, `FaunaNetworkSync.ServerSpawn`)
 and read back: no error or exception; every prism active; Mass plain prisms shielded; Charge prisms all danger; the
-Space root at its scale with its meshes' vertex counts unchanged. The Ray's run found a fault in the game itself.
-Say in the checklist entry what the run showed and that Amoebius is not Unity (it does not draw the spindle shader).
+Space root at its scale with its meshes' vertex counts unchanged; `PlayPossessionAttack` finds the limbs the spec
+whips. The Ray's first run found a fault in the game itself. Amoebius is not Unity: it does not draw the spindle
+shader, so say so.
 
-It writes ONE PREFAB FOR EACH ELEMENT (the Time form keeps the creature's name; the others are `<Species>Charge`,
-`<Species>Mass`, `<Species>Space`), each with its own meshes and its own material, one data asset, the four element
-configs (each pointing at its own prefab, with the body size from the spec's `"elements"`) and four network list
-entries. It adds the creature to NO cell, so nothing spawns it. Then write the entry in
-`Docs/UNITY_VERIFICATION_CHECKLIST.md` (copy the Ray's), because nothing here opens Unity.
+**Last, write the entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`** (copy the four creatures' entry): what each
+element should look like, how it should feel under a rider, and what the engine run showed. Nothing here opens Unity.
 
-How the body MOVES in Unity, in three lines you can repeat to a person:
-- **The wave is in the shader.** Every mesh vertex carries its own wave (the numbers the lab plays); the spindle
-  shader adds it (`SpindleGrownSway`). You write nothing for this: give limbs `sway` in the spec (`/spindle` section 3).
-- **Prisms ride it on the CPU.** `GrownLimbDriver` carries each prism along its limb's wave, because a prism is a collider.
-- **Joints are only for the attack** (step B).
-
-**The Space prefab is authored already thinned, and says so.** The game thins a Space body when it spawns, one mesh
-at a time, which tears a body cut into jointed pieces (`python3 Tools/Build/fauna_kit/erosion.py <Species>` measures
-it). So the Space form is thinned by the same law when it is made, its prisms are written as the law's needles, and
-its prefab carries `spindleAuthoredEroded: 1`. The Space config still says `ErodeSpindle: 1`, like every species.
-The tool does all of this and checks it.
-
-A creature whose body is over 65,535 vertices or whose spec fails `fauna.py check` is refused.
-
-**Step B, joints: only so the attack can WHIP (the Ray has them: copy its `"unity"` block).** With no `"unity"`
-block the body is whole and the game's attack lunges it. For a whip, name three or more moving parts; `unity_port.py`
-cuts each at its hinges and hangs the pieces from joints the attack turns:
-
-```python
-"unity": {"limbs": [
-    {"name": "VaneA", "wires": ["Lead0", "Trail0", "Web0"],   # the limbs and membranes that make this one moving part
-     "cut": "x", "hinges": [3.0, 13.0, 24.0],                 # where it is cut, walking OUT from the body (x: sideways, z: along the tail)
-     "axis": [0, 0, 1], "degrees": [9.0, 11.0, 13.0],         # each joint's turning axis; degrees and lag are used only by the fallback below
-     "lag": 0.9}]}
-```
-
-Rules: a hinge is a straight cut, so it suits flat or straight limbs (a wing, a tail), not a coil. A limb a FORM adds
-names the part it rides: `"unity": {"wires": {"VaneA": ["Rib00", "Talon0"]}}` in the form. A species with a move of
-its own gets a small class (`RayFauna` is the example) named in `"klass"`; that is C#, so run
-`bash Tools/Build/unity_refcompile/run.sh` (after `python3 Tools/Build/unity_refcompile/dotnet_from_nuget.py` once).
-
-**If the shader's wave is wrong in the editor** (a person says the body is still, or pink): put `"sway": "joints"` in
-the spec's `"unity"` block and run `unity_port.py <name>` again. The body goes back to the shared SpindleMaterial and
-`GrownLimbDriver` beats the joints on the CPU instead. Tell the person which one is in the build.
-
-**Step C, the Spawn Matrix.** Add one row and one description in `Tools/Build/author_spawn_matrix_roster.py` (copy
-the Ray's), run it, then `--check`. That is where a person inspects one species alone. A cell's own spawn profile is
-`/ecology`'s (it changes the collider budget): do not add a creature to a cell from this skill.
+| what you see | do |
+|---|---|
+| `the game has no suction shape '...' yet` | the lab has shapes the game does not (`funnel`, `bore`). Use `ahead`, `ram` or `all`, or tell the person the game needs that shape first |
+| `the donor moved` | the creature prefabs are made from `QuadFish.prefab`, and someone changed it. Read what changed (`git log -3 -- Assets/_Prefabs/FloraAndFauna/QuadFish.prefab`) and follow it in `unity_port.py`; never patch the generated prefabs by hand |
+| `the spec's attack is 'whip' and the game's attack finds N limb(s)` | fewer than three limbs grow from one limb. Make the attack `"lunge"`, or grow the limbs from one hub |
+| `... is in two moving parts` | a `"unity"` block names one limb twice |
+| the body is still, or pink, in the editor | `"unity": {"sway": "joints"}` in the spec and run the tool again: the body goes back to the shared SpindleMaterial (and, with a plane-cut `"unity"` block, beats at its joints). Tell the person which one is in the build |
 
 **Not available yet for any grown creature:** a Codex page. The lab's light running down a limb is the lab's stand-in
 for the game's own lace on the spindle shader; it is not ported and is not meant to be.

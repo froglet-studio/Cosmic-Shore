@@ -612,7 +612,7 @@ namespace CosmicShore.Gameplay
             var host = _host;
             if (!host) return;
             float reach = config.AttackReach + host.PossessionBodyRadius;
-            var victim = NearestRival(host.PossessionNestPoint, _frame * Vector3.forward, reach * config.AttackAimReaches, 50f);
+            var victim = NearestRival(host.PossessionNestPoint, _frame * Vector3.forward, reach * config.AttackAimReaches, host.PossessionAimConeDegrees);
             if (victim != null)
             {
                 if (Time.time < _attackReadyAt) return;

@@ -62,8 +62,11 @@ def corona():
     for k, a, shell in shells:
         P = lambda r, z, a=a: K.polar(r, a, z)
         change[shell["name"]] = {"barbs": {"count": 20, "length": [4.5, 1.6], "angle": 58.0, "sides": 1, "dir": [0, 0, 1], "flutter": 0.8, "from": 0.05, "to": 0.7}}
-        add.append(K.grown(f"Horn{k}", "Siphon", [P(0.6, -2.4), P(6.0, -4.5), P(12.0, -3.5), P(15.5, -0.3)],
-                           girth=(0.34, 0.05), design="spar", barbs=False))
+        # one big sharp thing: a great horn that sweeps out past the shell and hooks forward (small horns left the
+        # outline alone: the form sat 0.13 from the Mass form)
+        add.append(K.grown(f"Horn{k}", "Siphon", [P(0.6, -2.4), P(9.0, -7.5), P(20.0, -9.0), P(29.0, -5.0), P(32.0, -0.4)],
+                           girth=(0.42, 0.05), design="spar",
+                           barbs={"count": 6, "length": [2.0, 0.6], "angle": 60.0, "sides": 1, "dir": [0, 0, 1], "flutter": 0.8}))
     return {"feeling": "the corona: awe with fear in it. Thorned whorls, horns hooked forward; do not touch.", "change": change, "add": add}
 
 

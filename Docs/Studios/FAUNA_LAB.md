@@ -24,6 +24,54 @@ give me a vessel, ark, and prism cluster to attack."
 - **Retire condition for a new creature:** a "cut it" in the feedback log, or a second round in which it still wins
   no column and nobody says it feels good.
 
+## Where things stand (read this first; the rounds below are a dated log, and later rounds overrule earlier ones)
+
+- **In the lab:** seven shipped creatures (recreated from their prefabs), five grown creatures (Ray, Plume, Lantern,
+  Ammon, Nettle) each with four element forms of its own, the Manta (braid kit), five archived round-1 proposals.
+- **In Unity:** the five grown creatures, each as four element prefabs (`<Name>`, `<Name>Charge`, `<Name>Mass`,
+  `<Name>Space`) on the Spawn Matrix and in no cell. One class, `GrownFauna`. No network rig. Not opened in the editor.
+- **How a grown body moves in the game:** its wave is in the spindle shader (`SpindleGrownSway`), from what each mesh
+  vertex carries; it answers its own turning (stroke, twist, lag, bank); `GrownLimbDriver` carries its prisms; joints
+  exist only where the attack whips. Superseded, and no longer true of any prefab: round 7's wingbeat at the joints,
+  round 8's jointed streamers, `RayFauna`, and any mention of network list entries.
+- **How to make the next one:** `/fauna-maker` (seven steps, the four forms, three commands into Unity), with
+  `.claude/skills/fauna-maker/references/RAY.md` as the worked example.
+- **Waiting on a person:** the editor hand tests (`Docs/UNITY_VERIFICATION_CHECKLIST.md`: the armour entry, the four
+  creatures' entry, the Ray's entry), and judging the sixteen new forms here.
+
+## Round 11 (2026-11-21): the other four brought to the Ray's standard, and into Unity
+
+Garrett: "bring everything up to this ones standard and continue learning and updating the skills along the way so we
+can make many many more fauna to come."
+
+**All five grown creatures are in Unity now**, each as four element prefabs on the Spawn Matrix, each with the wave
+and the turn response in the shader and its ridden feel from its spec:
+
+| creature | attack | under a rider | Charge's one big thing (new this round) |
+|---|---|---|---|
+| Ray | whips two wings and its lash | glides, feeds on the wing | talons and a trident tail |
+| Plume | whips ten arms | eats and attacks all round | five forward talons |
+| Lantern | lunges | the smoothest swimmer, quick to turn | four spurs flaring from the combs |
+| Ammon | whips its shells and feelers | swims in jets: a kick, then a glide | two great horns |
+| Nettle | whips its frilled arms | swims in pulses, eats and attacks all round | four claws from the bell's rim |
+
+**What the method learned from them** (all of it is in `/fauna-maker` now):
+- **One class, no code a creature.** `GrownFauna` (the Ray's class, generalised) reads the spec's `possession` block
+  off the prefab: the turn rate, the ease into speed, the suction's shape, a pulse, the body's radius to a rider, the
+  attack's aim cone. `unity_port.py` writes them. A new creature needs no C#.
+- **Whip limbs are found and cut by the tool.** The limbs the lab whips (three or more growing from one limb) are cut
+  along their own paths, so a coil or a curved arm can whip; each ends on an empty tip so the game's attack never
+  turns a skin. A `lunge` body stays whole. Nobody writes a `unity` block unless a body has flat wings.
+- **Charge needs one big sharp thing.** Three of the four first Charge forms (thorns and small tines) were nearer than
+  0.18 to another form of their own species; `elements.py --silhouette` now prints `ALIKE` for that. A claw, a spur
+  and a horn fixed all three (now 0.29 to 0.38 from their nearest kin).
+- **The trunk had taken the network rig off the donor prefab** while this branch worked. The tool failed loudly on the
+  merge ("the donor moved"), which is what a generator that owns its output is for; grown creatures now carry no
+  network rig and stay out of the network prefab list (it is part of the multiplayer protocol).
+
+**Checked:** every gate; the reference compile (0 errors in changed files); the lab verifier. **NOT checked: the
+Unity editor** (the hand tests are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Four more grown creatures").
+
 ## Round 10 (2026-11-18): the body answers its own turning
 
 Garrett, after flying the Ray: "the ripples look good when the ray is moving forward. but its rotations just happen

@@ -76,7 +76,8 @@ python3 Tools/Build/fauna_kit/unity_port.py ray --check
 ```
 
 It writes, for EACH element: a prefab (`Ray`, `RayCharge`, `RayMass`, `RaySpace`), ten meshes, a material; and once: a
-data asset, four configs, four network entries. Then `author_spawn_matrix_roster.py` adds the Spawn Matrix row.
+data asset and four configs. No network rig and no entry in the network prefab list (no fauna species is
+network-synced). Then `author_spawn_matrix_roster.py` adds the Spawn Matrix row.
 
 What each piece is for, so you can explain it:
 
@@ -88,7 +89,7 @@ What each piece is for, so you can explain it:
 | `GrownLimbDriver` riders | each prism is carried along the wave of the limb it sits on, from the same clock, because a prism is a collider |
 | the joints | only what the attack whips. They do not make the wave |
 | the turn (`GrownLimbDriver.AnswerTheTurn`, six more shader floats) | the body answers its own rotation: the outer wing beats harder, the hind edges deflect in a roll, the tips and tail lag and settle, the body banks. Automatic for every grown creature; numbers in `elements.TURN` |
-| `RayFauna` | feeds on the wing; glides under a rider (turn x 0.3, speed ease 0.9); rolls with its rider's frame |
+| `GrownFauna` (one class for every grown creature) | reads the spec's `possession` block off the prefab: the Ray feeds on the wing (`suction` ram), glides under a rider (turn x 0.3, speed ease 0.9) and rolls with its rider's frame |
 | `spindleAuthoredEroded` on the Space prefab | the Space body is already thinned by the law; the game must not thin it again (it would tear the wing 8 u at its hinges: `erosion.py Ray`) |
 
 What went wrong on the way:
@@ -101,6 +102,19 @@ What went wrong on the way:
 | Mass at x 0.58 | the kit took the SMALLEST body that clears the shields | Mass is never under the base body (law L8) |
 | the body only rotated ("its rotations just happen") | Garrett flew it | the body reads its own angular velocity and answers it, mirrored left to right (the lab's Body tab tunes it) |
 | Mass unshielded, Charge not dangerous | running the game's spawn order in Amoebius: 0 of 8 shielded. The shipped QuadFish was the same | the game armed a body before it rolled its element; `Fauna.AssignLineage` arms it after (a fix for every light fauna) |
+
+## 5.5 The four that followed (Plume, Lantern, Ammon, Nettle), and what each added to the method
+
+| creature | what was different about it | what the method needed |
+|---|---|---|
+| Plume (feathered arms, every arm a sting) | no limb a form may hang from but the root; its feathers ARE the species | "if every arm carries a sting, hang from the root, between the arms"; a form may not strip more than half a limb's barbs (the first attempt passed its outline check by plucking them) |
+| Lantern (a comb jelly, attack `lunge`) | a body with no whip limbs; a small `lead` | no joints at all: the body is one mesh; forward points are barbs with `"dir": [0, 0, 1]`; a lunge body may not gain a hub of three limbs |
+| Ammon (two coils) | limbs that are spirals, a pulse swimmer | whip limbs are cut ALONG their own path (a plane cannot cut a coil); `"motion": {"kind": "pulse", ...}` reaches the game |
+| Nettle (a bell with tendrils) | eats and attacks all round; base outline accepted under the bar | `"suction": {"shape": "all"}`, `"aim_cone": 180`; a form is held to the accepted base's distance, not the bar |
+
+All four: their first Charge forms were thorns and a small pair of tines, and three of them read as another of their
+own forms (`ALIKE`, under 0.18 apart). One big sharp thing each fixed it. None needed C#, a `"unity"` block or a hand
+edit of a prefab.
 
 ## 6. What is proven, and what only a person can judge
 

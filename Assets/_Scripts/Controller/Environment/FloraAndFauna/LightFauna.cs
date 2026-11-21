@@ -1094,7 +1094,7 @@ namespace CosmicShore.Gameplay
             Vector3 heading = current > 1e-3f ? currentVelocity / current : transform.forward;
             float turn = (turnRate > 0f ? turnRate : Mathf.Max(0.01f, data.rotationLerpSpeed)) * LeashTurnScale;
             heading = Vector3.Slerp(heading, to.normalized, Mathf.Clamp01(Time.deltaTime * turn));
-            current = Mathf.Lerp(current, Mathf.Max(0f, speed), Mathf.Clamp01(Time.deltaTime * LeashSpeedEase));
+            current = Mathf.Lerp(current, Mathf.Max(0f, speed) * LeashSpeedScale, Mathf.Clamp01(Time.deltaTime * LeashSpeedEase));
             currentVelocity = heading * current;
             if (current > 1e-3f && SafeLookRotation.TryGet(currentVelocity, LeashUp(heading), out var rotation, this))
                 desiredRotation = rotation;
@@ -1107,6 +1107,10 @@ namespace CosmicShore.Gameplay
         /// <summary>How fast this species' speed eases to its holder's, per second: 2.5 for every creature, less for
         /// one that is slow to gain speed and slow to lose it.</summary>
         protected virtual float LeashSpeedEase => 2.5f;
+
+        /// <summary>The share of its holder's speed this species swims at right now: 1 for every creature, more and
+        /// then less for one that swims in pulses (a kick, then a glide).</summary>
+        protected virtual float LeashSpeedScale => 1f;
 
         /// <summary>The up a leashed creature flies with on <paramref name="heading"/>: the world's, for every creature
         /// with a belly. A body with no up (two identical faces) may take its rider's instead.</summary>

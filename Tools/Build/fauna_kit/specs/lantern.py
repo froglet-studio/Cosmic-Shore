@@ -62,19 +62,23 @@ def drift():
 
 
 def corona():
-    """CHARGE, the corona: awe with fear in it. The combs' plates become forward-leaning thorns, and two barbed tines
-    spread from the tails of two opposite combs. Every prism on it is danger (the game's law)."""
+    """CHARGE, the corona: awe with fear in it. The combs' plates become forward-leaning thorns, and four long barbed
+    spurs flare from the widest part of every second comb and sweep back, so it flies inside a crown of points. Every
+    prism on it is danger (the game's law). (Thorns and two small tines did not change the outline: the form sat 0.13
+    from the Time form. Charge needs ONE big sharp thing.)"""
     add, change = [], {}
     for c in combs:
         change[c["name"]] = {"barbs": {"count": 8, "length": [2.6, 1.4], "angle": 58.0, "sides": 1, "dir": [0, 0, 1],
                                        "flutter": 0.8, "from": 0.12, "to": 0.9}}
-    for k, i in enumerate((2, 6)):
-        at, r, ang = tail_end(i)
-        P = lambda rr, z, ang=ang: K.polar(rr, ang, z)
-        add.append(K.grown(f"Tine{k}", combs[i]["name"], [at, P(r + 5.0, at[2] - 4.0), P(r + 11.0, at[2] - 8.0), P(r + 16.0, at[2] - 15.0)],
-                           girth=(0.24, 0.04), design="whip", sway={"dir": out_of(ang), "amp": 1.8, "waves": 1.8, "pow": 1.2},
-                           barbs={"count": 6, "length": [1.4, 0.5], "angle": 70.0, "sides": 1, "dir": out_of(ang), "flutter": 1.0}))
-    return {"feeling": "the corona: awe with fear in it. Thorned combs, barbed tines behind; do not touch.",
+    for k, i in enumerate((1, 3, 5, 7)):
+        at = K.along(combs[i], 0.45)[0]
+        r, z = K.rz(at)
+        ang = math.atan2(at[1], at[0])
+        P = lambda rr, zz, ang=ang: K.polar(rr, ang, zz)
+        add.append(K.grown(f"Spur{k}", combs[i]["name"], [at, P(r + 7.0, z - 1.5), P(r + 15.0, z - 6.5), P(r + 21.0, z - 16.0), P(r + 22.5, z - 26.0)],
+                           girth=(0.3, 0.04), design="spar", section=2, sway={"dir": out_of(ang), "amp": 1.8, "waves": 0.9, "pow": 1.4},
+                           barbs={"count": 6, "length": [1.8, 0.6], "angle": 64.0, "sides": 1, "dir": out_of(ang), "flutter": 1.0}))
+    return {"feeling": "the corona: awe with fear in it. It flies inside a crown of spurs; do not touch.",
             "change": change, "add": add}
 
 

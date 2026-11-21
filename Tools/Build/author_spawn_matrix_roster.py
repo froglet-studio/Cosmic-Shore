@@ -147,6 +147,10 @@ FAUNA = [
     ("Bee", [f"Lifeforms/Bee Fauna {e}.asset" for e in ELEMENTS]),
     # the first GROWN creature (Tools/Build/fauna_kit/unity_port.py ray; Docs/Studios/FAUNA_LAB.md round 7)
     ("Ray", [f"Lifeforms/Ray Fauna {e}.asset" for e in ELEMENTS]),
+    ("Plume", [f"Lifeforms/Plume Fauna {e}.asset" for e in ELEMENTS]),
+    ("Lantern", [f"Lifeforms/Lantern Fauna {e}.asset" for e in ELEMENTS]),
+    ("Ammon", [f"Lifeforms/Ammon Fauna {e}.asset" for e in ELEMENTS]),
+    ("Nettle", [f"Lifeforms/Nettle Fauna {e}.asset" for e in ELEMENTS]),
 ]
 
 FLORA = [
@@ -266,6 +270,16 @@ DESCRIPTIONS = {
     "Ray": "A glider grown from woven wire: two great vanes that beat in a slow wave, two lobes curled round its "
            "crystal, a long whip with a sting. It grazes mass as it passes. Ride it with a Jewel Wasp: it eats "
            "whatever comes within its lobes.",
+    "Plume": "A feather star grown from woven wire: ten feathered arms round a cup, every one ending in a sting. It "
+             "eats on every side through its plumes and whips all ten arms at a vessel. Each element is its own "
+             "body.",
+    "Lantern": "A lit comb jelly: eight rows of beating combs round a woven body, two long stinging lines behind. "
+               "The smoothest swimmer here and quick to turn; it lunges. Each element is its own body.",
+    "Ammon": "Twin coiled shells either side of its heart, like a ram's horns, with six stinging feelers between. "
+             "It swims in jets: a kick, then a glide it turns in. Each element is its own body.",
+    "Nettle": "A woven bell that swims in pulses, eight stinging tendrils hanging from its rim and four frilled arms "
+              "beneath. It eats on every side and whips a vessel anywhere inside its tendrils. Each element is its "
+              "own body.",
     "Bee": "A pollinator. It eats no plants: it makes the plants it visits, of every colour, grow faster. Released "
            "on its own it pollinates wherever it is; predators hunt it.",
     "Gyroid Topiary": "A clipped gyroid specimen for garden beds: 30-prism tiles with smaller leaves in "

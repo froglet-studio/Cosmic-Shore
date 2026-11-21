@@ -98,15 +98,47 @@ def wire_rows(made):
     return rows
 
 
+WHIP_HINGES = {True: (0.12, 0.55), False: (0.12,)}      # a few whip limbs take two joints each; many take one
+
+
+def whip_limbs(spec, made):
+    """The moving parts of a body whose spec states none: the limbs the attack whips. They are the ones the lab whips
+    (`made["chains"]`, FaunaAttackDriver's own hub rule run on the limb tree: three or more limbs growing from one limb),
+    each cut ALONG ITS OWN PATH and carrying every limb that grows from it and every membrane woven inside it. A body
+    whose attack is "lunge" has none."""
+    if spec["possession"].get("attack") != "whip" or len(made["chains"]) < 3:
+        return []
+    kids = {}
+    for sp in spec["spindles"]:
+        kids.setdefault(sp.get("parent"), []).append(sp["name"])
+
+    def tree(name):
+        return [name] + [d for k in kids.get(name, []) for d in tree(k)]
+    roots = [c["joints"][0] for c in made["chains"]]
+    out = []
+    for root in roots:
+        mine = tree(root)
+        webs = [m["name"] for m in spec.get("membranes", []) if m["a"] in mine and m["b"] in mine]
+        out.append({"name": root + "Whip", "wires": mine + webs, "along": root, "hinges": list(WHIP_HINGES[len(roots) <= 4]),
+                    "axis": [0, 0, 1], "degrees": [0.0, 0.0], "lag": 0.0})
+    return out
+
+
+def moving_parts(spec, made):
+    """The spec's own `unity` limbs (the Ray's wings and lash, cut by planes), or the limbs its attack whips."""
+    return list((spec.get("unity") or {}).get("limbs") or []) or whip_limbs(spec, made)
+
+
 def joints_of(key, spec, made):
     """The body cut at its hinges (the spec's `unity` block): (core, joints, prism homes). The core and every joint
     carry a mesh {V, T, S, U}. A joint is {name, parent, origin, axis, degrees, phase, V, T, S, U}.
     EVERY MESH STAYS IN THE BODY'S OWN SPACE (a joint's skin is set back by the joint's origin in the prefab), so
     anything the shader computes from a vertex's position is the same function on both sides of a cut: SpindleSway
     shears by z from the origin, and pieces in their own spaces tore 2.6 u apart at the first tail hinge.
-    A triangle goes to the last hinge its centre has passed, walking out from the body; before the first, to the core."""
+    A triangle goes to the last hinge its centre has passed, walking out from the body; before the first, to the core.
+    The LAST joint of a limb also carries a `tip`: an empty transform that is its first child in the prefab, so the
+    game's attack (which walks first children down a limb and turns every one) ends on a point and never turns a skin."""
     rows = wire_rows(made)
-    unity = spec.get("unity") or {}
     claimed, joints, home = set(), [], {}
     core = {"V": [], "T": [], "S": [], "U": []}
 
@@ -122,29 +154,49 @@ def joints_of(key, spec, made):
             out.append(remap[i])
         dst["T"].append(tuple(out))
 
-    for limb in unity.get("limbs", []):
-        ax = 0 if limb["cut"] == "x" else 2
-        sgn = 1.0 if limb["hinges"][0] >= 0 else -1.0
-        seg = lambda c: sum(1 for h in limb["hinges"] if c * sgn >= h * sgn)
+    import organic
+    by_name = {sp["name"]: SP.resolve(sp) for sp in spec["spindles"]}
+    for limb in moving_parts(spec, made):
+        if limb.get("along"):      # cut along the limb's own path: a hinge is a share of the way down it
+            path = organic.centre(by_name[limb["along"]])
+            marks = [min(len(path) - 2, max(1, int(round(t * (len(path) - 1))))) for t in limb["hinges"]]
+            origins = [list(path[i]) for i in marks]
+            tip = list(path[-1])
+
+            def seg(point, marks=marks, path=path):
+                i = min(range(len(path)), key=lambda k: C.norm(C.sub(path[k], point)))
+                return sum(1 for m in marks if i >= m)
+            # a limb that grows from this one rides, whole, the piece it grows from
+            anchor = {w: seg(by_name[w]["from"]) for w in limb["wires"] if w in by_name and w != limb["along"]}
+            where = lambda w, centre: anchor[w] if w in anchor else seg(centre)
+        else:
+            ax = 0 if limb["cut"] == "x" else 2
+            sgn = 1.0 if limb["hinges"][0] >= 0 else -1.0
+            origins = [[h, 0.0, 0.0] if ax == 0 else [0.0, 0.0, h] for h in limb["hinges"]]
+            tip = None
+            where = lambda w, centre, ax=ax, sgn=sgn, limb=limb: sum(1 for h in limb["hinges"] if centre[ax] * sgn >= h * sgn)
         chain = []
-        for j, h in enumerate(limb["hinges"]):
-            origin = [h, 0.0, 0.0] if ax == 0 else [0.0, 0.0, h]
+        for j, origin in enumerate(origins):
             chain.append({"name": f"{limb['name']}{j}", "parent": chain[-1]["name"] if chain else None, "origin": origin, "axis": limb["axis"],
-                          "degrees": limb["degrees"][j], "phase": limb["lag"] * j, "V": [], "T": [], "S": [], "U": [], "_map": {}})
+                          "degrees": limb["degrees"][min(j, len(limb["degrees"]) - 1)], "phase": limb["lag"] * j,
+                          "V": [], "T": [], "S": [], "U": [], "_map": {}, "tip": None})
+        chain[-1]["tip"] = tip or [origins[-1][c] + (origins[-1][c] - (origins[-2][c] if len(origins) > 1 else 0.0)) * 0.5 for c in range(3)]
         for w in limb["wires"]:
             if w not in rows:
-                raise SystemExit(f"{spec['species']}: the unity limb {limb['name']} names a wire the body has not got: {w}")
+                raise SystemExit(f"{spec['species']}: the moving part {limb['name']} names a wire the body has not got: {w}")
+            if w in claimed:
+                raise SystemExit(f"{spec['species']}: {w} is in two moving parts")
             claimed.add(w)
             cmap = {}
             for tri in rows[w][1]:
-                k = seg(sum(rows[w][0][i][ax] for i in tri) / 3.0)
+                k = where(w, [sum(rows[w][0][i][c] for i in tri) / 3.0 for c in range(3)])
                 if k == 0:
                     add(core, cmap, tri, rows[w])
                 else:
                     add(chain[k - 1], chain[k - 1]["_map"].setdefault(w, {}), tri, rows[w])
         for p in made["prisms"]:
             if p["limb"] in limb["wires"]:
-                k = seg(p["at"][ax])
+                k = where(p["limb"], p["at"])
                 if k:
                     home[p["name"]] = chain[k - 1]
         joints += chain
@@ -277,6 +329,7 @@ def mesh_waves(text):
 
 
 GROWN_MATERIAL = "Assets/_Graphics/Materials/Fauna/{sp}Spindle.mat"
+SUCTION = {"ahead": 0, "ram": 1, "all": 2}      # GrownFauna.SuctionShape
 
 
 def material(spec):
@@ -376,6 +429,12 @@ def prefab(key, spec, made):
     for j in joints:
         go, tr = jid[j["name"]]
         nxt = [jid[c["name"]][1] for c in joints if c["parent"] == j["name"]]
+        if j.get("tip"):      # the limb ends here: an empty transform at its tip, FIRST, for the attack to stop on
+            tgo, ttr = nid(f"{species}:tipgo:{j['name']}"), nid(f"{species}:tiptr:{j['name']}")
+            docs += GO_DOC.format(go=tgo, layer=layer, name=j["name"] + "Tip", comps=f"  - component: {{fileID: {ttr}}}\n")
+            docs += TR_DOC.format(tr=ttr, go=tgo, x=num(j["tip"][0] - j["origin"][0]), y=num(j["tip"][1] - j["origin"][1]),
+                                  z=num(j["tip"][2] - j["origin"][2]), kids=" []", father=tr)
+            nxt = [ttr]
         parent = j["parent"]
         local = [j["origin"][c] - (next(q for q in joints if q["name"] == parent)["origin"][c] if parent else 0.0) for c in range(3)]
         mine = list(nxt)
@@ -434,13 +493,23 @@ def prefab(key, spec, made):
                  + f"  damping: {num(turn['damping'])}\n  strokeSeconds: {num(turn['stroke'])}\n  maxStroke: {num(turn['max_stroke'])}\n"
                  + f"  twistSeconds: {num(turn['twist'])}\n  maxTwist: {num(turn['max_twist'])}\n  bankSeconds: {num(turn['bank'])}\n"
                  + f"  maxBankDegrees: {num(turn['max_bank'])}\n")
-    if unity.get("klass"):      # the species' own class: the script guid is swapped in place, the component keeps its fileID
-        light = re.search(r"guid: (\w+)", read(SCRIPTS + "LightFauna.cs.meta")).group(1)
-        once(r"(m_Script: \{fileID: 11500000, guid: )%s" % light, r"\g<1>" + script_guid(unity["klass"]), "LightFauna's script")
-        pos = spec["possession"]      # the species' feel under a rider, as the lab flies it (RIDER_TURN 10, ease 2.5 are everyone's)
-        mine = (f"  ramRadius: {num(unity.get('ram_radius', 20.0))}\n  riddenTurnScale: {num(pos.get('turn_rate', 10.0) / 10.0)}\n"
-                f"  riddenSpeedEase: {num(pos.get('speed_ease', 2.5))}\n  carriesRiderUp: {1 if spec.get('steering_up') == 'carried' else 0}\n")
-        once(r"(  data: \{fileID: 11400000, guid: \w+, type: 2\}\n)", r"\g<1>" + mine, "LightFauna.data (for the species' own fields)")
+    # every grown creature is a GrownFauna: the script guid is swapped in place (the component keeps its fileID) and the
+    # ridden feel is the spec's possession block, the numbers the lab flies it with (the lab's RIDER_TURN is 10, its ease 2.5)
+    light = re.search(r"guid: (\w+)", read(SCRIPTS + "LightFauna.cs.meta")).group(1)
+    once(r"(m_Script: \{fileID: 11500000, guid: )%s" % light, r"\g<1>" + script_guid("GrownFauna"), "LightFauna's script")
+    pos = spec["possession"]
+    shape = (pos.get("suction") or {}).get("shape", "ahead")
+    if shape not in SUCTION:
+        raise SystemExit(f"{species}: the game has no suction shape '{shape}' yet (it has {', '.join(SUCTION)}); add it to GrownFauna or choose one of those")
+    pulse = pos.get("motion") if (pos.get("motion") or {}).get("kind") == "pulse" else None
+    mine = (f"  suction: {SUCTION[shape]}\n  ramRadius: {num((pos.get('suction') or {}).get('radius', 20.0))}\n"
+            f"  riddenTurnScale: {num(min(1.0, pos.get('turn_rate', 10.0) / 10.0))}\n  riddenSpeedEase: {num(pos.get('speed_ease', 2.5))}\n"
+            f"  carriesRiderUp: {1 if spec.get('steering_up') == 'carried' else 0}\n"
+            f"  pulsePeriod: {num(pulse['period'] if pulse else 0.0)}\n  pulseKickShare: 0.3\n"
+            f"  pulseKickSpeed: {num(pulse['kick'] if pulse else 2.0)}\n  pulseGlideSpeed: {num(pulse['glide'] if pulse else 0.5)}\n"
+            f"  pulseGlideTurnScale: {num(min(1.0, pulse['glide_turn'] / 10.0) if pulse else 1.0)}\n"
+            f"  riddenBodyRadius: {num(pos.get('body_radius', 0.0))}\n  aimConeDegrees: {num(pos.get('aim_cone', 50.0))}\n")
+    once(r"(  data: \{fileID: 11400000, guid: \w+, type: 2\}\n)", r"\g<1>" + mine, "LightFauna.data (for the species' own fields)")
     if spec.get("eroded") == "authored":      # the Space form: grown at the law's girth, its prisms the law's needles (elements.py)
         once(r"(  data: \{fileID: 11400000, guid: \w+, type: 2\}\n)", r"\g<1>  spindleAuthoredEroded: 1\n", "LightFauna.data (for spindleAuthoredEroded)")
     return t + blocks + docs
@@ -584,13 +653,18 @@ def verify(key, spec, made, mesh, out):
             problems.append(f"{len(got)} prisms in the prefab, {len(made['prisms'])} in the spec")
         if not any("Crystal" in n.scripts for n in root.walk()):
             problems.append("no heart crystal in the prefab")
-        if spec.get("unity"):
-            import dossier as D
-            limbs = D.attack_limbs(root)
-            if len(limbs) < 3:
-                problems.append(f"the game's attack finds {len(limbs)} limb(s) on the prefab (three or more whip; fewer lunge)")
-            if spec["unity"].get("klass") and spec["unity"]["klass"] not in root.scripts:
-                problems.append("the root is missing its own class")
+        import dossier as D
+        limbs = D.attack_limbs(root)
+        whips = spec["possession"].get("attack") == "whip"
+        if whips != (len(limbs) >= 3):
+            problems.append(f"the spec's attack is '{spec['possession'].get('attack')}' and the game's attack finds {len(limbs)} limb(s) on the prefab "
+                            "(three or more whip; fewer lunge)")
+        for limb in limbs:
+            if any(n.mesh is not None for n in limb):
+                problems.append("a limb the attack turns ends on a skin, not a tip: it would swing that piece about the body's origin")
+                break
+        if "GrownFauna" not in root.scripts:
+            problems.append("the root is not a GrownFauna")
         if "GrownLimbDriver" not in root.scripts:
             problems.append("the root is missing its limb driver")
         if "QuadFishSwimDriver" in [s for n in root.walk() for s in n.scripts]:

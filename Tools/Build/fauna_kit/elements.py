@@ -208,6 +208,7 @@ def _fit(out):
     return out
 
 
+KIN = 0.18        # two forms of one species nearer than this read as one creature (the Ray's closest pair: 0.19)
 REACH = 2.5      # a form's longest extent over the base body's: past this the creature is its addition, not itself
 
 
@@ -417,7 +418,12 @@ def main(argv):
             print(f"{key} {e:<7} nearest other body: {n} {d:.3f}" + ("" if ok else f"   UNDER {need:.3f}: spread what this form adds OUTWARD, "
                                                                      f"away from the shape of the {n} (/fauna-maker step 6.5)"))
         if kin:
-            print("between its own forms (kin, no bar): " + ", ".join(f"{a}-{b} {d:.2f}" for (a, b), d in kin.items()))
+            print("between its own forms (kin): " + ", ".join(f"{a}-{b} {d:.2f}" for (a, b), d in kin.items()))
+            for (a, b), d in kin.items():
+                if d < KIN:
+                    print(f"  ALIKE: {a} and {b} are {d:.2f} apart (the Ray's closest pair is 0.19). One of them has nothing that changes its "
+                          f"OUTLINE: barbs and thin lines do not. Give it one big thing (/fauna-maker step 6.5)")
+                    bad += 1
         return 1 if bad else 0
     if "--sheet" in argv:
         i = argv.index("--sheet")

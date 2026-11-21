@@ -92,6 +92,37 @@ body after the heart is provisioned (one line). Reference compile: 0 errors in c
 4. **A pooled body** that comes back as another element sheds the last one's armour (it did in the harness's
    Time and Space controls; not tested through the pool).
 
+### 🔴 Four more grown creatures in Unity: Plume, Lantern, Ammon, Nettle, each as four element prefabs (`cece/peaceful-babbage-tsg0kd`, 2026-11-21, Garrett) — NOT EDITOR-VERIFIED
+
+Made exactly as the Ray was (`Tools/Build/fauna_kit/unity_port.py <name>` from `specs/<name>.py`; the Ray's entry
+below has the shared checks: do its check 0 to 5 once, they cover the shader, the meshes and the prisms for all five).
+All of them are `GrownFauna` (the Ray's class, generalised; `RayFauna.cs` was renamed, same script guid). None carries a
+network rig or is in the network prefab list. **Where:** Cell Selector > Barren > Spawn Matrix, a row each.
+
+| creature | what it is | renderers (Time form) | attack (RT at a vessel) | under a Jewel Wasp |
+|---|---|---|---|---|
+| Plume | ten feathered arms round a cup, a sting on each | 16 | WHIPS all ten arms (and the Time form's five streamers) | turns at half rate; RT at prisms eats on EVERY side; attacks a vessel anywhere round it |
+| Lantern | eight comb rows round a woven body, two stinging lines | 1 | LUNGES (the whole body punches forward) | turns at 0.7; a mouthful ahead |
+| Ammon | two coiled shells, six stinging feelers | 9 | WHIPS shells and feelers | swims in JETS: a kick every 1.2 s, then a glide it turns in |
+| Nettle | a woven bell, eight tendrils, four frilled arms | 9 | WHIPS the four frilled arms | swims in PULSES (1.8 s); eats on every side; attacks all round |
+
+1. **Each element of each creature draws and looks like its own form** (the lab shows all sixteen: pick the creature,
+   then the element). Charge's one big thing: Plume five forward talons, Lantern four spurs, Ammon two great horns,
+   Nettle four claws from the rim. Space is the largest and thinnest with needle prisms; Mass is shielded.
+2. **Each ripples, and answers its turns** (the Ray's checks 3 and 13 to 16). The Plume's feathers and the Nettle's
+   tendrils should trail a turn and settle.
+3. **The whip.** RT at a vessel: Plume, Ammon and Nettle swing the limbs in the table toward it and they come back to
+   rest exactly. A limb is one or two rigid pieces (cut along the limb): look for a piece that swings about the wrong
+   point or leaves a gap at its root. The Lantern lunges.
+4. **The pulse** (Ammon, Nettle): a ridden one surges and coasts in a steady rhythm and turns more easily in the
+   coast. If it feels like stuttering, the numbers are `pulsePeriod`, `pulseKickSpeed`, `pulseGlideSpeed` on the
+   prefab's `GrownFauna` (from `"motion"` in the spec).
+5. **Eating on every side** (Plume, Nettle): RT at prisms takes mass behind and beside it, not only ahead.
+6. **Draw calls.** A Plume is 16 renderers and each carries a property block for the turn (not SRP-batched): eight
+   Plumes is about 130 draws. Not measured. If it shows in a frame-time A/B, whip joints can drop to five arms.
+7. **Every other creature under a wasp is unchanged** (the new hooks' defaults are the old constants; the attack's
+   aim cone is 50 degrees unless a `GrownFauna` says otherwise).
+
 ### 🔴 The Ray, the first GROWN creature in Unity: four element prefabs, its wave in the spindle shader, on the Spawn Matrix (`cece/peaceful-babbage-tsg0kd`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
 
 Written by `Tools/Build/fauna_kit/unity_port.py ray` from `specs/ray.py` and `elements.py`; the whole path with what
@@ -105,7 +136,7 @@ function returns the position it was given, bit for bit (proved by compiling the
 pink, not still). If one is pink, `git checkout` the five `.shadergraph` files and tell the session.**
 
 C# changed (reference compile: 0 errors in the files this branch changed; 30 in existing code that needs packages this
-container lacks): `GrownLimbDriver` (carries prisms along the shader's wave), `RayFauna` (the wing feeding, the glide,
+container lacks): `GrownLimbDriver` (carries prisms along the shader's wave), `GrownFauna` (was `RayFauna`: the wing feeding, the glide,
 the rider's up), `Fauna.spindleAuthoredEroded`, `Spindle.TryGetSwayPhase`, `LightFauna.LeashTurnScale / LeashSpeedEase /
 LeashUp` (virtual, defaults unchanged), `IFaunaLeashFrame` (the Jewel Wasp implements it).
 
@@ -149,12 +180,11 @@ Headless: `unity_port.py ray --check` and `--self-test`, `elements.py --check`, 
    vessel WHIPS both wings and the tail toward it (the only thing the joints do), A leaves.
 9. **The glide.** Under a rider it turns slowly (about a third of another creature's rate) and is slow to gain and
    lose speed. **Roll the wasp** (one stick up, one down): the Ray rolls with you and stays rolled; no other creature
-   does. If this feels wrong, the three numbers are on the prefab's `RayFauna`.
+   does. If this feels wrong, the three numbers are on the prefab's `GrownFauna`.
 10. **Every other creature under a wasp is unchanged** (the hooks' defaults are the old constants: turn x 1, ease 2.5, world up).
-11. **Multiplayer.** The Ray is NOT network-synced: its configs carry `NetworkSynced` off, like every fauna species
-    today (no config in `Assets/_SO_Assets/Lifeforms/` has it on), so each peer simulates its own and the spawn seam
-    strips the NetworkObject at birth (one warning a spawn in a development build is expected). The four prefabs are
-    in the network prefab list for the day a species is rolled out; turning it on is `/multiplayer`'s decision.
+11. **Multiplayer.** The Ray is NOT network-synced, like every fauna species today: its prefabs carry no network rig
+    and are not in the network prefab list (the trunk took the rig off the donor QuadFish for the same reason,
+    3d802353d3). Each peer simulates its own. Rolling a species out is `/multiplayer`'s decision.
 12. **Budget.** Nine prisms a Ray on every element; vertices 2,688 / 3,650 / 4,575 / 2,838 (Time / Charge / Mass /
     Space) against the 5,072 bar; 10 renderers a Ray. Nothing here measured draw calls, overdraw, or the cost of two
     more vertex channels on every spindle draw (they are read and multiplied by 0): run a frame-time A/B in a lattice

@@ -2044,3 +2044,19 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: for any body a person steers or watches turn, measure its angular velocity in its own frame and give it at least: a lag of the far parts (a spring, so it overshoots and settles), an asymmetry of the cycle between the inside and outside of the turn, and a bank. State each as a function of position so one formula serves the shader, the CPU riders and the lab, and expose multipliers in the lab so the person tunes feel, not code.
 - Evidence: `Docs/Studios/FAUNA_LAB.md` round 10; `elements.TURN`; `SpindleGrownSway.hlsl`; `GrownLimbDriver.AnswerTheTurn`.
 - Promoted: `/spindle` section 3
+
+### L-STU-194 — A variant's identity must change the OUTLINE: measure the variants against each other, not only against the world
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/elements.py` (`silhouettes`, `KIN`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-21
+- What happened: four creatures were each given four element forms by smaller models following the skill. Every form passed the check against other species. Three of the four Charge forms were then found 0.13 to 0.15 from another form of their OWN species: thorns and a small pair of tines read as detail, and at a distance the Charge creature was the Time or Mass one. Nothing had measured kin against kin.
+- Do instead: when a thing has variants a player must tell apart, measure every pair of variants with the same distinctness measure and set a floor from the reference set (here 0.18, under the flagship's closest pair). State the fix in terms of the measure ("one thing 15 u or longer that leaves the body"), not taste.
+- Evidence: `elements.py --silhouette <name>` (`ALIKE`); `specs/nettle.py` `thornbell`, `specs/lantern.py` `corona`, `specs/ammon.py` `corona`; `Docs/Studios/FAUNA_LAB.md` round 11.
+- Promoted: `/fauna-maker` step 6.5
+
+### L-STU-195 — Generalise at the second instance, and let the tool derive what a person would have had to author
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/unity_port.py` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-21
+- What happened: the first creature in Unity had its own class and a hand-written block saying where to cut its limbs. Bringing four more to the same standard would have meant four classes and four blocks, three of them for limbs a plane cannot cut (coils, curved arms). Instead the class became one class reading the spec's existing "how it feels" numbers, and the tool derives the whip limbs from the same rule the lab already used and cuts each along its own path. The four ports needed no C#, no block and no hand edit.
+- Do instead: when the second instance of a hand-made thing arrives, look for the data that already states the intent (the lab's own numbers, the rule the lab already runs) and make the tool read it, before writing a second copy of the hand-made thing. A port that needs per-instance code will not be repeated by a smaller model.
+- Evidence: `GrownFauna.cs`; `unity_port.whip_limbs`, `joints_of` (the `along` cut); `Docs/Studios/FAUNA_LAB.md` round 11.
+- Promoted: `/fauna-maker` Into Unity

@@ -144,7 +144,7 @@ SPEC = {
     # hangs from a joint. The WAVE is not the joints': it runs in the spindle shader from what every vertex carries
     # (SpindleGrownSway). The joints are what the game's attack whips (three limbs: two vanes and the lash), and the
     # `degrees` and `lag` are only used by the fallback (`"sway": "joints"`), where GrownLimbDriver beats them.
-    "unity": {"klass": "RayFauna", "ram_radius": 20.0, "idle_hz": 0.38, "fast_hz": 0.9, "limbs": [
+    "unity": {"idle_hz": 0.38, "fast_hz": 0.9, "limbs": [
         {"name": "VaneA", "wires": ["Lead0", "Trail0", "Web0"], "cut": "x", "hinges": [3.0, 13.0, 24.0], "axis": [0, 0, 1], "degrees": [9.0, 11.0, 13.0], "lag": 0.9},
         {"name": "VaneB", "wires": ["Lead1", "Trail1", "Web1"], "cut": "x", "hinges": [-3.0, -13.0, -24.0], "axis": [0, 0, 1], "degrees": [-9.0, -11.0, -13.0], "lag": 0.9},
         {"name": "Lash", "wires": ["Whip"], "cut": "z", "hinges": [-32.0, -42.0, -52.0], "axis": [0, 1, 0], "degrees": [3.0, 4.0, 5.0], "lag": 0.8}]},

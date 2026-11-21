@@ -63,19 +63,21 @@ def sprite():
 
 
 def thornbell():
-    """CHARGE, the thornbell: beauty with a warning in it. A crown of eight spears leans forward from the rim of the
-    bell, each one hooked a little, and the frilled arms are bare so the points are all you see. Every prism on it is
-    danger (the game's law)."""
+    """CHARGE, the thornbell: beauty with a warning in it. Four great claws sweep out from the rim of the bell and hook
+    back; the frilled arms are bare so the points are all you see. Every prism on it is danger (the game's law). (Eight small spears alone did not change the outline: the form
+    sat 0.15 from the Mass form and under the bar. Charge needs ONE big sharp thing.)"""
     add, change = [], {}
     for k, a, rib in ribs:
         P = lambda r, z, a=a: K.polar(r, a, z)
-        add.append(K.grown(f"Spear{k}", rib["name"], [P(17.6, -7.5), P(19.6, -3.6), P(20.8, 0.4), P(20.2, 2.9)],
-                           girth=(0.26, 0.04), design="spar", section=2, barbs=False))
+        if k % 2 == 0:
+            add.append(K.grown(f"Claw{k // 2}", rib["name"], [P(19.5, -6.5), P(26.5, -4.0), P(33.5, -8.5), P(37.0, -18.0), P(35.5, -27.0)],
+                               girth=(0.36, 0.05), design="spar", section=2, sway={"dir": outward(a), "amp": 1.6, "waves": 0.8, "pow": 1.4},
+                               barbs={"count": 6, "length": [2.2, 0.7], "angle": 62.0, "sides": 1, "dir": outward(a), "flutter": 0.8}))
     for k, a, fr in frills:
         change[fr["name"]] = {"barbs": False}
     for k, a, rib in ribs:
         change[f"Tendril{k}"] = {"barbs": {"count": 7, "length": [1.6, 0.5], "angle": 70.0, "sides": 1, "dir": [0, 0, 1], "flutter": 0.8}}
-    return {"feeling": "the thornbell: beauty with a warning in it. A crown of spears leans out of the bell; do not touch.",
+    return {"feeling": "the thornbell: beauty with a warning. Four claws hook out of the bell; do not touch.",
             "add": add, "change": change}
 
 
