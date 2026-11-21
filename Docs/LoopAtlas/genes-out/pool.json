@@ -1,0 +1,2487 @@
+{
+ "evaluator": "surrogate",
+ "date": "2026-11-21",
+ "entries": [
+  {
+   "vessel": "Angler",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7315,
+   "hash": "258828a7829b",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Hop the school",
+      "weight": 0.57,
+      "dials": {
+       "schoolSpread": null,
+       "dashLead": null
+      }
+     },
+     {
+      "id": "chain:Time>Space",
+      "weight": 0.625,
+      "dials": {
+       "handoff": 3.1479,
+       "commit": 0.3057,
+       "reach": 350.8118
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Angler",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.7599,
+   "hash": "6324b772dfb8",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The sic",
+      "weight": 1.069,
+      "dials": {
+       "lockRange": 80.7841,
+       "keepSchool": 3.8614
+      }
+     },
+     {
+      "id": "chain:Time>Charge",
+      "weight": 1.278,
+      "dials": {
+       "handoff": 2.4172,
+       "commit": 0.9076,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Angler",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.8159,
+   "hash": "d89bd03aa186",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The garden",
+      "weight": 0.585,
+      "dials": {
+       "gardenHold": 6.3409,
+       "seedSpacing": 102.1086
+      }
+     },
+     {
+      "id": "chain:Mass>Space>Charge",
+      "weight": 0.907,
+      "dials": {
+       "handoff": null,
+       "commit": 0.6581,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Angler",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.7741,
+   "hash": "c909073b99b0",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The school play",
+      "weight": 0.941,
+      "dials": {
+       "tameHold": 2.5695,
+       "minSchool": null,
+       "throwRange": 94.5996
+      }
+     },
+     {
+      "id": "chain:Space>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7672,
+   "hash": "85f5f1f44e79",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Speed and settle",
+      "weight": 0.746,
+      "dials": {
+       "minStraight": 202.236,
+       "turnShift": 79.9828
+      }
+     },
+     {
+      "id": "chain:Charge>Time>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Space>Mass>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": 241.8279
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.758,
+   "hash": "435f3f86e49b",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The ring throw",
+      "weight": 0.675,
+      "dials": {
+       "omniDetour": 105.2356,
+       "planeFill": null
+      }
+     },
+     {
+      "id": "chain:Space>Charge",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": 338.6223
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.6951,
+   "hash": "03d7674289f8",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Five-line weave",
+      "weight": 1.112,
+      "dials": {
+       "weaveRadius": 131.7438,
+       "ringTurn": 30.8077
+      }
+     },
+     {
+      "id": "chain:Space>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 2.4027,
+       "commit": null,
+       "reach": 242.4562
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.7582,
+   "hash": "569d7e9e79c7",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The shift line",
+      "weight": 1.0,
+      "dials": {
+       "heatCutoff": null,
+       "coolLay": 4.0909,
+       "chargeRange": null
+      }
+     },
+     {
+      "id": "chain:Mass>Charge>Space",
+      "weight": 1.291,
+      "dials": {
+       "handoff": 1.734,
+       "commit": null,
+       "reach": 313.8103
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Dolphin",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.6558,
+   "hash": "84e107e578a2",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Drift and kick",
+      "weight": 1.073,
+      "dials": {
+       "driftEntry": null,
+       "releaseAlign": 6.2546
+      }
+     },
+     {
+      "id": "chain:Time>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": 119.3709
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Dolphin",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.6794,
+   "hash": "7525861c11ac",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The hunter's shot",
+      "weight": 0.773,
+      "dials": {
+       "leadTime": null,
+       "bankThreshold": null
+      }
+     },
+     {
+      "id": "chain:Time>Mass>Charge",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 1.6222,
+       "commit": null,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Mass>Space>Charge",
+      "weight": 0.703,
+      "dials": {
+       "handoff": null,
+       "commit": 0.7221,
+       "reach": 349.5539
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Dolphin",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.7778,
+   "hash": "7eb869e61e9d",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The echo shot",
+      "weight": 1.519,
+      "dials": {
+       "bankThreshold": null,
+       "targetMass": 157.5327,
+       "alignTolerance": 13.6692
+      }
+     },
+     {
+      "id": "chain:Charge>Mass>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": 238.8061
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Goby",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.6709,
+   "hash": "eae88410bcca",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Lock and snap",
+      "weight": 0.742,
+      "dials": {
+       "lockHold": 2.611,
+       "snapRange": 58.856
+      }
+     },
+     {
+      "id": "chain:Space>Time>Charge",
+      "weight": 0.835,
+      "dials": {
+       "handoff": null,
+       "commit": 0.4429,
+       "reach": 332.689
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Goby",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.7189,
+   "hash": "7c5398ab7ede",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "chain:Time>Mass",
+      "weight": 1.802,
+      "dials": {
+       "handoff": 2.8323,
+       "commit": 0.3281,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Mass>Charge",
+      "weight": 1.648,
+      "dials": {
+       "handoff": null,
+       "commit": 0.5195,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Goby",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.7332,
+   "hash": "b003f8573cd6",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The riptide",
+      "weight": 0.921,
+      "dials": {
+       "dwell": null,
+       "snapDensity": null
+      }
+     },
+     {
+      "id": "chain:Mass>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 3.3648,
+       "commit": 0.7854,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.718,
+   "hash": "f8a1f2ff21fc",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Three rushes",
+      "weight": 1.198,
+      "dials": {
+       "rushSpacing": null,
+       "reserve": 0.8229
+      }
+     },
+     {
+      "id": "atlas:Rush into Dig In",
+      "weight": 0.881,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": 104.0842
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.676,
+   "hash": "2bf5a844cf25",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The ambush",
+      "weight": 0.818,
+      "dials": {
+       "ambushLead": 1.8365,
+       "sniperRange": 212.2518
+      }
+     },
+     {
+      "id": "chain:Space>Charge",
+      "weight": 0.764,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Time>Charge>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.5467,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "plateaued": false,
+   "eff": 0.6949,
+   "hash": "b6503e126b67",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "chain:Charge>Space>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 0.834,
+       "commit": 0.3845,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Mass>Charge>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 1.2246,
+       "commit": 0.4965,
+       "reach": 149.3812
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7151,
+   "hash": "08c87d6dccac",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Slip chain",
+      "weight": 0.918,
+      "dials": {
+       "slipAlign": 26.9724,
+       "keepCharge": null
+      }
+     },
+     {
+      "id": "chain:Mass>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Space>Mass>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.6577,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.7367,
+   "hash": "eacf15b3bbaa",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Puzzle to dart",
+      "weight": 1.0,
+      "dials": {
+       "hiveDetour": 137.217,
+       "bankedUses": null
+      }
+     },
+     {
+      "id": "chain:Time>Charge",
+      "weight": 0.973,
+      "dials": {
+       "handoff": null,
+       "commit": 0.6761,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Mass>Space>Charge",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 1.8497,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.6673,
+   "hash": "8b7b1671fc43",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The hive build",
+      "weight": 0.778,
+      "dials": {
+       "hiveRange": 108.0885
+      }
+     },
+     {
+      "id": "chain:Charge>Time>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.7679,
+   "hash": "2b278db9a1fc",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Peck the comb",
+      "weight": 0.843,
+      "dials": {
+       "peckRange": 131.9585,
+       "burstSpacing": 1.2309
+      }
+     },
+     {
+      "id": "chain:Space>Time>Mass",
+      "weight": 1.173,
+      "dials": {
+       "handoff": null,
+       "commit": 0.7173,
+       "reach": 162.8633
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Jacks",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7927,
+   "hash": "757915f95a9b",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Decoy and dash",
+      "weight": 0.808,
+      "dials": {
+       "decoyLead": 76.3733
+      }
+     },
+     {
+      "id": "chain:Mass>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 2.5126,
+       "commit": 0.53,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Charge>Mass>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.5432,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Jacks",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.7192,
+   "hash": "d0728ede2967",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Herd and sting",
+      "weight": 1.0,
+      "dials": {
+       "herdSize": 14.088,
+       "callLead": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Jacks",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.8171,
+   "hash": "e5bf322a0372",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The trawl",
+      "weight": 0.954,
+      "dials": {
+       "wideDwell": null,
+       "netRange": 59.3069
+      }
+     },
+     {
+      "id": "chain:Space>Time",
+      "weight": 1.036,
+      "dials": {
+       "handoff": 2.3231,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Manta",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7558,
+   "hash": "8847259585cc",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Soar the line",
+      "weight": 1.0,
+      "dials": {
+       "yawCommit": null,
+       "skimDetour": 25.967
+      }
+     },
+     {
+      "id": "chain:Space>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 3.5774,
+       "commit": null,
+       "reach": 105.1527
+      }
+     },
+     {
+      "id": "chain:Mass>Charge>Time",
+      "weight": 1.124,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Manta",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.6991,
+   "hash": "4c1f7f8d2926",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The fuse",
+      "weight": 1.0,
+      "dials": {
+       "plantsBeforeBloom": 3.5055,
+       "grazeGap": null
+      }
+     },
+     {
+      "id": "chain:Mass>Time>Charge",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 2.9447,
+       "commit": null,
+       "reach": 165.9974
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Manta",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.7313,
+   "hash": "db0d2ac195b8",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The bait",
+      "weight": 1.0,
+      "dials": {
+       "baitRange": null,
+       "yawAway": 0.7364
+      }
+     },
+     {
+      "id": "chain:Time>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 2.348,
+       "commit": 0.4973,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Mass>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Manta",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.8122,
+   "hash": "a7ff2134d919",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Chain blow",
+      "weight": 0.849,
+      "dials": {
+       "skimPass": 34.152
+      }
+     },
+     {
+      "id": "chain:Time>Mass>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Meerkat",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.8407,
+   "hash": "430cb0e68376",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Ride the network",
+      "weight": 0.83,
+      "dials": {
+       "tunnelAim": 109.4306
+      }
+     },
+     {
+      "id": "chain:Space>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 1.584,
+       "commit": 0.6455,
+       "reach": 244.591
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Meerkat",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.7557,
+   "hash": "8399dd1b9446",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Sentry line",
+      "weight": 0.909,
+      "dials": {
+       "sentryLead": null
+      }
+     },
+     {
+      "id": "chain:Charge>Time>Space",
+      "weight": 1.128,
+      "dials": {
+       "handoff": 2.8682,
+       "commit": 0.7845,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Meerkat",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.8509,
+   "hash": "9d66f9dc7b7f",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The warren",
+      "weight": 1.0,
+      "dials": {
+       "exitSpacing": 124.9115,
+       "warrenRadius": 261.8571
+      }
+     },
+     {
+      "id": "chain:Space>Time>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 1.7241,
+       "commit": 0.2585,
+       "reach": 194.7967
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Meerkat",
+   "element": "Space",
+   "plateaued": false,
+   "eff": 0.7202,
+   "hash": "2ecc4562f034",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The burrow",
+      "weight": 0.843,
+      "dials": {
+       "exitAim": 123.6502,
+       "suckDensity": null
+      }
+     },
+     {
+      "id": "chain:Time>Charge>Space",
+      "weight": 0.866,
+      "dials": {
+       "handoff": null,
+       "commit": 0.3647,
+       "reach": 138.1886
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Orca",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7338,
+   "hash": "4156956b7b52",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Tank and missile",
+      "weight": 0.821,
+      "dials": {
+       "tankReserve": 0.0743,
+       "missileDetour": null
+      }
+     },
+     {
+      "id": "chain:Time>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Space>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Orca",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.727,
+   "hash": "abb8fe2bbd03",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The broadside",
+      "weight": 1.245,
+      "dials": {
+       "closeTo": 190.8456,
+       "salvo": 2.0814,
+       "burstLead": 1.2458
+      }
+     },
+     {
+      "id": "atlas:Boost Tank into Danger Shield into Flown Missiles",
+      "weight": 1.439,
+      "dials": {
+       "handoff": null,
+       "commit": 0.4546,
+       "reach": 341.9511
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Orca",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.8263,
+   "hash": "a25ad0aeb42f",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The ice shelf",
+      "weight": 0.79,
+      "dials": {
+       "shelfRadius": 126.7126
+      }
+     },
+     {
+      "id": "chain:Mass>Charge",
+      "weight": 0.879,
+      "dials": {
+       "handoff": 0.6676,
+       "commit": 0.5352,
+       "reach": 162.8852
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Orca",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.7397,
+   "hash": "600488691417",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Depth charge",
+      "weight": 0.652,
+      "dials": {
+       "burstDepth": null
+      }
+     },
+     {
+      "id": "chain:Time>Charge>Space",
+      "weight": 0.763,
+      "dials": {
+       "handoff": 1.7497,
+       "commit": null,
+       "reach": 154.392
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Rhino",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7271,
+   "hash": "19123fed1408",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Straight spool",
+      "weight": 1.037,
+      "dials": {
+       "turnBudget": 9.9448
+      }
+     },
+     {
+      "id": "chain:Time>Charge",
+      "weight": 1.318,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": 191.572
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Rhino",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.748,
+   "hash": "eeaed42a0fc5",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The windrow",
+      "weight": 0.734,
+      "dials": {
+       "spoolBeforeField": null,
+       "throwHold": null
+      }
+     },
+     {
+      "id": "chain:Time>Mass",
+      "weight": 0.831,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": 81.699
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Rhino",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.7016,
+   "hash": "f2d5f523ca28",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The landslide",
+      "weight": 1.0,
+      "dials": {
+       "fieldDensity": 71.8682,
+       "aimHold": 2.6106
+      }
+     },
+     {
+      "id": "chain:Space>Time",
+      "weight": 1.426,
+      "dials": {
+       "handoff": null,
+       "commit": 0.2922,
+       "reach": 307.9885
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Scarab",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7265,
+   "hash": "73c53462f69f",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Throttle line",
+      "weight": 1.029,
+      "dials": {
+       "brakeLead": null,
+       "depth": 0.8
+      }
+     },
+     {
+      "id": "chain:Time>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.3533,
+       "reach": 113.6498
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Scarab",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.7193,
+   "hash": "2c38b9c8a768",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The shove",
+      "weight": 1.101,
+      "dials": {
+       "dashLead": 1.4086
+      }
+     },
+     {
+      "id": "chain:Charge>Space",
+      "weight": 1.105,
+      "dials": {
+       "handoff": 0.8407,
+       "commit": 0.5664,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Scarab",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.7818,
+   "hash": "37fb1a28dca7",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The tollway",
+      "weight": 0.639,
+      "dials": {
+       "switchDetour": 140.205
+      }
+     },
+     {
+      "id": "chain:Space>Mass",
+      "weight": 0.458,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Charge>Time>Mass",
+      "weight": 1.439,
+      "dials": {
+       "handoff": 1.6653,
+       "commit": null,
+       "reach": 242.6076
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Scarab",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.6372,
+   "hash": "f58ab3e57b20",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The ball game",
+      "weight": 1.005,
+      "dials": {
+       "lineUp": 15.5725,
+       "throttleDepth": 0.8427
+      }
+     },
+     {
+      "id": "chain:Charge>Space>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.6988,
+   "hash": "02224ca2cd88",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Feed the tank",
+      "weight": 0.858,
+      "dials": {
+       "feedBelow": 0.6335,
+       "feedTime": null
+      }
+     },
+     {
+      "id": "chain:Space>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.7806,
+   "hash": "493af85c6be5",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The ghost shot",
+      "weight": 1.0,
+      "dials": {
+       "zoom": null,
+       "cloakLead": 4.0091
+      }
+     },
+     {
+      "id": "chain:Space>Charge",
+      "weight": 1.708,
+      "dials": {
+       "handoff": null,
+       "commit": 0.3192,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.6407,
+   "hash": "b0adcd028318",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Hedgerow",
+      "weight": 1.0,
+      "dials": {
+       "wallDwell": 3.9243
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.6963,
+   "hash": "325218859bcc",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The cloak raid",
+      "weight": 1.0,
+      "dials": {
+       "raidDepth": 168.0682
+      }
+     },
+     {
+      "id": "chain:Time>Space>Charge",
+      "weight": 1.194,
+      "dials": {
+       "handoff": null,
+       "commit": 0.3636,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7175,
+   "hash": "9d3fcec64bed",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Sling chain",
+      "weight": 0.903,
+      "dials": {
+       "slingAlign": null,
+       "dockTime": 0.8876
+      }
+     },
+     {
+      "id": "chain:Time>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Mass>Charge>Time",
+      "weight": 1.192,
+      "dials": {
+       "handoff": 1.6288,
+       "commit": 0.6525,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.7934,
+   "hash": "596e10ded92d",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The nest strike",
+      "weight": 1.0,
+      "dials": {
+       "nestsBeforePaint": 2.1579,
+       "paintHold": 1.4495
+      }
+     },
+     {
+      "id": "chain:Time>Charge",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.7356,
+   "hash": "2784cce4df07",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The thornbush",
+      "weight": 1.0,
+      "dials": {
+       "nestSpacing": 147.137
+      }
+     },
+     {
+      "id": "chain:Space>Time>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 1.6021,
+       "commit": null,
+       "reach": 327.6808
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.7498,
+   "hash": "7358a16845f1",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "chain:Time>Mass>Space",
+      "weight": 1.607,
+      "dials": {
+       "handoff": null,
+       "commit": 0.3109,
+       "reach": 354.6285
+      }
+     },
+     {
+      "id": "chain:Charge>Mass>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.665,
+       "reach": 178.7523
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7314,
+   "hash": "ebcca0dfbf4a",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Strafe the gate",
+      "weight": 1.0,
+      "dials": {
+       "rollTrigger": 98.5704
+      }
+     },
+     {
+      "id": "chain:Charge>Mass>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Space>Charge>Time",
+      "weight": 1.174,
+      "dials": {
+       "handoff": 0.9013,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.6444,
+   "hash": "4f24a5483fca",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Guns to rockets",
+      "weight": 1.0,
+      "dials": {
+       "rocketRange": 89.3559,
+       "heatCutoff": 0.789
+      }
+     },
+     {
+      "id": "chain:Space>Mass>Charge",
+      "weight": 0.864,
+      "dials": {
+       "handoff": 2.6393,
+       "commit": null,
+       "reach": 240.475
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.7718,
+   "hash": "c6b41077317e",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The bunker",
+      "weight": 1.0,
+      "dials": {
+       "stanceTime": 7.0699,
+       "sweep": 80.1753
+      }
+     },
+     {
+      "id": "chain:Charge>Mass",
+      "weight": 1.248,
+      "dials": {
+       "handoff": null,
+       "commit": 0.5196,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.7215,
+   "hash": "c8334a4ecb2f",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Cold bursts",
+      "weight": 0.807,
+      "dials": {
+       "burstLength": 2.7018,
+       "coolPause": 1.0027
+      }
+     },
+     {
+      "id": "chain:Time>Charge>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 3.0171,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Squirrel",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7388,
+   "hash": "c593a7083239",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The tube run",
+      "weight": 0.892,
+      "dials": {
+       "ringLead": null,
+       "skimLine": null
+      }
+     },
+     {
+      "id": "atlas:Skimming into Crystal Joust into Steal",
+      "weight": 0.777,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": 251.8137
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Squirrel",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.7338,
+   "hash": "f6972111fc55",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The joust",
+      "weight": 0.774,
+      "dials": {
+       "joustMargin": 4.2264
+      }
+     },
+     {
+      "id": "chain:Mass>Charge",
+      "weight": 0.901,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": 130.9557
+      }
+     },
+     {
+      "id": "chain:Time>Space>Charge",
+      "weight": 0.775,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": 348.2889
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Squirrel",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.8093,
+   "hash": "148aa242ca9f",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Ring fence",
+      "weight": 1.0,
+      "dials": {
+       "fenceRadius": 188.4137
+      }
+     },
+     {
+      "id": "chain:Time>Space>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.4439,
+       "reach": 98.446
+      }
+     },
+     {
+      "id": "chain:Charge>Time>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 3.034,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Squirrel",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.6762,
+   "hash": "51914a4f41de",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The thief's lap",
+      "weight": 1.0,
+      "dials": {
+       "stealLine": null,
+       "loopBack": null
+      }
+     },
+     {
+      "id": "chain:Mass>Space",
+      "weight": 1.978,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": 287.1835
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Starling",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.8053,
+   "hash": "b70c2376df03",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Pick the Time card into Pick the Charge card into Pick the Mass card",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 2.2248,
+       "commit": 0.8137,
+       "reach": 60.7215
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7669,
+   "hash": "5ce90a6d123f",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The slingshot",
+      "weight": 1.0,
+      "dials": {
+       "holeLead": 82.3988,
+       "releaseAngle": 67.0891,
+       "squeeze": null
+      }
+     },
+     {
+      "id": "chain:Time>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Time>Mass>Space",
+      "weight": 1.179,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.6699,
+   "hash": "b0aeb10bedd6",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "chain:Mass>Time>Charge",
+      "weight": 0.927,
+      "dials": {
+       "handoff": null,
+       "commit": 0.7451,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Space>Mass>Charge",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.5431,
+       "reach": 309.5723
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.7209,
+   "hash": "8042859e3bd1",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Fulmen",
+      "weight": 1.0,
+      "dials": {
+       "chainCount": null,
+       "squeeze": 0.1683
+      }
+     },
+     {
+      "id": "chain:Mass>Space",
+      "weight": 0.85,
+      "dials": {
+       "handoff": null,
+       "commit": 0.749,
+       "reach": 274.1473
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.6735,
+   "hash": "3510a439fc26",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Spear",
+      "weight": 0.512,
+      "dials": {
+       "turnBudget": null
+      }
+     },
+     {
+      "id": "chain:Time>Charge",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": 107.4779
+      }
+     },
+     {
+      "id": "chain:Mass>Time>Charge",
+      "weight": 0.631,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.735,
+   "hash": "1fcd91583e0c",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The lit run",
+      "weight": 0.709,
+      "dials": {
+       "lightLead": 1.5521
+      }
+     },
+     {
+      "id": "chain:Charge>Space>Mass",
+      "weight": 0.794,
+      "dials": {
+       "handoff": null,
+       "commit": 0.6653,
+       "reach": 182.136
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.6847,
+   "hash": "fd3fd815c326",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The palisade",
+      "weight": 0.892,
+      "dials": {
+       "swingRate": 77.9242
+      }
+     },
+     {
+      "id": "chain:Mass>Charge",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.6484,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.6921,
+   "hash": "ea2749c677fb",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Cleave",
+      "weight": 0.826,
+      "dials": {
+       "superBerth": null,
+       "squeeze": 0.5705
+      }
+     },
+     {
+      "id": "chain:Time>Mass>Space",
+      "weight": 0.939,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Time>Space>Charge",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.6786,
+   "hash": "6222c48e3d90",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Plant into Mass Mode into Winch",
+      "weight": 1.032,
+      "dials": {
+       "handoff": 2.2421,
+       "commit": 0.8101,
+       "reach": 115.7411
+      }
+     },
+     {
+      "id": "chain:Charge>Space>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.902,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.7583,
+   "hash": "d90be6d00c4b",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The crack",
+      "weight": 1.0,
+      "dials": {
+       "laps": null,
+       "winchDepth": 0.9286
+      }
+     },
+     {
+      "id": "chain:Space>Time>Charge",
+      "weight": 1.237,
+      "dials": {
+       "handoff": 3.0835,
+       "commit": 0.7522,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.6503,
+   "hash": "9cd095192a31",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Bank and burst",
+      "weight": 0.853,
+      "dials": {
+       "bankTarget": 0.7935
+      }
+     },
+     {
+      "id": "chain:Charge>Mass",
+      "weight": 1.31,
+      "dials": {
+       "handoff": 1.0296,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.8024,
+   "hash": "7d16ca394a1b",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Harvest",
+      "weight": 0.802,
+      "dials": {
+       "sliceDepth": 38.3893
+      }
+     },
+     {
+      "id": "chain:Charge>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Space>Charge>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7894,
+   "hash": "7177e9ae3fc4",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The drop",
+      "weight": 1.0,
+      "dials": {
+       "dropLength": 1.954
+      }
+     },
+     {
+      "id": "chain:Space>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 2.6851,
+       "commit": 0.8072,
+       "reach": 276.17
+      }
+     },
+     {
+      "id": "chain:Charge>Mass>Time",
+      "weight": 0.958,
+      "dials": {
+       "handoff": 1.2603,
+       "commit": null,
+       "reach": 254.5471
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Charge",
+   "plateaued": false,
+   "eff": 0.7052,
+   "hash": "b3d0c512e130",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The dust trap",
+      "weight": 0.84,
+      "dials": {
+       "dropLead": 0.7369,
+       "dwell": 3.0845
+      }
+     },
+     {
+      "id": "chain:Time>Mass>Charge",
+      "weight": 0.86,
+      "dials": {
+       "handoff": null,
+       "commit": 0.3114,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Space>Time>Charge",
+      "weight": 0.74,
+      "dials": {
+       "handoff": 3.2678,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.7642,
+   "hash": "189d9e118950",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Paint and tend",
+      "weight": 1.0,
+      "dials": {
+       "paintTime": 7.437,
+       "tendHeight": 21.9082
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.6631,
+   "hash": "44a132d21cbf",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Sirocco",
+      "weight": 0.724,
+      "dials": {
+       "sweepHeight": null
+      }
+     },
+     {
+      "id": "chain:Charge>Mass>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.8397,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.7222,
+   "hash": "2a75e6898c62",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Rail to the gate",
+      "weight": 0.729,
+      "dials": {
+       "slipLead": null
+      }
+     },
+     {
+      "id": "chain:Charge>Space>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 3.2112,
+       "commit": 0.8437,
+       "reach": 251.4615
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Charge",
+   "plateaued": true,
+   "eff": 0.6849,
+   "hash": "501c3afd712f",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Spike burst",
+      "weight": 1.0,
+      "dials": {
+       "burstRange": 41.7531
+      }
+     },
+     {
+      "id": "chain:Time>Charge",
+      "weight": 1.583,
+      "dials": {
+       "handoff": null,
+       "commit": 0.2697,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.7634,
+   "hash": "fc18690592b8",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:The rail thief",
+      "weight": 0.801,
+      "dials": {
+       "rideShare": 0.3591,
+       "spikeRange": 93.0454
+      }
+     },
+     {
+      "id": "chain:Mass>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.8228,
+       "reach": 280.5653
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.735,
+   "hash": "2b14e62fd9f0",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Rail into their land",
+      "weight": 0.842,
+      "dials": {
+       "projectAim": 102.7237
+      }
+     },
+     {
+      "id": "chain:Charge>Mass>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 3.3158,
+       "commit": null,
+       "reach": 75.4094
+      }
+     },
+     {
+      "id": "chain:Space>Time>Charge",
+      "weight": 0.975,
+      "dials": {
+       "handoff": 3.5337,
+       "commit": null,
+       "reach": 139.3987
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Time",
+   "plateaued": true,
+   "eff": 0.6286,
+   "hash": "db9a08bc7f57",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Saved boosts",
+      "weight": 0.895,
+      "dials": {
+       "boostsBeforeSpend": 2.2141
+      }
+     },
+     {
+      "id": "chain:Mass>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.38,
+       "reach": 116.6668
+      }
+     },
+     {
+      "id": "chain:Space>Mass>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Charge",
+   "plateaued": false,
+   "eff": 0.7114,
+   "hash": "eeb19f9a1dc0",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "chain:Charge>Space",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 2.5038,
+       "commit": 0.3134,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Space>Charge",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.4072,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Charge>Time>Space",
+      "weight": 0.697,
+      "dials": {
+       "handoff": 3.1603,
+       "commit": 0.8899,
+       "reach": null
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Mass",
+   "plateaued": true,
+   "eff": 0.7101,
+   "hash": "e55e6cc0ac09",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "chain:Mass>Time>Charge",
+      "weight": 1.0,
+      "dials": {
+       "handoff": null,
+       "commit": 0.7981,
+       "reach": null
+      }
+     },
+     {
+      "id": "chain:Space>Time>Mass",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 1.6828,
+       "commit": null,
+       "reach": 289.976
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Space",
+   "plateaued": true,
+   "eff": 0.6773,
+   "hash": "163453e4c7f4",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Blastline",
+      "weight": 0.866,
+      "dials": {
+       "loopSize": 30.9157,
+       "motesPerLoop": 9.0054
+      }
+     },
+     {
+      "id": "chain:Space>Time>Mass",
+      "weight": 1.403,
+      "dials": {
+       "handoff": null,
+       "commit": null,
+       "reach": null
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

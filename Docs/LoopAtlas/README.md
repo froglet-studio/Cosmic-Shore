@@ -21,6 +21,9 @@ https://claude.ai/artifact/QUiM5ztvnHhkpWgsn4S43K.
 | `model/items.yaml` | Product work beyond the loops: the areas (Game, App, AI, ...) and the items in them, which move through the layers like loops. |
 | `model/fleet/<Vessel>.yaml` | One vessel: its verbs, combos (with nested `sub` loops and each combo's AI `gene`), games, arenas and board. |
 | `model/genes.yaml` | What turns a combo into an AI gene: the rule, the activation expectation for combos, the `senses` a gene's cues name and the pilot `sights` (callsigns). |
+| `genes-out/` | **The gene search's output** (`Tools/Build/gene_search.py run`): one genome per vessel and element (best, MAP-Elites archive, I1-I4 ladder, plateau, bloat), `pool.json` (the fixed AI pool arena balancing races against), `retrain-<arena>.json`, `discovered.json` (candidate loops) and `SUMMARY.md`. |
+| `balance-in/` | Proposed tuning from the arena balancing work, one JSON per arena, read by `gene_search.py retrain --balance`. |
+| `discover-in/` | Strategies other searches observed, offered as loops (`README.md` there has the shape). |
 | `GENES.md` | Every combo as an AI gene, the coverage per vessel and genome, and the activation expectations of every measured loop, **generated**. |
 | `schema.json` | JSON Schema for the assembled model. |
 | `model.json` | The assembled model, **generated**; never edit it by hand. Other tools read this. |
@@ -100,6 +103,14 @@ branch nobody can see change anything, that widens the search or costs effective
 (switching between noticeably different behaviours of roughly comparable effectiveness, kept in a MAP-Elites archive
 beside the best genome). Skill comes down the ladder by leaning on the archive's fun, less effective behaviours, never
 by adding random mistakes to the best one. GENES.md prints it under "How a search scores a genome".
+
+**Genes and loops inform each other** (Garrett, 2026-11-21). `Tools/Build/gene_search.py` trains every genome from
+the atlas's genes (atlas to genes) and may also compose the vessel's own verbs into chains no combo names. A chain the
+archive keeps, effective and used, is a candidate loop: `discover` lists it beside strategies other projects drop in
+`discover-in/`, and `propose --top N` writes the best into the vessel's YAML as a Proposed combo with its gene (genes to
+atlas). Once a person keeps one, the next run seeds it as an atlas gene. Until Froglet Compute runs again and a
+harness flies a gene in the vessel's own games, the search scores genomes on a surrogate: its numbers measure the
+search, not the vessels.
 
 The check refuses a cue that is not a sense, a sight that is not a callsign, a dial range that is empty, and a genome
 the vessel has no verb for. `report` lists a vessel with a game or arena for an element and no gene for it.

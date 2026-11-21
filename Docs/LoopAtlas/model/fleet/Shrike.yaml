@@ -166,4 +166,36 @@ combos:
     - [nestSpacing, distance between nests, 10, 200, u]
     done: Three nests stand inside the claim.
     sight: ENSIGN
+- in: x
+  name: Void Lance into Nest into Void Sling
+  t: [12, 60]
+  src: 'Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 100% of the behaviour in an archive
+    cell at 93% of the best genome). Not flown by a person yet.'
+  is: 'A chain the AI search kept that no combo named: Void Lance (Space), then Nest (Mass), then Void Sling (Time).'
+  chain:
+  - [Space, Void Lance]
+  - [Mass, Nest]
+  - [Time, Void Sling]
+  drivers: [break, joy, make]
+  feel: 'Not felt yet: fly it and name the moment, or drop it.'
+  gene:
+    genome: Time
+    cue: [rival_mass_ahead]
+    dials:
+    - - handoff
+      - seconds from one verb's payoff to the next press
+      - 0.2
+      - 4.0
+      - s
+    - - commit
+      - share of the first verb spent before chaining
+      - 0.2
+      - 1.0
+      - fraction
+    - - reach
+      - distance to the cue at which the chain starts
+      - 20
+      - 400
+      - u
+    done: Void Sling lands within the handoff of the Void Lance before it.
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md

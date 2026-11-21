@@ -136,4 +136,35 @@ combos:
       - u
     done: A shot from a dug-in post lands a petal hit.
     sight: BANDIT
+- in: x
+  name: Rush into Dig In
+  t: [8, 50]
+  src: 'Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 80% of the behaviour in an archive
+    cell at 98% of the best genome). Not flown by a person yet.'
+  is: 'A chain the AI search kept that no combo named: Rush (Time), then Dig In (Charge).'
+  chain:
+  - [Time, Rush]
+  - [Charge, Dig In]
+  drivers: [joy, mastery, rival]
+  feel: 'Not felt yet: fly it and name the moment, or drop it.'
+  gene:
+    genome: Time
+    cue: [gate_next]
+    dials:
+    - - handoff
+      - seconds from one verb's payoff to the next press
+      - 0.2
+      - 4.0
+      - s
+    - - commit
+      - share of the first verb spent before chaining
+      - 0.2
+      - 1.0
+      - fraction
+    - - reach
+      - distance to the cue at which the chain starts
+      - 20
+      - 400
+      - u
+    done: Dig In lands within the handoff of the Rush before it.
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_RUSH.md
