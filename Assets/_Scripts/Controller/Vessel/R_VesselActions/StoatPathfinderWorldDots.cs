@@ -10,8 +10,8 @@ namespace CosmicShore.Gameplay
     /// mode's detection / orbit rings (§1b): camera-facing discs every <c>spacing</c> world units along each polyline, each
     /// <c>size</c> across and never smaller on screen than <c>minPixels</c>. They sit in the world, so they recede with
     /// depth, pass behind prisms, and are bent by the black hole's lens like any light (the lens copies the scene after the
-    /// transparents). The screen overlay (<see cref="StoatPathfinderDots"/>) stays as the fallback when <c>dotsInWorld</c> is
-    /// off.
+    /// transparents). The screen overlay that was its fallback, and the predicted path it drew, were
+    /// deleted on 2026-11-21: today it draws the swing's reach ring and exit line, for the local human pilot only.
     ///
     /// <para><b>How it draws.</b> <see cref="Begin"/>, any number of <see cref="Add"/>s, <see cref="End"/>: every dot of the
     /// frame becomes a quad in ONE dynamic mesh (billboarded here toward the pilot's camera, its colour in the vertex
