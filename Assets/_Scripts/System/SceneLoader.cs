@@ -45,6 +45,12 @@ namespace CosmicShore.Core
                  "(Docs/PartySystem/BUGS.md B45). 0 turns the drain off.")]
         [SerializeField, Min(0f)] float sceneExitDrainMaxSeconds = 8f;
 
+        [Tooltip("Longest the host holds a scene load for the vessels' trail to go back to its pools, which started " +
+                 "when the exit began (12 ms a frame per pool). A short trail is back before the splash cover ends " +
+                 "and holds nothing. A menu vessel left flying for 20 minutes has laid about 50,000 prisms, and the " +
+                 "load's frame carried all of them (Docs/PartySystem/BUGS.md B45). 0 = do not wait.")]
+        [SerializeField, Min(0f)] float trailReleaseMaxSeconds = 4f;
+
         [Tooltip("The most prisms' worth of plants and creatures the drain destroys in one frame, a whole plant at " +
                  "a time. With a frame budget below, the slice starts at 1,000 and grows or shrinks to that budget, " +
                  "never past this.")]
@@ -607,6 +613,12 @@ namespace CosmicShore.Core
                 await sceneExitDrain;
             }
 
+            using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                       "Trail release behind the splash", isWait: true))
+            {
+                await WaitForTrailReleaseAsync();
+            }
+
             _sceneLoadSpan = LoadInsights.Begin(LoadInsightCategory.SceneLoad,
                 $"Scene load → activation ({sceneName})");
 
@@ -637,6 +649,27 @@ namespace CosmicShore.Core
                 CSDebug.LogWarning("[SceneLoader] No active server - falling back to local scene load.");
                 SceneManager.LoadScene(sceneName);
             }
+        }
+
+        /// <summary>
+        /// Hold the load until the trail pools have handed their prisms back (they began at
+        /// <c>InvokeSceneTransition(false)</c>), or <see cref="trailReleaseMaxSeconds"/>. What is left then goes on
+        /// being released a slice a frame after the load, as it always did.
+        /// </summary>
+        async UniTask WaitForTrailReleaseAsync()
+        {
+            int pendingAtStart = InteractivePrismPoolManager.TotalPendingRelease;
+            if (trailReleaseMaxSeconds <= 0f || pendingAtStart == 0) return;
+
+            float startedAt = Time.unscaledTime;
+            float deadline = startedAt + trailReleaseMaxSeconds;
+            while (InteractivePrismPoolManager.TotalPendingRelease > 0 && Time.unscaledTime < deadline)
+                await UniTask.Yield(PlayerLoopTiming.Update);
+
+            int left = InteractivePrismPoolManager.TotalPendingRelease;
+            NetSessionRecorder.Mark("trailRelease",
+                left > 0 ? $"cut short at {trailReleaseMaxSeconds:0.0}s with {left} of {pendingAtStart} left"
+                         : $"{pendingAtStart} still out when the cover ended, back in {Time.unscaledTime - startedAt:0.0}s");
         }
 
         /// <summary>

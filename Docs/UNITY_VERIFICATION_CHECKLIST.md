@@ -1854,6 +1854,23 @@ which no longer applies while nests stand).
 4. Every third nest holds a crystal you can take once it is open.
 5. AI Threshers (the soak or the AI Diagnose panel): they break their nests and finish at every intensity.
 
+### 🔴 B45: the trail goes back to its pools before a launch (`Ys-bleeding-edge`, 2026-11-22) — ONE EDITOR LAUNCH EACH WAY
+
+**What landed:** `GenericPoolManager.ReleaseAllActiveBudgetedAsync` (12 ms a frame per pool),
+`InteractivePrismPoolManager.BeginReleaseAllForSceneExit` / `TotalPendingRelease`, `SceneLoader.WaitForTrailReleaseAsync`
+(`trailReleaseMaxSeconds`, 4 s), and the guest's start in `MultiplayerSetup.OnSceneEventTrace`.
+
+**Run:** `unity recompile` 0 errors. Solo online host in the editor, a Bloomrush launch with about 19,600 trail prisms:
+the load's frame 3.2 s at the old rate, 1.7 s now (`Docs/PartySystem/BUGS.md`, "B45 on a launch from the menu").
+**Not run:** `unity_refcompile`, `gates.sh`, the edit-mode suite, a guest, two machines, a build.
+
+**Test:**
+1. Two players (two machines, or the editor and a built player on separate logins). Sit on the menu 20 minutes, then
+   launch any match. Expect: nobody bounces with "Host disconnected"; `net_logs.py show` has no `stall` of 9 s or more
+   around the launch, and a `trailRelease` mark on the host when the trail was long.
+2. A normal launch a few seconds after reaching the menu is not slower than before (no `trailRelease` mark).
+3. Return to the menu and launch again: the trail of the last match is not left drawn in the next scene.
+
 ### 🔴 Automatic host and join with built development players: -csMpAutoHost / -csMpAutoJoin (`Ys-bleeding-edge`, 2026-11-21; from `claude/mp-plan-p0`, 2026-11-02) — 2 AND 4 BUILT PLAYERS PASS ON ONE PC (2026-11-22); TWO MACHINES NOT RUN
 
 **What landed:** `MultiplayerAutoArgs` (the arguments, pure), `MultiplayerAutoPilot` (development builds and the editor

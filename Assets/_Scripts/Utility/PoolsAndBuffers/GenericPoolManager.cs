@@ -214,6 +214,52 @@ namespace CosmicShore.Utility
             CSDebug.LogVerbose(CSLogChannel.PrismRuntime, $"[PoolManager] Cleaned up {processed} items gracefully.");
         }
 
+        /// <summary>Objects a <see cref="ReleaseAllActiveBudgetedAsync"/> still has to hand back.</summary>
+        public int PendingReleaseCount { get; private set; }
+
+        /// <summary>
+        /// Returns all active objects to the pool, as many a frame as fit in <paramref name="msPerFrame"/>.
+        /// <see cref="ReleaseAllActiveAsync"/> hands back a fixed 100 a frame, which for a long trail (a menu
+        /// vessel lays about 2,500 prisms a minute, with no ceiling) is hundreds of frames: the scene load
+        /// arrived first and its frame carried every prism still active (Docs/PartySystem/BUGS.md B45).
+        /// </summary>
+        public async UniTask ReleaseAllActiveBudgetedAsync(float msPerFrame)
+        {
+            if (_activeObjects.Count == 0) return;
+            var itemsToRelease = new List<T>(_activeObjects);
+            _activeObjects.Clear(); // as ReleaseAllActiveAsync: nothing is released twice
+
+            int left = itemsToRelease.Count;
+            PendingReleaseCount += left;
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                for (int i = 0; i < itemsToRelease.Count; i++)
+                {
+                    var item = itemsToRelease[i];
+                    if (item)
+                    {
+                        OnReturnedToPool(item);
+                        item.transform.SetParent(transform);
+                        pool.Release(item);
+                    }
+                    left--;
+                    PendingReleaseCount--;
+
+                    if ((i & 31) == 31 && clock.Elapsed.TotalMilliseconds >= msPerFrame)
+                    {
+                        await UniTask.Yield(PlayerLoopTiming.Update);
+                        if (!this) return;   // the pool went with its scene
+                        clock.Restart();
+                    }
+                }
+            }
+            finally
+            {
+                PendingReleaseCount -= left;   // an exception or a destroyed pool leaves nothing counted
+            }
+        }
+
         /// <summary>
         /// Synchronously returns all active objects to the pool.
         /// Use during scene transitions where correctness matters more than smoothness.
