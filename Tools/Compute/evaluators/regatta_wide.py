@@ -558,6 +558,23 @@ def _judge():
     return regatta_judge
 
 
+def judge_retry(genome, hulls, seeds, limit_s, start):
+    """regatta_judge.judge, with every hull that came back with NO race (its game process timed out while booting, a
+    slow machine; 2026-11-21 on a busy PC whole fields came back empty) judged once more. A hull still missing is a
+    hole, named in the result's "holes"; a DNF in a race that ran is a real DNF."""
+    rj = _judge()
+    r = rj.judge(genome, hulls, list(seeds), limit_s=limit_s, start=start)
+    flown = {s["hull"] for race in r["races"] for s in race.get("seats", [])}
+    missing = [h for h in hulls if h not in flown]
+    if missing:
+        again = rj.judge(genome, missing, list(seeds), limit_s=limit_s, start=start)
+        r["races"].extend(again["races"])
+        r["notes"] = sorted(set(r.get("notes", []) + again.get("notes", [])))
+        flown |= {s["hull"] for race in again["races"] for s in race.get("seats", [])}
+    r["holes"] = [h for h in hulls if h not in flown]
+    return r
+
+
 def imbalance(result, hulls):
     rj = _judge()
     by = {}
@@ -575,9 +592,13 @@ def evaluate(genome, seeds_a=(1,), seeds_b=(1,), limit_s=300):
     """Stage A (four hulls, one seed, card start), then the field at both starts. Returns the record's score part."""
     rj = _judge()
     rec = {}
-    ra = rj.judge(genome, STAGE_A, list(seeds_a), limit_s=limit_s, start="card")
+    ra = judge_retry(genome, STAGE_A, seeds_a, limit_s, "card")
     a, times_a, dnf_a = imbalance(ra, STAGE_A)
-    rec["stage_a"] = {"imbalance": a, "times": times_a, "dnf": dnf_a, "notes": ra.get("notes", [])[:6]}
+    rec["stage_a"] = {"imbalance": a, "times": times_a, "dnf": dnf_a, "notes": ra.get("notes", [])[:6],
+                      "holes": ra["holes"]}
+    if ra["holes"]:
+        rec["score"], rec["stage"], rec["error"] = None, "A", f"judge holes {ra['holes']}"
+        return rec
     if a is None or a > STAGE_A_BAR:
         # A stage-A failure ranks below every stage-B course of the same spread.
         rec["score"] = None if a is None else 2.0 * field_score({"card": {"times": times_a}})
@@ -585,9 +606,12 @@ def evaluate(genome, seeds_a=(1,), seeds_b=(1,), limit_s=300):
         return rec
     worst, out = 0.0, {}
     for start in ("card", "L5"):
-        r = rj.judge(genome, FIELD, list(seeds_b), limit_s=limit_s, start=start)
+        r = judge_retry(genome, FIELD, seeds_b, limit_s, start)
         x, times, dnf = imbalance(r, FIELD)
-        out[start] = {"imbalance": x, "times": times, "dnf": dnf}
+        out[start] = {"imbalance": x, "times": times, "dnf": dnf, "holes": r["holes"], "notes": r.get("notes", [])[:8]}
+        if r["holes"]:
+            rec.update(field=out, score=None, stage="B", error=f"judge holes {r['holes']} at {start}")
+            return rec
         worst = max(worst, x if x else 99.0)
     rec["field"] = out
     rec["imbalance"] = worst
@@ -642,7 +666,8 @@ def field_score(field):
 
 def rescore(r):
     if r.get("stage") == "B" and r.get("field"):
-        r = dict(r, score=field_score(r["field"]))
+        holes = any(v.get("holes") for v in r["field"].values())
+        r = dict(r, score=None if holes or r.get("error") else field_score(r["field"]))
     elif r.get("stage") == "A" and (r.get("stage_a") or {}).get("times") and r.get("score") is not None:
         r = dict(r, score=2.0 * (field_score({"card": {"times": r["stage_a"]["times"]}}) or 99.0))
     return r
@@ -763,7 +788,7 @@ def confirm(records, out, per_base=1, top=8, seeds=(2, 3), limit_s=300):
         res = {}
         worst = 0.0
         for start in ("card", "L5"):
-            jr = rj.judge(r["genome"], FIELD, list(seeds), limit_s=limit_s, start=start)
+            jr = judge_retry(r["genome"], FIELD, seeds, limit_s, start)
             # The screen's seed-1 race joins the two new seeds.
             for h, t in r["field"][start]["times"].items():
                 jr["races"].append({"seats": [{"hull": h, "finish_s": t}]})
