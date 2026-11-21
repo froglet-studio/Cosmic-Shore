@@ -730,6 +730,34 @@ def confirm(records, out, per_base=1, bar=1.35, seeds=(1, 2, 3), limit_s=300):
         print(f"[wide] confirmed {r['id']} {r['niche']} screen {r['score']:.3f} -> {worst:.3f}", flush=True)
 
 
+def playtest_pool(confirmed, k=8):
+    """A shuffle pool (Tools/Build/regatta_shuffle_pool.json shape) of the k most different confirmed courses, for a
+    PLAYTEST branch: Regatta deals only these. Ref1-Ref4 go to the four most balanced (the generator needs them)."""
+    for c in confirmed:
+        c["score"] = c["confirmed"]
+        c["stage"] = "B"
+    chosen = pick(confirmed, k, bar=99.0)
+    by_balance = sorted(chosen, key=lambda c: c["confirmed"])
+    entries = []
+    for i, c in enumerate(chosen):
+        w = c["genome"]["wide"]
+        cell = w.get("cell") or {}
+        desc = (f"{w['base']['kind']} world, super-shielded {100 * c['ss_share']:.0f}%, "
+                f"{'no rails' if w['rails'] == 'off' else 'rails'}, {'no nucleus' if cell.get('nucleus') == 'None' else 'nucleus'}, "
+                f"lifeforms {cell.get('lifeforms') or 'none'}, lap {c['facts']['lap_u']:.0f} u")
+        spread = {st: round(v["imbalance"], 3) if v["imbalance"] else None for st, v in c["field"].items()}
+        e = {"label": f"Wild{i + 1}", "genome": {k2: v for k2, v in c["genome"].items() if k2 != "wide"},
+             "prisms": int(c.get("prisms") or 0) + 200, "candidate": c["id"],
+             "notes": f"Wide search {c['id']}: {desc}. Field spread {spread} (3 seeds, real-game judge).",
+             "judged": {st: v["times"] for st, v in c["field"].items()}}
+        if c in by_balance[:4]:
+            e["ref"] = f"Ref{by_balance.index(c) + 1}"
+        entries.append(e)
+    return {"picked_by": "Tools/Compute/evaluators/regatta_wide.py playtest (most different, then most balanced)",
+            "imbalance": {st: max(c["field"][st]["imbalance"] or 99 for c in chosen) for st in ("card", "L5")},
+            "refs_by": "the four most balanced wide-search courses (playtest branch only)", "entries": entries}
+
+
 def self_test():
     rng = random.Random(7)
     seen = set()
@@ -782,6 +810,16 @@ def main():
             recs += _load(os.path.join(d, "records.jsonl"))
         os.makedirs(a.out, exist_ok=True)
         return confirm(recs, a.out)
+    if a.cmd == "playtest":
+        conf = []
+        for d in a.dirs:
+            conf += _load(os.path.join(d, "confirmed.jsonl"))
+        pool = playtest_pool(conf, a.k)
+        with open(a.out, "w") as f:
+            json.dump(pool, f, indent=1)
+        for e in pool["entries"]:
+            print(e["label"], e.get("ref", ""), e["notes"])
+        return
     if a.cmd in ("merge", "pick"):
         recs = []
         for d in a.dirs or [a.out]:
