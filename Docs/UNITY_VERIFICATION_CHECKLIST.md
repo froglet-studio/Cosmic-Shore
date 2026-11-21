@@ -1829,6 +1829,38 @@ which no longer applies while nests stand).
 4. Every third nest holds a crystal you can take once it is open.
 5. AI Threshers (the soak or the AI Diagnose panel): they break their nests and finish at every intensity.
 
+### 🔴 Automatic host and join with built development players: -csMpAutoHost / -csMpAutoJoin (`Ys-bleeding-edge`, 2026-11-21; from `claude/mp-plan-p0`, 2026-11-02) — COMPILED AND UNIT-TESTED, NO BUILT-PLAYER RUN YET
+
+**What landed:** `MultiplayerAutoArgs` (the arguments, pure), `MultiplayerAutoPilot` (development builds and the editor
+only; hosts or presses JOIN through `PartyInviteController.JoinPartyAsync` and writes a result JSON), a `-csMpProfile`
+switch in `AuthenticationServiceFacade.SwitchMppmProfileIfNeeded` (development builds and the editor only),
+`Tools/Build/mp_auto.py` (launches 2-4 built players), and a real `PartyAcceptFlowPlayModeTests` test that runs two
+built players (skipped without `CS_MP_PLAYER`). `MultiplayerAutoArgsTests` covers the parsing. Procedure:
+`Docs/PartySystem/TESTS.md` § Automatic runs.
+
+**Verified without the editor:** `unity_refcompile` player, player-dev, editor and webgl configs: 0 errors in project
+code (the code is compiled out of the player config and in for player-dev and editor). `mp_auto.py --self-test`,
+`check_conditional_compilation.py`, `check_console_logging.py`, ship gates: all OK. **Not run on that branch**: no edit-mode
+test, no built player, no UGS sign-in.
+
+**2026-11-21, on `Ys-bleeding-edge`** (commit `2c9bb3617d` brought over; the B47 / B48 / B49 commits of that branch were
+not): Unity 6000.3.17f1 `unity recompile` 0 errors, 0 warnings. `MultiplayerAutoArgsTests` 26 of 26 pass, called
+directly in the open editor (not through the Test Runner); `TwoStandalonePlayers_HostAndJoin_BothReachTheParty` skips
+without `CS_MP_PLAYER`. `mp_auto.py --self-test` OK. **Still not run:** a built player, so steps 2-6 below.
+
+**Test:**
+1. EditMode: `MultiplayerAutoArgsTests` all pass; the existing multiplayer set still passes.
+2. Make a Windows **development** build pointed at a development UGS environment. Run
+   `python3 Tools/Build/mp_auto.py run --player <exe> --players 2`. Expected: two windows, the joiner lands in the host's
+   party within about a minute, both close, `PASS host` and `PASS join1`, exit code 0.
+3. Same with `--players 4`. Expected: four PASS lines, and the run fits in memory alongside one open Editor (note the
+   peak commit).
+4. Set `CS_MP_PLAYER` to the exe and run `TwoStandalonePlayers_HostAndJoin_BothReachTheParty` in the Test Runner.
+   Expected: pass. Unset it: the test shows as skipped.
+5. Negative: run the joiner alone (`--players 2`, then close the host window early). Expected: `FAIL join1` naming the
+   step it stopped at, exit code 1.
+6. A release (non-development) build launched with the same arguments does nothing different from a normal launch.
+
 ### 🔴 Thresher AI: the aimed launch, learned from Garrett's Thresher Time races (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** an AI Thresher in Thresher Time now launches AIMED, as Garrett does (85% of his planted time). Under the

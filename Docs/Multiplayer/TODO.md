@@ -12,8 +12,8 @@ The one live list. Updated 2026-11-02 from the code on `Ys-bleeding-edge`. Per-s
 ## Next: test automation
 
 5. **MPPM play-mode scenarios** (4 virtual players, scripted) so the checklist runs without a person.
-6. **Auto host/join harness**: a dev build or MPPM entry point that hosts or joins from the command line and logs presence, converge, ready, RTT and roster drift, so a multi-instance smoke test can run headless.
-7. **Two-client party accept play-mode test**: `PartyAcceptFlowPlayModeTests` is a placeholder (TODO at line 83) until a two-NetworkManager or MPPM harness exists; same dependency as item 6.
+6. **Auto host/join harness**: a dev build or MPPM entry point that hosts or joins from the command line and logs presence, converge, ready, RTT and roster drift, so a multi-instance smoke test can run headless. **Built 2026-11-21** on `Ys-bleeding-edge` (`MultiplayerAutoPilot`, `Tools/Build/mp_auto.py`): it hosts or joins and reports each step; compiled and unit-tested, not yet run with a built player (checklist "Automatic host and join"). Ready, RTT and roster drift are not logged yet.
+7. **Two-client party accept play-mode test**: `PartyAcceptFlowPlayModeTests` is a placeholder (TODO at line 83) no longer: `TwoStandalonePlayers_HostAndJoin_BothReachTheParty` runs two built players when `CS_MP_PLAYER` names one (2026-11-21), and skips otherwise. Plan Tests 2 and 3 are still manual.
 8. **`NetworkMonitor.BoostPolling`**: `PartyInviteController.cs:182` TODO, poll faster right after an invite; not built.
 9. Rebuild the Amoebius edit-mode suite (fill the 102 engine APIs).
 
