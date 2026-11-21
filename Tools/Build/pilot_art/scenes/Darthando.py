@@ -8,6 +8,7 @@ SCENE = dict(
     side='right',
     source='hobby: "tie a ribbon on the hull for every friend lost" (the game\'s Quirks; put it in the third person)',
     seen=('the treaty sash is deep blue with a gold seal', 'a folded treaty is tucked under one arm',),
+    close=(720, 20, 1180, 480),
     fused=("Darthando is a scarlet ibis grown into a toucan. The head is an ibis's, scarlet feathers with bare red "
            "skin at the face and a small bright eye, and the bill is a toucan's, huge and banded orange, yellow and "
            "black, curving down where the ibis's thin bill would be. Glossy black toucan feathers spread from the "

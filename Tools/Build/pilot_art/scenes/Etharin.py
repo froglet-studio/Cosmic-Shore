@@ -7,8 +7,9 @@ SCENE = dict(
     side='right',
     source='hobby: "keep score of everything, including naps" (the game\'s Quirks; put it in the third person)',
     seen=("the spray-racer's wetsuit is turquoise and white", 'a stopwatch hangs on a cord',),
+    close=(760, 0, 1340, 580),
     fused=("Etharin is a tardigrade grown into a narwhal. The head is a tardigrade's, a soft plump creamy segmented "
-           "face with a round puckered mouth and tiny dark eyes, and from the brow grows a narwhal's long spiral "
+           "face with a round puckered mouth and tiny dark eyes, and from the upper lip, at one side of the mouth, grows a narwhal's long spiral "
            "ivory tusk, the skin over the crown and nape turning to a narwhal's smooth mottled grey whale skin. A narwhal's broad grey fluked tail curls behind the legs."),
     doing=("Etharin chalks numbers on a pit board, the tusk angled up, the face turned to the camera: precise, "
            "pleased."),

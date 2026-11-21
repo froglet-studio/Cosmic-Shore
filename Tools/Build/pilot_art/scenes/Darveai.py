@@ -8,6 +8,7 @@ SCENE = dict(
     source=("hobby: \"collect shells from every port and give them away to strangers\" (the game's Quirks; put it in "
             "the third person)"),
     seen=("the spray-racer's wetsuit is turquoise and white", 'a team towel is slung round the neck',),
+    close=(180, 0, 720, 540),
     fused=("Darveai is a hummingbird grown into a jellyfish. The head is a hummingbird's, a long needle bill, "
            "emerald and gold scale-like feathers and a ruby gorget, and over the crown sits a jellyfish's "
            "translucent pink bell glowing from within, its fine trailing tentacles falling down the back like long "

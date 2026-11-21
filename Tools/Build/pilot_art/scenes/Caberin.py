@@ -8,6 +8,7 @@ SCENE = dict(
     source=("hobby: \"keep a jar of every crystal they have ever missed\" (the game's Quirks; put it in the third "
             "person)"),
     seen=('the velvet coat is plum', 'a ring of lockpicks lies by the jar',),
+    close=(700, 0, 1300, 600),
     fused=("Caberin is a narwhal grown into a koi. The head is a narwhal's, smooth mottled grey-white whale skin "
            "with a rounded melon brow and a long spiral ivory tusk, and the skin turns to a koi's large glossy "
            "orange and white scales over the neck and shoulders, with flowing koi fins trailing from the back of the"

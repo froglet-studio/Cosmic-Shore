@@ -8,6 +8,7 @@ SCENE = dict(
     side='right',
     source='want: "a quiet harbour and a long sleep" (the game\'s Wants)',
     seen=("the tracker's jerkin is mossy brown leather", 'a short bow hangs on a peg nearby',),
+    close=(1000, 0, 1480, 480),
     fused=("Brirensh is a platypus grown into a golden jackal. The face is a platypus's, a broad flat soft "
            "grey-brown bill and small dark eyes, sleek dark brown fur, and above the bill rise two tall pointed "
            "golden jackal ears, the jackal's tawny gold coat grizzled with black spreading over the crown and nape. "

@@ -9,6 +9,7 @@ SCENE = dict(
     source=("hobby: \"keep a jar of every crystal they have ever missed\" (the game's Quirks; put it in the third "
             "person)"),
     seen=("the envoy's coat is pale grey", 'a leather document case sits on the desk',),
+    close=(200, 0, 760, 560),
     fused=("Fensolo is a bison grown into a platypus. The head is a bison's, massive with short black horns and the "
            "shaggy brown mane, and the muzzle is a platypus's broad flat soft grey bill, the platypus's sleek dark "
            "fur over the face below the mane. A broad flat platypus tail hangs behind."),

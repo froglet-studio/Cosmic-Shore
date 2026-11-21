@@ -9,6 +9,7 @@ SCENE = dict(
     source=("hobby: \"name every vessel they fly, and apologise to it after a hard landing\" (the game's Quirks; put "
             "it in the third person)"),
     seen=("the envoy's coat is pale grey", 'a leather document case hangs at the side',),
+    close=(620, 0, 1200, 580),
     fused=("Joko is an axolotl grown into a capybara. The face is an axolotl's, smooth pale pink skin with a wide "
            "gentle smile and small dark eyes, three feathery crimson gill fronds fanning from each side, and the "
            "head is a capybara's in shape, broad and blunt with a capybara's square muzzle and small round ears, the"

@@ -8,6 +8,7 @@ SCENE = dict(
     side='right',
     source='want: "a crew that stays" (the game\'s Wants)',
     seen=('the reed-woven poncho is dull olive', 'a long fish spear leans on the shoulder',),
+    close=(860, 20, 1340, 500),
     fused=("Tamalo is a moon jellyfish grown into a tapir. The head is a tapir's, rounded and dark with a short soft"
            " prehensile tapir snout curling at the tip and small calm eyes, and over the crown the dark hide turns "
            "to a jellyfish's translucent pale-blue bell, glowing faintly from within, with fine trailing jellyfish "

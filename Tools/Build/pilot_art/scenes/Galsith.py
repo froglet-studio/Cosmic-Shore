@@ -8,6 +8,7 @@ SCENE = dict(
     source=("hobby: \"collect shells from every port and give them away to strangers\" (the game's Quirks; put it in "
             "the third person)"),
     seen=("the vigil's cloak is moss green", 'a seed pouch hangs at the belt',),
+    close=(780, 0, 1260, 480),
     fused=("Galsith is a tapir grown into a red-crowned crane. The head is a tapir's, dark and rounded with a short "
            "soft snout, and the crown carries a crane's red patch, the crane's long white neck feathers and "
            "black-tipped wings folded down the back."),

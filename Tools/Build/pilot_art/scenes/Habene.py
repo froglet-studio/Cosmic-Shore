@@ -8,6 +8,7 @@ SCENE = dict(
     side='right',
     source='want: "to be remembered in a song" (the game\'s Wants)',
     seen=("the explorer's coat is waxed canvas", 'a compass hangs on a chain',),
+    close=(760, 0, 1200, 440),
     fused=("Habene is a seahorse grown into a badger. The head is a seahorse's, the long tube snout and knobbed "
            "crest, and over it lies a badger's bold black and white stripes, the badger's coarse grey fur over the "
            "neck and shoulders, the curled seahorse tail round the stool."),

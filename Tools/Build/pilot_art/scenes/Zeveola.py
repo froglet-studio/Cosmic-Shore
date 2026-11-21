@@ -8,6 +8,7 @@ SCENE = dict(
     side='right',
     source='hobby: "hum off-key during every jump" (the game\'s Quirks; put it in the third person)',
     seen=("the research jacket is pale blue with the Institute's wave", 'a field notebook is wedged in the visor',),
+    close=(840, 20, 1420, 600),
     fused=("Zeveola is a crested newt grown into a Malayan tapir. The head is a tapir's, rounded and dark with the "
            "short soft prehensile tapir snout and small eyes, a tapir's pale saddle across the shoulders, and the "
            "skin over the crown and the back of the neck is a crested newt's, warty dark grey with a wavy newt crest"

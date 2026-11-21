@@ -7,6 +7,7 @@ SCENE = dict(
     side='right',
     source='hobby: "cannot resist a dare" (the game\'s Quirks; put it in the third person)',
     seen=('the patched pirate coat is wine red', 'a cutlass hangs at the hip',),
+    close=(800, 0, 1300, 500),
     fused=("Darveia is an axolotl grown into an armadillo. The face is an axolotl's, soft pale pink skin, a wide "
            "grin and small dark eyes, three feathery crimson gill fronds fanning from each side of the head, and "
            "over the crown sits a banded armadillo shell, a head shield of leathery grey-tan plates, the bands running on "

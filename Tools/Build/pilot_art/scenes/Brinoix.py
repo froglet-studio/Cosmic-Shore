@@ -9,6 +9,7 @@ SCENE = dict(
     source=("hobby: \"collect shells from every port and give them away to strangers\" (the game's Quirks; put it in "
             "the third person)"),
     seen=("the explorer's coat is waxed canvas with many pockets", 'a brass sextant hangs on a strap',),
+    close=(140, 0, 640, 500),
     fused=("Brinoix is a river otter grown into a tortoise. The head is an otter's, sleek brown fur with a pale "
            "throat, short round ears, bright black eyes and a whiskered muzzle, and a domed tortoise shell of "
            "high-ridged amber and brown scutes covers the back over the coat, the otter's fur growing out around its"

@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='hobby: "refuse to fly on an empty stomach" (the game\'s Quirks; put it in the third person)',
     seen=("the priest's robe is shell-white over a flight suit", 'nine small shells hang on a cord',),
+    close=(220, 0, 700, 480),
     fused=("Kasirin is a star-nosed mole grown into a chameleon. The face is a mole's, velvety charcoal fur with "
            "tiny eyes and the pink star of fleshy rays at the tip of the snout, and over the crown the fur turns to "
            "a chameleon's fine beaded scales in green and gold, rising into a tall chameleon casque. A chameleon's "

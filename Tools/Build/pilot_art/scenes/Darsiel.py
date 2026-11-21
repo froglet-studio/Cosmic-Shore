@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='history: "was raised among reef gardeners" (the game\'s Upbringings)',
     seen=("the reef warden's vest is teal with reflective bands", 'a mesh bag of coral cuttings hangs at the waist',),
+    close=(120, 0, 680, 560),
     fused=("Darsiel is a leopard gecko grown into a walrus. The head is a gecko's, smooth yellow skin spotted with "
            "black, large lidded amber eyes and a wide gentle mouth, and from the upper jaw two long ivory walrus "
            "tusks curve down past the chin, with a walrus's thick bristly moustache of whiskers on the muzzle above "

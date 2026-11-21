@@ -9,6 +9,7 @@ SCENE = dict(
     source=("hobby: \"keep a jar of every crystal they have ever missed\" (the game's Quirks; put it in the third "
             "person)"),
     seen=("the lab coat is white with the Institute's wave", 'a sample case on the bench',),
+    close=(200, 0, 720, 520),
     fused=("Luar is a chameleon grown into an orangutan. The head is a chameleon's, fine beaded green scales, a "
            "casque and a turret eye, and long shaggy orange orangutan hair hangs from the back of the head over the "
            "shoulders, the long orangutan arms and hands holding a pen."),

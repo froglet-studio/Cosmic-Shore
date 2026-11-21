@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='hobby: "cannot resist a dare" (the game\'s Quirks; put it in the third person)',
     seen=("the harvester's smock is undyed linen, belted", 'a wide woven basket is left behind on the rock',),
+    close=(220, 0, 700, 480),
     fused=("Penuek is a sea otter grown into a pelican. The head is a sea otter's, round and grizzled pale with a "
            "short whiskered muzzle and small round ears, and from the muzzle grows a pelican's long pale bill with "
            "its stretchy throat pouch, while two broad grey-white pelican wings spread wide from the shoulders as "

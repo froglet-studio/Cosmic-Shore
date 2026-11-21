@@ -1837,7 +1837,7 @@
    ],
    "faction": "Thief",
    "faction_name": "Whisperkelp",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Brirendek",
@@ -1851,7 +1851,7 @@
    ],
    "faction": "Hunter",
    "faction_name": "Longwake Lodge",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Tamalo",
@@ -1865,7 +1865,7 @@
    ],
    "faction": "Hunter",
    "faction_name": "Deepreed Stalkers",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Brinoix",
@@ -1879,7 +1879,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "Far Shoal Society",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Karenai",
@@ -1893,7 +1893,7 @@
    ],
    "faction": "Sport",
    "faction_name": "Slipstream Racing Club",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Cornoly",
@@ -1907,7 +1907,7 @@
    ],
    "faction": "Gatherer",
    "faction_name": "Driftnet Cooperative",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Darveia",
@@ -1921,7 +1921,7 @@
    ],
    "faction": "Pirate",
    "faction_name": "The Unmoored",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Darsiel",
@@ -1935,7 +1935,7 @@
    ],
    "faction": "Preservationist",
    "faction_name": "Reefward Trust",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Gallara",
@@ -1949,7 +1949,7 @@
    ],
    "faction": "Thief",
    "faction_name": "Velvet Gill",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Pemius",
@@ -1963,7 +1963,7 @@
    ],
    "faction": "Pirate",
    "faction_name": "Gullbone Crew",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Brirensh",
@@ -1977,7 +1977,7 @@
    ],
    "faction": "Hunter",
    "faction_name": "Hollowfen Trackers",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Penuek",
@@ -1991,7 +1991,7 @@
    ],
    "faction": "Gatherer",
    "faction_name": "The Patient Harvest",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Quiri",
@@ -2005,7 +2005,7 @@
    ],
    "faction": "Contractor",
    "faction_name": "Keel and Rivet",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Kasirin",
@@ -2019,7 +2019,7 @@
    ],
    "faction": "Priest",
    "faction_name": "The Ninefold Shell",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Joko",
@@ -2033,7 +2033,7 @@
    ],
    "faction": "Diplomat",
    "faction_name": "The Open Hand",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Ikoko",
@@ -2047,7 +2047,7 @@
    ],
    "faction": "Researcher",
    "faction_name": "Institute of the Shore",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Caveus",
@@ -2061,7 +2061,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "Lantern Reach Cartographers",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Brithari",
@@ -2075,7 +2075,7 @@
    ],
    "faction": "Sport",
    "faction_name": "Slipstream Racing Club",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Nenush",
@@ -2089,7 +2089,7 @@
    ],
    "faction": "Gatherer",
    "faction_name": "Kelpline Gleaners",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Darveai",
@@ -2103,7 +2103,7 @@
    ],
    "faction": "Sport",
    "faction_name": "Spray and Spin",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Zeveola",
@@ -2117,7 +2117,7 @@
    ],
    "faction": "Researcher",
    "faction_name": "Institute of the Shore",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Masoix",
@@ -2131,7 +2131,7 @@
    ],
    "faction": "Gatherer",
    "faction_name": "The Patient Harvest",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Darthando",
@@ -2145,7 +2145,7 @@
    ],
    "faction": "Diplomat",
    "faction_name": "The Treaty Table",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Malomo",
@@ -2159,7 +2159,7 @@
    ],
    "faction": "Activist",
    "faction_name": "The Unbound Choir",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Irin",
@@ -2173,7 +2173,7 @@
    ],
    "faction": "FirstResponder",
    "faction_name": "Harbour Watch",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Darmaix",
@@ -2187,7 +2187,7 @@
    ],
    "faction": "FirstResponder",
    "faction_name": "Lifeline Corps",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Caberin",
@@ -2201,7 +2201,7 @@
    ],
    "faction": "Thief",
    "faction_name": "Velvet Gill",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Wylane",
@@ -2215,7 +2215,7 @@
    ],
    "faction": "Gatherer",
    "faction_name": "Kelpline Gleaners",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Udira",
@@ -2229,7 +2229,7 @@
    ],
    "faction": "FirstResponder",
    "faction_name": "Lifeline Corps",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Galsosa",
@@ -2243,7 +2243,7 @@
    ],
    "faction": "Aristocrat",
    "faction_name": "The Jade Accord",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Etharin",
@@ -2257,7 +2257,7 @@
    ],
    "faction": "Sport",
    "faction_name": "Spray and Spin",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Fenveko",
@@ -2271,7 +2271,7 @@
    ],
    "faction": "Sport",
    "faction_name": "Slipstream Racing Club",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Edin",
@@ -2285,7 +2285,7 @@
    ],
    "faction": "Researcher",
    "faction_name": "The Tidal Archive",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Yorari",
@@ -2299,7 +2299,7 @@
    ],
    "faction": "Aristocrat",
    "faction_name": "The Lattice Peerage",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Rothaia",
@@ -2313,7 +2313,7 @@
    ],
    "faction": "Contractor",
    "faction_name": "Steadfast Joinery",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Rolon",
@@ -2327,7 +2327,7 @@
    ],
    "faction": "BountyHunter",
    "faction_name": "Writ and Hook",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Vero",
@@ -2341,7 +2341,7 @@
    ],
    "faction": "Aristocrat",
    "faction_name": "The Lattice Peerage",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Xathara",
@@ -2355,7 +2355,7 @@
    ],
    "faction": "Contractor",
    "faction_name": "Keel and Rivet",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Xanuane",
@@ -2369,7 +2369,7 @@
    ],
    "faction": "Hunter",
    "faction_name": "Longwake Lodge",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Adix",
@@ -2383,7 +2383,7 @@
    ],
    "faction": "BountyHunter",
    "faction_name": "The Ninth Warrant",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Lunush",
@@ -2397,7 +2397,7 @@
    ],
    "faction": "Pirate",
    "faction_name": "Saltjaw Brethren",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Fensolo",
@@ -2411,7 +2411,7 @@
    ],
    "faction": "Diplomat",
    "faction_name": "The Open Hand",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Perao",
@@ -2425,7 +2425,7 @@
    ],
    "faction": "Sport",
    "faction_name": "The Glittering Heats",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Evewen",
@@ -2439,7 +2439,7 @@
    ],
    "faction": "Contractor",
    "faction_name": "Bright Hull Works",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Wyriix",
@@ -2453,7 +2453,7 @@
    ],
    "faction": "Contractor",
    "faction_name": "Steadfast Joinery",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Xanun",
@@ -2467,7 +2467,7 @@
    ],
    "faction": "Aristocrat",
    "faction_name": "House Verdance",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Quiloai",
@@ -2481,7 +2481,7 @@
    ],
    "faction": "Aristocrat",
    "faction_name": "The Jade Accord",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Zelaane",
@@ -2495,7 +2495,7 @@
    ],
    "faction": "Sport",
    "faction_name": "The Glittering Heats",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Zesa",
@@ -2509,7 +2509,7 @@
    ],
    "faction": "Priest",
    "faction_name": "The Ninefold Shell",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Luar",
@@ -2523,7 +2523,7 @@
    ],
    "faction": "Researcher",
    "faction_name": "Institute of the Shore",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Habene",
@@ -2537,7 +2537,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "The Unmapped",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Nenone",
@@ -2551,7 +2551,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "Far Shoal Society",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Galsith",
@@ -2565,7 +2565,7 @@
    ],
    "faction": "Preservationist",
    "faction_name": "The Green Vigil",
-   "state": "planned"
+   "state": "painted"
   },
   {
    "word": "Hanux",
@@ -2579,7 +2579,7 @@
    ],
    "faction": "Diplomat",
    "faction_name": "The Treaty Table",
-   "state": "planned"
+   "state": "painted"
   }
  ]
 }

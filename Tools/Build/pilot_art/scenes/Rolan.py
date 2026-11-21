@@ -8,6 +8,7 @@ SCENE = dict(
     side='right',
     source='hobby: "talk to the Ark at night and insist it answers" (the game\'s Quirks; put it in the third person)',
     seen=('the dark wrap jacket is kelp green', 'a coil of thin line hangs at the hip',),
+    close=(820, 0, 1380, 560),
     fused=("Rolan is a fennec fox grown into a chameleon. The head is a fennec's, small and sandy-cream with a short"
            " pointed muzzle, a black nose and two enormous upright fennec ears, and over the crown and down the nape"
            " the fur gives way to a chameleon's fine beaded scales in shifting green and turquoise, rising into a "

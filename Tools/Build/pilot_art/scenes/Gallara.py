@@ -9,6 +9,7 @@ SCENE = dict(
     source=("hobby: \"write letters to a sibling who never writes back\" (the game's Quirks; put it in the third "
             "person)"),
     seen=('the velvet coat is plum, the cuffs frayed', 'a ring of lockpicks lies on the desk',),
+    close=(720, 0, 1200, 480),
     fused=("Gallara is a seahorse grown into a stag beetle. The head is a seahorse's, the long tube snout, a "
            "horse-like crest of small bony knobs and ridges, golden-orange skin, and from the brow sweep two glossy "
            "black-brown stag beetle mandibles like antlers, with a beetle's hard shining shell of wing cases folded down the "

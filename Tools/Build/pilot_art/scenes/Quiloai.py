@@ -8,6 +8,7 @@ SCENE = dict(
     source=("hobby: \"collect shells from every port and give them away to strangers\" (the game's Quirks; put it in "
             "the third person)"),
     seen=('the jade silk coat is embroidered', 'a jade seal ring is on one finger',),
+    close=(820, 0, 1340, 520),
     fused=("Quiloai is an ocelot grown into a koi. The head is an ocelot's, gold fur with black rosettes and large "
            "amber eyes, and the fur turns to a koi's large glossy orange and white scales over the neck and "
            "shoulders, flowing koi fins trailing from the cheeks and the back of the head. A long koi tail with flowing fins sweeps out behind."),

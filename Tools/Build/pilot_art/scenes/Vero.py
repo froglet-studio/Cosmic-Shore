@@ -8,6 +8,7 @@ SCENE = dict(
     side='right',
     source='hobby: "talk to the Ark at night and insist it answers" (the game\'s Quirks; put it in the third person)',
     seen=("the peer's coat is silver brocade", 'a lattice crest pin is at the throat',),
+    close=(760, 0, 1260, 500),
     fused=("Vero is a raven grown into a capybara. The head is a raven's, glossy blue-black feathers, a heavy curved"
            " black beak and sharp dark eyes, and the body is a capybara's, broad and heavy, the coarse reddish-brown"
            " capybara fur covering the shoulders and arms, the raven's black feathers giving way to it at the neck."),

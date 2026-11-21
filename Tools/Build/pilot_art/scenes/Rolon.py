@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='want: "to pay back an old debt, with interest" (the game\'s Wants)',
     seen=('the duster coat is sand-coloured', 'warrant papers stick out of a pocket',),
+    close=(160, 0, 640, 480),
     fused=("Rolon is a grey wolf grown into an ocelot. The head is a wolf's, long-muzzled with grizzled grey fur and"
            " tall ears, and the coat over the nape, shoulders and arms is an ocelot's, gold with black rosettes, a "
            "long ringed ocelot tail behind."),

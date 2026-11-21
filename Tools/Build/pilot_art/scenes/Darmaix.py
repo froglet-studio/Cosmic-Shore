@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='want: "a quiet harbour and a long sleep" (the game\'s Wants)',
     seen=('the rescue jacket is white with a red band', 'a canvas bag lies at the feet',),
+    close=(200, 0, 720, 520),
     fused=("Darmaix is a moray eel grown into a bison. The face is an eel's, smooth spotted green-gold skin, a long "
            "mouth and small blue eyes, and from the crown curve two short black bison horns, the bison's dense "
            "shaggy brown mane covering the back of the head, the hump and the shoulders."),

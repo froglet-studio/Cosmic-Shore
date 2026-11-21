@@ -9,8 +9,9 @@ SCENE = dict(
     source=("hobby: \"collect shells from every port and give them away to strangers\" (the game's Quirks; put it in "
             "the third person)"),
     seen=("the rivet-worker's overalls are rust orange", 'a heavy rivet gun hangs from a sling',),
+    close=(240, 0, 880, 640),
     fused=("Xathara is a moray eel grown into a narwhal. The head is an eel's, smooth spotted green-gold skin, a "
-           "long mouth and small blue eyes, and from the brow grows a narwhal's long spiral ivory tusk, the skin "
+           "long mouth and small blue eyes, and from the upper lip, at one side of the mouth, grows a narwhal's long spiral ivory tusk (a tooth, rooted in the jaw, nothing on the forehead), the skin "
            "over the crown and the neck turning to a narwhal's mottled grey-white whale skin. A long eel tail with a"
            " fin along it hangs from the scaffold."),
     doing=("Xathara sets a small pink shell on a rivet head with a gloved hand, the tusk angled up past the hull, "

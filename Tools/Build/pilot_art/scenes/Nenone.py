@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='want: "a quiet harbour and a long sleep" (the game\'s Wants)',
     seen=("the explorer's coat hangs on a hook", 'a brass sextant sits on a shelf',),
+    close=(80, 120, 640, 680),
     fused=("Nenone is a golden jackal grown into a grey wolf. The head is a jackal's, narrow pointed muzzle with a "
            "black nose and tawny gold fur, and the ruff, ears and shoulders are a wolf's, thick grizzled grey with "
            "tall wolf ears, a long grey bushy wolf tail draped over the bunk edge."),

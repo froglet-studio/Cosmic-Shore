@@ -9,6 +9,7 @@ SCENE = dict(
     source=("hobby: \"keep a jar of every crystal they have ever missed\" (the game's Quirks; put it in the third "
             "person)"),
     seen=('the racing suit is white with a single red stripe', 'the helmet is tucked under one arm',),
+    close=(740, 20, 1280, 560),
     fused=("Karenai is a fennec fox grown into a moray eel. The head is a fennec's, small and sandy with a short "
            "pointed muzzle and two huge upright ears, and down the back of the neck the fur gives way to smooth "
            "spotted green-gold eel skin and a low eel fin running from the crown along the spine. A long tapering "

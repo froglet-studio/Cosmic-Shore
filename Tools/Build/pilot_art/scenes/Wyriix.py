@@ -8,6 +8,7 @@ SCENE = dict(
     side='right',
     source='want: "a rematch" (the game\'s Wants)',
     seen=("the joiner's apron is leather", 'a pencil is tucked behind the head',),
+    close=(720, 0, 1180, 460),
     fused=("Wyriix is a praying mantis grown into a spotted hyena. The head is a mantis's, triangular smooth green "
            "chitin and two large bulging green eyes, and from the back of the head grows a hyena's bristling short "
            "mane, spotted brown and tan fur covering the neck and shoulders, round hyena ears at the top of the "

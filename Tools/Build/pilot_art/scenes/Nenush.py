@@ -9,10 +9,11 @@ SCENE = dict(
     source=("hobby: \"write letters to a sibling who never writes back\" (the game's Quirks; put it in the third "
             "person)"),
     seen=("the gleaner's smock is kelp brown", 'a woven net bag is slung on the back',),
+    close=(420, 0, 1020, 600),
     fused=("Nenush is a fire-bellied newt grown into an octopus. The head is a newt's, smooth dark olive skin, small"
            " gold eyes and a wide flat mouth, the bright orange of the newt's belly showing at the throat, and from "
            "the back of the head hang an octopus's soft rust-red arms in place of hair, curling over the shoulders, "
-           "their suckers pale. One arm curls around the bottle beside the gloved hand."),
+           "their suckers pale. One arm curls around the bottle beside the other arms."),
     doing=("Nenush sets a corked bottle with a rolled letter inside onto the outgoing water, both hands and one "
            "octopus arm letting it go, the head turned toward the camera: quiet, still hoping."),
     place=("A long grey shore heaped with kelp at first light, a calm sea, a fleet of tiny bottles bobbing far out, "

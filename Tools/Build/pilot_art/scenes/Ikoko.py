@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='want: "a crew that stays" (the game\'s Wants)',
     seen=("the lab coat is white with a pale wave stitched on the pocket", 'a sample case hangs on a strap',),
+    close=(220, 20, 700, 500),
     fused=("Ikoko is a hummingbird grown into a hedgehog. The head is a hummingbird's, a long needle bill, tiny "
            "emerald and gold scale-like feathers and a ruby throat gorget, bright black eyes, and from the crown "
            "back grow the hedgehog's dense cream-and-brown spines, covering the back of the head and the shoulders "

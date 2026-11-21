@@ -8,6 +8,7 @@ SCENE = dict(
     side='right',
     source='want: "a vault no one else has opened" (the game\'s Wants)',
     seen=("the rivet-worker's overalls are rust orange", 'a heavy rivet gun hangs from a sling',),
+    close=(800, 20, 1240, 460),
     fused=("Quiri is a river otter grown into a hummingbird. The head is an otter's, sleek brown fur with a pale "
            "throat, small round ears, a whiskered muzzle, and over the crown grow tiny scale-like hummingbird "
            "feathers flashing emerald and gold, a glittering ruby throat gorget at the neck. Two small hummingbird "

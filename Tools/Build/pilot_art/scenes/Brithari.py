@@ -9,6 +9,7 @@ SCENE = dict(
     source=("hobby: \"name every vessel they fly, and apologise to it after a hard landing\" (the game's Quirks; put "
             "it in the third person)"),
     seen=("the racing suit is white with the club's red stripe", 'the cracked helmet lies on the salt',),
+    close=(280, 0, 760, 480),
     fused=("Brithari is a red-crowned crane grown into a jewel beetle. The head is a crane's, long and white with a "
            "red crown patch, a black throat and a long pointed grey bill, and the back is covered by a jewel "
            "beetle's hard iridescent wing cases, gleaming green and bronze, folded over the shoulders and the racing"

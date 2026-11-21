@@ -7,6 +7,7 @@ SCENE = dict(
     side='left',
     source='hobby: "keep score of everything, including naps" (the game\'s Quirks; put it in the third person)',
     seen=('the long pirate coat is weathered black', 'bone charms hang from the belt',),
+    close=(180, 0, 660, 480),
     fused=("Pemius is a great horned owl grown into a scarlet ibis. The face is an owl's, a round facial disc of "
            "barred brown feathers, huge orange eyes and two tall feathered ear tufts, and from the face grows the "
            "ibis's long thin curved bill, scarlet, where the owl's short beak would be, the scarlet ibis plumage "

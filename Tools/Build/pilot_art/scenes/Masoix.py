@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='hobby: "have never once arrived early" (the game\'s Quirks; put it in the third person)',
     seen=("the harvester's smock is undyed linen", 'a basket of fruit is clutched under one arm',),
+    close=(180, 0, 660, 480),
     fused=("Masoix is a spotted hyena grown into a golden jackal. The head is a hyena's, broad and heavy-jawed with "
            "a black muzzle, round ears and a short bristling mane, and the coat is a golden jackal's, tawny gold "
            "grizzled with black and silver over the shoulders and back. A long bushy golden jackal tail with a black"

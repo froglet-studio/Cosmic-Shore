@@ -8,10 +8,11 @@ SCENE = dict(
     side='right',
     source='hobby: "have never once arrived early" (the game\'s Quirks; put it in the third person)',
     seen=('the harbour watch jacket is high-visibility orange', 'a rescue float is in one hand',),
+    close=(860, 0, 1340, 480),
     fused=("Irin is a spiny lobster grown into a jellyfish. The face is a lobster's, hard red-brown shell, two black"
            " stalked eyes and long banded antennae sweeping back, and over the back of the head and the shoulders "
            "hangs a jellyfish's glowing translucent blue bell, its long fine tentacles trailing behind as the pilot "
-           "dives. The hands are human, gloved."),
+           "dives."),
     doing=("Irin launches off the wall with the rescue float held out, the antennae swept back, the stalked eyes on "
            "the camera: late, desperate, fast."),
     place=("A stone harbour wall at night in rain, a small capsized skiff in the dark water below, a lighthouse "

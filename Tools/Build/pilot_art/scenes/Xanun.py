@@ -9,6 +9,7 @@ SCENE = dict(
     source=("hobby: \"keep a jar of every crystal they have ever missed\" (the game's Quirks; put it in the third "
             "person)"),
     seen=('the green velvet coat is embroidered with vines', 'a signet ring on one finger',),
+    close=(200, 0, 680, 480),
     fused=("Xanun is an orangutan grown into a grey wolf. The face is an orangutan's, broad with wide cheek flanges,"
            " small brown eyes and long shaggy orange hair, and the muzzle and ears are a wolf's, long and grey with "
            "tall pointed ears, the wolf's grizzled grey ruff mixing into the orange hair at the neck. A long bushy grey wolf tail hangs behind."),

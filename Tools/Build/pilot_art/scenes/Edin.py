@@ -8,6 +8,7 @@ SCENE = dict(
     side='right',
     source='want: "a quiet harbour and a long sleep" (the game\'s Wants)',
     seen=("the archivist's robe is sea-grey", 'reading spectacles sit on the desk',),
+    close=(640, 80, 1320, 760),
     fused=("Edin is an octopus grown into a bison. The head is an octopus's, a soft rust-red mantle with wide golden"
            " horizontal-pupil eyes, and from the mantle curve two short black bison horns, the bison's shaggy brown "
            "mane over the shoulders and hump, the octopus's arms curling lazily round the desk legs."),

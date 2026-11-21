@@ -8,6 +8,7 @@ SCENE = dict(
     side='right',
     source='want: "a quiet harbour and a long sleep" (the game\'s Wants)',
     seen=("the cartographer's hat sits on a rock", 'a map case leans against the stones',),
+    close=(820, 60, 1340, 580),
     fused=("Caveus is a nine-banded armadillo grown into a capybara. The head is an armadillo's, a long pointed "
            "snout, small upright ears and a leathery banded head shield, and the body is a capybara's, broad and "
            "heavy, with coarse reddish capybara fur on the shoulders and arms rising out of the water, the "

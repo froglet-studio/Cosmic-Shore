@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='history: "was raised in a lighthouse" (the game\'s Upbringings)',
     seen=('the hunting cloak is undyed oilcloth', 'a carved bone whistle hangs on a cord',),
+    close=(280, 0, 720, 440),
     fused=("Brirendek is a raven grown into a firefly. The head is a raven's, glossy blue-black feathers and a heavy"
            " curved black beak, sharp dark eyes, and from the brow rise two long jointed firefly antennae. Two pairs"
            " of thin amber-veined firefly wings fold flat down the back over the cloak, and the lower back glows "

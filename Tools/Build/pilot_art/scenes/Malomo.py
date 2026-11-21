@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='want: "to be remembered in a song" (the game\'s Wants)',
     seen=("the choir's scarf is bright red", 'a megaphone hangs from the wrist',),
+    close=(200, 0, 720, 520),
     fused=("Malomo is a star-nosed mole grown into a yak. The face is a mole's, velvety charcoal fur, tiny eyes and "
            "the pink star of fleshy rays at the snout, and from the crown curve two long pale yak horns, the yak's "
            "long shaggy black and brown coat hanging from the shoulders and arms like a cloak."),

@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='hobby: "keep score of everything, including naps" (the game\'s Quirks; put it in the third person)',
     seen=("the gleaner's smock is kelp brown", 'a harvest hook hangs at the belt',),
+    close=(260, 0, 720, 460),
     fused=("Wylane is a lynx grown into a tortoise. The head is a lynx's, grey-gold spotted fur, tall black ear "
            "tufts and a ruff of long cheek fur, pale green eyes, and a domed tortoise shell of high-ridged brown and"
            " amber scutes covers the back over the smock, the lynx's fur growing out around its rim."),
@@ -16,5 +17,5 @@ SCENE = dict(
     place=("A kelp dock at evening, bundles of kelp stacked high, a lagoon of floating farms, a pale moon. No one "
            "else is there."),
     light='Warm evening light; long shadows.',
-    wear='Chalk dust on the paw; the shell wet; kelp on the boots.',
+    wear='Chalk dust on the glove; the shell wet; kelp on the boots.',
 )

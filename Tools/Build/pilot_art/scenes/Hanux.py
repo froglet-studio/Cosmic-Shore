@@ -7,8 +7,9 @@ SCENE = dict(
     side='left',
     source='hobby: "have never once arrived early" (the game\'s Quirks; put it in the third person)',
     seen=('the treaty sash is deep blue with a gold seal', 'papers spill from one arm',),
+    close=(200, 0, 760, 560),
     fused=("Hanux is an octopus grown into a pelican. The head is an octopus's, a soft rust-red mantle with golden "
-           "eyes, and it carries a pelican's long pale bill with a throat pouch, grey-white pelican wings folded at "
+           "eyes, and the octopus's own small beak, at the mouth beneath the eyes, grows out into a pelican's long pale bill with a throat pouch: one mouth, the mantle's skin running straight into the bill, grey-white pelican wings folded at "
            "the shoulders."),
     doing='Hanux rushes in with papers spilling, the bill open in apology, eyes to the camera: late, flustered.',
     place='A grand treaty hall with a long table of envoys turning. The envoys are a blur.',

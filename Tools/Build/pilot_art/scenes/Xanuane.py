@@ -8,10 +8,11 @@ SCENE = dict(
     side='right',
     source='hobby: "cannot resist a dare" (the game\'s Quirks; put it in the third person)',
     seen=('the hunting cloak is undyed oilcloth', 'a carved bone whistle hangs on a cord',),
+    close=(720, 60, 1200, 540),
     fused=("Xanuane is a cuttlefish grown into a tortoise. The face is a cuttlefish's, soft skin rippling with "
            "shifting bands of brown and gold, large W-shaped pupils and short arms curling below the eyes like a "
            "beard, and a domed tortoise shell of high-ridged brown scutes covers the back over the cloak."),
-    doing=("Xanuane reaches one gloved arm into the open mouth of a huge clam, looking at the camera with the skin "
+    doing=("Xanuane reaches one tentacle arm into the open mouth of a huge clam, looking at the camera with the skin "
            "flashing bright stripes: daring, laughing."),
     place=("A wide tidal reef at low tide, a giant clam the size of a table, pools and anemones, a ringed planet in "
            "the sky. No one else is there."),

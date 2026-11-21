@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='want: "a vault no one else has opened" (the game\'s Wants)',
     seen=("the racer's jacket is sequinned gold", 'a medal ribbon is pinned to it',),
+    close=(160, 0, 640, 480),
     fused=("Zelaane is a firefly grown into a ring-tailed lemur. The head is a lemur's, soft grey fur, white-rimmed "
            "dark eye patches and orange eyes, and from the brow rise two long firefly antennae, thin amber-veined "
            "firefly wings folded down the back, the firefly's lantern glowing green-gold at the lower back. A long "

@@ -8,8 +8,9 @@ SCENE = dict(
     side='left',
     source='want: "a rematch" (the game\'s Wants)',
     seen=("the racing suit is white with the club's red stripe", 'the helmet hangs from one hand',),
+    close=(220, 0, 880, 660),
     fused=("Fenveko is a chameleon grown into a narwhal. The head is a chameleon's, fine beaded green and turquoise "
-           "scales, a tall casque and one swivelling turret eye, and from the brow grows a narwhal's long spiral "
+           "scales, a tall casque and one swivelling turret eye, and from the upper lip, at one side of the mouth, grows a narwhal's long spiral "
            "ivory tusk, the skin over the back of the head turning to mottled grey whale skin. A narwhal's broad grey fluked tail curls behind the legs."),
     doing=("Fenveko points the helmet at someone off frame, one turret eye on the camera, a challenging grin: hungry"
            " for it."),

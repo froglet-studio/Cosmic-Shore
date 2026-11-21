@@ -8,6 +8,7 @@ SCENE = dict(
     side='left',
     source='hobby: "tie a ribbon on the hull for every friend lost" (the game\'s Quirks; put it in the third person)',
     seen=('the oilskin smock is faded yellow', 'a gutting knife is sheathed at the belt',),
+    close=(260, 0, 760, 500),
     fused=("Cornoly is a brown pelican grown into a pangolin. The head is a pelican's, white-crowned with a long "
            "grey-pink bill and its folded throat pouch, a pale gold eye, and behind the white crown the feathers "
            "give way to large overlapping tan pangolin scales covering the back of the head and the nape and "
