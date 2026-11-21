@@ -18,6 +18,9 @@
 // Editor) had focus, the memory Unity and the managed heap held against the machine's RAM (paging freezes
 // everything), and how many async prism-clone batches were waiting on the engine (B45).
 //
+// WHAT THE FRAME WAS DOING (2026-11-21): a "stallFrame" mark follows one frame later, naming the engine work the
+// frozen frame was made of (StallFrameMarkers: the scene load steps, destroys, GC, the player-loop phase).
+//
 // THREAD SAFETY: main-thread only. The clock is a settable delegate so tests drive it.
 // ─────────────────────────────────────────────────────────────────────────────
 using System;
@@ -46,14 +49,19 @@ namespace CosmicShore.Utility
         /// <summary>Seconds source. Defaults to <see cref="Time.realtimeSinceStartupAsDouble"/>; tests substitute a manual clock.</summary>
         public static Func<double> Now { get; set; } = () => Time.realtimeSinceStartupAsDouble;
 
-        /// <summary>Whether a stall matters now: the NetworkManager is listening. Tests substitute it.</summary>
-        public static Func<bool> OnlineProvider { get; set; } = () =>
-            NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        /// <summary>Whether a stall matters now: <see cref="NetworkIsListening"/>. Tests substitute it, and put this back.</summary>
+        public static Func<bool> OnlineProvider { get; set; } = NetworkIsListening;
+
+        /// <summary>The real answer: the NetworkManager is listening.</summary>
+        public static bool NetworkIsListening() => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
         static double s_lastFrameAt = double.NaN;
         static string s_lastScene;
         static double s_lastStallSeconds;
         static double s_lastStallEndedAt = double.NegativeInfinity;
+
+        /// <summary>A stall whose "stallFrame" mark waits for the next frame's marker values (0 when none).</summary>
+        static double s_pendingFrameMarkSeconds;
 
         /// <summary>What a stall's "stallContext" mark says. Tests substitute it; <see cref="DescribeContext"/> otherwise.</summary>
         public static Func<string> ContextProvider { get; set; } = DescribeContext;
@@ -82,6 +90,15 @@ namespace CosmicShore.Utility
             // being torn down, not to the one active when the frame finally ends.
             string startedIn = s_lastScene ?? sceneName;
             s_lastScene = sceneName;
+
+            // The previous stall's work may run into the frame that just completed: fold it in, then name it.
+            if (s_pendingFrameMarkSeconds > 0)
+            {
+                StallFrameMarkers.Fold();
+                NetSessionRecorder.Mark("stallFrame", StallFrameMarkers.Describe(s_pendingFrameMarkSeconds));
+                s_pendingFrameMarkSeconds = 0;
+            }
+
             if (frame < STALL_SECONDS || !SafeOnline()) return 0;
             string where = startedIn == sceneName ? sceneName : $"{startedIn}, ending in {sceneName}";
 
@@ -92,6 +109,8 @@ namespace CosmicShore.Utility
             string seconds = frame.ToString("0.0", CultureInfo.InvariantCulture);
             NetSessionRecorder.Mark("stall", $"{seconds}s in {where}");
             NetSessionRecorder.Mark("stallContext", SafeContext());
+            StallFrameMarkers.Fold();
+            s_pendingFrameMarkSeconds = frame;
             if (frame >= RELAY_RISK_SECONDS)
                 CSDebug.LogWarning($"[Net] The game froze for {seconds} s in {where} while online. Unity Relay drops a " +
                                    "connection after about 10 s without traffic, so this session may end with 'player timed out " +
@@ -149,6 +168,8 @@ namespace CosmicShore.Utility
             s_lastStallEndedAt = double.NegativeInfinity;
             LongestStallSeconds = 0;
             s_asyncClonesInFlight = 0;
+            s_pendingFrameMarkSeconds = 0;
+            StallFrameMarkers.Stop();
         }
 
         static int s_generation;
@@ -162,9 +183,12 @@ namespace CosmicShore.Utility
         {
             while (generation == s_generation && Application.isPlaying)
             {
+                // The marker recorders start the first time the game is online: offline play never pays for them.
+                if (SafeOnline()) StallFrameMarkers.EnsureStarted();
                 ObserveFrame(SceneManager.GetActiveScene().name);
                 await UniTask.Yield(PlayerLoopTiming.Update);
             }
+            if (generation == s_generation) StallFrameMarkers.Stop();
         }
     }
 }

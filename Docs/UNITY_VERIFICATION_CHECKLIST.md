@@ -25034,8 +25034,11 @@ Measured in `Docs/PartySystem/BUGS.md`, "B45 on the return to the menu".
 
 - [x] Solo online host, Bloomrush 90 s, Main Menu: the load's frame is 5.7-6.5 s (9.5-10.5 s before), the menu comes
       up normally, no red error, and the test log has a `sceneExitDrain` mark.
-- [ ] Two players, the same: the guest also reaches the menu, nobody bounces, and both logs carry the mark. Compare
-      each player's longest freeze with the 8.7-10.0 s of the test with Garrett of 2026-11-20.
+- [x] Two players, the same: the guest also reaches the menu, nobody bounces, and both logs carry the mark.
+      **Passed 2026-11-20** (editor + MPPM Player 2, `fbb1961a48`, 74,000 prisms on each at the end): longest frame
+      5.7 s on the host and 4.5 s on the guest (8.7-10.0 s in the test with Garrett the night before); the drain's own
+      frames were 1.4-3.5 s on the host and 0.5-1.8 s on the guest; both back on the menu, party still 2 of 4, no red
+      error. Both marks read `cut short at 8.0s`. One PC: a second machine and a build are still owed.
 - [ ] By eye: after pressing Main Menu the splash is up for longer than before (up to about 8 s more after a very
       heavy match) and nothing of the match shows through it.
 - [ ] A match with a cell environment (Cleave, Dog Fight), return to the menu, then launch it again: the arena lays
@@ -25043,14 +25046,62 @@ Measured in `Docs/PartySystem/BUGS.md`, "B45 on the return to the menu".
 - [ ] Play Again (the same scene reloads) and a Maelstrom round back to the hub still work.
 - [ ] `FrogletTools`: nothing new. The two numbers are on the SceneLoader in Bootstrap ("Scene exit drain").
 
+## 🟡 The boot shows the menu before the Relay host (2026-11-21, Yash, COMPILED and PLAYED by a session)
+
+`Cell.BootBuild.cs` (the boot world lays while nothing listens), `SceneLoader.BootReveal.cs` (the menu revealed once its
+world stands, UI input held until the vessel), `SceneTransitionManager.IsCovering`. Affects: Shombith's boot reveal
+(Docs/MENU_REDESIGN_B.md sections 25-26; queued for his `/approve`). `unity recompile`: 0 errors;
+`BootRevealBeforeHostTests` 8/8, `SceneTransitionManagerTests` 14/14, `PresenceIdentityRepublishTests` 5/5 by
+reflection; `check_console_logging`, `check_conditional_compilation` pass (`check_agent_first` fails on `Fauna.cs`,
+not this change). Measured in `Docs/Multiplayer/BUGS.md` (the 41% row).
+
+- [x] Solo online boots in the editor: the Garland is laid during "Creating session"; the menu shows 6.8-7.5 s after Menu_Main loads (about 10.5 s before).
+- [x] When the host is slower than the lay: the menu fades in with UI input off; input comes back when the vessel spawns.
+- [x] A focused editor (2026-11-21, second run): the splash dissolves in about 1.1 s while the session is still being created; the menu was up 1.7-2.3 s before the host listened. A build is still owed.
+- [x] UI input during the early menu, as a state check (same run): the EventSystem is disabled (`EventSystem.current` null) from the reveal until the vessel spawns, then enabled again. A person still owes the real clicks on ARCADE, TOY BOX and the cell; input that does not go through the EventSystem is not held.
+- [x] The late-host re-cover, forced (the host wait set to 0.5 s by a probe in Play): the warning is logged, the splash covers the menu again with input back on, and the ordinary reveal shows the menu once the host listens and the vessel spawns.
+- [ ] Block the network after sign-in (or a Relay failure): the boot's retry and "Starting offline" screens show on the re-covered splash.
+- [x] A first-time player (FTUE), by reading the code: `QuestGraphRunner.TryStart` runs only from `OnClientReady` (the vessel) and `FTUEEventManager.InitializeFTUE`, which nothing calls. A person still owes a first-run boot.
+- [ ] A build, and two machines.
+
+## 🟡 The boot's 41% "Creating session": no redundant identity republish on the party create (2026-11-21, Yash, COMPILED and PLAYED by a session)
+
+`HostConnectionService.IdentityDiffersFromLobby` / `IdentityDiffers`, timing lines in `PresenceLobbyService`,
+`PartySessionService` and `HostConnectionService` (Party channel), the refused SDK call in `UgsRequestPolicy`'s retry
+line. Affects: Shombith's UGS layer (queued for his `/approve`). `unity recompile`: 0 errors;
+`PresenceIdentityRepublishTests` 5/5 by reflection; `check_console_logging`, `check_conditional_compilation` pass.
+Measured in `Docs/Multiplayer/BUGS.md` (the 41% row).
+
+- [x] Solo online boots in the editor: a rate-limited refusal in 1 of 6 boots (9 of 11 before); the create 6.2-11.0 s.
+- [ ] A renamed player: change the display name, boot, and check the online list on another machine shows the new name.
+- [ ] Two machines: the guest's boot and the host's boot both reach "Host ready" without a "Relay session not ready".
+- [ ] A phone or desktop build, cold start: time "Creating session" with a stopwatch against the editor numbers.
+
+## 🟡 A freeze names the work it was made of: the `stallFrame` mark (B45, 2026-11-21, Yash, COMPILED and PLAYED by a session)
+
+`StallFrameMarkers` (new), `FrameStallWatch`, `FrameStallWatchTests`, `net_scenarios.py` (`MARKS`). `unity recompile`:
+0 errors; `FrameStallWatchTests` 10/10 in the open editor (by reflection, with SetUp and TearDown);
+`check_agent_first`, `check_console_logging`, `check_conditional_compilation` and `net_scenarios.py --self-test` pass.
+
+- [x] Solo online host, Bloomrush, return to the menu: each `stall` is followed one frame later by a `stallFrame`
+      line naming the scene load's work (measured: `Application.LoadLevelAsync Integrate 2737 ms`, `GC.Collect 806 ms`...).
+- [x] Running `FrameStallWatchTests` in the editor no longer switches the stall record off for the next Play.
+- [ ] The next two-machine test: any freeze on the menu after a return shows a `stallFrame` line in
+      `net_logs.py show` on the machine that froze. Read it before changing anything.
+- [ ] A development build: the line carries markers. A release build: it reads "no profiler markers on this build".
+- [ ] No frame-rate change from the recorders (about 120, started once online): compare a menu's fps online and offline.
+
 ## 🟡 Maelstrom seats its AI where the host placed them (2026-11-20, Yash, COMPILED and PLAYED by a session, solo host)
 
 `ServerPlayerVesselInitializerWithAI.PlacedOrBalancedDomain`, used by the match spawner and by
 `MaelstromController.DealAISeats`. `PlacedAIDomainTests` (4) pass in the editor (run by reflection, not the Test Runner).
 
 - [x] Solo host, Maelstrom, three AI placed on Ruby: the hub deals and spawns all three on Ruby.
-- [ ] Two players as in the report: both on Jade, two AI placed on Ruby. The hub shows both AI on Ruby on BOTH
-      machines, and every round keeps them there.
+- [x] Two players as in the report: both on Jade, two AI placed on Ruby. The hub shows both AI on Ruby on BOTH
+      machines, and every round keeps them there. **Passed 2026-11-20** (editor + MPPM Player 2, `fbb1961a48`): the
+      hub, a Breakwater round and the hub after it list ys1 and YS2 on Jade and both AI on Ruby on both machines; the
+      round's scoreboard has two teams, Ruby and Jade, and no Gold. One round played, set through the launch data
+      (`SetRequestedAIDomains`), not by clicking the launch panel.
 - [ ] Nothing placed (the default): the AI are spread as before (one per empty domain first).
 
 ## 🟡 Stoat: one slingshot - the swing's speed-up, no second push at the exit (2026-11-19, Yash, NOT PLAYED)
@@ -25798,6 +25849,25 @@ compiler from the editor's response file: 0 errors. No EditMode tests ran.
 - [ ] Hangar > Upgrades on a vessel with an open element slot, then claim a Daily Toy reward: the page redraws with
       the open-slot text (`79f1ff888b`).
 - [ ] Trigger a toast, change scene, trigger another: it shows, with no MissingReferenceException (`540bac6a24`).
+
+## Dead game cards unlinked (2026-11-20)
+
+Ten vessel class assets no longer list archived cards whose scenes were deleted, `TrainingGames` is empty (all four of
+its games led to deleted scenes and are archived), and `HangarScreen.DisplayTrainingModal` opens only for a hull with
+two training games. `check_gamelist_scenes.py`: OK (self-test 16/16). Unity editor recompile: 0 errors. Not played.
+
+- [ ] Menu: open the Hangar on the Dolphin, Manta, Serpent and Squirrel and press whatever opened training before.
+      Nothing opens and the console has no exception and no "Scene ... couldn't be loaded".
+- [ ] The daily challenge entry point: it reads as unavailable (one `[DailyChallengeSystem] Training game list is
+      empty` warning), and does not start a load.
+- [ ] A development build: play any game from the Arcade grid and the Hangar's Games page; no scene-load error.
+
+## 🟡 Stoat: the ripple is a colourless space-time wave (2026-11-21, Yash, NOT PLAYED)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1c "The drawn wave". `StoatRipplePass` + `StoatRipple.shader` (full-screen, its own copy); `StoatRippleConfig`: wavelength 9, bend 0.012, nearRadius 22, shimmer 0.05, passShare 0.35. Compiled (both assemblies, Roslyn against the editor's references) and the shader through `Tools/Shaders/verify_stoat_ripple.py` (glslang, both stages, negative control fires); not yet run in the editor.
+- [x] EditMode `StoatRippleTests`: all pass. 2026-11-21, real editor on B: at f19019a9c0: `StoatRipple` 10/10, `Stoat` 145/145; the shader imported with no error.
+- [ ] Let the swing hole go back to nothing: no coloured ring; the scene behind the wave wobbles outward from where the hole was, a few crests, and fades as it spreads.
+- [ ] The wave running past your own camera: a small swell of the whole view, not uncomfortable.
+- [ ] No hitch on the frame a ripple starts (the pass copies the camera colour only while one lives); try the Mobile look on a phone build.
 
 ## Voyage HUD, Rev 120 B: the plate over the Ark (2026-11-20)
 

@@ -403,7 +403,8 @@ so a pair held wide is a wide ripple — the dipole moment becomes the threat. A
 collapses / meets); the strip runs on each peer's copy of the rival's petals, the per-peer stance the wormhole toll and
 the sink's own crystal strip take, with Charge and Siphon read off replicated state so every peer sweeps the same sphere.
 
-**The picture** (`StoatRipple` + `StoatRipple.shader`): a back-faced sphere drawn by the black-hole lens pass
+**The picture** — superseded on 2026-11-21 by "The drawn wave" at the end of this section; kept as the record.
+(`StoatRipple` + `StoatRipple.shader`): a back-faced sphere drawn by the black-hole lens pass
 (`LightMode = BlackHoleLens`) from its copy of the camera colour. Per pixel, the view ray's closest approach to the
 centre picks the ring the shell projects to; within a band either side the ray is BENT — toward the centre outside the
 front (the scene pushed out), away inside it (pulled in), a derivative-of-Gaussian profile — with a red / blue split
@@ -448,6 +449,32 @@ the Studio lens look and unused by Mobile (their tooltips say so). The pair itse
 ring (black) and a bright soft core (white); the annihilation throws a faint local ripple (the gravitational wave's
 own waveform, gone by `mobileWaveReach` 220 u) instead of bending the view; the hull no longer stretches near a hole,
 and `gwShake` stretches nothing. The REACH, the strip and the kill are unchanged.
+
+**The drawn wave — a space-time ripple with no colour (2026-11-21).** Yash, on the swing hole going back to nothing:
+*"The ripple wave that comes out after the annihilation of blackhole back to nothing, is very bright and like a domain
+color ring enlarging throughout, very ugly. I want a near-realistic space-time ripple wave, no domain color, just a wave
+of disturbance created from the point of annihilation of the black hole diminishing to distance."* What he saw was the
+Mobile look's ring above (`BlackHoleGlow.DrawRing` in the owner's domain colour); the Studio look's bending sphere had
+never reached the screen. Both are gone. Now:
+- **No colour, only a disturbance.** `StoatRipplePass` copies the camera colour after the transparents (just after the
+  black-hole lens) and redraws, in one full-screen triangle, every pixel a wave crosses from that copy, **bent** along
+  the wave's radius; on a crest the scene's own light is raised and in a trough lowered by `shimmer` (0.05). Nothing is
+  added, so bloom has nothing to blow up. Pixels no wave reaches are discarded.
+- **A front that rings down.** The shape across the front is `StoatRippleMath.Profile` (= `StoatRippleProfile` in the
+  shader): a sharp leading edge, then about three crests trailing it, `wavelength` (9 u) apart, each weaker.
+- **Diminishing to distance.** The bend (`bend` 0.012 rad, about a hundredth of the screen's height) holds inside
+  `nearRadius` (22 u) and then falls as `nearRadius` / front, 1/r as a real spreading wave does, and fades with the wave
+  (`expandSeconds` 0.9, `fadeSeconds` 0.5: the clock the strip runs on, unchanged).
+- **It passes through you.** When the front runs through the camera the whole view swells and settles by `passShare`
+  (0.35) of the front's bend: a few pixels at the screen's edge.
+- **Both looks, briefly.** It runs in the Mobile and the Studio look alike; the pass is enqueued only while a ripple
+  lives (about 1.4 s), so a frame without one pays nothing. Stated limit: the URP asset keeps no depth texture, so an
+  opaque in front of the wave inside its band is bent with what is behind it (D7).
+- **Retired:** `bandWidth`, `chromaticSplit` and `rimGlow` (`author_stoat_assets.py` writes the new rows). Held by
+  `StoatRippleTests` (the profile, the 1/r falloff, the projection, the swell, the shipped colourless rows) and
+  `Tools/Shaders/verify_stoat_ripple.py` (both stages compile, no tint in the program, a negative control).
+- **Not touched:** a dipole PAIR's annihilation also throws the black-hole system's own waves (`annihilationWaves`,
+  `BlackHoleWaves`), which the Mobile look draws as faint pale rings; the swing hole throws only this ripple.
 
 ## 1d. The HUD — four cards, four gauges
 

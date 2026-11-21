@@ -125,6 +125,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         // Internal so LoadInsightReport can stamp the same git identity on load reports.
         internal static string TryRunGit(string arguments)
         {
+            // A player build has no checkout to ask, and IL2CPP cannot start a process at all: Process.Start throws
+            // there, and in a Debug-configuration IL2CPP build (the Windows development build) it asserts and the game dies.
+            if (!Application.isEditor) return "unknown";
             try
             {
                 var psi = new System.Diagnostics.ProcessStartInfo

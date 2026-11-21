@@ -11,6 +11,10 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public partial class Cell
     {
+        // The adaptive by-root drain's first slice and its floor (ReleaseRetiredWorldByRoot).
+        const int AdaptiveStartPrisms = 1000;
+        const int AdaptiveMinPrisms = 200;
+
         bool _retiringForSceneExit;
 
         /// <summary>True while <see cref="RetireWorldIntoPoolForSceneExit"/> is draining this cell's world.</summary>
@@ -73,7 +77,8 @@ namespace CosmicShore.Gameplay
         /// <returns>False when nothing was started: not playing, a satellite, a swap or an exit retire already
         /// running, or no world standing.</returns>
         public bool RetireWorldIntoPoolForSceneExit(double releaseSliceMs = 24.0, float suctionSeconds = 0f,
-            bool requireEnvironment = true, int rootDestroyPrismsPerFrame = 0, bool returnPooledTrail = true)
+            bool requireEnvironment = true, int rootDestroyPrismsPerFrame = 0, bool returnPooledTrail = true,
+            float rootDestroyFrameBudgetMs = 0f)
         {
             if (!Application.isPlaying) return false;
             if (IsSatellite) return false;          // a satellite's world is struck by its owner
@@ -83,12 +88,13 @@ namespace CosmicShore.Gameplay
             if (!environment && (requireEnvironment || (spawnedLifeForms.Count == 0 && trackedBlocks.Count == 0)))
                 return false;
 
-            StartCoroutine(RetireForSceneExitRoutine(releaseSliceMs, suctionSeconds, rootDestroyPrismsPerFrame, returnPooledTrail));
+            StartCoroutine(RetireForSceneExitRoutine(releaseSliceMs, suctionSeconds, rootDestroyPrismsPerFrame, returnPooledTrail,
+                rootDestroyFrameBudgetMs));
             return true;
         }
 
         IEnumerator RetireForSceneExitRoutine(double releaseSliceMs, float suctionSeconds, int rootDestroyPrismsPerFrame,
-            bool returnPooledTrail)
+            bool returnPooledTrail, float rootDestroyFrameBudgetMs)
         {
             _retiringForSceneExit = true;
             LastSceneExitParkedCount = 0;
@@ -128,7 +134,8 @@ namespace CosmicShore.Gameplay
 
                 yield return ReturnRetiredTrailToPool(pooledRetiring);
                 if (rootDestroyPrismsPerFrame > 0)
-                    yield return ReleaseRetiredWorldByRoot(retiring, environmentRoot, releaseSliceMs, rootDestroyPrismsPerFrame);
+                    yield return ReleaseRetiredWorldByRoot(retiring, environmentRoot, releaseSliceMs, rootDestroyPrismsPerFrame,
+                        rootDestroyFrameBudgetMs);
                 else
                     yield return ReleaseRetiredWorld(retiring, releaseSliceMs);
                 LastSceneExitParkedCount = _lastReleaseParkedCount;
@@ -157,9 +164,14 @@ namespace CosmicShore.Gameplay
         /// Bloomrush: 13 s in slices against 3.8 s inside the scene unload, measured 2026-11-20). A root goes down
         /// the engine's bulk path at the cost the unload pays; only the frame it lands in changes.</para>
         /// </summary>
-        /// <param name="prismsPerFrame">Prisms' worth of roots destroyed a frame. A root larger than this goes alone.</param>
+        /// <param name="prismsPerFrame">Prisms' worth of roots destroyed a frame, or with a frame budget the most a
+        /// frame may take. A root larger than this goes alone.</param>
+        /// <param name="frameBudgetMs">0: a fixed <paramref name="prismsPerFrame"/> a frame. Above 0: the slice starts
+        /// small and is resized every frame so that frame lasts about this long, on any device. The destroys land at the
+        /// end of the frame, so the frame just finished is what its slice cost. A fixed 15,000 a frame was 1-2 s frames on
+        /// a desktop (PC bench, 2026-11-21) and would be longer on a phone.</param>
         IEnumerator ReleaseRetiredWorldByRoot(GameObject retiring, GameObject environmentRoot, double releaseSliceMs,
-            int prismsPerFrame)
+            int prismsPerFrame, float frameBudgetMs = 0f)
         {
             _lastReleaseParkedCount = 0;
             _lastReleaseDestroyedCount = 0;
@@ -177,6 +189,8 @@ namespace CosmicShore.Gameplay
             // after a yield the destroyed roots (all above i) are gone and the rest keep theirs.
             var rootT = retiring ? retiring.transform : null;
             int budget = 0;
+            bool adaptive = frameBudgetMs > 0f;
+            int perFrame = adaptive ? Mathf.Min(prismsPerFrame, AdaptiveStartPrisms) : prismsPerFrame;
             for (int i = rootT ? rootT.childCount - 1 : -1; i >= 0; i--)
             {
                 if (!retiring) yield break;
@@ -188,10 +202,17 @@ namespace CosmicShore.Gameplay
                 budget += Mathf.Max(1, prisms);
                 Destroy(child.gameObject);
 
-                if (budget >= prismsPerFrame)
+                if (budget >= perFrame)
                 {
                     yield return null;
                     budget = 0;
+                    if (adaptive)
+                    {
+                        // At most double or halve a step, so one odd frame (a GC, a hiccup) cannot swing it far.
+                        float lastMs = Time.unscaledDeltaTime * 1000f;
+                        float scale = lastMs > 1f ? Mathf.Clamp(frameBudgetMs / lastMs, 0.5f, 2f) : 2f;
+                        perFrame = Mathf.Clamp(Mathf.RoundToInt(perFrame * scale), AdaptiveMinPrisms, prismsPerFrame);
+                    }
                 }
             }
 
