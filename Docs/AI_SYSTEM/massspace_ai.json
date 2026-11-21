@@ -1,0 +1,4 @@
+{
+ "note": "Each hull's learned Mass-Space AI (plan steps mass-arcade, space-arcade). Found by Tools/Compute/evaluators/massspace_ai_search.py in the hull's OWN Mass and Space games on the volume books (VC+VD per second vs the shipped AI), never in an arena game. 'ship': true rows are written into Assets/Resources/AIMassSpacePlan.asset (and the Urchin's UrchinAutopilotConfig_<mode>) by Tools/Build/massspace_ai_plan.py; --check is the drift gate. A genome: per button {on, dur, cd}, aggr and throttle scales (Urchin: its rail autopilot numbers).",
+ "hulls": {}
+}
