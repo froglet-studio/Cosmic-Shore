@@ -439,6 +439,10 @@ No self-hosted runner. The job runs on a fresh GitHub-hosted VM, which is discar
      (`compiler: refcompile`).
 2. **It checks the pinned image matches `ProjectSettings/ProjectVersion.txt`**, and fails with a
    re-pin message when the project's Unity version moves on.
+   - **A licence that does not activate falls back to `refcompile`** (2026-11-21): the container leaves
+     `unity-activation-failed`, and the run takes the reference-compile path with a "Not a Unity compile" warning
+     instead of going red as `infra` on every push. That happened on the first hosted run: the sign-in account has
+     no headless editor entitlement (`Docs/Reports/TRUNK_HEALTH.md`).
 3. **It classifies the result.** Any `error CS` line in the log is `compile`: it always blocks, and
    the first 40 lines go to the log and the step summary. Exit 0 is `ok`. No results XML and no
    compiler error is `infra` (licence, network, import or crash), which is not sent to autofix.
