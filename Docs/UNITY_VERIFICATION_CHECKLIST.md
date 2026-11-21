@@ -106,6 +106,11 @@ network rig or is in the network prefab list. **Where:** Cell Selector > Barren 
 | Ammon | two coiled shells, six stinging feelers | 9 | WHIPS shells and feelers | swims in JETS: a kick every 1.2 s, then a glide it turns in |
 | Nettle | a woven bell, eight tendrils, four frilled arms | 9 | WHIPS the four frilled arms | swims in PULSES (1.8 s); eats on every side; attacks all round |
 
+**Run in Amoebius** (the game's own code, not Unity's renderer; all sixteen configs, 360 frames each): 0 errors, every
+prism active, Mass shields every plain prism, Charge arms every prism, Space is at x 1.6477 with its meshes not eroded
+a second time, the attack finds 15 / 0 / 8 / 4 limbs (Plume / Lantern / Ammon / Nettle) each ending on a tip, and each
+`GrownFauna` carries its spec's numbers.
+
 1. **Each element of each creature draws and looks like its own form** (the lab shows all sixteen: pick the creature,
    then the element). Charge's one big thing: Plume five forward talons, Lantern four spurs, Ammon two great horns,
    Nettle four claws from the rim. Space is the largest and thinnest with needle prisms; Mass is shielded.

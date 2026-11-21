@@ -69,6 +69,23 @@ and the turn response in the shader and its ridden feel from its spec:
   merge ("the donor moved"), which is what a generator that owns its output is for; grown creatures now carry no
   network rig and stay out of the network prefab list (it is part of the multiplayer protocol).
 
+**Run in Amoebius, all twenty configs** (five creatures by four elements, 360 frames each, the spawner's own calls):
+
+| creature | errors | prisms active | Mass shielded | Charge danger | Space scale, meshes unchanged | attack |
+|---|---|---|---|---|---|---|
+| Ray | 0 | 9 of 9 | 8 of 8 | 9 of 9 | 2.0596, yes | whips 3 limbs |
+| Plume | 0 | 20 of 20 | 10 of 10 | 20 of 20 | 1.6477, yes | whips 15 limbs (Time: ten arms, five streamers) |
+| Lantern | 0 | 10 of 10 | 8 of 8 | 10 of 10 | 1.6477, yes | lunges |
+| Ammon | 0 | 10 of 10 | 4 of 4 | 10 of 10 | 1.6477, yes | whips 8 limbs |
+| Nettle | 0 | 16 of 16 | 8 of 8 | 16 of 16 | 1.6477, yes | whips 4 limbs |
+
+Every whip limb ends on a tip with no renderer; the attack plays and ends; the prisms sit exactly on the wave and the
+turn's terms; each `GrownFauna` carries its spec's numbers (the Plume and the Nettle eat on every side and aim all
+round, the Ammon and the Nettle pulse). Amoebius does not draw the spindle shader. **The engine did not build on the
+merged trunk** (one error in the trunk's own `UIThemeLive.cs` against the engine's `Shadow` class, nothing to do with
+this branch), so these runs used a scratch copy of the engine with that one line changed; the repo's engine was not
+touched. That gap is Shombith's to hear of.
+
 **Checked:** every gate; the reference compile (0 errors in changed files); the lab verifier. **NOT checked: the
 Unity editor** (the hand tests are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Four more grown creatures").
 
