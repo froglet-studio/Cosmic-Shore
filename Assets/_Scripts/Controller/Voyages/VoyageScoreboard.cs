@@ -71,11 +71,19 @@ namespace CosmicShore.Gameplay
         public System.Action Venture;
         public System.Action Finish;
         public System.Action Close;
+        /// <summary>A met Crystal Run: bank everything here and end the voyage (null hides it). With it on the board,
+        /// <see cref="Finish"/> is the escort home that pays <see cref="HomeRewardScale"/> times.</summary>
+        public System.Action FinishHere;
+        public float HomeRewardScale = 1f;
         /// <summary>A lost Ark's way back in: the same voyage with a fresh Ark (null hides it).</summary>
         public System.Action TryAgain;
         /// <summary>A party friend's board (Docs/Voyages/PARTY.md §5): the host chooses what next, so it offers no choice of
         /// its own, only a way to close it and keep flying; the host's next leg (or the end) reaches the voyage anyway.</summary>
         public bool Following;
+
+        /// <summary>The run's pilot, one line in their voice under the kicker (the authored ScoreQuote lines); empty shows
+        /// nothing.</summary>
+        public string Quote = string.Empty;
 
         /// <summary>The crystals of every element on the board.</summary>
         public int CrystalTotal

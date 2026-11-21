@@ -40,8 +40,8 @@ namespace CosmicShore.Gameplay
                  "seconds. 0 uses Min Seconds Between Pellets everywhere.")]
         [SerializeField, Min(0f)] float lowTankSecondsBetweenPellets;
         [Tooltip("Lay the refuel wall only where the course turns at least this much at the next gate (0 = " +
-                 "anywhere). The wall stands across the heading it was laid on, so the trail feeds it only " +
-                 "while the Serpent flies along it, which a corner right after the cloak gives.")]
+                 "anywhere). Written for the original wall, which stood across the heading and was fed only after a " +
+                 "corner; the Keel wall (2026-11-18) stands along the heading and is fed by flying straight on.")]
         [SerializeField, Range(0f, 180f)] float refuelMinCornerDegrees;
         [Tooltip("And only within this many seconds of that gate at the current speed (0 = any distance).")]
         [SerializeField, Min(0f)] float refuelMaxRunwaySeconds;

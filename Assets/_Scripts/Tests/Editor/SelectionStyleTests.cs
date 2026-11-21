@@ -6,9 +6,9 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Rev 7 selection colour (Docs/MENU_REDESIGN_B.md §47.1, the owner 2026-10-17: "sky blue"): one token,
-    /// appended at a fixed index so every prefab that serialized it keeps it, falling back to #3DB2FF when no theme
-    /// is wired. Tools/Build/author_ui_kit_prefabs.py --self-test guards the prefab side.
+    /// The selection colour (Rev 7, Docs/MENU_REDESIGN_B.md §47.1; Jade since Docs/UI_STYLE_GUIDE.md D3, was sky blue):
+    /// one token, appended at a fixed index so every prefab that serialized it keeps it, falling back to Jade #00D4FF
+    /// when no theme is wired. Tools/Build/author_ui_kit_prefabs.py --self-test guards the prefab side.
     /// </summary>
     public class SelectionStyleTests
     {
@@ -20,10 +20,12 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void SelectionFallsBackToSkyBlue()
+        public void SelectionFallsBackToJade()
         {
-            Color32 blue = UITheme.Resolve(null, UIColorToken.Selection);
-            Assert.AreEqual(new Color32(0x3D, 0xB2, 0xFF, 0xFF), blue);
+            // Docs/UI_STYLE_GUIDE.md D3 (Shombith, 2026-11-05): the selection and the focus ring are Jade, the control colour.
+            Color32 jade = UITheme.Resolve(null, UIColorToken.Selection);
+            Assert.AreEqual(new Color32(0x00, 0xD4, 0xFF, 0xFF), jade);
+            Assert.AreEqual(UITheme.Resolve(null, UIColorToken.ControlActive), UITheme.Resolve(null, UIColorToken.Selection));
         }
 
         [Test]

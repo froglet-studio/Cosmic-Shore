@@ -5,7 +5,7 @@
 //   - unity_log.txt: every line the game logged, as it happens
 //   - session.json: device, per-scene frame-time summary, error signatures, the last 400 warnings and errors with stacks
 //   - summary.txt: line one is what the phone's notification says
-//   - one `capture` per scene 90 s in, when the diagnostics HUD is up
+//   - one `capture` per scene 90 s in, when the diagnostics HUD is up, and a `<scene>-slow` one when a scene holds under 20 fps
 // A swiped-away app gets no goodbye, so nothing waits for a quit. It is all on disk within seconds, and each pause schedules
 // DeviceLogJob (DeviceLogAndroid~/, added to the build by DeviceLogGradleHook), which outlives this process, sends a finished
 // session to the bugledger-android/<user> branch with Android's exit record and the app's logcat, and posts a notification.
@@ -35,6 +35,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         const float FlushEvery = 60f, SampleEvery = 5f, CaptureAfter = 90f, SceneSettleSeconds = 15f;
         const int CaptureSeconds = 15;
         const long ScheduleDelayMs = 15000;
+        // The editor's slow captures (PerfAutoCapture), on the phone (Shombith 2026-11-20): a scene that holds under
+        // SlowFps for SlowWindows samples (10 s) is captured as <scene>-slow, and once more as <scene>-slower if it then
+        // halves again. The 90 s capture alone missed every slow stretch of a voyage.
+        const float SlowFps = 20f;
+        const int SlowWindows = 2, MaxSlowCaptures = 2;
+        static int _slowWindows, _slowCaptures;
+        static float _slowCeiling = SlowFps;
 
         struct Entry { public double t; public LogType type; public string msg, stack, scene; }
         sealed class SceneStats
@@ -176,6 +183,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             for (int i = 0; i < Scenes.Count; i++) if (Scenes[i].name == to.name) _scene = Scenes[i];
             if (_scene == null) { _scene = new SceneStats { name = to.name }; Scenes.Add(_scene); }
             _scene.enteredAt = Time.realtimeSinceStartup;
+            _slowWindows = 0;
+            _slowCaptures = 0;
+            _slowCeiling = SlowFps;
             Flush(); // leaving a game scene is the match end on every mode
         }
         static void Tick()
@@ -215,6 +225,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             DiagnosticsHUD.RunConsole($"{DiagnosticsHUD.CaptureCommand} {DeviceLogFormat.SafeName(_scene.name, "scene")} {CaptureSeconds}");
         }
 
+        static void MaybeSlowCapture(float fps)
+        {
+            if (_scene == null || !DevDiagnostics.Enabled || _slowCaptures >= MaxSlowCaptures) return;
+            if (fps >= _slowCeiling) { _slowWindows = 0; return; }
+            if (++_slowWindows < SlowWindows) return;
+            _slowWindows = 0;
+            string label = DeviceLogFormat.SafeName(_scene.name, "scene") + (_slowCaptures == 0 ? "-slow" : "-slower");
+            DiagnosticsHUD.RunConsole($"{DiagnosticsHUD.CaptureCommand} {label} {CaptureSeconds}");
+            _slowCaptures++;
+            _slowCeiling = Mathf.Max(1f, fps * 0.5f);
+        }
+
         // ── device ──
         static void SampleDevice()
         {
@@ -232,6 +254,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             // A scene's load is not its frame rate: the first seconds, and the boot scenes, stay out of its lowest fps.
             bool settled = _scene != null && !NoCaptureScenes.Contains(_scene.name) && Time.realtimeSinceStartup - _scene.enteredAt >= SceneSettleSeconds;
             if (settled && !capturing && fps < _scene.lowestWindowFps) _scene.lowestWindowFps = fps;
+            if (settled && !capturing) MaybeSlowCapture(fps);
 
             uint got = FrameTimingManager.GetLatestTimings((uint)Timings.Length, Timings);
             double cpu = 0, gpu = 0;

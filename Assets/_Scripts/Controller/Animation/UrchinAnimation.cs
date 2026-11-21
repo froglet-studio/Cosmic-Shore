@@ -111,6 +111,10 @@ namespace CosmicShore.Gameplay
         {
             base.Update();
 
+            // A hull updates from the frame it is instantiated, and is bound to its vessel a little later (a
+            // spawned hull waits on its player): the pods have no vessel to read until then.
+            if (!IsInitialized) return;
+
             if (VesselStatus.IsAttached)
             {
                 ResetParts(scaledParts, 6);

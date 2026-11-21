@@ -563,3 +563,1635 @@ MonoBehaviour:
     factionName: "Lifeline Corps"
     homeworld: "Floodmere"
     story: "Oki Sandrunner works the flood launches out of Floodmere, and brings home whoever is still out there, even a wild calf.\n\nThe Lifeline Corps answers every distress call in the HyperSea. With Oki aboard, your crew will be sent to derelicts with crews stranded aboard, and stay until everyone is safe.\n\nLast one out is still one."
+  - key: Joriro
+    callsign: 1
+    starter: 1
+    given: "Joriro"
+    family: "Wavecove"
+    speciesOne: 4
+    speciesTwo: 44
+    factionType: 6
+    factionName: "Lantern Reach Cartographers"
+    homeworld: "the Grey Reach"
+    story: "Joriro Wavecove learned to fly before they could read on the Grey Reach.\n\nLantern Reach Cartographers pay for places nobody has charted yet. With Joriro aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Dellalia
+    callsign: 2
+    starter: 1
+    given: "Dellalia"
+    family: "Tidebloom"
+    speciesOne: 7
+    speciesTwo: 17
+    factionType: 14
+    factionName: "The Bright Buoys"
+    homeworld: "the Amber Shoal"
+    story: "Dellalia Tidebloom grew up mending nets on the Amber Shoal.\n\nThe Bright Buoys answers the distress calls nobody else will. With Dellalia aboard, your crew will be sent to derelicts where crews are stranded, to hold on until everyone is aboard.\n\nThey hum off-key during every jump."
+  - key: Sabero
+    callsign: 3
+    starter: 1
+    given: "Sabero"
+    family: "Lowrest"
+    speciesOne: 18
+    speciesTwo: 45
+    factionType: 1
+    factionName: "Amber Ledger Guild"
+    homeworld: "Saltmere"
+    story: "Sabero Lowrest learned to fly before they could read on Saltmere.\n\nThe Amber Ledger Guild keeps a desk in every port worth the name. Fly with Sabero and the Exchange will hand your crew sealed dispatches to carry between them, and cargo for convoys bound to ports under pressure.\n\nThey refuse to fly on an empty stomach."
+  - key: Olo
+    callsign: 4
+    starter: 1
+    given: "Olo"
+    family: "Spindlewing"
+    speciesOne: 28
+    speciesTwo: 12
+    factionType: 11
+    factionName: "The Glittering Heats"
+    homeworld: "Farshore"
+    story: "Olo Spindlewing learned to fly before they could read on Farshore.\n\nThe The Glittering Heats runs exhibition courses all over the HyperSea. With Olo aboard, your crew will be invited to fly them: skim the course, gather the crystals, and make the crowd stand up.\n\nThey write letters to a sibling who never writes back."
+  - key: Rolamo
+    callsign: 5
+    starter: 1
+    given: "Rolamo"
+    family: "Mirehollow"
+    speciesOne: 15
+    speciesTwo: 11
+    factionType: 9
+    factionName: "Kelpline Gleaners"
+    homeworld: "Hollowfen"
+    story: "Rolamo Mirehollow learned to fly before they could read on Hollowfen.\n\nKelpline Gleaners knows when the blooms of the HyperSea will open. With Rolamo aboard, your crew will be sent to harvest them while they last.\n\nThey collect shells from every port and give them away to strangers."
+  - key: Yox
+    callsign: 6
+    starter: 1
+    given: "Yox"
+    family: "Lowhook"
+    speciesOne: 39
+    speciesTwo: 42
+    factionType: 6
+    factionName: "Lantern Reach Cartographers"
+    homeworld: "Ember Deep"
+    story: "Yox Lowhook spent a childhood racing skiffs on Ember Deep.\n\nThe Lantern Reach Cartographers sends crews where no one has been. With Yox aboard, your crew will be asked to survey uncharted places, and to follow chart fragments wherever they lead.\n\nThey refuse to fly on an empty stomach."
+  - key: Xathata
+    callsign: 7
+    starter: 1
+    given: "Xathata"
+    family: "Ashwell"
+    speciesOne: 25
+    speciesTwo: 5
+    factionType: 6
+    factionName: "Lantern Reach Cartographers"
+    homeworld: "the Kelp Throne"
+    story: "Xathata Ashwell was raised by a choir of dockworkers on the Kelp Throne.\n\nLantern Reach Cartographers pay for places nobody has charted yet. With Xathata aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Belthaly
+    callsign: 8
+    starter: 1
+    given: "Belthaly"
+    family: "Wavewell"
+    speciesOne: 6
+    speciesTwo: 29
+    factionType: 16
+    factionName: "Envoys of the Accord"
+    homeworld: "the Old Harbour"
+    story: "Belthaly Wavewell grew up in the shadow of a dead Ark on the Old Harbour.\n\nEnvoys of the Accord brings rivals to terms. With Belthaly aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.\n\nThey hum off-key during every jump."
+  - key: Nethael
+    callsign: 9
+    starter: 1
+    given: "Nethael"
+    family: "Foamridge"
+    speciesOne: 26
+    speciesTwo: 27
+    factionType: 16
+    factionName: "The Treaty Table"
+    homeworld: "the Glass Shoals"
+    story: "Nethael Foamridge learned to fly before they could read on the Glass Shoals.\n\nThe Treaty Table brings rivals to terms. With Nethael aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.\n\nThey name every vessel they fly, and apologise to it after a hard landing."
+  - key: Mamo
+    callsign: 10
+    starter: 1
+    given: "Mamo"
+    family: "Silverthorn"
+    speciesOne: 4
+    speciesTwo: 15
+    factionType: 9
+    factionName: "Driftnet Cooperative"
+    homeworld: "Ember Deep"
+    story: "Mamo Silverthorn grew up the youngest of eleven on Ember Deep.\n\nDriftnet Cooperative knows when the blooms of the HyperSea will open. With Mamo aboard, your crew will be sent to harvest them while they last.\n\nThey collect shells from every port and give them away to strangers."
+  - key: Xalaai
+    callsign: 11
+    starter: 1
+    given: "Xalaai"
+    family: "Shellhollow"
+    speciesOne: 42
+    speciesTwo: 46
+    factionType: 11
+    factionName: "Spray and Spin"
+    homeworld: "Mirrorfen"
+    story: "Xalaai Shellhollow was apprenticed to a cartographer on Mirrorfen.\n\nSpray and Spin put on exhibition runs in the brightest cells of the HyperSea. With Xalaai aboard, your crew will be invited to fly them, skimming the course for every crystal on it.\n\nThey keep score of everything, including naps."
+  - key: Briola
+    callsign: 12
+    starter: 1
+    given: "Briola"
+    family: "Whistlefield"
+    speciesOne: 7
+    speciesTwo: 27
+    factionType: 3
+    factionName: "House Verdance"
+    homeworld: "Saltmere"
+    story: "Briola Whistlefield grew up sorting crystals in a market stall on Saltmere.\n\nThe House Verdance keep watch over the cores the quiet domains rely on. With Briola aboard, the Wardens will ask your crew to patrol those cores, to answer when one calls for aid, and to hold it until the danger has passed.\n\nThey write letters to a sibling who never writes back."
+  - key: Peveth
+    callsign: 13
+    starter: 1
+    given: "Peveth"
+    family: "Driftrest"
+    speciesOne: 38
+    speciesTwo: 31
+    factionType: 16
+    factionName: "The Treaty Table"
+    homeworld: "the Lantern Reach"
+    story: "Peveth Driftrest was raised among reef gardeners on the Lantern Reach.\n\nThe Treaty Table brings rivals to terms. With Peveth aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.\n\nThey write letters to a sibling who never writes back."
+  - key: Fenra
+    callsign: 14
+    starter: 1
+    given: "Fenra"
+    family: "Greywell"
+    speciesOne: 24
+    speciesTwo: 37
+    factionType: 1
+    factionName: "Amber Ledger Guild"
+    homeworld: "the Grey Reach"
+    story: "Fenra Greywell was raised by a choir of dockworkers on the Grey Reach.\n\nThe Amber Ledger Guild lights half the ports of the HyperSea. With Fenra aboard, the Company will give your crew its dispatches to carry, and its convoys to run when a port goes dark.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Corrarin
+    callsign: 15
+    starter: 1
+    given: "Corrarin"
+    family: "Deepreach"
+    speciesOne: 42
+    speciesTwo: 6
+    factionType: 3
+    factionName: "Court of Still Water"
+    homeworld: "the Glass Shoals"
+    story: "Corrarin Deepreach was raised among reef gardeners on the Glass Shoals.\n\nCourt of Still Water trusts its clocks and its cores to the same few hands. With Corrarin in your crew, you will patrol the house's cores, answer its calls for aid, and retake a core another domain has seized.\n\nThey tie a ribbon on the hull for every friend lost."
+  - key: Neloel
+    callsign: 16
+    starter: 1
+    given: "Neloel"
+    family: "Anchorfall"
+    speciesOne: 46
+    speciesTwo: 15
+    factionType: 12
+    factionName: "Institute of the Shore"
+    homeworld: "Coldharbour"
+    story: "Neloel Anchorfall was raised among reef gardeners on Coldharbour.\n\nInstitute of the Shore wants to know how the HyperSea lives. With Neloel aboard, your crew will be asked to find a creature or a bloom and stay near it long enough to study it.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Uthael
+    callsign: 17
+    starter: 1
+    given: "Uthael"
+    family: "Stormdrift"
+    speciesOne: 35
+    speciesTwo: 41
+    factionType: 15
+    factionName: "Order of the Slow Tide"
+    homeworld: "Rimehollow"
+    story: "Uthael Stormdrift spent a childhood stowing away on freighters on Rimehollow.\n\nThe Order of the Slow Tide keeps vigil at shrines across the HyperSea. With Uthael aboard, your crew will be asked to hold a shrine through its vigil, and the Choir has older rites it shares only with crews it trusts.\n\nThey have never once arrived early."
+  - key: Cario
+    callsign: 18
+    starter: 1
+    given: "Cario"
+    family: "Emberrest"
+    speciesOne: 1
+    speciesTwo: 30
+    factionType: 1
+    factionName: "Brass Lantern Company"
+    homeworld: "Farshore"
+    story: "Cario Emberrest was apprenticed to a cartographer on Farshore.\n\nThe Brass Lantern Company charts the trade lanes and sells passage along them. Fly with Cario and the Consortium will give your crew dispatches to carry, and convoys to bring to the ports its lanes have left short.\n\nThey have never once arrived early."
+  - key: Lulaane
+    callsign: 1
+    starter: 1
+    given: "Lulaane"
+    family: "Whistlewright"
+    speciesOne: 18
+    speciesTwo: 28
+    factionType: 6
+    factionName: "The Unmapped"
+    homeworld: "Driftmoor"
+    story: "Lulaane Whistlewright was raised in a lighthouse on Driftmoor.\n\nThe The Unmapped sends crews where no one has been. With Lulaane aboard, your crew will be asked to survey uncharted places, and to follow chart fragments wherever they lead.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Belrenro
+    callsign: 2
+    starter: 1
+    given: "Belrenro"
+    family: "Frostbrook"
+    speciesOne: 24
+    speciesTwo: 5
+    factionType: 16
+    factionName: "The Treaty Table"
+    homeworld: "the Amber Shoal"
+    story: "Belrenro Frostbrook was raised among reef gardeners on the Amber Shoal.\n\nThe Treaty Table brings rivals to terms. With Belrenro aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.\n\nThey hum off-key during every jump."
+  - key: Zeriola
+    callsign: 3
+    starter: 1
+    given: "Zeriola"
+    family: "Lanternsong"
+    speciesOne: 45
+    speciesTwo: 17
+    factionType: 11
+    factionName: "The Glittering Heats"
+    homeworld: "the Grey Reach"
+    story: "Zeriola Lanternsong spent a childhood stowing away on freighters on the Grey Reach.\n\nThe Glittering Heats puts on exhibition runs wherever there is a crowd. With Zeriola aboard, your crew will be invited to fly them, skimming the course for every crystal along it.\n\nThey collect shells from every port and give them away to strangers."
+  - key: Maloane
+    callsign: 4
+    starter: 1
+    given: "Maloane"
+    family: "Wavegate"
+    speciesOne: 16
+    speciesTwo: 43
+    factionType: 11
+    factionName: "Spray and Spin"
+    homeworld: "Coldharbour"
+    story: "Maloane Wavegate grew up mending nets on Coldharbour.\n\nThe Spray and Spin runs exhibition courses all over the HyperSea. With Maloane aboard, your crew will be invited to fly them: skim the course, gather the crystals, and make the crowd stand up.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Fenx
+    callsign: 5
+    starter: 1
+    given: "Fenx"
+    family: "Brightlight"
+    speciesOne: 41
+    speciesTwo: 22
+    factionType: 10
+    factionName: "Steadfast Joinery"
+    homeworld: "Stillwater"
+    story: "Fenx Brightlight grew up in the shadow of a dead Ark on Stillwater.\n\nSteadfast Joinery mends what the HyperSea breaks. With Fenx aboard, your crew will be called to cores under pressure, to lay prisms in the breach until it holds.\n\nThey refuse to fly on an empty stomach."
+  - key: Quilox
+    callsign: 6
+    starter: 1
+    given: "Quilox"
+    family: "Ambermere"
+    speciesOne: 40
+    speciesTwo: 1
+    factionType: 2
+    factionName: "Moonsedge Pack"
+    homeworld: "the Grey Reach"
+    story: "Quilox Ambermere grew up in the shadow of a dead Ark on the Grey Reach.\n\nThe Moonsedge Pack keeps a ledger of every vault field and every sighting its members have ever heard of. With Quilox aboard, that ledger is open to your crew: vaults to open, and lairs to hunt.\n\nThey cannot resist a dare."
+  - key: Pediri
+    callsign: 7
+    starter: 1
+    given: "Pediri"
+    family: "Wakereach"
+    speciesOne: 6
+    speciesTwo: 25
+    factionType: 3
+    factionName: "House Verdance"
+    homeworld: "Tangleweed"
+    story: "Pediri Wakereach grew up on a salvage barge on Tangleweed.\n\nThe house holds cores across the sea for the domains it answers to. With Pediri in your crew, Albrine will send you to patrol them, to answer its calls for aid, and to take back a core another domain has seized.\n\nThey keep score of everything, including naps."
+  - key: Zesondo
+    callsign: 8
+    starter: 1
+    given: "Zesondo"
+    family: "Kelphook"
+    speciesOne: 38
+    speciesTwo: 34
+    factionType: 12
+    factionName: "The Tidal Archive"
+    homeworld: "the Coral Court"
+    story: "Zesondo Kelphook was raised in a lighthouse on the Coral Court.\n\nThe Tidal Archive wants every living thing in the sea written down. With Zesondo aboard, your crew will be asked to study creatures and blooms up close, for as long as they will let you.\n\nThey write letters to a sibling who never writes back."
+  - key: Mirin
+    callsign: 9
+    starter: 1
+    given: "Mirin"
+    family: "Dawnstone"
+    speciesOne: 6
+    speciesTwo: 31
+    factionType: 4
+    factionName: "Saltjaw Brethren"
+    homeworld: "Gloamwater"
+    story: "Mirin Dawnstone was raised in a lighthouse on Gloamwater.\n\nThe Saltjaw Brethren raid the hoards other pirates leave unguarded, and strip the wrecks nobody else will touch. With Mirin aboard, they will tell your crew where both are.\n\nThey cannot resist a dare."
+  - key: Olone
+    callsign: 10
+    starter: 1
+    given: "Olone"
+    family: "Deepwright"
+    speciesOne: 2
+    speciesTwo: 25
+    factionType: 2
+    factionName: "Moonsedge Pack"
+    homeworld: "Tangleweed"
+    story: "Olone Deepwright was apprenticed to a cartographer on Tangleweed.\n\nThe Moonsedge Pack hunt where the water is dangerous. With Olone in your crew, they will send you after vaults rumoured in the shallows, and into lairs where the fauna have grown into predators.\n\nThey tie a ribbon on the hull for every friend lost."
+  - key: Quikoth
+    callsign: 11
+    starter: 1
+    given: "Quikoth"
+    family: "Ashfield"
+    speciesOne: 18
+    speciesTwo: 1
+    factionType: 12
+    factionName: "The Tidal Archive"
+    homeworld: "the Old Harbour"
+    story: "Quikoth Ashfield spent a childhood stowing away on freighters on the Old Harbour.\n\nThe Tidal Archive wants to know how the HyperSea lives. With Quikoth aboard, your crew will be asked to find a creature or a bloom and stay near it long enough to study it.\n\nThey laugh at exactly the wrong moments."
+  - key: Athara
+    callsign: 12
+    starter: 1
+    given: "Athara"
+    family: "Glassmore"
+    speciesOne: 46
+    speciesTwo: 3
+    factionType: 12
+    factionName: "Institute of the Shore"
+    homeworld: "Gloamwater"
+    story: "Athara Glassmore grew up on a salvage barge on Gloamwater.\n\nInstitute of the Shore wants every living thing in the sea written down. With Athara aboard, your crew will be asked to study creatures and blooms up close, for as long as they will let you.\n\nThey have never once arrived early."
+  - key: Takoane
+    callsign: 13
+    starter: 1
+    given: "Takoane"
+    family: "Sandfin"
+    speciesOne: 17
+    speciesTwo: 12
+    factionType: 13
+    factionName: "Reefward Trust"
+    homeworld: "Stillwater"
+    story: "Takoane Sandfin was raised among reef gardeners on Stillwater.\n\nThe Reefward Trust keeps the nurseries of the HyperSea alive. With Takoane aboard, your crew will be asked to tend a nursery and hold it, with no killing while you are there.\n\nThey refuse to fly on an empty stomach."
+  - key: Dellorin
+    callsign: 14
+    starter: 1
+    given: "Dellorin"
+    family: "Stillbell"
+    speciesOne: 1
+    speciesTwo: 35
+    factionType: 7
+    factionName: "Open Current"
+    homeworld: "the Copper Reef"
+    story: "Dellorin Stillbell was raised in a lighthouse on the Copper Reef.\n\nOpen Current believes no creature should be kept behind another domain's walls. With Dellorin aboard, your crew will hear where those pens are, and be asked to break them open.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Maix
+    callsign: 15
+    starter: 1
+    given: "Maix"
+    family: "Whistlesworth"
+    speciesOne: 6
+    speciesTwo: 13
+    factionType: 4
+    factionName: "Red Reef Rovers"
+    homeworld: "Tangleweed"
+    story: "Maix Whistlesworth grew up sorting crystals in a market stall on Tangleweed.\n\nThe Red Reef Rovers knows where the other crews hide their hoards. With Maix aboard, you will hear where those hoards sit, and where a fresh wreck is waiting to be stripped.\n\nThey laugh at exactly the wrong moments."
+  - key: Mirisa
+    callsign: 16
+    starter: 1
+    given: "Mirisa"
+    family: "Saltward"
+    speciesOne: 28
+    speciesTwo: 19
+    factionType: 12
+    factionName: "The Tidal Archive"
+    homeworld: "Wrackline"
+    story: "Mirisa Saltward grew up on a salvage barge on Wrackline.\n\nThe Tidal Archive wants to know how the HyperSea lives. With Mirisa aboard, your crew will be asked to find a creature or a bloom and stay near it long enough to study it.\n\nThey cannot resist a dare."
+  - key: Cakoola
+    callsign: 17
+    starter: 1
+    given: "Cakoola"
+    family: "Lanterndrift"
+    speciesOne: 44
+    speciesTwo: 17
+    factionType: 6
+    factionName: "Lantern Reach Cartographers"
+    homeworld: "Stillwater"
+    story: "Cakoola Lanterndrift was apprenticed to a cartographer on Stillwater.\n\nLantern Reach Cartographers pay for places nobody has charted yet. With Cakoola aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.\n\nThey tie a ribbon on the hull for every friend lost."
+  - key: Corlilia
+    callsign: 18
+    starter: 1
+    given: "Corlilia"
+    family: "Rustmark"
+    speciesOne: 10
+    speciesTwo: 2
+    factionType: 5
+    factionName: "Copperclaim Agency"
+    homeworld: "Starwake"
+    story: "Corlilia Rustmark was apprenticed to a cartographer on Starwake.\n\nCopperclaim Agency carries the warrants on the most notorious crews in the HyperSea. With Corlilia aboard, your crew will be handed bounties, and told where the crew was last seen standing.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Galsoola
+    callsign: 1
+    starter: 1
+    given: "Galsoola"
+    family: "Gulltail"
+    speciesOne: 23
+    speciesTwo: 5
+    factionType: 9
+    factionName: "Kelpline Gleaners"
+    homeworld: "Hollowfen"
+    story: "Galsoola Gulltail spent a childhood racing skiffs on Hollowfen.\n\nKelpline Gleaners knows when the blooms of the HyperSea will open. With Galsoola aboard, your crew will be sent to harvest them while they last.\n\nThey hum off-key during every jump."
+  - key: Veveola
+    callsign: 2
+    starter: 1
+    given: "Veveola"
+    family: "Spindlespark"
+    speciesOne: 47
+    speciesTwo: 45
+    factionType: 1
+    factionName: "Saltmark Consortium"
+    homeworld: "Lowlight"
+    story: "Veveola Spindlespark was raised by a choir of dockworkers on Lowlight.\n\nThe Saltmark Consortium moves goods to every port on the Lane. Fly with Veveola and your crew will carry its dispatches from port to port, and run its convoys to ports short of what they need.\n\nThey laugh at exactly the wrong moments."
+  - key: Zeth
+    callsign: 3
+    starter: 1
+    given: "Zeth"
+    family: "Starwater"
+    speciesOne: 20
+    speciesTwo: 34
+    factionType: 6
+    factionName: "Far Shoal Society"
+    homeworld: "Cinder Bay"
+    story: "Zeth Starwater was apprenticed to a cartographer on Cinder Bay.\n\nThe Far Shoal Society sends crews where no one has been. With Zeth aboard, your crew will be asked to survey uncharted places, and to follow chart fragments wherever they lead.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Rosondo
+    callsign: 4
+    starter: 1
+    given: "Rosondo"
+    family: "Rusthollow"
+    speciesOne: 27
+    speciesTwo: 45
+    factionType: 12
+    factionName: "Institute of the Shore"
+    homeworld: "the Kelp Throne"
+    story: "Rosondo Rusthollow grew up the youngest of eleven on the Kelp Throne.\n\nInstitute of the Shore wants every living thing in the sea written down. With Rosondo aboard, your crew will be asked to study creatures and blooms up close, for as long as they will let you.\n\nThey laugh at exactly the wrong moments."
+  - key: Uline
+    callsign: 5
+    starter: 1
+    given: "Uline"
+    family: "Shellmoor"
+    speciesOne: 15
+    speciesTwo: 34
+    factionType: 6
+    factionName: "Far Shoal Society"
+    homeworld: "Driftmoor"
+    story: "Uline Shellmoor learned to fly before they could read on Driftmoor.\n\nFar Shoal Society pay for places nobody has charted yet. With Uline aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.\n\nThey tie a ribbon on the hull for every friend lost."
+  - key: Lunulo
+    callsign: 6
+    starter: 1
+    given: "Lunulo"
+    family: "Stormlight"
+    speciesOne: 4
+    speciesTwo: 5
+    factionType: 8
+    factionName: "Whisperkelp"
+    homeworld: "Lanternfall"
+    story: "Lunulo Stormlight grew up in the shadow of a dead Ark on Lanternfall.\n\nWhisperkelp trades in what other ports would rather keep. With Lunulo aboard, your crew will be sent to lift dispatches from rival ports, and the freshest news there will be yours to carry.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Ovex
+    callsign: 7
+    starter: 1
+    given: "Ovex"
+    family: "Driftsong"
+    speciesOne: 42
+    speciesTwo: 40
+    factionType: 11
+    factionName: "The Glittering Heats"
+    homeworld: "Cinder Bay"
+    story: "Ovex Driftsong grew up mending nets on Cinder Bay.\n\nThe Glittering Heats put on exhibition runs in the brightest cells of the HyperSea. With Ovex aboard, your crew will be invited to fly them, skimming the course for every crystal on it.\n\nThey laugh at exactly the wrong moments."
+  - key: Jodiola
+    callsign: 8
+    starter: 1
+    given: "Jodiola"
+    family: "Emberthorn"
+    speciesOne: 29
+    speciesTwo: 7
+    factionType: 14
+    factionName: "Harbour Watch"
+    homeworld: "Mirrorfen"
+    story: "Jodiola Emberthorn spent a childhood racing skiffs on Mirrorfen.\n\nThe Harbour Watch answers every distress call in the HyperSea. With Jodiola aboard, your crew will be sent to derelicts with crews stranded aboard, and stay until everyone is safe.\n\nThey name every vessel they fly, and apologise to it after a hard landing."
+  - key: Pekoar
+    callsign: 9
+    starter: 1
+    given: "Pekoar"
+    family: "Starwright"
+    speciesOne: 21
+    speciesTwo: 44
+    factionType: 6
+    factionName: "The Unmapped"
+    homeworld: "the Silver Lane"
+    story: "Pekoar Starwright spent a childhood racing skiffs on the Silver Lane.\n\nThe The Unmapped sends crews where no one has been. With Pekoar aboard, your crew will be asked to survey uncharted places, and to follow chart fragments wherever they lead.\n\nThey cannot resist a dare."
+  - key: Quibemo
+    callsign: 10
+    starter: 1
+    given: "Quibemo"
+    family: "Ashstone"
+    speciesOne: 44
+    speciesTwo: 30
+    factionType: 11
+    factionName: "The Glittering Heats"
+    homeworld: "Stillwater"
+    story: "Quibemo Ashstone grew up sorting crystals in a market stall on Stillwater.\n\nThe Glittering Heats puts on exhibition runs wherever there is a crowd. With Quibemo aboard, your crew will be invited to fly them, skimming the course for every crystal along it.\n\nThey cannot resist a dare."
+  - key: Mamaola
+    callsign: 11
+    starter: 1
+    given: "Mamaola"
+    family: "Crestmark"
+    speciesOne: 35
+    speciesTwo: 25
+    factionType: 9
+    factionName: "The Patient Harvest"
+    homeworld: "the Glass Shoals"
+    story: "Mamaola Crestmark grew up in the shadow of a dead Ark on the Glass Shoals.\n\nThe Patient Harvest knows when the blooms of the HyperSea will open. With Mamaola aboard, your crew will be sent to harvest them while they last.\n\nThey name every vessel they fly, and apologise to it after a hard landing."
+  - key: Tanuwen
+    callsign: 12
+    starter: 1
+    given: "Tanuwen"
+    family: "Spindlespark"
+    speciesOne: 2
+    speciesTwo: 47
+    factionType: 14
+    factionName: "Harbour Watch"
+    homeworld: "Ember Deep"
+    story: "Tanuwen Spindlespark learned to fly before they could read on Ember Deep.\n\nHarbour Watch answers the distress calls nobody else will. With Tanuwen aboard, your crew will be sent to derelicts where crews are stranded, to hold on until everyone is aboard.\n\nThey keep score of everything, including naps."
+  - key: Wyve
+    callsign: 13
+    starter: 1
+    given: "Wyve"
+    family: "Stillline"
+    speciesOne: 33
+    speciesTwo: 28
+    factionType: 1
+    factionName: "Amber Ledger Guild"
+    homeworld: "Rimehollow"
+    story: "Wyve Stillline was raised among reef gardeners on Rimehollow.\n\nThe Amber Ledger Guild insures cargo across the HyperSea, so it needs crews to carry its dispatches and see its convoys safe to ports where trouble is brewing. With Wyve aboard, that work comes to you.\n\nThey cannot resist a dare."
+  - key: Delliar
+    callsign: 14
+    starter: 1
+    given: "Delliar"
+    family: "Brinewater"
+    speciesOne: 20
+    speciesTwo: 2
+    factionType: 3
+    factionName: "House Albrine"
+    homeworld: "Brackenmouth"
+    story: "Delliar Brinewater spent a childhood racing skiffs on Brackenmouth.\n\nHouse Albrine holds cores in the green reaches of the HyperSea. Fly with Delliar and the house will ask your crew to patrol them, to answer its calls for aid, and to retake the ones another domain has taken.\n\nThey hum off-key during every jump."
+  - key: Delsoko
+    callsign: 15
+    starter: 1
+    given: "Delsoko"
+    family: "Tidehook"
+    speciesOne: 39
+    speciesTwo: 24
+    factionType: 8
+    factionName: "Whisperkelp"
+    homeworld: "the Kelp Throne"
+    story: "Delsoko Tidehook was apprenticed to a cartographer on the Kelp Throne.\n\nWhisperkelp hears every secret that moves between ports. With Delsoko aboard, your crew will be sent to lift dispatches from rival ports, and carry the freshest news home first.\n\nThey keep score of everything, including naps."
+  - key: Nemaix
+    callsign: 16
+    starter: 1
+    given: "Nemaix"
+    family: "Hollowline"
+    speciesOne: 27
+    speciesTwo: 16
+    factionType: 15
+    factionName: "The Ninefold Shell"
+    homeworld: "Shellmouth"
+    story: "Nemaix Hollowline was apprenticed to a cartographer on Shellmouth.\n\nThe Ninefold Shell keeps shrines across the HyperSea and the rite of nine that links them. With Nemaix aboard, your crew will be asked to hold a shrine through its vigil, and in time to join the ninefold rite.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Brilolia
+    callsign: 17
+    starter: 1
+    given: "Brilolia"
+    family: "Coralrest"
+    speciesOne: 5
+    speciesTwo: 45
+    factionType: 5
+    factionName: "Writ and Hook"
+    homeworld: "the Grey Reach"
+    story: "Brilolia Coralrest grew up on a salvage barge on the Grey Reach.\n\nWrit and Hook takes the bounties others will not. With Brilolia aboard, your crew will be handed warrants on notorious crews, and told where to meet them.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Ithax
+    callsign: 18
+    starter: 1
+    given: "Ithax"
+    family: "Moonmark"
+    speciesOne: 27
+    speciesTwo: 13
+    factionType: 8
+    factionName: "The Pickled Hand"
+    homeworld: "Coldharbour"
+    story: "Ithax Moonmark grew up on a salvage barge on Coldharbour.\n\nThe The Pickled Hand moves news between ports before anyone knows it has moved. With Ithax aboard, your crew will be sent to lift dispatches from rival ports, and to be gone before morning.\n\nThey have never once arrived early."
+  - key: Makoola
+    callsign: 1
+    starter: 1
+    given: "Makoola"
+    family: "Starsail"
+    speciesOne: 36
+    speciesTwo: 43
+    factionType: 2
+    factionName: "Deepreed Stalkers"
+    homeworld: "Brackenmouth"
+    story: "Makoola Starsail learned to fly before they could read on Brackenmouth.\n\nThe Deepreed Stalkers follow sightings across the HyperSea. Fly with Makoola and you will hear of vault fields before other crews do, and of lairs where something has grown too large to leave alone.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Talolo
+    callsign: 2
+    starter: 1
+    given: "Talolo"
+    family: "Foamrest"
+    speciesOne: 15
+    speciesTwo: 42
+    factionType: 8
+    factionName: "Velvet Gill"
+    homeworld: "Rimehollow"
+    story: "Talolo Foamrest grew up on a salvage barge on Rimehollow.\n\nThe Velvet Gill trades in news before it is news. With Talolo aboard, your crew will be sent to lift dispatches from rival ports and carry them away first.\n\nThey keep score of everything, including naps."
+  - key: Iri
+    callsign: 3
+    starter: 1
+    given: "Iri"
+    family: "Whistlebell"
+    speciesOne: 33
+    speciesTwo: 35
+    factionType: 11
+    factionName: "Spray and Spin"
+    homeworld: "Wrackline"
+    story: "Iri Whistlebell was raised by a choir of dockworkers on Wrackline.\n\nThe Spray and Spin runs exhibition courses all over the HyperSea. With Iri aboard, your crew will be invited to fly them: skim the course, gather the crystals, and make the crowd stand up.\n\nThey laugh at exactly the wrong moments."
+  - key: Miben
+    callsign: 4
+    starter: 1
+    given: "Miben"
+    family: "Glasscove"
+    speciesOne: 2
+    speciesTwo: 3
+    factionType: 11
+    factionName: "Slipstream Racing Club"
+    homeworld: "Lowlight"
+    story: "Miben Glasscove was apprenticed to a cartographer on Lowlight.\n\nSlipstream Racing Club put on exhibition runs in the brightest cells of the HyperSea. With Miben aboard, your crew will be invited to fly them, skimming the course for every crystal on it.\n\nThey collect shells from every port and give them away to strangers."
+  - key: Verao
+    callsign: 5
+    starter: 1
+    given: "Verao"
+    family: "Emberrest"
+    speciesOne: 19
+    speciesTwo: 24
+    factionType: 1
+    factionName: "Amber Ledger Guild"
+    homeworld: "the Old Harbour"
+    story: "Verao Emberrest spent a childhood stowing away on freighters on the Old Harbour.\n\nThe Amber Ledger Guild keeps accounts in every port. With Verao aboard, your crew will carry the Guild's dispatches, and run its convoys to ports under pressure.\n\nThey have never once arrived early."
+  - key: Brisilia
+    callsign: 6
+    starter: 1
+    given: "Brisilia"
+    family: "Stillridge"
+    speciesOne: 26
+    speciesTwo: 13
+    factionType: 11
+    factionName: "The Glittering Heats"
+    homeworld: "Starwake"
+    story: "Brisilia Stillridge was raised in a lighthouse on Starwake.\n\nThe Glittering Heats puts on exhibition runs wherever there is a crowd. With Brisilia aboard, your crew will be invited to fly them, skimming the course for every crystal along it.\n\nThey name every vessel they fly, and apologise to it after a hard landing."
+  - key: Pewen
+    callsign: 7
+    starter: 1
+    given: "Pewen"
+    family: "Reefwatch"
+    speciesOne: 33
+    speciesTwo: 8
+    factionType: 5
+    factionName: "Copperclaim Agency"
+    homeworld: "the Silver Lane"
+    story: "Pewen Reefwatch learned to fly before they could read on the Silver Lane.\n\nCopperclaim Agency carries the warrants on the most notorious crews in the HyperSea. With Pewen aboard, your crew will be handed bounties, and told where the crew was last seen standing.\n\nThey refuse to fly on an empty stomach."
+  - key: Briraix
+    callsign: 8
+    starter: 1
+    given: "Briraix"
+    family: "Driftthorn"
+    speciesOne: 12
+    speciesTwo: 32
+    factionType: 2
+    factionName: "Moonsedge Pack"
+    homeworld: "the Glass Shoals"
+    story: "Briraix Driftthorn was raised among reef gardeners on the Glass Shoals.\n\nThe Moonsedge Pack trades in rumours: a vault field glimpsed through the mist, a lair where the predators have grown too bold. Fly with Briraix and those rumours become your crew's work.\n\nThey name every vessel they fly, and apologise to it after a hard landing."
+  - key: Mata
+    callsign: 9
+    starter: 1
+    given: "Mata"
+    family: "Deepridge"
+    speciesOne: 16
+    speciesTwo: 23
+    factionType: 14
+    factionName: "Harbour Watch"
+    homeworld: "the Silver Lane"
+    story: "Mata Deepridge learned to fly before they could read on the Silver Lane.\n\nThe Harbour Watch answers every distress call in the HyperSea. With Mata aboard, your crew will be sent to derelicts with crews stranded aboard, and stay until everyone is safe.\n\nThey refuse to fly on an empty stomach."
+  - key: Ludira
+    callsign: 10
+    starter: 1
+    given: "Ludira"
+    family: "Kelpfin"
+    speciesOne: 34
+    speciesTwo: 23
+    factionType: 3
+    factionName: "Court of Still Water"
+    homeworld: "Driftmoor"
+    story: "Ludira Kelpfin grew up sorting crystals in a market stall on Driftmoor.\n\nCourt of Still Water binds a dozen harbours to keep each other's cores. With Ludira in your crew, the Accord will send you to patrol them, to answer a harbour's call for aid, and to take a core back when another domain holds it.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Belsiar
+    callsign: 11
+    starter: 1
+    given: "Belsiar"
+    family: "Silvermore"
+    speciesOne: 44
+    speciesTwo: 40
+    factionType: 7
+    factionName: "Open Current"
+    homeworld: "Starwake"
+    story: "Belsiar Silvermore was raised by a choir of dockworkers on Starwake.\n\nThe Open Current tears down the pens other domains build around the HyperSea's creatures. With Belsiar aboard, your crew will be told where those pens are, and asked to break them open.\n\nThey have never once arrived early."
+  - key: Canuar
+    callsign: 12
+    starter: 1
+    given: "Canuar"
+    family: "Stormwatch"
+    speciesOne: 23
+    speciesTwo: 14
+    factionType: 2
+    factionName: "Hollowfen Trackers"
+    homeworld: "the Glass Shoals"
+    story: "Canuar Stormwatch grew up the youngest of eleven on the Glass Shoals.\n\nHollowfen Trackers follows rumours of old vaults and the lairs where predators gather. With Canuar aboard, your crew will be sent to empty those vaults, and to hunt the lairs when they swell.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Uro
+    callsign: 13
+    starter: 1
+    given: "Uro"
+    family: "Spindlefield"
+    speciesOne: 11
+    speciesTwo: 46
+    factionType: 14
+    factionName: "Harbour Watch"
+    homeworld: "Coldharbour"
+    story: "Uro Spindlefield spent a childhood racing skiffs on Coldharbour.\n\nHarbour Watch answers the distress calls nobody else will. With Uro aboard, your crew will be sent to derelicts where crews are stranded, to hold on until everyone is aboard.\n\nThey have never once arrived early."
+  - key: Emao
+    callsign: 14
+    starter: 1
+    given: "Emao"
+    family: "Ambermark"
+    speciesOne: 22
+    speciesTwo: 18
+    factionType: 15
+    factionName: "Choir of the Deep"
+    homeworld: "the Kelp Throne"
+    story: "Emao Ambermark grew up sorting crystals in a market stall on the Kelp Throne.\n\nThe Choir of the Deep keeps vigil at shrines across the HyperSea. With Emao aboard, your crew will be asked to hold a shrine through its vigil, and the Choir has older rites it shares only with crews it trusts.\n\nThey name every vessel they fly, and apologise to it after a hard landing."
+  - key: Ora
+    callsign: 15
+    starter: 1
+    given: "Ora"
+    family: "Spindlestone"
+    speciesOne: 32
+    speciesTwo: 30
+    factionType: 10
+    factionName: "Bright Hull Works"
+    homeworld: "Shellmouth"
+    story: "Ora Spindlestone learned to fly before they could read on Shellmouth.\n\nBright Hull Works builds and mends for anyone who pays. With Ora aboard, your crew will be sent to cores under pressure, to lay prisms in the breach until the pressure drops.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Nemath
+    callsign: 16
+    starter: 1
+    given: "Nemath"
+    family: "Dawnward"
+    speciesOne: 11
+    speciesTwo: 23
+    factionType: 11
+    factionName: "The Glittering Heats"
+    homeworld: "Cinder Bay"
+    story: "Nemath Dawnward was raised by a choir of dockworkers on Cinder Bay.\n\nThe The Glittering Heats runs exhibition courses all over the HyperSea. With Nemath aboard, your crew will be invited to fly them: skim the course, gather the crystals, and make the crowd stand up.\n\nThey cannot resist a dare."
+  - key: Oth
+    callsign: 17
+    starter: 1
+    given: "Oth"
+    family: "Farmere"
+    speciesOne: 46
+    speciesTwo: 41
+    factionType: 13
+    factionName: "Reefward Trust"
+    homeworld: "Ember Deep"
+    story: "Oth Farmere learned to fly before they could read on Ember Deep.\n\nThe Reefward Trust look after the nurseries where the HyperSea's young things grow. With Oth aboard, your crew will be asked to tend a nursery and keep it safe, with no killing while you are there.\n\nThey refuse to fly on an empty stomach."
+  - key: Sasoko
+    callsign: 18
+    starter: 1
+    given: "Sasoko"
+    family: "Hollowwell"
+    speciesOne: 26
+    speciesTwo: 25
+    factionType: 11
+    factionName: "Spray and Spin"
+    homeworld: "the Lantern Reach"
+    story: "Sasoko Hollowwell was apprenticed to a cartographer on the Lantern Reach.\n\nSpray and Spin put on exhibition runs in the brightest cells of the HyperSea. With Sasoko aboard, your crew will be invited to fly them, skimming the course for every crystal on it.\n\nThey collect shells from every port and give them away to strangers."
+  - key: Anudek
+    callsign: 7
+    starter: 1
+    given: "Anudek"
+    family: "Silversong"
+    speciesOne: 35
+    speciesTwo: 9
+    factionType: 10
+    factionName: "Steadfast Joinery"
+    homeworld: "Lanternfall"
+    story: "Anudek Silversong was raised in a lighthouse on Lanternfall.\n\nSteadfast Joinery shores up what is about to give way. With Anudek aboard, your crew will be called to cores under pressure, to lay prisms in the breach until it holds.\n\nThey cannot resist a dare."
+  - key: Xabedek
+    callsign: 11
+    starter: 1
+    given: "Xabedek"
+    family: "Stormgate"
+    speciesOne: 48
+    speciesTwo: 34
+    factionType: 15
+    factionName: "Order of the Slow Tide"
+    homeworld: "Lanternfall"
+    story: "Xabedek Stormgate was raised among reef gardeners on Lanternfall.\n\nOrder of the Slow Tide keeps shrines across the HyperSea and the rite of nine that links them. With Xabedek aboard, your crew will be asked to hold a shrine through its vigil, and in time to join the ninefold rite.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Belsoth
+    callsign: 13
+    starter: 1
+    given: "Belsoth"
+    family: "Deepwell"
+    speciesOne: 12
+    speciesTwo: 4
+    factionType: 6
+    factionName: "The Unmapped"
+    homeworld: "the Lantern Reach"
+    story: "Belsoth Deepwell was raised in a lighthouse on the Lantern Reach.\n\nThe Unmapped pay for places nobody has charted yet. With Belsoth aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.\n\nThey laugh at exactly the wrong moments."
+  - key: Zebeel
+    callsign: 18
+    starter: 1
+    given: "Zebeel"
+    family: "Reefsail"
+    speciesOne: 17
+    speciesTwo: 21
+    factionType: 14
+    factionName: "Harbour Watch"
+    homeworld: "Farshore"
+    story: "Zebeel Reefsail grew up on a salvage barge on Farshore.\n\nThe Harbour Watch answers every distress call in the HyperSea. With Zebeel aboard, your crew will be sent to derelicts with crews stranded aboard, and stay until everyone is safe.\n\nThey name every vessel they fly, and apologise to it after a hard landing."
+  - key: Lusiel
+    callsign: 1
+    starter: 1
+    given: "Lusiel"
+    family: "Lanternwater"
+    speciesOne: 13
+    speciesTwo: 37
+    factionType: 9
+    factionName: "Driftnet Cooperative"
+    homeworld: "Mirrorfen"
+    story: "Lusiel Lanternwater was apprenticed to a cartographer on Mirrorfen.\n\nDriftnet Cooperative knows when the blooms of the HyperSea will open. With Lusiel aboard, your crew will be sent to harvest them while they last.\n\nThey keep score of everything, including naps."
+  - key: Tathadek
+    callsign: 2
+    starter: 1
+    given: "Tathadek"
+    family: "Amberward"
+    speciesOne: 22
+    speciesTwo: 4
+    factionType: 8
+    factionName: "Whisperkelp"
+    homeworld: "Driftmoor"
+    story: "Tathadek Amberward learned to fly before they could read on Driftmoor.\n\nWhisperkelp hears every secret that moves between ports. With Tathadek aboard, your crew will be sent to lift dispatches from rival ports, and carry the freshest news home first.\n\nThey name every vessel they fly, and apologise to it after a hard landing."
+  - key: Brisoo
+    callsign: 3
+    starter: 1
+    given: "Brisoo"
+    family: "Brinereach"
+    speciesOne: 1
+    speciesTwo: 23
+    factionType: 5
+    factionName: "Writ and Hook"
+    homeworld: "Farshore"
+    story: "Brisoo Brinereach grew up mending nets on Farshore.\n\nWrit and Hook carries the warrants on the most notorious crews in the HyperSea. With Brisoo aboard, your crew will be handed bounties, and told where the crew was last seen standing.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Galsodek
+    callsign: 4
+    starter: 1
+    given: "Galsodek"
+    family: "Driftfall"
+    speciesOne: 42
+    speciesTwo: 22
+    factionType: 1
+    factionName: "Amber Ledger Guild"
+    homeworld: "the Amber Shoal"
+    story: "Galsodek Driftfall was apprenticed to a cartographer on the Amber Shoal.\n\nThe Amber Ledger Guild keeps accounts in every port. With Galsodek aboard, your crew will carry the Guild's dispatches, and run its convoys to ports under pressure.\n\nThey collect shells from every port and give them away to strangers."
+  - key: Brivelo
+    callsign: 5
+    starter: 1
+    given: "Brivelo"
+    family: "Greyrest"
+    speciesOne: 8
+    speciesTwo: 28
+    factionType: 8
+    factionName: "The Pickled Hand"
+    homeworld: "Tangleweed"
+    story: "Brivelo Greyrest grew up in the shadow of a dead Ark on Tangleweed.\n\nThe Pickled Hand trades in what other ports would rather keep. With Brivelo aboard, your crew will be sent to lift dispatches from rival ports, and the freshest news there will be yours to carry.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Veveai
+    callsign: 6
+    starter: 1
+    given: "Veveai"
+    family: "Dawnridge"
+    speciesOne: 23
+    speciesTwo: 40
+    factionType: 4
+    factionName: "Saltjaw Brethren"
+    homeworld: "the Kelp Throne"
+    story: "Veveai Dawnridge learned to fly before they could read on the Kelp Throne.\n\nThe Saltjaw Brethren live off what the sea gives up. Sign Veveai on and the Brethren will point your crew at the stashes they know of, and at wrecks still fresh enough to strip.\n\nThey keep score of everything, including naps."
+  - key: Tadiwen
+    callsign: 7
+    starter: 1
+    given: "Tadiwen"
+    family: "Driftwhistle"
+    speciesOne: 3
+    speciesTwo: 25
+    factionType: 6
+    factionName: "Far Shoal Society"
+    homeworld: "Cinder Bay"
+    story: "Tadiwen Driftwhistle grew up sorting crystals in a market stall on Cinder Bay.\n\nThe Far Shoal Society sends crews where no one has been. With Tadiwen aboard, your crew will be asked to survey uncharted places, and to follow chart fragments wherever they lead.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Esius
+    callsign: 8
+    starter: 1
+    given: "Esius"
+    family: "Greydrift"
+    speciesOne: 17
+    speciesTwo: 8
+    factionType: 9
+    factionName: "Kelpline Gleaners"
+    homeworld: "Hollowfen"
+    story: "Esius Greydrift learned to fly before they could read on Hollowfen.\n\nKelpline Gleaners knows when the blooms of the HyperSea will open. With Esius aboard, your crew will be sent to harvest them while they last.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Eradek
+    callsign: 9
+    starter: 1
+    given: "Eradek"
+    family: "Kelpkeel"
+    speciesOne: 15
+    speciesTwo: 22
+    factionType: 15
+    factionName: "Choir of the Deep"
+    homeworld: "Stillwater"
+    story: "Eradek Kelpkeel was raised among reef gardeners on Stillwater.\n\nThe Choir of the Deep keeps vigil at shrines across the HyperSea. With Eradek aboard, your crew will be asked to hold a shrine through its vigil, and the Choir has older rites it shares only with crews it trusts.\n\nThey laugh at exactly the wrong moments."
+  - key: Isoro
+    callsign: 10
+    starter: 1
+    given: "Isoro"
+    family: "Driftmore"
+    speciesOne: 55
+    speciesTwo: 72
+    factionType: 14
+    factionName: "Lifeline Corps"
+    homeworld: "Rimehollow"
+    story: "Isoro Driftmore was apprenticed to a cartographer on Rimehollow.\n\nThe Lifeline Corps answers every distress call in the HyperSea. With Isoro aboard, your crew will be sent to derelicts with crews stranded aboard, and stay until everyone is safe.\n\nThey hum off-key during every jump."
+  - key: Nemix
+    callsign: 11
+    starter: 1
+    given: "Nemix"
+    family: "Hollowrunner"
+    speciesOne: 88
+    speciesTwo: 87
+    factionType: 1
+    factionName: "Brass Lantern Company"
+    homeworld: "Cinder Bay"
+    story: "Nemix Hollowrunner grew up the youngest of eleven on Cinder Bay.\n\nThe Brass Lantern Company lights half the ports of the HyperSea. With Nemix aboard, the Company will give your crew its dispatches to carry, and its convoys to run when a port goes dark.\n\nThey refuse to fly on an empty stomach."
+  - key: Calio
+    callsign: 12
+    starter: 1
+    given: "Calio"
+    family: "Dawnrunner"
+    speciesOne: 86
+    speciesTwo: 36
+    factionType: 2
+    factionName: "Moonsedge Pack"
+    homeworld: "Hollowfen"
+    story: "Calio Dawnrunner was raised in a lighthouse on Hollowfen.\n\nThe Moonsedge Pack hears every sighting first. With Calio aboard, your crew will be sent after vaults the sightings point to, and into lairs when the predators gather.\n\nThey refuse to fly on an empty stomach."
+  - key: Hasa
+    callsign: 13
+    starter: 1
+    given: "Hasa"
+    family: "Wavemere"
+    speciesOne: 48
+    speciesTwo: 24
+    factionType: 4
+    factionName: "The Unmoored"
+    homeworld: "Mirrorfen"
+    story: "Hasa Wavemere spent a childhood stowing away on freighters on Mirrorfen.\n\nThe Unmoored answer to no port. Fly with Hasa and you will hear of hoards to raid and wrecks to strip from one end of the Grey Reach to the other.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Irenmo
+    callsign: 14
+    starter: 1
+    given: "Irenmo"
+    family: "Lowspark"
+    speciesOne: 6
+    speciesTwo: 46
+    factionType: 9
+    factionName: "Kelpline Gleaners"
+    homeworld: "the Glass Shoals"
+    story: "Irenmo Lowspark grew up in the shadow of a dead Ark on the Glass Shoals.\n\nKelpline Gleaners knows when the blooms of the HyperSea will open. With Irenmo aboard, your crew will be sent to harvest them while they last.\n\nThey have never once arrived early."
+  - key: Mithamo
+    callsign: 15
+    starter: 1
+    given: "Mithamo"
+    family: "Hollowsong"
+    speciesOne: 19
+    speciesTwo: 89
+    factionType: 16
+    factionName: "The Treaty Table"
+    homeworld: "the Amber Shoal"
+    story: "Mithamo Hollowsong spent a childhood racing skiffs on the Amber Shoal.\n\nThe Treaty Table brings rivals to terms. With Mithamo aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.\n\nThey keep score of everything, including naps."
+  - key: Nekoia
+    callsign: 16
+    starter: 1
+    given: "Nekoia"
+    family: "Foamwater"
+    speciesOne: 29
+    speciesTwo: 26
+    factionType: 4
+    factionName: "The Unmoored"
+    homeworld: "the Silver Lane"
+    story: "Nekoia Foamwater was raised by a choir of dockworkers on the Silver Lane.\n\nThe Unmoored answer to no port. Fly with Nekoia and you will hear of hoards to raid and wrecks to strip from one end of the Grey Reach to the other.\n\nThey collect shells from every port and give them away to strangers."
+  - key: Zerilo
+    callsign: 17
+    starter: 1
+    given: "Zerilo"
+    family: "Moonwing"
+    speciesOne: 44
+    speciesTwo: 46
+    factionType: 3
+    factionName: "Court of Still Water"
+    homeworld: "Brackenmouth"
+    story: "Zerilo Moonwing was raised in a lighthouse on Brackenmouth.\n\nThe Court of Still Water holds cores across the cold reaches. With Zerilo aboard, the Court will ask your crew to patrol them, answer its calls for aid, and retake what another domain has taken.\n\nThey have never once arrived early."
+  - key: Nebeth
+    callsign: 18
+    starter: 1
+    given: "Nebeth"
+    family: "Starspark"
+    speciesOne: 19
+    speciesTwo: 39
+    factionType: 10
+    factionName: "Keel and Rivet"
+    homeworld: "Brackenmouth"
+    story: "Nebeth Starspark was raised among reef gardeners on Brackenmouth.\n\nKeel and Rivet builds and mends for anyone who pays. With Nebeth aboard, your crew will be sent to cores under pressure, to lay prisms in the breach until the pressure drops.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Abeko
+    callsign: 1
+    starter: 1
+    given: "Abeko"
+    family: "Deeplight"
+    speciesOne: 38
+    speciesTwo: 20
+    factionType: 6
+    factionName: "Lantern Reach Cartographers"
+    homeworld: "Gloamwater"
+    story: "Abeko Deeplight was raised in a lighthouse on Gloamwater.\n\nLantern Reach Cartographers pay for places nobody has charted yet. With Abeko aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Zeliai
+    callsign: 2
+    starter: 1
+    given: "Zeliai"
+    family: "Lanternwhistle"
+    speciesOne: 15
+    speciesTwo: 6
+    factionType: 4
+    factionName: "Gullbone Crew"
+    homeworld: "Hollowfen"
+    story: "Zeliai Lanternwhistle was raised by a choir of dockworkers on Hollowfen.\n\nThe Gullbone Crew raid the hoards other pirates leave unguarded, and strip the wrecks nobody else will touch. With Zeliai aboard, they will tell your crew where both are.\n\nThey refuse to fly on an empty stomach."
+  - key: Zethave
+    callsign: 3
+    starter: 1
+    given: "Zethave"
+    family: "Shellhook"
+    speciesOne: 20
+    speciesTwo: 36
+    factionType: 15
+    factionName: "Choir of the Deep"
+    homeworld: "the Lantern Reach"
+    story: "Zethave Shellhook grew up on a salvage barge on the Lantern Reach.\n\nThe Choir of the Deep keeps vigil at shrines across the HyperSea. With Zethave aboard, your crew will be asked to hold a shrine through its vigil, and the Choir has older rites it shares only with crews it trusts.\n\nThey keep score of everything, including naps."
+  - key: Uvelo
+    callsign: 4
+    starter: 1
+    given: "Uvelo"
+    family: "Stillbell"
+    speciesOne: 26
+    speciesTwo: 5
+    factionType: 3
+    factionName: "House Verdance"
+    homeworld: "Cinder Bay"
+    story: "Uvelo Stillbell grew up sorting crystals in a market stall on Cinder Bay.\n\nHouse Verdance trusts its clocks and its cores to the same few hands. With Uvelo in your crew, you will patrol the house's cores, answer its calls for aid, and retake a core another domain has seized.\n\nThey write letters to a sibling who never writes back."
+  - key: Jorish
+    callsign: 5
+    starter: 1
+    given: "Jorish"
+    family: "Ambershore"
+    speciesOne: 5
+    speciesTwo: 20
+    factionType: 12
+    factionName: "The Tidal Archive"
+    homeworld: "Rimehollow"
+    story: "Jorish Ambershore grew up the youngest of eleven on Rimehollow.\n\nThe Tidal Archive wants to know how the HyperSea lives. With Jorish aboard, your crew will be asked to find a creature or a bloom and stay near it long enough to study it.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Vesidek
+    callsign: 6
+    starter: 1
+    given: "Vesidek"
+    family: "Saltfall"
+    speciesOne: 10
+    speciesTwo: 43
+    factionType: 6
+    factionName: "Lantern Reach Cartographers"
+    homeworld: "Tangleweed"
+    story: "Vesidek Saltfall was raised by a choir of dockworkers on Tangleweed.\n\nLantern Reach Cartographers pay for places nobody has charted yet. With Vesidek aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.\n\nThey hum off-key during every jump."
+  - key: Gallaus
+    callsign: 7
+    starter: 1
+    given: "Gallaus"
+    family: "Stillmore"
+    speciesOne: 30
+    speciesTwo: 40
+    factionType: 7
+    factionName: "Free Shoals League"
+    homeworld: "Mirrorfen"
+    story: "Gallaus Stillmore learned to fly before they could read on Mirrorfen.\n\nThe Free Shoals League tears down the pens other domains build around the HyperSea's creatures. With Gallaus aboard, your crew will be told where those pens are, and asked to break them open.\n\nThey write letters to a sibling who never writes back."
+  - key: Peai
+    callsign: 8
+    starter: 1
+    given: "Peai"
+    family: "Coralfield"
+    speciesOne: 42
+    speciesTwo: 27
+    factionType: 14
+    factionName: "Lifeline Corps"
+    homeworld: "the Glass Shoals"
+    story: "Peai Coralfield was raised among reef gardeners on the Glass Shoals.\n\nThe Lifeline Corps answers every distress call in the HyperSea. With Peai aboard, your crew will be sent to derelicts with crews stranded aboard, and stay until everyone is safe.\n\nThey keep score of everything, including naps."
+  - key: Harendek
+    callsign: 9
+    starter: 1
+    given: "Harendek"
+    family: "Kelpspark"
+    speciesOne: 43
+    speciesTwo: 40
+    factionType: 4
+    factionName: "The Rusted Grin"
+    homeworld: "Lanternfall"
+    story: "Harendek Kelpspark was raised in a lighthouse on Lanternfall.\n\nThe Rusted Grin raid the hoards richer crews leave behind, and strip the wrecks before the salvagers arrive. With Harendek aboard, your crew will hear where both are waiting.\n\nThey collect shells from every port and give them away to strangers."
+  - key: Delrave
+    callsign: 10
+    starter: 1
+    given: "Delrave"
+    family: "Hollowlight"
+    speciesOne: 29
+    speciesTwo: 18
+    factionType: 11
+    factionName: "Slipstream Racing Club"
+    homeworld: "the Kelp Throne"
+    story: "Delrave Hollowlight grew up the youngest of eleven on the Kelp Throne.\n\nThe Slipstream Racing Club runs exhibition courses all over the HyperSea. With Delrave aboard, your crew will be invited to fly them: skim the course, gather the crystals, and make the crowd stand up.\n\nThey keep score of everything, including naps."
+  - key: Belthax
+    callsign: 11
+    starter: 1
+    given: "Belthax"
+    family: "Creststone"
+    speciesOne: 30
+    speciesTwo: 12
+    factionType: 3
+    factionName: "Wardens of the Calm"
+    homeworld: "Brightwater"
+    story: "Belthax Creststone grew up sorting crystals in a market stall on Brightwater.\n\nThe Wardens of the Calm keep watch over the cores the quiet domains rely on. With Belthax aboard, the Wardens will ask your crew to patrol those cores, to answer when one calls for aid, and to hold it until the danger has passed.\n\nThey laugh at exactly the wrong moments."
+  - key: Nemiwen
+    callsign: 12
+    starter: 1
+    given: "Nemiwen"
+    family: "Saltgate"
+    speciesOne: 9
+    speciesTwo: 31
+    factionType: 13
+    factionName: "Keepers of the Bloom"
+    homeworld: "Shellmouth"
+    story: "Nemiwen Saltgate spent a childhood stowing away on freighters on Shellmouth.\n\nThe Keepers of the Bloom look after the nurseries where the HyperSea's young things grow. With Nemiwen aboard, your crew will be asked to tend a nursery and keep it safe, with no killing while you are there.\n\nThey cannot resist a dare."
+  - key: Delnous
+    callsign: 13
+    starter: 1
+    given: "Delnous"
+    family: "Anchorweaver"
+    speciesOne: 9
+    speciesTwo: 47
+    factionType: 10
+    factionName: "Steadfast Joinery"
+    homeworld: "Coldharbour"
+    story: "Delnous Anchorweaver was raised among reef gardeners on Coldharbour.\n\nSteadfast Joinery shores up what is about to give way. With Delnous aboard, your crew will be called to cores under pressure, to lay prisms in the breach until it holds.\n\nThey hum off-key during every jump."
+  - key: Darsous
+    callsign: 14
+    starter: 1
+    given: "Darsous"
+    family: "Silverwatch"
+    speciesOne: 31
+    speciesTwo: 33
+    factionType: 1
+    factionName: "Saltmark Consortium"
+    homeworld: "the Grey Reach"
+    story: "Darsous Silverwatch spent a childhood stowing away on freighters on the Grey Reach.\n\nThe Saltmark Consortium charts the trade lanes and sells passage along them. Fly with Darsous and the Consortium will give your crew dispatches to carry, and convoys to bring to the ports its lanes have left short.\n\nThey tie a ribbon on the hull for every friend lost."
+  - key: Jomasa
+    callsign: 15
+    starter: 1
+    given: "Jomasa"
+    family: "Gullstone"
+    speciesOne: 4
+    speciesTwo: 14
+    factionType: 4
+    factionName: "The Rusted Grin"
+    homeworld: "Lanternfall"
+    story: "Jomasa Gullstone was raised in a lighthouse on Lanternfall.\n\nThe Rusted Grin raid the hoards richer crews leave behind, and strip the wrecks before the salvagers arrive. With Jomasa aboard, your crew will hear where both are waiting.\n\nThey have never once arrived early."
+  - key: Mamiai
+    callsign: 16
+    starter: 1
+    given: "Mamiai"
+    family: "Saltsong"
+    speciesOne: 32
+    speciesTwo: 13
+    factionType: 10
+    factionName: "Steadfast Joinery"
+    homeworld: "the Coral Court"
+    story: "Mamiai Saltsong was apprenticed to a cartographer on the Coral Court.\n\nSteadfast Joinery shores up what is about to give way. With Mamiai aboard, your crew will be called to cores under pressure, to lay prisms in the breach until it holds.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Inuly
+    callsign: 17
+    starter: 1
+    given: "Inuly"
+    family: "Greywater"
+    speciesOne: 20
+    speciesTwo: 9
+    factionType: 11
+    factionName: "Spray and Spin"
+    homeworld: "Saltmere"
+    story: "Inuly Greywater was raised among reef gardeners on Saltmere.\n\nSpray and Spin puts on exhibition runs wherever there is a crowd. With Inuly aboard, your crew will be invited to fly them, skimming the course for every crystal along it.\n\nThey collect shells from every port and give them away to strangers."
+  - key: Ush
+    callsign: 18
+    starter: 1
+    given: "Ush"
+    family: "Drifthart"
+    speciesOne: 27
+    speciesTwo: 11
+    factionType: 6
+    factionName: "Far Shoal Society"
+    homeworld: "Stillwater"
+    story: "Ush Drifthart learned to fly before they could read on Stillwater.\n\nThe Far Shoal Society sends crews where no one has been. With Ush aboard, your crew will be asked to survey uncharted places, and to follow chart fragments wherever they lead.\n\nThey tie a ribbon on the hull for every friend lost."
+  - key: Venura
+    callsign: 1
+    starter: 1
+    given: "Venura"
+    family: "Amberfield"
+    speciesOne: 7
+    speciesTwo: 24
+    factionType: 5
+    factionName: "The Ninth Warrant"
+    homeworld: "Ember Deep"
+    story: "Venura Amberfield grew up sorting crystals in a market stall on Ember Deep.\n\nThe Ninth Warrant takes the bounties others will not. With Venura aboard, your crew will be handed warrants on notorious crews, and told where to meet them.\n\nThey tie a ribbon on the hull for every friend lost."
+  - key: Lutharin
+    callsign: 2
+    starter: 1
+    given: "Lutharin"
+    family: "Tidestone"
+    speciesOne: 10
+    speciesTwo: 30
+    factionType: 9
+    factionName: "Driftnet Cooperative"
+    homeworld: "the Silver Lane"
+    story: "Lutharin Tidestone grew up on a salvage barge on the Silver Lane.\n\nDriftnet Cooperative knows when the blooms of the HyperSea will open. With Lutharin aboard, your crew will be sent to harvest them while they last.\n\nThey hum off-key during every jump."
+  - key: Tariola
+    callsign: 3
+    starter: 1
+    given: "Tariola"
+    family: "Rustshore"
+    speciesOne: 8
+    speciesTwo: 30
+    factionType: 16
+    factionName: "Envoys of the Accord"
+    homeworld: "Lowlight"
+    story: "Tariola Rustshore was raised by a choir of dockworkers on Lowlight.\n\nEnvoys of the Accord brings rivals to terms. With Tariola aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.\n\nThey hum off-key during every jump."
+  - key: Jorenne
+    callsign: 4
+    starter: 1
+    given: "Jorenne"
+    family: "Rustbrook"
+    speciesOne: 25
+    speciesTwo: 19
+    factionType: 14
+    factionName: "Harbour Watch"
+    homeworld: "the Kelp Throne"
+    story: "Jorenne Rustbrook was apprenticed to a cartographer on the Kelp Throne.\n\nHarbour Watch answers the distress calls nobody else will. With Jorenne aboard, your crew will be sent to derelicts where crews are stranded, to hold on until everyone is aboard.\n\nThey laugh at exactly the wrong moments."
+  - key: Emasa
+    callsign: 5
+    starter: 1
+    given: "Emasa"
+    family: "Shellwing"
+    speciesOne: 16
+    speciesTwo: 11
+    factionType: 1
+    factionName: "House of Seven Scales"
+    homeworld: "Starwake"
+    story: "Emasa Shellwing spent a childhood stowing away on freighters on Starwake.\n\nThe House of Seven Scales moves goods to every port on the Lane. Fly with Emasa and your crew will carry its dispatches from port to port, and run its convoys to ports short of what they need.\n\nThey refuse to fly on an empty stomach."
+  - key: Kamane
+    callsign: 6
+    starter: 1
+    given: "Kamane"
+    family: "Coralwright"
+    speciesOne: 41
+    speciesTwo: 34
+    factionType: 5
+    factionName: "Copperclaim Agency"
+    homeworld: "the Coral Court"
+    story: "Kamane Coralwright was raised among reef gardeners on the Coral Court.\n\nCopperclaim Agency carries the warrants on the most notorious crews in the HyperSea. With Kamane aboard, your crew will be handed bounties, and told where the crew was last seen standing.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Yovelia
+    callsign: 7
+    starter: 1
+    given: "Yovelia"
+    family: "Frostgate"
+    speciesOne: 34
+    speciesTwo: 21
+    factionType: 4
+    factionName: "Saltjaw Brethren"
+    homeworld: "Tangleweed"
+    story: "Yovelia Frostgate grew up the youngest of eleven on Tangleweed.\n\nThe Saltjaw Brethren live off what the sea gives up. Sign Yovelia on and the Brethren will point your crew at the stashes they know of, and at wrecks still fresh enough to strip.\n\nThey hum off-key during every jump."
+  - key: Belkosa
+    callsign: 8
+    starter: 1
+    given: "Belkosa"
+    family: "Reefridge"
+    speciesOne: 1
+    speciesTwo: 26
+    factionType: 16
+    factionName: "The Open Hand"
+    homeworld: "Farshore"
+    story: "Belkosa Reefridge was raised by a choir of dockworkers on Farshore.\n\nThe Open Hand brings rivals to terms. With Belkosa aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.\n\nThey collect shells from every port and give them away to strangers."
+  - key: Kamael
+    callsign: 9
+    starter: 1
+    given: "Kamael"
+    family: "Drifttail"
+    speciesOne: 4
+    speciesTwo: 43
+    factionType: 4
+    factionName: "Saltjaw Brethren"
+    homeworld: "the Silver Lane"
+    story: "Kamael Drifttail learned to fly before they could read on the Silver Lane.\n\nThe Saltjaw Brethren live off what the sea gives up. Sign Kamael on and the Brethren will point your crew at the stashes they know of, and at wrecks still fresh enough to strip.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Wymimo
+    callsign: 10
+    starter: 1
+    given: "Wymimo"
+    family: "Amberdrift"
+    speciesOne: 33
+    speciesTwo: 11
+    factionType: 2
+    factionName: "Order of the Last Lure"
+    homeworld: "Stillwater"
+    story: "Wymimo Amberdrift grew up mending nets on Stillwater.\n\nThe Order of the Last Lure keeps a ledger of every vault field and every sighting its members have ever heard of. With Wymimo aboard, that ledger is open to your crew: vaults to open, and lairs to hunt.\n\nThey keep a jar of every crystal they have ever missed."
+  - key: Iliwen
+    callsign: 11
+    starter: 1
+    given: "Iliwen"
+    family: "Amberfall"
+    speciesOne: 38
+    speciesTwo: 8
+    factionType: 7
+    factionName: "Free Shoals League"
+    homeworld: "the Copper Reef"
+    story: "Iliwen Amberfall learned to fly before they could read on the Copper Reef.\n\nThe Free Shoals League tears down the pens other domains build around the HyperSea's creatures. With Iliwen aboard, your crew will be told where those pens are, and asked to break them open.\n\nThey have never once arrived early."
+  - key: Hanomo
+    callsign: 12
+    starter: 1
+    given: "Hanomo"
+    family: "Glasswick"
+    speciesOne: 3
+    speciesTwo: 41
+    factionType: 7
+    factionName: "The Unbound Choir"
+    homeworld: "Driftmoor"
+    story: "Hanomo Glasswick grew up the youngest of eleven on Driftmoor.\n\nThe Unbound Choir tears down the pens other domains build around the HyperSea's creatures. With Hanomo aboard, your crew will be told where those pens are, and asked to break them open.\n\nThey tie a ribbon on the hull for every friend lost."
+  - key: Nerenlo
+    callsign: 13
+    starter: 1
+    given: "Nerenlo"
+    family: "Crestreach"
+    speciesOne: 8
+    speciesTwo: 13
+    factionType: 6
+    factionName: "Lantern Reach Cartographers"
+    homeworld: "Driftmoor"
+    story: "Nerenlo Crestreach grew up in the shadow of a dead Ark on Driftmoor.\n\nLantern Reach Cartographers pay for places nobody has charted yet. With Nerenlo aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.\n\nThey write letters to a sibling who never writes back."
+  - key: Brilalo
+    callsign: 14
+    starter: 1
+    given: "Brilalo"
+    family: "Dawnshore"
+    speciesOne: 2
+    speciesTwo: 12
+    factionType: 1
+    factionName: "Brass Lantern Company"
+    homeworld: "Stillwater"
+    story: "Brilalo Dawnshore was raised in a lighthouse on Stillwater.\n\nThe Brass Lantern Company lights half the ports of the HyperSea. With Brilalo aboard, the Company will give your crew its dispatches to carry, and its convoys to run when a port goes dark.\n\nThey write letters to a sibling who never writes back."
+  - key: Abero
+    callsign: 15
+    starter: 1
+    given: "Abero"
+    family: "Greywing"
+    speciesOne: 48
+    speciesTwo: 37
+    factionType: 5
+    factionName: "Copperclaim Agency"
+    homeworld: "Starwake"
+    story: "Abero Greywing was raised in a lighthouse on Starwake.\n\nCopperclaim Agency carries the warrants on the most notorious crews in the HyperSea. With Abero aboard, your crew will be handed bounties, and told where the crew was last seen standing.\n\nThey talk to the Ark at night and insist it answers."
+  - key: Xamilo
+    callsign: 16
+    starter: 1
+    given: "Xamilo"
+    family: "Ashhook"
+    speciesOne: 41
+    speciesTwo: 1
+    factionType: 11
+    factionName: "Spray and Spin"
+    homeworld: "Cinder Bay"
+    story: "Xamilo Ashhook grew up mending nets on Cinder Bay.\n\nSpray and Spin puts on exhibition runs wherever there is a crowd. With Xamilo aboard, your crew will be invited to fly them, skimming the course for every crystal along it.\n\nThey hum off-key during every jump."
+  - key: Kakoai
+    callsign: 17
+    starter: 1
+    given: "Kakoai"
+    family: "Anchormoor"
+    speciesOne: 18
+    speciesTwo: 12
+    factionType: 1
+    factionName: "Tidewright Exchange"
+    homeworld: "Gloamwater"
+    story: "Kakoai Anchormoor grew up on a salvage barge on Gloamwater.\n\nThe Tidewright Exchange keeps a desk in every port worth the name. Fly with Kakoai and the Exchange will hand your crew sealed dispatches to carry between them, and cargo for convoys bound to ports under pressure.\n\nThey refuse to fly on an empty stomach."
+  - key: Caane
+    callsign: 18
+    starter: 1
+    given: "Caane"
+    family: "Frostdrift"
+    speciesOne: 38
+    speciesTwo: 22
+    factionType: 3
+    factionName: "The Jade Accord"
+    homeworld: "Coldharbour"
+    story: "Caane Frostdrift spent a childhood stowing away on freighters on Coldharbour.\n\nThe Jade Accord binds a dozen harbours to keep each other's cores. With Caane in your crew, the Accord will send you to patrol them, to answer a harbour's call for aid, and to take a core back when another domain holds it.\n\nThey laugh at exactly the wrong moments."
+  crews:
+  - members:
+    - ENSIGN
+    - MANGER
+    - ANVIL
+    - VOLT
+    - ZODIAC
+    - SUNDIAL
+    - OPAL
+    - RAMPART
+    - CITADEL
+    - HORNET
+    - IVY
+    - TALON
+    - DOE
+    - WINGMAN
+    - BANDIT
+    - NEEDLE
+    - GALLEON
+    - FLUME
+    codeHash: eae85ef741dcf5687e0bffd53180acd02d198f30df2c5ac9c896aabfea1679a4
+  - members:
+    - Scales
+    - Tender
+    - Dozer
+    - Flux
+    - Astrofoil
+    - Echo
+    - Maestro
+    - Tenacious
+    - Reaper
+    - Krush
+    - Bushy
+    - Strider
+    - Spare02
+    - Damsel
+    - Fiest
+    - Longshift
+    - Jugger
+    - Comet
+    codeHash: 8c7f6372a588bb047531040f79c957d944eecf319af75c316335969f48d40c32
+  - members:
+    - Spare05
+    - Spare07
+    - Mason
+    - Shrapnel
+    - Trace
+    - Spare01
+    - Xathata
+    - Spare08
+    - Riptide
+    - Spare04
+    - Xalaai
+    - Tomahawk
+    - Peveth
+    - Slingshot
+    - Spare06
+    - Siphon
+    - Spare03
+    - Cario
+    codeHash: b3ba1a57cb47e7f3b49912bf5df092b58fa661d0dd995598c106b9865d918065
+  - members:
+    - Joriro
+    - Dellalia
+    - Sabero
+    - Olo
+    - Rolamo
+    - Yox
+    - Pediri
+    - Belthaly
+    - Nethael
+    - Mamo
+    - Quikoth
+    - Briola
+    - Takoane
+    - Fenra
+    - Corrarin
+    - Neloel
+    - Uthael
+    - Corlilia
+    codeHash: 6fec496da5eb51ee813783731d54506d9b7db370bbaaf2765e35aa5b5e145918
+  - members:
+    - Lulaane
+    - Belrenro
+    - Zeriola
+    - Maloane
+    - Fenx
+    - Quilox
+    - Ovex
+    - Zesondo
+    - Mirin
+    - Olone
+    - Mamaola
+    - Athara
+    - Wyve
+    - Dellorin
+    - Maix
+    - Mirisa
+    - Cakoola
+    - Ithax
+    codeHash: 5536dc1a63695af23d4371949c3c9ab4020bd8c646649d15b1b3dfc9567fd285
+  - members:
+    - Galsoola
+    - Veveola
+    - Zeth
+    - Rosondo
+    - Uline
+    - Lunulo
+    - Pewen
+    - Jodiola
+    - Pekoar
+    - Quibemo
+    - Belsiar
+    - Tanuwen
+    - Uro
+    - Delliar
+    - Delsoko
+    - Nemaix
+    - Brilolia
+    - Sasoko
+    codeHash: 4eb8ab2e4414548769ef4013d51ff7f7f017a032a0fa2e6e3b374a466f88f9de
+  - members:
+    - Makoola
+    - Talolo
+    - Iri
+    - Miben
+    - Verao
+    - Brisilia
+    - Anudek
+    - Briraix
+    - Mata
+    - Ludira
+    - Xabedek
+    - Canuar
+    - Belsoth
+    - Emao
+    - Ora
+    - Nemath
+    - Oth
+    - Zebeel
+    codeHash: 538673ab4d3c7f47fea9ef3dd5bcd6b1ea7a4980529e3cc27fb7c00a419f2d4c
+  - members:
+    - Lusiel
+    - Tathadek
+    - Brisoo
+    - Galsodek
+    - Brivelo
+    - Veveai
+    - Tadiwen
+    - Esius
+    - Eradek
+    - Isoro
+    - Nemix
+    - Calio
+    - Hasa
+    - Irenmo
+    - Mithamo
+    - Nekoia
+    - Zerilo
+    - Nebeth
+    codeHash: 
+  - members:
+    - Abeko
+    - Zeliai
+    - Zethave
+    - Uvelo
+    - Jorish
+    - Vesidek
+    - Gallaus
+    - Peai
+    - Harendek
+    - Delrave
+    - Belthax
+    - Nemiwen
+    - Delnous
+    - Darsous
+    - Jomasa
+    - Mamiai
+    - Inuly
+    - Ush
+    codeHash: 
+  - members:
+    - Venura
+    - Lutharin
+    - Tariola
+    - Jorenne
+    - Emasa
+    - Kamane
+    - Yovelia
+    - Belkosa
+    - Kamael
+    - Wymimo
+    - Iliwen
+    - Hanomo
+    - Nerenlo
+    - Brilalo
+    - Abero
+    - Xamilo
+    - Kakoai
+    - Caane
+    codeHash: 
+  accounts: []

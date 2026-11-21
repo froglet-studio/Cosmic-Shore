@@ -410,8 +410,10 @@ namespace CosmicShore.Gameplay
                     ? profiles[drawn].Name
                     : $"AI {seats.Count + 1}";
 
-                var domain = ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
-                totalCounts[domain]++;
+                // The seat's ordinal is its index in the roster, which is the order the launch panel placed its AI
+                // in: a domain the host placed there wins, as it does in every other mode.
+                var domain = ServerPlayerVesselInitializerWithAI.PlacedOrBalancedDomain(
+                    seats.Count, _gameData.RequestedAIDomains, totalCounts, humanCounts);
 
                 seats.Add(new MaelstromAISeat { Name = name, Domain = domain });
             }

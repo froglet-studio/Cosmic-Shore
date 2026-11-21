@@ -275,6 +275,15 @@ lets it go on the release. The catch and the orbit fly on the simulating machine
     you are FLUNG: the kick along your new heading (`slingBoostMin`..`slingBoostMax` of the engine by the hold's deepest
     squeeze, × Mass's `launchPower`, under `speedCapShare` and `warpKickCapCruise`) and the warp kept as momentum. Every
     fling is timed: no window. Letting go of the trigger while it swings you flings you at once; before it, nothing.
+  - **One slingshot (Yash, 2026-11-19: "there are two slingshots happening when a stoat orbits the blackhole, one that
+    time, one after that, I want only one slingshot, the first one, then player should be able to reach their target
+    destinations more accurately and comfortably").** The swing gave two pushes: the flight clock leaping to the orbit's
+    full warp (about x3.1) the moment the swing starts, then a KICK at the exit (the hold's squeeze x Mass, up to 0.6 x
+    the speed, fading over 1.5 s) that overshot the target. The kick is now `swingKickShare` of itself, shipped 0: the
+    swing's own speed-up is the one slingshot, kept as momentum (fading over `momentumSeconds` 6 s), and you leave on the
+    dotted line's heading with nothing more added. Model (`stoat_orbit_sim.py --swing`): Slingshot's trained AI 62 / 71 /
+    74 / 76 s with no rings missed (61 / 71 / 72 / 76 with the kick); the hull's rows 106 / 104 / 101 / 98 s. Mass's
+    `launchPower` scaled that kick, so on the swing Mass now scales nothing (a follow-up for the element map).
   - **Drawn** (world dots, `StoatPathfinderExecutor.AddSwingRings`): a faint ring at the reach round the hole, and the EXIT
     LINE from your nose along the heading the swing would fling you on right now, so moving the stick moves the line;
     lime while it swings you. A lime ripple grows out of the hole at each fling. The Time card fills through the swing.
@@ -483,6 +492,7 @@ The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--
   `foresightRange` (1500 u), `foresightLength` (500 u) long, in their domain colours: each flown forward on the turn
   and speed it is holding NOW — its rotation's change since last frame, in its own axes — through the same
   `StoatDipoleMath.PredictPath`. Rivals rescanned once a second. Local pilot only; presentation only.
+- **The omni crystal is FULMEN (Yash, 2026-10-29; kept 2026-11-20: "no giant white hole, just fulmen lightning from center, burning any prisms it passes through").** Every omni crystal fires one bolt from the cell's centre (`FulmenByCrystalEffect` in `StoatImpactorDataContainer`, `FulmenConfig.asset`: `crystalsToFire` 1, reach 60% of the cell radius and at least 200 u). Every prism a stream passes through (`pathRadius` 16 u) burns for 12 s; no budget or cap skips one (fixed 2026-11-20, `FulmenSystem.BurnAlong`). The halo out to `burnRadius` 200 u burns while the burn manager has room (192 at once). The Stoat's own domain and super-shielded prisms never burn. The white hole asked for on 2026-11-11 was dropped and is not in the repo. Numbers and the fix: `Controller/Environment/Fulmen/README.md`.
 - **Retired as the omni-crystal ability 2026-10-29:** Yash made Fulmen (`Controller/Environment/Fulmen/README.md`) the Stoat's omni-crystal ability; Overclock was taken out of `StoatImpactorDataContainer` (code and asset kept). Note `Tools/Build/author_stoat_assets.py` still writes Overclock into the container if re-run.
 - **Overclock (PARKED — the omni crystal, proposal O1).** Not in any container; the asset and script stay because the generators reference their guid. `StoatOverclockByCrystalEffectSO`, the only Stoat entry in
   `vesselCrystalEffects`: 6 s in which the boost holds full and the line stays lime, warped or not.

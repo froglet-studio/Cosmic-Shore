@@ -102,7 +102,7 @@ Difficulty is the seat's AI level (`AIDifficultyFor`), never the intensity.
 | `aiRetargetSeconds` | 1.4, 1, 0.7, 0.5 |
 | `aiHuntRange` | 300, 420, 560, 720 |
 | `aiLeadSeconds` | 0, 0.2, 0.4, 0.6 |
-| `aiPassOffset` (u) | 70, 55, 40, 28 |
+| `aiPassOffset` (u) | 34, 29, 24, 19 (inside the 40 u full blast since 2026-11-20) |
 | `aiBreakOffWhenSilencedChance` | 0, 0.5, 1, 1 |
 | `aiSilencedPreyFocus` | 1, 1, 1.5, 2 |
 

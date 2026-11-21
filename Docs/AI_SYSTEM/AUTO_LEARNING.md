@@ -32,8 +32,11 @@ hold lifts, a vessel gains a learner), and one whose learner failed is tried aga
 
 ## 2. What the sweep does (the scheduled task's whole instruction)
 
-The scheduled task "AI learning sweep" (`trig_01VieYjD52nneXYEXHM8nUKY`, once a day at 03:47 IST (22:17 UTC) since 2026-11-02, hourly before that; created 2026-10-25 on
-Yash's request) wakes the session "AI learning sweep (daily)" (`session_01WGSY8UTqMrqdcy2tWPMkBD`). Change what the
+The scheduled task "AI learning sweep (daily, fresh session)" (`trig_01LvRJ9n1v7KsWBSQHxN4w9J`, once a day at 03:47
+IST (22:17 UTC)) starts a NEW session for every run (Yash, 2026-11-16: "use new sessions for token efficiency"); the
+state one run leaves for the next is this repo: `Docs/Reports/AI_LEARNING.md` ("What the sweep judged", "Waiting on")
+and `ai_learning_seen.json`. It replaced `trig_01VieYjD52nneXYEXHM8nUKY` (2026-10-25 to 2026-11-16, paused), which
+woke one long session (`session_01WGSY8UTqMrqdcy2tWPMkBD`) every time. Change what the
 sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARNING.md".
 
 

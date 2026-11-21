@@ -160,7 +160,9 @@ add(f"{EFFECTS}/Effect Containers/VesselContainers/UrchinImpactorDataContainer.a
     f"  - {aref('VesselDamagePrismEffect')}\n"
     f"  - {aref('VesselElementalDebuffByDangerPrismEffect')}\n"
     "  vesselCrystalEffects:\n"
-    f"  - {aref('VesselHapticsByCrystalEffect')}\n")
+    f"  - {aref('VesselHapticsByCrystalEffect')}\n"
+    # the omnicrystal ability, "reloads its spikes" (2026-11-17, #2194): ammo slot 0 set to full
+    f"  - {aref('UrchinVesselChangeResourceByCrystalEffect')}\n")
 
 # --- the three ability assets -------------------------------------------------
 # CHARGE: the one spike weapon, both shots. TAP = the aimed shotgun (ConcentricRings, ammo);

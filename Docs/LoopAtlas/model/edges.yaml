@@ -1,0 +1,124 @@
+# Loop Atlas model: edges. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+edges:
+- from: round.time
+  to: round.regatta
+  kind: train
+  why: Every Time game is training for Regatta.
+- from: round.charge
+  to: round.broadside
+  kind: train
+  why: Every Charge game is training for Broadside.
+- from: round.ms
+  to: round.broodrush
+  kind: train
+  why: Every Mass-Space game is training for Brood Rush.
+- from: toy.arkway
+  to: voyages
+  kind: cross
+  why: The Arkway is a taste of a freestyle voyage.
+  handoff: new
+- from: toybox
+  to: arcade
+  kind: cross
+  why: A hull you liked in the Vessel Changer has games of its own.
+  handoff: new
+  in: x
+- from: arcade
+  to: arena
+  kind: cross
+  why: A kit learned alone is ready to be flown against other classes.
+  handoff: done
+  in: px
+- from: arena
+  to: voyages
+  kind: cross
+  why: A squad that works in the Arena is the squad you take to sea.
+  handoff: done
+  in: px
+- from: voyages
+  to: arcade
+  kind: cross
+  why: 'After a voyage: back to a card to learn the hull that let you down.'
+  handoff: tired
+  in: px
+- from: voyages
+  to: arc.fleet
+  kind: feed
+  why: Spend mission rewards on a new vessel.
+  handoff: spend
+  in: px
+- from: voyages
+  to: arc.hoard
+  kind: feed
+  why: What is aboard at the dock joins the hoard.
+  handoff: done
+- from: voyages
+  to: arc.crew
+  kind: feed
+  why: A job done for a faction raises standing with it.
+  handoff: done
+- from: arcade
+  to: arc.fleet
+  kind: feed
+  why: The winner is paid crystals.
+  handoff: spend
+- from: ladder
+  to: arc.unlock
+  kind: feed
+  why: Rung I4 completes the mode's quest.
+  handoff: done
+- from: arc.fleet
+  to: arcade
+  kind: feed
+  why: A new vessel brings its own games to learn.
+  handoff: new
+- from: arc.squad
+  to: arena
+  kind: feed
+  why: The squad you saved is the squad you launch.
+  handoff: spend
+- from: arc.crew
+  to: voy.port
+  kind: feed
+  why: Each seated pilot finds their faction's jobs.
+  handoff: new
+- from: era.world
+  to: voy.port
+  kind: feed
+  why: What happened in the sea arrives as news, and news becomes jobs.
+  handoff: new
+- from: arc.saga
+  to: voyages
+  kind: feed
+  why: A chapter is a job on the board.
+  handoff: new
+- from: era.meta
+  to: arc.fleet
+  kind: feed
+  why: A new or retuned vessel is a kit to learn again.
+  handoff: new
+  in: px
+- from: arc.social
+  to: sitting
+  kind: feed
+  why: An invite opens the game.
+  handoff: pull
+- from: arc.flower
+  to: arena
+  kind: feed
+  why: Each petal offers the arena game it trained for.
+  handoff: done
+  in: x
+- from: era.tide
+  to: sitting
+  kind: feed
+  why: The day's job and the week's card are reasons to open the game.
+  handoff: new
+  in: x
+- from: breath
+  to: arena
+  kind: cross
+  why: The offered next step after a round.
+  handoff: done
+  in: x

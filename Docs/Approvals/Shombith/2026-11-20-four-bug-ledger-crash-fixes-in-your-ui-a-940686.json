@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-20-four-bug-ledger-crash-fixes-in-your-ui-a-940686",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-20T15:47:02+00:00",
+  "area": "Voyages map, Hangar, toasts and the Arkway conveyor",
+  "summary": "Four bug-ledger crash fixes in your UI and Voyages code, no behaviour or look changed: the edge strip's slice label is placed from LateUpdate instead of inside the canvas rebuild (e357fbad6c), the Hangar upgrades page draws a missing ability entry as the open slot (79f1ff888b), the toast pool drops items destroyed with their scene (540bac6a24), and CellConveyor no longer strikes its cells while the scene is closing (d391dc761d).",
+  "why": "Console errors the editors sent to the Bug Ledger: E-e061201544 (five machines), E-111d87fec0, E-245165ae01, E-c703a8f80b (six machines).",
+  "branch": "Ys-bleeding-edge",
+  "commit": "540bac6a2",
+  "paths": [
+    "Assets/_Scripts/Controller/Toys/CellConveyor.cs",
+    "Assets/_Scripts/UI/Elements/Hangar/HangarUpgradesPage.cs",
+    "Assets/_Scripts/UI/ToastNotification/ToastNotificationManager.cs",
+    "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs"
+  ]
+}

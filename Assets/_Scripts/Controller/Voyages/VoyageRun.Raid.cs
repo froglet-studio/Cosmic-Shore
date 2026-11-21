@@ -24,8 +24,24 @@ namespace CosmicShore.Gameplay
         bool _goalToastShown;
         ArkAlarmToasts _alarms;
         ArkAttackerMarks _attackerMarks;
+        ArkHudPlate _plate;
         int _toastedCell = -1;
         float _legStartedAt;
+        string _runPilotId;
+
+        /// <summary>The name of the pilot whose run this is (the job's pilot), or empty when none is named.</summary>
+        string RunPilotName => Content?.Person(_runPilotId)?.Name ?? string.Empty;
+
+        /// <summary>A line in the run's pilot's voice: empty when no pilot is named, so a line never opens on a bare
+        /// colon (Shombith 2026-11-20, the story pass).</summary>
+        string PilotSays(string template, params string[] tokens)
+        {
+            string pilot = RunPilotName;
+            if (string.IsNullOrEmpty(pilot) || string.IsNullOrEmpty(template)) return string.Empty;
+            var pairs = new List<string> { "pilot", pilot };
+            pairs.AddRange(tokens);
+            return TemplateText.Fill(template, pairs.ToArray());
+        }
         bool _anchorWarned;
         float _nextBankCheck;
         readonly Dictionary<string, float> _spillReadyAt = new();
@@ -52,13 +68,17 @@ namespace CosmicShore.Gameplay
         // ── The leg ─────────────────────────────────────────────────────────
 
         /// <summary>A Crystal Run's corridor, fitted to its cells (<see cref="VoyageRaid.FitCorridor"/>).</summary>
+        /// The job's named worlds (<see cref="VoyageJob.CellWorlds"/>) then stand in the cells they name.
         List<int> FitLeg(VoyageJob job, List<int> route) =>
-            job is { Cells: > 0 } ? VoyageRaid.FitCorridor(route, job.Cells, _worlds, _state.Day, job.From + ">" + job.To) : route;
+            job is { Cells: > 0 }
+                ? VoyageRaid.NameCells(VoyageRaid.FitCorridor(route, job.Cells, _worlds, _state.Day, job.From + ">" + job.To),
+                    job.CellWorlds, _worldNames)
+                : route;
 
         /// <summary>A new leg: the pacing fitted like the corridor, the count started over, and the counter armed.</summary>
         void BeginLegCount(VoyageJob job)
         {
-            if (job is { Cells: > 0 }) _profile = VoyageRaid.FitProfile(_profile, job.Cells);
+            if (job is { Cells: > 0 }) _profile = VoyageRaid.LayCellLife(VoyageRaid.FitProfile(_profile, job.Cells), job.CellLife);
             _legIndex.Clear();
             _toastedCell = -1;
             _goalToastShown = false;
@@ -66,6 +86,7 @@ namespace CosmicShore.Gameplay
             _spillReadyAt.Clear();
             _leakToasted = false;
             _legStartedAt = Time.time;
+            if (!string.IsNullOrEmpty(job?.PilotId)) _runPilotId = job.PilotId;   // the way home keeps the run's pilot
             _voyageRaid.Absorb(_raid);
             _raid.Clear();
             HookRaid(job is { CountsUnderway: true });
@@ -104,14 +125,35 @@ namespace CosmicShore.Gameplay
             if (CrystalsAtRisk)
             {
                 _raid.Carry(playerName, element);
+                ToastPickup(playerName, element, true);
                 return;
             }
             if (!_raid.Add(playerName, element)) return;
+            ToastPickup(playerName, element, false);
             // A party (Docs/Voyages/PARTY.md §4): a friend tells the host, the host tells everyone.
             ReportToHost(VoyagePartyReport.ReportKind.Crystal, playerName, element, false);
             if (!_following) _tallyDirty = true;
             CheckGoalToast();
         }
+
+        /// <summary>The local pilot's pickup toast (Shombith, 2026-11-17: "when we collect the crystals no popup comes"):
+        /// one running toast that each pickup rewrites, so a string of crystals never floods the toast spot. No sound of its
+        /// own; the crystal already sounds.</summary>
+        void ToastPickup(string playerName, Element element, bool carried)
+        {
+            var local = LocalVessel();
+            if (local == null || local.PlayerName != playerName || string.IsNullOrEmpty(Lines?.ToastCrystal)) return;
+            string line = TemplateText.Fill(Lines.ToastCrystal, "element", CosmicShore.UI.VoyageHudColors.ElementName(Lines, element));
+            string under;
+            if (carried)
+                under = TemplateText.Fill(Lines.ToastCrystalCarrySub, "carried", _raid.CarriedBy(playerName).ToString());
+            else
+                under = TemplateText.Fill(Lines.ToastBankedSub, "count", "1", "done", _raid.Total.ToString(),
+                    "goal", Mathf.CeilToInt(_state?.Current?.Goal ?? 0f).ToString());
+            if (_sea) _sea.ShowRunningBanner(line, PickupToastSeconds, ArkwayVoyageHud.Mood.Good, under);
+        }
+
+        const float PickupToastSeconds = 1.8f;
 
         /// <summary>The goal toast, once a leg, when the squad's count (the party's, in a party) reaches it.</summary>
         void CheckGoalToast()
@@ -173,9 +215,35 @@ namespace CosmicShore.Gameplay
         float RaidAnchorSeconds()
         {
             if (!_active || !Raiding || _fallen || !_def || GoalMet) return 0f;
+            // Nothing to raid: sail through instead of waiting at an empty core.
+            var ark = Ark;
+            if (_def.RaidAnchorMinLife > 0 && ark && CellLife(CurrentCell, ark.Domain) < _def.RaidAnchorMinLife) return 0f;
             int cell = LegCell(out _);
             bool hostile = cell > 0 && LegHostile(cell - 1);
-            return hostile ? _def.RaidAnchorHostileSeconds : _def.RaidAnchorCalmSeconds;
+            float window = hostile ? _def.RaidAnchorHostileSeconds : _def.RaidAnchorCalmSeconds;
+            // The job's own window for this cell, when it names one (Shombith's storyboard: 20 / 30 / 30 / 40 s).
+            return Mathf.Max(0f, VoyageRaid.PerCell(_state?.Current?.CellAnchorSeconds, cell - 1, window));
+        }
+
+        /// <summary>The lifeforms in <paramref name="cell"/> the squad can take a crystal from now: creatures of another
+        /// colour than <paramref name="squad"/> (the squad's own are not prey, as in <see cref="CountThreats"/>), and the
+        /// cell's plants when the cell is held by another colour (plants are born in the holder's colour). A calm cell
+        /// still held by the squad's colour holds nothing to steal, so the Ark sails through it. 0 for no cell.</summary>
+        static int CellLife(Cell cell, Domains squad)
+        {
+            if (!cell) return 0;
+            int live = 0;
+            var fauna = cell.LiveFauna;
+            for (int i = 0; i < fauna.Count; i++)
+            {
+                var f = fauna[i];
+                if (f && f.Domain != squad && f.IsAlivePrey) live++;
+            }
+            var profile = cell.Config ? cell.Config.SpawnProfile : null;
+            if (profile && profile.SupportedFloras != null && cell.ControllingDomain != squad)
+                foreach (var f in profile.SupportedFloras)
+                    if (f) live += cell.GetLiveFloraCount(f);
+            return live;
         }
 
         void OnRaidAnchored(float seconds)
@@ -344,6 +412,12 @@ namespace CosmicShore.Gameplay
             VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Event,
                 TemplateText.Fill(Lines.ToastSetOff, "goal", Mathf.CeilToInt(job.Goal).ToString(), "to", to),
                 TemplateText.Fill(Lines.ToastSetOffSub, "to", to, "breach", Mathf.RoundToInt(job.BreachHull * 100f).ToString()));
+            // The run's pilot on the comms: who asked, and why the Ark wants the crystals.
+            string goal = Mathf.CeilToInt(job.Goal).ToString();
+            string brief = PilotSays(Lines.PilotBriefTitle, "goal", goal, "to", to);
+            if (!string.IsNullOrEmpty(brief))
+                VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Event, brief.ToUpperInvariant(),
+                    PilotSays(Lines.PilotBrief, "goal", goal, "to", to), VoyageToasts.Seconds * 1.5f);
         }
 
         /// <summary>The cell the Ark is in, from 1 (0 while unknown), and the leg's cells.</summary>
@@ -457,6 +531,7 @@ namespace CosmicShore.Gameplay
                 Pay = r.Outcome == JobOutcome.Succeeded ? job.Pay : 0,
                 // A friend's board: the host chooses what next (the next leg, or the way home, reaches them on its own).
                 Following = _following,
+                Quote = PilotSays(r.Outcome == JobOutcome.Succeeded ? Lines.ScoreQuoteMet : Lines.ScoreQuoteMissed),
             };
             foreach (var e in VoyageRaid.Elements) board.Crystals[(int)e] = _raid.Of(e);
             AddRows(board);
@@ -468,13 +543,20 @@ namespace CosmicShore.Gameplay
 
             if (!_following && missed && forfeit)
             {
-                // Missed and forfeited: no venturing on a failed run. Try again (the same goal from here) or Finish.
-                var again = VoyageRaid.Retry(_state, Content, job);
-                if (again != null)
+                // Missed (Shombith's storyboard, 2026-11-17): Venture further keeps the run going, harder (the goal raised
+                // and one more cell), and this run's haul comes along, owed and at stake again. Finish sails home without it.
+                var kept = new VoyageRaidTally();
+                kept.Absorb(_raid);
+                var next = VoyageRaid.Venture(_state, Content, job);
+                if (next != null)
                 {
-                    board.NextGoal = Mathf.CeilToInt(again.Goal);
-                    board.NextCells = again.Cells;
-                    board.TryAgain = () => SailOn(again);
+                    board.NextGoal = Mathf.CeilToInt(next.Goal);
+                    board.NextCells = next.Cells;
+                    board.Venture = () =>
+                    {
+                        VoyageRaid.Owe(_state, kept);
+                        SailOn(next);
+                    };
                 }
                 board.Finish = SailHome;
             }
@@ -487,7 +569,20 @@ namespace CosmicShore.Gameplay
                     board.NextCells = next.Cells;
                     board.Venture = () => SailOn(next);
                 }
-                board.Finish = SailHome;
+                // Goal met (Shombith 2026-11-17): finish right here and bank now, or escort the Ark home for a bigger pay.
+                float bonus = _def ? _def.HomeEscortRewardScale : 1f;
+                if (!missed && bonus > 1f && !_state.IsHome())
+                {
+                    board.FinishHere = () => FinishHere();
+                    board.HomeRewardScale = bonus;
+                    board.Finish = () =>
+                    {
+                        _state.HomeRewardScale = bonus;
+                        SaveState();
+                        SailHome();
+                    };
+                }
+                else board.Finish = SailHome;
             }
             VoyageScoreboard.Show(board);
         }
@@ -549,6 +644,13 @@ namespace CosmicShore.Gameplay
             SetSail(local, next);
         }
 
+        /// <summary>Finish here: bank everything owed at this stop, as it is, and end the voyage (the Ark is home again).</summary>
+        void FinishHere()
+        {
+            if (!_active || _state == null || _state.AtSea) return;
+            Dock(here: true);
+        }
+
         /// <summary>Finish: the Ark sails home with the squad escorting it; docking banks everything.</summary>
         void SailHome()
         {
@@ -574,6 +676,7 @@ namespace CosmicShore.Gameplay
                 Hull = _sea && _sea.Ark ? _sea.Ark.HealthFraction : 1f,
                 Banked = true,
                 Following = _following,
+                Quote = PilotSays(Lines.ScoreQuoteDocked),
             };
             if (x != null)
                 for (int e = 0; e < x.Crystals.Length && e < board.Crystals.Length; e++) board.Crystals[e] = x.Crystals[e];
@@ -604,6 +707,7 @@ namespace CosmicShore.Gameplay
                 Seconds = Time.time - _legStartedAt,
                 Hull = 0f,
                 Following = _following,
+                Quote = PilotSays(Lines.ScoreQuoteLost),
             };
             for (int e = 0; e < board.Crystals.Length && stake != null && e < stake.Length; e++) board.Crystals[e] = stake[e];
             AddVoyageRows(board);
@@ -611,6 +715,9 @@ namespace CosmicShore.Gameplay
             string template = lost?.TemplateId;
             if (!_following && lost is { CountsUnderway: true } && !string.IsNullOrEmpty(template))
                 board.TryAgain = () => VoyageHarbour.Current?.TryAgain(template);
+            // Back to Voyages ends what is left of the voyage, so the scene returns to the menu (VoyageScene.AfterChoiceAsync
+            // waits for the harbour to stop being under way; a board that only closed left the pilot floating by a wreck).
+            if (!_following) board.Close = () => GiveUp("back to Voyages after the Ark fell");
             VoyageScoreboard.Show(board);
         }
 
@@ -623,6 +730,8 @@ namespace CosmicShore.Gameplay
             _alarms?.Unhook();
             if (_attackerMarks) Destroy(_attackerMarks.gameObject);
             _attackerMarks = null;
+            if (_plate) Destroy(_plate.gameObject);
+            _plate = null;
             if (ReferenceEquals(VoyageObjective.Source, this)) VoyageObjective.Source = null;
             PauseMenuAction.Release(this);
         }

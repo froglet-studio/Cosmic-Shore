@@ -65,7 +65,8 @@ MonoBehaviour:
   - Element: 4
     AbilityLabel: Skimming
     AbilityDescription: Skim prisms to build boost. Time raises the energy of
-      every skim, up to 2x at level 10. At level 5 danger prisms pay 10x.
+      every skim, up to 2x at level 10, and your cruise speed, a fifth faster by
+      level 10. At level 5 danger prisms pay 10x.
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4

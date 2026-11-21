@@ -404,7 +404,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.VesselCameraCustomizer
-  settings: {fileID: 11400000, guid: 2bd6a6d58dbefa346b5b51b78a9c82a8, type: 2}
+  settings: {fileID: 11400000, guid: 085bebe09734406e8fc75553a8daa8a9, type: 2}
   OnInitializePlayerCamera: {fileID: 11400000, guid: dfc4b3d01080dac408975d4a25c6c1ea, type: 2}
 --- !u!114 &1404834681197234611
 MonoBehaviour:

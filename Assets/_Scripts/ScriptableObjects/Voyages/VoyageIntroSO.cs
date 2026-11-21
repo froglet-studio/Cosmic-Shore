@@ -21,6 +21,9 @@ namespace CosmicShore.ScriptableObjects
         public const string EscortResourcePath = "Voyages/ArkEscortIntro";
         /// <summary>Crystal Run's intro (job.raid.crystals): the same reel, its own words.</summary>
         public const string CrystalRunResourcePath = "Voyages/CrystalRunIntro";
+        /// <summary>The docking ending (Shombith 2026-11-20, the story pass): the Ark home, the run's pilot's last line, then
+        /// the scoreboard. The same reel, one shot.</summary>
+        public const string DockOutroResourcePath = "Voyages/DockOutro";
 
         public enum Subject
         {
@@ -48,6 +51,12 @@ namespace CosmicShore.ScriptableObjects
 
             [Tooltip("Cut to this shot on the beat instead of easing into it.")]
             public bool HardCut;
+
+            [Tooltip("Launch from the Ark's hangar as this shot starts and form up beside it (one seat off each side, one " +
+                     "over the back). On a vessel's shot (You, Wingmates, Squad) that vessel launches, close up; on an " +
+                     "Ark shot the whole squad goes. Until then the vessels wait on the hangar's pads; a reel with no " +
+                     "launch shot opens with them already in their slots.")]
+            public bool Launch;
 
             [Tooltip("Played as the shot starts (a sting, a whoosh). Empty plays nothing.")]
             public FMODUnity.EventReference Sound;
@@ -108,6 +117,11 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("Shown in the corner while the intro may be skipped. Empty shows nothing.")]
         string skipHint = "Hold B to skip";
 
+        [SerializeField, Tooltip("The skip hint on a phone or tablet, where a touch held ON the hint (the bottom-right of " +
+                                 "the screen) skips; a thumb resting anywhere else never does (Shombith 2026-11-20). Empty " +
+                                 "shows nothing.")]
+        string touchSkipHint = "Hold here to skip";
+
         [SerializeField, Tooltip("The first time a pilot sees this intro it plays through; after that it can be skipped.")]
         bool skippableAfterFirstRun = true;
 
@@ -148,6 +162,7 @@ namespace CosmicShore.ScriptableObjects
         public bool SkippableAfterFirstRun => skippableAfterFirstRun;
         public string WorldSeparator => worldSeparator;
         public string SkipHint => skipHint;
+        public string TouchSkipHint => touchSkipHint;
         public float HoldToSkipSeconds => holdToSkipSeconds;
         public float SkipGraceSeconds => skipGraceSeconds;
         public float LetterboxShare => letterboxShare;
@@ -156,6 +171,17 @@ namespace CosmicShore.ScriptableObjects
         public float HandOverSeconds => handOverSeconds;
         public float ChaseDistance => chaseDistance;
         public float ChaseHeight => chaseHeight;
+
+        /// <summary>True when a shot launches the squad from the hangar (<see cref="Shot.Launch"/>).</summary>
+        public bool LaunchesSquad
+        {
+            get
+            {
+                foreach (var s in shots)
+                    if (s is { Launch: true }) return true;
+                return false;
+            }
+        }
 
         /// <summary>The intro's whole running time for a squad of <paramref name="squadVessels"/> hulls, hand-over
         /// included.</summary>
@@ -172,10 +198,17 @@ namespace CosmicShore.ScriptableObjects
             return t;
         }
 
-        static VoyageIntroSO s_escort, s_crystalRun;
+        static VoyageIntroSO s_escort, s_crystalRun, s_dockOutro;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => s_escort = s_crystalRun = null;
+        static void ResetStatics() => s_escort = s_crystalRun = s_dockOutro = null;
+
+        /// <summary>The docking ending, or null when none is shipped (the Ark then docks straight onto the scoreboard).</summary>
+        public static VoyageIntroSO LoadDockOutro()
+        {
+            if (!s_dockOutro) s_dockOutro = Resources.Load<VoyageIntroSO>(DockOutroResourcePath);
+            return s_dockOutro;
+        }
 
         /// <summary>The escort's intro, or null when none is shipped (the escort then opens as it always did).</summary>
         public static VoyageIntroSO LoadEscort()

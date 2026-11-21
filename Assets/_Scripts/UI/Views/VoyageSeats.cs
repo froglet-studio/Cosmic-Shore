@@ -231,6 +231,7 @@ namespace CosmicShore.UI
             var squad = Apply(VoyageSeatRecord.Get(key), seat, kind, option);
             if (squad == null) return false;
             VoyageSeatRecord.Set(key, squad);
+            RememberLineUp(key, squad);
             VoyageChanged?.Invoke();
             return true;
         }
@@ -246,8 +247,65 @@ namespace CosmicShore.UI
             if (filled == null) return false;
             FillCrew(filled);
             VoyageSeatRecord.Set(key, filled);
+            RememberLineUp(key, filled);
             VoyageChanged?.Invoke();
             return true;
+        }
+
+        /// <summary>The host's picks are the line-up the next voyage opens on; a friend's seat in someone else's lobby is
+        /// theirs for that lobby only.</summary>
+        static void RememberLineUp(string key, SavedSquad squad)
+        {
+            if (key != VoyageSeatRecord.PartyKey) VoyageSeatRecord.Remember(squad);
+        }
+
+        /// <summary>
+        /// The seats a voyage opens on, made from <paramref name="from"/> (the active squad): the line-up the player last
+        /// picked (<see cref="VoyageSeatRecord.TryRecall"/>), or on their first voyage <paramref name="firstLineUp"/> - their
+        /// own vessel first, then the AI wingmates in seat order (Shombith, 2026-11-17: the Sparrow, then AI in the
+        /// Butterfly and the Serpent). Only the seats the player may change take it; a vessel the player cannot fly now is
+        /// left as the squad has it, and every vessel keeps a pilot.
+        /// </summary>
+        public SavedSquad Seed(SavedSquad from, IReadOnlyList<VesselClassType> firstLineUp)
+        {
+            if (from == null) return null;
+            var squad = SquadMembership.Copy(from);
+            int mine = MySeat(squad);
+            var wingmates = new List<SquadSlot>();
+            if (VoyageSeatRecord.TryRecall(out var me, wingmates))
+            {
+                int next = 0;
+                for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
+                {
+                    if (!CanEdit(squad, seat)) continue;
+                    SquadSlot pick;
+                    if (seat == mine) pick = me;
+                    else if (next < wingmates.Count) pick = wingmates[next++];
+                    else continue;
+                    if (Flyable(pick.Vessel)) squad.SetSlot(seat, squad.GetSlot(seat).WithLoadout(pick));
+                }
+                FillCrew(squad);
+                return squad;
+            }
+            if (firstLineUp == null || firstLineUp.Count == 0) return squad;
+            int at = 1;
+            for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
+            {
+                if (!CanEdit(squad, seat)) continue;
+                int index = seat == mine ? 0 : at++;
+                if (index >= firstLineUp.Count) continue;
+                var vessel = firstLineUp[index];
+                if (!Flyable(vessel) || squad.GetSlot(seat).Vessel == vessel) continue;
+                squad = Apply(squad, seat, Vessel, new Option { Vessel = vessel }) ?? squad;
+            }
+            return squad;
+        }
+
+        /// <summary>True when the picker offers <paramref name="cls"/> (the vessel is in the list and not locked).</summary>
+        bool Flyable(VesselClassType cls)
+        {
+            var vessel = VesselOf(cls);
+            return vessel && !vessel.IsLocked;
         }
 
         /// <summary>A copy of <paramref name="from"/> with <paramref name="seat"/> taking <paramref name="option"/>, the

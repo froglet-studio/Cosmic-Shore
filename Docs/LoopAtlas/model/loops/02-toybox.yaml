@@ -1,0 +1,161 @@
+# Loop Atlas model: loops, toybox. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+- id: toybox
+  parent: sitting
+  at: 1
+  name: Toybox
+  tier: 5
+  kind: place
+  t: [300, 1800]
+  is: Freestyle. Nothing is scored. You fly, find toys and try hulls. It is also the menu's background, so every sitting
+    starts inside it.
+  phases:
+  - n: Fly out of the menu
+  - n: Reach a toy station
+  - n: Play the toy
+  - n: Swap hull, domain or element
+  - n: Wander to the next toy
+  drivers: [joy, find, make]
+  reps: null
+  repsOf: toys per visit
+  now:
+    s: built
+    note: Toys are chosen in the Toy Box only (2026-11-01). The Vessel Changer is where every new hull first becomes flyable.
+  plan:
+    note: Stays the place with no stakes and no artifacts. The Arkway is a taste of a voyage.
+  prop:
+    s: change
+    note: 'Each toy ends by offering its scored cousin: the Vessel Changer offers the hull''s Time game, the Arkway offers
+      a voyage.'
+  holes:
+  - 'on': np
+    q: 'What a toy session is for, in loop terms, is not written: there is no stated reason to leave a toy or to come back
+      to one.'
+    fill: A toy's exit is a crossing. Every toy names the scored loop it is the free version of, and offers it when the
+      player has done the toy's verb a few times.
+  src:
+  - Docs/ToySystem/ARCHITECTURE.md
+  - Docs/claude/MENU_AND_LAVA_LAMP.md
+- id: toy.fly
+  parent: toybox
+  at: 0
+  name: Free flight
+  tier: 4
+  kind: loop
+  t: [30, 600]
+  kit: free
+  is: Flying a hull for its own sake in an open cell. The kit with no objective around it.
+  phases:
+  - n: Pick a line through the mass
+  - n: Use a verb because it feels good
+  - n: See what it did to the cell
+  - n: Pick another line
+  drivers: [joy, find]
+  now:
+    s: built
+  holes: []
+  src:
+  - Docs/claude/MENU_AND_LAVA_LAMP.md
+- id: toy.changers
+  parent: toybox
+  at: 3
+  name: The changers
+  tier: 3
+  kind: loop
+  t: [5, 60]
+  is: 'Vessel Changer, Domain Changer and Element Charger: swap what you are and feel the difference at once.'
+  phases:
+  - n: Fly to the station
+  - n: Pick a hull, a domain or an element level
+  - n: Feel the new kit
+  - n: Swap again
+  drivers: [find, joy]
+  now:
+    s: built
+    note: Every new vessel is done when it can be flown from the Vessel Changer.
+  prop:
+    s: change
+    note: After a few minutes in a hull you do not own, offer its Time game at I1.
+  src:
+  - Docs/ToySystem/ARCHITECTURE.md (Vessel Changer, Domain Changer, Element Charger)
+- id: toy.matrix
+  parent: toybox
+  at: 2
+  name: Spawn Matrix and Cell Selector
+  tier: 3
+  kind: loop
+  t: [10, 120]
+  is: Choose what the cell holds and which cell you are in, then play in it.
+  phases:
+  - n: Open the matrix
+  - n: Pick what to spawn or which cell
+  - n: Play in what you made
+  - n: Change it
+  drivers: [find, make]
+  now:
+    s: built
+  src:
+  - Docs/ToySystem/ARCHITECTURE.md (Spawn Matrix, Cell Selector)
+- id: toy.paint
+  parent: toybox
+  at: 2
+  name: Painting
+  tier: 4
+  kind: loop
+  t: [120, 600]
+  is: 'Connect the dots: fly strokes through rings until the picture is drawn, then share it.'
+  phases:
+  - n: Pick a painting
+  - n: Fly a stroke through its rings
+  - n: The stroke stays
+  - n: Next stroke
+  - n: 'The picture is done: share it'
+  drivers: [make, mastery, joy]
+  reps: null
+  repsOf: strokes per painting
+  now:
+    s: built
+  src:
+  - Docs/ToySystem/ARCHITECTURE.md (Painting)
+- id: toy.wander
+  parent: toybox
+  at: 4
+  name: Wanderway
+  tier: 5
+  kind: loop
+  t: [300, 1200]
+  is: 'Wander without the Ark: a conveyor of small scenes, one after another, until you turn back.'
+  phases:
+  - n: Leave the toybox
+  - n: A microscene arrives
+  - n: Play in it
+  - n: Fly on to the next
+  - n: Return
+  drivers: [find, joy]
+  now:
+    s: built
+  src:
+  - Docs/ToySystem/ARCHITECTURE.md (Wanderway)
+- id: toy.arkway
+  parent: toybox
+  at: 4
+  name: Arkway run
+  tier: 5
+  kind: loop
+  t: [300, 1500]
+  kit: cell
+  is: 'Wander with the Ark: one Ark, a corridor of cells, no map and nothing at stake. The most voyage-like toy.'
+  phases:
+  - n: The Ark gets under way
+  - n: A cell streams in ahead
+  - n: 'The crossing: fauna on the hull'
+  - n: The nucleus is sanctuary
+  - n: On to the next cell
+  drivers: [find, joy, crew]
+  now:
+    s: built
+  plan:
+    note: Stays a toy. Voyages reuse its machinery and do not change it.
+  src:
+  - Docs/ToySystem/ARKWAY_PLAN.md
+  - Docs/Voyages/VOYAGES.md section 1

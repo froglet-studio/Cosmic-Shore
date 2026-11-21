@@ -66,11 +66,14 @@ namespace CosmicShore.Gameplay
             var kaiju = CellLifeSpawnerBase.SpawnFaunaWithDomain(host, cfg.FaunaPrefab, ark.Position,
                 host.ControllingDomain, at, cfg);
             if (!kaiju) return;
-            kaiju.GrowBody(_def.KaijuScale);
+            kaiju.GrowBody(_def.KaijuScale, _def.KaijuPrismScale);   // the frame huge, its plates not
             RaidLeash.Hold(kaiju);
             _kaiju.Add(kaiju);
             if (_kaijuThisCrossing++ > 0 || Lines == null) return;   // one toast per crossing
-            VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Threat, Lines.ToastKaiju, Lines.ToastKaijuSub);
+            // Named for the HyperSea's apex creature (the content's kaiju, DEPTH.md §3): this one is its spawn.
+            string name = (Content?.Kaiju?.Name ?? string.Empty).ToUpperInvariant();
+            VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Threat, TemplateText.Fill(Lines.ToastKaiju, "kaiju", name),
+                TemplateText.Fill(Lines.ToastKaijuSub, "kaiju", name));
         }
 
         /// <summary>True while the Ark anchors at a cell's core for a raid window.</summary>
@@ -144,6 +147,15 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
+        /// <summary>
+        /// Can this species be a kaiju? A leashable herbivore that swims alone: a <see cref="LightFauna"/> (today the
+        /// Brittlestar and the QuadFish of the voyage worlds). A <see cref="Boid"/> (the TadPole) is a flock member whose
+        /// steering reads its neighbours, so one grown 12x is a tadpole the size of a cell wall that still flocks; the
+        /// colony and swarm bodies take a leash's meal order but not its steering. 2026-11-17 perf pass.
+        /// </summary>
+        public static bool IsKaijuSpecies(FaunaConfigurationSO f) =>
+            f && f.FaunaPrefab is LightFauna { Diet: FaunaDiet.Herbivore, Leashable: true };
+
         static bool TakeGrazers(Cell c, Domains squad, List<FaunaConfigurationSO> into)
         {
             into.Clear();
@@ -151,8 +163,7 @@ namespace CosmicShore.Gameplay
             var profile = c.Config ? c.Config.SpawnProfile : null;
             if (!profile || profile.SupportedFaunas is not { Count: > 0 }) return false;
             foreach (var f in profile.SupportedFaunas)
-                if (f && f.FaunaPrefab && f.FaunaPrefab.Diet == FaunaDiet.Herbivore && f.FaunaPrefab.Leashable)
-                    into.Add(f);
+                if (IsKaijuSpecies(f)) into.Add(f);
             return into.Count > 0;
         }
 

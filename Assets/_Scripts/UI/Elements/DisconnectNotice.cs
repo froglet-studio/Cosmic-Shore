@@ -320,7 +320,7 @@ namespace CosmicShore.UI
             _presenceOnlineFor += _config.RejoinCheckSeconds;
             if (_presenceOnlineFor < _config.RejoinGiveUpSeconds) return;
             _presenceOnlineFor = 0f;
-            if (record.Dropped)
+            if (MatchRejoin.GiveUpSaysHostLeft(record.Dropped, MatchRejoin.DroppedThisRun))
             {
                 SetMode(Mode.HostLeft);
                 Show(_config.TitleHostLeft, _config.BodyHostLeft, offerReconnect: false);

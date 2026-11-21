@@ -124,7 +124,7 @@ def author(spec: Spec):
   Vessels:
   - {{fileID: 11400000, guid: {VESSEL_GOBY}, type: 2}}
   MinPlayersAllowed: {spec.min_players}
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: {spec.min_domains}
   MaxDomainsAllowed: 3
   MinIntensity: 1

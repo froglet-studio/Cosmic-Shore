@@ -1705,6 +1705,10 @@ namespace CosmicShore.Gameplay
 
         protected override bool AcceptsTeamRecolour => !Lineages;
 
+        /// <summary>A one-colour swarm re-colours whole (<see cref="OnTeamChanged"/>), so it can be stolen; a MultiDomain
+        /// swarm's colours are its lineages' history and cannot.</summary>
+        public override bool CanBeStolen => AcceptsTeamRecolour;
+
         /// <summary>Round 9 (§17): this swarm grows regional lineages - MultiDomain, on the one model that has them.
         /// Any other model is one colour whatever the flag says.</summary>
         bool Lineages => config && config.MultiDomain && config.Model == SwarmModel.Sort;

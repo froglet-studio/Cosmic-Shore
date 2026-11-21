@@ -54,6 +54,15 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void GiveUp_SaysHostLeftOnlyForADropSeenInThisRun()
+        {
+            Assert.IsTrue(MatchRejoin.GiveUpSaysHostLeft(dropped: true, droppedThisRun: true));
+            Assert.IsFalse(MatchRejoin.GiveUpSaysHostLeft(dropped: true, droppedThisRun: false),
+                "a drop on file from an earlier run is old news at the next launch");
+            Assert.IsFalse(MatchRejoin.GiveUpSaysHostLeft(dropped: false, droppedThisRun: true));
+        }
+
+        [Test]
         public void Record_MarkDroppedKeepsTheMatchAndSaysSo()
         {
             MatchRejoin.Remember("session-1", GameModes.Joust);

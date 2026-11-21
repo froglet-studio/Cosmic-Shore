@@ -199,10 +199,10 @@ main editor saw no other player (solo online play writes nothing). Say so in one
    with the branch and the date; **What landed**; **Proven without the editor** (the tests, the harness rows, the gates,
    the negative control); **Not run** (name every verify step that did not run); **Needs the editor** as numbered steps,
    each with an Expect and the mark it leaves in the log (§5). `/bug-closeout` when a B number closes.
-2. **One team-task line per branch.** A hand test, a two-machine retest or a decision your branch leaves goes through
-   `/team-tasks` as a SUGGESTION the person approves (`team_tasks.py step --line` appends a checklist line to this
-   branch's one ticket): never filed on your own, never assigned, never a second QA-NET ticket beside #1530
-   (T-20261025-edc2, the eleven QA-NET tests). When you read logs: a dated row in `Docs/PartySystem/SWEEP_LOG.md`.
+2. **Hand-offs on the swim lanes board.** A hand test or a two-machine retest your branch leaves goes in
+   `Docs/UNITY_VERIFICATION_CHECKLIST.md`; with the person's yes, the lane goes to the tester through
+   `/handoff-for-test` (never assigned). The eleven QA-NET tests are already listed (issue #1530, the last record of
+   them before Froglet Tasks was retired); add to them, never a second list. When you read logs: a dated row in `Docs/PartySystem/SWEEP_LOG.md`.
    When a step lands: START_HERE §4 and §6 in the same commit. In the commit: `Affects: <person>'s <area>`.
 3. **Who to ask.** Yash for anything multiplayer (the party, netcode, the AI handover, `EnvironmentPrismPool`).
    Shombith for UGS, the backend, Cloud Code (Yash does the work, posted through Shombith), the live project and its

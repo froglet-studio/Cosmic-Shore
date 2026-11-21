@@ -33,6 +33,9 @@ namespace CosmicShore.Data
         public List<string> Aboard = new();
         /// <summary>Crystals earned by jobs, paid at extraction, by element (index = (int)Element).</summary>
         public List<int> Owed = new();
+        /// <summary>What the crystals owed are multiplied by when the Ark docks home (Shombith 2026-11-17: escorting the
+        /// Ark home after a met goal pays 2x). 1 (or less) pays them as they are; docking sets it back to 1.</summary>
+        public float HomeRewardScale = 1f;
         public List<PortLedger> Ledgers = new();
         public List<WreckRecord> Wrecks = new();
         public List<StoryEntry> Story = new();
@@ -253,6 +256,11 @@ namespace CosmicShore.Data
         public int Cells;
         /// <summary>How many times the squad ventured further to reach this run (0 for the first).</summary>
         public int Venture;
+        /// <summary>The leg cell by cell, copied from the template (<see cref="JobTemplate.CellWorlds"/>,
+        /// <see cref="JobTemplate.CellAnchorSeconds"/>, <see cref="JobTemplate.CellLife"/>).</summary>
+        public List<string> CellWorlds = new();
+        public List<float> CellAnchorSeconds = new();
+        public List<float> CellLife = new();
 
         /// <summary>A shallow copy (the warnings and news are shared): the voyage page sets a copy's difficulty, never the
         /// board's own job.</summary>

@@ -48,8 +48,8 @@ namespace CosmicShore.Utility
         /// <summary>
         /// How many riding Urchins can cradle at once. Mirrors <c>PRISM_CRADLE_SLOTS</c> in
         /// <c>PrismCradle.hlsl</c> — change both together, since the shader's arrays are declared
-        /// at this length. Four is the largest roster any Urchin mode seats (Hijack and Skein,
-        /// <c>MaxPlayersAllowed 4</c>). <see cref="Flush"/> keeps the strongest if it ever overflows.
+        /// at this length. Urchin modes seat up to nine since every game opened to nine vessels (Garrett,
+        /// 2026-11-17), so a full lobby of Urchins can overflow it: <see cref="Flush"/> keeps the strongest four.
         /// </summary>
         public const int Slots = 4;
 

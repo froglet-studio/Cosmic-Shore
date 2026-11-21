@@ -1,0 +1,21 @@
+# Loop Atlas model: vessel JewelWasp. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Jewel Wasp
+verbs: {}
+board:
+  Time: x x x
+  Charge: b b .
+  Mass: x x x
+  Space: b b .
+missing: Time
+arenas: []
+games:
+  Time: []
+  Charge: [Marionette]
+  Mass: []
+  Space: [Gorge]
+excused: []
+lean: null
+leanWhy: null
+combos: []
+doc: ''

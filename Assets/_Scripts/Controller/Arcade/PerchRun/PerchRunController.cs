@@ -29,6 +29,16 @@ namespace CosmicShore.Gameplay
                  "Tools/Build/author_perch_run_assets.py. Unset = no coral, and a warning.")]
         [SerializeField] Prism coralPrefab;
 
+        [Header("AI coach")]
+        [Tooltip("How far past the last ring it threads the AI charges its dart (u). Short enough that a hairpin after it " +
+                 "is still one dart away. Learned by the Time-game AI search (time_ai_search.py --hull Goby); Regatta's " +
+                 "Goby coach (RegattaGobyDart) carries the same number.")]
+        [SerializeField, Range(0f, 300f)] float aiOvershoot = PerchRunCourse.Overshoot;
+
+        [Tooltip("The AI's turning circle is widened by this much before a ring counts as inside it (then it flies straight " +
+                 "on to open the range instead of orbiting). Learned with aiOvershoot.")]
+        [SerializeField, Range(1f, 3f)] float aiTurnMargin = 1.25f;
+
         const string CoralOwnerId = "PerchRun";
 
         readonly List<Coral> _coral = new();
@@ -126,10 +136,10 @@ namespace CosmicShore.Gameplay
             if (threaded >= RaceLength) return false;
             int next = RingIndexFor(threaded);
             if (next < 0 || next >= _course.Count) return false;
-            aim = PerchRunCourse.PlanDart(hull.position, _course, next, _coral, out dartLength);
+            aim = PerchRunCourse.PlanDart(hull.position, _course, next, _coral, aiOvershoot, out dartLength);
             // A ring inside the turning circle is only ever orbited: fly straight on to open the range, then turn.
             float speed = pilot.Vessel?.VesselStatus?.Speed ?? PerchRunCourse.AiCruiseSpeed;
-            if (PerchRunCourse.InsideTurn(hull.position, hull.forward, aim, PerchRunCourse.TurnRadius(speed)))
+            if (PerchRunCourse.InsideTurn(hull.position, hull.forward, aim, PerchRunCourse.TurnRadius(speed), aiTurnMargin))
             {
                 aim = hull.position + hull.forward * PerchRunCourse.DartRange;
                 dartLength = 0f;

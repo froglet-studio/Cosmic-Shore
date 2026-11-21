@@ -27,6 +27,12 @@ Nothing about the pair changes. The scene is Shatterplane's, cloned through `lib
 and rule swapped, the donor's settings and arena-cell fields stripped, the four AI templates turned from Brittle Stars
 into Gobies.
 
+## AI, trained (2026-11-19)
+
+The Goby AI's leash (`GobyPistolConfig.aiHomeRadius`) went 4000 -> 600, trained in Den Builder and Riptide together on
+the volume books. Riptide's mean seat VC + VD: I1 17.4k -> 22.7k, I2 14.1k -> 16.5k, I3 12.6k -> 21.1k, I4 11.9k ->
+14.8k. Numbers and knee: `DEN_BUILDER.md`.
+
 ## Verification status
 
 Authored headless: the generator's `--check`, the reference compile and the static gates. **Not run in Unity.** What

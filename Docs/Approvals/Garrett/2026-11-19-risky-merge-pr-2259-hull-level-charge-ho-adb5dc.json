@@ -1,0 +1,34 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2259-hull-level-charge-ho-adb5dc",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T06:49:54+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2259 (Hull-level Charge hooks for the Angler and the Tiger Moth) went in without waiting for you.",
+  "why": "shared AI code every AI hull runs: Assets/_Scripts/Controller/AI/AIPilot.cs; vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Angler.prefab, Assets/_Prefabs/Spacevessels/TigerMoth.prefab",
+  "branch": "claude/project-thread-kszcm7",
+  "pr": 2259,
+  "commit": "e1868c733",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Angler.prefab",
+    "Assets/_Prefabs/Spacevessels/TigerMoth.prefab",
+    "Assets/_Scripts/Controller/AI/AIPilot.cs",
+    "Assets/_Scripts/Controller/AI/Angler.meta",
+    "Assets/_Scripts/Controller/AI/Angler/AnglerHuntAutopilot.cs",
+    "Assets/_Scripts/Controller/AI/Angler/AnglerHuntAutopilot.cs.meta",
+    "Assets/_Scripts/Controller/AI/Butterfly/TigerMothDustAutopilot.cs",
+    "Assets/_Scripts/Controller/AI/Butterfly/TigerMothDustAutopilot.cs.meta"
+  ],
+  "risky": [
+    {
+      "key": "shared-ai",
+      "name": "shared AI code every AI hull runs",
+      "detail": "Assets/_Scripts/Controller/AI/AIPilot.cs"
+    },
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Angler.prefab, Assets/_Prefabs/Spacevessels/TigerMoth.prefab"
+    }
+  ]
+}

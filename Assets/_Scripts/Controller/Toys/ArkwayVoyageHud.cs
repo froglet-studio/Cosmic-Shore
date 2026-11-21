@@ -8,7 +8,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Arkway voyage's one screen-space surface, with two channels — a persistent COUNTDOWN
-    /// ("RETURN TO THE ARK — 3", held while the leash is breached) and timed BANNERS, the voyage's
+    /// ("RETURN TO THE ARK — 3", held while the leash is breached: a threat toast in the toast's own spot, the banners
+    /// waiting behind it until it clears) and timed BANNERS, the voyage's
     /// toasts ("STAY WITH THE ARK", "THE ARK HAS FALLEN"; Frogma Rev 113, Compare: a band top
     /// centre, a bold line and an optional line under it, an event, a threat or something good,
     /// one at a time).
@@ -42,17 +43,24 @@ namespace CosmicShore.Gameplay
         static readonly Color UnderInk = new(0.722f, 0.753f, 0.941f);
         static readonly Color CountdownInk = new(1f, 0.92f, 0.6f);
 
-        // Frogma Rev 116 A (Marquee): in a voyage the toast has ONE spot, just under the marquee the objective box
-        // draws top centre, like an arcade cabinet's call-out line. Elsewhere (the Arkway toy) it keeps the top spot.
-        const float TopY = 40f, UnderMarqueeY = 238f, CountdownGap = 110f;
+        // The Arkway toy keeps its toast top centre: a band, a bold line and a line under it.
+        const float TopY = 40f, BandWidth = 720f, LineWidth = 680f, HeadSize = 28f, UnderSize = 19f;
+        const float TallBand = 90f, ShortBand = 58f;
+        // Frogma Rev 120 B (On the Ark): in a voyage the toasts are a feed just under the chip top left
+        // (VoyageObjectiveBox), smaller, left aligned, on a band that fades out to the right with a stripe in the mood
+        // colour down its left edge.
+        const float FeedGap = 20f, FeedWidth = 520f, FeedMaxWidth = 820f, FeedPadX = 16f, FeedHead = 20f, FeedUnder = 16f;
+        const float FeedTall = 62f, FeedShort = 38f;
 
         CanvasGroup _bannerGroup, _countdownGroup;
-        ArkwayToastBand _band;
+        ArkwayToastBand _band, _countdownBand;
         RectTransform _countdownRect;
-        TMP_Text _head, _under, _countdown;
+        TMP_Text _head, _under, _countdown, _countdownUnder;
         bool _countdownShown;
         float _bannerFrom = -1f, _bannerUntil = -1f;
-        readonly Queue<(Mood mood, string line, string under, float seconds)> _queue = new();
+        bool _upIsRunning;
+        int _feed = -1;
+        readonly Queue<(Mood mood, string line, string under, float seconds, bool running)> _queue = new();
 
         /// <summary>
         /// While this answers true the surface is held: nothing new comes up, a banner already up fades and keeps the
@@ -73,21 +81,28 @@ namespace CosmicShore.Gameplay
             scaler.matchWidthOrHeight = 0.5f;
 
             // The banner: a band top centre, a bold line and an optional line under it.
-            var band = Child("Banner", transform, new Vector2(0f, -40f), new Vector2(900f, 96f));
+            var band = Child("Banner", transform, new Vector2(0f, -TopY), new Vector2(BandWidth, TallBand));
             _bannerGroup = band.gameObject.AddComponent<CanvasGroup>();
             _band = band.gameObject.AddComponent<ArkwayToastBand>();
             _band.raycastTarget = false;
-            _head = Line(band, "Line", new Vector2(0f, -12f), new Vector2(860f, 44f), 32f, FontStyles.Bold);
-            _under = Line(band, "Under", new Vector2(0f, -56f), new Vector2(860f, 30f), 21f, FontStyles.Normal);
+            _head = Line(band, "Line", new Vector2(0f, -10f), new Vector2(680f, 40f), 28f, FontStyles.Bold);
+            _under = Line(band, "Under", new Vector2(0f, -52f), new Vector2(680f, 28f), 19f, FontStyles.Normal);
             _under.color = ColorTrace.Retrace(ColorTrace.Ui, UnderInk);
             _bannerGroup.alpha = 0f;
 
-            // The countdown: the leash, held while it is breached, below the banner.
-            var cd = Child("Countdown", transform, new Vector2(0f, -(TopY + CountdownGap)), new Vector2(900f, 60f));
+            // The countdown: the leash, held while it is breached, as a threat toast in the toast's spot (Shombith
+            // 2026-11-17: "a warning 5 4 3 2 1"). The banners wait behind it.
+            var cd = Child("Countdown", transform, new Vector2(0f, -TopY), new Vector2(BandWidth, TallBand));
             _countdownRect = cd;
             _countdownGroup = cd.gameObject.AddComponent<CanvasGroup>();
-            _countdown = Line(cd, "Line", Vector2.zero, new Vector2(900f, 60f), 34f, FontStyles.Normal);
+            _countdownBand = cd.gameObject.AddComponent<ArkwayToastBand>();
+            _countdownBand.raycastTarget = false;
+            _countdownBand.color = ColorTrace.Retrace(ColorTrace.Ui, ThreatBand);
+            _countdown = Line(cd, "Line", new Vector2(0f, -10f), new Vector2(680f, 40f), 30f, FontStyles.Bold);
             _countdown.color = ColorTrace.Retrace(ColorTrace.Ui, CountdownInk);
+            _countdownBand.Accent = ColorTrace.Retrace(ColorTrace.Ui, ThreatInk);
+            _countdownUnder = Line(cd, "Under", new Vector2(0f, -52f), new Vector2(680f, 28f), 19f, FontStyles.Normal);
+            _countdownUnder.color = ColorTrace.Retrace(ColorTrace.Ui, UnderInk);
             _countdownGroup.alpha = 0f;
         }
 
@@ -117,10 +132,23 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Hold a countdown line on screen until <see cref="HideCountdown"/>.</summary>
-        public void ShowCountdown(string line)
+        public void ShowCountdown(string line) => ShowCountdown(line, null);
+
+        /// <summary>Hold a countdown toast on screen until <see cref="HideCountdown"/>: a bold line and a line under it
+        /// (may be empty). An empty line shows nothing.</summary>
+        public void ShowCountdown(string line, string under)
         {
+            if (string.IsNullOrEmpty(line))
+            {
+                _countdownShown = false;
+                return;
+            }
             _countdownShown = true;
             _countdown.text = line;
+            bool hasUnder = !string.IsNullOrEmpty(under);
+            _countdownUnder.text = hasUnder ? under : string.Empty;
+            _countdownUnder.gameObject.SetActive(hasUnder);
+            _countdownRect.sizeDelta = new Vector2(_countdownRect.sizeDelta.x, BandHeight(hasUnder));
         }
 
         public void HideCountdown() => _countdownShown = false;
@@ -130,11 +158,41 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Show a banner of <paramref name="mood"/>, with <paramref name="under"/> beneath it (may be empty), for
         /// <paramref name="seconds"/>. Banners show one at a time: a new one waits until the one up has been read.</summary>
-        public void ShowBanner(string line, float seconds, Mood mood, string under)
+        public void ShowBanner(string line, float seconds, Mood mood, string under) =>
+            ShowBanner(line, seconds, mood, under, running: false);
+
+        /// <summary>As above; a <paramref name="running"/> toast (a count that keeps going up, like crystals picked up)
+        /// takes over the running toast on screen, or the one waiting, instead of queueing another behind it.</summary>
+        public void ShowBanner(string line, float seconds, Mood mood, string under, bool running)
         {
             if (string.IsNullOrEmpty(line)) return;
+            under ??= string.Empty;
+            seconds = Mathf.Max(0.5f, seconds);
+            if (running)
+            {
+                float now = Time.unscaledTime;
+                if (_upIsRunning && _bannerUntil >= 0f && now < _bannerUntil && _queue.Count == 0)
+                {
+                    Write(mood, line, under);
+                    _bannerUntil = Mathf.Max(_bannerUntil, now + seconds);
+                    return;
+                }
+                bool replaced = false;
+                int n = _queue.Count;
+                for (int i = 0; i < n; i++)
+                {
+                    var item = _queue.Dequeue();
+                    if (item.running && !replaced)
+                    {
+                        item = (mood, line, under, seconds, true);
+                        replaced = true;
+                    }
+                    _queue.Enqueue(item);
+                }
+                if (replaced) return;
+            }
             if (_queue.Count >= MaxQueued) _queue.Dequeue(); // a backlog never outlives the moment it described
-            _queue.Enqueue((mood, line, under ?? string.Empty, Mathf.Max(0.5f, seconds)));
+            _queue.Enqueue((mood, line, under, seconds, running));
         }
 
         void Update()
@@ -142,16 +200,18 @@ namespace CosmicShore.Gameplay
             Place();
             float now = Time.unscaledTime;
             float step = Time.unscaledDeltaTime / FadeSeconds;
-            if (Hold != null && Hold())
+            bool held = Hold != null && Hold();
+            if (held || _countdownShown)
             {
-                // The banner up keeps its time: it comes back when the hold lifts, then goes on as it would have.
+                // The banner up keeps its time: it comes back when the hold (or the countdown, which takes the toast's
+                // spot) lifts, then goes on as it would have.
                 if (_bannerUntil >= 0f)
                 {
                     _bannerFrom += Time.unscaledDeltaTime;
                     _bannerUntil += Time.unscaledDeltaTime;
                 }
                 _bannerGroup.alpha = Mathf.MoveTowards(_bannerGroup.alpha, 0f, step);
-                _countdownGroup.alpha = Mathf.MoveTowards(_countdownGroup.alpha, 0f, step);
+                _countdownGroup.alpha = Mathf.MoveTowards(_countdownGroup.alpha, held ? 0f : 1f, step);
                 return;
             }
             bool showing = _bannerUntil >= 0f && now < _bannerUntil;
@@ -164,21 +224,94 @@ namespace CosmicShore.Gameplay
             _countdownGroup.alpha = Mathf.MoveTowards(_countdownGroup.alpha, _countdownShown ? 1f : 0f, step);
         }
 
-        /// <summary>The toast spot: under the voyage marquee while it is up, the top spot otherwise.</summary>
+        bool Feed => _feed == 1;
+
+        /// <summary>The toast spot: a feed under the voyage chip top left while it is up (Rev 120 B), the top spot
+        /// otherwise.</summary>
         void Place()
         {
-            float y = CosmicShore.UI.VoyageObjectiveBox.Showing ? UnderMarqueeY : TopY;
-            var band = (RectTransform)_band.transform;
-            if (!Mathf.Approximately(band.anchoredPosition.y, -y))
+            bool feed = CosmicShore.UI.VoyageObjectiveBox.Showing;
+            if ((feed ? 1 : 0) != _feed)
             {
-                band.anchoredPosition = new Vector2(0f, -y);
-                _countdownRect.anchoredPosition = new Vector2(0f, -(y + CountdownGap));
+                _feed = feed ? 1 : 0;
+                Restyle((RectTransform)_band.transform, _band, _head, _under);
+                Restyle(_countdownRect, _countdownBand, _countdown, _countdownUnder);
+                _fitHead = _fitCountdown = null;
+            }
+            if (feed)
+            {
+                Fit((RectTransform)_band.transform, _head, _under, ref _fitHead);
+                Fit(_countdownRect, _countdown, _countdownUnder, ref _fitCountdown);
+            }
+            var at = feed
+                ? new Vector2(CosmicShore.UI.VoyageObjectiveBox.Left, -(CosmicShore.UI.VoyageObjectiveBox.Bottom + FeedGap))
+                : new Vector2(0f, -TopY);
+            var band = (RectTransform)_band.transform;
+            if (band.anchoredPosition != at)
+            {
+                band.anchoredPosition = at;
+                _countdownRect.anchoredPosition = at;
             }
         }
 
+        string _fitHead, _fitCountdown;
+
+        /// <summary>A feed band widens to its longer line (up to <see cref="FeedMaxWidth"/>), so a long head is not cut
+        /// short; measured only when the words change.</summary>
+        static void Fit(RectTransform band, TMP_Text head, TMP_Text under, ref string fitted)
+        {
+            string key = head.text + "\n" + (under.gameObject.activeSelf ? under.text : string.Empty);
+            if (key == fitted) return;
+            fitted = key;
+            float need = head.GetPreferredValues(head.text, 4000f, 200f).x;
+            if (under.gameObject.activeSelf && !string.IsNullOrEmpty(under.text))
+                need = Mathf.Max(need, under.GetPreferredValues(under.text, 4000f, 200f).x);
+            float width = Mathf.Clamp(need + 2f * FeedPadX + 4f, FeedWidth, FeedMaxWidth);
+            band.sizeDelta = new Vector2(width, band.sizeDelta.y);
+            head.rectTransform.sizeDelta = new Vector2(width - 2f * FeedPadX, head.rectTransform.sizeDelta.y);
+            under.rectTransform.sizeDelta = new Vector2(width - 2f * FeedPadX, under.rectTransform.sizeDelta.y);
+        }
+
+        /// <summary>Lay a band and its two lines out as the top-centre toast or as the feed.</summary>
+        void Restyle(RectTransform band, ArkwayToastBand shape, TMP_Text head, TMP_Text under)
+        {
+            bool feed = Feed;
+            var corner = feed ? new Vector2(0f, 1f) : new Vector2(0.5f, 1f);
+            band.anchorMin = band.anchorMax = band.pivot = corner;
+            bool tall = under.gameObject.activeSelf;
+            band.sizeDelta = new Vector2(feed ? FeedWidth : BandWidth, BandHeight(tall));
+            shape.Feed = feed;
+            Lay(head, corner, feed ? new Vector2(FeedPadX, -8f) : new Vector2(0f, -10f),
+                new Vector2(feed ? FeedWidth - 2f * FeedPadX : LineWidth, feed ? 26f : 40f), feed ? FeedHead : HeadSize);
+            Lay(under, corner, feed ? new Vector2(FeedPadX, -36f) : new Vector2(0f, -52f),
+                new Vector2(feed ? FeedWidth - 2f * FeedPadX : LineWidth, feed ? 22f : 28f), feed ? FeedUnder : UnderSize);
+            var align = feed ? TextAlignmentOptions.Left : TextAlignmentOptions.Center;
+            head.alignment = align;
+            under.alignment = align;
+        }
+
+        static void Lay(TMP_Text text, Vector2 corner, Vector2 at, Vector2 size, float fontSize)
+        {
+            var rt = text.rectTransform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = corner;
+            rt.anchoredPosition = at;
+            rt.sizeDelta = size;
+            text.fontSize = fontSize;
+        }
+
+        float BandHeight(bool tall) => Feed ? (tall ? FeedTall : FeedShort) : (tall ? TallBand : ShortBand);
+
         void Next(float now)
         {
-            var (mood, line, under, seconds) = _queue.Dequeue();
+            var (mood, line, under, seconds, running) = _queue.Dequeue();
+            Write(mood, line, under);
+            _upIsRunning = running;
+            _bannerFrom = now;
+            _bannerUntil = now + seconds;
+        }
+
+        void Write(Mood mood, string line, string under)
+        {
             _head.text = line;
             _head.color = ColorTrace.Retrace(ColorTrace.Ui, mood switch
             {
@@ -192,9 +325,7 @@ namespace CosmicShore.Gameplay
             _under.text = under;
             _under.gameObject.SetActive(hasUnder);
             var band = (RectTransform)_band.transform;
-            band.sizeDelta = new Vector2(band.sizeDelta.x, hasUnder ? 96f : 64f);
-            _bannerFrom = now;
-            _bannerUntil = now + seconds;
+            band.sizeDelta = new Vector2(band.sizeDelta.x, BandHeight(hasUnder));
         }
     }
 
@@ -207,8 +338,18 @@ namespace CosmicShore.Gameplay
     {
         const float Slant = 22f;
         const float AccentHeight = 4f;
+        const float FeedStripe = 2f;
 
         Color _accent = Color.white;
+        bool _feed;
+
+        /// <summary>The voyage's toast feed (Frogma Rev 120 B): no slant, the band fading out to the right, the accent a
+        /// stripe down the left edge instead of a line along the foot.</summary>
+        public bool Feed
+        {
+            get => _feed;
+            set { if (_feed == value) return; _feed = value; SetVerticesDirty(); }
+        }
 
         /// <summary>The colour of the line along the band's foot (already traced through the colour set).</summary>
         public Color Accent
@@ -221,6 +362,19 @@ namespace CosmicShore.Gameplay
         {
             vh.Clear();
             var r = GetPixelAdjustedRect();
+            if (_feed)
+            {
+                var clear = new Color(color.r, color.g, color.b, 0f);
+                int i = vh.currentVertCount;
+                vh.AddVert(new Vector3(r.xMin, r.yMin), color, Vector2.zero);
+                vh.AddVert(new Vector3(r.xMin, r.yMax), color, Vector2.zero);
+                vh.AddVert(new Vector3(r.xMax, r.yMax), clear, Vector2.zero);
+                vh.AddVert(new Vector3(r.xMax, r.yMin), clear, Vector2.zero);
+                vh.AddTriangle(i, i + 1, i + 2);
+                vh.AddTriangle(i, i + 2, i + 3);
+                Quad(vh, r.xMin, r.xMin + FeedStripe, r.xMin, r.xMin + FeedStripe, r.yMax, r.yMin, _accent);
+                return;
+            }
             float s = Mathf.Min(Slant, r.width * 0.25f);
             Quad(vh, r.xMin + s, r.xMax, r.xMin, r.xMax - s, r.yMax, r.yMin + AccentHeight, color);
             float ax = s * AccentHeight / Mathf.Max(1f, r.height);

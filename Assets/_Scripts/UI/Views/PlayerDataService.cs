@@ -50,6 +50,7 @@ namespace CosmicShore.UI
             ColorSetCatalogSO.Purchased = id => IsRewardUnlocked(ColorSetCatalogSO.RewardId(id));
 
             CreateLocalDefaultProfile(null);
+            AccountInventoryStore.CrewReady += KeepAvatarInCrew;
         }
 
         void OnDestroy()
@@ -59,6 +60,7 @@ namespace CosmicShore.UI
                 Instance = null;
                 ColorSetCatalogSO.Purchased = null;
             }
+            AccountInventoryStore.CrewReady -= KeepAvatarInCrew;
 
             var ds = _ugsDataService;
             if (ds != null)
@@ -263,6 +265,19 @@ namespace CosmicShore.UI
             catch { /* auth not ready, keep existing userId */ }
 
             CurrentProfile = cloudData;
+
+            // The avatar is one of the account's own crew (Garrett, 2026-11-19): an avatar from outside it becomes the
+            // crew's pilot on the same callsign.
+            if (AccountInventoryStore.IsCloudLoaded)
+            {
+                int own = CrewAvatars.Consistent(CurrentProfile.Identity.AvatarId, profileIcons ? profileIcons.ProfileIcons : null,
+                    AccountInventoryStore.Current.Crew, PaintedCrewSO.Load());
+                if (own != CurrentProfile.Identity.AvatarId)
+                {
+                    CurrentProfile.Identity.AvatarId = own;
+                    needsResync = true;
+                }
+            }
 
             if (needsResync)
             {
@@ -505,6 +520,16 @@ namespace CosmicShore.UI
         }
 
         static bool IsElement(Element e) => e is Element.Charge or Element.Mass or Element.Space or Element.Time;
+
+        /// <summary>Once the account's crew is known (<see cref="AccountInventoryStore.CrewReady"/>), an avatar from
+        /// outside it becomes the crew's pilot on the same callsign (<see cref="CrewAvatars.Consistent"/>).</summary>
+        void KeepAvatarInCrew()
+        {
+            if (CurrentProfile?.Identity == null || !profileIcons || !AccountInventoryStore.IsCloudLoaded) return;
+            int own = CrewAvatars.Consistent(CurrentProfile.Identity.AvatarId, profileIcons.ProfileIcons,
+                AccountInventoryStore.Current.Crew, PaintedCrewSO.Load());
+            if (own != CurrentProfile.Identity.AvatarId) SetAvatarId(own);
+        }
 
         public void SetAvatarId(int avatarId)
         {

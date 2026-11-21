@@ -93,8 +93,9 @@ online), the Bug Hunt's after-Play send (`BugHuntAutoSend`) pushes whatever is n
    every branch).
 3. Fix what can be fixed from the code, on `Ys-bleeding-edge` only, with the usual proof (§2: tests in Amoebius,
    `unity_refcompile`, the gates, the checklist entry). Never push to `bleeding-edge`; never touch the live UGS project.
-4. What needs a person (a hand retest, an editor step, a design call): *suggest* a Froglet Tasks ticket on the page
-   (one per branch; nobody is named or assigned; an approver approves it). Never file one unapproved.
+4. What needs a person (a hand retest, an editor step, a design call): a hand test in
+   `Docs/UNITY_VERIFICATION_CHECKLIST.md`, and, with your person's yes, a swim-lane hand-off (`/handoff-for-test`,
+   `/handoff-open`; nobody is assigned).
 5. Add a dated row to `Docs/PartySystem/SWEEP_LOG.md`: tests read, what was found, what was fixed (commits),
    what was suggested. A sweep that found nothing new writes one line and changes nothing else.
 

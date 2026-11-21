@@ -1,0 +1,29 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2255-went-in-without-wait-c7764d",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T05:56:02+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2255 went in without waiting for you.",
+  "why": "shared AI code every AI hull runs: Assets/_Scripts/Controller/AI/AIPilot.cs; vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Dolphin.prefab, Assets/_Prefabs/Spacevessels/Rhino.prefab",
+  "branch": "claude/project-thread-2rf610",
+  "pr": 2255,
+  "commit": "ce3812c53",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Dolphin.prefab",
+    "Assets/_Prefabs/Spacevessels/Rhino.prefab",
+    "Assets/_Scripts/Controller/AI/AIPilot.cs"
+  ],
+  "risky": [
+    {
+      "key": "shared-ai",
+      "name": "shared AI code every AI hull runs",
+      "detail": "Assets/_Scripts/Controller/AI/AIPilot.cs"
+    },
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Dolphin.prefab, Assets/_Prefabs/Spacevessels/Rhino.prefab"
+    }
+  ]
+}

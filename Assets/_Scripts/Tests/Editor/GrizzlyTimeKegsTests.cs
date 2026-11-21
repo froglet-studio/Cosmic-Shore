@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using NUnit.Framework;
@@ -10,8 +12,9 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The powder-keg contract of Grizzly Time (<see cref="GrizzlyTimeKegs"/>, Docs/GrizzlyTime/POWDER_KEGS_SPEC.md §7):
     /// the kegs are a pure function of the course, they never crowd a ring's mouth, a blast in the mouth cannot open one,
-    /// the chalk marks a lane a blast does not clear and a mouth-threader never meets, the bank shot is worth taking on a
-    /// real corner, and the ladder adds one demand a level inside the prism budget. Asserted over a 400-seed sweep of every intensity, on the shipped
+    /// the chalk marks a lane a blast does not clear and a mouth-threader never meets, the blow point is on the keg's exit
+    /// side, the bank shot is worth taking on a real corner, a Rush through the core opens the keg and a pass beside it
+    /// does not, and the ladder adds one demand a level inside the prism budget. Asserted over a 400-seed sweep of every intensity, on the shipped
     /// circuit (<see cref="GrizzlyTimeCourse.ForIntensity"/>), because a generated course is exactly the kind of thing
     /// that is fine on the seed you looked at. Runs offline in Tools/Build/grizzly_time_course_harness.
     /// </summary>
@@ -210,23 +213,54 @@ namespace CosmicShore.Tests
             }
         }
 
+        /// <summary>The blow point is on the keg's EXIT side: a Grizzly is launched away from its bomb
+        /// (<c>GrizzlyTriggerBombExecutor.LaunchSelf</c>: direction = hull - bomb), so with the bomb in the keg the launch
+        /// of a hull at the blow point is the keg's exit lane, toward the next ring. Until 2026-11-20 the point stood on
+        /// the entry side and this test measured only its distance, so it passed on a point that throws the hull away
+        /// from the next ring.</summary>
         [Test]
         public void Every_keg_can_be_blown_from_its_exit_side_inside_its_credit_radius()
         {
             foreach (var (i, seed, lap, kegs) in Sweep())
                 foreach (var keg in kegs)
                 {
-                    float d = Vector3.Distance(GrizzlyTimeKegs.BlowPoint(keg), keg.Centre);
+                    Vector3 stand = GrizzlyTimeKegs.BlowPoint(keg);
+                    float d = Vector3.Distance(stand, keg.Centre);
                     Assert.Less(d, GrizzlyTimeKegs.FullReach, "the blow point is inside a full blast");
                     Assert.Less(d, GrizzlyTimeKegs.CreditRadius(i), "the blow point is inside the credit radius");
                     Assert.Greater(d, GrizzlyTimeKegs.HoopRadius + 6f, "the blow point is clear of the hoop");
+
+                    Vector3 launch = (stand - keg.Centre).normalized;   // away from a bomb in the keg
+                    Vector3 next = lap[(keg.Ring + 1) % lap.Count].Position;
+                    Assert.Less(Vector3.Angle(launch, keg.ExitDir), 1f, $"I{i} seed {seed} ring {keg.Ring}: the launch is the exit lane");
+                    Assert.Less(Vector3.Distance(stand, next), Vector3.Distance(keg.Centre, next),
+                                $"I{i} seed {seed} ring {keg.Ring}: the blow point is on the side nearer the next ring");
+                    Assert.Greater(Vector3.Dot(next - stand, keg.ExitDir), 0f,
+                                   $"I{i} seed {seed} ring {keg.Ring}: the next ring is ahead of the blow point, down the launch");
+                    Assert.Greater(Vector3.Dot(GrizzlyTimeKegs.ThrowLanding(keg) - stand, keg.ExitDir), 0f,
+                                   $"I{i} seed {seed} ring {keg.Ring}: the throw carries down the exit lane");
+                    Assert.IsTrue(GrizzlyTimeKegs.IsBankShot(keg.Centre, stand, launch * 300f, keg.ExitDir),
+                                  $"I{i} seed {seed} ring {keg.Ring}: the launch from the blow point reads as a bank shot");
                 }
         }
 
-        /// <summary>The bank shot is the I2 demand: on a corner over 60 deg, blowing the keg straight from where you came
-        /// in lands you farther from the next ring than blowing it from the exit side - always, and by at least
-        /// <see cref="MedianBankShotWorth"/> u (two seconds of cruise) at the median from I2 up. Measured 2026-11-11 on the
-        /// first cut: medians 101 / 137 / 157 / 277 u at I1-I4, the least 31 u.</summary>
+        /// <summary>A hull standing at the blow point is outside every ring's mouth by more than its own half-width, so
+        /// the throw never starts inside a mouth.</summary>
+        [Test]
+        public void The_blow_point_stands_outside_every_mouth()
+        {
+            foreach (var (i, seed, lap, kegs) in Sweep())
+                foreach (var keg in kegs)
+                    foreach (var gate in lap)
+                        Assert.Greater(Vector3.Distance(GrizzlyTimeKegs.BlowPoint(keg), gate.Position), gate.Radius + HullMargin,
+                                       $"I{i} seed {seed} ring {keg.Ring}: the blow point crowds a mouth");
+        }
+
+        /// <summary>The bank shot is the I2 demand: on a corner over 60 deg, a pilot who flies straight past the keg and
+        /// blows it from there (thrown the way it came in) lands farther from the next ring than one who gets round to the
+        /// exit side - always, and by at least <see cref="MedianBankShotWorth"/> u (two seconds of cruise) at the median
+        /// from I2 up. Both stand <see cref="GrizzlyTimeKegs.BlowStandOff"/> u past the core, on the side their launch
+        /// points. Measured 2026-11-20 (400 seeds): medians 198 / 243 / 281 / 335 u at I1-I4, the least 39 u.</summary>
         const float MedianBankShotWorth = 100f;
 
         [Test]
@@ -247,7 +281,7 @@ namespace CosmicShore.Tests
                     if (RaceCourseGeometry.Angle(at - prev, next - at) <= 60f) continue;
                     corners++;
                     Vector3 approach = (keg.Centre - prev).normalized;
-                    Vector3 straight = keg.Centre - approach * 60f + approach * carry;
+                    Vector3 straight = keg.Centre + approach * (GrizzlyTimeKegs.BlowStandOff + carry);
                     float waste = Vector3.Distance(straight, next) - Vector3.Distance(GrizzlyTimeKegs.ThrowLanding(keg), next);
                     Assert.Greater(waste, 0f, $"I{i} seed {seed} ring {keg.Ring}: the straight blow is as good as the bank shot");
                     byLevel[i].Add(waste);
@@ -306,17 +340,133 @@ namespace CosmicShore.Tests
         public void Bank_shot_reads_the_push_against_the_lane()
         {
             Vector3 keg = Vector3.zero, exit = Vector3.forward;
-            Assert.IsTrue(GrizzlyTimeKegs.IsBankShot(keg, new Vector3(0, 0, -60), exit * 300f, exit), "down the lane");
-            Assert.IsFalse(GrizzlyTimeKegs.IsBankShot(keg, new Vector3(0, 0, -60), Vector3.right * 300f, exit), "across it");
-            Assert.IsFalse(GrizzlyTimeKegs.IsBankShot(keg, new Vector3(0, 0, -400), exit * 300f, exit), "too far to be its blast");
-            Assert.IsFalse(GrizzlyTimeKegs.IsBankShot(keg, new Vector3(0, 0, -60), Vector3.zero, exit), "no push");
+            Vector3 stand = new Vector3(0, 0, GrizzlyTimeKegs.BlowStandOff);
+            Assert.IsTrue(GrizzlyTimeKegs.IsBankShot(keg, stand, exit * 300f, exit), "down the lane");
+            Assert.IsFalse(GrizzlyTimeKegs.IsBankShot(keg, stand, Vector3.right * 300f, exit), "across it");
+            Assert.IsFalse(GrizzlyTimeKegs.IsBankShot(keg, new Vector3(0, 0, 400), exit * 300f, exit), "too far to be its blast");
+            Assert.IsFalse(GrizzlyTimeKegs.IsBankShot(keg, stand, Vector3.zero, exit), "no push");
+        }
+
+        /// <summary>A Rush pushes the hull down the lane too, but it is not a bomb's launch: 80 u/s (120 at the peak of its
+        /// ease), against the 300 u/s a launch from inside a full blast reaches. A Rush alone must never read as a bank
+        /// shot, whatever the transformer's own ceiling is.</summary>
+        [Test]
+        public void A_Rush_alone_is_not_a_bank_shot()
+        {
+            Vector3 keg = Vector3.zero, exit = Vector3.forward;
+            Vector3 stand = new Vector3(0, 0, GrizzlyTimeKegs.BlowStandOff);
+            float rushPeak = RushAsset("magnitude") * 1.5f;
+            Assert.Greater(GrizzlyTimeKegs.BankShotMinPush, rushPeak, "the least bank-shot push is above a Rush's peak");
+            Assert.Less(GrizzlyTimeKegs.BankShotMinPush, GrizzlyTimeCourse.VelocityModifierCeiling, "and under a launch's ceiling");
+            Assert.IsFalse(GrizzlyTimeKegs.IsBankShot(keg, stand, exit * rushPeak, exit), "a Rush down the lane");
+            Assert.IsTrue(GrizzlyTimeKegs.IsBankShot(keg, stand, exit * GrizzlyTimeCourse.VelocityModifierCeiling, exit), "a launch down the lane");
+        }
+
+        // ── Rush: the ram ─────────────────────────────────────────────────
+
+        const string RushAssetPath = "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyRushAction.asset";
+
+        static float RushAsset(string key)
+        {
+            Assert.IsTrue(File.Exists(RushAssetPath), $"{RushAssetPath} is missing");
+            var m = Regex.Match(File.ReadAllText(RushAssetPath), $@"^\s+{key}: ([-0-9.eE]+)\s*$", RegexOptions.Multiline);
+            Assert.IsTrue(m.Success, $"{key} not found in {RushAssetPath}");
+            return float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>The mode READS the Rush's ram (it never changes the vessel): the two numbers it restates are the
+        /// shipped asset's. A retune of the Rush moves them here, or every peer but the rammer's opens kegs by the old
+        /// reach.</summary>
+        [Test]
+        public void Ram_constants_match_the_shipped_Rush()
+        {
+            const string why = " moved - GrizzlyTimeKegs builds the reach every peer opens a rammed keg by from it. Update the constant.";
+            Assert.AreEqual(GrizzlyTimeKegs.RamRadius, RushAsset("ramRadius"), 1e-4f, "Rush ramRadius" + why);
+            Assert.AreEqual(GrizzlyTimeKegs.RamSeconds, RushAsset("duration"), 1e-4f, "Rush duration" + why);
+            Assert.AreEqual(GrizzlyTimeKegs.CoreCube * 0.5f, GrizzlyTimeKegs.RamReach - GrizzlyTimeKegs.RamRadius, 1e-4f,
+                            "the mode's reach is the ram's radius plus half a core cube, its stated tolerance");
+        }
+
+        /// <summary>A hull that Rushes through the core opens the keg from anywhere along the core's line; one at the blow
+        /// point, at the AI's pass point, threading the ring's mouth or flying the ring-to-ring line does not, so a Rush
+        /// spent for pace on the racing line never opens a keg by accident (the nearest a ring-to-ring line comes to a core
+        /// is 34 u over 400 seeds, at I4, against the mode's reach of 19: the ram's 16 plus its tolerance).</summary>
+        [Test]
+        public void A_Rush_through_the_core_opens_the_keg_and_a_pass_beside_it_does_not()
+        {
+            float reach = GrizzlyTimeKegs.RamReach;
+            Assert.Less(reach, GrizzlyTimeKegs.AIKegPassOffset, "the AI's pass beside a keg is outside the ram");
+            Assert.Less(GrizzlyTimeKegs.RamCreditReach, GrizzlyTimeKegs.BlowStandOff, "a hull at the blow point did not ram the keg");
+            foreach (var (i, seed, lap, kegs) in Sweep())
+            {
+                int n = lap.Count;
+                foreach (var keg in kegs)
+                {
+                    Vector3 across = GrizzlyTimeKegs.Lateral(keg);
+                    Assert.IsTrue(GrizzlyTimeKegs.RamOpens(keg.Centre, keg, reach), "in the core");
+                    Assert.IsTrue(GrizzlyTimeKegs.RamOpens(keg.Centre + across * GrizzlyTimeKegs.CoreSpacing - keg.ExitDir * (reach - 1f), keg, reach),
+                                  "just short of an end block, coming down the barrel");
+                    Assert.IsFalse(GrizzlyTimeKegs.RamOpens(keg.Centre - keg.ExitDir * (reach + 1f), keg, reach), "a hull not there yet");
+                    Assert.IsFalse(GrizzlyTimeKegs.RamOpens(GrizzlyTimeKegs.BlowPoint(keg), keg, reach), "at the blow point");
+                    Assert.IsFalse(GrizzlyTimeKegs.RamOpens(keg.Centre + keg.ExitDir * GrizzlyTimeKegs.AIKegPassOffset, keg, reach), "at the AI's pass point");
+                    Assert.IsFalse(GrizzlyTimeKegs.RamOpens(lap[keg.Ring].Position, keg, reach), $"I{i} seed {seed}: in its ring's mouth");
+                    for (int r = 0; r < n; r++)
+                        Assert.Greater(SegmentDistance(keg.Centre, lap[r].Position, lap[(r + 1) % n].Position), reach,
+                                       $"I{i} seed {seed} ring {keg.Ring}: the ring-to-ring line of leg {r} runs through the ram's reach");
+                }
+            }
+        }
+
+        // ── AI: Rush on a straight ────────────────────────────────────────
+
+        /// <summary>The Energy resource's gain per tick, read off the shipped Grizzly: the first Resource block of the
+        /// prefab named Energy.</summary>
+        static float PrefabEnergyGain()
+        {
+            const string prefab = "Assets/_Prefabs/Spacevessels/Grizzly.prefab";
+            Assert.IsTrue(File.Exists(prefab), $"{prefab} is missing");
+            var m = Regex.Match(File.ReadAllText(prefab), @"Name: Energy\b[\s\S]{0,400}?resourceGainRate: ([-0-9.eE]+)");
+            Assert.IsTrue(m.Success, "the Grizzly's Energy resource was not found in its prefab");
+            return float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>The AI's Rush is one pure rule: lined up, a straight ahead, no launch pushing it, the Energy there
+        /// with a tick to spare, its last press cooled down. Each condition alone refuses the press.</summary>
+        [Test]
+        public void The_AI_rushes_only_on_a_lined_up_straight_outside_a_launch()
+        {
+            const float cost = 0.25f, tick = 0.05f, cooldown = 2f;
+            float nose = GrizzlyTimeKegs.AIRushNoseDegrees - 1f, run = GrizzlyTimeKegs.AIRushMinRun + 1f;
+            float ready = cooldown + GrizzlyTimeKegs.AIRushCooldownMargin + 0.01f;
+            float full = cost + tick;
+            Assert.IsTrue(GrizzlyTimeKegs.AIShouldRush(nose, run, 0f, full, cost, tick, ready, cooldown), "lined up on a straight");
+            Assert.IsTrue(GrizzlyTimeKegs.AIShouldRush(0f, 600f, 0f, 1f, cost, tick, float.PositiveInfinity, cooldown), "its first press");
+            Assert.IsFalse(GrizzlyTimeKegs.AIShouldRush(GrizzlyTimeKegs.AIRushNoseDegrees + 1f, run, 0f, full, cost, tick, ready, cooldown), "nose off the aim");
+            Assert.IsFalse(GrizzlyTimeKegs.AIShouldRush(nose, GrizzlyTimeKegs.AIRushMinRun - 1f, 0f, full, cost, tick, ready, cooldown), "no straight left");
+            Assert.IsFalse(GrizzlyTimeKegs.AIShouldRush(nose, run, GrizzlyTimeKegs.AIRushMaxPush + 1f, full, cost, tick, ready, cooldown), "mid-launch");
+            Assert.IsFalse(GrizzlyTimeKegs.AIShouldRush(nose, run, 0f, cost - 0.01f, cost, 0f, ready, cooldown), "no Energy");
+            Assert.IsFalse(GrizzlyTimeKegs.AIShouldRush(nose, run, 0f, full, cost, tick, cooldown, cooldown), "inside its cooldown");
+
+            // One tick of headroom: every peer runs the press against its own Energy, which gains once a second on its
+            // own phase, so at exactly the cost a peer one tick behind would refuse it.
+            Assert.IsFalse(GrizzlyTimeKegs.AIShouldRush(nose, run, 0f, cost, cost, tick, ready, cooldown), "at exactly the cost, a peer a tick behind refuses");
+            Assert.IsTrue(GrizzlyTimeKegs.AIShouldRush(nose, run, 0f, cost, cost, 0f, ready, cooldown), "no headroom asked, the cost is enough");
+            Assert.AreEqual(tick, PrefabEnergyGain(), 1e-4f, "the Grizzly's Energy gain per tick (the headroom this test stands for)");
+
+            // The straight it asks for is longer than a Rush covers (cruise plus the burst, one second), so the burst is
+            // over before the aim point; and a launch's push is far above the hold, a Rush's own never under it mid-burst.
+            float rushRun = GrizzlyTimeCourse.GrizzlyThrottleScaler * RushAsset("duration") + RushAsset("magnitude") * RushAsset("duration");
+            Assert.Greater(GrizzlyTimeKegs.AIRushMinRun, rushRun, "the least straight is longer than one Rush");
+            Assert.Less(GrizzlyTimeKegs.AIRushMaxPush, RushAsset("magnitude") * 0.5f, "the hold is under a Rush's own push at its weakest");
+            Assert.Greater(RushAsset("cooldownSeconds"), 0f, "the Rush has a cooldown the AI waits out");
         }
 
         [Test]
-        public void Toast_ids_are_the_reserved_300_and_301()
+        public void Toast_ids_are_the_reserved_300_to_302()
         {
             Assert.AreEqual(300, (int)GameToastSituation.GrizzlyTimeHint, "GrizzlyTimeHint");
             Assert.AreEqual(301, (int)GameToastSituation.GrizzlyTimeBankShot, "GrizzlyTimeBankShot");
+            Assert.AreEqual(302, (int)GameToastSituation.GrizzlyTimeRamKey, "GrizzlyTimeRamKey");
         }
     }
 }

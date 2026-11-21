@@ -143,6 +143,40 @@ namespace CosmicShore.Data
             return fitted;
         }
 
+        /// <summary>
+        /// The leg's named worlds (<see cref="JobTemplate.CellWorlds"/>) laid over a fitted corridor: cell i stands the
+        /// pool world called <c>named[i]</c>. A name the pool does not have, an empty name, and every cell past the list
+        /// keep the world already there. <paramref name="pool"/> is the corridor's worlds in route-index order.
+        /// </summary>
+        public static List<int> NameCells(List<int> cells, IReadOnlyList<string> named, IReadOnlyList<string> pool)
+        {
+            if (cells == null || named == null || named.Count == 0 || pool == null || pool.Count == 0) return cells;
+            var named0 = new List<int>(cells);
+            for (int i = 0; i < named0.Count && i < named.Count; i++)
+            {
+                if (string.IsNullOrEmpty(named[i])) continue;
+                for (int w = 0; w < pool.Count; w++)
+                    if (string.Equals(pool[w], named[i], StringComparison.OrdinalIgnoreCase)) { named0[i] = w; break; }
+            }
+            return named0;
+        }
+
+        /// <summary>Cell <paramref name="index"/>'s entry of a per-cell list (cells past the end take the last entry), or
+        /// <paramref name="fallback"/> when the list is empty or the index is below 0.</summary>
+        public static float PerCell(IReadOnlyList<float> values, int index, float fallback) =>
+            values == null || values.Count == 0 || index < 0 ? fallback : values[Math.Min(index, values.Count - 1)];
+
+        /// <summary>A fitted pacing with the leg's own life (<see cref="JobTemplate.CellLife"/>) over it: cell i takes
+        /// <c>life[i]</c>; cells past the list keep the lane's pacing.</summary>
+        public static List<float> LayCellLife(List<float> scales, IReadOnlyList<float> life)
+        {
+            if (scales == null || life == null || life.Count == 0) return scales;
+            var laid = new List<float>(scales);
+            for (int i = 0; i < laid.Count && i < life.Count; i++)
+                if (life[i] > 0f) laid[i] = life[i];
+            return laid;
+        }
+
         /// <summary>A corridor's pacing (<see cref="VoyageRules.CorridorProfile"/>) fitted the way
         /// <see cref="FitCorridor"/> fits its cells: trimmed from the start, padded at the start with the first scale.</summary>
         public static List<float> FitProfile(List<float> scales, int count)

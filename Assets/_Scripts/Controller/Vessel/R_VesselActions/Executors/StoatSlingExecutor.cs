@@ -863,17 +863,22 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Thrown off the swing (the simulating machine): the kick along the heading it turned you onto - the deepest squeeze
-        /// of the hold × Mass's power, under the caps - and the warp kept as momentum. Every fling is timed.
+        /// Let go by the swing (the simulating machine), on the heading it turned you onto. ONE slingshot (2026-11-19): the
+        /// swing's own speed-up (the orbit's warp from its start) is kept as momentum; the old second push - a kick of the
+        /// hold's squeeze × Mass's power - is paid only as <see cref="StoatSlingConfigSO.SwingKickShare"/> of it (0 ships).
         /// </summary>
         void Fling(VesselTransformer transformer, Transform hull)
         {
             _swinging = false;
-            float power = config.LaunchPower.EvaluateLive(_status);
-            float squeeze = StoatSlingMath.SlingBoost(EngineSpeed(), _holds[(int)_swingSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
-            float kick = StoatSlingMath.CappedKick(StoatSlingMath.TimedKick(squeeze, 1f, config.MissKickShare, power),
-                _status.Speed, config.SpeedCapShare, 180f, 0f);
-            kick = StoatSlingMath.WarpCappedKick(kick, transformer.FlightTimeScale, EngineSpeed(), config.WarpKickCapCruise);
+            float kick = 0f;
+            if (config.SwingKickShare > 0f)
+            {
+                float power = config.LaunchPower.EvaluateLive(_status);
+                float squeeze = StoatSlingMath.SlingBoost(EngineSpeed(), _holds[(int)_swingSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
+                kick = config.SwingKickShare * StoatSlingMath.CappedKick(StoatSlingMath.TimedKick(squeeze, 1f, config.MissKickShare, power),
+                    _status.Speed, config.SpeedCapShare, 180f, 0f);
+                kick = StoatSlingMath.WarpCappedKick(kick, transformer.FlightTimeScale, EngineSpeed(), config.WarpKickCapCruise);
+            }
             _momentumClock = Mathf.Max(1f, transformer.FlightTimeScale);
             _momentumAt = Time.time;
             _lastLaunchAt = Time.time;
