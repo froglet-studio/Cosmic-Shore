@@ -737,15 +737,22 @@ def pick(records, k=8, bar=1.25):
     return chosen
 
 
-def confirm(records, out, per_base=1, bar=2.2, seeds=(1, 2, 3), limit_s=300):
-    """Re-race the best stage-B course of each world (and of each super-shielded bin) on more seeds at both starts:
-    a one-seed screen is noisy (2026-11-18: 1.05-1.10x screens came out 1.15-1.48x on three seeds)."""
+def nine_window(r):
+    return max(spread_stats(r["field"][s]["times"])[1] for s in ("card", "L5"))
+
+
+def confirm(records, out, per_base=1, top=8, seeds=(2, 3), limit_s=300):
+    """Re-race the most balanced stage-B course of each world (by its tightest nine-hull window, the seats a match
+    fills) on two more seeds at both starts and fold in the screen's seed 1: a one-seed screen is noisy (2026-11-18:
+    1.05-1.10x screens came out 1.15-1.48x on three seeds). The `top` worlds go first."""
     rj = _judge()
     path = os.path.join(out, "confirmed.jsonl")
     done = {r["id"] for r in _load(path)}
     by_base = {}
-    for r in sorted((r for r in elites(records).values() if r.get("stage") == "B" and r["score"] <= bar),
-                    key=lambda r: r["score"]):
+    cands = [r for r in map(rescore, records) if r.get("stage") == "B" and r.get("score") is not None]
+    for r in sorted(cands, key=nine_window):
+        if len(by_base) >= top and r["niche"].split("|")[0] not in by_base:
+            continue
         key = r["niche"].split("|")[0]
         by_base.setdefault(key, [])
         if len(by_base[key]) < per_base:
@@ -757,15 +764,20 @@ def confirm(records, out, per_base=1, bar=2.2, seeds=(1, 2, 3), limit_s=300):
         worst = 0.0
         for start in ("card", "L5"):
             jr = rj.judge(r["genome"], FIELD, list(seeds), limit_s=limit_s, start=start)
+            # The screen's seed-1 race joins the two new seeds.
+            for h, t in r["field"][start]["times"].items():
+                jr["races"].append({"seats": [{"hull": h, "finish_s": t}]})
             x, times, dnf = imbalance(jr, FIELD)
             res[start] = {"imbalance": x, "times": times, "dnf": dnf}
             worst = max(worst, x if x else 99.0)
             prisms = next((race.get("course_placement_prisms") for race in jr["races"]), None)
-        c = dict(id=r["id"], niche=r["niche"], screen=r["score"], confirmed=worst, seeds=list(seeds), field=res,
+        c = dict(id=r["id"], niche=r["niche"], screen=r["score"], confirmed=worst, seeds=[1] + list(seeds), field=res,
+                 nine=max(spread_stats(res[s]["times"])[1] for s in res),
                  prisms=prisms, genome=r["genome"], ss_share=r["ss_share"], facts=r["facts"])
         with open(path, "a") as f:
             f.write(json.dumps(c) + "\n")
-        print(f"[wide] confirmed {r['id']} {r['niche']} screen {r['score']:.3f} -> {worst:.3f}", flush=True)
+        print(f"[wide] confirmed {r['id']} {r['niche']} nine {nine_window(r):.3f} -> {c['nine']:.3f}, "
+              f"all eleven {worst:.3f}", flush=True)
 
 
 def playtest_pool(confirmed, k=8):
