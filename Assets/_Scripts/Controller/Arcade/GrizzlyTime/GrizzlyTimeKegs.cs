@@ -378,6 +378,40 @@ namespace CosmicShore.Gameplay
             return sinceLastPress >= cooldownSeconds + AIRushCooldownMargin;
         }
 
+        // ── AI: ram a standing keg open (input only; one rule for every difficulty) ──
+
+        /// <summary>The AI presses Rush to ram a keg once its core is this near (u): a Rush covers about 125 u in its 1 s
+        /// ram window, so the core is reached while the ram still runs.</summary>
+        public const float AIRamPressDistance = 100f;
+        /// <summary>The AI presses Rush to ram a keg only with its nose this near (deg) the core.</summary>
+        public const float AIRamNoseDegrees = 12f;
+        /// <summary>Within this distance (u) of a core that still stands (the ram missed, or no Rush was there), the AI
+        /// gives the keg up for this gate and threads the mouth.</summary>
+        public const float AIRamGiveUp = 8f;
+
+        /// <summary>
+        /// Is ramming the keg worth it? True when the line from the hull through the keg's core to the next ring is no
+        /// longer than the line through the mouth plus <paramref name="slack"/> u. A keg sits on its corner's inside, so
+        /// on a sharp corner the core is the shorter way round; on a gentle one the mouth is.
+        /// </summary>
+        public static bool AIRamPays(Vector3 hull, Vector3 core, Vector3 gate, Vector3 next, float slack) =>
+            Vector3.Distance(hull, core) + Vector3.Distance(core, next)
+            <= Vector3.Distance(hull, gate) + Vector3.Distance(gate, next) + slack;
+
+        /// <summary>
+        /// Should an AI ramming a keg press Rush now? Its nose is within <see cref="AIRamNoseDegrees"/> of the core, the core
+        /// is within <see cref="AIRamPressDistance"/>, the Energy is there with <paramref name="energyHeadroom"/> to spare
+        /// (one tick, as <see cref="AIShouldRush"/>) and its own last press has cooled down. A launch still pushing the hull
+        /// does not stop it: the ram opens the keg however fast the hull arrives.
+        /// </summary>
+        public static bool AIShouldRam(float noseDegrees, float distanceToCore, float energy, float energyCost,
+                                       float energyHeadroom, float sinceLastPress, float cooldownSeconds)
+        {
+            if (noseDegrees > AIRamNoseDegrees || distanceToCore > AIRamPressDistance) return false;
+            if (energy < energyCost + Mathf.Max(0f, energyHeadroom) - 1e-4f) return false;
+            return sinceLastPress >= cooldownSeconds + AIRushCooldownMargin;
+        }
+
         /// <summary>Where a full throw from <paramref name="keg"/> lands you: its blow point plus one carry down its lane.</summary>
         public static Vector3 ThrowLanding(in Keg keg) =>
             BlowPoint(keg) + keg.ExitDir * GrizzlyTimeCourse.CarryAfterLaunch(1f);

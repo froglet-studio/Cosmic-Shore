@@ -33,6 +33,8 @@ namespace CosmicShore.Gameplay
             public bool Rescue;
             public float RescueSince;
             public float RushAt = float.NegativeInfinity;
+            /// <summary>The gate whose standing keg this AI is ramming (-1: none).</summary>
+            public int RamFor = -1;
         }
 
         readonly Dictionary<IPlayer, RacerAI> _aiState = new();
@@ -81,10 +83,12 @@ namespace CosmicShore.Gameplay
             }
             state.SeenAt = now;
 
-            bool overridden = KegAim(self.position, index, ring, state, now, out target);
-            if (running && aiRushes && !state.Rescue && TryRushLine(pilot, self.position, overridden, target, newLeg,
-                                                                   out Vector3 steer, out float run))
-                TickRush(pilot, self, state, steer, run, now);
+            bool overridden = KegAim(pilot, self.position, index, ring, state, now, out target);
+            if (!running || state.Rescue) return overridden;
+            if (overridden && state.RamFor == index)
+                TickRush(pilot, self, state, target, (target - self.position).magnitude, now, ram: true);
+            else if (aiRushes && TryRushLine(pilot, self.position, overridden, target, newLeg, out Vector3 steer, out float run))
+                TickRush(pilot, self, state, steer, run, now, ram: false);
             return overridden;
         }
 
@@ -124,9 +128,10 @@ namespace CosmicShore.Gameplay
         /// bombs to open; with the 40 u blast that opened about one keg a race and ran the ladder backwards.)</item>
         /// </list>
         /// </summary>
-        bool KegAim(Vector3 at, int index, int ring, RacerAI state, float now, out Vector3 target)
+        bool KegAim(IPlayer pilot, Vector3 at, int index, int ring, RacerAI state, float now, out Vector3 target)
         {
             target = default;
+            if (state.RamFor != index) state.RamFor = -1;
             if (state.Rescue || now - state.ThreadedAt >= GrizzlyTimeKegs.AIStallSeconds)
             {
                 var gate = _course[ring];
@@ -155,10 +160,32 @@ namespace CosmicShore.Gameplay
             var site = _kegs[ring];
             Vector3 pass = site.Keg.Centre + site.Keg.ExitDir * GrizzlyTimeKegs.AIKegPassOffset;
             if ((at - site.Keg.Centre).sqrMagnitude > GrizzlyTimeKegs.AIKegAimRange * GrizzlyTimeKegs.AIKegAimRange) return false;
-            // Only an OPEN keg is worth the detour (2026-11-21): since the 20-80 blast a standing core needs a bomb frozen
-            // within 40 u, which the autopilot's own fire clock does not aim, and chasing standing plain kegs at I1-I2
-            // cost about 55 s a race and ran the I1-I4 ladder backwards.
-            if (site.Standing) return false;
+            // A standing keg: ram it open with Rush when the line through its core is the shorter way round
+            // (2026-11-21, Garrett: teach the AI to open kegs). Passing beside one for the bomb autopilot to open is not
+            // tried: since the 20-80 blast a core needs a bomb frozen within 40 u, which the autopilot's fire clock does
+            // not aim, and that pass cost about 55 s a race at I1-I2 and ran the ladder backwards.
+            if (site.Standing)
+            {
+                Vector3 core = site.Keg.Centre;
+                if (state.RamFor == index)
+                {
+                    if ((at - core).sqrMagnitude <= GrizzlyTimeKegs.AIRamGiveUp * GrizzlyTimeKegs.AIRamGiveUp)
+                    {
+                        state.GaveUpOn = index;
+                        state.RamFor = -1;
+                        return false;
+                    }
+                    target = core;
+                    return true;
+                }
+                if (!aiRamsKegs || !RushReady(pilot)) return false;
+                Vector3 next = _course[(ring + 1) % _course.Count].Position;
+                if (!GrizzlyTimeKegs.AIRamPays(at, core, _course[ring].Position, next, aiKegRamSlack)) return false;
+                state.RamFor = index;
+                target = core;
+                return true;
+            }
+            state.RamFor = -1;
             target = pass;
             return true;
         }
@@ -172,7 +199,20 @@ namespace CosmicShore.Gameplay
         /// own phase, so the AI waits for one tick of headroom and a peer one tick behind still accepts it. A press the
         /// vessel refuses (no charge banked) does nothing and is tried again after the cooldown.
         /// </summary>
-        void TickRush(IPlayer pilot, Transform self, RacerAI state, Vector3 steer, float run, float now)
+        /// <summary>Is a Rush banked for this AI's hull now (Energy for one press with a tick to spare)? Read off the
+        /// vessel's own action and resource, as <see cref="TickRush"/> reads them.</summary>
+        bool RushReady(IPlayer pilot)
+        {
+            var status = pilot.Vessel.VesselStatus;
+            var handler = status != null ? status.ActionHandler : null;
+            if (!handler || !handler.TryGetBoundAction<GrizzlyRushActionSO>(out var rush, out _)) return false;
+            var resources = status.ResourceSystem ? status.ResourceSystem.Resources : null;
+            if (resources == null || rush.EnergyIndex < 0 || rush.EnergyIndex >= resources.Count) return false;
+            var energy = resources[rush.EnergyIndex];
+            return energy.CurrentAmount >= rush.EnergyCost + energy.resourceGainRate - 1e-4f;
+        }
+
+        void TickRush(IPlayer pilot, Transform self, RacerAI state, Vector3 steer, float run, float now, bool ram)
         {
             var status = pilot.Vessel.VesselStatus;
             var handler = status != null ? status.ActionHandler : null;
@@ -184,10 +224,13 @@ namespace CosmicShore.Gameplay
             if (resources == null || rush.EnergyIndex < 0 || rush.EnergyIndex >= resources.Count || !transformer) return;
             var energy = resources[rush.EnergyIndex];
 
-            if (!GrizzlyTimeKegs.AIShouldRush(Vector3.Angle(self.forward, steer - self.position), run,
-                    transformer.VelocityShift.magnitude, energy.CurrentAmount, rush.EnergyCost, energy.resourceGainRate,
-                    now - state.RushAt, rush.CooldownSeconds))
-                return;
+            float nose = Vector3.Angle(self.forward, steer - self.position);
+            bool press = ram
+                ? GrizzlyTimeKegs.AIShouldRam(nose, run, energy.CurrentAmount, rush.EnergyCost, energy.resourceGainRate,
+                    now - state.RushAt, rush.CooldownSeconds)
+                : GrizzlyTimeKegs.AIShouldRush(nose, run, transformer.VelocityShift.magnitude, energy.CurrentAmount,
+                    rush.EnergyCost, energy.resourceGainRate, now - state.RushAt, rush.CooldownSeconds);
+            if (!press) return;
 
             state.RushAt = now;
             handler.PerformShipControllerActionsReplicated(input);

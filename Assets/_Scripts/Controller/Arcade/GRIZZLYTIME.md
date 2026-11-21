@@ -49,15 +49,20 @@ in, and `kegsAtGates` turns them off).
   (`AICommitFromApproachPoint`; Redline went 10/24 → 24/24 offline on it); passes BESIDE a plain keg down its exit
   lane (the autopilot's bombs open it) and gives it up for the mouth if it still stands; flies to any OPEN keg within
   600 u; threads the mouth past a shielded keg; after 18 s without a gate it is steered to a run-up 300 u behind its
-  ring; and it Rushes on a straight (§0.1). **Since 2026-11-21 it threads the mouth past every STANDING keg, plain
-  too** (next bullet).
+  ring; and it Rushes on a straight (§0.1). **Since 2026-11-21 it no longer passes beside a standing keg for its bombs
+  to open; it RAMS a standing keg open with Rush** when the line through the core to the next ring is no longer than
+  the line through the mouth (`aiRamsKegs`, `aiKegRamSlack` 0; `GrizzlyTimeKegs.AIRamPays` / `AIShouldRam`: Rush within
+  100 u, nose within 12 deg, give up only inside 8 u of a core still standing). About 9 rams in 10 open the keg
+  (next bullet).
 - **The ladder after the 20-80 blast (2026-11-21).** With the smaller blast and its retrained Time AI the ladder ran
   backwards (bleeding-edge, 12 courses: I1 133 s, I2 136, I3 82, I4 92). The cause was the AI, not the courses: at
   I1-I2 it detoured to every standing plain keg, whose core now needs a bomb frozen within 40 u, and opened about one
-  a race. Threading the mouths past standing kegs (`GrizzlyTimeController.AI.cs`, `KegAim`; `AIKegGiveUp` retired),
-  `regatta_judge.py --mode GrizzlyTime`, card start, 24 fresh courses: **I1 77 s, I2 82, I3 80, I4 92**. I2 and I3
-  are level for the AI: what separates them (the shielded core, a narrower mouth) is in kegs it does not open. A
-  course pass was tried and dropped: squeeze, profile, mouth size and the out-of-plane swing barely move this AI;
+  a race. Threading the mouths past standing kegs (`AIKegGiveUp` retired) gave **I1 77 s, I2 82, I3 80, I4 92**
+  (`regatta_judge.py --mode GrizzlyTime`, card start, 24 fresh courses), I2 and I3 level. Garrett (card, 2026-11-21):
+  teach the AI to open kegs. With the ram (same 24 courses): **I1 70 s, I2 72, I3 82, I4 83**. The shielded cores of
+  I3-I4 are now the step: a ram opens them too, but (not traced yet) a hull meeting a shielded prism bounces (PRISM_MOTION 1a),
+  so a ram there costs more than at I1-I2. I1/I2 and I3/I4 are pairs for the AI (chalk, credit radius and regrow do
+  not touch a ram). A course pass was tried and dropped: squeeze, profile, mouth size and the out-of-plane swing barely move this AI;
   only course length does (an I4 ring of 950 u gave 114 s), and the 480-1080 cell shell then cuts legs under a
   launch and a half. Runs: `/mnt/project-files/regatta-flywheel/night3/grizzly_ladder/` (`be_*`, `fx*`).
 - **Feedback** (in the world, every peer): the keg's burst (doubled speed on your final lap) and its regrow as a live
