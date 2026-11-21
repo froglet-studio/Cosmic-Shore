@@ -1,0 +1,72 @@
+# Activation expectations: what each kind of player should meet, and by when, written as checks on the simulated
+# runs. The report marks each one met or missed per scenario, so a change to the model, the economy or a persona
+# shows which promises it breaks. These are PROPOSED targets (brainstorming, Docs/LoopAtlas/PROCESS.md), except the
+# D1 and D7 gate, which is Docs/ACTIVATION.md's. When real funnels exist, the same metrics are read from analytics.
+# Read by Tools/Build/loop_timescale_sim.py.
+#
+#   metric: a key of a scenario summary in sim/out/summary.json, or milestones.<name>.median_day / .share
+#   op:     ">=" or "<="
+#   who:    all, or a list of persona ids
+#   why:    the reason, in one sentence
+
+expectations:
+- id: E1
+  metric: d1
+  op: '>='
+  value: 0.35
+  who: all
+  why: The paid-EA gate (Docs/ACTIVATION.md). Weekend-only players read low here by design.
+- id: E2
+  metric: d7
+  op: '>='
+  value: 0.15
+  who: all
+  why: The paid-EA gate (Docs/ACTIVATION.md).
+- id: E3
+  metric: first_ten_rounds_win_rate
+  op: '>='
+  value: 0.5
+  who: all
+  why: A new player wins at least half of the first ten rounds; the I1 AI's job (arc.activation hole).
+- id: E4
+  metric: first_sitting_finished
+  op: '>='
+  value: 0.9
+  who: all
+  why: Nine first sittings in ten finish one thing (a round, a toy, a dock), whichever door they came in by.
+- id: E5
+  metric: lost_haul_share
+  op: '<='
+  value: 0.1
+  who: all
+  why: Fewer than one voyage in ten is abandoned with its haul lost because the sitting ended.
+- id: E6
+  metric: benched_share
+  op: '<='
+  value: 0.05
+  who: [night-crew, party-host]
+  why: A group of friends plays together; almost no match leaves one of them out.
+- id: E7
+  metric: flew_unwanted_share
+  op: '<='
+  value: 0.1
+  who: [mira]
+  why: A player who came for the puzzle seat is not made to fly.
+- id: E8
+  metric: milestones.first_vessel.share
+  op: '>='
+  value: 0.5
+  who: [mira, commuter, returner, party-host, completionist, jonah, night-crew]
+  why: Most players who keep playing buy their first vessel within one Tide.
+- id: E9
+  metric: d30_window
+  op: '>='
+  value: 0.25
+  who: [returner]
+  why: The long game brings a lapsed player back within the Tide (era).
+- id: E10
+  metric: milestones.nothing_to_buy.share
+  op: '<='
+  value: 0.25
+  who: [jonah, night-crew, completionist]
+  why: The core does not run out of things to earn toward inside one Tide.
