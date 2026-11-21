@@ -25982,3 +25982,18 @@ answer the CLI): Assembly-CSharp compiled with Unity's own compiler, 0 errors.
 - [ ] Fly the Grizzly, fire a sniper round and quit to the menu while the round's picture-in-picture is showing: no red
       error, and no ScopeCamera left in the scene root.
 - [ ] Fire a round and let it finish: the scope view returns to the hull as before, and scoping still works afterwards.
+
+## Bug ledger fixes from Yash's machine (2026-11-22)
+
+Three fixes, compiled with Unity's own compiler (0 errors), none played: the open editor did not answer the CLI.
+
+- [ ] Offline host beside a second copy (E-6f8a396c25 and the "address already in use" family): with one copy of the
+      game already in an offline session, start a second copy on the same computer (editor beside a build) with the
+      network off. The second copy reaches the menu in an offline session; no "Failed to bind UDP socket" or
+      "[OfflineModeService] StartHost failed" in its log.
+- [ ] Offline host alone: with the network off and no other copy running, the game still starts its offline session
+      as before (it still takes port 7777).
+- [ ] Pre-game cinematic (E-b872184a91): leave a match (or stop Play) while the camera is moving from the intro to
+      the vessel. No MissingReferenceException from `PreGameCinematicController.TransitionToPlayer`.
+- [ ] Ready button (E-c223e6e8e9): press Ready the moment a multiplayer mode's scene opens. No NullReferenceException
+      from `MultiplayerDomainGamesController.OnReadyClicked_`; a press after the player exists readies as before.
