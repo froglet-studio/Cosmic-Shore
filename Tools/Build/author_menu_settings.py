@@ -100,6 +100,7 @@ PAGES = [
         ("dd", "Resolution", "Native follows your monitor.", "resolutionDropdown"),
         ("dd", "Frame rate limit", "Caps how many frames are drawn each second.", "frameCapDropdown"),
         ("tg", "V-Sync", "Syncs frames to the monitor to stop tearing.", "vsync"),
+        ("tg", "Show FPS", "Shows how many frames are drawn each second in a corner of the screen.", "showFps"),
         ("sl", "Field of view", "Wider shows more around your vessel.", "fovSlider"),
     ]),
     ("Performance", "chrome_gauge", [
@@ -559,7 +560,7 @@ def controller_body(ctx, wiring):
             + btn("whatsNewButton", links["whatsNewButton"])
             + "  screenSwitcher: {fileID: 0}\n" + btn("quitGameButton", links["quitGameButton"])
             + f"  versionText: {ref(ctx.c('Window/Version', 'tmp'))}\n"
-            + dd("displayModeDropdown") + dd("resolutionDropdown") + dd("frameCapDropdown") + onoff("vsync")
+            + dd("displayModeDropdown") + dd("resolutionDropdown") + dd("frameCapDropdown") + onoff("vsync") + onoff("showFps")
             + sl("fovSlider") + "  fovMin: 60\n  fovMax: 90\n"
             + dd("qualityDropdown") + dd("antiAliasingDropdown") + dd("textureQualityDropdown") + dd("upscalingDropdown")
             + dd("adaptivePerformanceDropdown") + dd("physicsDetailDropdown")

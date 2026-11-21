@@ -99,6 +99,8 @@ namespace CosmicShore.UI
         [SerializeField] TMP_Dropdown resolutionDropdown;
         [SerializeField] TMP_Dropdown frameCapDropdown;
         [SerializeField] OnOffControl vsync;
+        [SerializeField, Tooltip("Shows the FPS counter (FpsCounter) in every build, release included.")]
+        OnOffControl showFps;
         [SerializeField] Slider fovSlider;
         [SerializeField] float fovMin = 60f, fovMax = 90f;
 
@@ -276,6 +278,7 @@ namespace CosmicShore.UI
             SetInteractable(resolutionDropdown, true);
             SetInteractable(frameCapDropdown, true);
             SetOnOffInteractable(vsync, true);
+            SetOnOffInteractable(showFps, true);
             SetInteractable(fovSlider, true);
 
             // GENERAL - accessibility + consent.
@@ -333,6 +336,7 @@ namespace CosmicShore.UI
             PopulateResolutionDropdown();
             BindDropdown(frameCapDropdown, FrameCapOpts, SetFrameCapIndex);
             BindOnOff(vsync, SetVSync, () => VSyncOn);
+            BindOnOff(showFps, SetShowFps, () => FpsCounter.Shown);
             BindSlider(fovSlider, fovMin, fovMax, true, SetFieldOfView, FieldOfView);
             BindReadout(fovSlider, fovValueText, DegreesReadout);
 
@@ -372,6 +376,7 @@ namespace CosmicShore.UI
             SetDropdown(resolutionDropdown, ResolutionIndex);
             SetDropdown(frameCapDropdown, FrameCapIndex);
             UpdateOnOff(vsync, VSyncOn);
+            UpdateOnOff(showFps, FpsCounter.Shown);
             SetSliderValue(fovSlider, FieldOfView);
 
             SetDropdown(qualityDropdown, QualityIndex);
@@ -534,6 +539,7 @@ namespace CosmicShore.UI
         }
         public void SetVSync(bool on) => S?.SetVSync(on ? VSyncSetting.On : VSyncSetting.Off);
         public void SetFieldOfView(float fov) => S?.SetFieldOfView(fov);
+        public void SetShowFps(bool on) => FpsCounter.Shown = on;
 
         public void AutoDetect()
         {

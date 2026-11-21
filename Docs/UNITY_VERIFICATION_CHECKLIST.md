@@ -25830,3 +25830,16 @@ render of it beside the board yet.
 - [ ] Set sail closes the window and opens the Voyage window.
 - [ ] Gamepad: up and down walk the list, right reaches Close and Set sail, A presses them.
 - [ ] Phone and iPad: the window fits the screen with nothing cut off.
+
+## Show FPS setting, every build (2026-11-21)
+
+Settings > Display > Show FPS turns on a small FPS counter (`FpsCounter`, words and look in
+`Assets/Resources/FpsCounterConfig.asset`) in every build, release included; the diagnostics overlay stays dev-only. Not
+run in the Unity editor: none in this session. The reference compile has 0 errors in the changed files (the rest are in
+untouched files, from packages this machine cannot fetch); a planted error in `FpsCounter.cs` was caught.
+
+- [ ] Settings > Display: a Show FPS row under V-Sync, OFF by default. Turn it ON: "60 FPS" (or the real rate) appears
+      top left, inside the safe area, and updates twice a second. OFF hides it at once.
+- [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
+- [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
+- [ ] Phone with a notch: the number is not under the notch or a rounded corner.
