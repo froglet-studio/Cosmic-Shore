@@ -158,7 +158,13 @@ Three ways a wall stood on one machine only:
    wall ate prisms every client still drew loose. `ShipActionSO.AutopilotPressTravels` (true on
    `CloakSeedWallActionSO`, `SeedWallActionSO` and `SniperScopeActionSO`, whose scope the cloak
    asks) sends such a press through `R_VesselActionHandler.TrySendAutopilotAction`, an RPC pair that
-   runs it on every peer, named by where the input maps hold it (protocol 39).
+   runs it on every peer, named by where the input maps hold it (protocol 39). The fleet audit the
+   same day flagged every other action an AI presses through the tape whose effect is prisms: the
+   sniper round, the Sparrow's guns (`FireGunActionSO`, `FullAutoActionSO`, `SparrowModeSwitchingFireSO`;
+   also the Honeyguide's Peck), the drift's trail (`DriftTrailActionSO`) and the Squirrel's tube
+   (`SquirrelTubeActionSO`); `SerpentWallSyncTests` holds the table. Not covered by the flag: the
+   AI's drift COMMIT (`AIPilot`, `vessel.PerformShipControllerActions(CommitControl)`) is still local,
+   so an AI's drift-trail shaping during a commit stays host-only.
 2. **The stance's wall was built only on the owner and the server.**
    `ToggleTranslationModeActionExecutor.Toggle` returns early where it cannot decide the stance (it
    keeps `n_IsTranslationRestricted` single-writer); every other peer now follows the replicated flag
