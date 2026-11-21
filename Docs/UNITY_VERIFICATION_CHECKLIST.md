@@ -24880,6 +24880,19 @@ Measured in `Docs/PartySystem/BUGS.md`, "B45 on the return to the menu".
 - [ ] Play Again (the same scene reloads) and a Maelstrom round back to the hub still work.
 - [ ] `FrogletTools`: nothing new. The two numbers are on the SceneLoader in Bootstrap ("Scene exit drain").
 
+## 🟡 The boot's 41% "Creating session": no redundant identity republish on the party create (2026-11-21, Yash, COMPILED and PLAYED by a session)
+
+`HostConnectionService.IdentityDiffersFromLobby` / `IdentityDiffers`, timing lines in `PresenceLobbyService`,
+`PartySessionService` and `HostConnectionService` (Party channel), the refused SDK call in `UgsRequestPolicy`'s retry
+line. Affects: Shombith's UGS layer (queued for his `/approve`). `unity recompile`: 0 errors;
+`PresenceIdentityRepublishTests` 5/5 by reflection; `check_console_logging`, `check_conditional_compilation` pass.
+Measured in `Docs/Multiplayer/BUGS.md` (the 41% row).
+
+- [x] Solo online boots in the editor: a rate-limited refusal in 1 of 6 boots (9 of 11 before); the create 6.2-11.0 s.
+- [ ] A renamed player: change the display name, boot, and check the online list on another machine shows the new name.
+- [ ] Two machines: the guest's boot and the host's boot both reach "Host ready" without a "Relay session not ready".
+- [ ] A phone or desktop build, cold start: time "Creating session" with a stopwatch against the editor numbers.
+
 ## 🟡 A freeze names the work it was made of: the `stallFrame` mark (B45, 2026-11-21, Yash, COMPILED and PLAYED by a session)
 
 `StallFrameMarkers` (new), `FrameStallWatch`, `FrameStallWatchTests`, `net_scenarios.py` (`MARKS`). `unity recompile`:

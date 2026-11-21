@@ -233,6 +233,7 @@ namespace CosmicShore.Gameplay
             // request and both observe the same session. The policy retries RateLimited / Transient
             // / Benign failures with jittered back-off and a Conflict (NetworkManager still shutting
             // down) exactly once; everything else propagates.
+            float createStart = Time.unscaledTime;
             var (session, region) = await RelayRegionPreference.CreateWithFallbackAsync(r =>
             {
                 var opts = new SessionOptions
@@ -250,7 +251,7 @@ namespace CosmicShore.Gameplay
             ActiveSession          = session;
             CreatedAtUnscaledTime  = Time.unscaledTime;
             Attach(ActiveSession);
-            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}, region={region ?? "auto"}).");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}, region={region ?? "auto"}) in {Time.unscaledTime - createStart:0.0}s.");
         }
 
         /// <summary>
