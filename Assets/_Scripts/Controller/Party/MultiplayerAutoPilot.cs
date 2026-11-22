@@ -318,6 +318,7 @@ namespace CosmicShore.Gameplay
 
         // ── A launched match (-csMpLaunch) ───────────────────────────────────────
 
+        const float ReturnSettleSeconds = 20f;   // how long after the menu shows the party is checked
         const float MatchRunSeconds = 10f;       // how long the turn runs before the host takes everyone back
         // Longer than the countdown (four beats, about 4 s). A press during the countdown counts toward a new ready
         // gate, and when every player has pressed again the countdown restarts (CountdownTimer.BeginCountdown kills
@@ -410,8 +411,12 @@ namespace CosmicShore.Gameplay
             if (!await WaitUntil(ct, null, () => ActiveScene() == MenuSceneName))
                 return $"never came back to the menu (scene {ActiveScene()}, {StateLine()})";
             Step("back on the menu");
-            if (!await WaitUntil(ct, "party still together on the menu", () => isHost ? IsHostWithEveryone() : IsClientInParty()))
+            // Looked at after the menu has settled, not on arrival: a joiner the host's long frames had starved was
+            // still "in the party" for a moment and bounced seconds later (2026-11-22, counted as a pass).
+            await UniTask.Delay(TimeSpan.FromSeconds(ReturnSettleSeconds), DelayType.Realtime, cancellationToken: ct);
+            if (!(isHost ? IsHostWithEveryone() : IsClientInParty()))
                 return $"the party did not survive the return ({StateLine()})";
+            Step($"party still together {ReturnSettleSeconds:0} s after the return");
             WriteMarker(BackSuffix);
 
             if (isHost && !await WaitUntil(ct, "every player is back", () => MarkerCount(BackSuffix) >= _args.Expect))
