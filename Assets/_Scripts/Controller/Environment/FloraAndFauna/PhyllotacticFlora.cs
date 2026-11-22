@@ -488,12 +488,11 @@ namespace CosmicShore.Gameplay
         {
             // The parent spindle may have been eaten between decision and drain; the claimed site
             // simply lapses with its TTL.
-            if (!order.parent.gameObject) return;
+            // A pooled limb is not destroyed when it dies (SpindlePool), so also ask whether it is still ours.
+            if (!order.parent.gameObject || !order.parent.gameObject.transform.IsChildOf(transform)) return;
 
-            var newSpindle = Instantiate(spindle, order.parent.gameObject.transform);
+            var newSpindle = SpindlePool.Get(spindle, order.position, order.rotation, order.parent.gameObject.transform);
             newSpindle.LifeForm = this;
-            newSpindle.transform.position = order.position;
-            newSpindle.transform.rotation = order.rotation;
             AddSpindle(newSpindle);
 
             var leaf = EnvironmentPrismPool.Get(healthPrism, order.position, order.rotation);

@@ -26081,3 +26081,15 @@ not known: it needs his editor log from that session.
 - [ ] Normal case: open a game card alone and with a party, press Start: the game launches as before.
 - [ ] If the warning "Start refused - the arcade config sync manager is not spawned" ever shows, send the editor log:
       that is the state Andrew hit, and the log before it says how the game got there.
+
+## Flora limbs are pooled (2026-11-22)
+
+A flora limb (`Spindle`) that has finished evaporating goes back to `SpindlePool` and the next growth step of
+`PhyllotacticFlora` or `BranchingFlora` reuses it; a limb still carrying a prism or a child limb, or destroyed with
+its plant, is destroyed as before. Compiled in the open editor (0 errors, 0 warnings); not played, no bench yet.
+
+- [ ] Bloomrush and Sirocco, two minutes each: plants grow, get eaten and regrow as before; no limb appears at a wrong
+      place or size, none stays invisible, none keeps a dead plant's colour or hue lean.
+- [ ] A plant that withers (starve it or kill its heart): the limbs fade outside-in and leave shards as before, and
+      the plant finishes dying (no limb left standing, no error naming Spindle or SpindlePool).
+- [ ] Leave the mode and enter another flora mode: no MissingReferenceException from a reused limb.
