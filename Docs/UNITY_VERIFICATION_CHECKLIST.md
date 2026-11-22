@@ -25942,3 +25942,11 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 2. WebGL Toybox build, open it in Chrome: colours match the Windows build without bloom (no washed-out glow).
 3. Fly freestyle with the mouse, press Escape: the flight ends and the menu comes back. In an arcade game, Escape opens the pause menu; Resume, then click the canvas, and the mouse locks again.
 4. Windows / Editor: Escape still works as before, and post-processing is unchanged.
+
+## Browser build: the Profile and its colour sets open (2026-11-22)
+
+**Branch:** `claude/project-thread-282neh`. **Not compiled** (cloud session). `ScreenSwitcher.IsScreenInWebToybox` lets the browser open the Profile (Home's pilot card, or Y).
+
+1. Run `WebToyboxTests` (EditMode). Expect green.
+2. WebGL Toybox build: click the pilot card. The Profile opens; its colour sets tab lists the sets; Apply wears one (the cell recolours); Unlock spends crystals and the set stays unlocked after a page reload.
+3. Back returns to Home. Other Profile controls that need an account (friends, linking) may be inert; note any that error.

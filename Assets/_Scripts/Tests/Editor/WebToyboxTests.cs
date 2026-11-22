@@ -67,6 +67,18 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheToyboxOpensHomeAndTheProfile_AndEveryScreenIsDecided()
+        {
+            // The Profile carries the colour sets, which the browser wears like every build (Shombith, 2026-11-22).
+            var allowed = new HashSet<ScreenSwitcher.MenuScreens> { ScreenSwitcher.MenuScreens.HOME, ScreenSwitcher.MenuScreens.PROFILE };
+            foreach (ScreenSwitcher.MenuScreens screen in Enum.GetValues(typeof(ScreenSwitcher.MenuScreens)))
+            {
+                Assert.AreEqual(allowed.Contains(screen), ScreenSwitcher.IsScreenInWebToybox(screen),
+                    $"{screen}: the browser Toybox should {(allowed.Contains(screen) ? "" : "not ")}open it");
+            }
+        }
+
+        [Test]
         public void TheEditorWithoutTheDefine_KeepsTheLoopbackTransport()
         {
             // UsesInMemoryTransport is true only on a WebGL player or in the toybox build; a plain

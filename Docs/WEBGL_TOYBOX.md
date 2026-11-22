@@ -94,7 +94,7 @@ What follows is the freestyle Toybox's own menu rules, unchanged:
 - `ScreenSwitcher.IsModalInWebToybox`: Toybox, Toybox configure, Settings, Credits, and (since 2026-11-21) the
   Arcade, Arena and their configure windows open; every other modal is refused, and `WebToyboxTests` enumerates the
   enum, so a new modal is refused until someone decides.
-- Every screen but HOME, and the Mission hub entry, read **Locked: "In the full game"**.
+- Every screen but HOME and the Profile (its colour sets; Shombith, 2026-11-22), and the Mission hub entry, read **Locked: "In the full game"** (`ScreenSwitcher.IsScreenInWebToybox`).
   The layout stays intact, the tap explains itself, and it points at the full game.
 - `OfflineUIGate` keeps hiding online-only UI but no longer reveals the offline notice or reconnect button.
   `OnlineStatusIndicator` and `ReconnectButton` hide themselves, and `ReconnectService.ReconnectAsync` refuses.

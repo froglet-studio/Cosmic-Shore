@@ -1345,6 +1345,12 @@ namespace CosmicShore.UI
         /// services (profile names, leaderboards, squads, purchases) or is a mode the browser build does
         /// not carry (Mission, Voyages).
         /// </summary>
+        /// <summary>The screens the browser build opens: Home, and the Profile over it, whose colour sets the
+        /// browser wears and unlocks like every other build (Shombith, 2026-11-22). Every other screen is
+        /// "in the full game".</summary>
+        public static bool IsScreenInWebToybox(MenuScreens screen) =>
+            screen is MenuScreens.HOME or MenuScreens.PROFILE;
+
         public static bool IsModalInWebToybox(ModalWindows modal) =>
             modal is ModalWindows.NONE
                   or ModalWindows.TOYBOX
@@ -1359,8 +1365,8 @@ namespace CosmicShore.UI
 
         private bool IsScreenDisabled(MenuScreens screen)
         {
-            // The browser Toybox is the home screen and its freestyle world, nothing else.
-            if (WebToybox.IsBuild && screen != MenuScreens.HOME) return true;
+            // The browser Toybox is the home screen, its freestyle world and the profile (colour sets).
+            if (WebToybox.IsBuild && !IsScreenInWebToybox(screen)) return true;
 
             if (disabledScreens != null && disabledScreens.Contains(screen)) return true;
 
