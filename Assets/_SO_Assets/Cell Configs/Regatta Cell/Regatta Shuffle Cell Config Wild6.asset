@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Regatta Shuffle Cell Config Wild6
+  m_EditorClassIdentifier:
+  CellName: Regatta
+  Description: 'Regatta course-pool entry 2, shuffle course Ref3 (Wild6)
+    (CellTypeChoiceOptions.CourseVariantWise, list order = Regatta Course Pool order - the
+    host deals one enabled entry per match). A searched course: its rails prefab carries the
+    whole RegattaCourseGenome (circuit, braid, features, placements), the one the real-game
+    judge raced. Wide search shard_cloud2-0428: LinkedRings world, super-shielded 35%, rails
+    on 12% of the lap, no nucleus, lifeforms Zephyr Cell/Zephyr Cell Config, lap 4305 u.
+    Field spread {''card'': 4.002, ''L5'': 4.666} (3 seeds, real-game judge). 3204 prisms
+    measured; PhaseThresholds ride that count at the rail prism''s nominal volume plus a
+    trail band. Flora and fauna: Zephyr Cell/Zephyr Cell Config''s spawn profile. Regenerate
+    with Tools/Build/author_regatta_assets.py from Tools/Build/regatta_shuffle_pool.json,
+    never by hand.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 1
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: 4c06f97afbda28c4ea70d435976318d2, type: 2}
+  EnvironmentPrefab: {fileID: 5260000000000303, guid: 881e234be360cbf06540b4ba91856581, type: 3}
+  EnvironmentIntensity: 1
+  PhaseThresholds:
+    RestlessEnter: 3904
+    RestlessExit: 3704
+    FrenzyEnter: 6804
+    FrenzyExit: 6204
+    RestlessEnterVolume: 982752
+    RestlessExitVolume: 962752
+    FrenzyEnterVolume: 1322752
+    FrenzyExitVolume: 1242752

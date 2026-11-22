@@ -1,7 +1,7 @@
 {
  "picked_by": "Tools/Compute/evaluators/regatta_wide.py playtest (most different, then most balanced)",
  "imbalance": {
-  "card": 4.904525241956576,
+  "card": 5.442868028593197,
   "L5": 6.215362303827627
  },
  "refs_by": "the four most balanced wide-search courses (playtest branch only)",
@@ -740,10 +740,238 @@
      "Shrike": 400.0
     }
    },
-   "ref": "Ref3"
+   "ref": "Ref4"
   },
   {
    "label": "Wild4",
+   "genome": {
+    "version": 2,
+    "intensity": 1,
+    "seed": 1675121219,
+    "features": {
+     "Sections": [
+      {
+       "Leg": -1,
+       "From": 0.0,
+       "To": 1.0,
+       "Kind": 3,
+       "Neutral": false,
+       "Detour": 0.0,
+       "DetourBearing": 0.0
+      },
+      {
+       "Leg": 3,
+       "From": 0.295,
+       "To": 0.721,
+       "Kind": 2,
+       "Neutral": false,
+       "Detour": 0.0,
+       "DetourBearing": 0.0
+      },
+      {
+       "Leg": 0,
+       "From": 0.232,
+       "To": 0.562,
+       "Kind": 1,
+       "Neutral": false,
+       "Detour": 0.0,
+       "DetourBearing": 0.0
+      }
+     ],
+     "AlternateGates": [],
+     "Crystals": {
+      "PerLap": 0,
+      "Phase": 0.28709275032202286
+     }
+    },
+    "line_clearance": 47.137,
+    "placements": [
+     {
+      "kind": "Switchyard",
+      "leg": 0.0,
+      "offset": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "scale": 980.124,
+      "yaw": 321.405,
+      "pitch": 29.005,
+      "roll": 321.239,
+      "seed": 1193949657,
+      "density": 0.8904,
+      "cross_line": true,
+      "cross_rail": true,
+      "params": {
+       "ringRadius": 1668.215795524868,
+       "smallBurrShells": 1.0,
+       "shellPitch": 19.049275760803205
+      },
+      "base": true,
+      "at": [
+       -99.831,
+       -115.872,
+       -13.384
+      ],
+      "domain": "Native",
+      "prism": "Mix",
+      "prism_mix": [
+       0.0309,
+       0.7601,
+       0.0,
+       0.209
+      ],
+      "prism_size": 0.7801,
+      "keep": 0.9978
+     }
+    ],
+    "rings": [
+     {
+      "pos": [
+       -626.888,
+       -305.879,
+       -277.873
+      ],
+      "axis": [
+       0.20061,
+       -0.88173,
+       -0.42698
+      ],
+      "radius": 108.596
+     },
+     {
+      "pos": [
+       33.746,
+       -697.51,
+       -228.141
+      ],
+      "axis": [
+       0.93394,
+       0.21563,
+       0.28507
+      ],
+      "radius": 172.712
+     },
+     {
+      "pos": [
+       608.694,
+       -355.171,
+       180.993
+      ],
+      "axis": [
+       0.2492,
+       0.89837,
+       0.36171
+      ],
+      "radius": 66.873
+     },
+     {
+      "pos": [
+       633.708,
+       230.756,
+       279.295
+      ],
+      "axis": [
+       -0.66694,
+       0.71516,
+       -0.20912
+      ],
+      "radius": 46.452
+     },
+     {
+      "pos": [
+       232.76,
+       641.347,
+       -289.289
+      ],
+      "axis": [
+       -0.60394,
+       0.24839,
+       -0.75734
+      ],
+      "radius": 65.385
+     },
+     {
+      "pos": [
+       -282.202,
+       648.705,
+       -259.99
+      ],
+      "axis": [
+       -0.75131,
+       0.19041,
+       0.63189
+      ],
+      "radius": 73.976
+     },
+     {
+      "pos": [
+       -587.765,
+       223.62,
+       432.114
+      ],
+      "axis": [
+       -0.86089,
+       -0.50826,
+       0.02323
+      ],
+      "radius": 110.724
+     },
+     {
+      "pos": [
+       -716.031,
+       -17.034,
+       259.116
+      ],
+      "axis": [
+       -0.57397,
+       -0.22192,
+       -0.78823
+      ],
+      "radius": 80.904
+     }
+    ],
+    "sight_clearance": 27.076,
+    "cell": {
+     "nucleus": "None",
+     "shell_radius": 0.0,
+     "lifeforms": "Switchyard Cell/Switchyard Cell Config 1"
+    }
+   },
+   "prisms": 2367,
+   "candidate": "shard_cloud0-0329",
+   "notes": "Wide search shard_cloud0-0329: Switchyard world, super-shielded 0%, rails on 9% of the lap, no nucleus, lifeforms Switchyard Cell/Switchyard Cell Config 1, lap 5581 u. Field spread {'card': 5.057, 'L5': 4.86} (3 seeds, real-game judge).",
+   "judged": {
+    "card": {
+     "Urchin": 143.71,
+     "Scarab": 85.56,
+     "Sparrow": 85.41,
+     "Dolphin": 84.39,
+     "Squirrel": 118.09,
+     "Thresher": 153.84,
+     "BrittleStar": 87.21,
+     "Rhino": 174.2,
+     "Swordfish": 170.58,
+     "Goby": 79.1,
+     "Shrike": 400.0
+    },
+    "L5": {
+     "Urchin": 140.33,
+     "Scarab": 73.66,
+     "Sparrow": 76.53,
+     "Dolphin": 81.39,
+     "Squirrel": 116.1,
+     "Thresher": 119.86,
+     "BrittleStar": 78.79,
+     "Rhino": 149.3,
+     "Swordfish": 145.31,
+     "Goby": 72.55,
+     "Shrike": 352.59
+    }
+   }
+  },
+  {
+   "label": "Wild5",
    "genome": {
     "version": 2,
     "intensity": 1,
@@ -1030,11 +1258,577 @@
      "Goby": 75.08,
      "Shrike": 400.0
     }
-   },
-   "ref": "Ref4"
+   }
   },
   {
-   "label": "Wild5",
+   "label": "Wild6",
+   "genome": {
+    "version": 2,
+    "intensity": 1,
+    "seed": 1241884628,
+    "features": {
+     "Sections": [
+      {
+       "Leg": -1,
+       "From": 0.0,
+       "To": 1.0,
+       "Kind": 3,
+       "Neutral": false,
+       "Detour": 0.0,
+       "DetourBearing": 0.0
+      },
+      {
+       "Leg": 0,
+       "From": 0.726,
+       "To": 1.0,
+       "Kind": 1,
+       "Neutral": true,
+       "Detour": 0.0,
+       "DetourBearing": 0.0
+      },
+      {
+       "Leg": 2,
+       "From": 0.095,
+       "To": 0.265,
+       "Kind": 2,
+       "Neutral": false,
+       "Detour": 0.0,
+       "DetourBearing": 0.0
+      },
+      {
+       "Leg": 2,
+       "From": 0.27,
+       "To": 0.809,
+       "Kind": 1,
+       "Neutral": false,
+       "Detour": 0.0,
+       "DetourBearing": 0.0
+      }
+     ],
+     "AlternateGates": [],
+     "Crystals": {
+      "PerLap": 2,
+      "Phase": 0.7478665475740791
+     }
+    },
+    "line_clearance": 60.758,
+    "placements": [
+     {
+      "kind": "LinkedRings",
+      "leg": 0.0,
+      "offset": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "scale": 847.873,
+      "yaw": 149.755,
+      "pitch": 314.077,
+      "roll": 102.376,
+      "seed": 5987096,
+      "density": 1.0,
+      "cross_line": false,
+      "cross_rail": true,
+      "params": {
+       "blocksPerRing": 32.0,
+       "ringRadius": 124.47359772938752,
+       "colorByRing": 0.0
+      },
+      "base": true,
+      "at": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "domain": "Native",
+      "prism": "Mix",
+      "prism_mix": [
+       0.1455,
+       0.0168,
+       0.2467,
+       0.591
+      ],
+      "prism_size": 0.3,
+      "jitter": 28.919,
+      "warp": 124.153,
+      "warp_wavelength": 617.668
+     },
+     {
+      "kind": "Ribcage",
+      "leg": 6.3844,
+      "offset": [
+       247.088,
+       264.93,
+       21.39
+      ],
+      "scale": 112.046,
+      "yaw": 276.716,
+      "pitch": 358.344,
+      "roll": 351.648,
+      "seed": 1007983429,
+      "density": 1.0,
+      "cross_line": true,
+      "cross_rail": true,
+      "params": {
+       "shellCount": 2.0
+      },
+      "domain": "Jade",
+      "prism": "Mix",
+      "prism_mix": [
+       0.0373,
+       0.5554,
+       0.3915,
+       0.0158
+      ],
+      "prism_size": 0.8986,
+      "jitter": 17.11
+     }
+    ],
+    "rings": [
+     {
+      "pos": [
+       606.828,
+       -272.476,
+       107.294
+      ],
+      "axis": [
+       0.63492,
+       0.58853,
+       0.50051
+      ],
+      "radius": 156.517
+     },
+     {
+      "pos": [
+       572.283,
+       17.817,
+       387.663
+      ],
+      "axis": [
+       -0.56589,
+       0.82305,
+       0.04852
+      ],
+      "radius": 123.08
+     },
+     {
+      "pos": [
+       144.917,
+       385.784,
+       502.275
+      ],
+      "axis": [
+       -0.63314,
+       0.65501,
+       -0.41243
+      ],
+      "radius": 160.711
+     },
+     {
+      "pos": [
+       -354.989,
+       526.39,
+       275.212
+      ],
+      "axis": [
+       -0.95717,
+       0.17093,
+       -0.23368
+      ],
+      "radius": 69.776
+     },
+     {
+      "pos": [
+       -562.818,
+       351.789,
+       -4.113
+      ],
+      "axis": [
+       -0.05735,
+       -0.62759,
+       -0.77643
+      ],
+      "radius": 72.359
+     },
+     {
+      "pos": [
+       -649.871,
+       -62.793,
+       -113.013
+      ],
+      "axis": [
+       0.26225,
+       -0.8801,
+       -0.39579
+      ],
+      "radius": 73.171
+     },
+     {
+      "pos": [
+       -299.837,
+       -481.732,
+       -405.232
+      ],
+      "axis": [
+       0.95005,
+       -0.30555,
+       -0.06362
+      ],
+      "radius": 112.615
+     },
+     {
+      "pos": [
+       365.236,
+       -458.408,
+       -291.782
+      ],
+      "axis": [
+       0.98044,
+       0.18396,
+       0.07003
+      ],
+      "radius": 64.265
+     }
+    ],
+    "sight_clearance": 15.683,
+    "cell": {
+     "nucleus": "None",
+     "shell_radius": 0.0,
+     "lifeforms": "Zephyr Cell/Zephyr Cell Config"
+    }
+   },
+   "prisms": 3204,
+   "candidate": "shard_cloud2-0428",
+   "notes": "Wide search shard_cloud2-0428: LinkedRings world, super-shielded 35%, rails on 12% of the lap, no nucleus, lifeforms Zephyr Cell/Zephyr Cell Config, lap 4305 u. Field spread {'card': 4.002, 'L5': 4.666} (3 seeds, real-game judge).",
+   "judged": {
+    "card": {
+     "Urchin": 124.13,
+     "Scarab": 65.52,
+     "Sparrow": 65.91,
+     "Dolphin": 89.41,
+     "Squirrel": 109.02,
+     "Thresher": 98.57,
+     "BrittleStar": 77.77,
+     "Rhino": 130.6,
+     "Swordfish": 254.14,
+     "Goby": 63.51,
+     "Shrike": 86.54
+    },
+    "L5": {
+     "Urchin": 231.98,
+     "Scarab": 55.25,
+     "Sparrow": 61.32,
+     "Dolphin": 72.49,
+     "Squirrel": 90.4,
+     "Thresher": 100.94,
+     "BrittleStar": 71.13,
+     "Rhino": 121.23,
+     "Swordfish": 257.81,
+     "Goby": 65.34,
+     "Shrike": 78.96
+    }
+   },
+   "ref": "Ref3"
+  },
+  {
+   "label": "Wild7",
+   "genome": {
+    "version": 2,
+    "intensity": 1,
+    "seed": 169212954,
+    "features": {
+     "Sections": [
+      {
+       "Leg": -1,
+       "From": 0.0,
+       "To": 1.0,
+       "Kind": 3,
+       "Neutral": false,
+       "Detour": 0.0,
+       "DetourBearing": 0.0
+      },
+      {
+       "Leg": 5,
+       "From": 0.686,
+       "To": 1.0,
+       "Kind": 1,
+       "Neutral": false,
+       "Detour": 0.0,
+       "DetourBearing": 0.0
+      },
+      {
+       "Leg": 1,
+       "From": 0.784,
+       "To": 1.0,
+       "Kind": 2,
+       "Neutral": false,
+       "Detour": 0.0,
+       "DetourBearing": 0.0
+      },
+      {
+       "Leg": 6,
+       "From": 0.609,
+       "To": 1.0,
+       "Kind": 2,
+       "Neutral": true,
+       "Detour": 26.68,
+       "DetourBearing": 0.0
+      }
+     ],
+     "AlternateGates": [],
+     "Crystals": {
+      "PerLap": 0,
+      "Phase": 0.7762119473639908
+     }
+    },
+    "line_clearance": 51.004,
+    "placements": [
+     {
+      "kind": "TorusKnot",
+      "leg": 0.0,
+      "offset": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "scale": 806.124,
+      "yaw": 70.174,
+      "pitch": 202.044,
+      "roll": 143.282,
+      "seed": 1772797470,
+      "density": 1.0,
+      "cross_line": true,
+      "cross_rail": true,
+      "params": {
+       "q": 3.0,
+       "minorRadius": 46.34783451441909,
+       "blocksAlongKnot": 718.0,
+       "strands": 3.0
+      },
+      "base": true,
+      "at": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "domain": "Native",
+      "prism": "Mix",
+      "prism_mix": [
+       0.004,
+       0.1509,
+       0.7019,
+       0.1432
+      ],
+      "prism_size": 0.3
+     },
+     {
+      "kind": "Jackstraw",
+      "leg": 1.2909,
+      "offset": [
+       87.052,
+       134.594,
+       30.751
+      ],
+      "scale": 255.677,
+      "yaw": 63.054,
+      "pitch": 106.497,
+      "roll": 317.511,
+      "seed": 1567811559,
+      "density": 1.0,
+      "cross_line": true,
+      "cross_rail": true,
+      "params": {
+       "heapRadius": 259.4155149628814,
+       "ringClearingRadius": 35.00351582380744,
+       "ironwoodEveryNth": 19.0
+      },
+      "domain": "Native",
+      "prism": "Mix",
+      "prism_mix": [
+       0.0047,
+       0.0131,
+       0.9821,
+       0.0002
+      ],
+      "prism_size": 0.5452,
+      "jitter": 54.18
+     },
+     {
+      "kind": "Jackstraw",
+      "leg": 1.4451,
+      "offset": [
+       52.575,
+       296.332,
+       -51.713
+      ],
+      "scale": 108.795,
+      "yaw": 125.676,
+      "pitch": 85.336,
+      "roll": 6.87,
+      "seed": 1908872573,
+      "density": 1.0,
+      "cross_line": true,
+      "cross_rail": true,
+      "params": {
+       "heapRadius": 403.2175270920995,
+       "stickCount": 56.0,
+       "centreClearingRadius": 76.59093592124597,
+       "ringClearingRadius": 54.328848356559604,
+       "ironwoodEveryNth": 12.0
+      },
+      "domain": "Blue",
+      "prism": "Mix",
+      "prism_mix": [
+       0.0251,
+       0.0196,
+       0.9549,
+       0.0005
+      ],
+      "prism_size": 1.8644
+     }
+    ],
+    "rings": [
+     {
+      "pos": [
+       765.085,
+       -44.13,
+       -274.884
+      ],
+      "axis": [
+       -0.57371,
+       -0.81877,
+       0.02162
+      ],
+      "radius": 126.513
+     },
+     {
+      "pos": [
+       440.44,
+       -559.889,
+       35.215
+      ],
+      "axis": [
+       -0.46419,
+       -0.83554,
+       -0.29394
+      ],
+      "radius": 179.56
+     },
+     {
+      "pos": [
+       -81.585,
+       -794.339,
+       -166.813
+      ],
+      "axis": [
+       -0.90923,
+       0.00309,
+       0.41628
+      ],
+      "radius": 52.946
+     },
+     {
+      "pos": [
+       -684.933,
+       -604.808,
+       46.325
+      ],
+      "axis": [
+       -0.90536,
+       0.42442,
+       -0.01427
+      ],
+      "radius": 91.082
+     },
+     {
+      "pos": [
+       -783.751,
+       -108.14,
+       197.33
+      ],
+      "axis": [
+       0.10231,
+       0.90151,
+       0.42048
+      ],
+      "radius": 98.668
+     },
+     {
+      "pos": [
+       -429.886,
+       553.27,
+       -115.723
+      ],
+      "axis": [
+       0.56591,
+       0.67761,
+       -0.46967
+      ],
+      "radius": 134.72
+     },
+     {
+      "pos": [
+       144.022,
+       775.633,
+       197.974
+      ],
+      "axis": [
+       0.98386,
+       0.09248,
+       0.15317
+      ],
+      "radius": 123.939
+     },
+     {
+      "pos": [
+       762.083,
+       499.98,
+       20.075
+      ],
+      "axis": [
+       0.87933,
+       -0.46019,
+       -0.12245
+      ],
+      "radius": 143.717
+     }
+    ],
+    "sight_clearance": 29.525
+   },
+   "prisms": 3434,
+   "candidate": "shard_cloud2-0411",
+   "notes": "Wide search shard_cloud2-0411: TorusKnot world, super-shielded 82%, rails on 12% of the lap, nucleus, lifeforms none, lap 5558 u. Field spread {'card': 5.443, 'L5': 5.68} (3 seeds, real-game judge).",
+   "judged": {
+    "card": {
+     "Urchin": 311.07,
+     "Scarab": 82.84,
+     "Sparrow": 90.15,
+     "Dolphin": 91.27,
+     "Squirrel": 139.73,
+     "Thresher": 143.78,
+     "BrittleStar": 95.68,
+     "Rhino": 140.28,
+     "Swordfish": 131.82,
+     "Goby": 73.49,
+     "Shrike": 400.0
+    },
+    "L5": {
+     "Urchin": 317.0,
+     "Scarab": 71.02,
+     "Sparrow": 81.97,
+     "Dolphin": 88.55,
+     "Squirrel": 113.36,
+     "Thresher": 118.02,
+     "BrittleStar": 89.19,
+     "Rhino": 122.18,
+     "Swordfish": 112.0,
+     "Goby": 70.42,
+     "Shrike": 400.0
+    }
+   }
+  },
+  {
+   "label": "Wild8",
    "genome": {
     "version": 2,
     "intensity": 1,
