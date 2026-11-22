@@ -1758,7 +1758,7 @@
   },
   {
    "Id": "job.raid.crystals",
-   "Kind": 14,
+   "Kind": 2,
    "Faction": 0,
    "Needs": 0,
    "Goes": 1,

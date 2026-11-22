@@ -303,7 +303,7 @@ namespace CosmicShore.UI
             cta.pivot = new Vector2(1f, 0.5f);
             cta.sizeDelta = new Vector2(300f, 56f);
             cta.anchoredPosition = new Vector2(-24f, 0f);
-            (_openButton, _) = _kit.Cta(cta, _lines?.BoardSailKey, _lines?.SeaOpenVoyage,
+            (_openButton, _) = _kit.Commit(cta, _lines?.BoardSailKey, _lines?.SeaOpenVoyage,
                 () => _board.ShowPage(VoyageBoard.Page.Voyage));
         }
 
@@ -420,7 +420,8 @@ namespace CosmicShore.UI
                 : TemplateText.Fill(_lines?.SeaOfferKicker, "kind", offer.Kind, "pilot", offer.Pilot));
             VoyageKit.Set(_cardTitle, offer.Title);
             ShowMeta(offer, d, _cardPips, _cardDifficulty, _cardFlower, _cardPay);
-            _openButton.interactable = true;
+            // A locked voyage shows but never opens (VoyageToyDefinitionSO: locked jobs and the locked escort).
+            _openButton.interactable = !offer.Locked;
             for (int i = 0; i < _openNow.Count && i < _cards.Count; i++)
             {
                 int index = _openNow[i];

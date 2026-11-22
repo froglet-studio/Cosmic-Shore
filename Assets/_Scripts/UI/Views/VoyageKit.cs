@@ -46,6 +46,11 @@ namespace CosmicShore.UI
         public Color CtaFill => ColorTrace.Retrace(ColorTrace.Ui, Style.CtaFill);
         public Color CtaText => ColorTrace.Retrace(ColorTrace.Ui, Style.CtaText);
         public Color Disabled => ColorTrace.Retrace(ColorTrace.Ui, DisabledAuthored);
+        /// <summary>Set sail, Open voyage and Ready: the style guide's <c>commit</c> Ruby (no way back), the worn colour
+        /// set's UI theme while one is live, the same token <see cref="KitButtonVariant.Commit"/> draws.</summary>
+        public Color CommitFill => UITheme.Resolve(null, UIColorToken.Tooltip);
+        /// <summary>The words on <see cref="CommitFill"/>: the style guide's <c>on-commit</c> white.</summary>
+        public Color CommitText => UITheme.OnCommit;
 
         /// <summary><paramref name="c"/> at <paramref name="alpha"/> of its own opacity.</summary>
         public static Color Fade(Color c, float alpha) => new(c.r, c.g, c.b, c.a * alpha);
@@ -328,16 +333,25 @@ namespace CosmicShore.UI
 
         /// <summary>The screen's one call to action (style guide section 5, Lime): as wide as <paramref name="rt"/>, its
         /// keycap before its words.</summary>
-        public (Button button, TMP_Text words) Cta(RectTransform rt, string key, string words, Action onClick)
+        public (Button button, TMP_Text words) Cta(RectTransform rt, string key, string words, Action onClick) =>
+            Primary(rt, key, words, onClick, CtaFill, CtaText);
+
+        /// <summary>A commitment the player cannot take back (style guide section 5, Ruby: Set sail, Open voyage,
+        /// Ready): the same band as <see cref="Cta"/> in the commit Ruby under the on-commit white.</summary>
+        public (Button button, TMP_Text words) Commit(RectTransform rt, string key, string words, Action onClick) =>
+            Primary(rt, key, words, onClick, CommitFill, CommitText);
+
+        (Button button, TMP_Text words) Primary(RectTransform rt, string key, string words, Action onClick,
+            Color fillColor, Color textColor)
         {
             // Soft hard soft: solid across the middle, fading out to both ends; no box and no cut corners.
-            var fill = Band(rt, CtaFill, 0.2f, hit: true);
+            var fill = Band(rt, fillColor, 0.2f, hit: true);
             var b = rt.gameObject.AddComponent<Button>();
             b.targetGraphic = fill;
             var colors = b.colors;
             colors.disabledColor = Disabled;
             b.colors = colors;
-            var t = KeyedLabel(rt, key, words, CtaText);
+            var t = KeyedLabel(rt, key, words, textColor);
             b.onClick.AddListener(() => onClick?.Invoke());
             return (b, t);
         }

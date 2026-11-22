@@ -763,6 +763,10 @@ namespace CosmicShore.UI
             // After an update, the What's new window once (WhatsNewRules), when the menu is at rest.
             if (!returningToCard && !PlayerPrefs.HasKey(ReturnToModalPrefKey))
                 StartCoroutine(OpenWhatsNewAfterUpdateCoroutine());
+
+            // A party's voyage lobby: the host tells its friends where its Voyage window stands, a friend follows
+            // (ScreenSwitcher.VoyageLobby.cs).
+            StartCoroutine(VoyageLobbyCoroutine());
         }
 
         /// <summary>

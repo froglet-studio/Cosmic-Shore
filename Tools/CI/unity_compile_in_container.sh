@@ -83,6 +83,9 @@ if [ "$activated" != true ]; then
     echo "::error::Unity licence activation ($how) failed after 4 attempts. Check UNITY_EMAIL / UNITY_PASSWORD / UNITY_SERIAL (or UNITY_LICENSE) in the unity-ci environment, and that the seat is not already in use. Removing UNITY_SERIAL and UNITY_LICENSE tries sign-in activation instead."
   fi
   echo 1 > "$CODE"
+  # The workflow reads this and falls back to the reference compile, so a licence problem
+  # does not hide a compile break (or read as one).
+  : > "$GITHUB_WORKSPACE/unity-activation-failed"
   exit 1
 fi
 echo "Licence activated ($how)."

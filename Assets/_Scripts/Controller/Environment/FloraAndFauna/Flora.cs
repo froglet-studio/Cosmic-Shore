@@ -1018,6 +1018,11 @@ namespace CosmicShore.Gameplay
 
         IEnumerator GrowCoroutine()
         {
+            // A seeder plants a whole forest in one frame, and plants that start their clocks together tick together
+            // for the rest of the match: every plant's growth decisions and births land in ONE frame per period (the
+            // 0.3-0.8 s Bloomrush spikes, Profiler capture 2026-11-21). Starting each clock at a random point in its
+            // own period spreads that work over the period; the cadence and what each tick grows are unchanged.
+            yield return new WaitForSeconds(Random.Range(0f, EffectiveGrowPeriod));
             while (true)
             {
                 if (isGrowing)

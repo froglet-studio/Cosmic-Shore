@@ -255,7 +255,7 @@ namespace CosmicShore.UI
             var back = At("Back", RightX, ButtonsY, 160f, 56f);
             _kit.Quiet(back, _lines?.PageBackKey, _lines?.PageBack, _board.StepBack);
             var ready = At("ReadyYourArk", RightX + 160f + 20f, ButtonsY, 280f, 56f);
-            (_ready, _) = _kit.Cta(ready, _lines?.BoardSailKey, _lines?.BriefReady,
+            (_ready, _) = _kit.Commit(ready, _lines?.BoardSailKey, _lines?.BriefReady,
                 () => _board.ShowPage(VoyageBoard.Page.Ark));
         }
 

@@ -82,6 +82,7 @@ bleeding-edge, keep the higher number.
 33 is taken on `Ys-bleeding-edge`) - both sides had claimed 32 for different wire changes (`Ys-bleeding-edge`'s merge
 above and the voyage party's messages), so the build that carries both is 34: a 32 build from either line cannot join it.
 **37** (2026-11-19, the merge of `bleeding-edge` into `Ys-bleeding-edge`; 36 was the highest on every origin branch pushed since 2026-11-10, checked that day) - no wire change of its own: the build that carries both bleeding-edge's 36 and `Ys-bleeding-edge`'s 33 (the two fauna prefabs off the network prefab list).
+**38** (2026-11-21, `claude/project-thread-zobeo0` into `launch-check`; 37 was the highest on `bleeding-edge` that day) - two named messages for the voyage lobby (`VoyageLobbyLink`): `cosmicshore.voyage.lobby` (host to friends: the host's Voyage window, its open voyage and page, the Ark's one domain and the votes), which pulls each friend into the host's voyage as an arcade card does, and `cosmicshore.voyage.domainvote` (a friend's vote for the Ark's domain); `Docs/Voyages/PARTY.md` §7.
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.

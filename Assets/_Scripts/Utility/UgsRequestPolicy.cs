@@ -518,6 +518,25 @@ namespace CosmicShore.Utility
             await ExecuteAsync<bool>(operationKey, async () => { await call(); return true; }, ct);
         }
 
+        /// <summary>
+        /// The innermost UGS SDK method in <paramref name="e"/>'s stack, for the verbose retry line: which call inside
+        /// an SDK operation was refused (a session create is a lobby create, a Relay allocation and lobby updates).
+        /// </summary>
+        internal static string ServiceCallSite(Exception e)
+        {
+            string trace = e?.StackTrace;
+            if (string.IsNullOrEmpty(trace)) return "(no stack)";
+            foreach (var raw in trace.Split('\n'))
+            {
+                string line = raw.Trim();
+                if (line.StartsWith("at ", StringComparison.Ordinal)) line = line.Substring(3);
+                if (line.IndexOf("Unity.Services.", StringComparison.Ordinal) < 0) continue;
+                int paren = line.IndexOf('(');
+                return paren > 0 ? line.Substring(0, paren) : line;
+            }
+            return "(no SDK frame)";
+        }
+
         private async UniTaskVoid RunAsync<T>(string key, Func<UniTask<T>> call, CancellationToken ct, UniTaskCompletionSource<T> completion)
         {
             string label = string.IsNullOrEmpty(key) ? "ugs" : key;
@@ -555,7 +574,7 @@ namespace CosmicShore.Utility
                         if (CSDebug.IsVerbose(CSLogChannel.Party))
                             CSDebug.LogVerbose(CSLogChannel.Party,
                                 $"[UgsRequestPolicy] {label}: attempt {attempt + 1} failed ({cls}: {e.GetType().Name}: {e.Message}) - " +
-                                $"retry {attempt + 1}/{retriesForClass} in {delayMs} ms");
+                                $"retry {attempt + 1}/{retriesForClass} in {delayMs} ms. Refused in: {ServiceCallSite(e)}");
                         await _delay(delayMs, ct);
                     }
                 }
