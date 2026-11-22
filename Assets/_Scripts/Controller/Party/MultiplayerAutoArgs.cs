@@ -51,6 +51,11 @@ namespace CosmicShore.Gameplay
         public const string TimeoutArg = "-csMpTimeout";
         public const string ResultArg = "-csMpResult";
         public const string QuitArg = "-csMpQuit";
+        /// <summary>After the party forms, the host launches this game mode (a <c>GameModes</c> name), every
+        /// player readies, the turn runs a few seconds, the host returns everyone to the menu.</summary>
+        public const string LaunchArg = "-csMpLaunch";
+        /// <summary>Switches the Party log channel on from boot, so the player's log carries the party trace.</summary>
+        public const string PartyLogArg = "-csMpPartyLog";
 
         public const int DefaultExpect = 2;
         public const int MaxExpect = 4;          // A party is 4. Never 6 (Docs/MULTIPLAYER_START_HERE.md §2).
@@ -68,6 +73,8 @@ namespace CosmicShore.Gameplay
         public float TimeoutSeconds { get; private set; } = DefaultTimeoutSeconds;
         public string ResultPath { get; private set; } = string.Empty;
         public bool QuitWhenDone { get; private set; }
+        public string LaunchMode { get; private set; } = string.Empty;
+        public bool PartyLog { get; private set; }
 
         /// <summary>Problems found while parsing. A run with any is refused (the result file says why).</summary>
         public readonly List<string> Errors = new();
@@ -86,9 +93,11 @@ namespace CosmicShore.Gameplay
                 if (string.IsNullOrEmpty(arg)) continue;
 
                 if (Is(arg, QuitArg)) { a.QuitWhenDone = true; continue; }
+                if (Is(arg, PartyLogArg)) { a.PartyLog = true; continue; }
 
                 bool takesValue = Is(arg, ProfileArg) || Is(arg, HostArg) || Is(arg, JoinArg)
-                                  || Is(arg, ExpectArg) || Is(arg, TimeoutArg) || Is(arg, ResultArg);
+                                  || Is(arg, ExpectArg) || Is(arg, TimeoutArg) || Is(arg, ResultArg)
+                                  || Is(arg, LaunchArg);
                 if (!takesValue) continue;
 
                 string value = i + 1 < args.Count ? args[i + 1] : null;
@@ -105,6 +114,7 @@ namespace CosmicShore.Gameplay
                 else if (Is(arg, ExpectArg)) a.SetExpect(value);
                 else if (Is(arg, TimeoutArg)) a.SetTimeout(value);
                 else if (Is(arg, ResultArg)) a.ResultPath = value;
+                else if (Is(arg, LaunchArg)) a.LaunchMode = value;
             }
 
             if (a.IsActive && string.IsNullOrEmpty(a.Profile))

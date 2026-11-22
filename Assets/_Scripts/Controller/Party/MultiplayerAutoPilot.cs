@@ -62,6 +62,7 @@ namespace CosmicShore.Gameplay
         static void ParseArgs()
         {
             Args = MultiplayerAutoArgs.Parse(Environment.GetCommandLineArgs());
+            if (Args.PartyLog) CSDebug.VerboseChannels |= CSLogChannel.Party;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -91,7 +92,11 @@ namespace CosmicShore.Gameplay
                 if (_args.Errors.Count > 0)
                     reason = "bad arguments: " + string.Join("; ", _args.Errors);
                 else
-                    reason = _args.Role == MultiplayerAutoRole.Host ? await HostAsync(ct) : await JoinAsync(ct);
+                {
+                    bool isHost = _args.Role == MultiplayerAutoRole.Host;
+                    reason = isHost ? await HostAsync(ct) : await JoinAsync(ct);
+                    if (reason == null && !string.IsNullOrEmpty(_args.LaunchMode)) reason = await MatchAsync(ct, isHost);
+                }
                 ok = reason == null;
             }
             catch (OperationCanceledException)
@@ -164,7 +169,8 @@ namespace CosmicShore.Gameplay
             {
                 string dir = Path.GetDirectoryName(Path.GetFullPath(_args.RendezvousPath));
                 if (!Directory.Exists(dir)) return;
-                foreach (string f in Directory.GetFiles(dir, Path.GetFileName(_args.RendezvousPath) + ".*" + JoinedSuffix))
+                foreach (string suffix in new[] { JoinedSuffix, InMatchSuffix, BackSuffix })
+                foreach (string f in Directory.GetFiles(dir, Path.GetFileName(_args.RendezvousPath) + ".*" + suffix))
                     TryDelete(f);
             }
             catch (IOException) { }
@@ -211,6 +217,7 @@ namespace CosmicShore.Gameplay
                 value = r.playerId;
             }
 
+            int pressed = 0;
             for (int attempt = 1; attempt <= MaxJoinAttempts; attempt++)
             {
                 PartyPlayerData target = default;
@@ -222,6 +229,7 @@ namespace CosmicShore.Gameplay
                 if (controller == null) return "PartyInviteController is not loaded";
 
                 Step($"JOIN pressed for {target.DisplayName} (attempt {attempt})");
+                pressed = attempt;
                 try
                 {
                     await controller.JoinPartyAsync(target);
@@ -246,7 +254,9 @@ namespace CosmicShore.Gameplay
                 if (TimedOut()) break;
                 Step($"join attempt {attempt} did not reach the party ({StateLine()})");
             }
-            return $"not in the party after {MaxJoinAttempts} attempts";
+            return TimedOut()
+                ? $"not in the party when the {_args.TimeoutSeconds:0} s ran out (JOIN pressed {pressed} time(s))"
+                : $"not in the party after {pressed} JOIN presses";
         }
 
         bool IsClientInParty()
@@ -284,6 +294,106 @@ namespace CosmicShore.Gameplay
                        && r.IsFresh(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             }
             catch (IOException) { return false; }   // the host is mid-write; read it next poll
+        }
+
+        // ── A launched match (-csMpLaunch) ───────────────────────────────────────
+
+        const float MatchRunSeconds = 10f;       // how long the turn runs before the host takes everyone back
+        const float ReadyPressEverySeconds = 3f;
+        const string MenuSceneName = "Menu_Main";
+        const string InMatchSuffix = ".inmatch";
+        const string BackSuffix = ".back";
+
+        static GameDataSO FindGameData()
+        {
+            GameDataSO best = null;
+            foreach (var g in Resources.FindObjectsOfTypeAll<GameDataSO>())
+                if (g != null && (best == null || g.Players.Count > best.Players.Count)) best = g;
+            return best;
+        }
+
+        int MarkerCount(string suffix)
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(Path.GetFullPath(_args.RendezvousPath));
+                return Directory.Exists(dir)
+                    ? Directory.GetFiles(dir, Path.GetFileName(_args.RendezvousPath) + ".*" + suffix).Length : 0;
+            }
+            catch (IOException) { return 0; }
+        }
+
+        void WriteMarker(string suffix)
+        {
+            if (!string.IsNullOrEmpty(_args.RendezvousPath))
+                WriteAllTextAtomic($"{_args.RendezvousPath}.{_args.Profile}{suffix}", _args.Profile);
+        }
+
+        static string ActiveScene() => UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+
+        /// <summary>The match half of a run, the same for the host and a joiner except who launches and who returns.</summary>
+        async UniTask<string> MatchAsync(CancellationToken ct, bool isHost)
+        {
+            var gameData = FindGameData();
+            if (gameData == null) return "no GameDataSO is loaded";
+
+            if (isHost)
+            {
+                if (!Enum.TryParse(_args.LaunchMode, true, out CosmicShore.Data.GameModes mode))
+                    return $"{MultiplayerAutoArgs.LaunchArg} '{_args.LaunchMode}' is not a GameModes name";
+                SO_ArcadeGame card = null;
+                foreach (var g in Resources.FindObjectsOfTypeAll<SO_ArcadeGame>())
+                    if (g != null && g.Mode == mode) { card = g; break; }
+                if (card == null) return $"no loaded arcade card for {mode}";
+
+                gameData.SyncFromArcadeGame(card);
+                gameData.IsTraining = false;
+                gameData.SelectedIntensity.Value = 1;
+                gameData.ConfigurePlayerCounts(Mathf.Max(_args.Expect, 4), _args.Expect);   // the other seats are AIs
+                gameData.InvokeGameLaunch();
+                Step($"launched {card.name} ({gameData.SceneName})");
+            }
+
+            if (!await WaitUntil(ct, null, () => ActiveScene() != MenuSceneName && gameData.LocalPlayer != null))
+                return $"never reached the match with a local player (scene {ActiveScene()})";
+            Step($"in {ActiveScene()} with a local player");
+
+            float nextPress = 0f;
+            while (!gameData.IsTurnRunning)
+            {
+                if (TimedOut()) return $"the turn never started ({StateLine()})";
+                if (Time.realtimeSinceStartup >= nextPress)
+                {
+                    var controller = FindAnyObjectByType<MiniGameControllerBase>();
+                    if (controller != null) controller.OnReadyClicked();
+                    nextPress = Time.realtimeSinceStartup + ReadyPressEverySeconds;
+                }
+                await UniTask.Delay(TimeSpan.FromSeconds(PollSeconds), DelayType.Realtime, cancellationToken: ct);
+            }
+            Step("turn running");
+            WriteMarker(InMatchSuffix);
+
+            if (isHost)
+            {
+                if (!await WaitUntil(ct, "every player is in the turn", () => MarkerCount(InMatchSuffix) >= _args.Expect))
+                    return $"only {MarkerCount(InMatchSuffix)} of {_args.Expect} players reached a running turn";
+                await UniTask.Delay(TimeSpan.FromSeconds(MatchRunSeconds), DelayType.Realtime, cancellationToken: ct);
+                var loader = FindAnyObjectByType<SceneLoader>();
+                if (loader == null) return "no SceneLoader to return to the menu with";
+                Step("returning everyone to the menu");
+                loader.ReturnToMainMenu();
+            }
+
+            if (!await WaitUntil(ct, null, () => ActiveScene() == MenuSceneName))
+                return $"never came back to the menu (scene {ActiveScene()}, {StateLine()})";
+            Step("back on the menu");
+            if (!await WaitUntil(ct, "party still together on the menu", () => isHost ? IsHostWithEveryone() : IsClientInParty()))
+                return $"the party did not survive the return ({StateLine()})";
+            WriteMarker(BackSuffix);
+
+            if (isHost && !await WaitUntil(ct, "every player is back", () => MarkerCount(BackSuffix) >= _args.Expect))
+                return $"only {MarkerCount(BackSuffix)} of {_args.Expect} players confirmed the return";
+            return null;
         }
 
         // ── Shared ───────────────────────────────────────────────────────────────
@@ -358,7 +468,12 @@ namespace CosmicShore.Gameplay
             else CSDebug.LogWarning($"[MultiplayerAutoPilot] {_args.Role} FAIL after {_result.seconds:0.0}s: {reason} -> {path}");
 
 #if !UNITY_EDITOR
-            if (_args.QuitWhenDone) Application.Quit(ok ? 0 : 1);
+            if (_args.QuitWhenDone)
+            {
+                // The app defers a quit to leave its UGS session and then quits again itself, which lost the code.
+                ApplicationLifecycleManager.QuitExitCode = ok ? 0 : 1;
+                Application.Quit(ok ? 0 : 1);
+            }
 #endif
         }
 
