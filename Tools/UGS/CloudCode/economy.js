@@ -39,6 +39,9 @@ const RULES = {
     // A voyage's dock: RetentionTuning.crystalsPerVoyageJob (600) per job finished since the last dock, at most
     // voyageDockCap (1800) a dock (P10, one currency). A Crystal Run takes about 11 minutes.
     voyage_dock:          { maxPerCall: 1800, minIntervalSeconds: 120, dailyCap: 6000 },
+    // A finished Toybox painting (P16, making pays): RetentionTuning crystalsPerPainting (150) for the first
+    // paintingsPaidPerDay (2) each day. PaintingPay.PayFinished.
+    painting:             { maxPerCall: 150, minIntervalSeconds: 60, dailyCap: 300 },
     // Editor and test builds only (the Froglet Toolbox crystal field). Refused in production.
     debug:                { maxPerCall: 100000, minIntervalSeconds: 0, dailyCap: 1e9, nonProductionOnly: true },
   },

@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-21-new-earn-source-painting-150-a-call-300-cb2048",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-21T22:28:59+00:00",
+  "area": "UGS Cloud Code economy (earn sources)",
+  "summary": "New earn source 'painting' (150 a call, 300 a day) for P16 making pays: a finished Toybox painting pays 150 wallet crystals twice a day. Not deployed; deploying it to the live backend is yours.",
+  "branch": "claude/retain-makers",
+  "commit": "efdaaa761"
+}

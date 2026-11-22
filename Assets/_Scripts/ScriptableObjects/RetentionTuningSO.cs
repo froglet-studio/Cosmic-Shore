@@ -28,7 +28,16 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The most wallet crystals one docking can bank (0 = no limit). Matches the server's per-call limit.")]
         [SerializeField, Min(0)] int voyageDockCap = 1800;
 
+        [Header("Painting pay (P16, making pays)")]
+        [Tooltip("Wallet crystals a finished Toybox painting pays, so making feeds the long game. 0 pays nothing.")]
+        [SerializeField, Min(0)] int crystalsPerPainting = 150;
+
+        [Tooltip("How many finished paintings a day are paid (a painter is paid for making, not farming).")]
+        [SerializeField, Min(0)] int paintingsPaidPerDay = 2;
+
         public bool PayPartyByBestPlacing => payPartyByBestPlacing;
+        public int CrystalsPerPainting => crystalsPerPainting;
+        public int PaintingsPaidPerDay => paintingsPaidPerDay;
         public int CrystalsPerVoyageJob => crystalsPerVoyageJob;
         public int VoyageDockCap => voyageDockCap;
 
