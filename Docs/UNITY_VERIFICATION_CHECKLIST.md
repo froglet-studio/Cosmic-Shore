@@ -26128,3 +26128,19 @@ its plant, is destroyed as before. Compiled in the open editor (0 errors, 0 warn
 - [ ] Lay a Stoat hole in a dense trail: prisms pulled in are drawn into the hole as shards (the look of a creature eating a prism); none explode outward.
 - [ ] Frame time holds with a few hundred prisms in the pull (contacts used the cheap plain explosion at the Bulk level; the suction has its own budget).
 - [ ] Prism counts and scoring after the hole are as before (same destruction, only the picture changed).
+
+## One return to the menu at a time (2026-11-22)
+
+Bug ledger E-908f18b36f and E-853e9f9090 (Andrew's editor, 2026-11-21 23:46 UTC, the same play run as E-31b2135ed2).
+His load reports show "Return to menu" requested twice within 2.6 s from the Voyage scene; the second began while the
+first was still in its scene exit drain. Each started its own scene load. `SceneLoader.LoadSceneAsync` loads the menu
+locally when Netcode refuses a load, which it does for a second one, so the menu came up over Netcode's own load with
+no local Player and its network objects unspawned: every domain and vessel pick was dropped and Start threw.
+`SceneLoader.ReturnToMainMenu` now drops a second request while the first is loading (30 s at most,
+`menuReturnInFlightSeconds` on the SceneLoader). Compiled with `unity_refcompile` (0 errors in project code); not run
+in Unity. The cause is read from the load reports, not reproduced.
+
+- [ ] In a Voyage, press the pause menu's Main Menu button twice quickly: the menu loads once, the Console shows the
+      warning "Return to menu requested again ... ignored", and a game card's domain pick and Start work.
+- [ ] Normal case: return to the menu from an arcade game and from a Voyage, then launch another game: as before.
+- [ ] Return to the menu, launch a game, return again within 30 s: the second return is not ignored.

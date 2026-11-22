@@ -107,6 +107,18 @@ namespace CosmicShore.Core
         // collect and keep their one; a return to the menu keeps both.
         bool _collectedBeforeLoad;
 
+        // Unscaled time the host's return to the menu began, or a negative value when none is under way. A second
+        // request while it runs is dropped (ReturnToMainMenu). Cleared when any scene arrives.
+        float _menuReturnStartedAt = -1f;
+
+        [Header("Return to menu")]
+        [Tooltip("While the host's return to the menu is loading, a second request for it is dropped for this many " +
+                 "seconds (unscaled). Two at once start two scene loads: Netcode refuses the second, which then " +
+                 "loads the menu locally over Netcode's own load, and the menu comes up with no local Player and " +
+                 "its network objects unspawned (Bug Ledger E-908f18b36f, E-31b2135ed2). After this long a new " +
+                 "request goes through, so a load that never arrived cannot lock the way out. 0 turns it off.")]
+        [SerializeField, Min(0f)] float menuReturnInFlightSeconds = 30f;
+
         [Header("SOAP Events (wired in Bootstrap inspector)")]
         [SerializeField] ScriptableEventNoParam _onClickToMainMenuButton;
         [SerializeField] ScriptableEventNoParam _onActiveSessionEnd;
@@ -160,6 +172,7 @@ namespace CosmicShore.Core
         {
             LoadInsights.End(_sceneLoadSpan);
             _sceneLoadSpan = -1;
+            _menuReturnStartedAt = -1f;
 
             // A scene arrived, so any client scene-follow watchdog in flight has nothing left to
             // rescue. Bumping the generation retires it without needing a handle on it.
@@ -434,6 +447,17 @@ namespace CosmicShore.Core
                 ArmClientSceneFollowWatchdog(menuScene, "Return to menu");
                 return;
             }
+
+            // One return at a time: a second request while the first is loading (the button pressed twice, or the
+            // button and a session end together) would start a second scene load beside it.
+            if (_menuReturnStartedAt >= 0f && menuReturnInFlightSeconds > 0f
+                && Time.unscaledTime - _menuReturnStartedAt < menuReturnInFlightSeconds)
+            {
+                CSDebug.LogWarning($"[SceneLoader] Return to menu requested again " +
+                                   $"{Time.unscaledTime - _menuReturnStartedAt:0.0}s into the one already loading - ignored.");
+                return;
+            }
+            _menuReturnStartedAt = Time.unscaledTime;
 
             // Cover every connected client's screen BEFORE anything despawns. Clients
             // never run this method (the SOAP raise is host-local), so without this they
