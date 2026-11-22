@@ -9018,6 +9018,23 @@ best for the catch against 59.6 s for the field.
    (top speed stays in the 300s, not the 700s).
 4. Slingshot with 3 AI Stoats: the AIs in Time mode keep pace with Mass-mode AIs.
 
+### 🔴 The browser build's Beta Phase 1 scope: Arcade (Squirrel's games, every Time game), Regatta, a Time-only Maelstrom (`claude/project-thread-282neh`, 2026-11-21) — NOT EDITOR-VERIFIED
+
+**What landed:** `WebBuildScopeSO` (`Assets/Resources/WebBuildScope.asset`, written by `Tools/Build/web_build_scope.py`)
+lists the 27 cards the browser build carries and the Maelstrom's browser buckets (I1 2, I2 4, I3 6, I4 8 Time games).
+`WebToyboxBuild.RequireScenes` adds every card's scene; the Arcade and Arena windows open in the browser and show only
+those cards; `MaelstromDataSO.ActiveTiers` deals from the browser buckets; the weekly challenge is hidden. No compile ran
+(no .NET SDK or Unity in the cloud session that wrote it).
+
+1. Compile in the editor; run `WebBuildScopeTests` and `WebToyboxTests` (EditMode). Expect all green.
+2. Switch to Web, FrogletTools > Build > WebGL Toybox (Development). Expect 30 scenes in `build_manifest.txt`.
+3. `python3 Tools/Build/publish_toybox.py serve --build-dir Builds/WebGLToybox`, open http://localhost:8000.
+4. Home: Arcade and Arena open; Missions still reads "In the full game". Arcade shows Skim Race, Joust, Scurry and the
+   Time games only, no weekly challenge card. Arena shows Regatta only.
+5. Play Skim Race and Regatta to the end and back to the menu. Start a Maelstrom at I1: only Scarab Rally and Slingshot
+   are dealt; at I4 the pool list shows 8 games.
+6. With `diag` on, note the frame rate of each game played (fill in the scope file's table).
+
 ### 🔴 The browser Toybox: a WebGL build of Menu_Main's freestyle for www.froglet.games/play (`claude/webgl-toybox-kg5qx7`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 **What landed:** everything in `Docs/WEBGL_TOYBOX.md`. The `FROGLET_WEB_TOYBOX` define (read through
@@ -26083,3 +26100,22 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
+
+## Browser build: no post-processing, and Escape leaves a game (2026-11-22)
+
+**Branch:** `claude/project-thread-282neh`. **Not compiled:** `unity_refcompile` cannot run in the cloud session (no .NET, package fetches blocked).
+
+**What landed:** `PlatformProfileSO.noPostProcessing` (on for `PlatformProfile_Web` only): `PlatformRenderApplier` turns every camera's URP post-processing off before it renders. `BrowserCursorRelease` (WebGL player only) reads the browser releasing the mouse lock as `OverviewGesture`, because a browser keeps Escape for itself while the pointer is locked.
+
+1. Compile in the editor (Web platform). Expect no `error CS`.
+2. WebGL Toybox build, open it in Chrome: colours match the Windows build without bloom (no washed-out glow).
+3. Fly freestyle with the mouse, press Escape: the flight ends and the menu comes back. In an arcade game, Escape opens the pause menu; Resume, then click the canvas, and the mouse locks again.
+4. Windows / Editor: Escape still works as before, and post-processing is unchanged.
+
+## Browser build: the Profile and its colour sets open (2026-11-22)
+
+**Branch:** `claude/project-thread-282neh`. **Not compiled** (cloud session). `ScreenSwitcher.IsScreenInWebToybox` lets the browser open the Profile (Home's pilot card, or Y).
+
+1. Run `WebToyboxTests` (EditMode). Expect green.
+2. WebGL Toybox build: click the pilot card. The Profile opens; its colour sets tab lists the sets; Apply wears one (the cell recolours); Unlock spends crystals and the set stays unlocked after a page reload.
+3. Back returns to Home. Other Profile controls that need an account (friends, linking) may be inert; note any that error.

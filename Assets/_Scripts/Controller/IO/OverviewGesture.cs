@@ -18,11 +18,17 @@ namespace CosmicShore.Gameplay
     /// control they would have reached for it is on this key. The cursor is released when the
     /// overview actually opens (the input controller pauses, and the strategy unlocks it there),
     /// not speculatively before.</para>
+    ///
+    /// <para>In the browser build Escape never reaches the page while the mouse is locked, so the
+    /// browser releasing the lock counts as the key (<see cref="BrowserCursorRelease"/>).</para>
     /// </summary>
     public static class OverviewGesture
     {
         public static bool RequestedThisFrame()
         {
+            // The browser keeps Escape while the mouse is locked; its release of the lock is the key.
+            if (BrowserCursorRelease.ReleasedThisFrame) return true;
+
             var keyboard = Keyboard.current;
             if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame) return true;
 

@@ -216,7 +216,11 @@ namespace CosmicShore.UI
             // every repopulate because the card's own state (this week's mode, completion, the
             // countdown label) is redrawn by Bind - and a repopulate is exactly when the grid
             // around it was rebuilt.
-            if (WeeklyChallengeCard)
+            // The browser build has no weekly challenge: its board is a UGS leaderboard, and the build never
+            // signs in (Docs/WEBGL_TOYBOX.md section 2).
+            if (WeeklyChallengeCard && WebToybox.IsBuild)
+                WeeklyChallengeCard.gameObject.SetActive(false);
+            else if (WeeklyChallengeCard)
                 WeeklyChallengeCard.Bind(this);
 
             // The roster is resolved BEFORE the grid is walked, because the grid has to be big
@@ -236,7 +240,10 @@ namespace CosmicShore.UI
             // than no flag because its comment reads as a to-do. Docs/UI_ARCHITECTURE_AUDIT.md
             // §2.11. Ownership gating, if it comes back, comes back on the live economy - not on
             // this.
-            var filteredGames = roster.Games;
+            //
+            // The browser build narrows it to the cards whose scenes it carries (WebBuildScopeSO, through
+            // WebToybox.Offers); every other build offers the whole roster.
+            var filteredGames = roster.Games.Where(g => WebToybox.Offers(g)).ToList();
 
             // The Maelstrom is NOT one of the grid's cards. It is the meta-mode that draws the
             // others, so listing it beside them invites "play this one" when what it actually
@@ -760,7 +767,8 @@ namespace CosmicShore.UI
         }
 
         /// <summary>True when this window's roster lists <paramref name="game"/> (the Hangar's Games tab asks).</summary>
-        public bool Offers(SO_ArcadeGame game) => game && Roster && Roster.Games != null && Roster.Games.Contains(game);
+        public bool Offers(SO_ArcadeGame game) =>
+            game && Roster && Roster.Games != null && Roster.Games.Contains(game) && WebToybox.Offers(game);
 
         public void SelectGame(SO_ArcadeGame selectedGame)
         {
@@ -802,7 +810,7 @@ namespace CosmicShore.UI
             for (int i = 0; i < roster.Games.Count; i++)
             {
                 var game = roster.Games[i];
-                if (game && game.Mode == mode) return game;
+                if (game && game.Mode == mode) return WebToybox.Offers(game) ? game : null;
             }
 
             return null;
@@ -864,6 +872,8 @@ namespace CosmicShore.UI
         /// </summary>
         public void SelectWeeklyChallenge()
         {
+            if (WebToybox.IsBuild) return;   // no weekly challenge in the browser (PopulateGameSelectionList)
+
             var service = WeeklyChallengeService.Instance;
             if (service == null)
             {

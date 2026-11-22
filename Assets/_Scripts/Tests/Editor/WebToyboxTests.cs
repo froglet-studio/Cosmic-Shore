@@ -51,11 +51,30 @@ namespace CosmicShore.Tests
                 ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE,
                 ScreenSwitcher.ModalWindows.SETTINGS,
                 ScreenSwitcher.ModalWindows.CREDITS,
+                // The browser build's arcade and arena (Shombith, 2026-11-21); which cards they offer is
+                // WebBuildScopeSO's (WebBuildScopeTests).
+                ScreenSwitcher.ModalWindows.ARCADE,
+                ScreenSwitcher.ModalWindows.ARCADE_GAME_CONFIGURE,
+                ScreenSwitcher.ModalWindows.MAELSTROM_GAME_CONFIGURE,
+                ScreenSwitcher.ModalWindows.ARENA,
+                ScreenSwitcher.ModalWindows.ARENA_GAME_CONFIGURE,
             };
             foreach (ScreenSwitcher.ModalWindows modal in Enum.GetValues(typeof(ScreenSwitcher.ModalWindows)))
             {
                 Assert.AreEqual(allowed.Contains(modal), ScreenSwitcher.IsModalInWebToybox(modal),
                     $"{modal}: the browser Toybox should {(allowed.Contains(modal) ? "" : "not ")}open it");
+            }
+        }
+
+        [Test]
+        public void TheToyboxOpensHomeAndTheProfile_AndEveryScreenIsDecided()
+        {
+            // The Profile carries the colour sets, which the browser wears like every build (Shombith, 2026-11-22).
+            var allowed = new HashSet<ScreenSwitcher.MenuScreens> { ScreenSwitcher.MenuScreens.HOME, ScreenSwitcher.MenuScreens.PROFILE };
+            foreach (ScreenSwitcher.MenuScreens screen in Enum.GetValues(typeof(ScreenSwitcher.MenuScreens)))
+            {
+                Assert.AreEqual(allowed.Contains(screen), ScreenSwitcher.IsScreenInWebToybox(screen),
+                    $"{screen}: the browser Toybox should {(allowed.Contains(screen) ? "" : "not ")}open it");
             }
         }
 

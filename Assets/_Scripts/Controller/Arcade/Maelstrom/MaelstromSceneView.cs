@@ -1006,7 +1006,7 @@ namespace CosmicShore.Gameplay
         {
             if (tournamentData == null || tournamentData.GameQueue == null) return string.Empty;
 
-            int total = tournamentData.GameQueue.Count(g => g != null);
+            int total = tournamentData.GameQueue.Count(g => g != null && tournamentData.IsInThisBuildsPool(g));
             int ceiling = Mathf.Clamp(tournamentData.IntensityCeiling <= 0 ? 1 : tournamentData.IntensityCeiling, 1, 4);
             int drawable = tournamentData.GamesForIntensity(ceiling).Count;
 

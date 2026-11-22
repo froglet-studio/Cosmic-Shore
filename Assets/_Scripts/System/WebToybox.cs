@@ -1,3 +1,5 @@
+using CosmicShore.ScriptableObjects;
+
 namespace CosmicShore.Core
 {
     /// <summary>
@@ -20,8 +22,9 @@ namespace CosmicShore.Core
     /// Relay or analytics. The session is the offline local host, on <c>SinglePlayerTransport</c>.</item>
     /// <item>Boot goes straight from Bootstrap to Menu_Main and into freestyle; no consent screen,
     /// no username step.</item>
-    /// <item>Menu_Main shows the toybox only: the Arcade, Arena and Mission entries are hidden and
-    /// refuse to open.</item>
+    /// <item>Menu_Main shows the toybox plus the cards <see cref="WebBuildScopeSO"/> lists (Beta Phase 1:
+    /// Squirrel's games, every Time game, Regatta, and a Maelstrom that deals only Time games). Every
+    /// other card, Missions, Voyages and the online windows stay locked and refuse to open.</item>
     /// </list>
     /// Platform differences that are about WebGL rather than about the toybox (no compute shaders,
     /// no threads, no NativeShare) key off the platform or <c>SystemInfo</c>, not this flag, so
@@ -40,5 +43,15 @@ namespace CosmicShore.Core
 
         /// <summary>The scripting define the build sets. One spelling, used by the build script and tests.</summary>
         public const string Define = "FROGLET_WEB_TOYBOX";
+
+        /// <summary>
+        /// True when this build lets a player launch <paramref name="game"/>: always outside the browser build,
+        /// and in it only for a card <see cref="WebBuildScopeSO"/> lists (its scene is the only one the build has).
+        /// </summary>
+        public static bool Offers(SO_ArcadeGame game) => Offers(game, IsBuild, IsBuild ? WebBuildScopeSO.Load() : null);
+
+        /// <summary>The decision <see cref="Offers(SO_ArcadeGame)"/> makes, with the flag and scope passed in (tests).</summary>
+        public static bool Offers(SO_ArcadeGame game, bool webBuild, WebBuildScopeSO scope) =>
+            game && (!webBuild || (scope && scope.Carries(game)));
     }
 }

@@ -1338,21 +1338,35 @@ namespace CosmicShore.UI
         public const string WebToyboxLockedMessage = "In the full game";
 
         /// <summary>
-        /// The modals the browser Toybox opens: the toybox itself, its configure panel, Settings and
-        /// Credits. Everything else either needs online services (profile names, leaderboards,
-        /// squads, purchases) or is a mode the toybox does not carry (Arcade, Arena, Mission).
+        /// The modals the browser Toybox opens: the toybox itself, its configure panel, Settings,
+        /// Credits, and the Arcade and Arena windows with their configure panels and the Maelstrom's
+        /// (Shombith, 2026-11-21). Which CARDS those windows offer is <see cref="WebBuildScopeSO"/>'s,
+        /// through <see cref="WebToybox.Offers(SO_ArcadeGame)"/>. Everything else either needs online
+        /// services (profile names, leaderboards, squads, purchases) or is a mode the browser build does
+        /// not carry (Mission, Voyages).
         /// </summary>
+        /// <summary>The screens the browser build opens: Home, and the Profile over it, whose colour sets the
+        /// browser wears and unlocks like every other build (Shombith, 2026-11-22). Every other screen is
+        /// "in the full game".</summary>
+        public static bool IsScreenInWebToybox(MenuScreens screen) =>
+            screen is MenuScreens.HOME or MenuScreens.PROFILE;
+
         public static bool IsModalInWebToybox(ModalWindows modal) =>
             modal is ModalWindows.NONE
                   or ModalWindows.TOYBOX
                   or ModalWindows.TOYBOX_CONFIGURE
                   or ModalWindows.SETTINGS
-                  or ModalWindows.CREDITS;
+                  or ModalWindows.CREDITS
+                  or ModalWindows.ARCADE
+                  or ModalWindows.ARCADE_GAME_CONFIGURE
+                  or ModalWindows.MAELSTROM_GAME_CONFIGURE
+                  or ModalWindows.ARENA
+                  or ModalWindows.ARENA_GAME_CONFIGURE;
 
         private bool IsScreenDisabled(MenuScreens screen)
         {
-            // The browser Toybox is the home screen and its freestyle world, nothing else.
-            if (WebToybox.IsBuild && screen != MenuScreens.HOME) return true;
+            // The browser Toybox is the home screen, its freestyle world and the profile (colour sets).
+            if (WebToybox.IsBuild && !IsScreenInWebToybox(screen)) return true;
 
             if (disabledScreens != null && disabledScreens.Contains(screen)) return true;
 
@@ -1668,7 +1682,7 @@ namespace CosmicShore.UI
         /// </summary>
         public bool OpenGame(SO_ArcadeGame game)
         {
-            if (!game || WebToybox.IsBuild) return false;
+            if (!game || !WebToybox.Offers(game)) return false;
             foreach (var explore in FindObjectsByType<ArcadeExploreView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 if (!explore.Offers(game)) continue;
@@ -1688,7 +1702,6 @@ namespace CosmicShore.UI
         /// </summary>
         public bool OpenGame(GameModes mode)
         {
-            if (WebToybox.IsBuild) return false;
             foreach (var explore in FindObjectsByType<ArcadeExploreView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 var game = explore.FindGameByMode(mode);
@@ -1700,10 +1713,6 @@ namespace CosmicShore.UI
 
         private void OpenArcadePanel()
         {
-            // The gamepad's A on HOME and the arcade nav both land here; the browser Toybox has no
-            // arcade to open.
-            if (WebToybox.IsBuild) return;
-
             UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
 
             if (ArcadeModal)

@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Core
@@ -41,6 +43,22 @@ namespace CosmicShore.Core
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.activeSceneChanged -= OnActiveSceneChanged;
             SceneManager.activeSceneChanged += OnActiveSceneChanged;
+            RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+            RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+        }
+
+        /// <summary>
+        /// A tier with <see cref="ScriptableObjects.PlatformProfileSO.NoPostProcessing"/> (the browser
+        /// build) renders every camera without post-processing. Asked before each camera renders, so a
+        /// camera created later, or one whose owner turns its flag back on (a crew view restoring its
+        /// saved value), is held off too.
+        /// </summary>
+        static void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
+        {
+            var profile = PlatformProfile.Current;
+            if (!profile || !profile.NoPostProcessing || !camera) return;
+            if (camera.TryGetComponent(out UniversalAdditionalCameraData data) && data.renderPostProcessing)
+                data.renderPostProcessing = false;
         }
 
         static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => ApplySkybox();
