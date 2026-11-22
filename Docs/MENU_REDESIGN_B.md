@@ -9009,7 +9009,7 @@ development), the theme menu with the nine themes and Motion, and scroll-driven 
 No recommendation yet: the pick (or a mix of parts) is Shombith's. Rev 122's boards stay as the parts list (themes,
 vessel stage, admin). The generator was session scratch, not committed.
 
-## 219. Rev 124 mockups: six pages grown from Rev 123 H, in the Hypersea style (2026-11-22, awaiting a pick)
+## 219. Rev 124 mockups: six pages grown from Rev 123 H, in the Hypersea style (2026-11-22, E picked)
 
 **Asked (Shombith, 2026-11-22, on Rev 123):** "I loved H, the animations, tabs colors but it is too cartoon comic book
 style can you do something about that, uses weird colors, delete all the other mockups and create inspired from this
@@ -9038,3 +9038,38 @@ for the call to action, the game's type. Each moves its own way:
 
 Every page was checked at 1440 in both games for text running past its box. Tumult's text says it is in beta and
 under live development. No recommendation yet; the generator was session scratch, not committed.
+
+## 220. Rev 125 mockups: E as a site of pages, with the Fleet Codex, a Pilot Codex and a moving background (2026-11-22, awaiting review)
+
+**Asked (Shombith, 2026-11-22):** he picked Rev 124 E (Skim Trails). "for vessels view I want the fleet codex to be
+integrated there a fullscreen or button should take them to fleet codex in the website. The fleet codex can be
+updated as it is updated now", and the flat colour background behind the sections is bland. Then: the game modes in
+the Fleet Codex look, sorted between Time, Mass and the other element games for the arcade; a separate Arena page; a
+Voyages page with the story and introductions for everyone; Cosmic Shore more descriptive than Tumult, which is
+small; no noisy single page. Then: "The pilot codex should be accessible too in a separate page".
+
+**On the canvas:** tab **Frogma Website**, section "Rev 125", below Rev 124: seven pages (`expand: fill`, 1440
+wide, interactive) and the notes. Copies in `Docs/MenuRedesignB/board/R125*.dc.html`.
+- **A Home:** hero, story, four ways to play (Toybox, Arcade, Arena, Voyages), a fleet teaser, Press Start, stores,
+  the latest post. The team moved to Studio.
+- **B Vessels:** the racing lane; every card and an Open the Fleet Codex button open the codex full screen (a skewed
+  wipe), with a vessel switcher, previous and next, and a Full page link.
+- **C Arcade:** all 49 arcade cards from the codex's `fleet.json`, filtered by Time, Charge, Mass, Space or Party
+  and sorted by element, A to Z or vessel, with the codex's card art.
+- **D Arena:** Regatta, Broadside, Brood Rush and Astro League, the hulls on each card, how a match works.
+- **E Voyages:** port, lanes, places, meetings, home; the squad of three and one Ark; marked In development.
+- **F Pilots:** a Pilot Codex: the 18 callsigns with their scenes (`Docs/Pilots/art/scenes/`), filtered by what they
+  see (from `Docs/Pilots/CALLSIGNS.md`).
+- **G Studio:** blog, the team, contact and Studio sign-in.
+Tumult stays one smaller page behind the switch on every page, and still says it is in beta and under live
+development.
+
+**Moving background:** Cosmic Shore: the hero image, blurred to grey and tinted by the theme (`mix-blend-mode:
+color`), under glowing skim trails with light pulses, drifting prisms, streaks and a running grid floor. Tumult: its
+shore image the same way in gold, with tide lines, turning contour rings and drifting dice. Motion Off stops all of it.
+
+**How the codex stays current on the site (proposed):** the site hosts the codex's own generated files at
+`froglet.games/fleet-codex/`, copied by the same refresh that publishes the Fleet Codex artifact
+(`Tools/Build/fleet_codex.py`), and the Arcade and Arena pages read its `fleet.json`. In the mockup the codex views
+are full-page captures of the live codex in Photic, uploaded to Frogma's asset store. The generators were session
+scratch, not committed.
