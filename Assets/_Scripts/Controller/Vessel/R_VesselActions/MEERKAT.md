@@ -12,8 +12,12 @@ Cloned from the Vessel Studio (2026-10-27, `/artifact-to-unity`): the Meerkat pa
   - the look is the **plain wormhole** of `Docs/Shaders/WORMHOLE_SHADERS.md` §16 (2026-11-01).
 - **2026-11-20 (Yash: "the visual will be like a wormhole ... anything inside a wormhole won't interact with anything
   outside the hole"):**
-  - the look is a **real wormhole** (`WORMHOLE_SHADERS.md` §17): a mouth shows the place round its other mouth, the ride
-    is a streaked throat with a clear way ahead that grows until it swallows the view, and leaving throws one ripple;
+  - the look is a **real wormhole** (`WORMHOLE_SHADERS.md` §17): a mouth shows the place round its other mouth, its
+    ring flares as it forms, and leaving throws one ripple;
+  - **riding, the camera sees only the tube's inner wall** (2026-11-22, Yash: "players should not be able to see outer
+    world that time, it's like gliding through the inner surface of the space-time hole, and exiting to the universe
+    again"; `WORMHOLE_SHADERS.md` §18): a grid on bent space that follows the tube's path, the riders in it, and the way
+    out as a light that opens onto the world;
   - **nothing inside a tube touches anything outside it**, on every machine: §11 is the audit.
 - **Still as built here:**
   - inside any tube the hull is phased (§9, round 25; widened to every machine and every kind of contact in §11);

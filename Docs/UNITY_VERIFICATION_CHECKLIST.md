@@ -253,11 +253,16 @@ tested as arithmetic only. No phone was measured.
 1. Toybox (Lava Lamp), Vessel Changer: the Meerkat. Form a wormhole with RT near some prisms.
    - **Pass:** its rings flare as it opens. Inside the ring round each mouth you see the scenery at the other end, not
      the local scene turned over.
-2. Ride it.
-   - **Pass:** the world outside smears into streaks running to a clear disk ahead; the disk grows as the way out
-     nears and swallows the view as you leave; one ripple runs out from the middle. Nothing pops as you cross the mouth.
-   - **Judge:** comfort. If it is too much, lower `InsideStreak` or `ExitPop` on `SolitonTunnel.asset` (FrogletTools >
-     Environment > Environmental Fundamentals).
+2. Ride it (the 2026-11-22 ride, `WORMHOLE_SHADERS.md` §18).
+   - **Pass:** inside, you see only the tube's wall (a grid whose rings rush past, bending where the tube bends), your
+     own hull, and a light at the way out. No prism, crystal, sky or other hull of the outer world shows, even where
+     the tube runs through prisms. The light grows, clears onto the world and you are out; one ripple runs out from
+     the middle. Nothing pops as you cross either mouth.
+   - **Check the hull:** its nose, tail and wings are all in sight. If part is cut off, raise `InsideHullRadius`; if a
+     patch of the outer world shows round it, lower it (`SolitonTunnel.asset`, FrogletTools > Environment >
+     Environmental Fundamentals).
+   - **Judge:** speed and comfort. More rings a second: lower `InsideGridSpacing`. Too much motion: lower
+     `InsideStretch`, `InsideSwirl` or `ExitPop`.
 3. Form a wormhole through a wall of prisms and ride it. Have a rival (an AI Sparrow or Rhino) fire at you and ram
    you while you are inside.
    - **Pass:** the wall stands, you lose no petal, you are not knocked, slowed or silenced, and the camera does not
