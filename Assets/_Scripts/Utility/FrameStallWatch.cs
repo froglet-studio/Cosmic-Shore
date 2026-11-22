@@ -56,6 +56,14 @@ namespace CosmicShore.Utility
         public static bool NetworkIsListening() => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
         static double s_lastFrameAt = double.NaN;
+
+        /// <summary>
+        /// Log every frame of <see cref="STALL_SECONDS"/> or more with the work that held it, online or not. Off
+        /// by default: the record carries those. A built player writes no record, so the automatic multiplayer
+        /// run switches this on (<c>MultiplayerAutoPilot</c>, development builds and the editor only).
+        /// </summary>
+        public static bool LogEveryStall;
+        static double s_pendingOfflineLogSeconds;
         static string s_lastScene;
         static double s_lastStallSeconds;
         static double s_lastStallEndedAt = double.NegativeInfinity;
@@ -99,13 +107,31 @@ namespace CosmicShore.Utility
                 NetSessionRecorder.Mark("stallFrame", held);
                 // A built player writes no net record, so a freeze long enough to cost the Relay connection also
                 // names its work in the log (one line a freeze; B45 on the return to the menu, 2026-11-22).
-                if (s_pendingFrameMarkSeconds >= RELAY_RISK_SECONDS)
+                if (s_pendingFrameMarkSeconds >= RELAY_RISK_SECONDS || LogEveryStall)
                     CSDebug.LogWarning($"[Net] What held that frozen frame: {held}");
                 s_pendingFrameMarkSeconds = 0;
             }
+            if (s_pendingOfflineLogSeconds > 0)
+            {
+                StallFrameMarkers.Fold();
+                CSDebug.LogWarning($"[Net] What held that frame: {StallFrameMarkers.Describe(s_pendingOfflineLogSeconds)}");
+                s_pendingOfflineLogSeconds = 0;
+            }
 
-            if (frame < STALL_SECONDS || !SafeOnline()) return 0;
+            if (frame < STALL_SECONDS) return 0;
             string where = startedIn == sceneName ? sceneName : $"{startedIn}, ending in {sceneName}";
+            if (!SafeOnline())
+            {
+                // Not a stall for the record (nothing online to lose). A test harness still wants it in the log:
+                // a player bounced to its own menu is offline for the frames that follow.
+                if (LogEveryStall)
+                {
+                    CSDebug.LogWarning($"[Net] A frame of {frame.ToString("0.0", CultureInfo.InvariantCulture)} s in {where} (not online).");
+                    StallFrameMarkers.Fold();
+                    s_pendingOfflineLogSeconds = frame;
+                }
+                return 0;
+            }
 
             s_lastStallSeconds = frame;
             s_lastStallEndedAt = now;
@@ -116,6 +142,8 @@ namespace CosmicShore.Utility
             NetSessionRecorder.Mark("stallContext", SafeContext());
             StallFrameMarkers.Fold();
             s_pendingFrameMarkSeconds = frame;
+            if (LogEveryStall && frame < RELAY_RISK_SECONDS)
+                CSDebug.LogWarning($"[Net] A frame of {seconds} s in {where} while online.");
             if (frame >= RELAY_RISK_SECONDS)
                 CSDebug.LogWarning($"[Net] The game froze for {seconds} s in {where} while online. Unity Relay drops a " +
                                    "connection after about 10 s without traffic, so this session may end with 'player timed out " +
@@ -174,6 +202,8 @@ namespace CosmicShore.Utility
             LongestStallSeconds = 0;
             s_asyncClonesInFlight = 0;
             s_pendingFrameMarkSeconds = 0;
+            s_pendingOfflineLogSeconds = 0;
+            LogEveryStall = false;
             StallFrameMarkers.Stop();
         }
 
