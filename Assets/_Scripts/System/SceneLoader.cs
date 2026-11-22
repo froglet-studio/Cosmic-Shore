@@ -29,7 +29,7 @@ namespace CosmicShore.Core
     /// Replay / restart is owned by MiniGameControllerBase.RequestReplay() - both
     /// the scoreboard and the pause menu call it directly.
     /// </summary>
-    public class SceneLoader : MonoBehaviour
+    public partial class SceneLoader : MonoBehaviour
     {
         [Tooltip("Seconds the opaque splash shows before the load starts - long enough for it to reach the screen " +
                  "ahead of the blocking collect and load. Both callers make the splash opaque instantly " +
@@ -45,12 +45,18 @@ namespace CosmicShore.Core
                  "(Docs/PartySystem/BUGS.md B45). 0 turns the drain off.")]
         [SerializeField, Min(0f)] float sceneExitDrainMaxSeconds = 8f;
 
-        [Tooltip("Prisms' worth of plants and creatures the drain destroys per frame, a whole plant at a time. " +
-                 "Large on purpose: a destroy during play costs about 150 microseconds a prism against the scene " +
-                 "unload's 57, and small slices cost more still (2,000 a frame left a 7.8 s load frame, 15,000 a " +
-                 "6.4 s one, on a 73,500-prism Bloomrush). Each drain frame is then one to three seconds, far " +
-                 "under Relay's limit.")]
+        [Tooltip("The most prisms' worth of plants and creatures the drain destroys in one frame, a whole plant at " +
+                 "a time. With a frame budget below, the slice starts at 1,000 and grows or shrinks to that budget, " +
+                 "never past this.")]
         [SerializeField, Min(100)] int sceneExitDestroysPerFrame = 15000;
+
+        [Tooltip("How long one drain frame may take, in milliseconds: the slice is resized every frame to fit it, " +
+                 "so a phone takes smaller slices than a desktop. 0 = a fixed slice of the count above (1-2 s " +
+                 "frames on a desktop at 15,000, measured 2026-11-21). A destroy during play costs about 2.6 times " +
+                 "the scene unload's, so a slower drain leaves more for the load's own frame when it is cut short. " +
+                 "Off by default: at 200 ms a desktop return took 4-5 s longer with more 0.5 s hitches, because " +
+                 "those frames cost 0.3-0.5 s whatever the slice (measured 2026-11-21).")]
+        [SerializeField, Min(0f)] float sceneExitFrameBudgetMs = 0f;
 
         /// <summary>Milliseconds of pool-return work a frame during the drain (the Maelstrom hub's own slice).</summary>
         const double SceneExitSliceMs = 24.0;
@@ -180,6 +186,7 @@ namespace CosmicShore.Core
                 _holdVeilForMenuSettle = IsGameplayScene(_lastLoadedSceneName);
 
                 ArmSplashFadeOnNextClientReady();
+                RevealBootMenuBeforeHostAsync(_holdVeilForMenuSettle).Forget();
             }
 
             _lastLoadedSceneName = scene.name;
@@ -306,6 +313,8 @@ namespace CosmicShore.Core
         {
             // A return to the menu keeps its after-load collect: that one frees the finished match.
             bool menuReturn = _holdVeilForMenuSettle;
+            // The boot menu may already be on screen, its input held, waiting for this vessel (SceneLoader.BootReveal).
+            bool shownEarly = TakeEarlyBootReveal();
             // Game→menu return only: hold the opaque veil for a short settle window so
             // the previous session's cleanup (late despawns, pooled-prism churn, painting
             // regrow snap) finishes out of sight instead of visibly clearing after the
@@ -343,7 +352,7 @@ namespace CosmicShore.Core
             // Let the frames that carried the collect (and the veil's release work) END while the splash is still
             // opaque. The fade reads each frame's time, so starting it on the frame after a long one let that frame
             // eat the fade, and the menu banged open instead of dissolving in.
-            for (int i = 0; i < revealSettleFrames; i++)
+            for (int i = 0; i < revealSettleFrames && !shownEarly; i++)
                 await UniTask.NextFrame(PlayerLoopTiming.Update);
 
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
@@ -352,14 +361,14 @@ namespace CosmicShore.Core
             // The menu becomes visible now: stamp it, so the load report keeps the true "shown" moment while its
             // file is written after the reveal instead of on the reveal's first frame.
             bool recordingMenu = LoadInsights.IsRecordingMenuLoad;
-            if (recordingMenu) LoadInsights.MarkVisualReady();
+            if (recordingMenu && !shownEarly) LoadInsights.MarkVisualReady();
 
             // The lava lamp is up: from now on this player is listed online on every other machine
             // (LavaLampPresence; before this they were still booting and could not be invited).
             if (intoMenu)
                 LavaLampPresence.MarkShown();
 
-            if (_sceneTransitionManager != null)
+            if (_sceneTransitionManager != null && !shownEarly)
             {
                 if (intoMenu) await _sceneTransitionManager.RevealAsync();
                 else await _sceneTransitionManager.FadeFromBlack();
@@ -663,7 +672,8 @@ namespace CosmicShore.Core
             foreach (var cell in FindObjectsByType<Cell>(FindObjectsSortMode.None))
             {
                 if (cell && cell.RetireWorldIntoPoolForSceneExit(SceneExitSliceMs, 0f, requireEnvironment: false,
-                        rootDestroyPrismsPerFrame: sceneExitDestroysPerFrame, returnPooledTrail: returnPooledTrail))
+                        rootDestroyPrismsPerFrame: sceneExitDestroysPerFrame, returnPooledTrail: returnPooledTrail,
+                        rootDestroyFrameBudgetMs: sceneExitFrameBudgetMs))
                     (draining ??= new System.Collections.Generic.List<Cell>()).Add(cell);
             }
             if (draining == null) return;

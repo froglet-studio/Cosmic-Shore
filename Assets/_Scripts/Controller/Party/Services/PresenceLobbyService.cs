@@ -510,9 +510,13 @@ namespace CosmicShore.Gameplay
         {
             var queryOptions = PresenceQuery();
 
+            float queryStart = UnityEngine.Time.realtimeSinceStartup;
             var results = await _policy.ExecuteAsync("presence:query",
                 async () => await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread());
             IList<ISessionInfo> sessions = results.Sessions;
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[PresenceLobbyService] Presence query: {sessions?.Count ?? 0} lobbies in " +
+                $"{UnityEngine.Time.realtimeSinceStartup - queryStart:0.0}s.");
 
             if (sessions == null || sessions.Count == 0) return null;
 
@@ -529,6 +533,7 @@ namespace CosmicShore.Gameplay
 
                 try
                 {
+                    float joinStart = UnityEngine.Time.realtimeSinceStartup;
                     // The previous Play's membership (Stop without a leave) is cleared and the join made again.
                     var joined = await StaleLobbyMembership.JoinAsync(_policy, session.Id,
                         () => _policy.ExecuteAsync($"presence:join:{session.Id}",
@@ -536,7 +541,9 @@ namespace CosmicShore.Gameplay
                                 session.Id,
                                 new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread()),
                         leaveOnFailure: false, tag: "PresenceLobbyService");
-                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
+                    CSDebug.LogVerbose(CSLogChannel.Party,
+                        $"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}) in " +
+                        $"{UnityEngine.Time.realtimeSinceStartup - joinStart:0.0}s.");
                     return joined;
                 }
                 catch (Exception e)
