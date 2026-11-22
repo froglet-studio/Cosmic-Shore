@@ -110,8 +110,8 @@ Stoat circled the 32-48 u mouths. That is the defect Switchback, Breakwater and 
 - 2026-10-27: the dipole copy's let-go distance was set to 250 u by hand. Warped to about 140 u/s on a 167 u turning
   circle, the AI could not line up on a 26-48 u ring from the base 60 u let-go; at 250 u it finished all 15 recorded
   courses in 82-92 s with no missed mouth (Yash: median 92 s).
-- Since the re-seat neither is flown here. `StoatDipoleConfig_Warpline` is gone from the tree
-  (`StoatSlingTests` asserts it); `StoatSlingConfig_Warpline.asset` is still there and seeded the Stoat's Slingshot copy.
+- Since the re-seat neither is flown here, and both are gone from the tree (`StoatSlingTests` asserts it): the dipole
+  copy with the field dipole (2026-11-21), the sling copy on 2026-11-23, after it had seeded the Stoat's Slingshot copy.
 
 ### 6.3 The Stoat's two-pair limit
 

@@ -486,12 +486,11 @@
    "kind": "one-shot",
    "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
    "target": "event:/SFX/Vessels/Stoat/Sling wind-up",
-   "brief": "A tightening stretch. (Also fills the three AI-policy copies of the sling config.)",
+   "brief": "A tightening stretch. (Also fills the two AI-policy copies of the sling config.)",
    "slots": [
     "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:holdStartEvent",
     "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:holdStartEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:holdStartEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:holdStartEvent"
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:holdStartEvent"
    ]
   },
   {
@@ -2409,12 +2408,11 @@
    "kind": "one-shot",
    "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
    "target": "event:/SFX/Vessels/Stoat/Swing start",
-   "brief": "A tether catching and the arc beginning. (Also fills the three AI-policy copies of the sling config.)",
+   "brief": "A tether catching and the arc beginning. (Also fills the two AI-policy copies of the sling config.)",
    "slots": [
     "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:swingStartEvent",
     "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:swingStartEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:swingStartEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:swingStartEvent"
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:swingStartEvent"
    ]
   },
   {
@@ -2425,12 +2423,11 @@
    "kind": "one-shot",
    "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
    "target": "event:/SFX/Vessels/Stoat/Swing fling",
-   "brief": "The kick at the end of the arc. (Also fills the three AI-policy copies of the sling config.)",
+   "brief": "The kick at the end of the arc. (Also fills the two AI-policy copies of the sling config.)",
    "slots": [
     "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:swingFlingEvent",
     "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:swingFlingEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:swingFlingEvent",
-    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:swingFlingEvent"
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:swingFlingEvent"
    ]
   },
   {

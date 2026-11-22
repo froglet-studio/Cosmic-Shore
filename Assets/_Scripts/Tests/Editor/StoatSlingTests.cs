@@ -539,8 +539,7 @@ namespace CosmicShore.Tests
             // Every AI copy of the sling config carries no retired row.
             foreach (var path in new[] { "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset",
                                          "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset",
-                                         "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset",
-                                         "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset" })
+                                         "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset" })
             {
                 string text = Read(path);
                 foreach (var row in new[] { "  trampoline", "  skim:", "  aimedExit:", "  catchAhead:", "  orbitRadiusWide:",
@@ -550,6 +549,8 @@ namespace CosmicShore.Tests
             // The field dipole's AI copies are gone with it.
             Assert.IsFalse(File.Exists("Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset"));
             Assert.IsFalse(File.Exists("Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset"));
+            // Warpline seats the Meerkat only (2026-10-27), so the Stoat's sling copy for it went too (2026-11-23).
+            Assert.IsFalse(File.Exists("Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset"));
         }
 
         [Test]

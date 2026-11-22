@@ -71,41 +71,6 @@
     "path": "event:/SFX/Oneshots/Gameplay sfx/Speed burst"
    }
   ],
-  "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset": [
-   {
-    "fid": "11400000",
-    "field": "holdStartEvent",
-    "data": [
-     -922617308,
-     1092038894,
-     -167764571,
-     -698904471
-    ],
-    "path": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate"
-   },
-   {
-    "fid": "11400000",
-    "field": "swingStartEvent",
-    "data": [
-     -922617308,
-     1092038894,
-     -167764571,
-     -698904471
-    ],
-    "path": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate"
-   },
-   {
-    "fid": "11400000",
-    "field": "swingFlingEvent",
-    "data": [
-     -80347349,
-     1177752133,
-     1086952125,
-     -723090544
-    ],
-    "path": "event:/SFX/Oneshots/Gameplay sfx/Speed burst"
-   }
-  ],
   "Assets/Resources/PayloadConfig.asset": [
    {
     "fid": "11400000",
