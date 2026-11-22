@@ -1,0 +1,169 @@
+{
+  "schema": "cosmicshore.nettestlog.v1",
+  "engine": "unity",
+  "peer": "main",
+  "isVirtualPlayer": false,
+  "why": "client 1 approved",
+  "user": "yskha",
+  "unityVersion": "6000.3.17f1",
+  "branch": "Ys-bleeding-edge",
+  "commit": "eb7b68e47f",
+  "playStartedUtc": "2026-11-22T13:11:43.4203490Z",
+  "playEndedUtc": "2026-11-22T13:25:25.7969582Z",
+  "record": {
+    "schema": "cosmicshore.netsession.v1",
+    "startedUtc": "2026-11-22T13:11:56.7432337Z",
+    "durationSeconds": 808.9441528320313,
+    "buildGuid": "00000000000000000000000000000000",
+    "platform": "WindowsEditor",
+    "isOfflineSession": false,
+    "role": "host",
+    "counters": {
+        "requests": 91,
+        "lobbyReads": 166,
+        "retries": 0,
+        "coalesced": 0,
+        "budgetExhausted": 0,
+        "rateLimited": 0,
+        "transient": 0,
+        "benign": 0,
+        "conflict": 0,
+        "full": 0,
+        "gone": 0,
+        "fatal": 1,
+        "presenceForceReset": 0,
+        "offlineFallback": 0,
+        "partyRosterPush": 2,
+        "presencePush": 11,
+        "lobbyReadsPerSecond": 0.2052057534456253
+    },
+    "verdict": {
+        "offlineFallbacksWhileOnline": 0,
+        "forceResets": 0,
+        "budgetExhaustions": 0,
+        "rateLimited": 0
+    },
+    "lifecycle": [
+        {
+            "t": 0.000004499999704421498,
+            "e": "party",
+            "detail": "Disconnected->InPresenceLobby"
+        },
+        {
+            "t": 0.00002300000051036477,
+            "e": "party",
+            "detail": "InPresenceLobby->HostingParty"
+        },
+        {
+            "t": 5.331250190734863,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 5.3857221603393559,
+            "e": "netConfig",
+            "detail": "hash=8a386bf5ce8cd7d7 prefabs=33 234294682:Rhino 297461143:Angler 336337177:BrittleStar 504450242:Termite 515096987:Grizzly 532772460:Honeyguide 758961507:StatsManager 873610668:Urchin 1012147755:Stoat 1066882345:NetworkVesselSpawner 1124080984:Sparrow 1234547654:AstroLeagueBall 1554866019:Serpent 1887398589:Thresher 1945657574:TigerMoth 2256742461:Squirrel 2358568326:TadPoleFauna 2437889963:Orca 2603481845:MassSharkFauna 2640575084:Jacks 2854954169:Falcon 3228241887:BeeFauna 3347286452:Goby 3392890734:Manta 3401243537:Shrike 3404334551:Dolphin 3630817127:Swordfish 3827091966:Scarab 3939330856:Player 3950253892:JewelWasp 4022926403:Starling 4044113297:Wrasse 4221370039:Meerkat"
+        },
+        {
+            "t": 6.691394805908203,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 78.0076675415039,
+            "e": "clientApproved",
+            "detail": "1"
+        },
+        {
+            "t": 725.3397827148438,
+            "e": "trailRelease",
+            "detail": "15518 still out when the cover ended, back in 1.2s"
+        },
+        {
+            "t": 779.7764892578125,
+            "e": "clientLeft",
+            "detail": "1"
+        },
+        {
+            "t": 779.7765502929688,
+            "e": "leaverToAI",
+            "detail": "Lion"
+        }
+    ],
+    "lifecycleDropped": 0
+},
+  "console": {
+    "errors": 6,
+    "warnings": 28,
+    "dropped": 0,
+    "lines": [
+      {"t": 1.148, "type": "log", "msg": "[Adaptive Performance] Only default scaler profile available. Reset all scalers to default profile."},
+      {"t": 1.239, "type": "warning", "msg": "Entities.Graphics should be used with URP Forward+. Change Rendering Path on URP_Asset_Renderer for best compatibility.", "at": "Unity.Debug:LogWarning (object) (at ./Library/PackageCache/com.unity.entities@f6e02210e263/Unity.Entities/Stubs/Unity/Debug.cs:13)"},
+      {"t": 1.257, "type": "warning", "msg": "[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN - every vessel, game mode, intensity and the Vessel Hangar are unlocked, and the quest graph is stood down. This is the shipped default until the FTUE is designed. Turn it off in the Froglet Toolbox (Quest Debug or Vessel Unlock tab) to test real progression or the FTUE itself.", "at": "CosmicShore.Core.DeveloperUnlockGate:AnnounceOnce () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Progression/DeveloperUnlockGate.cs:147)"},
+      {"t": 1.279, "type": "log", "msg": "Root Bindings Installed from 'ContainerScope'"},
+      {"t": 1.279, "type": "log", "msg": "Root Bindings Installed from 'AppManager'"},
+      {"t": 1.279, "type": "log", "msg": "Scene (Bootstrap) Bindings Installed"},
+      {"t": 2.347, "type": "log", "msg": "Overriding environment to 'development' through InitializationOptions"},
+      {"t": 2.552, "type": "warning", "msg": "[DailyChallengeSystem] Arcade or TrainingGames not ready - daily challenge unavailable.", "at": "CosmicShore.Core.DailyChallengeSystem:TryFetchDailyChallenge (CosmicShore.Data.DailyChallenge&) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/DailyChallengeSystem.cs:146)"},
+      {"t": 2.552, "type": "log", "msg": "<color=red><b>Gamepad Detected:</b> 'Xbox Controller' ()\n<b>Controller Type:</b> Other\n<b>[Details]</b>\nName: XInputControllerWindows\nProduct: \nManufacturer: \nInterface: XInput\nUsages: \n<b>Supported Controls:</b>\n   - dpad: /XInputControllerWindows/dpad [Dpad]\n   - start: /XInputControllerWindows/start [Button]\n   - select: /XInputControllerWindows/select [Button]\n   - leftStickPress: /XInputControllerWindows/leftStickPress [Button]\n   - rightStickPress: /XInputControllerWindows/rightStickPress [Button]\n   - leftShoulder: /XInputControllerWindows/leftShoulder [Button]\n   - rightShoulder: /XInputControllerWindows/rightShoulder [Button]\n   - buttonSouth: /XInputControllerWindows/buttonSouth [Button]\n   - buttonEast: /XInputControllerWindows/buttonEast [Button]\n   - buttonWest: /XInputControllerWindows/buttonWest [Button]\n   - buttonNorth: /XInputControllerWindows/buttonNorth [Button]\n   - leftTrigger: /XInputControllerWindows/leftTrigger [Button]\n   - rightTrigger: /XInputControllerWindo..."},
+      {"t": 2.555, "type": "log", "msg": "Pipeline: Quitting application with exit code 0"},
+      {"t": 3.864, "type": "log", "msg": "Pipeline: Quitting application with exit code 0"},
+      {"t": 3.909, "type": "log", "msg": "Pipeline: Quitting application with exit code 0"},
+      {"t": 3.933, "type": "log", "msg": "Container Bootstrap (-2039544226) disposed"},
+      {"t": 3.937, "type": "log", "msg": "Scene (Authentication) Bindings Installed"},
+      {"t": 4.781, "type": "error", "msg": "NotFound\r\n(404) HTTP/1.1 404 Not Found\r\nError\r\nScript could not be found\r\n", "at": "Unity.Services.CloudCode.CloudCodeInternal:BuildException (bool,long,int,string,Unity.Services.CloudCode.Internal.Http.HttpException) (at ./Library/PackageCache/com.unity.services.cloudcode@4d38bd1f7a5b/Runtime/CloudCode.cs:181)"},
+      {"t": 4.784, "type": "warning", "msg": "[LaunchFlags] The flags could not be fetched (NotFound\r\n(404) HTTP/1.1 404 Not Found\r\nError\r\nScript could not be found\r\n); keeping the Default flags.", "at": "CosmicShore.Core.LaunchFlagsService/<FetchAsync>d__7:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/CloudData/LaunchFlagsService.cs:62)"},
+      {"t": 4.796, "type": "log", "msg": "[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only)."},
+      {"t": 6.682, "type": "log", "msg": "Container Authentication (1417988812) disposed"},
+      {"t": 7.213, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.215, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.217, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.218, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.219, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.221, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.223, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.224, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.225, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 8.801, "type": "log", "msg": "[GameModeProgressionService] ProgressionBackendGate closed — cloud record ignored; progression is session-local and starts fresh each launch."},
+      {"t": 11.165, "type": "error", "msg": "[WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-11-16'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.", "at": "CosmicShore.Core.WeeklyChallengeLeaderboardService:WarnIfBoardNotResetting (string,int,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/WeeklyChallenge/WeeklyChallengeLeaderboardService.cs:592)"},
+      {"t": 11.808, "type": "warning", "msg": "[EnvironmentPrismPool] Async clone batch (2048 prisms) not integrated after 4s — forcing WaitForCompletion. The engine's async-instantiate budget is being starved by other loading.", "at": "CosmicShore.Gameplay.EnvironmentPrismPool/<GetBatchAsync>d__8:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/PoolsAndBuffers/EnvironmentPrismPool.cs:138)"},
+      {"t": 16.234, "type": "log", "msg": "QosJob: executing job with 10000ms timeout"},
+      {"t": 16.235, "type": "log", "msg": "QosJob: send to 34.146.99.138:7778 took 0ms"},
+      {"t": 16.237, "type": "log", "msg": "QosJob: send to 8.231.126.202:7778 took 2ms"},
+      {"t": 16.237, "type": "log", "msg": "QosJob: send to 34.142.230.217:7778 took 0ms"},
+      {"t": 16.238, "type": "log", "msg": "QosJob: send to 34.116.71.234:7778 took 2ms"},
+      {"t": 16.239, "type": "log", "msg": "QosJob: send to 34.116.187.244:7778 took 0ms"},
+      {"t": 16.24, "type": "log", "msg": "QosJob: send to 34.88.56.54:7778 took 2ms"},
+      {"t": 16.241, "type": "log", "msg": "QosJob: send to 34.90.19.193:7778 took 0ms"},
+      {"t": 16.244, "type": "log", "msg": "QosJob: send to 35.199.98.209:7778 took 3ms"},
+      {"t": 16.244, "type": "log", "msg": "QosJob: send to 35.194.37.245:7778 took 0ms"},
+      {"t": 16.247, "type": "log", "msg": "QosJob: send to 34.74.55.21:7778 took 2ms"},
+      {"t": 16.247, "type": "log", "msg": "QosJob: send to 34.169.230.114:7778 took 0ms"},
+      {"t": 16.598, "type": "log", "msg": "QosJob: received 55 responses of 55/55 in 351ms waiting avg 6ms per response"},
+      {"t": 16.599, "type": "log", "msg": "QosJob: took 364ms to process 11 servers"},
+      {"t": 159.623, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 286.447, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 683.987, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 732.993, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 737.385, "type": "log", "msg": "[LoadInsights] ● Recording load — Game launch — Bloomrush → MinigameBloomrush"},
+      {"t": 740.389, "type": "log", "msg": "Container Menu_Main (1883318107) disposed"},
+      {"t": 740.457, "type": "log", "msg": "Scene (MinigameBloomrush) Bindings Installed"},
+      {"t": 741.337, "type": "warning", "msg": "[ServerPlayerVesselInitializer] Arrange Spawn Points Around Cell is on but the cell nucleus radius is unavailable (cell=Cell, configAssigned=False) - using authored spawn points for now; will retry on the next spawn.", "at": "CosmicShore.Gameplay.ServerPlayerVesselInitializer:EnsureSpawnPosesReady () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializer.cs:565)"},
+      {"t": 741.348, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Charge_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Charge at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1457)"},
+      {"t": 741.385, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Mass_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Mass at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1457)"},
+      {"t": 741.386, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Space_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Space at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1457)"},
+      {"t": 741.388, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Time_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Time at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1457)"},
+      {"t": 741.783, "type": "warning", "msg": "[ServerPlayerVesselInitializer] Arrange Spawn Points Around Cell is on but the cell nucleus radius is unavailable (cell=Cell, configAssigned=False) - using authored spawn points for now; will retry on the next spawn.", "at": "CosmicShore.Gameplay.ServerPlayerVesselInitializer:EnsureSpawnPosesReady () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializer.cs:565)"},
+      {"t": 741.807, "type": "warning", "msg": "[Cell 0] Crystal spawned before Cell Initialized. Attempting lazy init.", "at": "CosmicShore.Gameplay.Cell:InitilizePostFirstCellItem () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Cell.cs:2189)"},
+      {"t": 741.857, "type": "warning", "msg": "[ServerPlayerVesselInitializer] Bloomrush does not allow Squirrel (player Lion); spawning Manta instead.", "at": "CosmicShore.Gameplay.ServerPlayerVesselInitializer:ResolveSpawnVesselType (CosmicShore.Gameplay.Player) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializer.cs:843)"},
+      {"t": 747.451, "type": "warning", "msg": "[Netcode] [Deferred OnSpawn] Messages were received for a trigger of type NetworkVariableDeltaMessage associated with id (6), but the NetworkObject was not received within the timeout period 10 second(s).", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 748.307, "type": "error", "msg": "[Netcode] [Received log from client][SenderId:1] NetworkPrefab hash was not found! In-Scene placed NetworkObject soft synchronization failure!", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 748.309, "type": "error", "msg": "[Netcode] [Received log from client][SenderId:1][Game][NetworkObjectId:7] [NonAuthorityLocalSpawn][GlobalObjectIdHash:832162383] Failed to spawn NetworkObject!", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 748.311, "type": "error", "msg": "[Netcode] [Received log from client][SenderId:1] NetworkPrefab hash was not found! In-Scene placed NetworkObject soft synchronization failure!", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 748.313, "type": "error", "msg": "[Netcode] [Received log from client][SenderId:1][Cell][NetworkObjectId:12] [NonAuthorityLocalSpawn][GlobalObjectIdHash:1184899663] Failed to spawn NetworkObject!", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 788.528, "type": "warning", "msg": "[ConnectingPanel] Released after waiting 45s for 1 player(s) who never reported their arena built - starting anyway.", "at": "CosmicShore.UI.ConnectingPanelController/<WaitForPeersAsync>d__30:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/ConnectingPanelController.cs:230)"},
+      {"t": 788.553, "type": "log", "msg": "[LoadInsights] ■ Load report ready — 51.14s · Loaded — arena complete (laid + grown), connecting screen done → C:/Users/yskha/AppData/LocalLow/Froglet Games/Cosmic Shore\\Benchmarks/LoadInsights\\load_MinigameBloomrush_20261122_132451_fc422c54482b.json"},
+      {"t": 793.043, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassSharkFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string,bool) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:117)"}
+    ]
+  }
+}
