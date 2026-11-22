@@ -245,6 +245,11 @@ nothing outside the tube, on every machine (`R_VesselActions/MEERKAT.md` §11, `
   the findings it printed names a file this change touched; the change adds no colour literal in C#, no material and no
   colour field.
 
+**The 2026-11-22 ride (only the tube's inner wall, `WORMHOLE_SHADERS.md` §18):** the open editor compiled it (0 errors).
+Its 5 EditMode tests (`SolitonTunnelThroatTests`) and an editor capture were NOT run: a player build was running on
+the machine and tests do not overlap. The wall's method was looked at in a software render only (the same ring logic
+in Python); the shader compiles with `fxc`. Step 2 below has never been seen in Unity.
+
 **NOT done:** nobody has flown it. The look was captured on a test tunnel made by script in Menu_Main, not on one a
 Meerkat formed. No multiplayer session was run, so the peer-side read (a remote rider's place against the tubes) is
 tested as arithmetic only. No phone was measured.
