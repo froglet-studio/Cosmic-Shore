@@ -316,7 +316,10 @@ namespace CosmicShore.Gameplay
         // ── A launched match (-csMpLaunch) ───────────────────────────────────────
 
         const float MatchRunSeconds = 10f;       // how long the turn runs before the host takes everyone back
-        const float ReadyPressEverySeconds = 3f;
+        // Longer than the countdown (four beats, about 4 s). A press during the countdown counts toward a new ready
+        // gate, and when every player has pressed again the countdown restarts (CountdownTimer.BeginCountdown kills
+        // the running one): at 3 s the turn never started (2026-11-22, both players pressing for 300 s).
+        const float ReadyPressEverySeconds = 20f;
         const string MenuSceneName = "Menu_Main";
         const string InMatchSuffix = ".inmatch";
         const string BackSuffix = ".back";
