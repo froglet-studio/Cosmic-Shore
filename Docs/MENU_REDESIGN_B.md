@@ -9009,7 +9009,7 @@ development), the theme menu with the nine themes and Motion, and scroll-driven 
 No recommendation yet: the pick (or a mix of parts) is Shombith's. Rev 122's boards stay as the parts list (themes,
 vessel stage, admin). The generator was session scratch, not committed.
 
-## 219. Rev 124 mockups: six pages grown from Rev 123 H, in the Hypersea style (2026-11-22, E picked)
+## 219. Rev 124 mockups: six pages grown from Rev 123 H, in the Hypersea style (2026-11-22, E picked; deleted from the canvas and the board copies on Shombith's word)
 
 **Asked (Shombith, 2026-11-22, on Rev 123):** "I loved H, the animations, tabs colors but it is too cartoon comic book
 style can you do something about that, uses weird colors, delete all the other mockups and create inspired from this
@@ -9078,3 +9078,25 @@ scratch, not committed.
 backdrop tint now runs purple through blue (Photic `--a2` with `--blu`), the image is fainter and dimmed harder, the
 glows, trails and grid floor are quieter, and the type is scaled down on all seven pages (headlines about a third
 smaller, body and card text a step smaller). Boards republished in place at their new heights.
+
+## 221. Rev 126 mockups: Rev 125 made calm and of the HyperSea, the galaxy map on Voyages, Tumult's storm hero (2026-11-22, awaiting review)
+
+**Asked (Shombith):** after the purple and smaller-type pass he wanted to lock the style and build it, then stopped:
+"Rather than the grid or the plain bg or the lines why cant we use hypersea galaxy map or the faunas or floras instead
+of that. Also the galaxy map should be there in the voyages tab. Rather than these noisy lines and grids we should have
+cells and calmer", "Recreate"; "use the bear with the lightning effect as the hero for the tumult page" (Tumult's own
+Home rotates captains now, so the octopus is gone); "Delete rev 124" (done: its boards, notes and frames are off the
+canvas and its board copies are removed here).
+
+**Drawn (Frogma tab `frogma-website`, Rev 126 A-G and notes, top row beside Rev 123 H):** Rev 125's seven pages with the
+same purple-blue tint and type, and every skim trail, light pulse, streak, drifting prism and grid floor removed. Behind
+the content: the game's HyperSea skybox (`Assets/_Graphics/Skyboxes/StaticHyperSeaSky.png`) panning over seven minutes,
+patches of the Voyage Board's foam cells (`Docs/Voyages/VoyageBoard`, Neighbourhood and Cell tiers, captured without
+labels) breathing in and out, the galaxy turning, and seventeen of the codex's flora and fauna renders
+(`Assets/_Graphics/Codex/`) drifting. Voyages opens on the turning galaxy and its first section is the HyperSea map, the
+board's chart at Galaxy, Arm, Sector, Neighbourhood and Cell with a zoom ladder (captures in the mockup; the live map with
+drag and pinch on the site; the place names are Garrett's proposals, §5 of `Docs/Voyages/VOYAGE_BOARD.md`). Tumult's hero
+is SPARE02, Lunari Hollowreach (opossum and lynx) on a marsh boardwalk in a lightning storm, from TumultTTG
+`assets/scenes-hd/`, mirrored so the lightning sits behind the title, with a soft flash; behind its page the same painting
+blurred, with fog and a far-off flash. Motion Off stops everything. Generators were session scratch, not committed.
+
