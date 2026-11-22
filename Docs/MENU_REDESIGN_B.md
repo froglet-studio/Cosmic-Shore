@@ -8978,3 +8978,33 @@ No recommendation: the boards are pages of one site, not rival options; the pick
 **Differs from the build:** the live site (`Cosmic-Shore-landing-page`, `css/design-3-hyperdrive.css`) has one dark
 look, no theme setting, no game switch (Tumult is its own page at `/tumult/`) and an admin with three screens (profile,
 my posts, write a post).
+
+## 218. Rev 123 mockups: eight full-site directions for the Froglet Games website (2026-11-22, awaiting a pick)
+
+**Asked (Shombith, 2026-11-22, on Rev 122):** "This whole is one mockup to me. I want different variations like 8 of
+all these. It should be scrollable as well, mix stuff up. This is not bad but I want something better, in the 8
+mockups with variations of designs I probably would find it from you." Then: "For tumult description please mention
+that its still in beta and under live development."
+
+**On the canvas:** tab **Frogma Website** (`frogma-website`), section "Rev 123", the eight pages side by side in one
+row with the notes under them. Copies in `Docs/MenuRedesignB/board/R123*.dc.html`. Each board is a whole site, 1440
+wide and as tall as its page (`expand: fill`), and scrolls in Play in full window. Every one holds every section
+(story, vessels, modes, blog, play, team, get the game, footer with a Studio sign-in link to the Rev 122 H admin), its
+own Cosmic Shore / Tumult switch (Cosmic Shore default; the Tumult text says it is in beta and under live
+development), the theme menu with the nine themes and Motion, and scroll-driven reveals (`animation-timeline: view()`):
+- **A Hyperdrive:** the kept hero full bleed, a sideways vessel rail, a mode mosaic, a play window, store cards.
+- **B Split Shore:** both games side by side on the home (hover widens one, a click picks it), then an editorial
+  page with sticky chapter numbers and a vessel list that shows each ship on hover.
+- **C Bento:** the whole site in rounded tiles on one short page.
+- **D The Hypersea Gazette:** a newspaper; Vol. I and Vol. II are the game switch; fleet plates, an index of games.
+- **E Cockpit:** a flight deck: section rail, scroll progress line, two channels for the games, a reticle over the
+  hero, a vessel select screen, a mission board, a crew manifest.
+- **F Descent:** the page is a dive; a depth gauge driven by the page's scroll counts 0 to 10,994 m through
+  Shallows, Reef, Trench, Abyss and Seabed.
+- **G Cinematic:** black, letterboxed, full-height panels, giant words that slide in, the fleet on a film reel,
+  modes as coming attractions, the team as end credits.
+- **H Arcade Poster:** a sticker that flips the games, ticker tape, a poster hero, pick your fighter, collectible
+  mode cards that tilt, Press Start, polaroid crew.
+
+No recommendation yet: the pick (or a mix of parts) is Shombith's. Rev 122's boards stay as the parts list (themes,
+vessel stage, admin). The generator was session scratch, not committed.

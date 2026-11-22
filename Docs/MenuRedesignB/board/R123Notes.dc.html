@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 123 notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@400;500;600;700&amp;family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,400&amp;family=Anton&amp;family=JetBrains+Mono:wght@400;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+
+body{margin:0;background:#00010A}
+html{scroll-behavior:smooth}
+*{box-sizing:border-box}
+.pg{--e:cubic-bezier(.22,1,.36,1);--e2:cubic-bezier(.34,1.56,.64,1);position:relative;width:100%;background:var(--bg);color:var(--tx);overflow:hidden;transition:background-color .6s var(--e),color .6s var(--e)}
+.pg *{transition-property:background-color,border-color,color,box-shadow,opacity,transform,filter,flex-grow,width;transition-duration:.45s;transition-timing-function:var(--e)}
+.pg img{filter:var(--imgf)}
+.pg a{color:inherit;text-decoration:none}
+.pg button{font:inherit;color:inherit;cursor:pointer}
+.pg :focus-visible{outline:2px solid var(--a1);outline-offset:3px}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--tx2)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 40px}
+/* theme menu, shared by every direction */
+.tpop{position:absolute;right:24px;top:calc(100% + 10px);width:min(560px,92vw);z-index:60;padding:22px;background:color-mix(in srgb,var(--bg) 94%,transparent);border:1px solid var(--ln);backdrop-filter:blur(20px);box-shadow:0 30px 90px rgba(0,0,0,.45);animation:popIn .45s var(--e2) both;transform-origin:90% 0;color:var(--tx);text-align:left;font-family:'Aldrich',sans-serif}
+.tgrp{margin:6px 0 10px}
+.tgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.topt{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px;border:1px solid var(--ln);background:var(--sf);text-align:left;min-height:76px;color:var(--tx)}
+.topt:hover{border-color:var(--a1);transform:translateY(-2px)}
+.topt.on{border-color:var(--a1);box-shadow:inset 0 0 0 1px var(--a1)}
+.topt b{font-family:'Chakra Petch';font-weight:700;font-size:13px;letter-spacing:.06em}
+.sw{display:flex;gap:3px}.sw i{display:block;width:16px;height:16px;border-radius:3px}
+.mrow{display:flex;gap:8px;margin-top:14px;align-items:center}
+.seg{display:flex;border:1px solid var(--ln);border-radius:999px;padding:3px;background:var(--sf)}
+.seg button{border:0;background:transparent;height:32px;padding:0 14px;border-radius:999px;font-family:'Chakra Petch';font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx2)}
+.seg button.on{background:var(--tx);color:var(--bg)}
+.ibtn{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 14px;border:1px solid var(--ln);background:var(--sf);border-radius:999px;font-family:'Chakra Petch';font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx)}
+.ibtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+/* scroll-linked reveals: the page's own scroll drives them; with no support everything simply shows */
+@supports (animation-timeline: view()){
+.rv{animation:rvIn linear both;animation-timeline:view();animation-range:entry 0% cover 25%}
+.rvl{animation:rvL linear both;animation-timeline:view();animation-range:entry 0% cover 30%}
+.rvr{animation:rvR linear both;animation-timeline:view();animation-range:entry 0% cover 30%}
+.rvz{animation:rvZ linear both;animation-timeline:view();animation-range:entry 0% cover 35%}
+.plx{animation:plx linear both;animation-timeline:view();animation-range:cover 0% cover 100%}
+}
+@keyframes rvIn{from{opacity:0;transform:translateY(70px)}to{opacity:1;transform:none}}
+@keyframes rvL{from{opacity:0;transform:translateX(-90px)}to{opacity:1;transform:none}}
+@keyframes rvR{from{opacity:0;transform:translateX(90px)}to{opacity:1;transform:none}}
+@keyframes rvZ{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
+@keyframes plx{from{transform:translateY(-8%) scale(1.15)}to{transform:translateY(8%) scale(1.15)}}
+@keyframes popIn{from{opacity:0;transform:scale(.92) translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes kb{from{transform:scale(1.02)}to{transform:scale(1.14) translate(-1.5%,-1%)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes swapIn{from{opacity:0;transform:scale(1.04);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
+@keyframes wipe{0%{clip-path:circle(0% at 50% 50%);opacity:1}55%{clip-path:circle(80% at 50% 50%);opacity:1}100%{clip-path:circle(80% at 50% 50%);opacity:0}}
+@keyframes floatUp{0%{opacity:0;transform:translateY(0) rotate(0)}12%{opacity:.85}85%{opacity:.6}100%{opacity:0;transform:translateY(-900px) rotate(320deg)}}
+.mo-calm *,.mo-calm *::before,.mo-calm *::after{animation-duration:3s;transition-duration:.9s}
+.mo-off *,.mo-off *::before,.mo-off *::after{animation:none !important;transition:none !important}
+@media (prefers-reduced-motion: reduce){.pg *,.pg *::before,.pg *::after{animation:none !important;transition-duration:.01ms !important}}
+.th-photic{--bg:#00041F;--bg2:#00010A;--sf:rgba(34,38,69,.58);--sf2:rgba(67,76,137,.32);--ln:rgba(116,123,173,.38);--tx:#E6E9FF;--tx2:#A2A8D4;--cta:#99FF80;--on:#00041F;--a1:#00D4FF;--a2:#C04BFF;--a3:#FFAE00;--fire:#FE5645;--blu:#4D8BFF;--g1:rgba(0,212,255,.18);--g2:rgba(166,0,255,.16);--imgf:none;--wash:rgba(0,4,31,0)}
+.th-nocturne{--bg:#070A1C;--bg2:#02030B;--sf:rgba(8,31,92,.42);--sf2:rgba(63,32,95,.35);--ln:rgba(115,154,251,.28);--tx:#ECEFFF;--tx2:#A9B1DA;--cta:#B4E232;--on:#0A0F02;--a1:#4BD5D4;--a2:#DF5CE4;--a3:#ECBD44;--fire:#E8614E;--blu:#739AFB;--g1:rgba(75,213,212,.16);--g2:rgba(223,92,228,.14);--imgf:saturate(1.1);--wash:rgba(8,31,92,.18)}
+.th-octopus{--bg:#030E14;--bg2:#010608;--sf:rgba(3,25,35,.72);--sf2:rgba(27,71,156,.28);--ln:rgba(73,144,249,.34);--tx:#FBF1DA;--tx2:#D3C29A;--cta:#9FD648;--on:#0B1400;--a1:#4990F9;--a2:#B049E5;--a3:#F9D373;--fire:#D54C25;--blu:#4990F9;--g1:rgba(73,144,249,.22);--g2:rgba(249,211,115,.10);--imgf:saturate(.9) hue-rotate(-8deg);--wash:rgba(3,25,35,.25)}
+.th-nacre{--bg:#F6F1F4;--bg2:#ECE3EC;--sf:rgba(255,255,255,.74);--sf2:rgba(181,201,255,.30);--ln:rgba(122,149,178,.35);--tx:#241B33;--tx2:#5A4E6E;--cta:#B0E660;--on:#1C2A08;--a1:#127A74;--a2:#9333C2;--a3:#8A6516;--fire:#C4473A;--blu:#4C68C4;--g1:rgba(95,234,226,.30);--g2:rgba(218,92,230,.22);--imgf:saturate(.8) brightness(1.08);--wash:rgba(246,241,244,.10)}
+.th-protan{--bg:#05081A;--bg2:#020309;--sf:rgba(18,37,121,.38);--sf2:rgba(28,43,62,.5);--ln:rgba(213,174,245,.3);--tx:#F0F1FF;--tx2:#B4B8D8;--cta:#D5E305;--on:#121400;--a1:#2EE1CE;--a2:#A27BFF;--a3:#E6AC3F;--fire:#E2557F;--blu:#D5AEF5;--g1:rgba(46,225,206,.15);--g2:rgba(213,227,5,.10);--imgf:none;--wash:rgba(5,8,26,.1)}
+.th-deutan{--bg:#050719;--bg2:#020309;--sf:rgba(15,43,73,.48);--sf2:rgba(71,8,121,.3);--ln:rgba(67,228,230,.26);--tx:#F1F2FF;--tx2:#B6BAD8;--cta:#D2D813;--on:#121400;--a1:#43E4E6;--a2:#FD5CFF;--a3:#E0A85C;--fire:#F82278;--blu:#7C88FF;--g1:rgba(67,228,230,.15);--g2:rgba(253,30,255,.12);--imgf:none;--wash:rgba(5,7,25,.1)}
+.th-tritan{--bg:#0B0614;--bg2:#040208;--sf:rgba(65,26,41,.42);--sf2:rgba(23,71,81,.4);--ln:rgba(73,232,149,.26);--tx:#FFF3F3;--tx2:#C9B7BE;--cta:#B4C95A;--on:#121400;--a1:#49E895;--a2:#D25BF0;--a3:#F3CB76;--fire:#FF4A2A;--blu:#4D9BEB;--g1:rgba(73,232,149,.14);--g2:rgba(255,74,42,.12);--imgf:none;--wash:rgba(11,6,20,.1)}
+.th-achro{--bg:#0A0A0A;--bg2:#000000;--sf:rgba(40,40,40,.62);--sf2:rgba(80,80,80,.3);--ln:rgba(255,255,255,.3);--tx:#F5F5F5;--tx2:#BDBDBD;--cta:#FFFFFF;--on:#000000;--a1:#E6E6E6;--a2:#9C9C9C;--a3:#D0D0D0;--fire:#8A8A8A;--blu:#6E6E6E;--g1:rgba(255,255,255,.08);--g2:rgba(255,255,255,.05);--imgf:grayscale(1) contrast(1.12);--wash:rgba(0,0,0,.15)}
+.th-contrast{--bg:#000000;--bg2:#000000;--sf:rgba(0,0,0,.86);--sf2:rgba(255,255,255,.08);--ln:rgba(255,255,255,.85);--tx:#FFFFFF;--tx2:#F0F0F0;--cta:#3DFF4F;--on:#000000;--a1:#26E6FF;--a2:#FF5CFF;--a3:#FFE14D;--fire:#FF3B30;--blu:#4D7DFF;--g1:rgba(38,230,255,.10);--g2:rgba(255,92,255,.08);--imgf:contrast(1.15);--wash:rgba(0,0,0,.25)}
+.th-nacre{--ctaink:#3E7A1C;--bw:1px}.th-photic,.th-nocturne,.th-octopus,.th-protan,.th-deutan,.th-tritan,.th-achro{--ctaink:var(--cta);--bw:1px}
+.th-contrast{--ctaink:var(--cta);--bw:2px}
+</style>
+</helmet>
+<div class="pg th-photic" style="width: 1920px; height: 820px; padding: 56px; display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 40px; font-family: Inter, sans-serif"><div><div class="lab" style="color:var(--a1)">Eight different sites</div><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">A  Hyperdrive. The hero you liked, full bleed, then a vessel rail you scroll sideways, a mode mosaic, a play window and store cards.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">B  Split Shore. The home is both games side by side; hover widens one, a click picks it. Below, an editorial page with sticky chapter numbers and a vessel list that shows each ship on hover.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">C  Bento. The whole site in rounded tiles on one short page: hero, Toybox, the other game, fleet, a running strip of games, stores, blog, themes and team.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">D  The Hypersea Gazette. A newspaper: masthead with Vol. I and Vol. II as the game switch, drop caps, a pull quote, fleet plates and an index of games with dotted leaders.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">E  Cockpit. A flight deck: a side rail of section numbers, a scroll progress line, two channels for the games, a targeting reticle on the hero, a vessel select screen, a mission board and a crew manifest.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">F  Descent. The page is a dive: a depth gauge counts from 0 to 10,994 m as you scroll, through Shallows, Reef (vessels drift like creatures), Trench (modes on a line), Abyss (a lantern to press) and the Seabed.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">G  Cinematic. Black, letterboxed and full height: an opening title, giant words that slide in, the fleet on a film reel, modes as coming attractions, a screening room and the team as end credits.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">H  Arcade Poster. Loud: a sticker that flips between the games, ticker tape, a poster hero with badges, a pick-your-fighter grid, collectible mode cards that tilt, a Press Start button and polaroid crew.</p></div><div><div class="lab" style="color:var(--a1)">Same in all eight</div><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">Every page scrolls and holds every section: story, vessels, modes, blog, play, team and get the game, plus a Studio sign-in link in the footer for the admin (Rev 122 board H).</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">Each has its own Cosmic Shore / Tumult switch; Cosmic Shore is the default. Tumult says it is in beta and under live development.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">Each has the theme menu with all nine themes and a Motion setting (Full, Calm, Off); reduced motion on the device turns it off.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">Sections reveal as you scroll (scroll-driven, no script), and each direction adds its own motion: the dive gauge, the reel, the ticker, the reticle.</p></div><div><div class="lab" style="color:var(--a1)">SEO</div><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">Cosmic Shore stays at / and Tumult at /tumult/: the switch is a real link, so both are crawled and shared with their own title, description and image.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">One h1 per page, headings in order, alt text on images, and sections as real anchors (#story, #vessels, ...), whichever direction is picked.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">Real numbers only: 20 vessels and 36 games come from the site's own data, synced from the game.</p></div><div><div class="lab" style="color:var(--a1)">Pick</div><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">Open a page with Play in full window to scroll it like a site. On the canvas each frame shows the whole Cosmic Shore page.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">Pick one, or mix: say which hero, which vessel section, which modes section and which switch you want, and the next round joins them.</p><p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:var(--tx)">Rev 122 (above) stays as the parts list: its theme board, vessel stage and admin console carry into whichever direction wins.</p></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":820}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

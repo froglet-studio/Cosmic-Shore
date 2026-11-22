@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-22 from canvas version `1795374373-f4b4` of **Frogma**: Rev 41 to Rev 122, 315 boards on 16 tabs. The canvas opens on the tab `frogma-website`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-22 from canvas version `1795375833-84df` of **Frogma**: Rev 41 to Rev 123, 324 boards on 16 tabs. The canvas opens on the tab `frogma-website`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -527,6 +527,18 @@ No boards yet.
 - [`R121Notes.dc.html`](R121Notes.dc.html) - Rev 121 - notes: what each option does, where it opens from, what the build needs
 
 ### Tab: Frogma Website  (`frogma-website`)
+
+#### Rev 123: eight full-site directions, each a scrolling page
+
+- [`R123A.dc.html`](R123A.dc.html) - Rev 123 A - Hyperdrive: the hero kept full bleed, a sideways vessel rail, a mode mosaic, a play window - interactive
+- [`R123B.dc.html`](R123B.dc.html) - Rev 123 B - Split Shore: both games side by side on the home, then an editorial page with sticky chapters - interactive
+- [`R123C.dc.html`](R123C.dc.html) - Rev 123 C - Bento: the whole site in rounded tiles on one short page - interactive
+- [`R123D.dc.html`](R123D.dc.html) - Rev 123 D - The Hypersea Gazette: a newspaper, Vol. I and Vol. II as the game switch - interactive
+- [`R123E.dc.html`](R123E.dc.html) - Rev 123 E - Cockpit: a flight deck with a section rail, scroll progress, vessel select and a mission board - interactive
+- [`R123F.dc.html`](R123F.dc.html) - Rev 123 F - Descent: the page is a dive, a depth gauge from the surface to the seabed - interactive
+- [`R123G.dc.html`](R123G.dc.html) - Rev 123 G - Cinematic: letterboxed full-height panels, a film reel fleet, the team as end credits - interactive
+- [`R123H.dc.html`](R123H.dc.html) - Rev 123 H - Arcade Poster: stickers, ticker tape, pick your fighter, collectible mode cards - interactive
+- [`R123Notes.dc.html`](R123Notes.dc.html) - Rev 123 - notes: the eight directions, what all share, SEO and how to pick
 
 #### Rev 122 - Froglet Games website redesign: Hypersea themes, Cosmic Shore and Tumult on one home, eight animated pages
 

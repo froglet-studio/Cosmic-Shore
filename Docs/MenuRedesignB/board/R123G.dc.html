@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option G - Cinematic</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@400;500;600;700&amp;family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,400&amp;family=Anton&amp;family=JetBrains+Mono:wght@400;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+
+body{margin:0;background:#00010A}
+html{scroll-behavior:smooth}
+*{box-sizing:border-box}
+.pg{--e:cubic-bezier(.22,1,.36,1);--e2:cubic-bezier(.34,1.56,.64,1);position:relative;width:100%;background:var(--bg);color:var(--tx);overflow:hidden;transition:background-color .6s var(--e),color .6s var(--e)}
+.pg *{transition-property:background-color,border-color,color,box-shadow,opacity,transform,filter,flex-grow,width;transition-duration:.45s;transition-timing-function:var(--e)}
+.pg img{filter:var(--imgf)}
+.pg a{color:inherit;text-decoration:none}
+.pg button{font:inherit;color:inherit;cursor:pointer}
+.pg :focus-visible{outline:2px solid var(--a1);outline-offset:3px}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--tx2)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 40px}
+/* theme menu, shared by every direction */
+.tpop{position:absolute;right:24px;top:calc(100% + 10px);width:min(560px,92vw);z-index:60;padding:22px;background:color-mix(in srgb,var(--bg) 94%,transparent);border:1px solid var(--ln);backdrop-filter:blur(20px);box-shadow:0 30px 90px rgba(0,0,0,.45);animation:popIn .45s var(--e2) both;transform-origin:90% 0;color:var(--tx);text-align:left;font-family:'Aldrich',sans-serif}
+.tgrp{margin:6px 0 10px}
+.tgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.topt{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px;border:1px solid var(--ln);background:var(--sf);text-align:left;min-height:76px;color:var(--tx)}
+.topt:hover{border-color:var(--a1);transform:translateY(-2px)}
+.topt.on{border-color:var(--a1);box-shadow:inset 0 0 0 1px var(--a1)}
+.topt b{font-family:'Chakra Petch';font-weight:700;font-size:13px;letter-spacing:.06em}
+.sw{display:flex;gap:3px}.sw i{display:block;width:16px;height:16px;border-radius:3px}
+.mrow{display:flex;gap:8px;margin-top:14px;align-items:center}
+.seg{display:flex;border:1px solid var(--ln);border-radius:999px;padding:3px;background:var(--sf)}
+.seg button{border:0;background:transparent;height:32px;padding:0 14px;border-radius:999px;font-family:'Chakra Petch';font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx2)}
+.seg button.on{background:var(--tx);color:var(--bg)}
+.ibtn{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 14px;border:1px solid var(--ln);background:var(--sf);border-radius:999px;font-family:'Chakra Petch';font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx)}
+.ibtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+/* scroll-linked reveals: the page's own scroll drives them; with no support everything simply shows */
+@supports (animation-timeline: view()){
+.rv{animation:rvIn linear both;animation-timeline:view();animation-range:entry 0% cover 25%}
+.rvl{animation:rvL linear both;animation-timeline:view();animation-range:entry 0% cover 30%}
+.rvr{animation:rvR linear both;animation-timeline:view();animation-range:entry 0% cover 30%}
+.rvz{animation:rvZ linear both;animation-timeline:view();animation-range:entry 0% cover 35%}
+.plx{animation:plx linear both;animation-timeline:view();animation-range:cover 0% cover 100%}
+}
+@keyframes rvIn{from{opacity:0;transform:translateY(70px)}to{opacity:1;transform:none}}
+@keyframes rvL{from{opacity:0;transform:translateX(-90px)}to{opacity:1;transform:none}}
+@keyframes rvR{from{opacity:0;transform:translateX(90px)}to{opacity:1;transform:none}}
+@keyframes rvZ{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
+@keyframes plx{from{transform:translateY(-8%) scale(1.15)}to{transform:translateY(8%) scale(1.15)}}
+@keyframes popIn{from{opacity:0;transform:scale(.92) translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes kb{from{transform:scale(1.02)}to{transform:scale(1.14) translate(-1.5%,-1%)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes swapIn{from{opacity:0;transform:scale(1.04);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
+@keyframes wipe{0%{clip-path:circle(0% at 50% 50%);opacity:1}55%{clip-path:circle(80% at 50% 50%);opacity:1}100%{clip-path:circle(80% at 50% 50%);opacity:0}}
+@keyframes floatUp{0%{opacity:0;transform:translateY(0) rotate(0)}12%{opacity:.85}85%{opacity:.6}100%{opacity:0;transform:translateY(-900px) rotate(320deg)}}
+.mo-calm *,.mo-calm *::before,.mo-calm *::after{animation-duration:3s;transition-duration:.9s}
+.mo-off *,.mo-off *::before,.mo-off *::after{animation:none !important;transition:none !important}
+@media (prefers-reduced-motion: reduce){.pg *,.pg *::before,.pg *::after{animation:none !important;transition-duration:.01ms !important}}
+.th-photic{--bg:#00041F;--bg2:#00010A;--sf:rgba(34,38,69,.58);--sf2:rgba(67,76,137,.32);--ln:rgba(116,123,173,.38);--tx:#E6E9FF;--tx2:#A2A8D4;--cta:#99FF80;--on:#00041F;--a1:#00D4FF;--a2:#C04BFF;--a3:#FFAE00;--fire:#FE5645;--blu:#4D8BFF;--g1:rgba(0,212,255,.18);--g2:rgba(166,0,255,.16);--imgf:none;--wash:rgba(0,4,31,0)}
+.th-nocturne{--bg:#070A1C;--bg2:#02030B;--sf:rgba(8,31,92,.42);--sf2:rgba(63,32,95,.35);--ln:rgba(115,154,251,.28);--tx:#ECEFFF;--tx2:#A9B1DA;--cta:#B4E232;--on:#0A0F02;--a1:#4BD5D4;--a2:#DF5CE4;--a3:#ECBD44;--fire:#E8614E;--blu:#739AFB;--g1:rgba(75,213,212,.16);--g2:rgba(223,92,228,.14);--imgf:saturate(1.1);--wash:rgba(8,31,92,.18)}
+.th-octopus{--bg:#030E14;--bg2:#010608;--sf:rgba(3,25,35,.72);--sf2:rgba(27,71,156,.28);--ln:rgba(73,144,249,.34);--tx:#FBF1DA;--tx2:#D3C29A;--cta:#9FD648;--on:#0B1400;--a1:#4990F9;--a2:#B049E5;--a3:#F9D373;--fire:#D54C25;--blu:#4990F9;--g1:rgba(73,144,249,.22);--g2:rgba(249,211,115,.10);--imgf:saturate(.9) hue-rotate(-8deg);--wash:rgba(3,25,35,.25)}
+.th-nacre{--bg:#F6F1F4;--bg2:#ECE3EC;--sf:rgba(255,255,255,.74);--sf2:rgba(181,201,255,.30);--ln:rgba(122,149,178,.35);--tx:#241B33;--tx2:#5A4E6E;--cta:#B0E660;--on:#1C2A08;--a1:#127A74;--a2:#9333C2;--a3:#8A6516;--fire:#C4473A;--blu:#4C68C4;--g1:rgba(95,234,226,.30);--g2:rgba(218,92,230,.22);--imgf:saturate(.8) brightness(1.08);--wash:rgba(246,241,244,.10)}
+.th-protan{--bg:#05081A;--bg2:#020309;--sf:rgba(18,37,121,.38);--sf2:rgba(28,43,62,.5);--ln:rgba(213,174,245,.3);--tx:#F0F1FF;--tx2:#B4B8D8;--cta:#D5E305;--on:#121400;--a1:#2EE1CE;--a2:#A27BFF;--a3:#E6AC3F;--fire:#E2557F;--blu:#D5AEF5;--g1:rgba(46,225,206,.15);--g2:rgba(213,227,5,.10);--imgf:none;--wash:rgba(5,8,26,.1)}
+.th-deutan{--bg:#050719;--bg2:#020309;--sf:rgba(15,43,73,.48);--sf2:rgba(71,8,121,.3);--ln:rgba(67,228,230,.26);--tx:#F1F2FF;--tx2:#B6BAD8;--cta:#D2D813;--on:#121400;--a1:#43E4E6;--a2:#FD5CFF;--a3:#E0A85C;--fire:#F82278;--blu:#7C88FF;--g1:rgba(67,228,230,.15);--g2:rgba(253,30,255,.12);--imgf:none;--wash:rgba(5,7,25,.1)}
+.th-tritan{--bg:#0B0614;--bg2:#040208;--sf:rgba(65,26,41,.42);--sf2:rgba(23,71,81,.4);--ln:rgba(73,232,149,.26);--tx:#FFF3F3;--tx2:#C9B7BE;--cta:#B4C95A;--on:#121400;--a1:#49E895;--a2:#D25BF0;--a3:#F3CB76;--fire:#FF4A2A;--blu:#4D9BEB;--g1:rgba(73,232,149,.14);--g2:rgba(255,74,42,.12);--imgf:none;--wash:rgba(11,6,20,.1)}
+.th-achro{--bg:#0A0A0A;--bg2:#000000;--sf:rgba(40,40,40,.62);--sf2:rgba(80,80,80,.3);--ln:rgba(255,255,255,.3);--tx:#F5F5F5;--tx2:#BDBDBD;--cta:#FFFFFF;--on:#000000;--a1:#E6E6E6;--a2:#9C9C9C;--a3:#D0D0D0;--fire:#8A8A8A;--blu:#6E6E6E;--g1:rgba(255,255,255,.08);--g2:rgba(255,255,255,.05);--imgf:grayscale(1) contrast(1.12);--wash:rgba(0,0,0,.15)}
+.th-contrast{--bg:#000000;--bg2:#000000;--sf:rgba(0,0,0,.86);--sf2:rgba(255,255,255,.08);--ln:rgba(255,255,255,.85);--tx:#FFFFFF;--tx2:#F0F0F0;--cta:#3DFF4F;--on:#000000;--a1:#26E6FF;--a2:#FF5CFF;--a3:#FFE14D;--fire:#FF3B30;--blu:#4D7DFF;--g1:rgba(38,230,255,.10);--g2:rgba(255,92,255,.08);--imgf:contrast(1.15);--wash:rgba(0,0,0,.25)}
+.th-nacre{--ctaink:#3E7A1C;--bw:1px}.th-photic,.th-nocturne,.th-octopus,.th-protan,.th-deutan,.th-tritan,.th-achro{--ctaink:var(--cta);--bw:1px}
+.th-contrast{--ctaink:var(--cta);--bw:2px}
+.g-tu{--a1:var(--a3)}
+
+.vg{font-family:'Inter',sans-serif;background:#000;color:#fff}
+.vg .hd{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:26px;height:70px;padding:0 44px;background:linear-gradient(rgba(0,0,0,.75),transparent);mix-blend-mode:normal}
+.vg .hd img{height:30px}
+.vg .hd nav{display:flex;gap:26px;margin-left:auto}.vg .hd nav a{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.7)}.vg .hd nav a:hover{color:#fff}
+.vg .tb{position:relative}
+.vg .ibtn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25);color:#fff}
+.vg .reel{display:flex;gap:2px;padding:3px;border:1px solid rgba(255,255,255,.3);border-radius:4px}
+.vg .reel button{height:34px;padding:0 14px;border:0;background:transparent;color:rgba(255,255,255,.6);font-size:12px;letter-spacing:.2em;text-transform:uppercase;border-radius:2px}
+.vg .reel button.on{background:#fff;color:#000}
+.vg .panel{position:relative;height:900px;overflow:hidden;display:flex;align-items:center}
+.vg .panel>img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.vg .panel .vig{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.8))}
+.vg .bar{position:absolute;left:0;right:0;height:90px;background:#000;z-index:3}
+.vg .bar.t{top:0;animation:barT 1.6s var(--e) both}.vg .bar.b{bottom:0;animation:barB 1.6s var(--e) both}
+@keyframes barT{from{height:50%}to{height:90px}}
+@keyframes barB{from{height:50%}to{height:90px}}
+.vg .open{position:relative;z-index:2;width:100%;text-align:center}
+.vg .open .pre{font-size:14px;letter-spacing:.5em;text-transform:uppercase;color:rgba(255,255,255,.75);animation:fade 1.4s 1.2s both}
+.vg .open img{width:min(760px,80%);margin-top:24px;animation:swapIn 1.6s 1.4s var(--e) both}
+.vg .open p{max-width:560px;margin:26px auto 0;font-size:19px;line-height:1.6;color:rgba(255,255,255,.85);animation:fade 1.4s 2s both}
+.vg .open .acts{display:flex;gap:14px;justify-content:center;margin-top:30px;animation:fade 1.4s 2.4s both}
+.vg .wb{display:inline-flex;align-items:center;gap:10px;height:52px;padding:0 26px;background:#fff;color:#000;font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:13px}
+.vg .wb:hover{background:var(--a1)}
+.vg .wb svg{width:16px;height:16px;fill:currentColor}
+.vg .ob{display:inline-flex;align-items:center;height:52px;padding:0 24px;border:1px solid rgba(255,255,255,.5);color:#fff;letter-spacing:.14em;text-transform:uppercase;font-size:13px}
+.vg .ob:hover{background:rgba(255,255,255,.1)}
+.vg .chap{position:absolute;left:44px;top:120px;z-index:3;font-size:13px;letter-spacing:.4em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.vg .chap b{display:block;font-family:'Anton';font-weight:400;font-size:120px;letter-spacing:0;line-height:1;color:transparent;-webkit-text-stroke:1.5px rgba(255,255,255,.55)}
+.vg .giant{position:relative;z-index:2;padding:150px 44px 0;width:100%}
+.vg .giant h2{margin:0;font-family:'Anton';font-weight:400;font-size:clamp(90px,13vw,200px);line-height:.88;text-transform:uppercase;letter-spacing:-.01em}
+.vg .giant h2 span{display:block}
+.vg .giant h2 em{font-style:normal;color:var(--a1)}
+.vg .giant p{max-width:620px;margin:30px 0 0;font-size:21px;line-height:1.65;color:rgba(255,255,255,.85)}
+@supports (animation-timeline: view()){
+.vg .sl1{animation:slL linear both;animation-timeline:view();animation-range:entry 10% cover 50%}
+.vg .sl2{animation:slR linear both;animation-timeline:view();animation-range:entry 10% cover 50%}
+}
+@keyframes slL{from{transform:translateX(-30%);opacity:0}to{transform:none;opacity:1}}
+@keyframes slR{from{transform:translateX(30%);opacity:0}to{transform:none;opacity:1}}
+.vg .film{position:relative;padding:60px 0;background:#0b0b0b}
+.vg .film::before,.vg .film::after{content:'';position:absolute;left:0;right:0;height:22px;background:repeating-linear-gradient(90deg,transparent 0 18px,#222 18px 40px);background-color:#000}
+.vg .film::before{top:18px}.vg .film::after{bottom:18px}
+.vg .strip{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:30px 44px;scrollbar-width:none}
+.vg .fr{flex:0 0 360px;height:520px;position:relative;scroll-snap-align:center;overflow:hidden;background:#111}
+.vg .fr img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:var(--imgf) grayscale(.6);transition:filter .6s,transform 1s var(--e)}
+.vg .fr:hover img{filter:var(--imgf);transform:scale(1.06)}
+.vg .fr .cap{position:absolute;left:0;right:0;bottom:0;padding:22px;background:linear-gradient(transparent,rgba(0,0,0,.9))}
+.vg .fr .cap b{display:block;font-family:'Anton';font-weight:400;font-size:42px;text-transform:uppercase;line-height:1}
+.vg .fr .cap small{display:block;margin-top:8px;color:rgba(255,255,255,.75);font-size:14px;line-height:1.5;max-height:0;overflow:hidden;transition:max-height .6s var(--e)}
+.vg .fr:hover .cap small{max-height:120px}
+.vg .fr .n{position:absolute;left:18px;top:16px;font-size:12px;letter-spacing:.3em;color:rgba(255,255,255,.7)}
+.vg .attr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;background:#000}
+.vg .po{position:relative;height:560px;overflow:hidden}
+.vg .po img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1.6s var(--e)}
+.vg .po:hover img{transform:scale(1.08)}
+.vg .po .in{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:36px;background:linear-gradient(transparent 40%,rgba(0,0,0,.9))}
+.vg .po .k{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--a1)}
+.vg .po h3{margin:8px 0 0;font-family:'Anton';font-weight:400;font-size:64px;line-height:.95;text-transform:uppercase}
+.vg .po p{margin:10px 0 0;max-width:460px;color:rgba(255,255,255,.8);line-height:1.55}
+.vg .po.wide{grid-column:span 2;height:620px}
+.vg .scr{position:relative;width:min(1100px,90%);height:600px;margin:0 auto;z-index:2}
+.vg .scr img{width:100%;height:100%;object-fit:cover;box-shadow:0 0 140px color-mix(in srgb,var(--a1) 30%,transparent)}
+.vg .scr .pl{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.4);color:#fff;display:flex;align-items:center;justify-content:center}
+.vg .scr .pl:hover{background:#fff;color:#000;transform:scale(1.08)}
+.vg .scr .pl svg{width:44px;height:44px;fill:currentColor;margin-left:6px}
+.vg .credits{position:relative;padding:140px 44px;text-align:center;background:#000}
+.vg .credits .role{font-size:12px;letter-spacing:.4em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.vg .credits .name{font-family:'Anton';font-weight:400;font-size:46px;text-transform:uppercase;margin:6px 0 36px}
+.vg .credits .ph{width:70px;height:70px;border-radius:50%;overflow:hidden;margin:0 auto 10px;filter:grayscale(1)}
+.vg .credits .ph img{width:100%;height:100%;object-fit:cover}
+.vg .cr2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 40px;max-width:1000px;margin:0 auto}
+.vg .avail{display:flex;justify-content:center;gap:50px;flex-wrap:wrap;margin-top:30px}
+.vg .avail a{text-align:center}
+.vg .avail a b{display:block;font-family:'Anton';font-weight:400;font-size:30px;text-transform:uppercase}
+.vg .avail a small{color:rgba(255,255,255,.6);letter-spacing:.14em;text-transform:uppercase;font-size:11px}
+.vg .avail a:hover b{color:var(--a1)}
+.vg .bts{display:grid;grid-template-columns:1.3fr 1fr;gap:60px;align-items:center;padding:0 44px;width:100%;position:relative;z-index:2}
+.vg .bts img{width:100%;box-shadow:0 30px 100px rgba(0,0,0,.8)}
+.vg .bts h3{margin:12px 0 0;font-family:'Anton';font-weight:400;font-size:58px;line-height:1;text-transform:uppercase}
+.vg .bts p{color:rgba(255,255,255,.75);line-height:1.7;font-size:17px}
+.vg .dots{position:fixed;right:24px;top:50%;transform:translateY(-50%);z-index:45;display:flex;flex-direction:column;gap:12px}
+.vg .dots a{width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.7)}
+.vg .dots a:hover{background:#fff;transform:scale(1.4)}
+.vg footer{padding:50px 44px;display:flex;gap:30px;align-items:center;border-top:1px solid #222;color:rgba(255,255,255,.6);font-size:13px;letter-spacing:.14em;text-transform:uppercase;background:#000}
+.vg footer a:hover{color:#fff}
+.th-nacre.vg,.th-contrast.vg{background:#000}
+
+</style>
+</helmet>
+<div class="{{pgCls}}" style="width: 100%; min-height: 900px" id="top">
+<header class="hd"><img src="/_blob/be30cdfc0f2f02d725671dc45f5a10cf" alt="Froglet Games"><div class="reel" role="group" aria-label="Choose a game"><button type="button" class="{{csOn}}" aria-pressed="{{csPressed}}" onClick="{{toCS}}">Cosmic Shore</button><button type="button" class="{{tuOn}}" aria-pressed="{{tuPressed}}" onClick="{{toTU}}">Tumult</button></div><nav class="" aria-label="Main"><sc-for list="{{navItems}}" as="n" hint-placeholder-count="6"><a href="#{{n.id}}" class="{{n.cls}}">{{n.label}}</a></sc-for></nav><div class="tb"><button type="button" class="ibtn" aria-expanded="{{themeOpenStr}}" aria-haspopup="dialog" onClick="{{toggleTheme}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.8 1.6-1.6 0-.9-.6-1.3-.6-2.1 0-.9.7-1.5 1.6-1.5H17a4 4 0 0 0 4-4c0-4.9-4-8.8-9-8.8z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg><span>{{themeName}}</span></button><sc-if value="{{themeOpen}}" hint-placeholder-val="{{ false }}"><div class="tpop sl" role="dialog" aria-label="Theme"><div style="display:flex;align-items:center;justify-content:space-between"><span class="lab">Theme - the whole site</span><button type="button" class="ibtn" style="height:36px;padding:0 10px" aria-label="Close" onClick="{{toggleTheme}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="lab tgrp" style="font-size:11px;color:var(--a1)">Hypersea</div><div class="tgrid"><button type="button" class="topt sls {{tc.photic}}" aria-pressed="{{tp.photic}}" onClick="{{tpick.photic}}"><span class="sw" aria-hidden="true"><i style="background:#FE5645"></i><i style="background:#FFAE00"></i><i style="background:#99FF80"></i><i style="background:#00D4FF"></i><i style="background:#4D8BFF"></i><i style="background:#A600FF"></i></span><b>Photic</b></button><button type="button" class="topt sls {{tc.nocturne}}" aria-pressed="{{tp.nocturne}}" onClick="{{tpick.nocturne}}"><span class="sw" aria-hidden="true"><i style="background:#E8614E"></i><i style="background:#ECBD44"></i><i style="background:#B4E232"></i><i style="background:#4BD5D4"></i><i style="background:#739AFB"></i><i style="background:#DF5CE4"></i></span><b>Nocturne</b></button><button type="button" class="topt sls {{tc.octopus}}" aria-pressed="{{tp.octopus}}" onClick="{{tpick.octopus}}"><span class="sw" aria-hidden="true"><i style="background:#D54C25"></i><i style="background:#F9D373"></i><i style="background:#9FD648"></i><i style="background:#56DBDB"></i><i style="background:#4990F9"></i><i style="background:#B049E5"></i></span><b>Blue-ringed Octopus</b></button><button type="button" class="topt sls {{tc.nacre}}" aria-pressed="{{tp.nacre}}" onClick="{{tpick.nacre}}"><span class="sw" aria-hidden="true"><i style="background:#FF6D56"></i><i style="background:#F5D47C"></i><i style="background:#B0E660"></i><i style="background:#5FEAE2"></i><i style="background:#B5C9FF"></i><i style="background:#DA5CE6"></i></span><b>Nacre</b></button></div><div class="lab tgrp" style="font-size:11px;color:var(--a1)">Colour vision</div><div class="tgrid"><button type="button" class="topt sls {{tc.protan}}" aria-pressed="{{tp.protan}}" onClick="{{tpick.protan}}"><span class="sw" aria-hidden="true"><i style="background:#B73259"></i><i style="background:#E6AC3F"></i><i style="background:#D5E305"></i><i style="background:#2EE1CE"></i><i style="background:#D5AEF5"></i><i style="background:#7127FE"></i></span><b>Protanopia</b></button><button type="button" class="topt sls {{tc.deutan}}" aria-pressed="{{tp.deutan}}" onClick="{{tpick.deutan}}"><span class="sw" aria-hidden="true"><i style="background:#F82278"></i><i style="background:#CE9549"></i><i style="background:#D2D813"></i><i style="background:#43E4E6"></i><i style="background:#5E6BFF"></i><i style="background:#FD1EFF"></i></span><b>Deuteranopia</b></button><button type="button" class="topt sls {{tc.tritan}}" aria-pressed="{{tp.tritan}}" onClick="{{tpick.tritan}}"><span class="sw" aria-hidden="true"><i style="background:#D42502"></i><i style="background:#F3CB76"></i><i style="background:#8FA83A"></i><i style="background:#49E895"></i><i style="background:#257BD4"></i><i style="background:#B320DB"></i></span><b>Tritanopia</b></button><button type="button" class="topt sls {{tc.achro}}" aria-pressed="{{tp.achro}}" onClick="{{tpick.achro}}"><span class="sw" aria-hidden="true"><i style="background:#5A5A5A"></i><i style="background:#C9C9C9"></i><i style="background:#A3A3A3"></i><i style="background:#E6E6E6"></i><i style="background:#3C3C3C"></i><i style="background:#7F7F7F"></i></span><b>Achromatopsia</b></button><button type="button" class="topt sls {{tc.contrast}}" aria-pressed="{{tp.contrast}}" onClick="{{tpick.contrast}}"><span class="sw" aria-hidden="true"><i style="background:#FF3B30"></i><i style="background:#EDD98B"></i><i style="background:#3DFF4F"></i><i style="background:#26CADE"></i><i style="background:#4D7DFF"></i><i style="background:#E840E9"></i></span><b>High Contrast</b></button></div><div class="mrow"><span class="lab" style="margin-right:auto">Motion</span><div class="seg" role="group" aria-label="Motion"><button type="button" class="{{moc.full}}" onClick="{{mopick.full}}">Full</button><button type="button" class="{{moc.calm}}" onClick="{{mopick.calm}}">Calm</button><button type="button" class="{{moc.off}}" onClick="{{mopick.off}}">Off</button></div></div><p style="margin:12px 0 0;font-size:13px;color:var(--tx2);line-height:1.5">Kept on this device. Follows your system's reduced-motion setting until you choose.</p></div></sc-if></div></header><nav class="dots" aria-label="Chapters"><a href="#top" aria-label="top"></a><a href="#story" aria-label="story"></a><a href="#vessels" aria-label="vessels"></a><a href="#modes" aria-label="modes"></a><a href="#play" aria-label="play"></a><a href="#blog" aria-label="blog"></a><a href="#team" aria-label="team"></a></nav><sc-if value="{{isCS}}" hint-placeholder-val="{{ true }}"><section class="panel" aria-labelledby="h1g" style="margin-top:-70px"><img class="bg plx" src="/_blob/80128cc07fd19d17ab60e36743ad6f8b" alt=""><div class="vig"></div><div class="bar t"></div><div class="bar b"></div><div class="open"><div class="pre">Froglet Games presents</div><h1 id="h1g" style="margin:0"><img src="/_blob/c5b61cbd7371950afae91e45b9fb6e12" alt="Cosmic Shore"></h1><p>Master drift, unleash firepower, and chase glory on the galaxy&rsquo;s largest space station.</p><div class="acts"><a class="wb" href="#play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Watch it play</a><a class="ob" href="#get">Get the Game</a></div></div></section><section class="panel" id="story"><img class="bg" src="/_blob/eb6f5a5d8174e090b258afe819906f27" alt="" style="opacity:.45"><div class="vig"></div><div class="chap">Chapter<b>01</b>The story</div><div class="giant"><h2><span class="sl1">Leave the</span><span class="sl2"><em>planet.</em></span><span class="sl1">Chase glory.</span></h2><p class="rv">As a native of the planet Tumult you are one of the most adaptive creatures in the known universe. With a burning curiosity for the unexplored, a healthy sense of adventure, and a strong competitive streak you&rsquo;ve left the planet to chase glory and fortune on the galaxy&rsquo;s largest space station. Here, the greatest pilots and biggest names in the Milky Way compete in a series of simple but exhilarating contests. Show off the finest flying in the Galaxy, or have the most fun trying!</p></div></section><section class="film" id="vessels"><div style="padding:60px 44px 0;display:flex;align-items:flex-end;gap:30px"><div class="chap" style="position:static">Chapter<b>02</b>The fleet</div><p style="margin-left:auto;max-width:420px;color:rgba(255,255,255,.7);line-height:1.6">Eight of twenty vessels. Drag the reel; hover a frame to see it in colour.</p></div><div class="strip"><a class="fr" href="#v-sparrow"><img src="/_blob/249f4b491a8e8cb55950ed2f330267e3" alt="The Sparrow"><span class="n">01 / 20</span><span class="cap"><b>Sparrow</b><small>The classic arcade flyer. Use your Pulsefire Cannons and Skyburst Rockets to destroy enemy blocks, flora, fauna, structures, everything...</small></span></a><a class="fr" href="#v-manta"><img src="/_blob/1beb462a98922b3d33e9d27fe910ecb8" alt="The Manta"><span class="n">02 / 20</span><span class="cap"><b>Manta</b><small>Soar at high speed through open spaces to create the biggest blocks in the Hypersea, or skim your opponents trail to steal theirs.</small></span></a><a class="fr" href="#v-serpent"><img src="/_blob/e81125070a27c63d6ecedd0e98fc97aa" alt="The Serpent"><span class="n">03 / 20</span><span class="cap"><b>Serpent</b><small>Navigate with just one thumb and place seeds that will steal ALL local blocks into a wall that can be shielded. Use walls to disrupt enemy volume and navigation.</small></span></a><a class="fr" href="#v-rhino"><img src="/_blob/5404728cbe31fc59ad1bae9895e89c2c" alt="The Rhino"><span class="n">04 / 20</span><span class="cap"><b>Rhino</b><small>Smash things with your face to gain boost and volume. Hunt down other players to stop them from making volume.</small></span></a><a class="fr" href="#v-squirrel"><img src="/_blob/9c36615077b1511b4a8e9e69b56c17d1" alt="The Squirrel"><span class="n">05 / 20</span><span class="cap"><b>Squirrel</b><small>Get in your flow and stay there. Hard decisions are for other classes. You’re here to bounce around and ride your speed tubes, leaving a wake of creation and destruction.</small></span></a><a class="fr" href="#v-dolphin"><img src="/_blob/755a090c652790dff4d8ea8bb5b57608" alt="The Dolphin"><span class="n">06 / 20</span><span class="cap"><b>Dolphin</b><small>Thread the narrowest needles at the highest speeds to build max charge, then drift sideways into a crystal to release one of the biggest blasts in the Hypersea.</small></span></a><a class="fr" href="#v-urchin"><img src="/_blob/c2a356919b8f088c7cf912489371732e" alt="The Urchin"><span class="n">07 / 20</span><span class="cap"><b>Urchin</b><small>Rides other pilots&#x27; trails and surfaces like rails, turning their prismscapes into its road, then fires a cascade of chain spikes from the ride.</small></span></a><a class="fr" href="#v-orca"><img src="/_blob/e4b19c7657adeb49ea0fc5df52979253" alt="The Orca"><span class="n">08 / 20</span><span class="cap"><b>Orca</b><small>Four seats, one hull - a helm and three gunners. The helm flies with two thumbs, boosts on the right trigger and rings the hull in danger prisms on the left; each gunner looks out of a stabilized turret and flies the missile it releases.</small></span></a></div></section><section id="modes" style="position:relative"><div style="padding:110px 44px 40px;background:#000"><div class="chap" style="position:static">Chapter<b>03</b>Coming attractions</div></div><div class="attr"><a class="po rvz wide" href="#m-regatta"><img src="/_blob/64d6b7c142b8d600e716c23f9ae75702" alt=""><span class="in"><span class="k">Arena &middot; 2–6 players</span><h3>Regatta</h3><p>Every hull, one circuit, three laps.</p></span></a><a class="po rvz" href="#m-broadside"><img src="/_blob/1438ba9d1b0d1b76a44f31d15c43596f" alt=""><span class="in"><span class="k">Arena &middot; 2–6 players</span><h3>Broadside</h3><p>Every hull that can fight, loose in the Boneyard, each with the weapon it actually has.</p></span></a><a class="po rvz" href="#m-brood_rush"><img src="/_blob/f08cc0314e936f972e93838de6f6bbc4" alt=""><span class="in"><span class="k">Arena &middot; 2–6 players</span><h3>Brood Rush</h3><p>Hold the nucleus.</p></span></a><a class="po rvz" href="#m-maelstrom"><img src="/_blob/eb6f5a5d8174e090b258afe819906f27" alt=""><span class="in"><span class="k">Arcade &middot; 2–4 players</span><h3>Maelstrom</h3><p>A multi-game gauntlet - compete across a lineup of games for the crown.</p></span></a><a class="po rvz" href="#m-skim_race"><img src="/_blob/c7a369eecaf278f917dae86ccd808ead" alt=""><span class="in"><span class="k">Arcade &middot; 1–12 players</span><h3>Skim Race</h3><p>Find the fastest path to the crystal by skimming trails for a speed boost.</p></span></a></div></section><section class="panel" id="play" style="height:auto;padding:170px 0 120px;flex-direction:column;background:radial-gradient(ellipse at 50% 60%,color-mix(in srgb,var(--a1) 18%,#000),#000 70%)"><div class="chap">Chapter<b>04</b>Now playing</div><div class="scr rvz"><img src="/_blob/80128cc07fd19d17ab60e36743ad6f8b" alt=""><button type="button" class="pl" aria-label="Start the Toybox"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg></button></div><p style="position:relative;z-index:2;margin:30px 0 0;letter-spacing:.3em;text-transform:uppercase;font-size:13px;color:rgba(255,255,255,.7)">Now playing in your browser</p><div class="avail" id="get" style="position:relative;z-index:2"><a href="#s0"><b>iPhone and iPad</b><small>Open beta on TestFlight</small></a><a href="#s1"><b>Android</b><small>Google Play, coming soon</small></a><a href="#s2"><b>Windows</b><small>Steam, coming soon</small></a><a href="#s3"><b>Discord</b><small>Meet the pilots and the team</small></a></div></section></sc-if><sc-if value="{{isTU}}" hint-placeholder-val="{{ false }}"><section class="panel" aria-labelledby="h1gt" style="margin-top:-70px"><img class="bg plx" src="/_blob/f53e50d2103d74a1fe9a89f10d208de4" alt="An octopus-and-raven pilot on a shipwrecked shore" style="object-position:70% 30%"><div class="vig"></div><div class="bar t"></div><div class="bar b"></div><div class="open"><div class="pre">Froglet Games presents</div><h1 id="h1gt" style="margin:20px 0 0;font-family:Fraunces,serif;font-weight:800;font-size:190px;line-height:.9;animation:swapIn 1.6s 1.4s var(--e) both">Tumult</h1><p>An expedition across a restless world. Free in your browser.</p><div class="acts"><a class="wb" href="#play" style="background:var(--a3)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>Play free now</a><a class="ob" href="#how">How it plays</a></div></div></section><section class="panel" id="story"><img class="bg" src="/_blob/2ed67cbc7ed97ac6549bf4074968bbe3" alt="" style="opacity:.45"><div class="vig"></div><div class="chap">Chapter<b>01</b>The world</div><div class="giant"><h2><span class="sl1">Cross it by</span><span class="sl2"><em>land, sea</em></span><span class="sl1">and air.</span></h2><p class="rv">A tabletop RPG crossed with a board game. Draft a squad of pilots, plan every turn against enemies that show you their next move, and cross Tumult by land, sea and air to the Heart at the end of the route. Tumult is still in beta and under live development.</p></div></section><section id="how"><div style="padding:110px 44px 40px;background:#000"><div class="chap" style="position:static">Chapter<b>02</b>How it plays</div></div><div class="attr"><div class="po rvz wide"><img src="/_blob/9a0267c5c49690c50802ef6c59a3db79" alt=""><span class="in"><span class="k">Act 1</span><h3>Draft a squad</h3><p>Pick pilots and the traits they fly with.</p></span></div><div class="po rvz"><img src="/_blob/c25cda7d6286979ead1ec8fd4a4fa1a4" alt=""><span class="in"><span class="k">Act 2</span><h3>Read the enemy</h3><p>Enemies show their next move before you act.</p></span></div><div class="po rvz"><img src="/_blob/2ed67cbc7ed97ac6549bf4074968bbe3" alt=""><span class="in"><span class="k">Act 3</span><h3>Cross the world</h3><p>By land, sea and air to the Heart at the end of the route.</p></span></div></div></section><section class="panel" id="world" style="height:auto;padding:170px 0 120px;flex-direction:column;background:radial-gradient(ellipse at 50% 60%,color-mix(in srgb,var(--a3) 18%,#000),#000 70%)"><div class="chap">Chapter<b>03</b>Now playing</div><div class="scr rvz" id="play"><img src="/_blob/f92e7419115b02bbc8ecb1fbd75cabf8" alt="The Tumult title screen"><button type="button" class="pl" aria-label="Start Tumult"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg></button></div><p style="position:relative;z-index:2;margin:30px 0 0;letter-spacing:.3em;text-transform:uppercase;font-size:13px;color:rgba(255,255,255,.7)">Free in any browser</p></section></sc-if><section class="panel" id="blog" style="height:760px"><img class="bg" src="/_blob/54dfa35f898b5c328de32716cb5f1473" alt="" style="opacity:.18;filter:blur(8px)"><div class="vig"></div><div class="bts"><img class="rvl" src="/_blob/54dfa35f898b5c328de32716cb5f1473" alt="The Amoebius launcher"><div class="rvr"><span style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--a1)">Behind the scenes &middot; 23 Oct 2026</span><h3>Amoebius: building our own engine, one script at a time</h3><p>Why we started Amoebius, Froglet&rsquo;s own game engine, what it is for, and what it can already do: the real Cosmic Shore, booting and playing, without Unity.</p><a class="ob" href="#post">Read the post</a></div></div></section><section class="credits" id="team"><div class="role rv">A Froglet Games production</div><div class="name rv" style="font-size:80px">The crew</div><div class="cr2"><div class="rv"><div class="ph"><img src="/_blob/58e868d0a0a3c8e1ccfbb22eb6ef99be" alt=""></div><div class="role">Vessel Mechanic and CEO</div><div class="name">Garrett</div></div><div class="rv"><div class="ph"><img src="/_blob/91b4cbccb5144e9a3e3c940db323e2ca" alt=""></div><div class="role">COO</div><div class="name">Caleb</div></div><div class="rv"><div class="ph"><img src="/_blob/e6f09dbd6312acfb70c1b060ea60be99" alt=""></div><div class="role">Jack Reacher of Froglet Games</div><div class="name">Shombith</div></div><div class="rv"><div class="ph"><img src="/_blob/aacf246341bb84e3770d4ec541f386ec" alt=""></div><div class="role">Game Systems Engineer</div><div class="name">Yash</div></div><div class="rv"><div class="ph"><img src="/_blob/83b0332547bd96716d44d1291497ed04" alt=""></div><div class="role">Designer/Writer/Voice Actor</div><div class="name">Jones</div></div><div class="rv"><div class="role">CTO</div><div class="name">Iggy</div></div><div class="rv"><div class="role">QA</div><div class="name">Andrew</div></div><div class="rv"><div class="role">Audio Engineer</div><div class="name">Charles</div></div><div class="rv"><div class="role">Operations</div><div class="name">Jake</div></div></div></section><footer><img src="/_blob/be30cdfc0f2f02d725671dc45f5a10cf" alt="" style="height:28px"><span>&copy; 2026 Froglet Games</span><span style="margin-left:auto;display:flex;gap:24px"><a href="#privacy">Privacy</a><a href="#support">Support</a><a href="#admin">Studio sign-in</a></span></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["photic","nocturne","octopus","nacre","protan","deutan","tritan","achro","contrast"],"default":"photic"},"$preview":{"width":1440,"height":7730}}'>
+
+class Component extends DCLogic {
+themes() { return [{"id": "photic", "name": "Photic", "group": "Hypersea", "line": "The game as it was authored: one paint per domain on the deep sea.", "sw": ["#FE5645", "#FFAE00", "#99FF80", "#00D4FF", "#4D8BFF", "#A600FF"], "bg": "#00041F", "tx": "#E6E9FF", "tx2": "#A2A8D4", "cta": "#99FF80", "on": "#00041F", "a1": "#00D4FF"}, {"id": "nocturne", "name": "Nocturne", "group": "Hypersea", "line": "Lanterns: rims glow in their own hue over night-dark jewel faces.", "sw": ["#E8614E", "#ECBD44", "#B4E232", "#4BD5D4", "#739AFB", "#DF5CE4"], "bg": "#070A1C", "tx": "#ECEFFF", "tx2": "#A9B1DA", "cta": "#B4E232", "on": "#0A0F02", "a1": "#4BD5D4"}, {"id": "octopus", "name": "Blue-ringed Octopus", "group": "Hypersea", "line": "Sand skin, electric rings, black outlines: an alarm in the shallows.", "sw": ["#D54C25", "#F9D373", "#9FD648", "#56DBDB", "#4990F9", "#B049E5"], "bg": "#030E14", "tx": "#FBF1DA", "tx2": "#D3C29A", "cta": "#9FD648", "on": "#0B1400", "a1": "#4990F9"}, {"id": "nacre", "name": "Nacre", "group": "Hypersea", "line": "The inside of a shell: pastel bodies, pearly ground, a soft iridescent turn.", "sw": ["#FF6D56", "#F5D47C", "#B0E660", "#5FEAE2", "#B5C9FF", "#DA5CE6"], "bg": "#F6F1F4", "tx": "#241B33", "tx2": "#5A4E6E", "cta": "#B0E660", "on": "#1C2A08", "a1": "#127A74"}, {"id": "protan", "name": "Protanopia", "group": "Colour vision", "line": "For eyes without red cones: domains spread on blue against yellow, and in lightness.", "sw": ["#B73259", "#E6AC3F", "#D5E305", "#2EE1CE", "#D5AEF5", "#7127FE"], "bg": "#05081A", "tx": "#F0F1FF", "tx2": "#B4B8D8", "cta": "#D5E305", "on": "#121400", "a1": "#2EE1CE"}, {"id": "deutan", "name": "Deuteranopia", "group": "Colour vision", "line": "For eyes without green cones, the commonest: blue against yellow, reds kept bright.", "sw": ["#F82278", "#CE9549", "#D2D813", "#43E4E6", "#5E6BFF", "#FD1EFF"], "bg": "#050719", "tx": "#F1F2FF", "tx2": "#B6BAD8", "cta": "#D2D813", "on": "#121400", "a1": "#43E4E6"}, {"id": "tritan", "name": "Tritanopia", "group": "Colour vision", "line": "For eyes without blue cones: domains spread on red against teal.", "sw": ["#D42502", "#F3CB76", "#8FA83A", "#49E895", "#257BD4", "#B320DB"], "bg": "#0B0614", "tx": "#FFF3F3", "tx2": "#C9B7BE", "cta": "#B4C95A", "on": "#121400", "a1": "#49E895"}, {"id": "achro", "name": "Achromatopsia", "group": "Colour vision", "line": "No colour at all: every domain its own brightness, every state its own shape.", "sw": ["#5A5A5A", "#C9C9C9", "#A3A3A3", "#E6E6E6", "#3C3C3C", "#7F7F7F"], "bg": "#0A0A0A", "tx": "#F5F5F5", "tx2": "#BDBDBD", "cta": "#FFFFFF", "on": "#000000", "a1": "#E6E6E6"}, {"id": "contrast", "name": "High Contrast", "group": "Colour vision", "line": "Low vision: black ground, white type, full-strength rims and thicker outlines.", "sw": ["#FF3B30", "#EDD98B", "#3DFF4F", "#26CADE", "#4D7DFF", "#E840E9"], "bg": "#000000", "tx": "#FFFFFF", "tx2": "#F0F0F0", "cta": "#3DFF4F", "on": "#000000", "a1": "#26E6FF"}]; }
+st(k, d) { const s = this.state || {}; return s[k] === undefined ? d : s[k]; }
+navFor(game) {
+  const cs = [['story','Story'],['vessels','Vessels'],['modes','Modes'],['blog','Blog'],['play','Play'],['team','Team']];
+  const tu = [['story','Story'],['how','How it plays'],['world','The world'],['blog','Blog'],['play','Play'],['team','Team']];
+  return (game === 'tu' ? tu : cs).map(([id, label]) => ({ id, label, cls: '' }));
+}
+base(defGame) {
+  const th = this.st('theme', this.props.theme ?? 'photic');
+  const game = this.st('game', defGame);
+  const mo = this.st('motion', 'full');
+  const open = this.st('themeOpen', false);
+  const T = this.themes();
+  const cur = T.find((t) => t.id === th) || T[0];
+  const tc = {}, tp = {}, tpick = {};
+  T.forEach((t) => { tc[t.id] = t.id === th ? 'on' : ''; tp[t.id] = t.id === th ? 'true' : 'false'; tpick[t.id] = () => this.setState({ theme: t.id }); });
+  const moc = {}, mopick = {};
+  ['full','calm','off'].forEach((m) => { moc[m] = m === mo ? 'on' : ''; mopick[m] = () => this.setState({ motion: m }); });
+  return {
+    pgCls: 'pg vg th-' + th + ' mo-' + mo + ' g-' + game,
+    themeName: cur.name, themeOpen: open, themeOpenStr: open ? 'true' : 'false',
+    toggleTheme: () => this.setState({ themeOpen: !this.st('themeOpen', false) }),
+    tc, tp, tpick, moc, mopick,
+    isCS: game === 'cs', isTU: game === 'tu', gameName: game === 'tu' ? 'Tumult' : 'Cosmic Shore',
+    gswPos: game === 'tu' ? 'tu' : '', csOn: game === 'cs' ? 'on' : '', tuOn: game === 'tu' ? 'on' : '',
+    csPressed: game === 'cs' ? 'true' : 'false', tuPressed: game === 'tu' ? 'true' : 'false',
+    toCS: () => this.setState({ game: 'cs' }), toTU: () => this.setState({ game: 'tu' }),
+    navItems: this.navFor(game),
+  };
+}
+
+renderVals() {
+return this.base('cs');
+}
+}
+</script>
+</body>
+</html>
