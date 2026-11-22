@@ -115,7 +115,11 @@ namespace CosmicShore.Gameplay
         async UniTask<string> HostAsync(CancellationToken ct)
         {
             TryDelete(_args.RendezvousPath);   // a previous run's file must never send a joiner to a dead session
-            if (!string.IsNullOrEmpty(_args.RendezvousPath)) ClearJoinedMarkers();
+            if (!string.IsNullOrEmpty(_args.RendezvousPath))
+            {
+                ClearJoinedMarkers();
+                TryDelete(SeenPath());
+            }
             if (!await WaitUntil(ct, "solo party session up", () => OwnSessionId() != null)) return "the solo party session never came up";
 
             string written = null;
@@ -136,6 +140,9 @@ namespace CosmicShore.Gameplay
                 if (!done) await UniTask.Delay(TimeSpan.FromSeconds(PollSeconds), DelayType.Realtime, cancellationToken: ct);
             }
             Step($"{_args.Expect} players in the party");
+            // Tells the joiners the host counted them. A joiner that quit the moment it was in could be gone before
+            // this poll saw it (2026-11-22: joiner PASS at 48.7 s, host "only 1 of 2 players arrived").
+            if (!string.IsNullOrEmpty(_args.RendezvousPath)) WriteAllTextAtomic(SeenPath(), _args.Profile);
 
             // Stay up until every joiner says it is in. The host counts a joiner the moment it connects, seconds
             // before that joiner's own vessel is ready; quitting then pulled the session from under it (the first
@@ -149,6 +156,9 @@ namespace CosmicShore.Gameplay
         }
 
         const string JoinedSuffix = ".joined";
+        const float HostSeenWaitSeconds = 30f;
+
+        string SeenPath() => _args.RendezvousPath + ".seen";
 
         string JoinedMarkerPath(string profile) => $"{_args.RendezvousPath}.{profile}{JoinedSuffix}";
 
@@ -246,7 +256,14 @@ namespace CosmicShore.Gameplay
                     {
                         Step("in the party as a client");
                         if (_args.TargetKind == MultiplayerAutoTargetKind.RendezvousFile)
+                        {
                             WriteAllTextAtomic(JoinedMarkerPath(_args.Profile), _args.Profile);   // tells the host it may close
+                            // Stay until the host has counted everyone, or this player's quit races its poll.
+                            float seenBy = Time.realtimeSinceStartup + HostSeenWaitSeconds;
+                            while (!File.Exists(SeenPath()) && Time.realtimeSinceStartup < seenBy && !TimedOut())
+                                await UniTask.Delay(TimeSpan.FromSeconds(PollSeconds), DelayType.Realtime, cancellationToken: ct);
+                            Step(File.Exists(SeenPath()) ? "the host counted everyone" : "the host never said it counted everyone");
+                        }
                         return null;
                     }
                     await UniTask.Delay(TimeSpan.FromSeconds(PollSeconds), DelayType.Realtime, cancellationToken: ct);
