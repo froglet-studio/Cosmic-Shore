@@ -86,8 +86,10 @@ namespace CosmicShore.Editor
             {
                 case Phase.Boot:
                     PokeBootGates();
-                    var gd = Resources.FindObjectsOfTypeAll<GameDataSO>().FirstOrDefault();
-                    if (IsMenu() && gd != null && gd.LocalPlayer?.Vessel != null && now - _phaseAt > 3)
+                    // The menu up is enough: a spectator needs no pilot of its own, and its local host may never get one
+                    // (another editor can hold UDP 7777).
+                    if (!IsMenu()) _phaseAt = now;
+                    else if (now - _phaseAt > 15)
                     {
                         Log("menu up; leaving the local host");
                         nm?.Shutdown();
