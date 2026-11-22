@@ -9008,3 +9008,33 @@ development), the theme menu with the nine themes and Motion, and scroll-driven 
 
 No recommendation yet: the pick (or a mix of parts) is Shombith's. Rev 122's boards stay as the parts list (themes,
 vessel stage, admin). The generator was session scratch, not committed.
+
+## 219. Rev 124 mockups: six pages grown from Rev 123 H, in the Hypersea style (2026-11-22, awaiting a pick)
+
+**Asked (Shombith, 2026-11-22, on Rev 123):** "I loved H, the animations, tabs colors but it is too cartoon comic book
+style can you do something about that, uses weird colors, delete all the other mockups and create inspired from this
+one and the texts in this is also going out of bounds something like this but with our own unique cosmic shore
+hypersea style themed I guess. Give me another new 6 mockups lets say". Then: "Not very calm too, I like the dynamics
+and motion of this, each 6 can be unique with this dynamics".
+
+**On the canvas:** tab **Frogma Website** now holds only section "Rev 124": Rev 123 H at the left of the row as the
+reference, then six full pages (`expand: fill`, 1440 wide, scroll in Play), then the notes. Rev 122 and Rev 123 A-G
+were taken off the tab at his request; their copies stay in `Docs/MenuRedesignB/board/R122*` and `R123*`. Copies of
+the new boards in `Docs/MenuRedesignB/board/R124*.dc.html`.
+
+Each keeps H's structure and motion (a shouted line that pops in, ticker tape, floating badges, a vessel grid,
+collectible mode cards that tilt in 3D, Press Start, the crew) without H's comic look (no ink outlines, hard shadows,
+halftone, rotated stickers or purple and orange bands): glass, glow and prism edges in the theme's colours, lime only
+for the call to action, the game's type. Each moves its own way:
+- **A Prism Arcade:** prism-cut cards with a gradient edge and a light sweep, a hex lattice, a logo that glitches in.
+- **B Holo Deck:** a hand of vessel cards fans up from the hero; the fleet is a hand to draw from, the games a deck
+  to scroll; holo-foil shimmer.
+- **C Hex Signal:** a honeycomb of vessels beside the hero, a scan line, hex vessel cells, the games as a signal list.
+- **D Bioluminescence:** light motes, round glowing badges, vessels in bobbing portholes, a masonry wall of games, a
+  lantern Start.
+- **E Skim Trails:** light streaks, italic type, slanted cards, a racing lane of vessels, a start grid of games that
+  slides in from both sides.
+- **F Nucleus:** rings turning round the logo, vessels as moons clicked into the centre, the games on a turning 3D ring.
+
+Every page was checked at 1440 in both games for text running past its box. Tumult's text says it is in beta and
+under live development. No recommendation yet; the generator was session scratch, not committed.

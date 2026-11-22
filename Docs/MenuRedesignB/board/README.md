@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-22 from canvas version `1795375833-84df` of **Frogma**: Rev 41 to Rev 123, 324 boards on 16 tabs. The canvas opens on the tab `frogma-website`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-22 from canvas version `1795376739-e85f` of **Frogma**: Rev 41 to Rev 124, 314 boards on 16 tabs. The canvas opens on the tab `frogma-website`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -528,28 +528,15 @@ No boards yet.
 
 ### Tab: Frogma Website  (`frogma-website`)
 
-#### Rev 123: eight full-site directions, each a scrolling page
+#### Rev 124: six pages grown from Rev 123 H, in the Hypersea style
 
-- [`R123A.dc.html`](R123A.dc.html) - Rev 123 A - Hyperdrive: the hero kept full bleed, a sideways vessel rail, a mode mosaic, a play window - interactive
-- [`R123B.dc.html`](R123B.dc.html) - Rev 123 B - Split Shore: both games side by side on the home, then an editorial page with sticky chapters - interactive
-- [`R123C.dc.html`](R123C.dc.html) - Rev 123 C - Bento: the whole site in rounded tiles on one short page - interactive
-- [`R123D.dc.html`](R123D.dc.html) - Rev 123 D - The Hypersea Gazette: a newspaper, Vol. I and Vol. II as the game switch - interactive
-- [`R123E.dc.html`](R123E.dc.html) - Rev 123 E - Cockpit: a flight deck with a section rail, scroll progress, vessel select and a mission board - interactive
-- [`R123F.dc.html`](R123F.dc.html) - Rev 123 F - Descent: the page is a dive, a depth gauge from the surface to the seabed - interactive
-- [`R123G.dc.html`](R123G.dc.html) - Rev 123 G - Cinematic: letterboxed full-height panels, a film reel fleet, the team as end credits - interactive
-- [`R123H.dc.html`](R123H.dc.html) - Rev 123 H - Arcade Poster: stickers, ticker tape, pick your fighter, collectible mode cards - interactive
-- [`R123Notes.dc.html`](R123Notes.dc.html) - Rev 123 - notes: the eight directions, what all share, SEO and how to pick
-
-#### Rev 122 - Froglet Games website redesign: Hypersea themes, Cosmic Shore and Tumult on one home, eight animated pages
-
-- [`R122A.dc.html`](R122A.dc.html) - Rev 122 A - Home, Cosmic Shore: the hero kept, the game switch, motion intro - interactive
-- [`R122B.dc.html`](R122B.dc.html) - Rev 122 B - Home, Tumult: the switch played, the same page as an expedition - interactive
-- [`R122C.dc.html`](R122C.dc.html) - Rev 122 C - Themes: Photic, Nocturne, Blue-ringed Octopus, Nacre and five colour-vision sets across the whole UI - interactive
-- [`R122D.dc.html`](R122D.dc.html) - Rev 122 D - Vessels: the hangar, one vessel at a time with motion - interactive
-- [`R122E.dc.html`](R122E.dc.html) - Rev 122 E - Modes: every game as a filterable deck - interactive
-- [`R122F.dc.html`](R122F.dc.html) - Rev 122 F - Story, Team and Blog: the studio pages - interactive
-- [`R122G.dc.html`](R122G.dc.html) - Rev 122 G - Play and Get the Game: the Toybox and the stores - interactive
-- [`R122H.dc.html`](R122H.dc.html) - Rev 122 H - Admin: the new studio console (dashboard, posts, pages, media, SEO, themes, builds) - interactive
-- [`R122Notes.dc.html`](R122Notes.dc.html) - Rev 122 - notes: what each page does, the SEO structure, the motion rules and what to pick
+- [`R123H.dc.html`](R123H.dc.html) - Rev 123 H - Arcade Poster: the one Shombith picked to grow from (2026-11-22) - interactive
+- [`R124A.dc.html`](R124A.dc.html) - Rev 124 A - Prism Arcade: faceted prism cards, a light sweep, a logo that glitches in - interactive
+- [`R124B.dc.html`](R124B.dc.html) - Rev 124 B - Holo Deck: a hand of cards fans up from the hero, the fleet as a hand, the games as a deck - interactive
+- [`R124C.dc.html`](R124C.dc.html) - Rev 124 C - Hex Signal: a honeycomb of vessels, a scan line, the games as a signal list - interactive
+- [`R124D.dc.html`](R124D.dc.html) - Rev 124 D - Bioluminescence: light motes, vessels in portholes, a masonry wall of games, a lantern Start - interactive
+- [`R124E.dc.html`](R124E.dc.html) - Rev 124 E - Skim Trails: light streaks, slanted cards, a racing lane of vessels, a start grid of games - interactive
+- [`R124F.dc.html`](R124F.dc.html) - Rev 124 F - Nucleus: turning rings, vessels as moons you click into the centre, games on a 3D ring - interactive
+- [`R124Notes.dc.html`](R124Notes.dc.html) - Rev 124 - notes: the six directions, what changed from H, and how to pick
 
 <!-- frogma.py readme: end -->
