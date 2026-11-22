@@ -77,6 +77,16 @@ async function test(name, fn) { await fn(); passed++; console.log("ok -", name);
     assert.equal(apply(e, { action: "earn", source: "voyage_dock", amount: 5000 }, t + 600000, "production").reason, "bad_amount");
   });
 
+  await test("a finished painting pays twice a day at most", () => {
+    const e = emptyEconomy(); let t = Date.UTC(2026, 10, 21, 1);
+    assert.equal(apply(e, { action: "earn", source: "painting", amount: 150 }, t, "production").ok, true);
+    t += 61000;
+    assert.equal(apply(e, { action: "earn", source: "painting", amount: 150 }, t, "production").ok, true);
+    t += 61000;
+    assert.equal(apply(e, { action: "earn", source: "painting", amount: 150 }, t, "production").ok, false);
+    assert.equal(apply(e, { action: "earn", source: "painting", amount: 500 }, t + 86400000, "production").reason, "bad_amount");
+  });
+
   await test("the daily cap holds", () => {
     const e = emptyEconomy(); let t = Date.UTC(2026, 9, 24, 1); let ok = 0;
     for (let i = 0; i < 100; i++) { if (apply(e, { action: "earn", source: "game_placement", amount: 200 }, t, "production").ok) ok++; t += 31000; }

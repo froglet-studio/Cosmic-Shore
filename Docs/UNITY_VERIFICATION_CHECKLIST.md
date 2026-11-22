@@ -25958,3 +25958,14 @@ has 0 errors in the changed files; the two new `VoyageRulesTests` were not run.
 - [ ] Leave freestyle before the first world: the voyage is given up as before.
 - [ ] A friend following the host: leaving never keeps a chapter on the friend's machine.
 - [ ] Run the edit-mode tests: `VoyageRulesTests` passes.
+
+## Puzzle-first door and painting pay (P14, P16, 2026-11-21)
+
+The Honeyguide now remembers the seat its person last picked, as the Wrasse already did (`CrewSeatChoice`): a player who
+swaps to the Ratel's board starts on it next time. A finished Toybox painting pays 150 wallet crystals, twice a day
+(`PaintingPay`, `RetentionTuning.asset`, Cloud Code source `painting`). Not run in the Unity editor: none in this
+session. The reference compile has 0 errors in the changed files; `economy.test.cjs` passes (18).
+
+- [ ] Fly the Honeyguide in freestyle, swap to the Ratel, leave and fly it again: it starts on the Ratel's board. Swap
+      back to flying, leave and return: it starts flying.
+- [ ] Finish a painting in the Toybox gallery: the wallet rises by 150. A third painting the same day pays nothing.
