@@ -74,7 +74,7 @@
 [Package Manager] com.unity.sysroot.linux-x86_64 is deprecated: This package is no longer supported on this editor version. Use com.unity.sdk.linux-x86_64 instead.
 [Subsystems] No new subsystems found in resolved package list.
 [Package Manager] Done registering packages in 0.03 seconds
-IPCStream (Upm-62080): IPC stream failed to read (Not connected)
-[Package Manager] Cancelled resolving packages after 1.17 seconds
+IPCStream (Upm-63828): IPC stream failed to read (Not connected)
+[Package Manager] Cancelled resolving packages after 1.13 seconds
 [Package Manager] Failed to resolve packages: operation cancelled.
 Exiting without the bug reporter. Application will terminate with return code 1
