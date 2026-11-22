@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-22-thornlinecourse-s-mirror-of-the-shrike-s-73c669",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-22T18:55:27+00:00",
+  "area": "Thornline (the Shrike's Time game)",
+  "summary": "ThornlineCourse's mirror of the Shrike's sling cooldown and ShrikeConfigTests now read 4.4 -> 4.1, the values ShrikeConfig.asset has shipped since e8e669df46 (2026-11-19); they still said 4.75 -> 3.75, so ShrikeConfigTests and the Thornline constant check failed. The vessel is not touched. Thornline's offline model times move with it and its ladder has not been re-judged.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "511f37d48"
+}

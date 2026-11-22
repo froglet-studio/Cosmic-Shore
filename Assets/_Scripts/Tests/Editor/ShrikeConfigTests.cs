@@ -30,13 +30,13 @@ namespace CosmicShore.Tests
                 Range(config.NestBlocks, Element.Mass, 12f, 32f, "nestBlocks");
                 Range(config.TrailWavelength, Element.Mass, 8f, 4f, "trailWavelength");
                 Range(config.LockCone, Element.Space, 5f, 14f, "lockCone");
-                Range(config.SlingCooldown, Element.Time, 4.75f, 3.75f, "slingCooldown");   // the 2026-11-19 Regatta knee (#2253)
-                // the page's mults at Mass/Charge/Space/Time 3: lanceR 2.55, nestBlocks 18, wave 6.8, cone 7.7, slingCd 4.45 (4.95 on the page, before the Regatta knee)
+                Range(config.SlingCooldown, Element.Time, 4.4f, 4.1f, "slingCooldown");   // flattened at rest on 2026-11-19 (e8e669df46); 4.75 -> 3.75 at the Regatta knee (#2253) before
+                // the page's mults at Mass/Charge/Space/Time 3: lanceR 2.55, nestBlocks 18, wave 6.8, cone 7.7, slingCd 4.31 (4.95 on the page, before the Regatta knee and the flattening)
                 Assert.AreEqual(2.55f, config.LanceRadius.EvaluateAtNormalizedLevel(0.3f), Eps);
                 Assert.AreEqual(18, ShrikeRules.NestBlockCount(config.NestBlocks.EvaluateAtNormalizedLevel(0.3f)));
                 Assert.AreEqual(6.8f, config.TrailWavelength.EvaluateAtNormalizedLevel(0.3f), Eps);
                 Assert.AreEqual(7.7f, config.LockCone.EvaluateAtNormalizedLevel(0.3f), Eps);
-                Assert.AreEqual(4.45f, config.SlingCooldown.EvaluateAtNormalizedLevel(0.3f), Eps);
+                Assert.AreEqual(4.31f, config.SlingCooldown.EvaluateAtNormalizedLevel(0.3f), Eps);
             }
             finally
             {
