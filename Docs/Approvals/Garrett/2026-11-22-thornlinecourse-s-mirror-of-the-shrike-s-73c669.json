@@ -4,7 +4,7 @@
   "by": "Yash",
   "date": "2026-11-22T18:55:27+00:00",
   "area": "Thornline (the Shrike's Time game)",
-  "summary": "ThornlineCourse's mirror of the Shrike's sling cooldown and ShrikeConfigTests now read 4.4 -> 4.1, the values ShrikeConfig.asset has shipped since e8e669df46 (2026-11-19); they still said 4.75 -> 3.75, so ShrikeConfigTests and the Thornline constant check failed. The vessel is not touched. Thornline's offline model times move with it and its ladder has not been re-judged.",
+  "summary": "ThornlineCourse's mirror of the Shrike's sling cooldown now reads 4.4 -> 4.1, the values ShrikeConfig.asset has shipped since e8e669df46 (2026-11-19); it still said 4.75 -> 3.75, so ThornlineCourseTests.Course_constants_match_the_shipped_Shrike failed. The vessel is not touched. Two things this shows, for you to decide: ShrikeConfigSO's code default for slingCooldown is still 4.75 -> 3.75 (ShrikeConfigTests locks that default), so the class and the asset disagree; and with the true constants ThornlineCourseTests.A_snipe_is_worth_taking_and_a_crystal_is_worth_aiming_for reads 0.765 against its 0.9 bar (0.84 before), so the flattened Time curve no longer gives 'super-shielded thorns reload clearly faster'. Thornline's ladder has not been re-judged.",
   "branch": "Ys-bleeding-edge",
   "commit": "511f37d48"
 }
