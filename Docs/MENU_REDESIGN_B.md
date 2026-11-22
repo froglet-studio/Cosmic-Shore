@@ -9079,7 +9079,7 @@ backdrop tint now runs purple through blue (Photic `--a2` with `--blu`), the ima
 glows, trails and grid floor are quieter, and the type is scaled down on all seven pages (headlines about a third
 smaller, body and card text a step smaller). Boards republished in place at their new heights.
 
-## 221. Rev 126 mockups: Rev 125 made calm and of the HyperSea, the galaxy map on Voyages, Tumult's storm hero (2026-11-22, awaiting review)
+## 221. Rev 126 mockups: Rev 125 made calm and of the HyperSea, the galaxy map on Voyages, Tumult's storm hero (2026-11-22, picked; building it)
 
 **Asked (Shombith):** after the purple and smaller-type pass he wanted to lock the style and build it, then stopped:
 "Rather than the grid or the plain bg or the lines why cant we use hypersea galaxy map or the faunas or floras instead
@@ -9105,7 +9105,7 @@ hero card or high resolution cards everywhere", "the theme button is too big"):*
 screen with the Start button under it (Tumult's too); the vessels are a four-column grid down the page instead of a
 sideways lane; the page heroes, the four ways to play and the story stack use the site's own 1920x1080 game captures
 (`assets/images/Image Sequence_*.jpg` in the website repo) instead of the 640-768 px card renders, and the pilots use
-their full 1536x864 scenes (`Docs/Pilots/art/scenes/`); the theme button is a 34 px pill with 10 px type. The small game
+their full 1536x864 scenes (`Docs/Pilots/art/scenes/`); the theme button is a 34 px pill with 10 px type, and a long theme name (Blue-ringed Octopus) stays on one line. The small game
 cards in the Arcade grid and the Arena rows keep each game's own card art (768 px, shown below that size). Republished
 in place.
 
