@@ -134,7 +134,7 @@ the Amoebius build of these files was not run here.
    join from the new one shows the same toast with "an older version".
 6. Revert the bump in step 3 before committing anything.
 
-### 🟡 One camera whoever flies: the player's camera on an AI-flown hull; the panel keeps only Free fly (`Ys-bleeding-edge`, 2026-11-22, Yash) — MEASURED IN PLAY ON SIX HULLS; THE LOOK, THE JEWEL WASP, THE MENU AND TWO MACHINES BY HAND
+### 🟡 One camera whoever flies: the player's camera on an AI-flown hull; the panel keeps only Free fly (`Ys-bleeding-edge`, 2026-11-22, Yash) — MEASURED IN PLAY ON SEVEN HULLS AND THE MENU; THE LOOK AND TWO MACHINES BY HAND
 
 What changed: the AI Diagnose panel (F2, Third Eye) lost its Chase (30 behind, 8 up), Follow and Orbit cameras; Free
 fly is its one camera. A vessel's own camera effects (the Thresher's ball zoom, the Swordfish's sword reach and pan,
@@ -170,9 +170,24 @@ the AI flying the local hull:
   while you held the hull). **The pull-back itself was not seen**: in neither match did the net spread wider than the
   70-unit view, so the distance stayed at 70. Fly it with a wide net to see it (step 4).
 
-**Still by hand** (not measured): how it looks and feels, the Jacks' pull-back with a wide net, the Jewel Wasp, the
-menu's lava lamp, and two machines. The probe's first seconds of each match were the pre-game cinematic, so "you
-flying" was measured after it ended and again after the AI handed the hull back.
+A third Play run the same evening closed the open ones:
+- **Jacks, the pull-back (Trawl, staged)**: a wide net alone never needs it. At the default 90 degree field of view
+  the 70-unit camera already covers the net at full spread (the jacks reach about 54 u out; the view takes about
+  100), which is why the two earlier matches showed nothing. So the probe took the flying seat, held both sticks
+  apart and set the field-of-view setting to 40 for the run (put back to 90 after). You flying: 70 to 104 units as
+  the net opened. At the hand-over: 104 on the sample before and the sample after. The AI then landed and the camera
+  EASED to 70 (104, 100, 97, 96 ... over about a second; the old code let go of the camera at the hand-over, which was not measured), and when the AI
+  took off and netted again it stood at 104 for the whole flight.
+- **Jewel Wasp (Gorge, Marionette)**: with the AI flying, riding a creature on 846 and 832 samples, the camera stood
+  back on every one of them, 45 to 204 units. No jump at either hand-over (204 on both sides while still riding).
+- **Menu lava lamp** (the Squirrel on autopilot, 88 samples over 9 s): no gameplay camera controller is active, the
+  player rig is switched off, the view is the menu's own camera, and nothing was written to the rig. That is the
+  condition every vessel's camera code tests (`CameraManager.ActiveRigFollowing` / the active controller), so no hull
+  can move the menu's camera; only the Squirrel was in the menu to show it.
+
+**Still by hand** (not measured): how it looks and feels, and two machines (it needs a second signed-in player; the
+change did not touch the test that keeps a remote hull off this machine's camera, and in every run above the AI
+seats docked, rode and netted without moving the local camera).
 
 By hand, in the editor, any gate race or freestyle:
 1. Fly your hull and note how far back the camera sits. F2, Pilots: **AI** on your own hull. The view does not move:
