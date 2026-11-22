@@ -124,6 +124,16 @@ namespace CosmicShore.Editor
                     bool ok = nm.StartHost();
                     Note($"re-hosted on {port}: {ok}");
                     _rehost = 2;
+                    _rehostAt = now;
+                    break;
+                // The menu spawns its vessel when its scene comes up under a listening host: load it again, as the
+                // network scene, so the new host's player gets one.
+                case 2 when nm.IsListening && now - _rehostAt > 2:
+                    var menu = SceneManager.GetActiveScene().name;
+                    var status = nm.SceneManager != null ? nm.SceneManager.LoadScene(menu, LoadSceneMode.Single) : Unity.Netcode.SceneEventProgressStatus.None;
+                    Note($"menu reloaded after the re-host: {status}");
+                    _rehost = 3;
+                    _menuSince = -1;
                     break;
             }
         }
