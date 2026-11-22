@@ -5,7 +5,8 @@
 > the scene and the steering are unchanged: five long legs a lap (~750 u, longer than one 600 u straight tunnel), two
 > laps, the Regatta steering. Everything below about the Stoat is the record of its races here (2026-10-09..27); the
 > Stoat's learned variants (`StoatDipoleConfig_Warpline`, `StoatSlingConfig_Warpline`) are no longer flown here and seed
-> its Slingshot ones. Burrow Run (`BURROWRUN.md`) is the Meerkat's other race on the same circuit, eight rings a lap.
+> its Slingshot ones. Warpline is the Meerkat's ONLY Time game since 2026-11-22 (Yash): Burrow Run (`BURROWRUN.md`), eight rings a lap on the
+> same circuit, moved to the Jewel Wasp.
 > The course and its intensities can be prototyped and saved in **FrogletTools > Game Modes > Time Race Prototyper**
 > (`Docs/TIME_RACE_PROTOTYPER.md`).
 
