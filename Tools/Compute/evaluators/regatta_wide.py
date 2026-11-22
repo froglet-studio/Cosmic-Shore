@@ -669,6 +669,10 @@ def evaluate(genome, seeds_a=(1,), seeds_b=(1,), limit_s=300):
         # A world the carves ate (2026-11-21: a confirmed LSystem course laid 0 base prisms) is an empty cell.
         rec["score"], rec["stage"], rec["error"] = None, "A", f"thin world: {prisms} prisms laid"
         return rec
+    if dnf_a > 1:
+        # Two of the four probe hulls stuck is a course the field does not fly, however even its times look.
+        rec["score"], rec["stage"], rec["error"] = None, "A", f"stage A: {dnf_a} of {len(STAGE_A)} did not finish"
+        return rec
     if a is None or a > STAGE_A_BAR:
         # A stage-A failure ranks below every stage-B course of the same spread.
         rec["score"] = None if a is None else 2.0 * field_score({"card": {"times": times_a}})
@@ -712,8 +716,11 @@ def spread_stats(times):
     v = sorted(x if x else 400.0 for x in times.values())
     med = v[len(v) // 2]
     rms = math.sqrt(sum(math.log(x / med) ** 2 for x in v) / len(v))
+    # The window is over FINISHERS: nine DNFs at the 400 s limit are not a 1.00x window (2026-11-22, every partial-
+    # rail course scored 1.00 with 9 of 11 hulls stuck).
+    fin = [x for x in v if x < 400.0]
     k = min(9, len(v))
-    nine = min(v[i + k - 1] / v[i] for i in range(len(v) - k + 1))
+    nine = min(fin[i + k - 1] / fin[i] for i in range(len(fin) - k + 1)) if len(fin) >= k else 99.0
     return v[-1] / v[0], nine, math.exp(rms)
 
 
@@ -737,9 +744,10 @@ def field_score(field):
 def rescore(r):
     genes = (r.get("genome") or {}).get("wide") or {}
     if genes.get("rails") == "on" or (genes.get("base") or {}).get("kind") == "none" or \
-            (r.get("prisms") is not None and r["prisms"] < MIN_WORLD_PRISMS):
+            (r.get("prisms") is not None and r["prisms"] < MIN_WORLD_PRISMS) or \
+            ((r.get("stage_a") or {}).get("dnf") or 0) > 1:
         return dict(r, score=None)
-    if r.get("niche") and r["niche"].count("|") == 3:
+    if r.get("niche") and r["niche"].count("|") == 2:
         r = dict(r, niche=r["niche"] + "|r0")    # written before the rail-coverage axis: railless
     if r.get("stage") == "B" and r.get("field"):
         # A hull with no time at all (None; a DNF is 400) never raced: a hole, in records written before holes were named.

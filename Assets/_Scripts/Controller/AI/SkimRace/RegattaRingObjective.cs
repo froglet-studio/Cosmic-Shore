@@ -69,6 +69,9 @@ namespace CosmicShore.Gameplay
 
             var lane = FindLane(rails, status.Domain, out int laneIndex);
             if (lane == null) return false;
+            // A lane a gap cuts into stretches is no closed course to skim (its ends are not neighbours): the pilot
+            // flies the rings as on a railless course (2026-11-22, Squirrels stuck at a rail stub's end).
+            if (!rails.LaneIsWhole(laneIndex)) return false;
 
             var pts = new List<Vector3>(lane.Count);
             var nrm = new List<Vector3>(lane.Count);

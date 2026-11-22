@@ -218,6 +218,22 @@ namespace CosmicShore.Gameplay
             return runs <= 1 ? single : joined;
         }
 
+        /// <summary>True when lane <paramref name="lane"/> is one closed loop round the whole lap (no gap). A lane a gap
+        /// cuts is only stretches: <see cref="LanePrisms"/> joins them in order, but its ends are not neighbours on the
+        /// course, so a reader that follows it as a loop (the race line, the Urchin's own-lane aim) must not.</summary>
+        public bool LaneIsWhole(int lane)
+        {
+            int runs = 0;
+            bool closed = false;
+            for (int r = 0; r < _runLane.Count; r++)
+            {
+                if (_runLane[r] != lane) continue;
+                runs++;
+                closed = r < _runClosed.Count && _runClosed[r];
+            }
+            return runs == 1 && closed;
+        }
+
         /// <summary>The lane laid in <paramref name="domain"/>'s colour, or -1.</summary>
         public int LaneOf(Domains domain)
         {

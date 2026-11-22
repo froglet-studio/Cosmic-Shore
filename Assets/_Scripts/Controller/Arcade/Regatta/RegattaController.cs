@@ -360,6 +360,10 @@ namespace CosmicShore.Gameplay
                  "joins the lane going the way the race goes. Lane prisms sit a few units apart.")]
         [SerializeField, Min(0)] int aiOwnLaneLeadPrisms = 12;
 
+        [Tooltip("On a lane a gap cuts into stretches: the farthest (u) an AI Urchin goes out of its way to its own " +
+                 "lane's nearest prism. Beyond it, or past a stretch's end, it flies the ring.")]
+        [SerializeField, Min(0f)] float aiPartialLaneCapture = 60f;
+
         [Tooltip("A free AI Urchin closer than this (units) to a RIVAL's lane than to its own steers for its own lane " +
                  "from the side away from the rival lane (aiOwnLaneStandOff past it), so it leaves the rival rail at " +
                  "once instead of brushing along it and latching it again (the lanes are only 22 u apart).")]
@@ -403,10 +407,20 @@ namespace CosmicShore.Gameplay
             }
             if (nearest < 0) return false;
 
+            // A lane a gap cuts is stretches joined in order: follow one only from close by, and never across its end
+            // to the next stretch (2026-11-22: every hull of a partially railed course aimed at a rail stub forever).
+            bool whole = _railsForAI.LaneIsWhole(_railsForAI.LaneOf(pilot.Domain));
+            if (!whole && best > aiPartialLaneCapture * aiPartialLaneCapture) return false;
+            float stride = RegattaCourse.DefaultRails.PrismSpacing * 2f;
+
             for (int step = aiOwnLaneLeadPrisms; step >= 0; step--)
             {
+                if (!whole && nearest + step >= lane.Count) continue;
                 var ahead = lane[(nearest + step) % lane.Count];
                 if (!ahead) continue;
+                if (!whole && lane[nearest] &&
+                    (ahead.transform.position - lane[nearest].transform.position).sqrMagnitude > (step + 1) * stride * ((step + 1) * stride))
+                    continue;   // the next stretch: this one ends before the lead
                 target = ahead.transform.position;
                 if (TryNearestRivalLanePoint(pilot.Domain, from, out Vector3 rival, out float rivalDistance))
                     target = OwnLaneApproach(target, from, rival, rivalDistance, Mathf.Sqrt(best),
@@ -584,6 +598,9 @@ namespace CosmicShore.Gameplay
             int own = -1;
             for (int laneIndex = 0; laneIndex < _railsForAI.LaneCount; laneIndex++)
             {
+                // The gap line is built between two whole loops; a lane cut into stretches has none, so a styled hull
+                // flies the gate way on a partially railed course.
+                if (!_railsForAI.LaneIsWhole(laneIndex)) return false;
                 var list = _railsForAI.LanePrisms(laneIndex);
                 if (list == null) continue;
                 var points = new List<Vector3>(list.Count);
