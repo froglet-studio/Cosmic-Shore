@@ -198,6 +198,28 @@ def project_network_hashes() -> "set[int]":
     return seen
 
 
+# The scene's crystal manager, as the donor (Warpline) authors it and as this race needs it: FixedCount (0), zero crystals.
+DONOR_CRYSTALS = "  crystalCountMode: 1\n  fixedCrystalCount: 1\n  extraCrystalsToSpawnBeyondPlayerCount: 1\n"
+NO_CRYSTALS = "  crystalCountMode: 0\n  fixedCrystalCount: 0\n  extraCrystalsToSpawnBeyondPlayerCount: 1\n"
+
+
+def crystal_errors(scene_text: str) -> "list[str]":
+    """Why this scene's race could spawn a crystal, or []. An omni crystal hatches a creature under a Jewel Wasp, and an
+    AI wasp leaves the race for any creature in the cell, so 'the barren cell has no creature' holds only while the
+    scene's crystal manager spawns none: exactly one manager, in FixedCount mode, with a count of 0."""
+    modes = re.findall(r"^  crystalCountMode: (\d+)$", scene_text, re.M)
+    counts = re.findall(r"^  fixedCrystalCount: (\d+)$", scene_text, re.M)
+    if len(modes) != 1 or len(counts) != 1:
+        return [f"{SCENE_NAME}.unity: expected one crystal manager, found {len(modes)} crystalCountMode and "
+                f"{len(counts)} fixedCrystalCount lines - re-read how this scene spawns crystals"]
+    if modes[0] != "0" or counts[0] != "0":
+        return [f"{SCENE_NAME}.unity: the crystal manager can spawn a crystal (crystalCountMode {modes[0]}, "
+                f"fixedCrystalCount {counts[0]}; the race needs FixedCount with a count of 0). An omni crystal hatches a "
+                f"predator under a Jewel Wasp and every AI wasp then rides creatures instead of racing "
+                f"(BURROWRUN.md section 2)"]
+    return []
+
+
 def clone_scene() -> str:
     scene = g.read(DONOR_SCENE)
     scene = lib.swap_guid(scene, EXISTING["WarplineController"], G_SCRIPT["BurrowRunController"],
@@ -232,6 +254,13 @@ if NEW_FIELDS not in scene and scene.count(_MEERKAT_FIELDS) == 1:
     scene = scene.replace(_MEERKAT_FIELDS, NEW_FIELDS)
 if NEW_FIELDS not in scene:
     scene_errors.append(f"{SCENE_NAME}.unity: authored block no longer in the committed scene:\n{NEW_FIELDS}")
+# The race spawns NO crystal (2026-11-23). The donor's crystal manager spawns players + 1 omni crystals in the nucleus,
+# and an omni crystal hatches a predator under a Jewel Wasp (JewelWaspHatchByCrystalEffectSO -> HatchPredator), so the
+# cell stopped being barren 40 game seconds into every race and every AI wasp stung and rode creatures until the
+# clock ran out: measured with the mode smoke test, 600 game seconds, no finisher, 16 to 49 creatures alive. A fixed
+# count of 0 is Redline's setting. One-shot on the donor's block; the check in the validation section never stands down.
+if NO_CRYSTALS not in scene and scene.count(DONOR_CRYSTALS) == 1:
+    scene = scene.replace(DONOR_CRYSTALS, NO_CRYSTALS)
 g.emit_scene(SCENE_NAME, G_SCENE, scene)
 
 # ── 5. Preview (a card without one offers no Test Flight) ────────────────────
@@ -325,6 +354,7 @@ for _needle in ("if (IsAI) StepAIFree();", "if (f) Sting(f);",
     if _needle not in _executor:
         errors.append(f"JewelWaspExecutor no longer has '{_needle}' - re-read how an AI wasp flies before trusting "
                       f"Burrow Run's 'no creature in the cell, so the AI races' rule")
+errors += crystal_errors(scene)
 if EXISTING["BarrenRaceCell"] not in NEW_FIELDS:
     errors.append("the race cell is no longer the barren one - an AI wasp stings any creature in the cell and "
                   "leaves the race (see the note above)")
