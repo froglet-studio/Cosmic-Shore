@@ -26178,6 +26178,28 @@ its plant, is destroyed as before. Compiled in the open editor (0 errors, 0 warn
       the plant finishes dying (no limb left standing, no error naming Spindle or SpindlePool).
 - [ ] Leave the mode and enter another flora mode: no MissingReferenceException from a reused limb.
 
+## Every menu window draws on its own Canvas, off while hidden (2026-11-22)
+
+`ModalWindowManager` gives each window its own nested Canvas (with a GraphicRaycaster) and keeps it on exactly while
+the window's CanvasGroup alpha is above 0.01 (`SyncWindowCanvas`, in `SetCanvasGroupVisible` and `LateUpdate`). This is
+the open item of `Docs/MENU_REDESIGN_B.md` 46.3. Measured in editor Play in Menu_Main with a temporary probe (about
+1,000 frames each side): the shared menu canvas held 6,937 graphics and had a graphic rebuilt on 1,013 of 1,013 frames
+(the hidden Voyage board's pin halo); after, about 3,200 graphics and 212 of 971 frames. Compiled in the open editor
+(0 errors, 0 warnings). In Play, driven by the probe: Arcade, Arena and Toybox each had their Canvas on in the frame
+they opened (nested under `UI_Refactored`, overlay), a click at the screen centre landed on the window while open and
+on the Home screen 1.6 s after it closed; the Arcade window was looked at in one Game view capture and drew as before.
+Not measured in a built player yet, and nothing below was done by hand.
+
+- [ ] Open and close every menu window with mouse and with a gamepad (Arcade, Arena, Toybox, Voyage, Settings,
+      Profile, Quests, What's new, Credits, Replays, the configure windows, the purchase confirmation): each appears,
+      takes clicks and B, and closes; nothing behind it takes a click while it is open.
+- [ ] Left and right between Toybox, Arcade, Arena and Voyage (the hub slide): the incoming window is drawn during
+      the slide, not one frame late.
+- [ ] A guided path (FTUE spotlight) onto a control inside a window still frames the control.
+- [ ] In a game scene: the pause window and the end-of-match windows open and close as before.
+- [ ] The fly hint, the Ark's Convert sweep and the domain volume hex still re-batch the remaining menu canvas each
+      frame (known, next step); this change does not address them.
+
 ## Flora growth runs on a frame budget (2026-11-22)
 
 Every plant's grow tick (`Flora.GrowCoroutine`) and `PhyllotacticFlora`'s queued limb spawns now go through
