@@ -1016,6 +1016,54 @@ namespace CosmicShore.Gameplay
             return _stunWait;
         }
 
+        bool _growTickQueued;
+        bool _growDrainQueued;
+
+        internal bool TryMarkGrowTickQueued()
+        {
+            if (_growTickQueued) return false;
+            return _growTickQueued = true;
+        }
+
+        internal bool TryMarkGrowDrainQueued()
+        {
+            if (_growDrainQueued) return false;
+            return _growDrainQueued = true;
+        }
+
+        internal void ClearGrowDrainQueued() => _growDrainQueued = false;
+
+        /// <summary>One grow tick, called by <see cref="FloraGrowthPump"/> when the frame has room for it.</summary>
+        internal void RunGrowTick()
+        {
+            _growTickQueued = false;
+            // Asked for while alive and growing; it may have been grazed, stunned or killed while it waited.
+            if (!isGrowing || IsDying || !isActiveAndEnabled) return;
+
+            Grow();
+
+            // Reproduction is decided once per grow tick rather than once per grown
+            // prism: the quota itself is EARNED by growth (NotifyGrew), so this only
+            // chooses when the decision is re-evaluated - and re-evaluating on the tick
+            // is what lets a plant that banked its quota while the species was at its
+            // cap fill the gap the moment a neighbour is grazed out. A plant with no
+            // banked growth fails on the first compare, so an unauthored species pays
+            // two int reads per tick and nothing else.
+            TryReproduce();
+        }
+
+        /// <summary>
+        /// Carries out one frame's step of growth this plant has already decided on, for a species that
+        /// queues its births (<c>PhyllotacticFlora</c>). Called by <see cref="FloraGrowthPump"/> in turn
+        /// with every other such plant. Returns whether orders are still waiting; <paramref name="worked"/>
+        /// says whether this call did anything.
+        /// </summary>
+        internal virtual bool DrainQueuedGrowth(out bool worked)
+        {
+            worked = false;
+            return false;
+        }
+
         IEnumerator GrowCoroutine()
         {
             // A seeder plants a whole forest in one frame, and plants that start their clocks together tick together
@@ -1027,16 +1075,10 @@ namespace CosmicShore.Gameplay
             {
                 if (isGrowing)
                 {
-                    Grow();
-
-                    // Reproduction is decided once per grow tick rather than once per grown
-                    // prism: the quota itself is EARNED by growth (NotifyGrew), so this only
-                    // chooses when the decision is re-evaluated - and re-evaluating on the tick
-                    // is what lets a plant that banked its quota while the species was at its
-                    // cap fill the gap the moment a neighbour is grazed out. A plant with no
-                    // banked growth fails on the first compare, so an unauthored species pays
-                    // two int reads per tick and nothing else.
-                    TryReproduce();
+                    // The tick itself (RunGrowTick) runs inside the frame's shared growth budget: this
+                    // frame while there is room, a later one when the garden is asking for more than a
+                    // frame can take. The cadence below does not wait for it.
+                    FloraGrowthPump.RequestTick(this);
 
                     yield return GrowWait();
                 }

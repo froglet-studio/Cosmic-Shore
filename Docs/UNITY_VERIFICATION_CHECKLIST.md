@@ -26178,6 +26178,22 @@ its plant, is destroyed as before. Compiled in the open editor (0 errors, 0 warn
       the plant finishes dying (no limb left standing, no error naming Spindle or SpindlePool).
 - [ ] Leave the mode and enter another flora mode: no MissingReferenceException from a reused limb.
 
+## Flora growth runs on a frame budget (2026-11-22)
+
+Every plant's grow tick (`Flora.GrowCoroutine`) and `PhyllotacticFlora`'s queued limb spawns now go through
+`FloraGrowthPump`, which serves them first come first served within 3 ms a frame (`BudgetMsPerFrame`), at least one a
+frame. Before, plants whose grow clocks expired together after a long frame all grew in the next frame, which made it
+long too. Compiled in the open editor (0 errors, 0 warnings). Measured in a built Windows player (`win_pc1122c`, one
+clean run a side, 2026-11-22 20:13-20:36) against bleeding-edge (`win_pc1122a`), p95 / worst frame ms: Bloomrush
+61 / 179 -> 39 / 96, DepthCharge 100 / 252 -> 49 / 84, Fulmen 89 / 288 -> 52 / 106, Sirocco 113 / 220 -> 49 / 81; with
+the budget off in the same build the numbers return to bleeding-edge's. Flown only by the bench AI, never by a person.
+
+- [ ] Bloomrush and Sirocco, two minutes each: gardens fill at a pace that looks like before (growth is spread over
+      frames, not slowed on purpose); no plant stops growing for good.
+- [ ] Eat a large garden down and stop: it regrows; a plant that dies mid-growth leaves no error naming
+      `FloraGrowthPump`.
+- [ ] Pause (time scale 0) and resume in a flora mode: growth holds while paused and continues after.
+
 ## 🟡 Black holes eat prisms the way fauna do (2026-11-22, Yash, NOT PLAYED)
 `Docs/PRISM_MOTION.md` section 3, "A black hole EATS what collides in its pull". `BlackHoleGravityField.ApplyContacts` -> `PrismMotion.AnnihilateInto` (both prisms `Prism.Consume`d into the hole). Compiled (both assemblies, Roslyn against the editor's references); not yet run in the editor.
 - [x] EditMode `PrismMotionTests`: all pass. 2026-11-22, real editor on B: at 837627b1dc: `PrismMotion` 18/18; `BlackHole` 39/40 and `Stoat` 64/65, the two failures not from this change (`BlackHoleTests.Lens_DrawsTheStudiosWaves` reads a shader line an earlier colour commit moved; `StoatSlingTests.NoStoatDrawsAPathOrARing_ForAnyPilot` trips on the word WorldDots in the pathfinder's own comment, from 2af146725e).
