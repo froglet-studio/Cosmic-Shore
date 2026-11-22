@@ -16,10 +16,12 @@
 // it"; WORMHOLE_SHADERS.md §17), still this one pass, no second camera and no new texture:
 //   - FAR VIEW: inside its Einstein ring a mouth shows the place round its OTHER mouth (the same scene copy, sampled round
 //     the far mouth's place on screen, wide-angle, the rim dark as a sphere's limb), so it reads as a way through, not a lens.
-//   - THE THROAT (riding, _MWThroat*): the way ahead is a clear disk that grows until it swallows the view; the world outside
-//     the tube smears into streaks running to it (MW_STREAK_TAPS taps of the scene copy), dimmed, washed in the tube's tint,
-//     a bright ring round the way ahead. The ridden tube's wall is not marched (the throat draws it), so riding costs a few
-//     taps instead of the march; leaving throws one ripple out from the centre (the POP).
+//   - THE THROAT (riding, _MWThroat*, _MWRing*, _MWHull; Yash, 2026-11-22: "players should not be able to see outer world
+//     that time, it's like gliding through the inner surface of the space-time hole, and exiting to the universe again"):
+//     a camera inside a tube sees ONLY the tube's inner wall - a grid on bent space that follows the tube's own path,
+//     fading into the dark ahead, lit by the way out - the riders in the tube, and the way out, a disk of light that opens
+//     onto the world as it nears. No march and no smear: a loop over 16 rings of the wall, no texture read on the wall.
+//     Leaving throws one ripple out from the centre (the POP).
 //   - FORMING: the ring flares while the tube opens (folded in on the C# side).
 // Comfort's Distortion intensity and every speed cap are folded in on the C# side. A vessel in front of a tube or a mouth
 // is neither bent nor lit. Removed 2026-11-01 (Docs/Shaders/WORMHOLE_SHADERS.md §16, restore from this commit's parent):
@@ -62,16 +64,15 @@ Shader "CosmicShore/SolitonTunnel"
             #define MEERKAT_FIELD_STEPS 256
             #define MW_PI 3.14159265
             #define MW_GRAZE 0.9      // a grazing crossing bends nearly as much as a square one (the Tube Lens Lab's 0.9)
-            // The throat's streaks: taps of the scene copy per pixel while riding (dithered, so few read as smooth). The
-            // march-free variant is the phone's: fewer taps. A tube the eye is inside past MW_RIDE_SKIP draws no wall (the
-            // throat draws it); the march-free wall cannot draw a tube from inside at all, so there any insideness skips it.
+            // A tube the eye is inside past MW_RIDE_SKIP draws no wall from outside (the throat draws it); the march-free
+            // wall cannot draw a tube from inside at all, so there any insideness skips it.
             #if defined(_MW_STANDIN)
-            #define MW_STREAK_TAPS 4
             #define MW_RIDE_SKIP 0.0
             #else
-            #define MW_STREAK_TAPS 6
             #define MW_RIDE_SKIP 0.5
             #endif
+            #define MW_RINGS 16
+            #define MW_HULLS 4
             #define MW_FAR_FIELD 0.45   // how wide a field of the far side a mouth shows (screen heights at its rim)
 
             // x the camera's aspect, y how far the eye is inside a tube (0..1), z that tube's steady centre (screen heights),
@@ -111,17 +112,26 @@ Shader "CosmicShore/SolitonTunnel"
             float4 _MWWellC[MEERKAT_LENS_MAX_WELLS];
             float4 _MWWellP[MEERKAT_LENS_MAX_WELLS];
             float4 _MWWellT[MEERKAT_LENS_MAX_WELLS];
-            // x mouths in the bank, y the throat stretch (x how far inside), z its flow phase, w its twist
+            // x mouths in the bank, z the inner wall's ripple phase (y, w unused)
             float4 _MWHole;
             // F per mouth: xy its tube's OTHER mouth on screen (screen heights), z how much of the far side it shows (0: none)
             float4 _MWWellF[MEERKAT_LENS_MAX_WELLS];
-            // Riding (SolitonTunnelLensPass.Throat): xy the way ahead on screen (screen heights), z its clear disk's radius,
-            // w how far into the ride the eye is (0..1, eased); 2: x the streaks' reach, y the dim, z the exit pop's
-            // strength now, w its radius now; 3: x the ring round the way ahead; Tint: the ridden tube's (rgb, a strength).
+            // Riding (SolitonTunnelLensPass.Throat): x the distance the wall fades into the dark over (u), y the grid's
+            // ring spacing (u), z its lines round the tube, w how far into the ride the eye is (0..1, eased);
+            // 2: x the grid's brightness, y the way out's light, z the exit pop's strength now, w its radius now;
+            // 3: x the ripples' depth, y the grid's twist (rad per u ahead), z 1 when the tube's end ahead is a mouth,
+            // w the camera's focal length (screen heights); Tint: the ridden tube's (rgb, a strength).
             float4 _MWThroat;
             float4 _MWThroat2;
             float4 _MWThroat3;
             float4 _MWThroatTint;
+            // The ridden tube's wall as rings ahead of the eye, nearest first, the last at the tube's end: C xy the ring's
+            // centre on screen, z its radius (screen heights); S x how far along the tube it is (u), y how far ahead of
+            // the eye (u), zw the tube's frame normal there on screen (unit).
+            float4 _MWRingC[MW_RINGS];
+            float4 _MWRingS[MW_RINGS];
+            // The riders in the ridden tube: xy on screen, z the radius of the disc kept in sight, w its depth (0: none).
+            float4 _MWHull[MW_HULLS];
 
             TEXTURE2D(_MeerkatSceneColor);
 
@@ -406,17 +416,6 @@ Shader "CosmicShore/SolitonTunnel"
                 return disp;
             }
 
-            // Riding: the throat stretches out from the way ahead (_MWThroat.xy), streaming toward it, slightly twisted.
-            float2 MWStretch(float2 p)
-            {
-                if (_MWHole.y <= 0.0) return float2(0.0, 0.0);
-                float2 q = p - _MWThroat.xy;
-                float r = length(q);
-                float wave = 0.6 + 0.4 * sin(2.0 * MW_PI * (log(max(r, 1e-3)) * 1.6 - _MWHole.z));
-                float k = smoothstep(0.05, 0.6, r) * wave;
-                return (-q * _MWHole.y + float2(-q.y, q.x) * _MWHole.w) * k;
-            }
-
             // Leaving a tube: one ripple thrown out from the middle of the screen (space closing behind you).
             float2 MWPop(float2 p)
             {
@@ -425,58 +424,91 @@ Shader "CosmicShore/SolitonTunnel"
                 return p / max(r, 1e-4) * (-_MWThroat2.z * exp(-k * k));
             }
 
-            // The scene as a rider sees it at s: inside the clear disk round the way ahead, as it is; outside it, smeared
-            // into streaks running to the way ahead (taps toward it, dithered per pixel so few taps read as smooth).
-            // mask: how much of the throat this pixel is (0 in the disk and when not riding).
-            float3 MWThroatScene(float2 s, float aspect, float2 pix, out float mask, out float2 q)
+            // One family of lines on the wall: 1 on a line, 0 between, x in line spacings and w the line's half width in
+            // them. A wide line is dimmed so its light stays the same: far lines melt into an even glow, not into moire.
+            float MWGridLine(float x, float w)
             {
-                mask = 0.0;
-                q = s - _MWThroat.xy;
-                if (_MWThroat.w <= 0.0) return MWScene(s, aspect);
-                float r = length(q), R = _MWThroat.z;
-                mask = _MWThroat.w * smoothstep(R, R * 1.5 + 0.06, r);
-                float reach = _MWThroat2.x * mask;
-                if (reach <= 0.002) return MWScene(s, aspect);
-                float jitter = frac(52.9829189 * frac(dot(pix, float2(0.06711056, 0.00583715))));
-                float3 acc = float3(0.0, 0.0, 0.0);
-                for (int k = 0; k < MW_STREAK_TAPS; k++)
-                    acc += MWScene(_MWThroat.xy + q * (1.0 - reach * (k + jitter) / MW_STREAK_TAPS), aspect);
-                return acc / MW_STREAK_TAPS;
+                float fromLine = abs(frac(x + 0.5) - 0.5);
+                return (1.0 - smoothstep(0.0, w, fromLine)) * (0.07 / (w + 0.035));
+            }
+
+            // RIDING: what a camera inside a tube sees - the tube's inner wall, the riders in it, the way out. Nothing of
+            // the outer world. The wall is given as MW_RINGS rings ahead of the eye (_MWRingC / _MWRingS), each a circle
+            // on screen; they shrink with distance and slide sideways where the tube bends. This pixel's ray meets the wall
+            // between the last ring it is inside and the first it is outside, which gives where along the tube (s), how
+            // far ahead (d) and where round it (ang, from the tube's own frame, so the grid does not turn with the camera).
+            // A pixel inside every ring looks straight out of the tube's end.
+            //   - the wall: the tube's tint, dark, fading into the depth (fog); on it a grid of rings every _MWThroat.y u
+            //     (they stand still in the tube, so they rush past) and _MWThroat.z lines along it; ripples of light run
+            //     along it; near the way out its light spills on the wall.
+            //   - the way out: a disk of light, clearing onto the world (the scene copy) as its ring grows on screen.
+            //   - riders: a scene pixel inside a rider's disc AND within its sphere's depths is that rider (or its cargo
+            //     beside it): it is shown. Every other scene pixel is the outer world and is not.
+            float3 MWInside(float2 p, float sceneZ, float aspect)
+            {
+                float gPrev = length(p - _MWRingC[0].xy) - _MWRingC[0].z;
+                int hit = MW_RINGS;
+                float t = 0.0;
+                for (int k = 1; k < MW_RINGS; k++)
+                {
+                    float g = length(p - _MWRingC[k].xy) - _MWRingC[k].z;
+                    if (hit == MW_RINGS)
+                    {
+                        if (g > 0.0) { hit = k; t = gPrev < 0.0 ? saturate(gPrev / (gPrev - g)) : 0.0; }
+                        else gPrev = g;
+                    }
+                }
+                float3 tint = dot(_MWThroatTint.rgb, float3(1.0, 1.0, 1.0)) > 1e-4 ? _MWThroatTint.rgb : _MWGlintColour.rgb;
+                float3 col;
+                if (hit == MW_RINGS)
+                {
+                    // out of the tube's end: light, clearing onto the world as the way out nears
+                    float veil = 1.0 - smoothstep(0.08, 0.5, _MWRingC[MW_RINGS - 1].z);
+                    float3 light = lerp(tint, _MWGlintColour.rgb, 0.7) * (0.35 + 0.65 * _MWThroat2.y);
+                    col = _MWThroat3.z > 0.5 ? lerp(MWScene(p, aspect), light, veil) : tint * 0.03;
+                }
+                else
+                {
+                    float4 A = _MWRingS[hit - 1], B = _MWRingS[hit];
+                    float2 q = p - lerp(_MWRingC[hit - 1].xy, _MWRingC[hit].xy, t);
+                    float s = lerp(A.x, B.x, t), d = lerp(A.y, B.y, t);
+                    float2 n = lerp(A.zw, B.zw, t);
+                    float ang = atan2(q.y, q.x) - atan2(n.y, n.x) + _MWThroat3.y * d;
+                    float fog = exp(-d / max(_MWThroat.x, 1.0));
+                    float sp = max(_MWThroat.y, 0.5);
+                    float rings = MWGridLine(s / sp, 0.035 + 0.45 * saturate(d / (30.0 * sp)));
+                    float spokes = MWGridLine(ang * _MWThroat.z / (2.0 * MW_PI), 0.04 + 0.3 * saturate(d / (60.0 * sp)));
+                    float ripple = 1.0 + _MWThroat3.x * sin(2.0 * MW_PI * (s / (4.0 * sp) - _MWHole.z));
+                    float fromEnd = max(_MWRingS[MW_RINGS - 1].y - d, 0.0);
+                    float spill = exp(-fromEnd / max(3.0 * sp, 1.0)) * _MWThroat2.y * _MWThroat3.z;
+                    col = tint * ((0.035 + 0.09 * fog) * ripple)
+                        + lerp(tint, _MWGlintColour.rgb, 0.35) * (max(rings, spokes) * fog * _MWThroat2.x * ripple)
+                        + lerp(tint, _MWGlintColour.rgb, 0.7) * (0.5 * spill);
+                }
+                float rider = 0.0;
+                for (int h = 0; h < MW_HULLS; h++)
+                {
+                    float4 H = _MWHull[h];
+                    if (H.w <= 0.0) continue;
+                    float reach = H.z * H.w / max(_MWThroat3.w, 1e-3);   // the sphere's radius (u)
+                    rider = max(rider, (1.0 - smoothstep(0.85 * H.z, H.z, length(p - H.xy))) * step(abs(sceneZ - H.w), reach));
+                }
+                if (rider > 0.0) col = lerp(col, MWScene(p, aspect), rider);
+                return col;
             }
 
             // The bent scene (one sample), darkened in a throat, washed by the domain tint through the wall, then the light:
             // the wall's rim, glint and glow, and the mouths' Einstein rings.
-            half4 MWShade(float2 p, float2 disp, float aspect, float3 ring, float shadow, float4 far, float2 pix)
+            half4 MWShade(float2 p, float2 disp, float aspect, float3 ring, float shadow, float4 far)
             {
                 float4 L = g_mwLayer.a;
                 float od = L.x;
                 if (dot(disp, disp) < 1e-12 && od < 1e-4 && dot(ring, ring) < 1e-8 && far.z <= 0.0 && _MWThroat.w <= 0.0) discard;
-                // riding a tube: the way ahead stays still (comfort)
+                // partly inside a tube (crossing its wall): the middle of the screen stays still (comfort)
                 if (_MWView.y > 0.0 && _MWView.z > 0.0)
-                    disp *= lerp(1.0, smoothstep(0.4 * _MWView.z, _MWView.z, length(p - _MWThroat.xy)), _MWView.y);
+                    disp *= lerp(1.0, smoothstep(0.4 * _MWView.z, _MWView.z, length(p)), _MWView.y);
                 float3 col = float3(0.0, 0.0, 0.0);
-                if (far.z < 0.999)
-                {
-                    float mask = 0.0; float2 q = float2(0.0, 0.0);
-                    col = MWThroatScene(p + disp, aspect, pix, mask, q) * (1.0 - shadow);
-                    if (mask > 0.0)
-                    {
-                        // the throat's wall: streak lines round the way ahead, their light running to it; dimmed, washed
-                        // in the tube's tint, and a bright ring round the way ahead
-                        float r = length(q), ang = atan2(q.y, q.x);
-                        float lines = 0.5 + 0.5 * sin(ang * 23.0 + 3.0 * sin(ang * 7.0));
-                        float flow = 0.5 + 0.5 * sin(2.0 * MW_PI * (log(max(r, 1e-3)) * 1.6 - _MWHole.z) + MW_PI * lines);
-                        col *= 1.0 - _MWThroat2.y * mask * (0.55 + 0.45 * lines * (1.0 - flow));
-                        float4 tt = _MWThroatTint;
-                        col = lerp(col, col * lerp(float3(1.0, 1.0, 1.0), tt.rgb * 1.25, 0.6) + tt.rgb * 0.03, saturate(tt.a) * mask);
-                    }
-                    if (_MWThroat.w > 0.0 && _MWThroat3.x > 0.0)
-                    {
-                        float R = _MWThroat.z, kr = (length(q) - (R * 1.25 + 0.03)) / (0.012 + 0.04 * R);   // a thin ring, however big
-                        col += lerp(float3(1.0, 1.0, 1.0), _MWThroatTint.rgb, saturate(_MWThroatTint.a))
-                               * (_MWThroat3.x * _MWThroat.w * exp(-kr * kr));
-                    }
-                }
+                if (far.z < 0.999) col = MWScene(p + disp, aspect) * (1.0 - shadow);
                 if (far.z > 0.0)   // a mouth's far view: the place round its other mouth
                 {
                     float3 fc = MWScene(far.xy, aspect) * far.w;
@@ -512,6 +544,11 @@ Shader "CosmicShore/SolitonTunnel"
                 float aspect = _MWView.x;
                 float2 p = (uv - 0.5) * float2(aspect, 1.0);
                 float sceneZ = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
+                // riding: the tube's inner wall and nothing of the outer world; fully inside, nothing else is worked out
+                float ride = _MWThroat.w;
+                float3 inside = float3(0.0, 0.0, 0.0);
+                if (ride > 0.0) inside = MWInside(p, sceneZ, aspect);
+                if (ride >= 0.999) return half4(inside, 1.0);
                 #if defined(_MW_STANDIN)
                 float2 disp = MWContourStandin(p, sceneZ);
                 #else
@@ -521,9 +558,9 @@ Shader "CosmicShore/SolitonTunnel"
                 float shadow = 0.0;
                 float4 far = float4(0.0, 0.0, 0.0, 1.0);
                 disp += MWWells(p, sceneZ, ring, shadow, far);
-                disp += MWStretch(p);
                 disp += MWPop(p);
-                return MWShade(p, disp, aspect, ring, shadow, far, input.positionCS.xy);
+                half4 outside = MWShade(p, disp, aspect, ring, shadow, far);
+                return half4(lerp(outside.rgb, inside, ride), 1.0);   // crossing a mouth: the world eases into the tube
             }
             ENDHLSL
         }
