@@ -26069,3 +26069,15 @@ before reading its abilities. Compiled with Unity's own compiler (0 errors); not
 - [ ] Fly the Serpent, raise a wall, then leave the match (or swap vessel) while the wall is still growing: no
       MissingReferenceException naming VesselStatus.
 - [ ] With the Serpent alive, the wall's Mass lockdown panels and the Space upgrade's steal of shielded prisms work as before.
+
+## Start on a game card when the sync manager is not on the network (2026-11-22)
+
+Bug ledger E-31b2135ed2 (Andrew's editor, 5 sightings): pressing Start on a game card threw NullReferenceException
+inside Netcode from `ArcadeConfigSyncManager.ConfirmReady_ServerRpc`, and left the card on "Waiting for others...".
+The card now refuses Start with a warning when the sync manager is not spawned, as it already did with no host
+listening. Compiled in the open editor (0 errors); not played. Why the manager was unspawned on Andrew's machine is
+not known: it needs his editor log from that session.
+
+- [ ] Normal case: open a game card alone and with a party, press Start: the game launches as before.
+- [ ] If the warning "Start refused - the arcade config sync manager is not spawned" ever shows, send the editor log:
+      that is the state Andrew hit, and the log before it says how the game got there.
