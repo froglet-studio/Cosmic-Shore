@@ -8,7 +8,8 @@
 - **Seven machines send errors from Unity**, each to its own `bugledger/<user>` branch: Garrett (`gradi`), Shombith,
   Andrew (`owner`), jtgjones (`mrglo`), Yash (`yskha`), Caleb (`belac`), Will (`will`).
 - **Ledger on 2026-11-22 (by hand; 2026-11-21 20:37 UTC): 380 open, 40 being checked after a fix** (420 issues;
-  the Team Bug Board was mirrored with it). Yash asked for
+  the Team Bug Board was mirrored with it). **Later that day: 379 open, 42 being checked** (421: one new issue,
+  fixed, and the Rider folder error on Yash's machine; section 3). Yash asked for
   the two errors new since the 11-21 sweep, then every open one on his machine (81), then the other machines' (208
   seen since 10-21, 53 of them naming a game script outside the multiplayer folders). Five were code and are fixed
   (section 3), one was already fixed and is now marked, one is a missing backend deploy (the `launch-flags` Cloud
@@ -118,6 +119,19 @@ From the multiplayer session, the same day:
 - "Double initialization not allowed" from `ClientPlayerVesselInitializer.ReInitializePair` (E-71cedd035d, Yash's
   machine) was already fixed on 11-02 by `b6c5ad826` (B47: a reclaimed seat uses `ChangePlayer`, not a second
   `Initialize`). Marked against that commit.
+
+Later the same day (ledger then: 379 open, 42 being checked, 421 issues):
+
+- Start on a game card threw NullReferenceException inside Netcode from
+  `ArcadeConfigSyncManager.ConfirmReady_ServerRpc` and left the card on "Waiting for others..." (E-31b2135ed2,
+  Andrew's machine, new on 11-21, 5 sightings). A host was listening but the card's sync manager was not spawned.
+  Fixed in `ecdcc06b6e`: `ArcadeGameConfigureModal.OnStartGameClicked` refuses Start with a warning in that state.
+  Compiled in the open editor (0 errors), not played. Why the manager was unspawned is not known: it needs Andrew's
+  editor log from such a session.
+- The Rider plugin folder error on Yash's machine (E-15034bdc73, 51 sightings) was a machine setting, not code:
+  Unity's external script editor pointed at a leftover Rider folder with no `rider-unity` plugin. The setting is now
+  none and the folder is deleted; one editor start was read clean from the log. Marked against `860bc615d2` so the
+  editor counts clean sessions.
 
 ### 2026-11-21 (not run in the editor; `unity_refcompile` OK)
 
