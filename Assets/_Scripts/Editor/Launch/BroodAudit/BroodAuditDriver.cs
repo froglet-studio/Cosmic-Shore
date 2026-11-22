@@ -50,6 +50,8 @@ namespace CosmicShore.Editor
         readonly Dictionary<IPlayer, float> _speedSum = new();
         readonly Dictionary<string, float> _claimS = new();
         readonly List<Domains> _teamDomains = new();
+        readonly StringBuilder _wallRows = new();
+        bool _clientSeen;
         int _samples;
         readonly List<string> _notes = new();
         readonly BroodAuditActionCounter _actions = new();
@@ -110,6 +112,18 @@ namespace CosmicShore.Editor
         void TickSettle(double now)
         {
             if (now - _phaseStarted < 1.5) return;
+            if (_m.waitClient)
+            {
+                var nm = Unity.Netcode.NetworkManager.Singleton;
+                int clients = nm != null && nm.IsServer ? nm.ConnectedClientsIds.Count : 0;
+                if (clients < 2)
+                {
+                    if (now - _phaseStarted > 900) { Finish(now, "the client never connected"); return; }
+                    return;
+                }
+                if (!_clientSeen) { _clientSeen = true; _phaseStarted = now; Note($"client connected ({clients} connections)"); return; }
+                if (now - _phaseStarted < 5) return;
+            }
             Configure();
             Subscribe();
             UnityEngine.Random.InitState(_m.seed);
@@ -284,6 +298,12 @@ namespace CosmicShore.Editor
                 walls++;
                 if (w.IsActive) active++;
                 if (membersField?.GetValue(w) is System.Collections.ICollection m) bricks += m.Count;
+            }
+            if (_m.waitClient && BroodAuditLauncher.OutDir is { } dir)
+            {
+                if (_wallRows.Length == 0) _wallRows.Append("t,walls,bricks,active\n");
+                _wallRows.Append(string.Format(CultureInfo.InvariantCulture, "{0:0.0},{1},{2},{3}\n", Time.time - _matchStart, walls, bricks, active));
+                System.IO.File.WriteAllText(System.IO.Path.Combine(dir, $"walls_host_{_m.index}.csv"), _wallRows.ToString());
             }
             _m.serpentWallsMax = Mathf.Max(_m.serpentWallsMax, walls);
             _m.serpentBricksMax = Mathf.Max(_m.serpentBricksMax, bricks);

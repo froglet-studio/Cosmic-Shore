@@ -51,7 +51,7 @@ namespace CosmicShore.Editor
         {
             public int index, seed, intensity;
             public string teamA, teamB, teamC = "", hostHull, difficulty = "Legendary";
-            public bool parkHost, stockCard;
+            public bool parkHost, stockCard, waitClient;
             public float limitS = 300f, timeScale = 1f;
             public string status = "planned", phaseReached = "", outcome = "", fault = "", notes = "", broods = "",
                 winner = "", claim = "", hostDomainAtLaunch = "", allowed = "", hostBooks = "";
@@ -87,6 +87,8 @@ namespace CosmicShore.Editor
         }
 
         static RunState _state;
+        /// <summary>Where this run writes (the driver adds its per-match wall series here).</summary>
+        public static string OutDir => _state?.outDir;
         static BroodAuditDriver _driver;
         static double _startedAt, _exitAt = -1;
 
@@ -129,6 +131,7 @@ namespace CosmicShore.Editor
                         difficulty = Arg("-broodDifficulty", "Legendary"),
                         parkHost = HasArg("-broodPark"),
                         stockCard = HasArg("-broodStock"),
+                        waitClient = HasArg("-broodWaitClient"),
                         hostHull = hostOff,
                     });
             }
