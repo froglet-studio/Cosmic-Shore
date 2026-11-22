@@ -86,7 +86,9 @@ if [ "$activated" != true ]; then
   # The workflow reads this and falls back to the reference compile, so a licence problem
   # does not hide a compile break (or read as one).
   : > "$GITHUB_WORKSPACE/unity-activation-failed"
-  exit 1
+  # Exit 0: the fallback step runs the reference compile and the classify step gives the
+  # verdict. Exiting 1 here turned the whole job red even when that compile passed.
+  exit 0
 fi
 echo "Licence activated ($how)."
 
