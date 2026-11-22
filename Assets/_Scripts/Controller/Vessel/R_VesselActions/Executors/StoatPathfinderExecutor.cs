@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     /// largest wins; they never add. This is the swing's speed-up: the one slingshot.</para>
     ///
     /// <para><b>Nothing is drawn, for any pilot</b> (Yash, 2026-11-22: "I dont need to see the drawing line either"). The swing's
-    /// reach ring, its dotted exit line and its fling ring were deleted with <c>StoatPathfinderWorldDots</c>; Time 5's Foresight
+    /// reach ring, its dotted exit line and its fling ring were deleted with the class that drew them; Time 5's Foresight
     /// and every older path and ring went on 2026-11-21.</para>
     ///
     /// <para><b>One writer.</b> This is the only writer of <see cref="VesselTransformer.FlightTimeScale"/> on the Stoat; it
