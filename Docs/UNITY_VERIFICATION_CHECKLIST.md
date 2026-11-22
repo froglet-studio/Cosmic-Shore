@@ -134,7 +134,7 @@ the Amoebius build of these files was not run here.
    join from the new one shows the same toast with "an older version".
 6. Revert the bump in step 3 before committing anything.
 
-### 🟡 One camera whoever flies: the player's camera on an AI-flown hull; the panel keeps only Free fly (`Ys-bleeding-edge`, 2026-11-22, Yash) — MEASURED IN PLAY ON THREE HULLS; THE LOOK AND THE OTHER HULLS BY HAND
+### 🟡 One camera whoever flies: the player's camera on an AI-flown hull; the panel keeps only Free fly (`Ys-bleeding-edge`, 2026-11-22, Yash) — MEASURED IN PLAY ON SIX HULLS; THE LOOK, THE JEWEL WASP, THE MENU AND TWO MACHINES BY HAND
 
 What changed: the AI Diagnose panel (F2, Third Eye) lost its Chase (30 behind, 8 up), Follow and Orbit cameras; Free
 fly is its one camera. A vessel's own camera effects (the Thresher's ball zoom, the Swordfish's sword reach and pan,
@@ -160,9 +160,19 @@ with `PilotControl.TrySetAIFlies` (the panel's own switch), took it back, then d
   flies on (0.01 u against 117 u), Frame pilot lands on the framed pose and stays there, Release puts the camera back
   behind the hull at its follow distance, and `aidiag chase` answers that it was removed.
 
-**Still by hand** (not measured): how it looks and feels, steps 3 to 7 below for the Jacks, Jewel Wasp, Shrike and
-Meerkat, the menu's lava lamp, and two machines. The probe's first seconds of each match were the pre-game cinematic,
-so "you flying" was measured after the AI handed the hull back, not at the start.
+A second Play run the same day (same probe, also reading each hull's own state) covered the other three hulls with
+the AI flying the local hull:
+- **Shrike (Thornline)**: docked on 317 samples, the camera pulled back on all 317, from 30 to 150 units; back at 30
+  when undocked. No jump at either hand-over.
+- **Meerkat (Burrow Run)**: riding a tunnel on 628 samples, the tunnel-ride camera on for 622 (the six misses are the
+  first frame of each ride). No jump at either hand-over.
+- **Jacks (Decoy Run, Trawl)**: the net camera held the rig on every sample while the AI flew (507 of 507, as it did
+  while you held the hull). **The pull-back itself was not seen**: in neither match did the net spread wider than the
+  70-unit view, so the distance stayed at 70. Fly it with a wide net to see it (step 4).
+
+**Still by hand** (not measured): how it looks and feels, the Jacks' pull-back with a wide net, the Jewel Wasp, the
+menu's lava lamp, and two machines. The probe's first seconds of each match were the pre-game cinematic, so "you
+flying" was measured after it ended and again after the AI handed the hull back.
 
 By hand, in the editor, any gate race or freestyle:
 1. Fly your hull and note how far back the camera sits. F2, Pilots: **AI** on your own hull. The view does not move:
