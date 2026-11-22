@@ -65,6 +65,22 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Skim Race flights record a finish: the crystal target and the team's crystals (`Ys-bleeding-edge`, 2026-11-23, Yash) — NOT COMPILED BY ITS AUTHOR, NOT RUN IN EDITOR
+
+**What was wrong.** `HumanFlightRecorder` took a flight's `raceTarget` only from `SwitchTargetCount`, which only a gate
+race sets. Skim Race ends when a team's summed crystals reach `CrystalTargetCount`, so every Skim Race flight was written
+with `raceTarget` 0 and `finished` false (the chart read 0 of 33 finished). Now, in Skim Race only, `raceTarget` is the
+crystal target, the header's `rings` is the pilot's team's summed crystals, and `finished` is true when the team reached
+the target (Yash's decision, 2026-11-23). The per-sample `rings` column and every other mode are unchanged.
+
+**Verify in editor**
+- [ ] Fly a Skim Race your team wins. The flight file's header has `"raceTarget"` equal to the round's crystal target
+      (the HUD's target), `"rings"` at least that, and `"finished":true`.
+- [ ] Fly one a rival team wins. `"finished":false`, `"rings"` below `"raceTarget"`, and `"result"` still says who won.
+- [ ] Fly any gate race (Switchback). Its `raceTarget`, `rings` and `finished` read as before.
+- [ ] `py Tools/Build/rung_bars.py --no-fetch` and `py Tools/Build/vessel_mode_chart.py` still run, and a new Skim Race
+      flight counts as finished in both. Flights recorded before this change keep `raceTarget` 0.
+
 ### 🔴 Element armour now lands on EVERY light fauna and boid: Mass shielded, Charge all danger (`cece/peaceful-babbage-tsg0kd`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED, changes shipped creatures
 
 **What was wrong.** `LightFauna` and `Boid` arm their bodies in `Initialize`, which every spawner calls BEFORE
