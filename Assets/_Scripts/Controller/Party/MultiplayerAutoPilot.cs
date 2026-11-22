@@ -57,6 +57,7 @@ namespace CosmicShore.Gameplay
         MultiplayerAutoArgs _args;
         readonly Result _result = new();
         float _startTime;
+        bool _joinersWriteNoMarkers;   // host: the joiners came by id or name, so no marker file will ever arrive
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ParseArgs()
@@ -150,9 +151,22 @@ namespace CosmicShore.Gameplay
             // Stay up until every joiner says it is in. The host counts a joiner the moment it connects, seconds
             // before that joiner's own vessel is ready; quitting then pulled the session from under it (the first
             // built-player run, 2026-11-22: host PASS at 97 s, joiner never ready).
-            if (!string.IsNullOrEmpty(_args.RendezvousPath))
+            if (!string.IsNullOrEmpty(_args.RendezvousPath) && _args.Expect > 1)
             {
-                if (!await WaitUntil(ct, "every joiner confirmed", () => JoinedMarkerCount() >= _args.Expect - 1))
+                // A joiner sent by "id:" or "name:" has no rendezvous path, so it can write no marker. When no marker
+                // at all arrives in the time a joiner allows itself to get in, the joiners are taken to be of that
+                // kind and the host passes on the party count above. Once one marker has arrived the joiners read the
+                // file, and the host waits for every one of them as before (a run that mixes the two kinds still
+                // waits for markers the id and name joiners cannot write).
+                float markerBy = Time.realtimeSinceStartup + JoinSettleSeconds;
+                while (JoinedMarkerCount() == 0 && Time.realtimeSinceStartup < markerBy && !TimedOut())
+                    await UniTask.Delay(TimeSpan.FromSeconds(PollSeconds), DelayType.Realtime, cancellationToken: ct);
+                if (JoinedMarkerCount() == 0)
+                {
+                    _joinersWriteNoMarkers = true;
+                    Step("no joiner wrote a marker: they joined by id or name, which have no rendezvous path");
+                }
+                else if (!await WaitUntil(ct, "every joiner confirmed", () => JoinedMarkerCount() >= _args.Expect - 1))
                     return $"only {JoinedMarkerCount()} of {_args.Expect - 1} joiners confirmed they were in the party";
             }
             return null;
@@ -399,7 +413,8 @@ namespace CosmicShore.Gameplay
 
             if (isHost)
             {
-                if (!await WaitUntil(ct, "every player is in the turn", () => MarkerCount(InMatchSuffix) >= _args.Expect))
+                if (!_joinersWriteNoMarkers
+                    && !await WaitUntil(ct, "every player is in the turn", () => MarkerCount(InMatchSuffix) >= _args.Expect))
                     return $"only {MarkerCount(InMatchSuffix)} of {_args.Expect} players reached a running turn";
                 await UniTask.Delay(TimeSpan.FromSeconds(MatchRunSeconds), DelayType.Realtime, cancellationToken: ct);
                 var loader = FindAnyObjectByType<SceneLoader>();
@@ -419,7 +434,8 @@ namespace CosmicShore.Gameplay
             Step($"party still together {ReturnSettleSeconds:0} s after the return");
             WriteMarker(BackSuffix);
 
-            if (isHost && !await WaitUntil(ct, "every player is back", () => MarkerCount(BackSuffix) >= _args.Expect))
+            if (isHost && !_joinersWriteNoMarkers
+                && !await WaitUntil(ct, "every player is back", () => MarkerCount(BackSuffix) >= _args.Expect))
                 return $"only {MarkerCount(BackSuffix)} of {_args.Expect} players confirmed the return";
             return null;
         }
