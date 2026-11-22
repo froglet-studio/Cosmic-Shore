@@ -1,53 +1,77 @@
 # Burrow Run (`GameModes.BurrowRun = 71`)
 
-The **Meerkat's time race**, the Vessel Studio's Meerkat race (`Docs/Studios/VesselStudio/meerkat.html`) in the game. A
-closed loop of **eight** switch rings is cut through the barren race cell; every pilot flies **two laps** of it in
-order, and the first **DOMAIN** whose **LEAD RUNNER** threads the last ring of the last lap wins (golf: finish time).
+The **Jewel Wasp's time race**. A closed loop of **eight** switch rings is cut through the barren race cell; every
+pilot flies **two laps** of it in order, and the first **DOMAIN** whose **LEAD RUNNER** threads the last ring of the
+last lap wins (golf: finish time).
+
+**Re-seated 2026-11-22 (Yash):** the mode was built as the Meerkat's race (the Vessel Studio's Meerkat race). The
+Meerkat keeps one Time game, Warpline, and Burrow Run moved to a hull that had none. The name, id, scene, circuit,
+target and scoring did not change; the card, the preview, the AI numbers and the Meerkat-only parts did (section 5).
 
 | | |
 |---|---|
 | Scene | `Assets/_Scenes/Multiplayer Scenes/MinigameBurrowRun.unity` (cloned from `MinigameWarpline`) |
 | Controller | `BurrowRunController : GateRaceController` |
-| Course | `BurrowRunCourseSource`: `SlingshotCourse.ForIntensity` (the studio's 600 u eight-ring circle and its intensity ladder) through the shared `HeadlongCircuit` |
+| Course | `BurrowRunCourseSource`: `SlingshotCourse.ForIntensity` (the 600 u eight-ring circle and its intensity ladder) through the shared `HeadlongCircuit` |
 | Metric | `ScoringMetric.SwitchesThreaded` (9), **reused**, golf |
 | Target | `EndConditionOverridesSO.burrowRunGateTarget` = **16** (2 laps × 8 rings) - FrogletTools ▸ Game Modes ▸ End Game Conditions |
-| Card | `_SO_Assets/Games/ArcadeGameBurrowRun.asset` - Vessels: `SO_Class_Meerkat` only |
+| Card | `_SO_Assets/Games/ArcadeGameBurrowRun.asset` - Vessels: `SO_Class_JewelWasp` only |
 | Generator | `Tools/Build/author_burrowrun_assets.py` (`--check`) |
-| Vessel | `R_VesselActions/MEERKAT.md` (the wormhole) |
+| Vessel | `R_VesselActions/JEWEL_WASP.md` |
 
-## 1. What the mode is asking
+## 1. What the mode is asking today
 
-**How far to bend, and how long a tunnel the ring leaves room for.** The Meerkat cruises at 60 u/s on one thumb; its
-only speed past that is its wormhole. The reticle on its nose is the tunnel RT would form; the right stick bends it
-toward the next ring (up to 150°, on a bend of fixed radius), LT sets how long a straight shaft runs before the bend
-(round 7: the umbrella handle), and the ride
-rushes to 2.5 × the entry speed at the throat and comes out on the tunnel's last heading. A long straight tunnel needs a
-ring far away; a sharp bend turns you round a corner the hull alone turns slowly.
+**The line through eight rings.** The wasp flies free like any hull (55 u/s cruise) and threads the rings in order. A
+ring counts the hull's own position, so a wasp nested in a creature would thread a ring by riding through it; the
+barren race cell has no creature, so today nobody rides.
 
-## 2. Reused, not built
+## 2. Open: the wasp's Time ability is not in the race yet
+
+The wasp's Time ability is the burst while it rides a creature (x1.5 to x3 the host's top speed, `JEWEL_WASP.md`
+section 2). The race cell is barren, so the ability has nothing to act on and the mode does not yet pass the elemental
+loop's step 1 (abilities and game together). The fix is the mode's to make, through its environment: creatures along
+the circuit for the wasp to sting and ride from ring to ring. It is not built because of the AI:
+
+- An AI wasp stings a creature whenever the cell has one (`JewelWaspExecutor.StepAIFree`), then flies the host at
+  the nearest rival, not at a ring (`StepAIHost`), and leaves after 14 s. With creatures in the cell no AI wasp would
+  race.
+- A mode AI may only steer the free hull (`WaspSeats`); what the wasp does in a host is the vessel's own code, which a
+  mode never changes (the LOCKED vessel rule). An AI that rides for a ring needs a way to tell the wasp's AI where to
+  ride, and that is a change on the wasp, for its owner (Garrett).
+
+The generator fails if the cell stops being the barren one while the wasp's AI still flies a host at a rival, so
+creatures cannot be added without this being settled.
+
+## 3. Reused, not built
 
 Everything but the cut is the platform's, exactly as Warpline: `GateRaceController` (rings, ordering, laps, the lead-
 runner rule, the AI approach and the Regatta steering), `RaceGateTurnMonitor`, `RaceGateObjectiveProvider` (registered
 in `MiniGameHUD`), `GateRaceScoringRuleSO` (one more asset), the barren race cell, the equatorial spawn ring, the shared
 race toasts, the comeback.
 
-## 2.1 Omnicrystals (2026-10-28)
+## 4. AI
 
-The Meerkat's Omnicrystal ability (`R_VesselActions/MEERKAT.md` §7): `omniCount` gold omnicrystals lie half way between
-the rings of a lap (`BurrowRunController.OnCourseRaised` → `MeerkatOmnicrystalField.ForCourse`). Fly through one and the
-roots grow at once from you, sized by your last tunnel; you fly them on the left stick and come out of a tip.
+The platform's `AIPilot` flies the line (the gate approach, `AICommitFromApproachPoint`) and the mode presses nothing.
+The approach numbers are Warpline's (commit 160, lead 180, through 120): no search has flown a Jewel Wasp here. Easy
+and Medium race on `GateRaceHandicap` (`AIDifficultyRules.HasOwnHandicap`).
 
-## 3. AI
+## 5. What the re-seat changed (2026-11-22)
 
-The platform's `AIPilot` flies the line (the gate approach, `AICommitFromApproachPoint`); the Meerkat's wormhole
-autopilot (`MeerkatSolitonExecutor.Autopilot`, the studio's `aiInput` / `aiGatePlan`) forms the tunnels: once its
-reticle is back and its ring is at least `aiBentMinDistance` away, it tries every bend and LT squeeze, keeps the one
-whose way out heads within 0.26 rad of the ring with 60 u to spare, holds its line while it bends the reticle for
-`aiShapeSeconds`, then presses RT through the **replicated** press path. Easy and Medium race on `GateRaceHandicap`
-(`AIDifficultyRules.HasOwnHandicap`), the studio's two AI-level mistakes applied to rings.
+- **Card:** seats `SO_Class_JewelWasp`; the words describe the ring race, not the tunnel.
+- **Preview:** flies the Jewel Wasp (class 31); its objective line is the ring race's.
+- **AI approach:** the Meerkat's searched genes (commit 42, lead 702, through 74, run1 2026-11-17) and its nose row
+  (follow 7.97/s) were that hull's and left with it; the scene went back to Warpline's numbers through the generator.
+- **Omnicrystals:** the controller no longer lays the Meerkat's omnicrystals between the rings
+  (`MeerkatOmnicrystalField.ForCourse`). They are the Meerkat's ability and belong to no other hull's race.
+- **Generator checks:** the Meerkat's wormhole checks went; in their place the wasp's prefab flies under `AIPilot`,
+  the cell is barren while the wasp's AI chases rivals in a host, the detection clamp covers the wasp's sting flight,
+  the controller names nothing of the Meerkat and the card does not seat it.
+- **Not changed:** the card background (the circuit is the same, so `/cardart`'s render still shows this arena), the
+  target, the scoring rule, the scene's Netcode hashes, any vessel file.
 
-## 4. Status
+## 6. Status
 
-Authored by the generator; compiled headless (`Tools/Build/unity_refcompile`), **not yet run in the Editor** -
-`/verify-unity` was not available in the session that wrote it (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). The card
-background is the shared placeholder until `/cardart` renders the circuit.
+Authored by the generator, `--check` green with two negative controls watched (the card re-seated by hand, the
+controller naming the Meerkat). **Not compiled and not run in the Editor** on 2026-11-22: `unity_refcompile` does not run
+on the machine that made the change and Unity was not opened (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). No offline race
+model flies a Jewel Wasp here, so `/compute` cannot teach its AI this mode yet.

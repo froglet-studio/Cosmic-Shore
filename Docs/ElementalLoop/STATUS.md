@@ -15,7 +15,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | Honeyguide | `R b ~` | `b b .` | `b b .` | `b b .` | - | - |
 | Jacks | `R b b` | `b b .` | `- - -` | `b b .` | - | Broadside |
-| JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
+| JewelWasp | `b b .` | `b b .` | `x x x` | `b b .` | - | - |
 | Manta | `R b ~` | `b b .` | `x x x` | `b b .` | - | Regatta, BroodRush |
 | Meerkat | `R b b` | `b b .` | `b b .` | `b b .` | - | Broadside |
 | Orca | `R ~ .` | `b b .` | `b b .` | `b b .` | - | - |
@@ -54,9 +54,9 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Grizzly | Grizzly Time | Standoff | excused | Grizzly Charge |
 | Honeyguide | Slip Line | Flitstrike | Honeycomb | Woodpecker |
 | Jacks | Decoy Run | Stingherd | excused | Trawl |
-| JewelWasp | - | Marionette | - | Gorge |
+| JewelWasp | Burrow Run | Marionette | - | Gorge |
 | Manta | Redline | Corona | - | Bloomrush |
-| Meerkat | Burrow Run, Warpline | Sentry | Warren | Cave-in |
+| Meerkat | Warpline | Sentry | Warren | Cave-in |
 | Orca | Breach | Pod Hunt | Ice Shelf | Depth Charge |
 | Rhino | Headlong | Bullrush | Windrow | Landslide |
 | Scarab | Scarab Rally | Undertow | Tollway | Wrecking Ball |

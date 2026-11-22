@@ -224,12 +224,13 @@ line for line:
    roots' `AiStick`).
 
 `aiNoise` bends it off the mark (0, Hard, by default). Easy and Medium race on the gate race's own handicap
-(`GateRaceHandicap`) in Burrow Run. `aiWormhole` off flies without tunnels.
+(`GateRaceHandicap`) in its gate race. `aiWormhole` off flies without tunnels.
 
 ## 4. Where it is offered
 
 - **The Toybox Vessel Changer (lava lamp):** `ToyVesselRoster.Default` + `Vessel Prefab Container`.
-- **Its Time mini-game:** `GameModes.BurrowRun = 71` (`Arcade/BURROWRUN.md`), in the arcade list.
+- **Its Time mini-game:** Warpline (`GameModes.Warpline = 65`, `Arcade/WARPLINE.md`), its only one since 2026-11-22
+  (Yash). Burrow Run (71), which was built as this hull's race, now seats the Jewel Wasp (`Arcade/BURROWRUN.md`).
 - **Its Charge, Mass and Space games** (2026-11-15, `Arcade/MEERKAT_GAMES.md`): Sentry (`GameModes.Sentry = 105`, Sentinel Mode), Warren (`Warren = 106`, the exit portal) and Cave-in (`CaveIn = 107`, the soliton swallow and fire), in the arcade list. Each changes nothing about the kit and steers the AI only.
 - **Its class card** (`SO_Class_Meerkat`, the Stoat's icons as placeholders) is in `SO_Classlist_All` / `_Classes`.
 
@@ -336,7 +337,8 @@ by left thumbstick."*
 - **The Omnicrystal ability, the roots** (rounds 16-21; `SolitonTunnelMath`, `SolitonNetwork`, `MeerkatOmnicrystalField`,
   the executor's roots half):
   - **Omnicrystals** (`omniCount`, gold; `omniOn` 0 switches the ability off):
-    - In Burrow Run, half way between the rings of a lap (`BurrowRunController.OnCourseRaised`).
+    - In no race since 2026-11-22: Burrow Run laid them half way between the rings of a lap (`ForCourse`) and now
+      seats the Jewel Wasp, so nothing calls `ForCourse`. Whether Warpline lays them is open.
     - In a scene with no course (the Toybox's Vessel Changer), the local Meerkat lays them ahead of itself, 300 u on and
       200 u apart. It lays them again 6 s after the last is taken.
     - Fly within 18 u of one and it is yours.

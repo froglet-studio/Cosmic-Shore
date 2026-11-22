@@ -103,7 +103,7 @@ Unity is claimed: every one of these is authored headless until a person flies i
 |---|---|---|---|
 | 1 | Chum (Angler Space) | `claude/angler-space-chum` | built headless, not run in Unity (2026-11-15) |
 | 35 | Standoff (Grizzly Charge) | PR #1998, merged | built headless, not run in Unity (2026-11-15) |
-| 36-37 | Marionette, Gorge (Jewel Wasp Charge, Space) | `claude/jewel-wasp-games` | built headless, not run in Unity (2026-11-15). The wasp has no Time or Mass game yet: a Time game would take id 128+ after a collision check, and its Mass verb (the plant host) is left for its own pass |
+| 36-37 | Marionette, Gorge (Jewel Wasp Charge, Space) | `claude/jewel-wasp-games` | built headless, not run in Unity (2026-11-15). The wasp's Time game is Burrow Run (71) since 2026-11-22 (re-seated from the Meerkat, `BURROWRUN.md`); it has no Mass game yet. When this row was written it had neither: a Time game would take id 128+ after a collision check, and its Mass verb (the plant host) is left for its own pass |
 | 2 | Starweave (Brittle Star Mass) | `claude/brittlestar-mass` | built headless, not run in Unity (2026-11-15) |
 | 3 | Haul (Thresher Mass) | `claude/thresher-mass-haul` | built headless, not run in Unity (2026-11-15) |
 | 4 | Hedgerow (Serpent Mass) | `claude/serpent-mass-hedgerow` | built headless, not run in Unity (2026-11-15) |

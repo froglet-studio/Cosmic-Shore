@@ -66,6 +66,19 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 ---
 
 
+## 🔴 Burrow Run re-seated on the Jewel Wasp (2026-11-22, Yash, NOT COMPILED, NOT RUN IN EDITOR)
+
+Burrow Run (71) moved from the Meerkat to the Jewel Wasp (`Assets/_Scripts/Controller/Arcade/BURROWRUN.md` section 5).
+Ran: `author_burrowrun_assets.py --check` (green, two negative controls) and the static gates. Did not run:
+`unity_refcompile` (cannot run on the Windows machine that made the change) and the Unity editor.
+
+- [ ] The project compiles (`BurrowRunController` lost its omnicrystal override, its nose row and a using).
+- [ ] The Burrow Run card offers the Jewel Wasp only, and the Meerkat's Time game list shows Warpline only.
+- [ ] A Jewel Wasp threads all 16 rings and the race ends; the HUD arrow points at the next ring.
+- [ ] AI Jewel Wasps fly the circuit and finish at each AI level (their approach is Warpline's 160 / 180 / 120, untrained).
+- [ ] The card's preview flies a Jewel Wasp.
+- [ ] Toybox: the Meerkat's omnicrystals still work there (`MeerkatOmnicrystalField.EnsureFreestyle` is untouched).
+
 ## 🔴 Voyages launch fixes: follow the host, the Ark's one domain, the Escort lock, Start pauses (2026-11-21, Shombith, NOT RUN IN EDITOR)
 `claude/project-thread-zobeo0` into `launch-check`. `VoyageLobbyLink` + `ScreenSwitcher.VoyageLobby.cs` (protocol 38, `Docs/Voyages/PARTY.md` §7), `VoyageArkPage` (domain chips, uncropped faces, the Fill button), `VoyageKit.Commit` (ruby Set sail / Open voyage / Ready), `VoyageToyDefinitionSO.lockEscort`, `VoyageJobsView` (locked jobs off the board), `MenuMiniGameHUD` (Start pauses in the voyage), `MenuServerPlayerVesselInitializer` (the voyage scene spawns everyone in the Ark's domain), the Crystal Run's kind Raid -> Salvage. Verified: `unity_refcompile` has no errors in the changed files (the UGS package errors on launch-check are the sandbox's); `author_voyage_assets.py --check` clean; colour_trace, console logging, conditional compilation OK. Not compiled or run in Unity.
 - [ ] Compiles; EditMode `VoyageMilestoneOneTests`, `VoyageBoardTests`, `VoyageLobbyTests`, `VoyageShellTests` pass.
