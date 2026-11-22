@@ -252,6 +252,31 @@ def random_genes(rng, base=None, ss=None):
     return genes
 
 
+def random_stretch(rng):
+    a = rng.uniform(0.0, 0.8)
+    return {"leg": rng.randrange(RINGS), "from": round(a, 3), "to": round(min(1.0, a + rng.uniform(0.15, 1.0)), 3),
+            "kind": rng.choice([1, 1, 2]), "neutral": rng.random() < 0.25,
+            "detour": round(rng.choice([0.0, 0.0, rng.uniform(10.0, 80.0)]), 2)}
+
+
+def rail_coverage(genes):
+    """The share of the lap's legs that carry rail (0 with rails off)."""
+    if genes.get("rails") != "partial":
+        return 0.0
+    cov = [[] for _ in range(RINGS)]
+    for st in genes.get("stretches", []):
+        cov[st["leg"] % RINGS].append((st["from"], st["to"]))
+    tot = 0.0
+    for spans in cov:
+        end = 0.0
+        for a, b in sorted(spans):
+            a = max(a, end)
+            if b > a:
+                tot += b - a
+                end = b
+    return tot / RINGS
+
+
 def _random_genes(rng, base=None, ss=None):
     return {
         "loop": random_loop(rng),
@@ -260,9 +285,13 @@ def _random_genes(rng, base=None, ss=None):
         "base": random_base(rng, base, ss),
         "extras": [random_extra(rng, None, ss) for _ in range(rng.choice([0, 0, 1, 2, 3, 5]))],
         "cell": None,
-        # Rails are always off (2026-11-21): every confirmed rails-on course still looked like the old tracks, and the
-        # fleet's balance on them leaned on the rails. railKind is kept for old genomes' schema only.
-        "rails": "off",
+        # 2026-11-21: every confirmed full-braid ("on") course still looked like the old tracks; "on" is no longer
+        # drawn and railKind is kept for old genomes' schema only.
+        # Rails are off or PARTIAL (Garrett 2026-11-22: "there is an optimum amount of railing and part of learning the
+        # course is to find out what that is"): a few stretches of shielded or plain rail on chosen legs, the rest a gap.
+        # Never the full braid that made every old course look alike.
+        "rails": "off" if rng.random() < 0.4 else "partial",
+        "stretches": [random_stretch(rng) for _ in range(rng.randint(1, 6))],
         "railKind": rng.choice([1, 2, 3]),      # Shielded, Plain, Gap (never all super-shielded)
         "sight": rng.uniform(8.0, 30.0), "line": rng.uniform(14.0, 70.0),
         "crystals": rng.choice([0, 0, 1, 2, 3, 4]), "crystalPhase": rng.random(),
@@ -346,7 +375,15 @@ def _v2_fields(src, pd):
 def render(genes):
     """The game's genome (RegattaCourseGenome version 2 JSON) for a genotype; the genotype rides along in "wide"."""
     sections = []
-    if genes["rails"] == "on":
+    if genes["rails"] == "partial":
+        # The whole lap a gap, then each stretch laid over it (a later section wins where they overlap).
+        sections.append({"Leg": -1, "From": 0.0, "To": 1.0, "Kind": 3, "Neutral": False, "Detour": 0.0,
+                         "DetourBearing": 0.0})
+        for st in genes["stretches"]:
+            sections.append({"Leg": int(st["leg"]), "From": float(st["from"]), "To": float(st["to"]),
+                             "Kind": int(st["kind"]), "Neutral": bool(st["neutral"]), "Detour": float(st["detour"]),
+                             "DetourBearing": 0.0})
+    elif genes["rails"] == "on":
         sections.append({"Leg": -1, "From": 0.0, "To": 1.0, "Kind": int(genes["railKind"]), "Neutral": False,
                          "Detour": 0.0, "DetourBearing": 0.0})
     g = {"version": 2, "intensity": 1, "seed": int(genes["seed"]),
@@ -354,7 +391,7 @@ def render(genes):
                       "Crystals": {"PerLap": int(genes["crystals"]), "Phase": float(genes["crystalPhase"])}},
          "line_clearance": round(genes["line"], 3), "placements": [], "rings": render_rings(genes),
          "sight_clearance": round(genes["sight"], 3)}
-    if genes["rails"] != "on":
+    if genes["rails"] == "off":
         g["rails_off"] = True
     c = genes.get("cell") or {}
     if c.get("nucleus") == "None" or c.get("shell") or c.get("lifeforms"):
@@ -466,6 +503,7 @@ def ss_share(genes):
         add(e, min(3000.0, cat[e["kind"]]["native_prisms"]))
     if genes["rails"] == "on" and genes["railKind"] != 3:
         total += 1812.0
+    total += 1812.0 * rail_coverage(genes)      # partial rails are shielded or plain, never super-shielded
     return ss / total if total else 0.0
 
 
@@ -475,7 +513,9 @@ def descriptor(genes, facts):
     shape = f"w{genes['loop']['winding']}{'e' if genes['loop']['winding'] == 0 and genes['loop']['eight'] else ''}"
     tall = "tall" if facts["vertical_u"] > 900 else "flat"
     nuc = "open" if (genes.get("cell") or {}).get("nucleus") == "None" else "core"
-    return f"{genes['base']['kind']}|ss{ss_bin}|{shape}-{tall}-{nuc}"
+    cov = rail_coverage(genes)
+    rails = "r0" if cov <= 0 else "r1" if cov < 0.25 else "r2"
+    return f"{genes['base']['kind']}|ss{ss_bin}|{shape}-{tall}-{nuc}|{rails}"
 
 
 # ── Variation ─────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -486,12 +526,14 @@ def _jiggle(rng, v, sd, lo, hi):
 
 def mutate(genes, rng):
     g = copy.deepcopy(genes)
-    g["rails"] = "off"          # an older rails-on elite's children are railless
+    if g["rails"] == "on":
+        g["rails"] = "off"      # an older full-braid elite's children are railless
+    g.setdefault("stretches", [random_stretch(rng) for _ in range(rng.randint(1, 4))])
     if g["base"]["kind"] == "none":
         g["base"] = random_base(rng, rng.choice(base_choices()), None)
     ops = rng.randint(1, 4)
     for _ in range(ops):
-        op = rng.choice(["loop", "loop", "ring", "ring", "base", "base", "basekind", "mix", "extra", "dials",
+        op = rng.choice(["loop", "loop", "ring", "ring", "base", "base", "basekind", "mix", "extra", "rails", "rails", "dials",
                          "cell", "cross"])
         L = g["loop"]
         if op == "loop":
@@ -550,8 +592,22 @@ def mutate(genes, rng):
         elif op == "cross" and g["base"]["kind"] != "none":
             g["base"]["cross_line"] = not g["base"].get("cross_line")
         elif op == "rails":
-            g["rails"] = "on" if g["rails"] == "off" and rng.random() < 0.3 else "off"
-            g["railKind"] = rng.choice([1, 2, 3])
+            st, r = g["stretches"], rng.random()
+            if g["rails"] == "off" or r < 0.1:
+                g["rails"] = "partial" if g["rails"] == "off" else "off"
+            elif r < 0.3 and len(st) < 8:
+                st.append(random_stretch(rng))
+            elif r < 0.45 and len(st) > 1:
+                st.pop(rng.randrange(len(st)))
+            else:
+                x = rng.choice(st)
+                key = rng.choice(["leg", "from", "to", "kind", "neutral", "detour"])
+                if key == "leg": x["leg"] = rng.randrange(RINGS)
+                elif key == "from": x["from"] = round(_jiggle(rng, x["from"], 0.15, 0.0, x["to"] - 0.05), 3)
+                elif key == "to": x["to"] = round(_jiggle(rng, x["to"], 0.15, x["from"] + 0.05, 1.0), 3)
+                elif key == "kind": x["kind"] = 1 if x["kind"] == 2 else 2
+                elif key == "neutral": x["neutral"] = not x["neutral"]
+                else: x["detour"] = round(_jiggle(rng, x["detour"], 15, 0.0, 80.0), 2)
         else:
             g["sight"] = _jiggle(rng, g["sight"], 4, 8, 30)
             g["line"] = _jiggle(rng, g["line"], 8, 14, 70)
@@ -683,6 +739,8 @@ def rescore(r):
     if genes.get("rails") == "on" or (genes.get("base") or {}).get("kind") == "none" or \
             (r.get("prisms") is not None and r["prisms"] < MIN_WORLD_PRISMS):
         return dict(r, score=None)
+    if r.get("niche") and r["niche"].count("|") == 3:
+        r = dict(r, niche=r["niche"] + "|r0")    # written before the rail-coverage axis: railless
     if r.get("stage") == "B" and r.get("field"):
         # A hull with no time at all (None; a DNF is 400) never raced: a hole, in records written before holes were named.
         holes = any(v.get("holes") or any(t is None for t in v["times"].values()) for v in r["field"].values())
@@ -763,7 +821,7 @@ def distance(a, b):
     d += 1.0 if ga["loop"]["winding"] != gb["loop"]["winding"] else 0.0
     d += abs(a["facts"]["vertical_u"] - b["facts"]["vertical_u"]) / 1500.0
     d += abs(a["facts"]["lap_u"] - b["facts"]["lap_u"]) / 5000.0
-    d += 0.5 if ga["rails"] != gb["rails"] else 0.0
+    d += 2.0 * abs(rail_coverage(ga) - rail_coverage(gb))
     return d
 
 
@@ -837,7 +895,7 @@ def playtest_pool(confirmed, k=8):
         w = c["genome"]["wide"]
         cell = w.get("cell") or {}
         desc = (f"{w['base']['kind']} world, super-shielded {100 * c['ss_share']:.0f}%, "
-                f"{'no rails' if w['rails'] == 'off' else 'rails'}, {'no nucleus' if cell.get('nucleus') == 'None' else 'nucleus'}, "
+                f"{'no rails' if w['rails'] == 'off' else f'rails on {rail_coverage(w):.0%} of the lap'}, {'no nucleus' if cell.get('nucleus') == 'None' else 'nucleus'}, "
                 f"lifeforms {cell.get('lifeforms') or 'none'}, lap {c['facts']['lap_u']:.0f} u")
         spread = {st: round(v["imbalance"], 3) if v["imbalance"] else None for st, v in c["field"].items()}
         e = {"label": f"Wild{i + 1}", "genome": {k2: v for k2, v in c["genome"].items() if k2 != "wide"},
