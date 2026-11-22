@@ -245,12 +245,14 @@ def want_match(place, seg, model):
 class Run:
     """One persona through one scenario, one seed."""
 
-    def __init__(self, p, seg, model, eco, scenario, seed, partner=None, log=True):
+    def __init__(self, p, seg, model, eco, scenario, seed, partner=None, log=True, fixes=None):
         self.p, self.seg, self.model, self.eco, self.sc = p, seg, model, eco, scenario
         self.rng = random.Random(seed)
         self.log = log
         self.partner = partner  # the persona whose sittings this one joins, by id
         self.fix = set(FIXES) if scenario == "proposed" else set()
+        if fixes is not None:  # the `built` report: the proposed layer with only the fixes the game has
+            self.fix = set(fixes)
         self.skill = p["skill"]
         self.fly_skill = p.get("fly_skill", p["skill"] if p.get("seat") != "puzzle" else 0.12)
         self.e = seg["habit"]
@@ -768,8 +770,8 @@ def joins_for(p, personas):
     return out
 
 
-def simulate(p, seg, model, eco, sc, seed, log=True):
-    return Run(p, seg, model, eco, sc, seed, log=log).run(joins_for(p, None))
+def simulate(p, seg, model, eco, sc, seed, log=True, fixes=None):
+    return Run(p, seg, model, eco, sc, seed, log=log, fixes=fixes).run(joins_for(p, None))
 
 
 # ------------------------------------------------------------------------------------------------------- summary
@@ -1030,6 +1032,54 @@ def dump(obj):
     return json.dumps(obj, indent=1, sort_keys=False) + "\n"
 
 
+# ------------------------------------------------------------------------------------------------------- built
+
+# What the retention build (Garrett, 2026-11-21: "Build everything proposed. Get all personas retained") put in the
+# game, fix by fix, with the PR that carries it. A fix is listed only when the sim's whole fix is built; a part is
+# named in BUILT_PART and left out of the `built` scenario.
+BUILT = {
+    "one_currency": "#2334 a voyage dock pays 600 wallet crystals a job",
+    "quest_rung": "#2334 a quest clears on its goal met at I2",
+    "breath": "#2335 the scoreboard offers the next rung, the crossing or today's job",
+    "chapters": "#2336 a voyage closed at sea waits at the world reached",
+    "make_pays": "#2337 a finished painting pays 150 crystals twice a day; sharing existed",
+}
+BUILT_PART = {
+    "puzzle_door": "#2337 the Honeyguide remembers the Ratel seat; the fly-or-solve guide and the Home offer are FTUE, not built",
+    "crew_seat": "#2322 seats the crew vessels in Brood Rush; a fourth friend riding a crew seat over the cap is not built",
+    "tide": "#2283 (draft) the Tide strip on Home; the daily job, the weekly card and the season are not built",
+}
+
+
+def built_report(atlas=ATLAS, runs=60):
+    """BUILT.md: D30 per persona today, with what is built, with each fix still missing added, and with every fix."""
+    model, eco, segs, personas = load(atlas)
+    validate(model, eco, segs, personas)
+    built = set(BUILT)
+    missing = [f for f in FIXES if f not in built]
+    cols = [("today", "today", None), ("built", "proposed", built)]
+    cols += [("+" + f, "proposed", built | {f}) for f in missing]
+    cols += [("+door+seat", "proposed", built | {"puzzle_door", "crew_seat"}), ("every fix", "proposed", set(FIXES))]
+    lines = ["# What the retention build retains (generated)", "",
+             "`python3 Tools/Build/loop_timescale_sim.py built` writes this; `--check` fails when it is stale. D30 is any",
+             f"play in days 28 to 34, over {runs} seeded runs a column. **built** is the proposed layer with only the fixes",
+             "the game now has; each **+fix** adds one fix still missing. It is a model of the personas, not a measurement.", "",
+             "## Built", ""]
+    lines += [f"- `{f}`: {why}" for f, why in BUILT.items()]
+    lines += ["", "## Built in part (left out of **built**)", ""]
+    lines += [f"- `{f}`: {why}" for f, why in BUILT_PART.items()]
+    lines += ["", "## D30 by persona", "", "| Persona | " + " | ".join(c[0] for c in cols) + " |",
+              "|---|" + "---|" * len(cols)]
+    for i, p in enumerate(personas):
+        seg = segment_of(p, segs)
+        row = []
+        for _, sc, fx in cols:
+            rs = [simulate(p, seg, model, eco, sc, SEED + 1000 * i + k, log=False, fixes=fx) for k in range(runs)]
+            row.append(f"{summarize(rs)['d30_window']:.0%}")
+        lines.append(f"| {p['name']} | " + " | ".join(row) + " |")
+    return "\n".join(lines) + "\n"
+
+
 def write(atlas=ATLAS, runs=RUNS):
     journeys, summary, report = build(atlas, runs)
     out = atlas / "sim" / "out"
@@ -1037,6 +1087,7 @@ def write(atlas=ATLAS, runs=RUNS):
     (out / "journeys.json").write_text(json.dumps(journeys, separators=(",", ":")) + "\n")
     (out / "summary.json").write_text(dump(summary))
     (atlas / "sim" / "REPORT.md").write_text(report)
+    (atlas / "sim" / "BUILT.md").write_text(built_report(atlas))
     print(f"loop_timescale_sim: wrote {out / 'journeys.json'}, {out / 'summary.json'}, {atlas / 'sim' / 'REPORT.md'}")
 
 
@@ -1045,7 +1096,8 @@ def check(atlas=ATLAS, runs=RUNS):
     out = atlas / "sim" / "out"
     bad = []
     pairs = [(out / "journeys.json", json.dumps(journeys, separators=(",", ":")) + "\n"),
-             (out / "summary.json", dump(summary)), (atlas / "sim" / "REPORT.md", report)]
+             (out / "summary.json", dump(summary)), (atlas / "sim" / "REPORT.md", report),
+             (atlas / "sim" / "BUILT.md", built_report(atlas))]
     for path, text in pairs:
         if not path.exists() or path.read_text() != text:
             bad.append(str(path.relative_to(ROOT)))
@@ -1113,7 +1165,7 @@ def self_test():
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", nargs="?", default="report", choices=["report", "fit", "self-test"])
+    ap.add_argument("cmd", nargs="?", default="report", choices=["report", "fit", "self-test", "built"])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--runs", type=int, default=RUNS)
     a = ap.parse_args(argv)
@@ -1121,6 +1173,10 @@ def main(argv=None):
         return check(runs=a.runs)
     if a.cmd == "self-test":
         return self_test()
+    if a.cmd == "built":
+        (ATLAS / "sim" / "BUILT.md").write_text(built_report())
+        print(f"loop_timescale_sim: wrote {ATLAS / 'sim' / 'BUILT.md'}")
+        return 0
     if a.cmd == "fit":
         model, eco, segs, personas = load()
         validate(model, eco, segs, personas)

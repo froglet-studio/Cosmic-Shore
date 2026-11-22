@@ -25,6 +25,8 @@ proposals:
   title: The breath between rounds
   what: 'After every result, one offered next step: rematch, next rung, or a crossing to the place the round trained for.'
   touches: [breath, sitting, arcade]
+  stage: building
+  branch: claude/retain-breath
 - id: P6
   title: The Tide
   what: A daily job, a weekly card and a six-week season, built from the living sea's tick and the studio's rebalance.
@@ -47,6 +49,8 @@ proposals:
   title: One currency
   what: Voyage pay is the same crystals as arcade pay, so 'the voyage ended, buy a vessel' is a real path.
   touches: [voyages, arc.fleet]
+  stage: building
+  branch: claude/retain-economy
 - id: P11
   title: A party owns something
   what: A party shares one voyage record, and a crew vessel's empty seat is an invite.
@@ -61,12 +65,16 @@ proposals:
     the dock at home banks it. A 20 to 40 minute voyage becomes two to four phone sittings, and a commuter stops losing
     hauls (100% of started voyages simulated as planned, none with chapters).
   touches: [voyages, voy.place, voy.home, sitting]
+  stage: building
+  branch: claude/retain-voyage-chapters
 - id: P14
   title: A puzzle-first door
   what: The first-login guide asks fly or solve. A solver's spotlight leads to the Ratel's board while the Honeyguide's
     AI flies, and a Honeyguide game counts for the quest chain. Simulated, it lifts a puzzle player's D30 from 3% to 94%,
     with P15.
   touches: [arc.activation, arc.unlock, toybox, fleet]
+  stage: building
+  branch: claude/retain-makers
 - id: P15
   title: A crew vessel in every squad
   what: 'Every crew vessel seats at least one arena card and a voyage squad, so two people share one seat: a parent rides
@@ -77,3 +85,5 @@ proposals:
   what: A finished painting pays a little and can be shared as a replay link; a liked painting is the creative player's
     win. The Toybox feeds the long game instead of standing beside it.
   touches: [toybox, toy.paint, arc.replay, arc.fleet]
+  stage: building
+  branch: claude/retain-makers

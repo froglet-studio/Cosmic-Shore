@@ -53,7 +53,7 @@
 - id: breath
   parent: sitting
   at: 4
-  in: x
+  in: px
   name: The breath
   tier: 3
   kind: loop
@@ -71,7 +71,13 @@
   drivers: [reward, mastery, find]
   reps: '1'
   repsOf: per round
-  prop:
-    s: add
-    note: Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.
   src: [proposal]
+  plan:
+    s: decided
+    note: Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.
+  build:
+    s: building
+    what: Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.
+    by: Garrett
+    at: '2026-11-21'
+    branch: claude/retain-breath
