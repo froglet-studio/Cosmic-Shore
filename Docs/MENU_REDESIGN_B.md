@@ -9100,3 +9100,12 @@ is SPARE02, Lunari Hollowreach (opossum and lynx) on a marsh boardwalk in a ligh
 `assets/scenes-hd/`, mirrored so the lightning sits behind the title, with a soft flash; behind its page the same painting
 blurred, with fog and a far-off flash. Motion Off stops everything. Generators were session scratch, not committed.
 
+**Fixes (same day, Shombith: a wide playable screen with Start below it, vessels scrolling vertically, "use the home
+hero card or high resolution cards everywhere", "the theme button is too big"):** Press Start is now a full-width 16:9
+screen with the Start button under it (Tumult's too); the vessels are a four-column grid down the page instead of a
+sideways lane; the page heroes, the four ways to play and the story stack use the site's own 1920x1080 game captures
+(`assets/images/Image Sequence_*.jpg` in the website repo) instead of the 640-768 px card renders, and the pilots use
+their full 1536x864 scenes (`Docs/Pilots/art/scenes/`); the theme button is a 34 px pill with 10 px type. The small game
+cards in the Arcade grid and the Arena rows keep each game's own card art (768 px, shown below that size). Republished
+in place.
+
