@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-22-browser-build-only-the-browser-releasing-5f84b0",
+  "to": "Yash",
+  "by": "Shombith",
+  "date": "2026-11-22T18:54:52+00:00",
+  "area": "Cameras, input and haptics (OverviewGesture)",
+  "summary": "Browser build only: the browser releasing the mouse lock now counts as the Escape overview gesture (BrowserCursorRelease), because a browser keeps Escape for itself under pointer lock and web players could not leave a game. Runs only on WebGLPlayer.",
+  "branch": "claude/project-thread-282neh",
+  "commit": "9362c9f3c"
+}

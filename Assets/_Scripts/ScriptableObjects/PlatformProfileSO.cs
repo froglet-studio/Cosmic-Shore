@@ -61,6 +61,13 @@ namespace CosmicShore.ScriptableObjects
                  "highlights) clamp, so they bloom less. Off = the URP asset's own setting.")]
         [SerializeField] bool disableHdr;
 
+        [Tooltip("Draw no post-processing at all on this tier: every camera renders with its URP " +
+                 "Post Processing flag off (PlatformRenderApplier, before each camera renders), so no bloom, " +
+                 "Panini, colour grading or final post pass. The browser build (Web) sets it: the LDR " +
+                 "bloom there washed every colour out, and the post passes cost a frame budget WebGL does " +
+                 "not have (Shombith, 2026-11-22). Off = each camera's own setting.")]
+        [SerializeField] bool noPostProcessing;
+
         [Tooltip("Skybox materials replaced on this tier: when a scene's RenderSettings.skybox is an " +
                  "entry's authored material, the replacement draws instead (PlatformRenderApplier, on " +
                  "every scene load). MobileLow swaps the 767-line procedural HyperSea sky for its offline " +
@@ -138,6 +145,9 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>True when this tier turns the URP asset's HDR off.</summary>
         public bool DisableHdr => disableHdr;
+
+        /// <summary>True when this tier draws no post-processing on any camera.</summary>
+        public bool NoPostProcessing => noPostProcessing;
 
         /// <summary>Highest CapsuleMembrane subdivision level drawn on this tier; -1 = no cap.</summary>
         public int MembraneMaxSubdivisions => membraneMaxSubdivisions;

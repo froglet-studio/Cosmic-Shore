@@ -25931,3 +25931,14 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
+
+## Browser build: no post-processing, and Escape leaves a game (2026-11-22)
+
+**Branch:** `claude/project-thread-282neh`. **Not compiled:** `unity_refcompile` cannot run in the cloud session (no .NET, package fetches blocked).
+
+**What landed:** `PlatformProfileSO.noPostProcessing` (on for `PlatformProfile_Web` only): `PlatformRenderApplier` turns every camera's URP post-processing off before it renders. `BrowserCursorRelease` (WebGL player only) reads the browser releasing the mouse lock as `OverviewGesture`, because a browser keeps Escape for itself while the pointer is locked.
+
+1. Compile in the editor (Web platform). Expect no `error CS`.
+2. WebGL Toybox build, open it in Chrome: colours match the Windows build without bloom (no washed-out glow).
+3. Fly freestyle with the mouse, press Escape: the flight ends and the menu comes back. In an arcade game, Escape opens the pause menu; Resume, then click the canvas, and the mouse locks again.
+4. Windows / Editor: Escape still works as before, and post-processing is unchanged.
