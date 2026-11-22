@@ -9073,3 +9073,8 @@ shore image the same way in gold, with tide lines, turning contour rings and dri
 (`Tools/Build/fleet_codex.py`), and the Arcade and Arena pages read its `fleet.json`. In the mockup the codex views
 are full-page captures of the live codex in Photic, uploaded to Frogma's asset store. The generators were session
 scratch, not committed.
+
+**Second pass (same day, Shombith: "mix it with purple, everything is too bright and the texts are too big"):** the
+backdrop tint now runs purple through blue (Photic `--a2` with `--blu`), the image is fainter and dimmed harder, the
+glows, trails and grid floor are quieter, and the type is scaled down on all seven pages (headlines about a third
+smaller, body and card text a step smaller). Boards republished in place at their new heights.
