@@ -105,6 +105,7 @@ namespace CosmicShore.Editor
         /// </summary>
         void TickRehost(double now)
         {
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-broodRehost") < 0) return; // off by default: it does not yet give the menu a vessel
             if (!IsMenu()) { _menuSince = -1; return; }
             if (_menuSince < 0) _menuSince = now;
             var nm = Unity.Netcode.NetworkManager.Singleton;
