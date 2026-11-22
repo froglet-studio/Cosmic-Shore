@@ -1938,6 +1938,27 @@ the load's frame 3.2 s at the old rate, 1.7 s now (`Docs/PartySystem/BUGS.md`, "
 
 ### 🔴 Automatic host and join with built development players: -csMpAutoHost / -csMpAutoJoin (`Ys-bleeding-edge`, 2026-11-21; from `claude/mp-plan-p0`, 2026-11-02) — 2 AND 4 BUILT PLAYERS PASS ON ONE PC (2026-11-22); TWO MACHINES NOT RUN
 
+**2026-11-22 evening, built-player block (development player built 17:42 from `de57912782`, one PC, each player
+on its own `-csMpProfile`, `development` environment, one test at a time).** The build also carries the flora limb
+pool (`e2a0bb1783`), never played before, so no load-frame number here is B45's alone.
+
+| Test | Result |
+|---|---|
+| Host and join, 2 and 4 built players | PASS (55 s; 56-61 s), no main-thread error |
+| Launched match, 2 built players (`-csMpLaunch Bloomrush`: party, launch, ready, running turn, return, party together) | PASS (136 s). The host froze 9.3 s leaving Bloomrush |
+| Launched match, 4 built players | **FAIL on the return to the menu**: launch and turn fine, then every player froze 9-11 s leaving Bloomrush (host 9.0 s, joiners 10.2, 11.0, 11.4 s; the load report's worst frame 13.4 s), Relay dropped the three joiners ("Host disconnected") and each ended solo on its menu |
+| B45 on a guest: editor host + one built guest, 10 min on the menu, Bloomrush launch at 17,500 host trail prisms | The guest stayed connected (2 humans at +20 s and +45 s); the host's `trailRelease` mark: 15,518 still out, back in 1.2 s; no host stall |
+| Multiplayer edit-mode classes (35), by reflection with a log scope | 483 pass, 1 fail (`NetworkSceneObjectGuardTests.SamePrefabStrippedTwice_WarnsOnce` warned twice; cause not found), 1 skip |
+| `TwoStandalonePlayers_HostAndJoin_BothReachTheParty` run from the editor | FAIL: both players sat on the Authentication scene for 240 s. The same build and arguments from a shell reach the menu. The test blocks the editor's main thread for the whole run; cause not confirmed |
+| Boot's "Relay session not ready (attempt 1/3)" with `-csMpPartyLog` | Not a Relay fault: the presence lobby step took 24.1 s on a busy boot, longer than the sign-in scene's first wait; the retry succeeds |
+
+**Not run:** the guest's own frame time (a built player writes no net record); a trail of 50,000 prisms (it stopped
+growing near 17,500 on the menu); the Angler tame hit for the stray guard (no scripted way; zero "Destroying components
+immediately" errors in three editor Plays); a release build ignoring `-csMp` (it signs in to production UGS: Yash's
+call first); two machines. Two guest runs before the clean one were thrown away: an editor host stalls when its window
+is not in front. The four-player times are inflated by four development players sharing one PC, and there is no older
+build left to say whether the return freeze is new.
+
 **2026-11-22, host closed early (two runs, built dev player of 00:39, one PC, profiles `mpauto-host` / `mpauto-join1`, `development` environment, nothing else running):** the host process was killed as the joiner pressed JOIN, and again 5 s after it began hosting. Both times the joiner reported FAIL, logged `NetworkManagerStartFailed`, ended in its own solo party on the menu (`role=host members=1/4`) and its log had no main-thread error. Harness flaws seen, not fixed yet: a FAIL exits with code 0 (`mp_auto.py` reads the result file, so its verdict is right), and the reason says "not in the party after 3 attempts" when one attempt ran out the 150 s clock. Not measured: how long the join took to give up.
 
 **What landed:** `MultiplayerAutoArgs` (the arguments, pure), `MultiplayerAutoPilot` (development builds and the editor

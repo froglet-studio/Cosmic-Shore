@@ -2774,6 +2774,20 @@ a course's own prisms are not the cell's plants or environment, so they still di
 **Not measured:** two machines, a build, the hold on a focused editor, and any heavy mode other than Bloomrush.
 The second freeze on the menu a minute after a return (6.9-21.9 s, B45 of 2026-11-20) is untouched.
 
+### B45 on the return to the menu, built players (2026-11-22): reproduced with four on one PC
+
+Four development players on one PC (`mp_auto.py --players 4 --extra "-csMpLaunch Bloomrush"`, build of 17:42 from
+`de57912782`): party, launch and a running turn were fine. On the host's return to the menu every player froze while
+leaving Bloomrush (host 9.0 s, joiners 10.2, 11.0 and 11.4 s; `[Net] The game froze for ... in MinigameBloomrush`),
+Relay dropped the three joiners and each bounced to its own solo menu. With two players the host froze 9.3 s and the
+party survived. One joiner's load report (return to menu, 46.3 s, worst frame 13.4 s): scene exit drain 9.0 s, streamed
+prism lay of the menu's garland (4,259 prisms) 11.7 s, scene load to activation 6.6 s.
+
+**Read with care.** Four development players share one PC, so the times are inflated; the build carries the never-played
+flora limb pool (`e2a0bb1783`) and the trail release of this morning, and no older build is left to compare. Not yet
+known: which of the drain, the garland lay and the scene activation is the frozen frame. Logs: the run's folder is in
+the session scratchpad (`mpauto/m_run4`), not in the repo.
+
 ### B45 on a launch from the menu (2026-11-22): the trail goes back to its pools before the load
 
 **Cause.** At a scene exit the host's trail pools handed their prisms back 100 a frame
