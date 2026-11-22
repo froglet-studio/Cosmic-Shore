@@ -31,7 +31,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | voyages | Session | Docking offers the Hangar when the pay covers a vessel, and the next saga chapter when one opened. |
 | arc.fleet | Arc | Crystals get a second sink so the loop does not end with the last vessel. |
 | arc.flower | Arc | Proposal P8. It gives every card an order, makes 'arcade trains for arena' visible to the player, and reuses the petal shape the HUD already teaches. |
-| arc.crew | Arc | Every account holds one crew of 18 dealt from the painted pilots (commit 5a34332f9); since 2026-11-20 there are 180 of them in 10 full crews (commit b02766a07). Make that dealt crew the start of this loop: recruiting becomes choosing which of your 18 to seat, and standing is earned per pilot of that crew, so the device-side standing stand-in and the dealt crew are one roster instead of two. |
+| arc.crew | Arc | Since 2026-11-21 the painted pool holds 324 pilots (PRs 2318, 2328: 17 roster crews, each pilot a species pair no earlier one had), and an account is dealt 18 of them once (PaintedCrewSO). Make the dealt crew the start of this loop and the other ~300 its recruit pool: "Recruit a pilot" at port offers someone outside your crew, a species pair you do not hold yet, and standing is earned per pilot. Each new painted batch then restocks the port, a reason to come back that the Returner persona lacks (loop_timescale_sim, PR 2338: Returner 12% at D30 with every fix). |
 | arc.social | Arc | A crew vessel's empty seat is the invite: 'fly the kite on my Wrasse'. |
 | arc.replay | Session | The breath offers 'watch the pass that beat you': a ten-second cut, not the whole match. |
 | era.meta | Era | Tie each turn to a Tide so that players can see it coming, and announce it in the What's new window built 2026-11-21 (commit 56584fa4e, Frogma Rev 121 C): the turn's entry in WhatsNew.asset names which vessels changed and which arena environments are new, and the window opens once by itself after the update, so the hole's 'nothing tells a player that the meta turned' has its channel. |
@@ -50,7 +50,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | P12 | proposal | A replay can travel: A ten-second cut shared as a link that opens the same card at the same rung. |
 | kit-drift | Tooling | Kit drift check: Add a report check that flags a vessel whose abilities changed in the game while its kit in model/fleet/ did not. On 2026-11-19 the Rhino (Time is now Momentum with oversteer, Unstoppable and the Momentum ward are base, L5s Avalanche and Slingshot), the Shrike (trail almost nothing, a nest walled in super-shielded plates) and the Jewel Wasp (a possessed creature is stolen for good) all changed, and their fleet YAML still describes the old kits. The element-ability-table reader already reads the shipped ability maps, so the check can compare against it. |
 
-## Holes: undecided (24)
+## Holes: undecided (25)
 
 | Loop or item | Hole | Question | Proposed fill |
 | --- | --- | --- | --- |
@@ -60,6 +60,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | toybox | 0 | What a toy session is for, in loop terms, is not written: there is no stated reason to leave a toy or to come back to one. | A toy's exit is a crossing. Every toy names the scored loop it is the free version of, and offers it when the player has done the toy's verb a few times. |
 | arcade | 0 | Rounds per run are not measured, and nothing but the player's own wish moves them from a card to the next card. | 3 to 5 rounds a run. The breath offers the next rung after a win and the same rung after a loss. |
 | arcade | 1 | Most cards have never been played: steps 1 to 3 of the elemental loop are 'built', not 'done', for every vessel and element except Dolphin Time step 1. |  |
+| ladder | 0 | Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time's AI (fb750ac38, GRIZZLYTIME.md, 24 courses) finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2's level-5 start and I4's fauna add almost nothing for it. | Judge each card's ladder by the fixed AI's time per rung (regatta_judge) and flag two neighbouring rungs closer than about 5% as a ladder to retune before step 3 signs off. |
 | round.ms | 0 | Only the category has landed. The per-vessel merge has not started: the board still shows Mass and Space as two games each. |  |
 | arena | 0 | Matches per set, and what makes a squad stay for another, are not written. | Best of three against the same opponents, hulls re-drafted between matches, so the set is a loop of its own. |
 | round.astro | 0 | The plan names three arena games. Where Astro League sits (a fourth arena, or an arena-sized party game) is not said. | Call it the Arena's party game: it balances nothing and is kept for fellowship, the way party cards are in the Arcade. |
@@ -79,10 +80,11 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | arc.support | 0 | What an episode gives the player is not defined in loop terms: it opens no loop on this map. | An episode is a Tide's content, sold once the Tide has run free for its season: its saga, its arena environments, its colour set. |
 | era.meta | 0 | The schedule is not set, and nothing tells a player that the meta turned or why their vessel flies differently. | One turn per Tide, six weeks. The Tide's news says in authored words which vessels changed and which arena environments are new. |
 
-## Recent moves (6)
+## Recent moves (7)
 
 | Date | Step | Loop or item | By | What |
 | --- | --- | --- | --- | --- |
+| 2026-11-22 | propose | arc.crew | Claude | Since 2026-11-21 the painted pool holds 324 pilots (PRs 2318, 2328: 17 roster crews, each pilot a species pair no earlier one had), and an account is dealt 18 of them once (PaintedCrewSO). Make the dealt crew the start of this loop and the other ~300 its recruit pool: "Recruit a pilot" at port offers someone outside your crew, a species pair you do not hold yet, and standing is earned per pilot. Each new painted batch then restocks the port, a reason to come back that the Returner persona lacks (loop_timescale_sim, PR 2338: Returner 12% at D30 with every fix). |
 | 2026-11-21 | propose | arc.crew | Claude | Every account holds one crew of 18 dealt from the painted pilots (commit 5a34332f9); since 2026-11-20 there are 180 of them in 10 full crews (commit b02766a07). Make that dealt crew the start of this loop: recruiting becomes choosing which of your 18 to seat, and standing is earned per pilot of that crew, so the device-side standing stand-in and the dealt crew are one roster instead of two. |
 | 2026-11-21 | propose | era.meta | Claude | Tie each turn to a Tide so that players can see it coming, and announce it in the What's new window built 2026-11-21 (commit 56584fa4e, Frogma Rev 121 C): the turn's entry in WhatsNew.asset names which vessels changed and which arena environments are new, and the window opens once by itself after the update, so the hole's 'nothing tells a player that the meta turned' has its channel. |
 | 2026-11-20 | idea | kit-drift | Claude | Kit drift check: Add a report check that flags a vessel whose abilities changed in the game while its kit in model/fleet/ did not. On 2026-11-19 the Rhino (Time is now Momentum with oversteer, Unstoppable and the Momentum ward are base, L5s Avalanche and Slingshot), the Shrike (trail almost nothing, a nest walled in super-shielded plates) and the Jewel Wasp (a possessed creature is stolen for good) all changed, and their fleet YAML still describes the old kits. The element-ability-table reader already reads the shipped ability maps, so the check can compare against it. |
