@@ -945,7 +945,7 @@ MonoBehaviour:
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
   skimmer: {fileID: 874579554510349383}
-  BaseScale: {x: 3, y: 3, z: 0.5}
+  BaseScale: {x: 4, y: 3, z: 4}
   prismType: 5
   initialWavelength: 5
   minWavelength: 5
