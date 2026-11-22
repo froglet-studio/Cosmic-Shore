@@ -95,7 +95,12 @@ namespace CosmicShore.Utility
             if (s_pendingFrameMarkSeconds > 0)
             {
                 StallFrameMarkers.Fold();
-                NetSessionRecorder.Mark("stallFrame", StallFrameMarkers.Describe(s_pendingFrameMarkSeconds));
+                string held = StallFrameMarkers.Describe(s_pendingFrameMarkSeconds);
+                NetSessionRecorder.Mark("stallFrame", held);
+                // A built player writes no net record, so a freeze long enough to cost the Relay connection also
+                // names its work in the log (one line a freeze; B45 on the return to the menu, 2026-11-22).
+                if (s_pendingFrameMarkSeconds >= RELAY_RISK_SECONDS)
+                    CSDebug.LogWarning($"[Net] What held that frozen frame: {held}");
                 s_pendingFrameMarkSeconds = 0;
             }
 
