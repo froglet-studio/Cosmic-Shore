@@ -326,13 +326,21 @@ namespace CosmicShore.Gameplay
             return s_gameData = found.Length > 0 ? found[0] : null;
         }
 
+        /// <summary>
+        /// The camera the player is looking through (<see cref="CameraManager.ViewCamera"/>): the gameplay rig in a
+        /// match, the scene camera in the menu. NOT <c>Camera.main</c>: in a match the gameplay camera carries no
+        /// MainCamera tag and nothing else is enabled, so <c>Camera.main</c> is null there. Reading it left Free fly
+        /// answering "No main camera to drive" and every overlay undrawn in flight (found in Play, 2026-11-22).
+        /// </summary>
+        public static Camera ViewCamera => CameraManager.ViewCamera;
+
         // ── Driving the main camera ──────────────────────────────────────────
         void StartDriving()
         {
             if (_driving) return;
             if (!_panel) SetPanel(true);   // diagnose cameras exist only while the panel is open
-            var cam = Camera.main;
-            if (!cam) { _note = "No main camera to drive."; return; }
+            var cam = ViewCamera;
+            if (!cam) { _note = "No camera to fly."; return; }
             _driving = true;
             Acquire(cam);
             // Free fly starts from where the game's camera is, so taking the camera moves nothing on screen.
@@ -382,7 +390,7 @@ namespace CosmicShore.Gameplay
 
             var lines = ThirdEyeLines.Instance;
             lines.Clear();
-            lines.Target = _driving ? _cam : Camera.main;
+            lines.Target = _driving ? _cam : ViewCamera;
             if (lines.Target && AnyOverlay) DrawOverlays(lines);
             lines.Sync();
         }
@@ -390,7 +398,7 @@ namespace CosmicShore.Gameplay
         void Drive()
         {
             // The game swapped cameras (death cam, end cam, a scene load): hand the old one back, take the new one.
-            var main = Camera.main;
+            var main = ViewCamera;
             if (main != _cam)
             {
                 Release();

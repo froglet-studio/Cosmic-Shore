@@ -236,7 +236,7 @@ namespace CosmicShore.Gameplay
         // "You / AI  hull  speed" over each pilot, pinned to the screen edge when off-screen (as the window did).
         void DrawLabels()
         {
-            var cam = Eye.DrivenCamera ? Eye.DrivenCamera : Camera.main;
+            var cam = Eye.DrivenCamera ? Eye.DrivenCamera : ThirdEye.ViewCamera;
             if (!cam) return;
             foreach (var p in Eye.Pilots)
             {

@@ -134,7 +134,7 @@ the Amoebius build of these files was not run here.
    join from the new one shows the same toast with "an older version".
 6. Revert the bump in step 3 before committing anything.
 
-### 🟡 One camera whoever flies: the player's camera on an AI-flown hull; the panel keeps only Free fly (`Ys-bleeding-edge`, 2026-11-22, Yash) — COMPILED IN THE EDITOR, NOT PLAYED
+### 🟡 One camera whoever flies: the player's camera on an AI-flown hull; the panel keeps only Free fly (`Ys-bleeding-edge`, 2026-11-22, Yash) — MEASURED IN PLAY ON THREE HULLS; THE LOOK AND THE OTHER HULLS BY HAND
 
 What changed: the AI Diagnose panel (F2, Third Eye) lost its Chase (30 behind, 8 up), Follow and Orbit cameras; Free
 fly is its one camera. A vessel's own camera effects (the Thresher's ball zoom, the Swordfish's sword reach and pan,
@@ -142,9 +142,27 @@ the Jacks' net, the Jewel Wasp's ride, the Shrike's docked pull-back, the Meerka
 run for the local player's hull whoever holds its sticks (`CameraManager.ActiveRigFollowing`), instead of stopping
 when the AI takes it.
 
-Ran: a real Unity compile (the open editor, 6000.3.17f1, `unity command recompile`, no `error CS`; both assemblies
-rebuilt with the new symbols). **Not run:** the edit-mode tests (`ThirdEyeRigTests`: the installed `com.unity.pipeline`
-0.5.0 cannot take a test filter from this CLI) and anything in Play mode (a bench held the machine).
+Ran: a real Unity compile (the open editor, 6000.3.17f1, `unity command recompile`, no `error CS`), the edit-mode
+tests whose names match the code touched (454 run, 445 pass; the 9 that fail are tuning-value and asset checks for the
+Jacks, Shrike, Swordfish, Thornline and one Thresher aim formula, none in this change), and a Play-mode run from
+Bootstrap in Skim Race (Squirrel), Thresher Time (Thresher) and Spearline (Swordfish): a temporary editor probe
+launched each match as the mode smoke test does, recorded the gameplay camera every 50 ms, handed the hull to the AI
+with `PilotControl.TrySetAIFlies` (the panel's own switch), took it back, then drove the panel's Free fly. Measured:
+- **No jump at either hand-over** on all three hulls: the follow offset is the same value on the sample before and the
+  sample after, the camera stays the player rig, on the hull, with the hull's own `CameraSettingsSO`.
+- **Thresher, AI flying**: the follow distance ran from 66 to 419 units (the prefab's is 55) as the ball went out; it
+  would have stayed at 55 before. The launch view never came up while the AI flew (`Spectate` unset on every sample).
+- **Swordfish, AI flying**: the sword's reach scale was applied (1.013 at the Space it had; 1 exactly before).
+- **Squirrel**: 17 units behind with you and with the AI.
+- **Free fly did not work at all before this run's fix**: in a match `Camera.main` is null (the gameplay camera carries
+  no MainCamera tag), so "take camera" answered "No main camera to drive" and no overlay was drawn. The panel now
+  takes `CameraManager.ViewCamera`. After the fix: it takes the player rig's camera, stays where it is while the hull
+  flies on (0.01 u against 117 u), Frame pilot lands on the framed pose and stays there, Release puts the camera back
+  behind the hull at its follow distance, and `aidiag chase` answers that it was removed.
+
+**Still by hand** (not measured): how it looks and feels, steps 3 to 7 below for the Jacks, Jewel Wasp, Shrike and
+Meerkat, the menu's lava lamp, and two machines. The probe's first seconds of each match were the pre-game cinematic,
+so "you flying" was measured after the AI handed the hull back, not at the start.
 
 By hand, in the editor, any gate race or freestyle:
 1. Fly your hull and note how far back the camera sits. F2, Pilots: **AI** on your own hull. The view does not move:
