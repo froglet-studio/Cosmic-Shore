@@ -1,0 +1,279 @@
+{
+  "schema": "cosmicshore.nettestlog.v1",
+  "engine": "unity",
+  "peer": "main",
+  "isVirtualPlayer": false,
+  "why": "client 1 approved",
+  "user": "yskha",
+  "unityVersion": "6000.3.17f1",
+  "branch": "Ys-bleeding-edge",
+  "commit": "eb7b68e47f",
+  "playStartedUtc": "2026-11-22T12:38:11.1839280Z",
+  "playEndedUtc": "2026-11-22T12:56:17.9134326Z",
+  "record": {
+    "schema": "cosmicshore.netsession.v1",
+    "startedUtc": "2026-11-22T12:38:30.0847399Z",
+    "durationSeconds": 1067.7261962890625,
+    "buildGuid": "00000000000000000000000000000000",
+    "platform": "WindowsEditor",
+    "isOfflineSession": false,
+    "role": "host",
+    "counters": {
+        "requests": 22,
+        "lobbyReads": 22,
+        "retries": 1,
+        "coalesced": 0,
+        "budgetExhausted": 0,
+        "rateLimited": 1,
+        "transient": 0,
+        "benign": 0,
+        "conflict": 0,
+        "full": 0,
+        "gone": 0,
+        "fatal": 1,
+        "presenceForceReset": 1,
+        "offlineFallback": 0,
+        "partyRosterPush": 2,
+        "presencePush": 8,
+        "lobbyReadsPerSecond": 0.020604534074664117
+    },
+    "verdict": {
+        "offlineFallbacksWhileOnline": 0,
+        "forceResets": 1,
+        "budgetExhaustions": 0,
+        "rateLimited": 1
+    },
+    "lifecycle": [
+        {
+            "t": 0.00014439999358728528,
+            "e": "party",
+            "detail": "Disconnected->InPresenceLobby"
+        },
+        {
+            "t": 0.0019147000275552273,
+            "e": "party",
+            "detail": "InPresenceLobby->HostingParty"
+        },
+        {
+            "t": 7.3971686363220219,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 7.551735877990723,
+            "e": "netConfig",
+            "detail": "hash=8a386bf5ce8cd7d7 prefabs=33 234294682:Rhino 297461143:Angler 336337177:BrittleStar 504450242:Termite 515096987:Grizzly 532772460:Honeyguide 758961507:StatsManager 873610668:Urchin 1012147755:Stoat 1066882345:NetworkVesselSpawner 1124080984:Sparrow 1234547654:AstroLeagueBall 1554866019:Serpent 1887398589:Thresher 1945657574:TigerMoth 2256742461:Squirrel 2358568326:TadPoleFauna 2437889963:Orca 2603481845:MassSharkFauna 2640575084:Jacks 2854954169:Falcon 3228241887:BeeFauna 3347286452:Goby 3392890734:Manta 3401243537:Shrike 3404334551:Dolphin 3630817127:Swordfish 3827091966:Scarab 3939330856:Player 3950253892:JewelWasp 4022926403:Starling 4044113297:Wrasse 4221370039:Meerkat"
+        },
+        {
+            "t": 10.901107788085938,
+            "e": "stall",
+            "detail": "3.2s in Menu_Main"
+        },
+        {
+            "t": 10.901968955993653,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4484 MB, managed 1752 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 10.995649337768555,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 2320 ms; GC.Collect 593 ms"
+        },
+        {
+            "t": 11.299728393554688,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 84.08235168457031,
+            "e": "clientApproved",
+            "detail": "1"
+        },
+        {
+            "t": 1049.39794921875,
+            "e": "stall",
+            "detail": "961.2s in Menu_Main"
+        },
+        {
+            "t": 1049.39794921875,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4498 MB, managed 1932 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 1050.04541015625,
+            "e": "party",
+            "detail": "InParty->Reconnecting"
+        },
+        {
+            "t": 1050.052490234375,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 1051.5118408203125,
+            "e": "relayDrop",
+            "detail": "after a 961.2 s freeze 2.1 s earlier"
+        },
+        {
+            "t": 1051.5145263671875,
+            "e": "bounce",
+            "detail": "Connection lost"
+        },
+        {
+            "t": 1051.58349609375,
+            "e": "relayDrop",
+            "detail": "after a 961.2 s freeze 2.2 s earlier"
+        },
+        {
+            "t": 1051.6080322265625,
+            "e": "clientLeft",
+            "detail": "1"
+        },
+        {
+            "t": 1054.776611328125,
+            "e": "party",
+            "detail": "Reconnecting->HostingParty"
+        },
+        {
+            "t": 1061.475830078125,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 1061.53173828125,
+            "e": "netConfig",
+            "detail": "hash=8a386bf5ce8cd7d7 prefabs=33 234294682:Rhino 297461143:Angler 336337177:BrittleStar 504450242:Termite 515096987:Grizzly 532772460:Honeyguide 758961507:StatsManager 873610668:Urchin 1012147755:Stoat 1066882345:NetworkVesselSpawner 1124080984:Sparrow 1234547654:AstroLeagueBall 1554866019:Serpent 1887398589:Thresher 1945657574:TigerMoth 2256742461:Squirrel 2358568326:TadPoleFauna 2437889963:Orca 2603481845:MassSharkFauna 2640575084:Jacks 2854954169:Falcon 3228241887:BeeFauna 3347286452:Goby 3392890734:Manta 3401243537:Shrike 3404334551:Dolphin 3630817127:Swordfish 3827091966:Scarab 3939330856:Player 3950253892:JewelWasp 4022926403:Starling 4044113297:Wrasse 4221370039:Meerkat"
+        },
+        {
+            "t": 1062.8558349609375,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        }
+    ],
+    "lifecycleDropped": 0
+},
+  "console": {
+    "errors": 41,
+    "warnings": 31,
+    "dropped": 0,
+    "lines": [
+      {"t": 1.74, "type": "log", "msg": "[Adaptive Performance] Only default scaler profile available. Reset all scalers to default profile."},
+      {"t": 2.352, "type": "warning", "msg": "Entities.Graphics should be used with URP Forward+. Change Rendering Path on URP_Asset_Renderer for best compatibility.", "at": "Unity.Debug:LogWarning (object) (at ./Library/PackageCache/com.unity.entities@f6e02210e263/Unity.Entities/Stubs/Unity/Debug.cs:13)"},
+      {"t": 2.443, "type": "warning", "msg": "[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN - every vessel, game mode, intensity and the Vessel Hangar are unlocked, and the quest graph is stood down. This is the shipped default until the FTUE is designed. Turn it off in the Froglet Toolbox (Quest Debug or Vessel Unlock tab) to test real progression or the FTUE itself.", "at": "CosmicShore.Core.DeveloperUnlockGate:AnnounceOnce () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Progression/DeveloperUnlockGate.cs:147)"},
+      {"t": 2.484, "type": "log", "msg": "Root Bindings Installed from 'ContainerScope'"},
+      {"t": 2.489, "type": "log", "msg": "Root Bindings Installed from 'AppManager'"},
+      {"t": 2.492, "type": "log", "msg": "Scene (Bootstrap) Bindings Installed"},
+      {"t": 3.971, "type": "log", "msg": "Overriding environment to 'development' through InitializationOptions"},
+      {"t": 4.334, "type": "warning", "msg": "[DailyChallengeSystem] Arcade or TrainingGames not ready - daily challenge unavailable.", "at": "CosmicShore.Core.DailyChallengeSystem:TryFetchDailyChallenge (CosmicShore.Data.DailyChallenge&) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/DailyChallengeSystem.cs:146)"},
+      {"t": 4.337, "type": "log", "msg": "<color=red><b>Gamepad Detected:</b> 'Xbox Controller' ()\n<b>Controller Type:</b> Other\n<b>[Details]</b>\nName: XInputControllerWindows\nProduct: \nManufacturer: \nInterface: XInput\nUsages: \n<b>Supported Controls:</b>\n   - dpad: /XInputControllerWindows/dpad [Dpad]\n   - start: /XInputControllerWindows/start [Button]\n   - select: /XInputControllerWindows/select [Button]\n   - leftStickPress: /XInputControllerWindows/leftStickPress [Button]\n   - rightStickPress: /XInputControllerWindows/rightStickPress [Button]\n   - leftShoulder: /XInputControllerWindows/leftShoulder [Button]\n   - rightShoulder: /XInputControllerWindows/rightShoulder [Button]\n   - buttonSouth: /XInputControllerWindows/buttonSouth [Button]\n   - buttonEast: /XInputControllerWindows/buttonEast [Button]\n   - buttonWest: /XInputControllerWindows/buttonWest [Button]\n   - buttonNorth: /XInputControllerWindows/buttonNorth [Button]\n   - leftTrigger: /XInputControllerWindows/leftTrigger [Button]\n   - rightTrigger: /XInputControllerWindo..."},
+      {"t": 4.366, "type": "log", "msg": "Pipeline: Quitting application with exit code 0"},
+      {"t": 6.915, "type": "log", "msg": "Pipeline: Quitting application with exit code 0"},
+      {"t": 6.965, "type": "log", "msg": "Pipeline: Quitting application with exit code 0"},
+      {"t": 7.003, "type": "log", "msg": "Container Bootstrap (-2039544226) disposed"},
+      {"t": 7.01, "type": "log", "msg": "Scene (Authentication) Bindings Installed"},
+      {"t": 7.82, "type": "warning", "msg": "Failed to create material drawer Header with arguments 'Seamless mouth (a crystal wormhole, Docs CRYSTAL_WORMHOLE.md)'", "at": "UnityEditor.MaterialPropertyHandler:GetShaderPropertyDrawer (string,bool&)"},
+      {"t": 8.147, "type": "log", "msg": "[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only)."},
+      {"t": 8.232, "type": "error", "msg": "NotFound\r\n(404) HTTP/1.1 404 Not Found\r\nError\r\nScript could not be found\r\n", "at": "Unity.Services.CloudCode.CloudCodeInternal:BuildException (bool,long,int,string,Unity.Services.CloudCode.Internal.Http.HttpException) (at ./Library/PackageCache/com.unity.services.cloudcode@4d38bd1f7a5b/Runtime/CloudCode.cs:181)"},
+      {"t": 8.24, "type": "warning", "msg": "[LaunchFlags] The flags could not be fetched (NotFound\r\n(404) HTTP/1.1 404 Not Found\r\nError\r\nScript could not be found\r\n); keeping the Default flags.", "at": "CosmicShore.Core.LaunchFlagsService/<FetchAsync>d__7:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/CloudData/LaunchFlagsService.cs:62)"},
+      {"t": 10.673, "type": "log", "msg": "Container Authentication (1564686639) disposed"},
+      {"t": 11.284, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 11.285, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 11.286, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 11.287, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 11.288, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 11.289, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 11.291, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 11.292, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 11.293, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 13.192, "type": "log", "msg": "[GameModeProgressionService] ProgressionBackendGate closed — cloud record ignored; progression is session-local and starts fresh each launch."},
+      {"t": 16.092, "type": "error", "msg": "[WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-11-16'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.", "at": "CosmicShore.Core.WeeklyChallengeLeaderboardService:WarnIfBoardNotResetting (string,int,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/WeeklyChallenge/WeeklyChallengeLeaderboardService.cs:592)"},
+      {"t": 16.421, "type": "warning", "msg": "[EnvironmentPrismPool] Async clone batch (2048 prisms) not integrated after 4s — forcing WaitForCompletion. The engine's async-instantiate budget is being starved by other loading.", "at": "CosmicShore.Gameplay.EnvironmentPrismPool/<GetBatchAsync>d__8:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/PoolsAndBuffers/EnvironmentPrismPool.cs:138)"},
+      {"t": 24.712, "type": "log", "msg": "QosJob: executing job with 10000ms timeout"},
+      {"t": 24.717, "type": "log", "msg": "QosJob: send to 34.146.99.138:7778 took 2ms"},
+      {"t": 24.72, "type": "log", "msg": "QosJob: send to 8.231.126.202:7778 took 1ms"},
+      {"t": 24.72, "type": "log", "msg": "QosJob: send to 34.142.230.217:7778 took 0ms"},
+      {"t": 24.723, "type": "log", "msg": "QosJob: send to 34.116.71.234:7778 took 3ms"},
+      {"t": 24.723, "type": "log", "msg": "QosJob: send to 34.116.187.244:7778 took 1ms"},
+      {"t": 24.725, "type": "log", "msg": "QosJob: send to 34.88.56.54:7778 took 2ms"},
+      {"t": 24.726, "type": "log", "msg": "QosJob: send to 34.90.19.193:7778 took 0ms"},
+      {"t": 24.727, "type": "log", "msg": "QosJob: send to 35.199.98.209:7778 took 1ms"},
+      {"t": 24.727, "type": "log", "msg": "QosJob: send to 35.194.37.245:7778 took 0ms"},
+      {"t": 24.73, "type": "log", "msg": "QosJob: send to 34.74.55.21:7778 took 3ms"},
+      {"t": 24.731, "type": "log", "msg": "QosJob: send to 34.169.230.114:7778 took 1ms"},
+      {"t": 25.089, "type": "log", "msg": "QosJob: received 55 responses of 55/55 in 358ms waiting avg 7ms per response"},
+      {"t": 25.089, "type": "log", "msg": "QosJob: took 377ms to process 11 servers"},
+      {"t": 28.587, "type": "warning", "msg": "[AuthScene] Relay session not ready (attempt 1/3) - retrying HCS init...", "at": "CosmicShore.Core.AuthenticationSceneController/<LoadMainMenuNetworkedAsync>d__71:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/AuthenticationSceneController.cs:976)"},
+      {"t": 112.452, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 177.889, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 183.228, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 248.669, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 254.016, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 319.442, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 324.785, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 390.219, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 395.565, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 461.001, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 466.362, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 531.784, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 537.109, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 602.529, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 607.888, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 673.305, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 678.619, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 744.067, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 749.405, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 754.76, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 760.1, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 765.422, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 770.801, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 780.216, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 789.629, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 819.108, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 849.481, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 854.796, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 860.133, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 865.455, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 998.581, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 120000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 1028.581, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 30000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 1058.581, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 30000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 1068.266, "type": "warning", "msg": "Receive queue is full, some packets could be dropped, consider increase its size (512).", "at": "Unity.Jobs.JobHandle:Complete ()"},
+      {"t": 1068.3, "type": "warning", "msg": "[Net] The game froze for 961.2 s in Menu_Main while online. Unity Relay drops a connection after about 10 s without traffic, so this session may end with 'player timed out due to inactivity' (Docs/PartySystem/BUGS.md B36).", "at": "CosmicShore.Utility.FrameStallWatch:ObserveFrame (string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/FrameStallWatch.cs:115)"},
+      {"t": 1068.941, "type": "warning", "msg": "[HostConnectionService] Refresh error (SessionException): SessionException: [Error: SessionNotFound] [Message: lobby not found]", "at": "CosmicShore.Gameplay.HostConnectionService/<RefreshAsync>d__147:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Party/HostConnectionService.cs:1866)"},
+      {"t": 1068.945, "type": "warning", "msg": "[HostConnectionService] Presence lobby is gone - rejoining at once", "at": "CosmicShore.Gameplay.HostConnectionService/<RefreshAsync>d__147:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Party/HostConnectionService.cs:1890)"},
+      {"t": 1070.386, "type": "error", "msg": "DTLS handshake failed at step 12 (SERVER_CHANGE_CIPHER_SPEC). Closing connection.", "at": "Unity.Jobs.JobHandle:Complete ()"},
+      {"t": 1070.389, "type": "error", "msg": "Failed to establish connection with the Relay server.", "at": "Unity.Jobs.JobHandle:Complete ()"},
+      {"t": 1070.406, "type": "error", "msg": "Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. Use NetworkManager.OnTransportFailure to be notified of such events programmatically.", "at": "Unity.Netcode.Transports.UTP.UnityTransport:OnEarlyUpdate () (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Transports/UTP/UnityTransport.cs:1184)"},
+      {"t": 1070.409, "type": "error", "msg": "[Netcode] Host is shutting down due to network transport failure of UnityTransport!", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 1070.412, "type": "warning", "msg": "[Net] Transport failure - bouncing to solo menu.", "at": "CosmicShore.Gameplay.MultiplayerSetup/<OnTransportFailure>d__38:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/MultiplayerSetup.cs:636)"},
+      {"t": 1070.415, "type": "warning", "msg": "[PartyInviteController] Bouncing to solo menu: Connection lost", "at": "CosmicShore.Gameplay.PartyInviteController/<BounceToSoloMenuAsync>d__45:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Party/PartyInviteController.cs:831)"},
+      {"t": 1070.481, "type": "error", "msg": "Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. Use NetworkManager.OnTransportFailure to be notified of such events programmatically.", "at": "Unity.Netcode.Transports.UTP.UnityTransport:OnEarlyUpdate () (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Transports/UTP/UnityTransport.cs:1184)"},
+      {"t": 1070.483, "type": "error", "msg": "[Netcode] Host is shutting down due to network transport failure of UnityTransport!", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 1070.484, "type": "warning", "msg": "[Net] Transport failure - bouncing to solo menu.", "at": "CosmicShore.Gameplay.MultiplayerSetup/<OnTransportFailure>d__38:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/MultiplayerSetup.cs:636)"},
+      {"t": 1071.829, "type": "log", "msg": "Container Menu_Main (-655464156) disposed"},
+      {"t": 1072.333, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 1072.334, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 1072.335, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 1072.336, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 1072.337, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 1072.338, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 1072.339, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 1072.34, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 1072.342, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 1075.491, "type": "warning", "msg": "[EnvironmentPrismPool] Async clone batch (2048 prisms) not integrated after 4s — forcing WaitForCompletion. The engine's async-instantiate budget is being starved by other loading.", "at": "CosmicShore.Gameplay.EnvironmentPrismPool/<GetBatchAsync>d__8:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/PoolsAndBuffers/EnvironmentPrismPool.cs:138)"},
+      {"t": 1078.971, "type": "log", "msg": "QosJob: executing job with 10000ms timeout"},
+      {"t": 1078.972, "type": "log", "msg": "QosJob: send to 34.146.99.138:7778 took 0ms"},
+      {"t": 1078.973, "type": "log", "msg": "QosJob: send to 8.231.126.202:7778 took 2ms"},
+      {"t": 1078.973, "type": "log", "msg": "QosJob: send to 34.142.230.217:7778 took 0ms"},
+      {"t": 1078.975, "type": "log", "msg": "QosJob: send to 34.116.71.234:7778 took 3ms"},
+      {"t": 1078.976, "type": "log", "msg": "QosJob: send to 34.116.187.244:7778 took 0ms"},
+      {"t": 1078.977, "type": "log", "msg": "QosJob: send to 34.88.56.54:7778 took 1ms"},
+      {"t": 1078.977, "type": "log", "msg": "QosJob: send to 34.90.19.193:7778 took 0ms"},
+      {"t": 1078.979, "type": "log", "msg": "QosJob: send to 35.199.98.209:7778 took 2ms"},
+      {"t": 1078.979, "type": "log", "msg": "QosJob: send to 35.194.37.245:7778 took 0ms"},
+      {"t": 1078.981, "type": "log", "msg": "QosJob: send to 34.74.55.21:7778 took 2ms"},
+      {"t": 1078.981, "type": "log", "msg": "QosJob: send to 34.169.230.114:7778 took 0ms"},
+      {"t": 1079.344, "type": "log", "msg": "QosJob: received 55 responses of 55/55 in 361ms waiting avg 7ms per response"},
+      {"t": 1079.344, "type": "log", "msg": "QosJob: took 373ms to process 11 servers"}
+    ]
+  }
+}
