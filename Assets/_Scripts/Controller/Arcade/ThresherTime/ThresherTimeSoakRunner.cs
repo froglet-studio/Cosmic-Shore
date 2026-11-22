@@ -299,7 +299,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>A watched run: the AI Diagnose panel (F2) open on the race, the AI's thinking, labels and trails on,
-        /// the camera chasing an AI Thresher. The panel closes itself when the race scene unloads, so every race opens it.</summary>
+        /// an AI Thresher picked for the info strip. The view is the game's own camera on the host's hull, which the AI
+        /// is flying: the panel has no camera that follows a hull (ThirdEye's summary). The panel closes itself when the
+        /// race scene unloads, so every race opens it.</summary>
         IEnumerator OpenAIDiagnose()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -308,8 +310,6 @@ namespace CosmicShore.Gameplay
             eye.SetPanel(true);
             var s = eye.Settings;
             s.ShowThinking = s.ShowLabels = s.ShowTrails = true;
-            eye.SetMode(ThirdEyeCameraMode.Chase);
-            eye.SetDriving(true);
             float until = Time.unscaledTime + 3f;
             while (Time.unscaledTime < until)
             {

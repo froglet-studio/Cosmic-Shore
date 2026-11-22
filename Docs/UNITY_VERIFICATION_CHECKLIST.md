@@ -134,6 +134,35 @@ the Amoebius build of these files was not run here.
    join from the new one shows the same toast with "an older version".
 6. Revert the bump in step 3 before committing anything.
 
+### 🟡 One camera whoever flies: the player's camera on an AI-flown hull; the panel keeps only Free fly (`Ys-bleeding-edge`, 2026-11-22, Yash) — COMPILED IN THE EDITOR, NOT PLAYED
+
+What changed: the AI Diagnose panel (F2, Third Eye) lost its Chase (30 behind, 8 up), Follow and Orbit cameras; Free
+fly is its one camera. A vessel's own camera effects (the Thresher's ball zoom, the Swordfish's sword reach and pan,
+the Jacks' net, the Jewel Wasp's ride, the Shrike's docked pull-back, the Meerkat's tunnel ride, `ZoomOutAction`) now
+run for the local player's hull whoever holds its sticks (`CameraManager.ActiveRigFollowing`), instead of stopping
+when the AI takes it.
+
+Ran: a real Unity compile (the open editor, 6000.3.17f1, `unity command recompile`, no `error CS`; both assemblies
+rebuilt with the new symbols). **Not run:** the edit-mode tests (`ThirdEyeRigTests`: the installed `com.unity.pipeline`
+0.5.0 cannot take a test filter from this CLI) and anything in Play mode (a bench held the machine).
+
+By hand, in the editor, any gate race or freestyle:
+1. Fly your hull and note how far back the camera sits. F2, Pilots: **AI** on your own hull. The view does not move:
+   same distance, same height, same framing. **You** takes it back, again with no jump.
+2. Thresher: let out the chain and swing. With **AI** on your hull the camera still pulls back to keep the ball in
+   frame (it used to sit at the prefab's distance). The launch view (the look-down aim with the crosshair) comes up
+   only when YOU plant and spin; with the AI flying it never does, and the AI launches as an AI seat does.
+3. Rhino / Swordfish with Space raised: the camera stands as far back with **AI** on as with you flying; a swung
+   sword is still centred.
+4. Jacks (net open), Jewel Wasp (riding a creature or a plant), Shrike (docked), Meerkat (inside a tunnel): hand the
+   hull to the AI in each state; the camera keeps that state's framing.
+5. The panel's Camera section shows one button, **Free fly**. It starts from the game's camera (nothing jumps), WASD
+   and RMB fly it, **Frame pilot** jumps it once to the picked pilot, **Release camera** returns to the game's camera
+   snapped behind your hull. `aidiag chase` answers that it was removed.
+6. Menu lava lamp with a Meerkat, a Rhino or a Thresher on autopilot: the menu camera is not moved by the hull
+   (no pull-back, no tunnel ride, no pan).
+7. Two machines, one a Rhino or a Dolphin: a remote hull's sword or zoom never moves your camera.
+
 ### 🔴 Every Stoat AI flies the swing; no AI Stoat draws a line; the old slingshots deleted (`Ys-bleeding-edge`, 2026-11-21, Yash) — NOT EDITOR-VERIFIED
 
 **What landed:** Yash: "I see the pathfinding dotted line in Stoat AIs while playing slingshot, make sure all AI uses our
@@ -1969,7 +1998,7 @@ eval (48 courses a cell). NOT run: the tests or a race in Unity.
 2. Re-run the Switchback soak (`SwitchbackSoakRunner`) at I4 with each difficulty: the medians should step about 10 s
    apart. If they are all ~1.6x the model's (as in the step 1 soak), the rows need scaling for the real game: report the
    times and the session retunes them.
-3. Watch a Legendary Dolphin in the AI Diagnose panel (F2, Chase): the nose snaps to its aim with no jitter. Fly another
+3. Watch a Legendary Dolphin through the game's camera (AI Diagnose panel, F2: take its hull with You, hand it back with AI; the panel's Chase camera was removed 2026-11-22): the nose snaps to its aim with no jitter. Fly another
    mode (Skim Race) with AI: its AIs fly as before (the lag is unchanged there).
 
 ### 🔴 Switchback AI step 3: the planner's plain-hit cost 0.6 -> 0.25 s (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
@@ -8407,8 +8436,8 @@ count as finished, so the three fastest finished races changed:
 The steps below test these values.
 **Verified without the editor:** `author_skimrace_ai_config.py --check`, `learn_from_flights.py --self-test`.
 **Verify in editor:**
-1. Regatta I1, solo, Squirrel against AI Squirrels (or let the AI fly your hull: Third Eye ▸ Pilots ▸ AI). Watch an AI
-   Squirrel in the Third Eye's Chase camera: it skims on the side of the rail the rings are on, and threads rings
+1. Regatta I1, solo, Squirrel against AI Squirrels (or let the AI fly your hull: Third Eye ▸ Pilots ▸ AI). Watch that
+   Squirrel through the game's own camera (the Third Eye's Chase camera was removed 2026-11-22): it skims on the side of the rail the rings are on, and threads rings
    without crossing through the rail.
 2. Count its rail hits over a full race (the Third Eye readout, or its stored flight's Slowed episodes): fewer than
    before. Its rings when you finish: more than the old median of 14 of 24.
