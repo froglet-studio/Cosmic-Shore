@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-21-fauna-assignlineage-now-arms-a-body-afte-fcb010",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-21T17:17:51+00:00",
+  "area": "Fauna the AIs and arcade modes meet (element armour)",
+  "summary": "Fauna.AssignLineage now arms a body AFTER its element is rolled: Mass light fauna and boids are shielded, Charge ones are all danger (Docs/ECOSYSTEM.md 65.4), where before a shared-prefab species (QuadFish) got neither. Any mode or AI training that meets Mass or Charge fauna will see shields and danger it did not see before. Your removal of the QuadFish network rig (3d802353d3) is followed: the five new grown creatures carry no rig and are not in the network prefab list.",
+  "branch": "cece/peaceful-babbage-tsg0kd",
+  "commit": "a543001e2"
+}
