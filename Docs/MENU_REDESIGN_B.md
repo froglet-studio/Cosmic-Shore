@@ -37,6 +37,7 @@ section here. The build that follows a pick is verified against the picked board
 | Voyages playtest | `voyages-playtest` | What the first Milestone 1 playtest asked for: four options each for the crew screen, the intro, the objective box, the toasts and the feel in flight (Rev 114), and your Ark with its seat picker five ways (Rev 115) | Shombith, 2026-11-16 (sections 210, 211) |
 | Loading Screens | `loading-screens` | Every loading screen: the loading screen into a game (Rev 91, F picked, section 173) and the boot splash and sign-in scene (Rev 92, section 174) | Shombith, 2026-11-12 (section 173) |
 | Quests | `quests` | The Quests screen, out of the Voyage window and a screen of its own, from Rev 101 | Shombith, 2026-11-13 (section 207) |
+| Frogma Website | `frogma-website` | The Froglet Games website (froglet.games, repo Cosmic-Shore-landing-page) redesign: Cosmic Shore and Tumult on one home, Hypersea themes, admin console, from Rev 122 | Shombith, 2026-11-22 (section 217) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -8943,3 +8944,37 @@ pref `WhatsNew.SeenId`) and from a WHAT'S NEW button beside CREDITS in Settings'
 (`author_menu_settings.py`). Spec `Docs/UI/specs/rev121-c-whats-new.md`, which lists where it differs from the board
 (no Ark picture yet, the door on General not Other, only Update 0.3 listed). Hand test in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 217. Rev 122 mockups: the Froglet Games website, eight animated pages (2026-11-22, awaiting a pick)
+
+**Asked (Shombith, 2026-11-22):** "We wanna redesign the website with modern UI, hypersea inspired themes, theme support
+with color blindness with photic, blue ringed octopus and nacre being in the selection. Whole UI should be supported
+with the themes. There should be dynamic animations with motion. Now that we have tumult the main page can switch
+between tumult or cosmic shore with cosmic shore being the default. Good transitions, great animations with seo support
+new admin tabs and all tabs included ... I like the main starting cosmic shore bg ... keep that ... Create a new
+frogma-website board and give me like 8 mockups with animations."
+
+**On the canvas:** a new tab, **Frogma Website** (`frogma-website`), section "Rev 122". Copies in
+`Docs/MenuRedesignB/board/R122*.dc.html`. Every board is interactive (game switch, Theme menu, Motion Full / Calm /
+Off) and drawn at 1920x1080 from the site's own art (hero `Image Sequence_025_0000.jpg`, logos, vessel, mode, Tumult
+and team images uploaded to the canvas):
+- **A Home, Cosmic Shore** (the default): the current hero kept, now with a slow drift, mouse parallax and rising
+  prisms; Get the Game, Play in your browser, Join Discord; a rail of four cards, the last opening Tumult.
+- **B Home, Tumult:** the game switch plays a ring of colour from the centre and brings up the Tumult page (Fraunces
+  type, the gold accent, letters rising, three steps of how it plays).
+- **C Themes:** nine themes, each restyling the whole site and the admin: Photic, Nocturne, Blue-ringed Octopus,
+  Nacre (light), and Protanopia, Deuteranopia, Tritanopia, Achromatopsia, High Contrast, taken from
+  `Docs/VesselModels/colour_sets.json`; live contrast ratios, Motion, Match my system.
+- **D Vessels:** a turning stage, one vessel at a time, auto-advance with pause and a progress line.
+- **E Modes:** the game cards with Arcade / Arena / vessel filters and search; a picked card opens a side panel.
+- **F Story, Team and Blog** under one tab bar. **G Play and Get the Game:** the browser player and the stores, with a
+  working sign-up. **H Admin:** the console with the new tabs (Dashboard, Pages, Media, Game content, Builds and
+  Toybox, Testers, SEO, Themes, Analytics, Settings) beside today's Team and Posts.
+- **Notes:** the SEO structure (both games stay real URLs, `/` and `/tumult/`; the switch is a link), the motion rules,
+  and where it departs from this board's quiet rules (motion asked for in the brief).
+
+No recommendation: the boards are pages of one site, not rival options; the pick is per board.
+
+**Differs from the build:** the live site (`Cosmic-Shore-landing-page`, `css/design-3-hyperdrive.css`) has one dark
+look, no theme setting, no game switch (Tumult is its own page at `/tumult/`) and an admin with three screens (profile,
+my posts, write a post).

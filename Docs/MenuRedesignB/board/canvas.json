@@ -2535,6 +2535,86 @@
       "h": 900,
       "page": "what-s-new",
       "title": "Rev 121 - notes: what each option does, where it opens from, what the build needs"
+    },
+    "R122A.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "frogma-website",
+      "title": "Rev 122 A - Home, Cosmic Shore: the hero kept, the game switch, motion intro - interactive",
+      "is_interactive": true
+    },
+    "R122B.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "frogma-website",
+      "title": "Rev 122 B - Home, Tumult: the switch played, the same page as an expedition - interactive",
+      "is_interactive": true
+    },
+    "R122C.dc.html": {
+      "x": 4200,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "frogma-website",
+      "title": "Rev 122 C - Themes: Photic, Nocturne, Blue-ringed Octopus, Nacre and five colour-vision sets across the whole UI - interactive",
+      "is_interactive": true
+    },
+    "R122D.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "frogma-website",
+      "title": "Rev 122 D - Vessels: the hangar, one vessel at a time with motion - interactive",
+      "is_interactive": true
+    },
+    "R122E.dc.html": {
+      "x": 2100,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "frogma-website",
+      "title": "Rev 122 E - Modes: every game as a filterable deck - interactive",
+      "is_interactive": true
+    },
+    "R122F.dc.html": {
+      "x": 4200,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "frogma-website",
+      "title": "Rev 122 F - Story, Team and Blog: the studio pages - interactive",
+      "is_interactive": true
+    },
+    "R122G.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 1080,
+      "page": "frogma-website",
+      "title": "Rev 122 G - Play and Get the Game: the Toybox and the stores - interactive",
+      "is_interactive": true
+    },
+    "R122H.dc.html": {
+      "x": 2100,
+      "y": 2520,
+      "w": 1920,
+      "h": 1080,
+      "page": "frogma-website",
+      "title": "Rev 122 H - Admin: the new studio console (dashboard, posts, pages, media, SEO, themes, builds) - interactive",
+      "is_interactive": true
+    },
+    "R122Notes.dc.html": {
+      "x": 0,
+      "y": 3780,
+      "w": 1920,
+      "h": 900,
+      "page": "frogma-website",
+      "title": "Rev 122 - notes: what each page does, the SEO structure, the motion rules and what to pick"
     }
   },
   "createdOnFiles": {
@@ -2543,7 +2623,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "what-s-new",
+    "page": "frogma-website",
     "view": "canvas"
   },
   "noteOrder": [
@@ -2619,6 +2699,7 @@
     "sec-rev120",
     "sec-rev120-2",
     "sec-rev121",
+    "sec-rev122",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -2705,7 +2786,8 @@
     "grp-116f-blocks-t",
     "rev117",
     "rev120",
-    "rev121"
+    "rev121",
+    "rev122"
   ],
   "notes": {
     "hud_end": {
@@ -4686,6 +4768,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "what-s-new"
+    },
+    "rev122": {
+      "kind": "title1",
+      "text": "Rev 122 - Froglet Games website redesign: Hypersea themes, Cosmic Shore and Tumult on one home, eight animated pages",
+      "x": 0,
+      "y": -400,
+      "w": 240,
+      "maxW": 6120,
+      "page": "frogma-website"
+    },
+    "sec-rev122": {
+      "kind": "rect",
+      "x": -160,
+      "y": -560,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "frogma-website"
     }
   },
   "order": [
@@ -4994,7 +5100,16 @@
     "R121C.dc.html",
     "R121D.dc.html",
     "R121Settings.dc.html",
-    "R121Notes.dc.html"
+    "R121Notes.dc.html",
+    "R122A.dc.html",
+    "R122B.dc.html",
+    "R122C.dc.html",
+    "R122D.dc.html",
+    "R122E.dc.html",
+    "R122F.dc.html",
+    "R122G.dc.html",
+    "R122H.dc.html",
+    "R122Notes.dc.html"
   ],
   "pages": [
     {
@@ -5056,6 +5171,10 @@
     {
       "id": "what-s-new",
       "name": "What's New"
+    },
+    {
+      "id": "frogma-website",
+      "name": "Frogma Website"
     }
   ],
   "title": "Frogma"

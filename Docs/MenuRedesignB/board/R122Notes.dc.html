@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 122 notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;family=Fraunces:opsz,wght@9..144,600;9..144,800&amp;display=swap" rel="stylesheet">
+<style>
+
+body{margin:0;background:#00010A}
+*{box-sizing:border-box}
+.site{--e:cubic-bezier(.22,1,.36,1);--e2:cubic-bezier(.34,1.56,.64,1);position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'Aldrich',sans-serif;transition:background-color .6s var(--e),color .6s var(--e)}
+.site *{transition-property:background-color,border-color,color,box-shadow,opacity,transform,filter;transition-duration:.45s;transition-timing-function:var(--e)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--tx2)}
+.cp{font-family:'Chakra Petch',sans-serif}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+a{color:var(--a1);text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.focusable:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--a1);outline-offset:3px}
+/* header */
+.hdr{position:absolute;left:0;right:0;top:0;height:92px;z-index:30;display:flex;align-items:center;gap:28px;padding:0 56px;background:linear-gradient(180deg,color-mix(in srgb,var(--bg2) 78%,transparent),transparent);animation:dropIn .7s var(--e) both}
+.hdr.solid{background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);border-bottom:var(--bw) solid var(--ln)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand img{height:40px;display:block}
+.gsw{position:relative;display:flex;padding:4px;border:var(--bw) solid var(--ln);border-radius:999px;background:var(--sf);backdrop-filter:blur(10px)}
+.gsw-t{position:absolute;top:4px;bottom:4px;left:4px;width:150px;border-radius:999px;background:var(--tx);transition:transform .55s var(--e2),background-color .45s}
+.gsw-t.tu{transform:translateX(150px)}
+.gsw button{position:relative;z-index:1;width:150px;height:38px;border:0;background:transparent;font-family:'Chakra Petch';font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx2);border-radius:999px}
+.gsw button.on{color:var(--bg)}
+.nav{display:flex;gap:6px;margin-left:auto}
+.nav a{position:relative;padding:12px 14px;font-family:'Chakra Petch';font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--tx2)}
+.nav a::after{content:'';position:absolute;left:14px;right:14px;bottom:4px;height:2px;background:var(--a1);transform:scaleX(0);transform-origin:left;transition:transform .35s var(--e)}
+.nav a:hover{color:var(--tx)}.nav a:hover::after,.nav a.on::after{transform:scaleX(1)}
+.nav a.on{color:var(--tx)}
+.ibtn{display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;border:var(--bw) solid var(--ln);background:var(--sf);border-radius:999px;font-family:'Chakra Petch';font-weight:600;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx)}
+.ibtn:hover{border-color:var(--a1)}
+.ibtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 30px;border:0;background:var(--cta);color:var(--on);font-family:'Chakra Petch';font-weight:700;font-size:16px;letter-spacing:.16em;text-transform:uppercase;position:relative;overflow:hidden}
+.btn::before{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-120%)}
+.btn:hover::before{transform:translateX(120%);transition:transform .8s var(--e)}
+.btn:hover{transform:translateY(-2px);box-shadow:0 12px 40px color-mix(in srgb,var(--cta) 40%,transparent)}
+.btn-s{height:44px;padding:0 20px;font-size:13px}
+.btn-o{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 28px;background:color-mix(in srgb,var(--bg) 35%,transparent);border:var(--bw) solid var(--ctaink);color:var(--ctaink);font-family:'Chakra Petch';font-weight:700;font-size:16px;letter-spacing:.16em;text-transform:uppercase;backdrop-filter:blur(8px)}
+.btn-o:hover{background:color-mix(in srgb,var(--cta) 16%,transparent);transform:translateY(-2px)}
+.btn-o svg,.btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border:var(--bw) solid var(--ln);border-radius:999px;font-family:'Chakra Petch';font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx2);background:var(--sf)}
+.glass{background:var(--sf);border:var(--bw) solid var(--ln);backdrop-filter:blur(16px)}
+/* theme menu */
+.tpop{position:absolute;right:56px;top:100px;width:560px;z-index:40;padding:22px;background:color-mix(in srgb,var(--bg) 92%,transparent);border:var(--bw) solid var(--ln);backdrop-filter:blur(20px);box-shadow:0 30px 90px rgba(0,0,0,.5);animation:popIn .45s var(--e2) both;transform-origin:85% 0}
+.tgrp{margin:6px 0 10px}
+.tgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.topt{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px;border:var(--bw) solid var(--ln);background:var(--sf);text-align:left;min-height:76px}
+.topt:hover{border-color:var(--a1);transform:translateY(-2px)}
+.topt.on{border-color:var(--a1);box-shadow:inset 0 0 0 1px var(--a1)}
+.topt b{font-family:'Chakra Petch';font-weight:700;font-size:13px;letter-spacing:.06em}
+.sw{display:flex;gap:3px}.sw i{display:block;width:16px;height:16px;border-radius:3px}
+.mrow{display:flex;gap:8px;margin-top:14px;align-items:center}
+.seg{display:flex;border:var(--bw) solid var(--ln);border-radius:999px;padding:3px;background:var(--sf)}
+.seg button{border:0;background:transparent;height:32px;padding:0 14px;border-radius:999px;font-family:'Chakra Petch';font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx2)}
+.seg button.on{background:var(--tx);color:var(--bg)}
+/* hero */
+.hero{position:absolute;inset:0;overflow:hidden}
+.hbg{position:absolute;inset:-4%;will-change:transform;transition:transform .9s var(--e)}
+.hbg img{width:100%;height:100%;object-fit:cover;display:block;filter:var(--imgf);animation:kb 26s ease-in-out infinite alternate}
+.hwash{position:absolute;inset:0;background:radial-gradient(ellipse at 25% 40%,var(--g1),transparent 55%),radial-gradient(ellipse at 75% 60%,var(--g2),transparent 55%),linear-gradient(180deg,var(--wash),transparent 30%,transparent 55%,var(--bg) 100%)}
+.th-nacre .hwash{background:radial-gradient(ellipse at 25% 40%,var(--g1),transparent 55%),radial-gradient(ellipse at 75% 60%,var(--g2),transparent 55%),linear-gradient(180deg,rgba(0,0,0,.25),transparent 30%,transparent 55%,var(--bg) 100%)}
+.hc{position:absolute;left:0;right:0;top:220px;display:flex;flex-direction:column;align-items:center;text-align:center;color:#fff}
+.hc h1{margin:0}
+.hlogo{width:560px;display:block;animation:logoIn 1.4s var(--e) .2s both;filter:drop-shadow(0 10px 40px rgba(0,0,0,.6))}
+.htag{margin:34px 0 0;font-family:'Chakra Petch';font-weight:700;font-size:20px;letter-spacing:.5em;text-transform:uppercase;color:var(--a1);animation:trackIn 1.4s var(--e) .7s both;text-shadow:0 2px 20px rgba(0,0,0,.6)}
+.th-nacre .htag{color:#5FEAE2}
+.hdesc{max-width:620px;margin:20px 0 0;font-size:21px;line-height:1.55;color:rgba(255,255,255,.86);animation:rise .9s var(--e) 1s both;text-shadow:0 2px 16px rgba(0,0,0,.7)}
+.hact{display:flex;gap:18px;margin-top:40px;animation:rise .9s var(--e) 1.2s both}
+.th-nacre .hact .btn-o{border-color:#B0E660;color:#B0E660}
+.rail{position:absolute;left:56px;right:56px;bottom:44px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.rc{display:flex;gap:16px;align-items:center;padding:14px;color:var(--tx);text-align:left;border:var(--bw) solid var(--ln);background:var(--sf);backdrop-filter:blur(16px);animation:rise .8s var(--e) both}
+.rc:hover{transform:translateY(-6px);border-color:var(--a1);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.rc img{width:96px;height:64px;object-fit:cover;display:block;filter:var(--imgf)}
+.rc .k{font-family:'Chakra Petch';font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--a1)}
+.rc .t{font-size:17px;margin-top:4px;line-height:1.3}
+.rc .ar{margin-left:auto;width:22px;height:22px;stroke:var(--tx2);fill:none;stroke-width:2}
+.rc:hover .ar{transform:translateX(4px);stroke:var(--a1)}
+.cue{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;color:rgba(255,255,255,.7)}
+.cue i{display:block;width:2px;height:44px;background:linear-gradient(var(--a1),transparent);animation:cue 2s ease-in-out infinite}
+/* particles */
+.pz{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.pz span{position:absolute;bottom:-40px;border:1.5px solid;opacity:0;animation:floatUp linear infinite}
+/* the game switch wipe */
+.wipe{position:absolute;inset:0;z-index:25;pointer-events:none;animation:wipe 1.25s var(--e) both}
+.wipe.cs{background:radial-gradient(circle at 50% 50%,var(--a1),var(--bg2) 70%)}
+.wipe.tu{background:radial-gradient(circle at 50% 50%,var(--a3),var(--bg2) 70%)}
+.swapIn{animation:swapIn 1s var(--e) .25s both}
+.g-tu .btn{background:var(--a3);color:var(--bg2)}
+.g-tu .btn:hover{box-shadow:0 12px 40px color-mix(in srgb,var(--a3) 40%,transparent)}
+.g-tu .nav a::after{background:var(--a3)}
+.g-tu .gsw-t{background:var(--a3)}
+.g-tu .btn-o{border-color:var(--a3);color:var(--a3)}
+/* motion settings */
+.mo-calm *,.mo-calm *::before,.mo-calm *::after{animation-duration:3s;transition-duration:.9s}
+.mo-off *,.mo-off *::before,.mo-off *::after{animation:none !important;transition:none !important}
+@media (prefers-reduced-motion: reduce){.site *,.site *::before,.site *::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}}
+@keyframes kb{from{transform:scale(1.02) translate(0,0)}to{transform:scale(1.12) translate(-1.5%,-1%)}}
+@keyframes rise{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes dropIn{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.92) translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes logoIn{0%{opacity:0;transform:translateY(30px) scale(.94);filter:blur(14px) drop-shadow(0 10px 40px rgba(0,0,0,.6))}100%{opacity:1;transform:none;filter:blur(0) drop-shadow(0 10px 40px rgba(0,0,0,.6))}}
+@keyframes trackIn{from{opacity:0;letter-spacing:1.2em}to{opacity:1;letter-spacing:.5em}}
+@keyframes cue{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+@keyframes floatUp{0%{opacity:0;transform:translateY(0) rotate(0)}12%{opacity:.85}85%{opacity:.6}100%{opacity:0;transform:translateY(-1150px) rotate(320deg)}}
+@keyframes wipe{0%{clip-path:circle(0% at 50% 50%);opacity:1}55%{clip-path:circle(80% at 50% 50%);opacity:1}100%{clip-path:circle(80% at 50% 50%);opacity:0}}
+@keyframes swapIn{from{opacity:0;transform:scale(1.04);filter:blur(8px)}to{opacity:1;transform:none;filter:blur(0)}}
+@keyframes slideL{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:none}}
+@keyframes slideR{from{opacity:0;transform:translateX(-60px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--cta) 55%,transparent)}100%{box-shadow:0 0 0 34px transparent}}
+@keyframes bar{from{transform:scaleY(.15)}to{transform:scaleY(1)}}
+@keyframes draw{from{stroke-dashoffset:1200}to{stroke-dashoffset:0}}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+
+.th-photic{--bg:#00041F;--bg2:#00010A;--sf:rgba(34,38,69,.58);--sf2:rgba(67,76,137,.32);--ln:rgba(116,123,173,.38);--tx:#E6E9FF;--tx2:#A2A8D4;--cta:#99FF80;--on:#00041F;--a1:#00D4FF;--a2:#C04BFF;--a3:#FFAE00;--fire:#FE5645;--blu:#4D8BFF;--g1:rgba(0,212,255,.18);--g2:rgba(166,0,255,.16);--imgf:none;--wash:rgba(0,4,31,0)}
+.th-nocturne{--bg:#070A1C;--bg2:#02030B;--sf:rgba(8,31,92,.42);--sf2:rgba(63,32,95,.35);--ln:rgba(115,154,251,.28);--tx:#ECEFFF;--tx2:#A9B1DA;--cta:#B4E232;--on:#0A0F02;--a1:#4BD5D4;--a2:#DF5CE4;--a3:#ECBD44;--fire:#E8614E;--blu:#739AFB;--g1:rgba(75,213,212,.16);--g2:rgba(223,92,228,.14);--imgf:saturate(1.1);--wash:rgba(8,31,92,.18)}
+.th-octopus{--bg:#030E14;--bg2:#010608;--sf:rgba(3,25,35,.72);--sf2:rgba(27,71,156,.28);--ln:rgba(73,144,249,.34);--tx:#FBF1DA;--tx2:#D3C29A;--cta:#9FD648;--on:#0B1400;--a1:#4990F9;--a2:#B049E5;--a3:#F9D373;--fire:#D54C25;--blu:#4990F9;--g1:rgba(73,144,249,.22);--g2:rgba(249,211,115,.10);--imgf:saturate(.9) hue-rotate(-8deg);--wash:rgba(3,25,35,.25)}
+.th-nacre{--bg:#F6F1F4;--bg2:#ECE3EC;--sf:rgba(255,255,255,.74);--sf2:rgba(181,201,255,.30);--ln:rgba(122,149,178,.35);--tx:#241B33;--tx2:#5A4E6E;--cta:#B0E660;--on:#1C2A08;--a1:#127A74;--a2:#9333C2;--a3:#8A6516;--fire:#C4473A;--blu:#4C68C4;--g1:rgba(95,234,226,.30);--g2:rgba(218,92,230,.22);--imgf:saturate(.8) brightness(1.08);--wash:rgba(246,241,244,.10)}
+.th-protan{--bg:#05081A;--bg2:#020309;--sf:rgba(18,37,121,.38);--sf2:rgba(28,43,62,.5);--ln:rgba(213,174,245,.3);--tx:#F0F1FF;--tx2:#B4B8D8;--cta:#D5E305;--on:#121400;--a1:#2EE1CE;--a2:#A27BFF;--a3:#E6AC3F;--fire:#E2557F;--blu:#D5AEF5;--g1:rgba(46,225,206,.15);--g2:rgba(213,227,5,.10);--imgf:none;--wash:rgba(5,8,26,.1)}
+.th-deutan{--bg:#050719;--bg2:#020309;--sf:rgba(15,43,73,.48);--sf2:rgba(71,8,121,.3);--ln:rgba(67,228,230,.26);--tx:#F1F2FF;--tx2:#B6BAD8;--cta:#D2D813;--on:#121400;--a1:#43E4E6;--a2:#FD5CFF;--a3:#E0A85C;--fire:#F82278;--blu:#7C88FF;--g1:rgba(67,228,230,.15);--g2:rgba(253,30,255,.12);--imgf:none;--wash:rgba(5,7,25,.1)}
+.th-tritan{--bg:#0B0614;--bg2:#040208;--sf:rgba(65,26,41,.42);--sf2:rgba(23,71,81,.4);--ln:rgba(73,232,149,.26);--tx:#FFF3F3;--tx2:#C9B7BE;--cta:#B4C95A;--on:#121400;--a1:#49E895;--a2:#D25BF0;--a3:#F3CB76;--fire:#FF4A2A;--blu:#4D9BEB;--g1:rgba(73,232,149,.14);--g2:rgba(255,74,42,.12);--imgf:none;--wash:rgba(11,6,20,.1)}
+.th-achro{--bg:#0A0A0A;--bg2:#000000;--sf:rgba(40,40,40,.62);--sf2:rgba(80,80,80,.3);--ln:rgba(255,255,255,.3);--tx:#F5F5F5;--tx2:#BDBDBD;--cta:#FFFFFF;--on:#000000;--a1:#E6E6E6;--a2:#9C9C9C;--a3:#D0D0D0;--fire:#8A8A8A;--blu:#6E6E6E;--g1:rgba(255,255,255,.08);--g2:rgba(255,255,255,.05);--imgf:grayscale(1) contrast(1.12);--wash:rgba(0,0,0,.15)}
+.th-contrast{--bg:#000000;--bg2:#000000;--sf:rgba(0,0,0,.86);--sf2:rgba(255,255,255,.08);--ln:rgba(255,255,255,.85);--tx:#FFFFFF;--tx2:#F0F0F0;--cta:#3DFF4F;--on:#000000;--a1:#26E6FF;--a2:#FF5CFF;--a3:#FFE14D;--fire:#FF3B30;--blu:#4D7DFF;--g1:rgba(38,230,255,.10);--g2:rgba(255,92,255,.08);--imgf:contrast(1.15);--wash:rgba(0,0,0,.25)}
+.th-nacre{--ctaink:#3E7A1C;--bw:1px}.th-photic,.th-nocturne,.th-octopus,.th-protan,.th-deutan,.th-tritan,.th-achro{--ctaink:var(--cta);--bw:1px}
+.th-contrast{--ctaink:var(--cta);--bw:2px}
+
+</style>
+</helmet>
+<div class="site th-photic" style="width: 1920px; height: 900px; padding: 56px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 40px"><div><div class="lab" style="color:var(--a1)">What the eight boards are</div><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">A  Home, Cosmic Shore. The hero you liked is kept as it is: the same background, logo, line and buttons. It now drifts slowly, follows the mouse a little, and prisms rise through it. A rail of four cards sits under it; the last one opens Tumult.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">B  Home, Tumult. The game switch in the header turns the whole page: a ring of colour opens from the centre and the Tumult page comes up under it, with its own type, its gold accent and three steps of how it plays.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">C  Themes. Nine themes in two groups, each restyling every page, menu, form and the admin. Live contrast numbers, a Motion setting (Full, Calm, Off) and Match my system.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">D  Vessels. One vessel at a time on a turning stage, real blurbs from the game, advancing every 6 s with a pause button and a progress line.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">E  Modes. Every game card with filters (Arcade, Arena, by vessel) and search; filtered-out cards fade, a picked card opens a side panel.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">F  Story, Team and Blog under one tab bar, each panel sliding in. G  Play in the browser and Get the Game, with a working sign-up. H  The admin console.</p></div><div><div class="lab" style="color:var(--a1)">What is new in the admin (H)</div><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">Today's admin has three things: Your profile, My posts, Write a post. H keeps them (Team, Posts) and adds Dashboard, Pages, Media, Game content (the sync from the game repo), Builds and Toybox, Testers, SEO, Themes, Analytics and Settings.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">Posts shows the search result and the share card while you type, with title and description length checks.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">SEO checks every page on publish. Themes picks which themes visitors are offered and the default for new visitors.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">Dashboard numbers are placeholders [n]: they come from Froglet Analytics once it is wired.</p></div><div><div class="lab" style="color:var(--a1)">SEO and motion</div><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">Cosmic Shore stays at / and Tumult at /tumult/. The switch is a real link to the other page with the ring transition played on arrival, so both pages are crawled and shared on their own, each with its own title, description, Open Graph image and VideoGame data.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">One h1 per page, headings in order, alt text on every image, fixed image sizes so nothing jumps, the hero image loaded first. The theme never changes a URL.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">Motion uses the style guide's timings (120, 200, 320, 500 ms) for UI and slow loops only in the hero. Reduced motion on the device turns it all off, and Calm and Off are in the theme menu.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">Departs from Frogma's quiet rules (no idle motion) because this brief asks for animation; the hero drift, prisms and the vessel stage are the only loops.</p></div><div><div class="lab" style="color:var(--a1)">Pick</div><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">Every board is interactive: press Play, use the game switch, the Theme button, the tabs and the filters.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">Pick per board, or name what to carry across: the ring switch, the theme menu, the vessel stage, the mode deck.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">Themes use the game's own colour sets (Docs/VesselModels/colour_sets.json): Photic, Nocturne, Blue-ringed Octopus and Nacre, plus Protanopia, Deuteranopia, Tritanopia, Achromatopsia and a High Contrast theme from the Contrast set.</p><p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:var(--tx)">Nothing is built until a pick; the site is the Cosmic-Shore-landing-page repo.</p></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

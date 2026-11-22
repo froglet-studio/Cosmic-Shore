@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-21 from canvas version `1795251681-3892` of **Frogma**: Rev 41 to Rev 121, 306 boards on 15 tabs. The canvas opens on the tab `what-s-new`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-22 from canvas version `1795374373-f4b4` of **Frogma**: Rev 41 to Rev 122, 315 boards on 16 tabs. The canvas opens on the tab `frogma-website`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -525,5 +525,19 @@ No boards yet.
 - [`R121D.dc.html`](R121D.dc.html) - Rev 121 D - Card: a small card slides in over Home and opens into the window - interactive
 - [`R121Settings.dc.html`](R121Settings.dc.html) - Rev 121 Settings - Settings: the What's new row under Other opens the same window - interactive
 - [`R121Notes.dc.html`](R121Notes.dc.html) - Rev 121 - notes: what each option does, where it opens from, what the build needs
+
+### Tab: Frogma Website  (`frogma-website`)
+
+#### Rev 122 - Froglet Games website redesign: Hypersea themes, Cosmic Shore and Tumult on one home, eight animated pages
+
+- [`R122A.dc.html`](R122A.dc.html) - Rev 122 A - Home, Cosmic Shore: the hero kept, the game switch, motion intro - interactive
+- [`R122B.dc.html`](R122B.dc.html) - Rev 122 B - Home, Tumult: the switch played, the same page as an expedition - interactive
+- [`R122C.dc.html`](R122C.dc.html) - Rev 122 C - Themes: Photic, Nocturne, Blue-ringed Octopus, Nacre and five colour-vision sets across the whole UI - interactive
+- [`R122D.dc.html`](R122D.dc.html) - Rev 122 D - Vessels: the hangar, one vessel at a time with motion - interactive
+- [`R122E.dc.html`](R122E.dc.html) - Rev 122 E - Modes: every game as a filterable deck - interactive
+- [`R122F.dc.html`](R122F.dc.html) - Rev 122 F - Story, Team and Blog: the studio pages - interactive
+- [`R122G.dc.html`](R122G.dc.html) - Rev 122 G - Play and Get the Game: the Toybox and the stores - interactive
+- [`R122H.dc.html`](R122H.dc.html) - Rev 122 H - Admin: the new studio console (dashboard, posts, pages, media, SEO, themes, builds) - interactive
+- [`R122Notes.dc.html`](R122Notes.dc.html) - Rev 122 - notes: what each page does, the SEO structure, the motion rules and what to pick
 
 <!-- frogma.py readme: end -->
