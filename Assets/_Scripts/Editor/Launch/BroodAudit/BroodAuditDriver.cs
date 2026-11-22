@@ -52,6 +52,8 @@ namespace CosmicShore.Editor
         readonly List<Domains> _teamDomains = new();
         readonly StringBuilder _wallRows = new();
         bool _clientSeen;
+        int _rehost;
+        double _menuSince = -1, _rehostAt;
         int _samples;
         readonly List<string> _notes = new();
         readonly BroodAuditActionCounter _actions = new();
@@ -91,7 +93,39 @@ namespace CosmicShore.Editor
         {
             if (IsMenu() && _gameData.LocalPlayer?.Vessel != null) { Enter(Phase.Settle, now); return; }
             if (now - _lastBootPoke >= 0.25) { _lastBootPoke = now; PokeBootGates(); }
+            TickRehost(now);
             if (now - _phaseStarted > BootTimeout) Finish(now, "menu never gave a local pilot");
+        }
+
+        /// <summary>
+        /// Several audit editors on one machine: the offline host always binds UDP 7777, so only the first editor gets a
+        /// pilot and the rest sit in the menu with none. Once the menu has been up a while with no local vessel, this
+        /// peer leaves its host and starts it again on its own port (<c>-broodPort</c>, else 7778 + a hash of the
+        /// project path), the way an MPPM clone does (<c>MultiplayerSetup</c>). The editor that holds 7777 never needs it.
+        /// </summary>
+        void TickRehost(double now)
+        {
+            if (!IsMenu()) { _menuSince = -1; return; }
+            if (_menuSince < 0) _menuSince = now;
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null) return;
+            switch (_rehost)
+            {
+                case 0 when now - _menuSince > 40 && _gameData.LocalPlayer?.Vessel == null:
+                    Note("no pilot in the menu: re-hosting on a free port");
+                    nm.Shutdown();
+                    _rehost = 1;
+                    _rehostAt = now;
+                    break;
+                case 1 when !nm.ShutdownInProgress && !nm.IsListening && now - _rehostAt > 2:
+                    ushort port = ushort.TryParse(Environment.GetCommandLineArgs().SkipWhile(a => a != "-broodPort").Skip(1).FirstOrDefault(), out var p)
+                        ? p : (ushort)(7778 + Math.Abs(Application.dataPath.GetHashCode()) % 200);
+                    if (nm.TryGetComponent(out Unity.Netcode.Transports.UTP.UnityTransport t)) t.SetConnectionData("127.0.0.1", port, "0.0.0.0");
+                    bool ok = nm.StartHost();
+                    Note($"re-hosted on {port}: {ok}");
+                    _rehost = 2;
+                    break;
+            }
         }
 
         void PokeBootGates()
