@@ -65,10 +65,6 @@ MonoBehaviour:
   warpKickCapCruise: 3
   poleGM: 20000
   rippleSeparation: 90
-  ringDotSpacing: 5
-  ringDotSize: 0.9
-  detectionRingAlpha: 0.35
-  orbitRingAlpha: 0.6
   slingBoostMin: 0.25
   slingBoostMax: 0.9
   slingBoostSeconds: 1.5

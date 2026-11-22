@@ -19,8 +19,8 @@ MonoBehaviour:
     AbilityDescription: 'Triggers: LT on the left, RT on the right. A press lays a small black hole
       ahead of you on the pressed side. Fly past beside it and it SWINGS you round toward
       itself until you have turned the angle your stick asks - toward the hole the most,
-      away from it the least, at rest the middle; the dotted line shows where you will go -
-      then lets you go on that line, keeping the swing''s speed. Let go of the trigger mid-swing
+      away from it the least, at rest the middle - then lets you go on that heading,
+      keeping the swing''s speed. Let go of the trigger mid-swing
       to leave at once. Passed or out of time, the hole collapses and throws the Charge
       ripple. A hole you own never pulls you in. Space is the swing''s reach - one dial, read
       live: x1 -> x1.4 at level 10 (StoatSlingConfigSO.orbitReach). R_VesselActions/STOAT_DIPOLE.md
@@ -46,7 +46,8 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: 
     UpgradeDescription: 'Open: Foresight (the rivals'' predicted paths, drawn with the old field pathfinder)
-      was deleted on 2026-11-21 with that pathfinder. Time 5 has no upgrade until one is designed.'
+      was deleted on 2026-11-21 with that pathfinder, and the Stoat draws nothing since 2026-11-22.
+      Time 5 has no upgrade until one is designed.'
   - Element: 1
     AbilityLabel: Ripple
     AbilityDescription: 'Passive, anti-vessel and anti-creature. Every black hole of yours that collapses - a

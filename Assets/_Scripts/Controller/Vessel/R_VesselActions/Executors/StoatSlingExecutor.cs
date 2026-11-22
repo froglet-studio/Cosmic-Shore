@@ -13,7 +13,8 @@ namespace CosmicShore.Gameplay
     /// small BLACK HOLE, no white hole, no orbit. PRESS lays it <see cref="StoatSlingConfigSO.SwingAhead"/> ahead and
     /// <see cref="StoatSlingConfigSO.SwingSide"/> to the pressed side. Pass beside it and it SWINGS you toward itself
     /// (ω = v / d, capped) until you have turned the angle the stick asks (<see cref="StoatSlingMath.SwingTurnDegrees"/>, read
-    /// every frame: toward the hole the most, away the least; the dotted exit line shows it), then lets you go on that heading.
+    /// every frame: toward the hole the most, away the least), then lets you go on that heading. Nothing is drawn for it
+    /// (2026-11-22).
     /// ONE slingshot (2026-11-19): the swing's own speed-up is kept as momentum, with no second push at the exit
     /// (<see cref="StoatSlingConfigSO.SwingKickShare"/> ships 0). Letting go of the trigger mid-swing lets you go at once; before
     /// it, it does nothing. Passed or out of time, the hole collapses and throws the Charge ripple
@@ -84,14 +85,9 @@ namespace CosmicShore.Gameplay
         Vector3 _swingHolePos;
         float _swingReach;
         float _swingAt;
-        Vector3 _swingEntry;        // the heading at the swing's start; the exit is it turned
         Vector3 _swingAxis;         // the turn axis, fixed at the start (toward the hole)
         float _swingTurned;         // degrees turned so far
         float _swingWant;           // degrees the stick asks for now
-        Vector3 _swingExit = Vector3.forward;   // the heading the swing would throw the hull on now (the dotted line)
-        float _swingFxAt = float.NegativeInfinity;
-        Vector3 _swingFxCentre;
-        Vector3 _swingFxNormal = Vector3.up;
 
         public bool IsHolding(Side side) => _holds[(int)side].Holding;
         /// <summary>The deepest squeeze of the current (or last) hold, 0..1.</summary>
@@ -120,15 +116,6 @@ namespace CosmicShore.Gameplay
         /// <summary>True while a swing's black hole is up (every peer), and while it swings the hull (the simulating machine).</summary>
         public bool IsSwingUp => _swingUp;
         public bool IsSwinging => _swinging;
-        /// <summary>The swing's black hole and the reach it starts a swing within, world.</summary>
-        public Vector3 SwingHolePosition => _swingHolePos;
-        public float SwingReachRadius => _swingUp ? _swingReach : 0f;
-        /// <summary>The heading a swing would throw the hull on right now (the stick's angle about the hole): the dotted line.</summary>
-        public Vector3 SwingExitHeading => _swingExit;
-        /// <summary>Seconds since the last fling (+∞ before the first), and where: the fling ripple.</summary>
-        public float SwingFxAge => Time.time - _swingFxAt;
-        public Vector3 SwingFxCentre => _swingFxCentre;
-        public Vector3 SwingFxNormal => _swingFxNormal;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
@@ -138,7 +125,6 @@ namespace CosmicShore.Gameplay
             _holds[1] = default;
             _lastLaunchAt = float.NegativeInfinity;
             _swingUp = _swinging = false;
-            _swingFxAt = float.NegativeInfinity;
             _resolvedSiblings = false;
             _lastTiming = -1f;
             _stance = TryGetComponent<ActionExecutorRegistry>(out var registry) ? registry.Get<ToggleTranslationModeActionExecutor>() : null;
@@ -302,13 +288,10 @@ namespace CosmicShore.Gameplay
             float d = toHole.magnitude;
             if (d <= _swingReach) _swingWasNear = true;
 
-            // The angle the stick asks for now, about the hole's side of the nose: what the dotted line shows.
-            var axis = _swinging ? _swingAxis : StoatSlingMath.SwingAxis(hull.forward, toHole, hull.up);
-            var entry = _swinging ? _swingEntry : hull.forward;
+            // The angle the stick asks for now, about the hole's side of the nose.
             Stick(out float x, out float y);
             _swingWant = StoatSlingMath.SwingTurnDegrees(x, y, Vector3.Dot(toHole, hull.right), Vector3.Dot(toHole, hull.up),
                 config.SwingMinDegrees, config.SwingMaxDegrees);
-            _swingExit = StoatSlingMath.SwingExit(entry, axis, _swingWant);
 
             var transformer = _status.VesselTransformer;
             if (MantaStingActionExecutor.IsSimAuthority(_status) && transformer && !_status.IsTranslationRestricted)
@@ -316,7 +299,6 @@ namespace CosmicShore.Gameplay
                 if (!_swinging && StoatSlingMath.SwingStarts(hull.position, hull.forward, _swingHolePos, _swingReach, config.SwingCatchDegrees))
                 {
                     _swinging = true;
-                    _swingEntry = hull.forward;
                     _swingAxis = StoatSlingMath.SwingAxis(hull.forward, toHole, hull.up);
                     _swingTurned = 0f;
                     PlayOneShot(config.SwingStartEvent);
@@ -376,9 +358,6 @@ namespace CosmicShore.Gameplay
             // The modifier starts at 1.5× its amount and fades over the duration (VesselTransformer); the kick raises the
             // displacement cap for its own life only (vessel §4.ab2).
             if (kick > 0f) transformer.ModifyVelocity(hull.forward * (kick / 1.5f), config.SlingBoostSeconds, false, kick * 1.05f);
-            _swingFxAt = Time.time;
-            _swingFxCentre = _swingHolePos;
-            _swingFxNormal = _swingAxis;
             PlayOneShot(config.SwingFlingEvent);
             CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] flung after {_swingTurned:F0}° of swing: kick {kick:F0}");
             EndSwing(flung: true);
@@ -402,7 +381,7 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ frame
 
         /// <summary>The person flying this hull on this machine: no AI seat, no autopilot, the local owner. Only they get the
-        /// haptics (and, in <see cref="StoatPathfinderExecutor"/>, the drawn reach ring and exit line).</summary>
+        /// haptics.</summary>
         bool IsLocalHumanPilot => _status != null && _status.Player != null && _status.IsLocalUser &&
                                   !_status.IsInitializedAsAI && !_status.AutoPilotEnabled;
 

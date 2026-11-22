@@ -12,7 +12,8 @@ namespace CosmicShore.ScriptableObjects
     /// only decides where, how big, how long and how it turns you.
     ///
     /// <para><b>Retired 2026-11-21</b> (Yash): the catch orbit and its aimed exit, the skim sling, the trampoline and the
-    /// crystal style, and every row they read. The swing is the only Time-mode slingshot, for every pilot.</para>
+    /// crystal style, and every row they read. The swing is the only Time-mode slingshot, for every pilot. The drawn reach
+    /// ring and exit line, and their rows, went on 2026-11-22: nothing is drawn.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "StoatSlingConfig", menuName = "ScriptableObjects/Vessel Actions/Stoat Sling Config")]
     public sealed class StoatSlingConfigSO : ScriptableObject
@@ -125,19 +126,6 @@ namespace CosmicShore.ScriptableObjects
                  "hole's warp: the flight runs at the larger of the two.")]
         [SerializeField, Range(0f, 10f)] float momentumSeconds = 6f;
 
-        [Header("The drawn reach ring and exit line (the local human pilot only)")]
-        [Tooltip("Dots of each ring and line are laid this many world units apart.")]
-        [SerializeField, Range(1f, 40f)] float ringDotSpacing = 5f;
-
-        [Tooltip("Each dot's size, world units (never smaller on screen than the dipole config's minimum).")]
-        [SerializeField, Range(0.1f, 5f)] float ringDotSize = 0.9f;
-
-        [Tooltip("The reach ring's opacity before the swing starts (faint: it is where it CAN swing you).")]
-        [SerializeField, Range(0f, 1f)] float detectionRingAlpha = 0.35f;
-
-        [Tooltip("The reach ring's opacity while it swings you, and the exit line's before it does.")]
-        [SerializeField, Range(0f, 1f)] float orbitRingAlpha = 0.6f;
-
         [Header("Autopilot swing")]
         [Tooltip("An autopilot presses when its target is at least this many degrees off the nose, to the side it wants to " +
                  "turn. 0 disables the AI swing.")]
@@ -188,10 +176,6 @@ namespace CosmicShore.ScriptableObjects
         public float PressWarpShare => Mathf.Clamp01(pressWarpShare);
         public float OrbitSpeedBonus => Mathf.Clamp01(orbitSpeedBonus);
         public float MomentumSeconds => Mathf.Clamp(momentumSeconds, 0f, 10f);
-        public float RingDotSpacing => Mathf.Clamp(ringDotSpacing, 1f, 40f);
-        public float RingDotSize => Mathf.Clamp(ringDotSize, 0.1f, 5f);
-        public float DetectionRingAlpha => Mathf.Clamp01(detectionRingAlpha);
-        public float OrbitRingAlpha => Mathf.Clamp01(orbitRingAlpha);
         public float AiSlingMinTurnDegrees => Mathf.Clamp(aiSlingMinTurnDegrees, 0f, 180f);
         public float AiSlingIntervalSeconds => Mathf.Clamp(aiSlingIntervalSeconds, 0.5f, 20f);
         public float AiSlingMinDistance => Mathf.Max(0f, aiSlingMinDistance);

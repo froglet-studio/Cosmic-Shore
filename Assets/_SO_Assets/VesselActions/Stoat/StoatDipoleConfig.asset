@@ -22,9 +22,6 @@ MonoBehaviour:
     Floor: 1.25
   boostRise: 20
   boostFadeSeconds: 0.6
-  worldDotMinPixels: 2.5
-  openColor: {r: 0.5882353, g: 0.6509804, b: 0.7607843, a: 1}
-  warpedColor: {r: 0.6156863, g: 1, b: 0.1803922, a: 1}
   warpEvent:
     Guid:
       Data1: -80347349

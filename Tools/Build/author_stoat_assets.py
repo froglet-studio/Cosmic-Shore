@@ -614,15 +614,12 @@ def so_header(script_guid: str, name: str) -> str:
 
 
 def dipole_config_asset() -> str:
-    """StoatDipoleConfig's seed (StoatDipoleConfigSO's initializers): the warp and the drawn ring's colours. Seeded once;
+    """StoatDipoleConfig's seed (StoatDipoleConfigSO's initializers): the warp. Seeded once;
     its numbers belong to the Vessel Studio artifact (studio_to_unity.py)."""
     return (so_header(DIPOLE_CONFIG_SCRIPT, "StoatDipoleConfig") +
             "  boost:\n" + elemental(2.5, 2.5, 5, 4, 1) +
             "  boostRise: 20\n"
-            "  boostFadeSeconds: 0.6\n"
-            "  worldDotMinPixels: 2.5\n"
-            f"  openColor: {color(150 / 255, 166 / 255, 194 / 255)}\n"
-            f"  warpedColor: {color(157 / 255, 1, 46 / 255)}\n" +
+            "  boostFadeSeconds: 0.6\n" +
             empty_event("warpEvent"))
 
 

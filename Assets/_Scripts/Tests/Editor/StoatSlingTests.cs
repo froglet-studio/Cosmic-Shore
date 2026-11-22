@@ -58,25 +58,6 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Ring_IsACircleOfTheRadius_InThePlaneOfThePass()
-        {
-            var points = new Vector3[96];
-            var centre = new Vector3(-45f, 0f, 150f);
-            var normal = StoatSlingMath.RingNormal(Vector3.zero, Vector3.forward, centre, Vector3.up);
-            Assert.AreEqual(1f, Mathf.Abs(Vector3.Dot(normal, Vector3.up)), 1e-4f, "a level pass draws a level ring");
-            int n = StoatSlingMath.Ring(centre, normal, 80f, 96, points);
-            Assert.AreEqual(96, n);
-            for (int i = 0; i < n; i++)
-            {
-                Assert.AreEqual(80f, Vector3.Distance(points[i], centre), 1e-3f, "every point on the ring");
-                Assert.AreEqual(0f, Vector3.Dot(points[i] - centre, normal), 1e-3f, "in the ring's plane");
-            }
-            Assert.AreEqual(Vector3.up, StoatSlingMath.RingNormal(Vector3.zero, Vector3.forward, new Vector3(0f, 0f, 50f), Vector3.up),
-                "flying straight at the centre: the fallback plane");
-            Assert.AreEqual(0, StoatSlingMath.Ring(centre, normal, 0f, 96, points), "no radius, no ring");
-        }
-
-        [Test]
         public void Peak_KeepsTheDeepestSqueezeThroughTheLetGo()
         {
             // A real trigger let go from full travel: the samples sweep back down before the release
@@ -418,10 +399,10 @@ namespace CosmicShore.Tests
         public void SwingAxis_TurnsTheNoseTowardTheHole_InAnyPlane()
         {
             var axis = StoatSlingMath.SwingAxis(Vector3.forward, Vector3.right * 35f, Vector3.up);
-            var turned = StoatSlingMath.SwingExit(Vector3.forward, axis, 45f);
+            var turned = Quaternion.AngleAxis(45f, axis) * Vector3.forward;   // the swing turns the nose about it
             Assert.Greater(turned.x, 0f, "a hole on the right swings you right");
             Assert.AreEqual(45f, Vector3.Angle(Vector3.forward, turned), 0.01f);
-            var up = StoatSlingMath.SwingExit(Vector3.forward, StoatSlingMath.SwingAxis(Vector3.forward, Vector3.up * 35f, Vector3.up), 30f);
+            var up = Quaternion.AngleAxis(30f, StoatSlingMath.SwingAxis(Vector3.forward, Vector3.up * 35f, Vector3.up)) * Vector3.forward;
             Assert.Greater(up.y, 0f, "a hole above swings you up");
             Assert.AreEqual(Vector3.up, StoatSlingMath.SwingAxis(Vector3.forward, Vector3.forward * 10f, Vector3.up), "dead ahead: the hull's up");
         }
@@ -572,17 +553,26 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void NoAIOrRemoteStoatDrawsAPath_TheLocalHumanOnly()
+        public void NoStoatDrawsAPathOrARing_ForAnyPilot()
         {
-            // Yash, 2026-11-21: "I see the pathfinding dotted line in Stoat AIs while playing slingshot". The swing's reach ring and
-            // exit line are drawn for the local human pilot only, and Time 5's Foresight (the rivals' predicted paths) is gone.
+            // Yash, 2026-11-21: "I see the pathfinding dotted line in Stoat AIs while playing slingshot"; 2026-11-22: "I dont need
+            // to see the drawing line either". The pathfinder is the flight clock's warp alone: no reach ring, no exit line, no
+            // fling ring, no Foresight, for any pilot.
             string path = Read("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatPathfinderExecutor.cs");
-            StringAssert.Contains("if (IsLocalHumanPilot && flying)", path);
-            StringAssert.Contains("_status.IsLocalUser && !_status.IsInitializedAsAI &&", path);
-            StringAssert.Contains("!_status.AutoPilotEnabled", path);
-            foreach (var gone in new[] { "Foresight(", "PredictPath", "StoatPathfinderDots", "AddTrampolineRings", "AddSkimRings" })
+            StringAssert.Contains("transformer.FlightTimeScale = _boost;", path, "the warp (the swing's speed-up) stays");
+            foreach (var gone in new[] { "WorldDots", "DrawRings", "AddSwingRings", "Foresight(", "PredictPath", "StoatPathfinderDots",
+                                         "Camera", "Ring(" })
                 StringAssert.DoesNotContain(gone, path, $"{gone} is back in the pathfinder");
-            Assert.IsFalse(File.Exists("Assets/_Scripts/Controller/Vessel/R_VesselActions/StoatPathfinderDots.cs"));
+            string sling = Read("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatSlingExecutor.cs");
+            foreach (var gone in new[] { "SwingExitHeading", "SwingFxAge", "SwingReachRadius" })
+                StringAssert.DoesNotContain(gone, sling, $"{gone} (a drawing input) is back on the sling executor");
+            foreach (var file in new[] { "StoatPathfinderDots.cs", "StoatPathfinderWorldDots.cs" })
+                Assert.IsFalse(File.Exists("Assets/_Scripts/Controller/Vessel/R_VesselActions/" + file), $"{file} is back");
+            foreach (var row in new[] { "  ringDotSpacing:", "  openColor:", "  worldDotMinPixels:" })
+            {
+                StringAssert.DoesNotContain(row, Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset"));
+                StringAssert.DoesNotContain(row, Read("Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset"));
+            }
         }
     }
 }

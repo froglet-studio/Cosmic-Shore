@@ -99,34 +99,6 @@ namespace CosmicShore.Gameplay
         public static float AccretionBonus(int captured, float perPrism, float max) =>
             Mathf.Clamp(Mathf.Max(0, captured) * Mathf.Max(0f, perPrism), 0f, Mathf.Max(0f, max));
 
-        // ------------------------------------------------------------------ the drawn reach ring
-
-        /// <summary>
-        /// The plane a ring round <paramref name="centre"/> is drawn in: the plane of the hull's pass (its offset from the
-        /// centre and its heading), or <paramref name="fallbackUp"/>'s plane when the hull flies straight at the centre.
-        /// Returns the unit normal.
-        /// </summary>
-        public static Vector3 RingNormal(Vector3 hull, Vector3 forward, Vector3 centre, Vector3 fallbackUp)
-        {
-            var n = Vector3.Cross(hull - centre, forward);
-            if (n.sqrMagnitude < 1e-6f) n = fallbackUp;
-            return n.sqrMagnitude > 1e-8f ? n.normalized : Vector3.up;
-        }
-
-        /// <summary>
-        /// A closed ring of <paramref name="radius"/> round <paramref name="centre"/> in the plane normal to
-        /// <paramref name="normal"/>, as up to <paramref name="segments"/> points. Returns the count written.
-        /// </summary>
-        public static int Ring(Vector3 centre, Vector3 normal, float radius, int segments, Vector3[] points)
-        {
-            if (points == null || radius <= 0f || normal.sqrMagnitude < 1e-8f) return 0;
-            int n = Mathf.Min(points.Length, Mathf.Max(3, segments));
-            var axis = normal.normalized;
-            var u = Vector3.Cross(axis, Mathf.Abs(axis.y) < 0.9f ? Vector3.up : Vector3.right).normalized * radius;
-            for (int i = 0; i < n; i++) points[i] = centre + Quaternion.AngleAxis(360f * i / n, axis) * u;
-            return n;
-        }
-
         // ------------------------------------------------------------------ the swing (STOAT_DIPOLE.md §1b)
 
         /// <summary>Where the swing's black hole is laid: <paramref name="ahead"/> along the nose and <paramref name="side"/> to
@@ -172,11 +144,6 @@ namespace CosmicShore.Gameplay
         /// circle round the hole), never faster than <paramref name="maxDegreesPerSecond"/>.</summary>
         public static float SwingRate(float speed, float distance, float maxDegreesPerSecond) =>
             Mathf.Min(Mathf.Max(0f, speed) / Mathf.Max(1f, distance) * Mathf.Rad2Deg, Mathf.Max(0f, maxDegreesPerSecond));
-
-        /// <summary>The heading a swing throws the hull on: its <paramref name="entry"/> heading turned
-        /// <paramref name="degrees"/> about <paramref name="axis"/> (the dotted exit line).</summary>
-        public static Vector3 SwingExit(Vector3 entry, Vector3 axis, float degrees) =>
-            (Quaternion.AngleAxis(degrees, axis.sqrMagnitude > 1e-8f ? axis.normalized : Vector3.up) * entry).normalized;
 
         /// <summary>The autopilot lets the swing throw it once it has turned at least <paramref name="minDegrees"/> and either faces
         /// its target (within <paramref name="faceDegrees"/>) or has its target no longer on the swing's side

@@ -5834,10 +5834,9 @@
     1.0
    ],
    "family": "blue",
-   "uses": 3,
+   "uses": 2,
    "where": [
-    "Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController",
-    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset StoatDipoleConfigSO"
+    "Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController"
    ]
   },
   "world:96EB29": {
@@ -5987,7 +5986,7 @@
     1.0
    ],
    "family": "lime",
-   "uses": 8,
+   "uses": 7,
    "where": [
     "Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController",
     "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset GobyPistolConfigSO"

@@ -1276,7 +1276,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Graphics/Materials/Graphs/CloakGhost.mat Material(CosmicShore/CloakGhost)'
   - Id: world:96A6C2
     Color: {r: 0.589999974, g: 0.649999976, b: 0.75999999, a: 1}
-    Note: '3 uses: Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController; Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset StoatDipoleConfigSO'
+    Note: '2 uses: Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController'
   - Id: world:96EB29
     Color: {r: 0.589999974, g: 0.920000017, b: 0.159999996, a: 1}
     Note: '4 uses: Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO; Assets/_Graphics/Materials/CrystalMaterials/ChargeCrystalArcs.mat Material(Custom/CrystalChargeArcsShader)'
@@ -1306,7 +1306,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Graphics/Materials/SwordfishSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)'
   - Id: world:9DFF2E
     Color: {r: 0.615686297, g: 1, b: 0.180392161, a: 1}
-    Note: '8 uses: Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController; Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset GobyPistolConfigSO'
+    Note: '7 uses: Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController; Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset GobyPistolConfigSO'
   - Id: world:9E6BF0
     Color: {r: 0.620000005, g: 0.419999987, b: 0.939999998, a: 1}
     Note: '27 uses: Assets/Resources/Codex.asset CodexSO'

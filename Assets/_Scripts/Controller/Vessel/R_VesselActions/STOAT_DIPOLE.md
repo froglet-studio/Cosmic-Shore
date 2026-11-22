@@ -9,8 +9,8 @@ hold; §1b is still the swing's section number.
 > (Mass mode, removed from the kit 2026-11-02), Time 5's Foresight (the old path drawn in front of every rival: the "dotted
 > line on the AI Stoats"), the catch orbit and its aimed exit, the skim sling, the trampoline and the crystal style. What
 > each was, and every number it was tuned to, is in this file's history: `git show 4e5df7090a:<this path>` (§6 lists the
-> files). The swing's reach ring and exit line are drawn for the LOCAL HUMAN pilot only; no AI or remote Stoat draws
-> anything.
+> files). **2026-11-22 (Yash: "I dont need to see the drawing line either"): nothing is drawn for any pilot** - the
+> swing's reach ring, dotted exit line and fling ring are deleted with `StoatPathfinderWorldDots`.
 
 **Quick read — the four abilities.**
 
@@ -41,7 +41,7 @@ hole"*. One black hole, no white hole, no orbit, no shell. `StoatSlingExecutor`,
   you are let go on that heading. Letting go of the trigger while it swings you lets you go at once; before it, nothing.
 - **One slingshot (Yash, 2026-11-19: "I want only one slingshot, the first one, then player should be able to reach
   their target destinations more accurately and comfortably").** The swing's own speed-up (the flight clock at the swing's
-  warp from its start) is kept as momentum, fading over `momentumSeconds` 6 s; you leave on the dotted line's heading with
+  warp from its start) is kept as momentum, fading over `momentumSeconds` 6 s; you leave on the heading the swing turned you to, with
   nothing more added. The second push (the hold's deepest squeeze × Mass's `launchPower`, under `speedCapShare` and
   `warpKickCapCruise`) is paid only as `swingKickShare` of itself, shipped **0**. So Mass scales nothing on the swing today
   (Heavy Launch is dormant; Armoured Wake still acts) — a decision for the element map.
@@ -49,10 +49,9 @@ hole"*. One black hole, no white hole, no orbit, no shell. `StoatSlingExecutor`,
   rises to `pressWarpShare` (0.5) of the swing's warp (`catchWarpShare` 1.15 × `StoatDipoleConfig.boost`, ×2.7 at rest),
   to all of it and `orbitSpeedBonus` (15%) more while the swing turns you, and after the fling its momentum. The largest
   wins; they never add. The omni crystal's Overclock (parked) would hold it full.
-- **Drawn, for the local human pilot only** (world dots, `StoatPathfinderExecutor.AddSwingRings`, gated on
-  `IsLocalHumanPilot`: the local owner, no AI seat, no autopilot): a faint ring at the reach round the hole, and the EXIT
-  LINE from your nose along the heading the swing would let you go on now, so moving the stick moves the line; lime while
-  it swings you. A lime ripple grows out of the hole at each fling. An AI Stoat, and a remote one, draws nothing.
+- **Nothing is drawn (2026-11-22).** Until then the local pilot saw a faint ring at the reach, a dotted EXIT LINE along
+  the heading the stick asked for, and a lime ring at each fling. All three are deleted, for every pilot, with the world
+  dots that drew them. What shows a swing now: the black hole's own look, the HUD's Time card, and the Charge ripple.
 - **The end.** Passed untouched (moving away beyond the reach) or after `swingSeconds` 4 s, the hole collapses; flung, it
   collapses at once. Either way it throws the Charge ripple (§1c) at `rippleSeparation` 90 u. A hull that came within the
   reach lays its trail shielded for `slingBoostSeconds` 1.5 s (Mass 5).
@@ -139,7 +138,7 @@ the next protocol bump. The hole budget is `BlackHoleConfig.maxBlackHoles` 16; a
 | | |
 |---|---|
 | The swing: press, turn, fling, collapse, AI | `Executors/StoatSlingExecutor.cs`, `StoatSlingMath.cs`, `Data Containers/StoatSlingConfigSO.cs` → `StoatSlingConfig.asset` (+ the AI copies `Resources/AIBoostPolicies/StoatSlingConfig_{Slingshot,Regatta,Warpline}.asset`), `Data Containers/StoatSlingActionSO.cs` → `StoatSlingLeft/RightAction.asset` |
-| The warp and the drawn reach / exit line | `Executors/StoatPathfinderExecutor.cs`, `StoatPathfinderWorldDots.cs` + `_Graphics/Materials/Graphs/StoatPathDots.shader` / `Resources/StoatPathDots.mat`, `Data Containers/StoatDipoleConfigSO.cs` → `StoatDipoleConfig.asset` (the warp and the colours only), `StoatDipoleMath.cs` (`AutopilotGauge`, `StepBoost`) |
+| The warp | `Executors/StoatPathfinderExecutor.cs` (draws nothing), `Data Containers/StoatDipoleConfigSO.cs` → `StoatDipoleConfig.asset` (`boost`, `boostRise`, `boostFadeSeconds`, `warpEvent`), `StoatDipoleMath.cs` (`AutopilotGauge`, `StepBoost`) |
 | The ripple | `Executors/StoatRippleExecutor.cs`, `StoatRipple.cs`, `StoatRipplePass.cs`, `StoatRippleMath.cs`, `Data Containers/StoatRippleConfigSO.cs` → `StoatRippleConfig.asset`, `_Graphics/Materials/Graphs/StoatRipple.shader` |
 | The mode | `Executors/StoatModeExecutor.cs`, `Data Containers/StoatModeActionSO.cs` → `StoatModeAction.asset` (Time only; bound to no input) |
 | Triggers | `StoatSlingLeft/RightAction` on LT / RT; `StoatHoldAction` on X |
@@ -175,6 +174,7 @@ mechanic's design and play tests.
 | `Data Containers/StoatSkimConfigSO.cs`, `StoatSkimMath.cs`, `StoatSkimConfig.asset`, `Tests/Editor/StoatSkimTests.cs` | the SKIM SLING (2026-10-29) |
 | in `StoatSlingExecutor` / `StoatSlingMath` / `StoatSlingConfigSO` (56 rows) | the CATCH ORBIT (2026-10-14) and its inner orbit, flick launch, sweet-spot window and AI hold; the AIMED EXIT (2026-11-03); the TRAMPOLINE (2026-11-04) and its borrowed AI steering; the CRYSTAL style; the `swing` switch (the swing is always on) |
 | in `StoatHUDView` | the Skim Sling's SKIP ×N counter |
+| **2026-11-22:** `StoatPathfinderWorldDots.cs`; in `StoatPathfinderExecutor`: `DrawRings`, `AddSwingRings`, the camera lookup; in `StoatSlingExecutor`: the exit heading, the fling ring's state, the hole / reach getters; in `StoatSlingMath`: `Ring`, `RingNormal`, `SwingExit`; `StoatSlingConfigSO` `ringDotSpacing`, `ringDotSize`, `detectionRingAlpha`, `orbitRingAlpha`; `StoatDipoleConfigSO` `worldDotMinPixels`, `openColor`, `warpedColor` | everything the Stoat DREW: the swing's reach ring, dotted exit line and fling ring. Kept: `StoatPathDots.shader` / `Resources/StoatPathDots.mat`, because the Angler's marks (`AnglerWorldMarks`) draw with them |
 | `Docs/AudioSystem/sound_placeholders.json` | 13 Stoat sounds whose slots went with them (skip, graze, plunk, capture, launch, chain break, both sweet spots, sling, trampoline touch / bounce, dipole open / annihilate) |
 
 Tools that modelled the old kit keep running on its last shipped numbers: `Tools/Build/slingshot_stoat_sim.py` and
@@ -182,6 +182,9 @@ Tools that modelled the old kit keep running on its last shipped numbers: `Tools
 shipped one). `Docs/Studios/StoatFlightStudio.html`'s `GAME_NAMES` marks the 34 deleted studio keys `lab`.
 
 ## 7. Status
+
+2026-11-22: the drawing removed; both assemblies compile with Unity's Roslyn (0 errors); checklist entry "The Stoat draws
+nothing".
 
 2026-11-21: compiled with Unity's Roslyn against the open editor's references (Assembly-CSharp and Assembly-CSharp-Editor,
 0 errors). The EditMode run and the hand test are recorded in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Every Stoat AI flies
@@ -191,7 +194,6 @@ the swing; no AI Stoat draws a line").
 
 | # | Kind | Row |
 |---|---|---|
-| D2 | debt walked past | **Two view-camera resolvers** (`BlackHoleLens.ViewCamera()` and `CameraManager.ViewCamera`); the pathfinder tries the controller first. Pick one. |
 | D7 | report | **The ripple bends what is in front of it** (no depth texture). |
 | D10 | debt | **The Stoat's sim-authority test lives on the Manta's executor** (`MantaStingActionExecutor.IsSimAuthority`). Move it to a vessel-level home. |
 | D13 | report | **`BlackHoleWaves` has no caller now**: its only producer was the deleted dipole. Keep it as an opt-in look or retire the pipeline with its studio rows (Garrett's black-hole system). |
@@ -199,3 +201,5 @@ the swing; no AI Stoat draws a line").
 | D17 | decision | **Mass scales nothing on the swing** while `swingKickShare` is 0 (Heavy Launch dormant), and **Time 5 is open**. Both are Yash's element-map calls. |
 | D18 | report | `SlingshotOrrery.PressSide` (45 u, the old catch pair's side) still places Slingshot's moons; the swing lays its hole 35 u aside. |
 | D19 | report | `R_VesselActionHandler.NetStoatDipoleSink` / `NetStoatDipoleSource` are unused; remove them with the next protocol bump. |
+| D20 | report | **The four ability cards still picture the orbit** (attractor, repulsor, orbit ring, 90-degree window) and carry a hidden Foresight part. They are the icon kit's (`Tools/Build/icon_kit/specs/stoat.py`): redraw them for the swing with `/ability-icon`. |
+| D21 | report | `StoatPathDots.shader` / `.mat` keep the Stoat's name but only the Angler uses them. |

@@ -3,9 +3,9 @@
 > **Flown on the swing — the Stoat's only slingshot, for every pilot (2026-11-21, Yash: "make sure all AI uses our latest
 > slingshot mechanics, and delete all other old pathfinding and other mechanics").** Press LT or RT and one small black
 > hole is laid 150 u ahead and 35 u to that side; fly past beside it and it swings your heading toward itself until you
-> have turned the angle your stick asks (15° away .. 52.5° at rest .. 90° toward; the dotted exit line shows it), then lets
+> have turned the angle your stick asks (15° away .. 52.5° at rest .. 90° toward), then lets
 > you go on that heading, keeping the swing's warp as momentum. One slingshot (2026-11-19): no second push at the exit.
-> Every AI Stoat flies the same swing; nothing is drawn for an AI. The field dipole, the catch orbit and its aimed exit,
+> Every AI Stoat flies the same swing; nothing is drawn for any pilot (no ring, no exit line; 2026-11-22). The field dipole, the catch orbit and its aimed exit,
 > the skim sling and the trampoline that Slingshot was flown on before (2026-10-09 .. 2026-11-11) are deleted from the game;
 > their record is `R_VesselActions/STOAT_DIPOLE.md` §6 and git. The source of truth is `R_VesselActions/STOAT.md` and
 > `STOAT_DIPOLE.md` §1b.
@@ -78,8 +78,8 @@ your heading toward itself, faster the closer you pass, until you have turned th
 go on that heading, and the hole collapses. While the hole is up your flight clock warps (half from the press, all of it
 and 15% more while it swings you), and after it the swing's warp is kept as momentum for 6 s.
 
-So a corner is a decision about WHERE to lay the hole and HOW FAR to turn: aim the dotted exit line at the next ring and
-you leave on it. A fresh press as one swing ends chains into the next turn.
+So a corner is a decision about WHERE to lay the hole and HOW FAR to turn: hold the stick toward the hole to turn more, away to turn
+less, and you leave on the heading it turned you to. A fresh press as one swing ends chains into the next turn.
 
 The hole moves **only the Stoat that laid it** — through its swing; an owned hole pulls nobody
 (`Docs/ELEMENTAL_ECONOMY.md` §9, LOCKED). A rival's hole is scenery: its lens bends your view and it eats prisms.

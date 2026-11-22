@@ -2,7 +2,8 @@
 > mechanics, and delete all other old pathfinding and other mechanics").** A press lays ONE small black hole ahead and to
 > the pressed side (RT right, LT left); passing beside it turns your heading toward it; the stick picks the exit angle
 > live; the swing's own speed-up is the one slingshot, kept as momentum (`swingKickShare` 0). Every AI Stoat flies the same
-> swing in every mode, and nothing is drawn for an AI or a remote Stoat. The field dipole and its predicted path, Time 5's
+> swing in every mode. **Nothing is drawn for any pilot (2026-11-22, Yash: "I dont need to see the drawing line either"):**
+> no reach ring, no exit line, no path. The field dipole and its predicted path, Time 5's
 > Foresight, the catch orbit and its aimed exit, the skim sling, the trampoline and the crystal style are DELETED from the
 > code, the assets, the tests and the tools; their record is in git (`STOAT_DIPOLE.md` §6). The omni crystal's ability is
 > Fulmen. The mechanics are `STOAT_DIPOLE.md` §1b-§1e; this file is the hull, the prefab and the phone.
@@ -34,8 +35,8 @@ the only speed past cruise. The black hole itself — the pull on prisms, the le
 opposing vessel (`Docs/ELEMENTAL_ECONOMY.md` §9, LOCKED). Its owner's turn is flown by `StoatSlingExecutor.StepSwing` on
 the simulating machine; prisms feel the hole.
 
-**Drawn for the local human pilot only:** a faint ring at the reach and the dotted EXIT LINE along the heading the stick
-asks for now (`StoatPathfinderExecutor`). An AI or remote Stoat draws nothing.
+**Nothing is drawn** (2026-11-22): the reach ring, the dotted exit line and the fling ring are deleted for every pilot.
+The black hole's own look and the Charge ripple are the only things on screen; the HUD's Time card fills through the swing.
 
 **The autopilot swings** (`StoatSlingExecutor.AutopilotSwing`, the only autopilot): it presses toward a turn it wants (or
 for the warp on a long leg) and lets go of the trigger at once; it is let go once it faces its target. Both edges go
@@ -64,8 +65,8 @@ squeeze and the stick do not.
 | `holdStartEvent`, `swingStartEvent`, `swingFlingEvent` | listed placeholders | FMOD slots |
 
 Pure arithmetic in `StoatSlingMath` (`Hold01`, `Peak`, `AutopilotPress`, `SlingBoost`, `CappedKick`, `WarpCappedKick`,
-`MomentumWarp`, `AccretionBonus`, `RingNormal`, `Ring`, `SwingHole`, `SwingStarts`, `SwingAxis`, `SwingTurnDegrees`,
-`SwingRate`, `SwingExit`, `SwingAiLetsGo`, `OnSwingSide`), held by `StoatSlingTests`.
+`MomentumWarp`, `AccretionBonus`, `SwingHole`, `SwingStarts`, `SwingAxis`, `SwingTurnDegrees`, `SwingRate`,
+`SwingAiLetsGo`, `OnSwingSide`), held by `StoatSlingTests`.
 
 ## 2.1 The hull — `Stoat.fbx`, a model (2026-10-18; the procedural placeholder is kept until it is accepted)
 
@@ -142,7 +143,7 @@ through the base class's lerp (the Butterfly lesson: it eats a slow periodic mot
 | `Data Containers/StoatSlingActionSO.cs` | one asset per trigger (`side`), shared and stateless: press → `BeginHold`, release → `Release` |
 | `Executors/StoatSlingExecutor.cs` | the per-vessel state: the two squeezes, the hole, the swing; lays the hole on press, flies the swing, lets go, collapses it; the swing's autopilot |
 | `StoatSlingMath.cs` | the pure maths |
-| `Executors/StoatPathfinderExecutor.cs`, `StoatPathfinderWorldDots.cs` | the flight clock's warp, and the reach ring and exit line (local human pilot only) |
+| `Executors/StoatPathfinderExecutor.cs` | the flight clock's warp (the swing's speed-up); it draws nothing |
 | `_SO_Assets/VesselActions/Stoat/` | `StoatSlingConfig`, `StoatSlingLeftAction` (side 0), `StoatSlingRightAction` (side 1), `StoatHoldAction` (stationaryMode 1 = Sparrow), `StoatDipoleConfig` (the warp), `StoatRippleConfig`, `StoatModeAction` |
 | `Resources/ElementalAbilityMaps/Stoat.asset` | Space = Catch Orbit (the swing), Time = Timed Slingshot (the warp; Time 5 open), Charge = Ripple, Mass = Heavy Launch (`STOAT_DIPOLE.md` §5) |
 | `_Prefabs/Spacevessels/Stoat.prefab` | authored by `Tools/Build/author_stoat_assets.py`: cloned once from `Squirrel.prefab` (§4), its own vessel since stage 6 |
@@ -239,7 +240,7 @@ card is display-only.
 `author_stoat_assets.py --check` and `--self-test` (with a negative control for the deleted dipole executor coming back
 and for Time 5's Foresight coming back); `studio_to_unity.py --check` (Stoat: 25 mapped, 0 drift);
 `StoatSlingTests.EveryStoatAI_FliesTheSwing_NoOtherSlingshotPathIsLeft` and
-`NoAIOrRemoteStoatDrawsAPath_TheLocalHumanOnly`. The EditMode run and the hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+`NoStoatDrawsAPathOrARing_ForAnyPilot` (2026-11-22). The EditMode run and the hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ## 6. Design status
 
