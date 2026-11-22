@@ -455,6 +455,7 @@ namespace CosmicShore.UI
                 if (mainMenuButton)   mainMenuButton.SetActive(false);
                 if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
                 StopRematchVoteRoster();
+                ScoreboardBreath.Ensure(playAgainButton)?.Hide();
                 return;   // no rematch vote mid-tournament: the next game is the lineup's, not a replay
             }
 
@@ -472,6 +473,22 @@ namespace CosmicShore.UI
             if (playAgainLabel)   playAgainLabel.text = isClient ? playAgainGuestLine : playAgainHostLine;
 
             StartRematchVoteRoster();
+
+            // The breath (P5): one offered next step beside Play again, for whoever decides where the party goes.
+            var breath = ScoreboardBreath.Ensure(playAgainButton);
+            if (breath)
+            {
+                if (isClient) breath.Hide();
+                else breath.Show(gameData, LocalPlacedFirst());
+            }
+        }
+
+        /// <summary>The local player's domain took first place this game (the breath's "after a win").</summary>
+        bool LocalPlacedFirst()
+        {
+            var local = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
+            var order = PlacementOrder();
+            return order.Count > 0 && order[0] == local;
         }
 
         /// <summary>
@@ -1241,6 +1258,7 @@ namespace CosmicShore.UI
             if (playAgainButton) playAgainButton.SetActive(false);
             if (mainMenuButton)  mainMenuButton.SetActive(false);
             if (continueButton)  continueButton.SetActive(false);
+            ScoreboardBreath.Ensure(playAgainButton)?.Hide();
         }
 
         /// <summary>

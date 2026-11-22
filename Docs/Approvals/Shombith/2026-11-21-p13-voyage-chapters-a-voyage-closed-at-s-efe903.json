@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-21-p13-voyage-chapters-a-voyage-closed-at-s-efe903",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-21T22:26:50+00:00",
+  "area": "Voyages (VoyageRules.Resume / Anchor, VOYAGES.md §11 default)",
+  "summary": "P13 voyage chapters: a voyage closed at sea after the Ark reached a world of its leg is no longer given up. It waits at that world with its job and hold, the harbour board offers it as the one card, and sailing it resumes there. A leg cut off before its first world is still given up. Built for Garrett's 'Build everything proposed. Get all personas retained'.",
+  "branch": "claude/retain-voyage-chapters",
+  "commit": "07ed4b0e1"
+}

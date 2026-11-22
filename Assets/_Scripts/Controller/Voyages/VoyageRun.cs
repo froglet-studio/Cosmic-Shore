@@ -80,6 +80,8 @@ namespace CosmicShore.Gameplay
         int _holdLineSecond = -1;
         int _progressBucket = -1;
         bool _active, _underway, _fallen, _fallTaken, _docked;
+        /// <summary>Where this leg's worlds start on the waypoint's route: 0 for a new leg, the world reached for a resumed one.</summary>
+        int _waypointBase;
         bool _following;
         VoyageCourse _pendingLeg;
         float _nextLeashCheck;
@@ -449,6 +451,13 @@ namespace CosmicShore.Gameplay
             var local = LocalVessel();
             if (local == null) return;
 
+            // A voyage left at sea waits at its waypoint: its job, sailed again, picks up at the last world reached (P13).
+            if (_state.HasWaypoint() && job == _state.Current)
+            {
+                ResumeWaypoint(local, job);
+                return;
+            }
+
             // A job still open here ends now: done if its work is done, otherwise left undone.
             if (_state.Current != null && !_state.AtSea)
                 Resolve(VoyageRules.WorkDone(_state.Current, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
@@ -466,6 +475,8 @@ namespace CosmicShore.Gameplay
             ClearStop();
             _legSerial++;
             PrepareLeg(job);
+            VoyageWaypoint.Begin(_state, route);
+            _waypointBase = 0;
             SaveState();
             PlaceCorridor(local, null);
             var course = Course(VoyageCourseKind.Leg);
@@ -490,6 +501,33 @@ namespace CosmicShore.Gameplay
             else Banner(Line(Lines.Depart, job.To));
             if (job.HullFloor > 0f && !string.IsNullOrEmpty(Lines.Convoy))
                 Banner(TemplateText.Fill(Lines.Convoy, "percent", Mathf.RoundToInt(job.HullFloor * 100f).ToString()));
+            VoyageHarbour.RaiseChanged();
+        }
+
+        /// <summary>Pick up a voyage left at sea (P13, voyage chapters): the same job, sailed from the last world the Ark
+        /// reached, with what was aboard still aboard.</summary>
+        void ResumeWaypoint(IVesselStatus local, VoyageJob job)
+        {
+            var route = VoyageWaypoint.Remaining(_state);
+            if (route.Count == 0) return;
+            _waypointBase = _state.WaypointReached;
+            ClearStop();
+            _legSerial++;
+            PrepareLeg(job);
+            SaveState();
+            PlaceCorridor(local, null);
+            var course = Course(VoyageCourseKind.Leg);
+            course.State = _state;
+            course.Job = job;
+            course.Route = route;
+            VoyageCourseLink.Send(course);
+            if (_sea.IsRunning) _sea.ContinueRoute(route);
+            else
+            {
+                _sea.SetRoute(route);
+                _sea.Begin(local);
+            }
+            if (!string.IsNullOrEmpty(Lines.WaypointResumed)) Banner(Line(Lines.WaypointResumed, job.To));
             VoyageHarbour.RaiseChanged();
         }
 
@@ -800,6 +838,11 @@ namespace CosmicShore.Gameplay
             if (cell == _legCell) return;
             _legCell = cell;
             if (!cell) return;
+            // The Ark reached a world of the leg: the voyage can pick up from here if it is closed now (P13). A resumed
+            // leg counts its worlds from where it picked up.
+            if (!_following && _legIndexOf.TryGetValue(cell, out int reached) &&
+                VoyageWaypoint.Mark(_state, _waypointBase + reached))
+                SaveState();
             for (int i = _pilots.Count - 1; i >= 0; i--)
             {
                 if (!_pilots[i]) { _pilots.RemoveAt(i); continue; }
@@ -1059,9 +1102,11 @@ namespace CosmicShore.Gameplay
         void EndAtStop()
         {
             bool atSea = _state.AtSea;
-            VoyageRules.Anchor(_state, Content, VoyageRules.WorkDone(_state.Current, Tally()));
+            bool waits = atSea && !_following && _state.HasWaypoint();
+            VoyageRules.Anchor(_state, Content, VoyageRules.WorkDone(_state.Current, Tally()), keepWaypoint: !_following);
             SaveState();
-            if (atSea) Banner(Lines.Failed);
+            if (waits) { if (!string.IsNullOrEmpty(Lines.WaypointSaved)) Banner(Lines.WaypointSaved); }
+            else if (atSea) Banner(Lines.Failed);
         }
 
         /// <summary>Home: everything aboard and every crystal owed is the player's now, a relic with its authored name and

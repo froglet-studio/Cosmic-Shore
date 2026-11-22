@@ -38,6 +38,9 @@ is paid by the party's best placing (`RetentionPay.PayDomain`, `Assets/Resources
 **1,800** a dock (`RetentionTuning.asset`; Cloud Code earn source `voyage_dock`). The elemental crystals a voyage banks
 are unchanged.
 
+**Painting pay (P16, making pays):** a finished Toybox painting pays **150** wallet crystals, for the first **2**
+finished each day (`RetentionTuning.asset`, `PaintingPay.PayFinished`; Cloud Code earn source `painting`, 300 a day).
+
 | Rule | Value |
 |---|---|
 | Losing payout | None |
