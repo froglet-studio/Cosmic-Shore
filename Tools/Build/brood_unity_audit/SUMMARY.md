@@ -73,3 +73,27 @@ Unity -batchmode -projectPath <checkout> -buildTarget Win64 -logFile Logs/brood.
 menu with no pilot and every one of its matches faults with "menu never gave a local pilot". The opt-in
 `-broodRehost` restarts that host on another port, but its menu still gets no vessel, so it is not a working fix yet.
 A match takes about 2.5-4 min of wall time.
+
+## Host and client Serpent walls (inconclusive)
+
+One host plus one client, both real Unity editors: the host ran a 3x3 match with an AI Serpent seated
+(`-broodWaitClient`), and the client (`BroodNetClient`) left its own offline host and joined on 127.0.0.1 as a spectator
+before the launch. It followed the host into MinigameBroodRush and sampled the Serpent walls every 0.5 s.
+Files are in `netcheck/`.
+
+- Host: up to 4 walls holding 3,434 prisms over the 90 s match.
+- Client: 0 walls the whole match.
+
+**This does not show that PR #2322's fix fails.** The client ran from a second checkout whose Library is broken:
+122 SOAP NullReferenceExceptions (an event channel's subscriber list is null), and "missing script" on prisms, vessels
+and crystals (Sparrow Projectile Prism, FastGrowPrism, Squirrel, Wrasse). A client that cannot run prism scripts builds
+no walls, so its zero says nothing about the fix. The harness itself worked: the client connected, followed the host's
+scene load and wrote its series.
+
+To get a real answer, run the client from a cleanly imported second checkout. This machine's C: drive had about 6 GB
+free, which is not enough for a fresh Library:
+
+    host:   -executeMethod CosmicShore.Editor.BroodAuditLauncher.Run -broodRosters "Sparrow,Serpent,Dolphin/Rhino,Manta,Stoat/Squirrel,Wrasse,Orca" -broodDifficulty Medium -broodWaitClient -broodQuit ...
+    client: -executeMethod CosmicShore.Editor.BroodNetClient.Run -broodOut Logs/BroodNet/client -broodLimit 2400 -broodQuit
+
+Start the client once the host holds UDP 7777.
