@@ -14,12 +14,13 @@ import statistics as st
 from collections import defaultdict
 
 
-def load(path):
-    rows = [r for r in csv.DictReader(open(path, encoding="utf-8"))]
+def load(paths):
+    """One or more results.csv, comma-separated; a match is keyed by its file and index."""
     matches = defaultdict(list)
-    for r in rows:
-        if r["outcome"] in ("ended", "timeout") and r["vc_vd"]:
-            matches[r["match"]].append(r)
+    for path in paths.split(","):
+        for r in csv.DictReader(open(path, encoding="utf-8")):
+            if r["outcome"] in ("ended", "timeout") and r["vc_vd"]:
+                matches[(path, r.get("run", ""), r["match"])].append(r)
     return matches
 
 
@@ -46,6 +47,10 @@ def table(matches):
             h["speed"].append(f(s["speed"]))
             h["trail"].append(f(s["trail_volume"]))
             h["abil"].append(f(s.get("ability_starts")))
+            h["lost"].append(f(s["lost"]) / mean if mean > 0 else 0.0)
+            h["broods"].append(f(s["team_broods"]))
+            h["vcabs"].append(f(s["vc"]))
+            h["vdabs"].append(f(s["vd"]))
             h["host"].append(1.0 if s["is_host"] == "True" else 0.0)
             h["pilots"].append(s["pilots"])
             h["levels"].append(s["start_levels"])
@@ -55,12 +60,12 @@ def table(matches):
 def render(name, matches):
     per, race = table(matches)
     out = [f"### {name}: {len(matches)} matches, mean match {st.mean(race) if race else 0:.0f} s", "",
-           "| Hull | n | Index | sd | VC share | VD share | Win | In nucleus | Speed | Trail vol | Ability starts | Host seats |",
-           "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+           "| Hull | n | Index | sd | VC share | VD share | Lost share | VC mean | VD mean | Team broods | Win | In nucleus | Speed | Trail vol | Ability starts | Host seats |",
+           "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for hull, h in sorted(per.items(), key=lambda kv: -st.mean(kv[1]["idx"])):
         n = len(h["idx"])
         sd = st.stdev(h["idx"]) if n > 1 else 0.0
-        out.append(f"| {hull} | {n} | {st.mean(h['idx']):.2f} | {sd:.2f} | {st.mean(h['vc']):.2f} | {st.mean(h['vd']):.2f} | "
+        out.append(f"| {hull} | {n} | {st.mean(h['idx']):.2f} | {sd:.2f} | {st.mean(h['vc']):.2f} | {st.mean(h['vd']):.2f} | {st.mean(h['lost']):.2f} | {st.mean(h['vcabs']):.0f} | {st.mean(h['vdabs']):.0f} | {st.mean(h['broods']):.2f} | "
                    f"{st.mean(h['win']):.0%} | {st.mean(h['nuc']):.0%} | {st.mean(h['speed']):.0f} | {st.mean(h['trail']):.2f} | "
                    f"{st.mean(h['abil']):.0f} | {int(sum(h['host']))} |")
     inside = [k for k, h in per.items() if 0.9 <= st.mean(h["idx"]) <= 1.1]
