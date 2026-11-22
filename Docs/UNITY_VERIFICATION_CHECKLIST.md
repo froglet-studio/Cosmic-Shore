@@ -26155,7 +26155,7 @@ its plant, is destroyed as before. Compiled in the open editor (0 errors, 0 warn
 
 ## 🟡 Black holes eat prisms the way fauna do (2026-11-22, Yash, NOT PLAYED)
 `Docs/PRISM_MOTION.md` section 3, "A black hole EATS what collides in its pull". `BlackHoleGravityField.ApplyContacts` -> `PrismMotion.AnnihilateInto` (both prisms `Prism.Consume`d into the hole). Compiled (both assemblies, Roslyn against the editor's references); not yet run in the editor.
-- [ ] EditMode `PrismMotionTests`: all pass.
+- [x] EditMode `PrismMotionTests`: all pass. 2026-11-22, real editor on B: at 837627b1dc: `PrismMotion` 18/18; `BlackHole` 39/40 and `Stoat` 64/65, the two failures not from this change (`BlackHoleTests.Lens_DrawsTheStudiosWaves` reads a shader line an earlier colour commit moved; `StoatSlingTests.NoStoatDrawsAPathOrARing_ForAnyPilot` trips on the word WorldDots in the pathfinder's own comment, from 2af146725e).
 - [ ] Lay a Stoat hole in a dense trail: prisms pulled in are drawn into the hole as shards (the look of a creature eating a prism); none explode outward.
 - [ ] Frame time holds with a few hundred prisms in the pull (contacts used the cheap plain explosion at the Bulk level; the suction has its own budget).
 - [ ] Prism counts and scoring after the hole are as before (same destruction, only the picture changed).
