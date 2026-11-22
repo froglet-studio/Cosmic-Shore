@@ -4956,6 +4956,62 @@
       "done": "A shot from a dug-in post lands a petal hit.",
       "sight": "BANDIT"
      }
+    },
+    {
+     "in": "x",
+     "name": "Rush into Dig In",
+     "t": [
+      8,
+      50
+     ],
+     "src": "Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 80% of the behaviour in an archive cell at 98% of the best genome). Not flown by a person yet.",
+     "is": "A chain the AI search kept that no combo named: Rush (Time), then Dig In (Charge).",
+     "chain": [
+      [
+       "Time",
+       "Rush"
+      ],
+      [
+       "Charge",
+       "Dig In"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery",
+      "rival"
+     ],
+     "feel": "Not felt yet: fly it and name the moment, or drop it.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "handoff",
+        "seconds from one verb's payoff to the next press",
+        0.2,
+        4.0,
+        "s"
+       ],
+       [
+        "commit",
+        "share of the first verb spent before chaining",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "reach",
+        "distance to the cue at which the chain starts",
+        20,
+        400,
+        "u"
+       ]
+      ],
+      "done": "Dig In lands within the handoff of the Rush before it."
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_RUSH.md"
@@ -6472,6 +6528,66 @@
       "done": "A burst wrecks rival prisms on every side of it.",
       "sight": "MANGER"
      }
+    },
+    {
+     "in": "x",
+     "name": "Boost Tank into Danger Shield into Flown Missiles",
+     "t": [
+      12,
+      60
+     ],
+     "src": "Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 73% of the behaviour in an archive cell at 98% of the best genome). Not flown by a person yet.",
+     "is": "A chain the AI search kept that no combo named: Boost Tank (Time), then Danger Shield (Mass), then Flown Missiles (Charge).",
+     "chain": [
+      [
+       "Time",
+       "Boost Tank"
+      ],
+      [
+       "Mass",
+       "Danger Shield"
+      ],
+      [
+       "Charge",
+       "Flown Missiles"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery",
+      "make"
+     ],
+     "feel": "Not felt yet: fly it and name the moment, or drop it.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "crystal_near"
+      ],
+      "dials": [
+       [
+        "handoff",
+        "seconds from one verb's payoff to the next press",
+        0.2,
+        4.0,
+        "s"
+       ],
+       [
+        "commit",
+        "share of the first verb spent before chaining",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "reach",
+        "distance to the cue at which the chain starts",
+        20,
+        400,
+        "u"
+       ]
+      ],
+      "done": "Flown Missiles lands within the handoff of the Boost Tank before it."
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md"
@@ -7604,6 +7720,66 @@
       "done": "Three nests stand inside the claim.",
       "sight": "ENSIGN"
      }
+    },
+    {
+     "in": "x",
+     "name": "Void Lance into Nest into Void Sling",
+     "t": [
+      12,
+      60
+     ],
+     "src": "Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 100% of the behaviour in an archive cell at 93% of the best genome). Not flown by a person yet.",
+     "is": "A chain the AI search kept that no combo named: Void Lance (Space), then Nest (Mass), then Void Sling (Time).",
+     "chain": [
+      [
+       "Space",
+       "Void Lance"
+      ],
+      [
+       "Mass",
+       "Nest"
+      ],
+      [
+       "Time",
+       "Void Sling"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "joy",
+      "make"
+     ],
+     "feel": "Not felt yet: fly it and name the moment, or drop it.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "rival_mass_ahead"
+      ],
+      "dials": [
+       [
+        "handoff",
+        "seconds from one verb's payoff to the next press",
+        0.2,
+        4.0,
+        "s"
+       ],
+       [
+        "commit",
+        "share of the first verb spent before chaining",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "reach",
+        "distance to the cue at which the chain starts",
+        20,
+        400,
+        "u"
+       ]
+      ],
+      "done": "Void Sling lands within the handoff of the Void Lance before it."
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md"
@@ -8259,6 +8435,66 @@
       "done": "A rival hits a dropped ring, or flies round it, inside the claim.",
       "sight": "HORNET"
      }
+    },
+    {
+     "in": "x",
+     "name": "Skimming into Crystal Joust into Steal",
+     "t": [
+      8,
+      45
+     ],
+     "src": "Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 77% of the behaviour in an archive cell at 93% of the best genome). Not flown by a person yet.",
+     "is": "A chain the AI search kept that no combo named: Skimming (Time), then Crystal Joust (Charge), then Steal (Space).",
+     "chain": [
+      [
+       "Time",
+       "Skimming"
+      ],
+      [
+       "Charge",
+       "Crystal Joust"
+      ],
+      [
+       "Space",
+       "Steal"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery",
+      "rival"
+     ],
+     "feel": "Not felt yet: fly it and name the moment, or drop it.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "handoff",
+        "seconds from one verb's payoff to the next press",
+        0.2,
+        4.0,
+        "s"
+       ],
+       [
+        "commit",
+        "share of the first verb spent before chaining",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "reach",
+        "distance to the cue at which the chain starts",
+        20,
+        400,
+        "u"
+       ]
+      ],
+      "done": "Steal lands within the handoff of the Skimming before it."
+     }
     }
    ],
    "doc": "Docs/ElementalAbilitySystem/FLEET_MAPS.md"
@@ -8399,6 +8635,66 @@
        ]
       ],
       "done": "The picked card is the one the swarm held least of, and the next hand comes sooner."
+     }
+    },
+    {
+     "in": "x",
+     "name": "Pick the Time card into Pick the Charge card into Pick the Mass card",
+     "t": [
+      30,
+      60
+     ],
+     "src": "Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 100% of the behaviour in an archive cell at 94% of the best genome). Not flown by a person yet.",
+     "is": "A chain the AI search kept that no combo named: Pick the Time card (Time), then Pick the Charge card (Charge), then Pick the Mass card (Mass).",
+     "chain": [
+      [
+       "Time",
+       "Pick the Time card"
+      ],
+      [
+       "Charge",
+       "Pick the Charge card"
+      ],
+      [
+       "Mass",
+       "Pick the Mass card"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery",
+      "rival"
+     ],
+     "feel": "Not felt yet: fly it and name the moment, or drop it.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "handoff",
+        "seconds from one verb's payoff to the next press",
+        0.2,
+        4.0,
+        "s"
+       ],
+       [
+        "commit",
+        "share of the first verb spent before chaining",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "reach",
+        "distance to the cue at which the chain starts",
+        20,
+        400,
+        "u"
+       ]
+      ],
+      "done": "Pick the Mass card lands within the handoff of the Pick the Time card before it."
      }
     }
    ],
@@ -9240,6 +9536,66 @@
       ],
       "done": "A pass slices rival prisms and the banked blast breaks more.",
       "sight": "MANGER"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Plant into Mass Mode into Winch",
+     "t": [
+      9,
+      54
+     ],
+     "src": "Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 80% of the behaviour in an archive cell at 99% of the best genome). Not flown by a person yet.",
+     "is": "A chain the AI search kept that no combo named: Plant (Time), then Mass Mode (Mass), then Winch (Space).",
+     "chain": [
+      [
+       "Time",
+       "Plant"
+      ],
+      [
+       "Mass",
+       "Mass Mode"
+      ],
+      [
+       "Space",
+       "Winch"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery",
+      "make"
+     ],
+     "feel": "Not felt yet: fly it and name the moment, or drop it.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "handoff",
+        "seconds from one verb's payoff to the next press",
+        0.2,
+        4.0,
+        "s"
+       ],
+       [
+        "commit",
+        "share of the first verb spent before chaining",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "reach",
+        "distance to the cue at which the chain starts",
+        20,
+        400,
+        "u"
+       ]
+      ],
+      "done": "Winch lands within the handoff of the Plant before it."
      }
     }
    ],

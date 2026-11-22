@@ -91,4 +91,37 @@ combos:
       - 1
       - ''
     done: The picked card is the one the swarm held least of, and the next hand comes sooner.
+- in: x
+  name: Pick the Time card into Pick the Charge card into Pick the Mass card
+  t: [30, 60]
+  src: 'Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 100% of the behaviour in an archive
+    cell at 94% of the best genome). Not flown by a person yet.'
+  is: 'A chain the AI search kept that no combo named: Pick the Time card (Time), then Pick the Charge card (Charge), then
+    Pick the Mass card (Mass).'
+  chain:
+  - [Time, Pick the Time card]
+  - [Charge, Pick the Charge card]
+  - [Mass, Pick the Mass card]
+  drivers: [joy, mastery, rival]
+  feel: 'Not felt yet: fly it and name the moment, or drop it.'
+  gene:
+    genome: Time
+    cue: [gate_next]
+    dials:
+    - - handoff
+      - seconds from one verb's payoff to the next press
+      - 0.2
+      - 4.0
+      - s
+    - - commit
+      - share of the first verb spent before chaining
+      - 0.2
+      - 1.0
+      - fraction
+    - - reach
+      - distance to the cue at which the chain starts
+      - 20
+      - 400
+      - u
+    done: Pick the Mass card lands within the handoff of the Pick the Time card before it.
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md

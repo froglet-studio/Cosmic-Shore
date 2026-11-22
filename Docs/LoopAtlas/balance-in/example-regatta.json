@@ -1,0 +1,9 @@
+{
+ "arena": "Regatta",
+ "element": "Time",
+ "note": "EXAMPLE, not a decision: the shape the arena balancing project writes. Each change is one knob on one vessel, from its current value to the proposed one.",
+ "changes": [
+  {"vessel": "Urchin", "knob": "Time baseline level", "from": 1.0, "to": 0.9},
+  {"vessel": "Manta", "knob": "Time baseline level", "from": 1.0, "to": 1.15}
+ ]
+}

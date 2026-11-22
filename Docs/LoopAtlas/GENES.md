@@ -26,23 +26,23 @@ Genes per vessel and genome. A dash is a genome the vessel has a verb for and no
 | Brittle Star | 1 | 1 | 1 | 1 |
 | Dolphin | 1 | 1 | - | 2 |
 | Goby | off | 1 | 1 | 1 |
-| Grizzly | 1 | 1 | - | 1 |
+| Grizzly | 2 | 1 | - | 1 |
 | Honeyguide | 1 | 1 | 1 | 1 |
 | Jacks | 1 | 1 | - | 1 |
 | Jewel Wasp |  |  |  |  |
 | Manta | 1 | 1 | 1 | 1 |
 | Meerkat | 1 | 1 | 1 | 1 |
-| Orca | 1 | 1 | 1 | 1 |
+| Orca | 1 | 2 | 1 | 1 |
 | Rhino | 1 | - | 1 | 1 |
 | Scarab | 1 | 1 | 1 | 1 |
 | Serpent | 1 | 1 | 1 | 1 |
-| Shrike | 1 | 1 | 1 | 1 |
+| Shrike | 2 | 1 | 1 | 1 |
 | Sparrow | 1 | 1 | 1 | 1 |
-| Squirrel | 2 | 1 | 1 | 1 |
-| Starling | 1 | - | - | - |
+| Squirrel | 3 | 1 | 1 | 1 |
+| Starling | 2 | - | - | - |
 | Stoat | 1 | 1 | - | 1 |
 | Swordfish | 1 | 1 | 1 | 1 |
-| Thresher | 1 | 1 | 1 | 1 |
+| Thresher | 2 | 1 | 1 | 1 |
 | Tiger Moth | 1 | 1 | 1 | 1 |
 | Urchin | 1 | 1 | 1 | 1 |
 | Wrasse | 1 | 1 | 1 | 1 |
@@ -91,6 +91,7 @@ Genes per vessel and genome. A dash is a genome the vessel has a verb for and no
 | The siege | Space | rival_mass_ahead, bank_low | `postRange` distance from the target to the post the Grizzly digs in at (30 to 250 u); `refillTo` energy refilled while dug in before firing (0.3 to 1 fraction); `chargeHold` seconds the cannon is charged before release (0.3 to 3 s) | A charged shell breaks rival prisms and the claw's burn spreads, from one dig-in. |  | Proposed |
 | Three rushes | Time | straight_ahead, bank_full | `rushSpacing` seconds between rushes (0.3 to 1.5 s); `reserve` rushes kept for the exit (0 to 2 count) | A gate is threaded on a rush. | NEEDLE | Proposed |
 | The ambush | Charge | rival_on_line, verb_ready | `ambushLead` seconds ahead of the rival the post is taken (0.5 to 4 s); `sniperRange` rival distance for the sniper shot (50 to 500 u) | A shot from a dug-in post lands a petal hit. | BANDIT | Proposed |
+| Rush into Dig In | Time | gate_next | `handoff` seconds from one verb's payoff to the next press (0.2 to 4 s); `commit` share of the first verb spent before chaining (0.2 to 1 fraction); `reach` distance to the cue at which the chain starts (20 to 400 u) | Dig In lands within the handoff of the Rush before it. |  | Proposed |
 
 ### Honeyguide
 
@@ -135,6 +136,7 @@ Genes per vessel and genome. A dash is a genome the vessel has a verb for and no
 | Tank and missile | Time | straight_ahead, crystal_near | `tankReserve` share of the tank kept for the gate (0 to 0.6 fraction); `missileDetour` distance a missile flies off the line for a crystal (0 to 300 u) | A gate is threaded under boost. | SUNDIAL | Proposed |
 | The ice shelf | Mass | own_mass_gap, rival_near | `shelfRadius` distance from the nucleus the shield is dropped (20 to 300 u) | Dropped danger prisms stand inside the claim. | HORNET | Proposed |
 | Depth charge | Space | rival_mass_ahead, dense_mass | `burstDepth` how deep into the mass before the tap (0 to 60 u) | A burst wrecks rival prisms on every side of it. | MANGER | Proposed |
+| Boost Tank into Danger Shield into Flown Missiles | Charge | crystal_near | `handoff` seconds from one verb's payoff to the next press (0.2 to 4 s); `commit` share of the first verb spent before chaining (0.2 to 1 fraction); `reach` distance to the cue at which the chain starts (20 to 400 u) | Flown Missiles lands within the handoff of the Boost Tank before it. |  | Proposed |
 
 ### Rhino
 
@@ -170,6 +172,7 @@ Genes per vessel and genome. A dash is a genome the vessel has a verb for and no
 | Perch and lance | Space | rival_mass_ahead, verb_ready | `perchOffset` distance from the target line to the perch (20 to 300 u); `lanceAlign` aim error down the line that still fires (1 to 15 deg) | One lance breaks rival prisms along its whole line. |  | Proposed |
 | Sling chain | Time | gate_next, mass_ahead | `slingAlign` heading error to the block that still slings (1 to 45 deg); `dockTime` seconds docked before the next sling (0 to 2 s) | A gate is threaded within two seconds of a sling. | NEEDLE | Proposed |
 | The thornbush | Mass | own_mass_gap | `nestSpacing` distance between nests (10 to 200 u) | Three nests stand inside the claim. | ENSIGN | Proposed |
+| Void Lance into Nest into Void Sling | Time | rival_mass_ahead | `handoff` seconds from one verb's payoff to the next press (0.2 to 4 s); `commit` share of the first verb spent before chaining (0.2 to 1 fraction); `reach` distance to the cue at which the chain starts (20 to 400 u) | Void Sling lands within the handoff of the Void Lance before it. |  | Proposed |
 
 ### Sparrow
 
@@ -189,12 +192,14 @@ Genes per vessel and genome. A dash is a genome the vessel has a verb for and no
 | The joust | Charge | rival_ahead, bank_full | `joustMargin` speed kept above the joust minimum before passing (0 to 30 %) | An overtake steals petals. | BANDIT | Proposed |
 | Crystal denial | Time | omni_near, rival_near | `denyMargin` seconds ahead of the rival needed to go for it (0 to 3 s); `omniDetour` distance flown off the line for the crystal (0 to 250 u) | The omni crystal is taken before the rival reaches it. | OPAL | Proposed |
 | Ring fence | Mass | own_mass_gap, rival_on_line | `fenceRadius` distance from the nucleus the rings are dropped (20 to 300 u) | A rival hits a dropped ring, or flies round it, inside the claim. | HORNET | Proposed |
+| Skimming into Crystal Joust into Steal | Time | gate_next | `handoff` seconds from one verb's payoff to the next press (0.2 to 4 s); `commit` share of the first verb spent before chaining (0.2 to 1 fraction); `reach` distance to the cue at which the chain starts (20 to 400 u) | Steal lands within the handoff of the Skimming before it. |  | Proposed |
 
 ### Starling
 
 | Combo | Genome | Starts when | Dials a search learns | Done when | Sight | Layer |
 |---|---|---|---|---|---|---|
 | Hand by hand | Time | crew_ready | `timeWeight` how much the AI wants a Time card (0 to 1); `chargeWeight` how much the AI wants a Charge card (0 to 1); `massWeight` how much the AI wants a Mass card (0 to 1); `spaceWeight` how much the AI wants a Space card (0 to 1) | The picked card is the one the swarm held least of, and the next hand comes sooner. |  | Proposed |
+| Pick the Time card into Pick the Charge card into Pick the Mass card | Time | gate_next | `handoff` seconds from one verb's payoff to the next press (0.2 to 4 s); `commit` share of the first verb spent before chaining (0.2 to 1 fraction); `reach` distance to the cue at which the chain starts (20 to 400 u) | Pick the Mass card lands within the handoff of the Pick the Time card before it. |  | Proposed |
 
 ### Stoat
 
@@ -221,6 +226,7 @@ Genes per vessel and genome. A dash is a genome the vessel has a verb for and no
 | Bank and burst | Mass | rival_mass_ahead, own_mass_gap | `bankTarget` energy banked in Mass Mode before switching back (0.2 to 1 fraction) | Mass Mode steals rival prisms, and the next blast is the larger one. |  | Proposed |
 | Plant and fling | Time | gate_next | `anchorPull` how far the trigger is pulled to anchor (0.2 to 0.9 fraction); `launchAlign` heading error onto the exit at launch (0 to 20 deg) | A gate is threaded within two seconds of the launch. | NEEDLE | Proposed |
 | Harvest | Space | rival_mass_ahead, dense_mass | `sliceDepth` how deep into the mass the chain is drawn (0 to 60 u) | A pass slices rival prisms and the banked blast breaks more. | MANGER | Proposed |
+| Plant into Mass Mode into Winch | Time | gate_next | `handoff` seconds from one verb's payoff to the next press (0.2 to 4 s); `commit` share of the first verb spent before chaining (0.2 to 1 fraction); `reach` distance to the cue at which the chain starts (20 to 400 u) | Winch lands within the handoff of the Plant before it. |  | Proposed |
 
 ### Tiger Moth
 
