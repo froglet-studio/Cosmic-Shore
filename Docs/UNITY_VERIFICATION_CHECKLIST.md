@@ -1928,6 +1928,8 @@ the load's frame 3.2 s at the old rate, 1.7 s now (`Docs/PartySystem/BUGS.md`, "
 
 ### 🔴 Automatic host and join with built development players: -csMpAutoHost / -csMpAutoJoin (`Ys-bleeding-edge`, 2026-11-21; from `claude/mp-plan-p0`, 2026-11-02) — 2 AND 4 BUILT PLAYERS PASS ON ONE PC (2026-11-22); TWO MACHINES NOT RUN
 
+**2026-11-22, host closed early (two runs, built dev player of 00:39, one PC, profiles `mpauto-host` / `mpauto-join1`, `development` environment, nothing else running):** the host process was killed as the joiner pressed JOIN, and again 5 s after it began hosting. Both times the joiner reported FAIL, logged `NetworkManagerStartFailed`, ended in its own solo party on the menu (`role=host members=1/4`) and its log had no main-thread error. Harness flaws seen, not fixed yet: a FAIL exits with code 0 (`mp_auto.py` reads the result file, so its verdict is right), and the reason says "not in the party after 3 attempts" when one attempt ran out the 150 s clock. Not measured: how long the join took to give up.
+
 **What landed:** `MultiplayerAutoArgs` (the arguments, pure), `MultiplayerAutoPilot` (development builds and the editor
 only; hosts or presses JOIN through `PartyInviteController.JoinPartyAsync` and writes a result JSON), a `-csMpProfile`
 switch in `AuthenticationServiceFacade.SwitchMppmProfileIfNeeded` (development builds and the editor only),
@@ -26119,3 +26121,10 @@ its plant, is destroyed as before. Compiled in the open editor (0 errors, 0 warn
 - [ ] A plant that withers (starve it or kill its heart): the limbs fade outside-in and leave shards as before, and
       the plant finishes dying (no limb left standing, no error naming Spindle or SpindlePool).
 - [ ] Leave the mode and enter another flora mode: no MissingReferenceException from a reused limb.
+
+## 🟡 Black holes eat prisms the way fauna do (2026-11-22, Yash, NOT PLAYED)
+`Docs/PRISM_MOTION.md` section 3, "A black hole EATS what collides in its pull". `BlackHoleGravityField.ApplyContacts` -> `PrismMotion.AnnihilateInto` (both prisms `Prism.Consume`d into the hole). Compiled (both assemblies, Roslyn against the editor's references); not yet run in the editor.
+- [ ] EditMode `PrismMotionTests`: all pass.
+- [ ] Lay a Stoat hole in a dense trail: prisms pulled in are drawn into the hole as shards (the look of a creature eating a prism); none explode outward.
+- [ ] Frame time holds with a few hundred prisms in the pull (contacts used the cheap plain explosion at the Bulk level; the suction has its own budget).
+- [ ] Prism counts and scoring after the hole are as before (same destruction, only the picture changed).
