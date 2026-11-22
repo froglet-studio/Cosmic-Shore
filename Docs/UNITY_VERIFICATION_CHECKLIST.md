@@ -1920,6 +1920,8 @@ the load's frame 3.2 s at the old rate, 1.7 s now (`Docs/PartySystem/BUGS.md`, "
 
 ### 🔴 Automatic host and join with built development players: -csMpAutoHost / -csMpAutoJoin (`Ys-bleeding-edge`, 2026-11-21; from `claude/mp-plan-p0`, 2026-11-02) — 2 AND 4 BUILT PLAYERS PASS ON ONE PC (2026-11-22); TWO MACHINES NOT RUN
 
+**2026-11-22, host closed early (two runs, built dev player of 00:39, one PC, profiles `mpauto-host` / `mpauto-join1`, `development` environment, nothing else running):** the host process was killed as the joiner pressed JOIN, and again 5 s after it began hosting. Both times the joiner reported FAIL, logged `NetworkManagerStartFailed`, ended in its own solo party on the menu (`role=host members=1/4`) and its log had no main-thread error. Harness flaws seen, not fixed yet: a FAIL exits with code 0 (`mp_auto.py` reads the result file, so its verdict is right), and the reason says "not in the party after 3 attempts" when one attempt ran out the 150 s clock. Not measured: how long the join took to give up.
+
 **What landed:** `MultiplayerAutoArgs` (the arguments, pure), `MultiplayerAutoPilot` (development builds and the editor
 only; hosts or presses JOIN through `PartyInviteController.JoinPartyAsync` and writes a result JSON), a `-csMpProfile`
 switch in `AuthenticationServiceFacade.SwitchMppmProfileIfNeeded` (development builds and the editor only),
