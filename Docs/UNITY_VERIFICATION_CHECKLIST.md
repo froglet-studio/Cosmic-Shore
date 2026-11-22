@@ -26360,6 +26360,20 @@ its plant, is destroyed as before. Compiled in the open editor (0 errors, 0 warn
       the plant finishes dying (no limb left standing, no error naming Spindle or SpindlePool).
 - [ ] Leave the mode and enter another flora mode: no MissingReferenceException from a reused limb.
 
+## Burrow Run spawns no crystal, so an AI Jewel Wasp finishes the race (2026-11-23)
+
+`MinigameBurrowRun.unity`'s crystal manager is FixedCount with a count of 0 (`author_burrowrun_assets.py`, which
+fails `--check` if the scene can spawn a crystal; two negative controls watched). Before, an omni crystal hatched a
+predator under a wasp and every AI wasp rode creatures until the clock ran out (`Arcade/BURROWRUN.md` sections 1 and
+6). Run in Unity batch mode with the mode smoke test, I1, three AI wasps: game over at 230 game seconds with a winner,
+0 creatures alive throughout; Warpline unchanged at 107. No C# changed. Nothing below was done by a person.
+
+- [ ] Burrow Run at I1 on the Jewel Wasp, flown by hand against two AI: no crystal appears, no creature appears, the
+      rings count, and the race ends when the lead runner threads the 16th.
+- [ ] I2, I3 and I4 once each with the AI on every seat: each reaches game over (only I1 was run).
+- [ ] Is a race with no crystal what the wasp's race should be? The wasp's omni hatch and its Time ability (the
+      burst while riding) have nothing to act on here; that is the mode's open step 1 and Garrett's vessel.
+
 ## Every menu window draws on its own Canvas, off while hidden (2026-11-22)
 
 `ModalWindowManager` gives each window its own nested Canvas (with a GraphicRaycaster) and keeps it on exactly while
