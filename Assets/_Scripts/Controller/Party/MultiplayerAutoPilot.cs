@@ -71,6 +71,7 @@ namespace CosmicShore.Gameplay
             if (Args == null || !Args.IsActive) return;
             // After FrameStallWatch.Reset (SubsystemRegistration), which clears it. A built player writes no net record.
             FrameStallWatch.LogEveryStall = true;
+            StallFrameMarkers.IncludeScriptMarkers = true;
             var go = new GameObject("[MultiplayerAutoPilot]");
             DontDestroyOnLoad(go);
             go.AddComponent<MultiplayerAutoPilot>()._args = Args;
