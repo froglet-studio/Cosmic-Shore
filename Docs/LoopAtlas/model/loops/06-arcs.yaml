@@ -193,9 +193,11 @@
   - Docs/Pilots/CALLSIGNS.md
   prop:
     s: change
-    note: 'Since 2026-11-19 every account holds one crew of 18 dealt from the 126 painted pilots (commit 5a34332f9). Make
-      that dealt crew the start of this loop: recruiting becomes choosing which of your 18 to seat, and standing is earned
-      per pilot of that crew, so the device-side standing stand-in and the dealt crew are one roster instead of two.'
+    note: 'Since 2026-11-21 the painted pool holds 324 pilots (PRs 2318, 2328: 17 roster crews, each pilot a species pair
+      no earlier one had), and an account is dealt 18 of them once (PaintedCrewSO). Make the dealt crew the start of this
+      loop and the other ~300 its recruit pool: "Recruit a pilot" at port offers someone outside your crew, a species pair
+      you do not hold yet, and standing is earned per pilot. Each new painted batch then restocks the port, a reason to
+      come back that the Returner persona lacks (loop_timescale_sim, PR 2338: Returner 12% at D30 with every fix).'
 - id: arc.hoard
   parent: era
   at: 3
