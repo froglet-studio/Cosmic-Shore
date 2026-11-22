@@ -1451,10 +1451,12 @@ def ripple_config_asset() -> str:
             "  reach:\n" + elemental(1, 1, 2, 1, 0.5) +
             "  expandSeconds: 0.9\n"
             "  fadeSeconds: 0.5\n"
-            "  bandWidth: 0.08\n"
-            "  bend: 0.008\n"
-            "  chromaticSplit: 0.03\n"
-            "  rimGlow: 0.15\n"
+            # the drawn wave: a space-time ripple with no colour (StoatRipple, Yash 2026-11-21)
+            "  wavelength: 9\n"
+            "  bend: 0.012\n"
+            "  nearRadius: 22\n"
+            "  shimmer: 0.05\n"
+            "  passShare: 0.35\n"
             "  petalsPerElement: 1\n"
             "  shedSpeed: 8\n"
             "  siphonOnChargeUpgrade: 1\n"

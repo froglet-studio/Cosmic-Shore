@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-20-uithemelive-a-scene-load-repaints-only-t-34df2b",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-20T20:24:25+00:00",
+  "area": "UI theme (UIThemeLive) and build/perf tooling",
+  "summary": "UIThemeLive: a scene load repaints only that scene's canvases now, prefab assets two frames later in one pass (was 0.85-2.3 s inside the load frame, B45). Tooling: BenchmarkReport.TryRunGit returns 'unknown' outside the editor (a Windows IL2CPP development build crashed on every DiagnosticsHUD capture: Process.Start asserts in IL2CPP Debug), and CosmicShoreBuildPipeline takes -il2cppRelease to build a development player with the Release IL2CPP config (the Debug config ran the menu at 12 fps, useless for perf).",
+  "branch": "Ys-bleeding-edge",
+  "commit": "a66a05194",
+  "paths": [
+    "Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.cs",
+    "Assets/_Scripts/UI/UIThemeLive.cs",
+    "Assets/_Scripts/Utility/PerformanceBenchmark/BenchmarkReport.cs"
+  ]
+}
