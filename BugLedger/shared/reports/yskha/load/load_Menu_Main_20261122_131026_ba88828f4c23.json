@@ -1,0 +1,206 @@
+{
+    "schemaVersion": 1,
+    "reportId": "ba88828f4c23",
+    "timestamp": "2026-11-22T13:10:26.8703708Z",
+    "source": {
+        "origin": 1,
+        "platform": "WindowsPlayer",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "unknown",
+    "gitCommitHash": "unknown",
+    "trigger": "Netcode scene load (client) — MinigameBloomrush",
+    "loadKind": "launch",
+    "completionReason": "Aborted: landed in non-game scene 'Menu_Main'",
+    "interrupted": false,
+    "sceneFrom": "Menu_Main",
+    "sceneTo": "Menu_Main",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Local",
+    "connectedClients": 0,
+    "totalMs": 54682.390625,
+    "visualReadyMs": -1.0,
+    "waitMs": 0.0,
+    "humanWaitMs": 0.0,
+    "workMs": 54682.390625,
+    "unattributedMs": 48566.78515625,
+    "framesDuringLoad": 5249,
+    "avgFpsDuringLoad": 95.99067687988281,
+    "worstFrameMs": 5603.1396484375,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Client scene load (MinigameBloomrush)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 2.0295000076293947,
+            "endMs": 6117.63525390625,
+            "durationMs": 6115.60595703125,
+            "exclusiveMs": 6115.60595703125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 48566.78515625,
+            "percent": 88.8161392211914,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 6115.60595703125,
+            "percent": 11.183866500854493,
+            "spanCount": 1,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Client scene load (MinigameBloomrush)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 6115.60595703125,
+            "exclusiveMs": 6115.60595703125,
+            "maxSingleMs": 6115.60595703125,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 7076.25732421875,
+            "durationMs": 5603.1396484375,
+            "during": "Client scene load (MinigameBloomrush)"
+        },
+        {
+            "atMs": 7854.45849609375,
+            "durationMs": 1038.675048828125,
+            "during": "—"
+        },
+        {
+            "atMs": 329.00390625,
+            "durationMs": 513.3552856445313,
+            "during": "Client scene load (MinigameBloomrush)"
+        },
+        {
+            "atMs": 733.1080932617188,
+            "durationMs": 406.5758972167969,
+            "during": "Client scene load (MinigameBloomrush)"
+        },
+        {
+            "atMs": 6397.376953125,
+            "durationMs": 376.8389892578125,
+            "during": "Client scene load (MinigameBloomrush)"
+        },
+        {
+            "atMs": 8068.13330078125,
+            "durationMs": 264.1001892089844,
+            "during": "—"
+        },
+        {
+            "atMs": 8185.97607421875,
+            "durationMs": 183.5644989013672,
+            "during": "—"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Netcode scene load (client) — MinigameBloomrush"
+        },
+        {
+            "atMs": 1.9876999855041505,
+            "label": "Netcode scene load begins: MinigameBloomrush"
+        },
+        {
+            "atMs": 5917.39697265625,
+            "label": "Unity scene loaded: MinigameBloomrush (Single)"
+        },
+        {
+            "atMs": 6117.6279296875,
+            "label": "Netcode scene load complete: MinigameBloomrush (client 1)"
+        },
+        {
+            "atMs": 6932.46240234375,
+            "label": "Netcode scene load completed on ALL clients: MinigameBloomrush"
+        },
+        {
+            "atMs": 54682.33984375,
+            "label": "Unity scene loaded: Menu_Main (Single)"
+        }
+    ],
+    "counters": [],
+    "accumulators": [],
+    "errors": [
+        {
+            "timeSeconds": 6.01909065246582,
+            "type": "Error",
+            "message": "[Netcode] NetworkPrefab hash was not found! In-Scene placed NetworkObject soft synchronization failure!"
+        },
+        {
+            "timeSeconds": 6.038513660430908,
+            "type": "Error",
+            "message": "[Netcode] [NonAuthorityLocalSpawn][GlobalObjectIdHash:832162383] Failed to spawn NetworkObject!"
+        },
+        {
+            "timeSeconds": 6.078152179718018,
+            "type": "Error",
+            "message": "[Netcode] NetworkPrefab hash was not found! In-Scene placed NetworkObject soft synchronization failure!"
+        },
+        {
+            "timeSeconds": 6.097466468811035,
+            "type": "Error",
+            "message": "[Netcode] [NonAuthorityLocalSpawn][GlobalObjectIdHash:1184899663] Failed to spawn NetworkObject!"
+        }
+    ],
+    "hints": [
+        {
+            "id": "load-long",
+            "severity": 1,
+            "title": "Long load",
+            "finding": "This load took 54.7s.",
+            "fixAdvice": "Aim for <10s: trim the top slices below.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 5.6s during \"Client scene load (MinigameBloomrush)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "unattributed",
+            "severity": 0,
+            "title": "A large share of the load is unattributed",
+            "finding": "48.6s (89%) had no active span.",
+            "fixAdvice": "Add LoadInsights.Measure(...) spans around the code that runs there (check the stalls list and timeline gaps for where).",
+            "matchedMarker": ""
+        },
+        {
+            "id": "errors-during-load",
+            "severity": 1,
+            "title": "Errors fired during the load",
+            "finding": "4 error(s)/exception(s) during load — failures often add retry waits.",
+            "fixAdvice": "Fix the errors first; they may be the hidden cause of the slow path.",
+            "matchedMarker": ""
+        }
+    ]
+}

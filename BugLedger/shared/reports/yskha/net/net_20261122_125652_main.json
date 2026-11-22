@@ -1,0 +1,1461 @@
+{
+  "schema": "cosmicshore.nettestlog.v1",
+  "engine": "unity",
+  "peer": "main",
+  "isVirtualPlayer": false,
+  "why": "client 1 approved",
+  "user": "yskha",
+  "unityVersion": "6000.3.17f1",
+  "branch": "Ys-bleeding-edge",
+  "commit": "eb7b68e47f",
+  "playStartedUtc": "2026-11-22T12:56:52.2783208Z",
+  "playEndedUtc": "2026-11-22T13:10:40.4049490Z",
+  "record": {
+    "schema": "cosmicshore.netsession.v1",
+    "startedUtc": "2026-11-22T12:57:05.8259696Z",
+    "durationSeconds": 814.4808959960938,
+    "buildGuid": "00000000000000000000000000000000",
+    "platform": "WindowsEditor",
+    "isOfflineSession": false,
+    "role": "host",
+    "counters": {
+        "requests": 87,
+        "lobbyReads": 162,
+        "retries": 0,
+        "coalesced": 0,
+        "budgetExhausted": 0,
+        "rateLimited": 0,
+        "transient": 0,
+        "benign": 0,
+        "conflict": 0,
+        "full": 0,
+        "gone": 0,
+        "fatal": 1,
+        "presenceForceReset": 0,
+        "offlineFallback": 0,
+        "partyRosterPush": 2,
+        "presencePush": 10,
+        "lobbyReadsPerSecond": 0.19889968633651734
+    },
+    "verdict": {
+        "offlineFallbacksWhileOnline": 0,
+        "forceResets": 0,
+        "budgetExhaustions": 0,
+        "rateLimited": 0
+    },
+    "lifecycle": [
+        {
+            "t": 0.000007099999493220821,
+            "e": "party",
+            "detail": "Disconnected->InPresenceLobby"
+        },
+        {
+            "t": 0.00004289999924367294,
+            "e": "party",
+            "detail": "InPresenceLobby->HostingParty"
+        },
+        {
+            "t": 5.185113906860352,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 5.253273010253906,
+            "e": "netConfig",
+            "detail": "hash=8a386bf5ce8cd7d7 prefabs=33 234294682:Rhino 297461143:Angler 336337177:BrittleStar 504450242:Termite 515096987:Grizzly 532772460:Honeyguide 758961507:StatsManager 873610668:Urchin 1012147755:Stoat 1066882345:NetworkVesselSpawner 1124080984:Sparrow 1234547654:AstroLeagueBall 1554866019:Serpent 1887398589:Thresher 1945657574:TigerMoth 2256742461:Squirrel 2358568326:TadPoleFauna 2437889963:Orca 2603481845:MassSharkFauna 2640575084:Jacks 2854954169:Falcon 3228241887:BeeFauna 3347286452:Goby 3392890734:Manta 3401243537:Shrike 3404334551:Dolphin 3630817127:Swordfish 3827091966:Scarab 3939330856:Player 3950253892:JewelWasp 4022926403:Starling 4044113297:Wrasse 4221370039:Meerkat"
+        },
+        {
+            "t": 6.5246381759643559,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 41.06116485595703,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 41.06120681762695,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4504 MB, managed 1785 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 41.08649444580078,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 50.19742202758789,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 50.197479248046878,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4504 MB, managed 1789 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 50.22898483276367,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 59.340423583984378,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 59.34046173095703,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4504 MB, managed 1793 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 59.36411666870117,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 68.47917175292969,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 68.47920989990235,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4504 MB, managed 1798 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 68.50041198730469,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 77.62592315673828,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 77.62596130371094,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4504 MB, managed 1804 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 77.65127563476563,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 80.24432373046875,
+            "e": "clientApproved",
+            "detail": "1"
+        },
+        {
+            "t": 91.44560241699219,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 91.44563293457031,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4504 MB, managed 1926 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 91.47473907470703,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 100.622314453125,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 100.62235260009766,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4504 MB, managed 1934 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 100.64807891845703,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 109.78417205810547,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 109.7842025756836,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4504 MB, managed 1941 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 109.80995178222656,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 118.96513366699219,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 118.96517181396485,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4504 MB, managed 1948 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 118.9921875,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 128.12188720703126,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 128.12191772460938,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4504 MB, managed 1956 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 128.1504364013672,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 137.2833251953125,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 137.28335571289063,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4504 MB, managed 1963 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 137.31114196777345,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 147.9604949951172,
+            "e": "stall",
+            "detail": "6.1s in Menu_Main"
+        },
+        {
+            "t": 147.9605255126953,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4505 MB, managed 1879 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 147.99237060546876,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 155.64466857910157,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 155.64471435546876,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4505 MB, managed 1976 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 155.6739044189453,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 164.80841064453126,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 164.80845642089845,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4505 MB, managed 1978 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 164.83961486816407,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 173.99168395996095,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 173.99171447753907,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4505 MB, managed 1982 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 174.02027893066407,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 183.16818237304688,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 183.168212890625,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4505 MB, managed 1985 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 183.2095184326172,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 192.3404083251953,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 192.34043884277345,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4505 MB, managed 1989 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 192.37489318847657,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 201.509521484375,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 201.50955200195313,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4505 MB, managed 1992 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 201.53897094726563,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 212.11570739746095,
+            "e": "stall",
+            "detail": "6.0s in Menu_Main"
+        },
+        {
+            "t": 212.11573791503907,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4505 MB, managed 1858 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 212.14768981933595,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 219.86351013183595,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 219.86355590820313,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4505 MB, managed 1954 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 219.89898681640626,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 229.0269775390625,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 229.02700805664063,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4521 MB, managed 1957 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 229.05792236328126,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 238.1919403076172,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 238.19198608398438,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4521 MB, managed 1960 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 238.2212371826172,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 247.36111450195313,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 247.36114501953126,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4545 MB, managed 1963 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 247.40948486328126,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 256.5237731933594,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 256.5238037109375,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4545 MB, managed 1966 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 256.55645751953127,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 265.6877746582031,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 265.68780517578127,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4545 MB, managed 1970 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 265.72412109375,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 276.0048522949219,
+            "e": "stall",
+            "detail": "5.7s in Menu_Main"
+        },
+        {
+            "t": 276.0048828125,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4545 MB, managed 2083 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 276.0406188964844,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 284.017578125,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 284.0176086425781,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4545 MB, managed 1914 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 284.0467834472656,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 293.1394958496094,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 293.1395263671875,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4545 MB, managed 1916 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 293.19415283203127,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 302.279052734375,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 302.2790832519531,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4545 MB, managed 1918 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 302.3122863769531,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 311.4141540527344,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 311.4141845703125,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4545 MB, managed 1921 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 311.4530029296875,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 320.55517578125,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 320.5552062988281,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4545 MB, managed 1924 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 320.5880126953125,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 329.7156066894531,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 329.71563720703127,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4545 MB, managed 1927 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 329.75146484375,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 340.0352783203125,
+            "e": "stall",
+            "detail": "5.7s in Menu_Main"
+        },
+        {
+            "t": 340.0353088378906,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4545 MB, managed 2039 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 340.06549072265627,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 348.1042785644531,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 348.1043395996094,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4561 MB, managed 2157 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 348.13873291015627,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 357.2378234863281,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 357.23785400390627,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4561 MB, managed 2164 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 357.2642517089844,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 366.3831787109375,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 366.3832092285156,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4561 MB, managed 2170 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 366.4244079589844,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 375.516845703125,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 375.5168762207031,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4561 MB, managed 2177 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 375.5552978515625,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 384.6480712890625,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 384.6481018066406,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4561 MB, managed 2183 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 384.7007751464844,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 393.78515625,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 393.7851867675781,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4561 MB, managed 2190 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 393.8329772949219,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 404.3521423339844,
+            "e": "stall",
+            "detail": "6.0s in Menu_Main"
+        },
+        {
+            "t": 404.3521728515625,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4561 MB, managed 2046 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 404.410888671875,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 412.1158447265625,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 412.1158752441406,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4561 MB, managed 2145 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 412.16583251953127,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 421.25537109375,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 421.2554016113281,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4561 MB, managed 2147 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 421.29736328125,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 430.39691162109377,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 430.3969421386719,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4561 MB, managed 2151 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 430.4512634277344,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 439.55242919921877,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 439.552490234375,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4561 MB, managed 2154 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 439.59771728515627,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 448.68157958984377,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 448.6816101074219,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4561 MB, managed 2159 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 448.7414855957031,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 457.81744384765627,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 457.8174743652344,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4577 MB, managed 2163 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 457.8554382324219,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 468.2126770019531,
+            "e": "stall",
+            "detail": "5.8s in Menu_Main"
+        },
+        {
+            "t": 468.21270751953127,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4591 MB, managed 2279 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 468.28802490234377,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 476.12664794921877,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 476.1266784667969,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4591 MB, managed 1807 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 476.1814880371094,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 485.2647705078125,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 485.2648010253906,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4591 MB, managed 1808 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 485.30596923828127,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 494.39752197265627,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 494.3975524902344,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4591 MB, managed 1808 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 494.4587097167969,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 503.50885009765627,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 503.5088806152344,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4591 MB, managed 1809 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 503.5633544921875,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 512.6653442382813,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 512.6654052734375,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4591 MB, managed 1811 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 512.7146606445313,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 521.8287353515625,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 521.8287353515625,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4591 MB, managed 1812 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 521.8651123046875,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 530.9693603515625,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 530.9694213867188,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4591 MB, managed 1813 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 531.06201171875,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 540.1286010742188,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 540.1286010742188,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4591 MB, managed 1999 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 540.1880493164063,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 549.2387084960938,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 549.2387084960938,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4591 MB, managed 2000 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 549.28759765625,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 558.3858642578125,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 558.3859252929688,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 2003 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 558.4652099609375,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 567.5097045898438,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 567.5097045898438,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 2005 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 567.5645141601563,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 576.6564331054688,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 576.6564331054688,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 2008 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 576.747314453125,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 585.7939453125,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 585.7940063476563,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 1821 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 585.8317260742188,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 596.134521484375,
+            "e": "stall",
+            "detail": "5.7s in Menu_Main"
+        },
+        {
+            "t": 596.1345825195313,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 1911 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 596.241943359375,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 604.078125,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 604.078125,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 2006 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 604.18408203125,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 613.2532958984375,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 613.2532958984375,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 2008 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 613.3308715820313,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 622.3818359375,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 622.3818969726563,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 2009 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 622.5089721679688,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 631.5197143554688,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 631.519775390625,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 2012 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 631.6161499023438,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 640.6951904296875,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 640.6951904296875,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 2013 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 640.7477416992188,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 649.8939208984375,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 649.8939208984375,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 2015 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 649.99658203125,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 660.4417114257813,
+            "e": "stall",
+            "detail": "6.0s in Menu_Main"
+        },
+        {
+            "t": 660.4417114257813,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 1858 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 660.493408203125,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 668.2339477539063,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 668.2340087890625,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 1953 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 668.3245239257813,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 677.3934326171875,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 677.3934326171875,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4607 MB, managed 1954 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 677.4262084960938,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 686.5587158203125,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 686.5587768554688,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4623 MB, managed 1957 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 686.6109619140625,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 695.725830078125,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 695.725830078125,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4623 MB, managed 1959 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 695.7578125,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 705.0264282226563,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main"
+        },
+        {
+            "t": 705.0264282226563,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4623 MB, managed 1961 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 705.0745849609375,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 714.15966796875,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 714.1597290039063,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4623 MB, managed 1965 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 714.20458984375,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 724.4332885742188,
+            "e": "stall",
+            "detail": "5.7s in Menu_Main"
+        },
+        {
+            "t": 724.433349609375,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4623 MB, managed 2069 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 724.4746704101563,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 734.98583984375,
+            "e": "stall",
+            "detail": "7.2s in Menu_Main"
+        },
+        {
+            "t": 734.98583984375,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4623 MB, managed 1940 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 735.0260620117188,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 741.4600219726563,
+            "e": "stall",
+            "detail": "4.8s in Menu_Main"
+        },
+        {
+            "t": 741.4600830078125,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4623 MB, managed 2043 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 741.4854125976563,
+            "e": "trailRelease",
+            "detail": "cut short at 4.0s with 13769 of 14665 left"
+        },
+        {
+            "t": 743.2130737304688,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 2113 ms; PreLateUpdate.ScriptRunBehaviourLateUpdate 846 ms; GC.Collect 732 ms; Update.ScriptRunBehaviourUpdate 272 ms"
+        },
+        {
+            "t": 750.8123779296875,
+            "e": "stall",
+            "detail": "4.8s in MinigameBloomrush"
+        },
+        {
+            "t": 750.8124389648438,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4612 MB, managed 1821 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 751.2693481445313,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 3184 ms; EarlyUpdate.UpdatePreloading 2466 ms; Loading.UpdatePreloading 2466 ms; Application.Integrate Assets in Background 2466 ms; Application.LoadLevelAsync Integrate 1771 ms; GC.Collect 666 ms; Destroy 590 ms; UnloadScene 553 ms"
+        },
+        {
+            "t": 760.8071899414063,
+            "e": "stall",
+            "detail": "5.7s in MinigameBloomrush"
+        },
+        {
+            "t": 760.8072509765625,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4588 MB, managed 1920 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 761.05126953125,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 768.8387451171875,
+            "e": "stall",
+            "detail": "4.8s in MinigameBloomrush"
+        },
+        {
+            "t": 768.8388061523438,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4629 MB, managed 1944 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 769.3081665039063,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 952 ms; Update.ScriptRunDelayedDynamicFrameRate 703 ms; Instantiate 423 ms"
+        },
+        {
+            "t": 777.9727172851563,
+            "e": "stall",
+            "detail": "4.9s in MinigameBloomrush"
+        },
+        {
+            "t": 777.9727783203125,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4816 MB, managed 1984 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 778.4810791015625,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 1108 ms; Update.ScriptRunDelayedDynamicFrameRate 674 ms; Instantiate 461 ms; Update.ScriptRunBehaviourUpdate 295 ms"
+        },
+        {
+            "t": 788.287109375,
+            "e": "stall",
+            "detail": "5.8s in MinigameBloomrush"
+        },
+        {
+            "t": 788.2871704101563,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 4996 MB, managed 1994 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 790.1448364257813,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 1253 ms; Update.ScriptRunDelayedDynamicFrameRate 803 ms; Instantiate 525 ms; Update.ScriptRunBehaviourUpdate 303 ms"
+        },
+        {
+            "t": 797.4677734375,
+            "e": "stall",
+            "detail": "5.6s in MinigameBloomrush"
+        },
+        {
+            "t": 797.4677734375,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 5072 MB, managed 2058 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 798.0804443359375,
+            "e": "clientLeft",
+            "detail": "1"
+        },
+        {
+            "t": 798.0816650390625,
+            "e": "leaverToAI",
+            "detail": "Lion"
+        },
+        {
+            "t": 798.2093505859375,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 1246 ms; Update.ScriptRunDelayedDynamicFrameRate 842 ms; Instantiate 524 ms"
+        },
+        {
+            "t": 805.3076782226563,
+            "e": "stall",
+            "detail": "4.8s in MinigameBloomrush"
+        },
+        {
+            "t": 805.3077392578125,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 5193 MB, managed 2104 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 805.6372680664063,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 921 ms; Update.ScriptRunDelayedDynamicFrameRate 659 ms; Instantiate 416 ms"
+        }
+    ],
+    "lifecycleDropped": 0
+},
+  "console": {
+    "errors": 8,
+    "warnings": 57,
+    "dropped": 0,
+    "lines": [
+      {"t": 1.418, "type": "log", "msg": "[Adaptive Performance] Only default scaler profile available. Reset all scalers to default profile."},
+      {"t": 1.534, "type": "warning", "msg": "Entities.Graphics should be used with URP Forward+. Change Rendering Path on URP_Asset_Renderer for best compatibility.", "at": "Unity.Debug:LogWarning (object) (at ./Library/PackageCache/com.unity.entities@f6e02210e263/Unity.Entities/Stubs/Unity/Debug.cs:13)"},
+      {"t": 1.554, "type": "warning", "msg": "[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN - every vessel, game mode, intensity and the Vessel Hangar are unlocked, and the quest graph is stood down. This is the shipped default until the FTUE is designed. Turn it off in the Froglet Toolbox (Quest Debug or Vessel Unlock tab) to test real progression or the FTUE itself.", "at": "CosmicShore.Core.DeveloperUnlockGate:AnnounceOnce () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Progression/DeveloperUnlockGate.cs:147)"},
+      {"t": 1.577, "type": "log", "msg": "Root Bindings Installed from 'ContainerScope'"},
+      {"t": 1.578, "type": "log", "msg": "Root Bindings Installed from 'AppManager'"},
+      {"t": 1.578, "type": "log", "msg": "Scene (Bootstrap) Bindings Installed"},
+      {"t": 2.459, "type": "log", "msg": "Overriding environment to 'development' through InitializationOptions"},
+      {"t": 2.693, "type": "warning", "msg": "[DailyChallengeSystem] Arcade or TrainingGames not ready - daily challenge unavailable.", "at": "CosmicShore.Core.DailyChallengeSystem:TryFetchDailyChallenge (CosmicShore.Data.DailyChallenge&) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/DailyChallengeSystem.cs:146)"},
+      {"t": 2.694, "type": "log", "msg": "<color=red><b>Gamepad Detected:</b> 'Xbox Controller' ()\n<b>Controller Type:</b> Other\n<b>[Details]</b>\nName: XInputControllerWindows\nProduct: \nManufacturer: \nInterface: XInput\nUsages: \n<b>Supported Controls:</b>\n   - dpad: /XInputControllerWindows/dpad [Dpad]\n   - start: /XInputControllerWindows/start [Button]\n   - select: /XInputControllerWindows/select [Button]\n   - leftStickPress: /XInputControllerWindows/leftStickPress [Button]\n   - rightStickPress: /XInputControllerWindows/rightStickPress [Button]\n   - leftShoulder: /XInputControllerWindows/leftShoulder [Button]\n   - rightShoulder: /XInputControllerWindows/rightShoulder [Button]\n   - buttonSouth: /XInputControllerWindows/buttonSouth [Button]\n   - buttonEast: /XInputControllerWindows/buttonEast [Button]\n   - buttonWest: /XInputControllerWindows/buttonWest [Button]\n   - buttonNorth: /XInputControllerWindows/buttonNorth [Button]\n   - leftTrigger: /XInputControllerWindows/leftTrigger [Button]\n   - rightTrigger: /XInputControllerWindo..."},
+      {"t": 2.696, "type": "log", "msg": "Pipeline: Quitting application with exit code 0"},
+      {"t": 3.843, "type": "log", "msg": "Pipeline: Quitting application with exit code 0"},
+      {"t": 3.936, "type": "log", "msg": "Pipeline: Quitting application with exit code 0"},
+      {"t": 3.957, "type": "log", "msg": "Container Bootstrap (-2039544226) disposed"},
+      {"t": 3.961, "type": "log", "msg": "Scene (Authentication) Bindings Installed"},
+      {"t": 4.583, "type": "error", "msg": "NotFound\r\n(404) HTTP/1.1 404 Not Found\r\nError\r\nScript could not be found\r\n", "at": "Unity.Services.CloudCode.CloudCodeInternal:BuildException (bool,long,int,string,Unity.Services.CloudCode.Internal.Http.HttpException) (at ./Library/PackageCache/com.unity.services.cloudcode@4d38bd1f7a5b/Runtime/CloudCode.cs:181)"},
+      {"t": 4.586, "type": "warning", "msg": "[LaunchFlags] The flags could not be fetched (NotFound\r\n(404) HTTP/1.1 404 Not Found\r\nError\r\nScript could not be found\r\n); keeping the Default flags.", "at": "CosmicShore.Core.LaunchFlagsService/<FetchAsync>d__7:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/CloudData/LaunchFlagsService.cs:62)"},
+      {"t": 5.119, "type": "log", "msg": "[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only)."},
+      {"t": 6.957, "type": "log", "msg": "Container Authentication (-1052263876) disposed"},
+      {"t": 7.582, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.583, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.584, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.585, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.585, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.586, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.588, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.589, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 7.591, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 8.909, "type": "log", "msg": "[GameModeProgressionService] ProgressionBackendGate closed — cloud record ignored; progression is session-local and starts fresh each launch."},
+      {"t": 11.489, "type": "error", "msg": "[WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-11-16'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.", "at": "CosmicShore.Core.WeeklyChallengeLeaderboardService:WarnIfBoardNotResetting (string,int,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/WeeklyChallenge/WeeklyChallengeLeaderboardService.cs:592)"},
+      {"t": 11.856, "type": "warning", "msg": "[EnvironmentPrismPool] Async clone batch (2048 prisms) not integrated after 4s — forcing WaitForCompletion. The engine's async-instantiate budget is being starved by other loading.", "at": "CosmicShore.Gameplay.EnvironmentPrismPool/<GetBatchAsync>d__8:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/PoolsAndBuffers/EnvironmentPrismPool.cs:138)"},
+      {"t": 16.47, "type": "log", "msg": "QosJob: executing job with 10000ms timeout"},
+      {"t": 16.47, "type": "log", "msg": "QosJob: send to 34.146.99.138:7778 took 1ms"},
+      {"t": 16.473, "type": "log", "msg": "QosJob: send to 8.231.126.202:7778 took 2ms"},
+      {"t": 16.473, "type": "log", "msg": "QosJob: send to 34.142.230.217:7778 took 0ms"},
+      {"t": 16.474, "type": "log", "msg": "QosJob: send to 34.116.71.234:7778 took 2ms"},
+      {"t": 16.474, "type": "log", "msg": "QosJob: send to 34.116.187.244:7778 took 0ms"},
+      {"t": 16.476, "type": "log", "msg": "QosJob: send to 34.88.56.54:7778 took 2ms"},
+      {"t": 16.477, "type": "log", "msg": "QosJob: send to 34.90.19.193:7778 took 0ms"},
+      {"t": 16.479, "type": "log", "msg": "QosJob: send to 35.199.98.209:7778 took 2ms"},
+      {"t": 16.479, "type": "log", "msg": "QosJob: send to 35.194.37.245:7778 took 1ms"},
+      {"t": 16.481, "type": "log", "msg": "QosJob: send to 34.74.55.21:7778 took 2ms"},
+      {"t": 16.481, "type": "log", "msg": "QosJob: send to 34.169.230.114:7778 took 0ms"},
+      {"t": 16.849, "type": "log", "msg": "QosJob: received 55 responses of 55/55 in 368ms waiting avg 7ms per response"},
+      {"t": 16.849, "type": "log", "msg": "QosJob: took 379ms to process 11 servers"},
+      {"t": 27.536, "type": "log", "msg": "[BugLedger] Sent to Claude: 80 open error(s) and 12 report file(s) on branch bugledger/yskha. Ask Claude to fix them, or wait for the daily sweep."},
+      {"t": 104.984, "type": "warning", "msg": "Receive queue is full, some packets could be dropped, consider increase its size (512).", "at": "Unity.Jobs.JobHandle:Complete ()"},
+      {"t": 106.706, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 114.159, "type": "warning", "msg": "Receive queue is full, some packets could be dropped, consider increase its size (512).", "at": "Unity.Jobs.JobHandle:Complete ()"},
+      {"t": 115.678, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 123.322, "type": "warning", "msg": "Receive queue is full, some packets could be dropped, consider increase its size (512).", "at": "Unity.Jobs.JobHandle:Complete ()"},
+      {"t": 124.84, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 134.008, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 150.821, "type": "warning", "msg": "Receive queue is full, some packets could be dropped, consider increase its size (512).", "at": "Unity.Jobs.JobHandle:Complete ()"},
+      {"t": 152.331, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 189.266, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 196.706, "type": "warning", "msg": "Receive queue is full, some packets could be dropped, consider increase its size (512).", "at": "Unity.Jobs.JobHandle:Complete ()"},
+      {"t": 205.881, "type": "warning", "msg": "Receive queue is full, some packets could be dropped, consider increase its size (512).", "at": "Unity.Jobs.JobHandle:Complete ()"},
+      {"t": 225.654, "type": "warning", "msg": "Receive queue is full, some packets could be dropped, consider increase its size (512).", "at": "Unity.Jobs.JobHandle:Complete ()"},
+      {"t": 227.94, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 253.237, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 271.582, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 280.747, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 299.073, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 317.333, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 326.485, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 335.606, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 344.763, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 356.642, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 372.287, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 381.438, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 420.178, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 485.03, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 500.32, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 536.875, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 555.22, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 555.221, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (0 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 611.982, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 637.438, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 701.608, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 746.588, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 750.169, "type": "log", "msg": "[LoadInsights] ● Recording load — Game launch — Bloomrush → MinigameBloomrush"},
+      {"t": 756.944, "type": "warning", "msg": "[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (1 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.", "at": "CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:290)"},
+      {"t": 757.914, "type": "log", "msg": "Container Menu_Main (-1363321038) disposed"},
+      {"t": 758.003, "type": "log", "msg": "Scene (MinigameBloomrush) Bindings Installed"},
+      {"t": 759.077, "type": "warning", "msg": "[ServerPlayerVesselInitializer] Arrange Spawn Points Around Cell is on but the cell nucleus radius is unavailable (cell=Cell, configAssigned=False) - using authored spawn points for now; will retry on the next spawn.", "at": "CosmicShore.Gameplay.ServerPlayerVesselInitializer:EnsureSpawnPosesReady () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializer.cs:565)"},
+      {"t": 759.163, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Charge_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Charge at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1457)"},
+      {"t": 759.21, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Mass_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Mass at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1457)"},
+      {"t": 759.212, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Space_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Space at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1457)"},
+      {"t": 759.215, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Time_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Time at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1457)"},
+      {"t": 764.405, "type": "warning", "msg": "[ServerPlayerVesselInitializer] Bloomrush does not allow Squirrel (player Lion); spawning Manta instead.", "at": "CosmicShore.Gameplay.ServerPlayerVesselInitializer:ResolveSpawnVesselType (CosmicShore.Gameplay.Player) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializer.cs:843)"},
+      {"t": 764.802, "type": "warning", "msg": "[Netcode] [Deferred OnSpawn] Messages were received for a trigger of type NetworkTransformMessage associated with id (6), but the NetworkObject was not received within the timeout period 10 second(s).", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 765.837, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'TadPoleFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string,bool) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:117)"},
+      {"t": 766.635, "type": "error", "msg": "[Netcode] [Received log from client][SenderId:1] NetworkPrefab hash was not found! In-Scene placed NetworkObject soft synchronization failure!", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 766.638, "type": "error", "msg": "[Netcode] [Received log from client][SenderId:1][Game][NetworkObjectId:7] [NonAuthorityLocalSpawn][GlobalObjectIdHash:832162383] Failed to spawn NetworkObject!", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 766.641, "type": "error", "msg": "[Netcode] [Received log from client][SenderId:1] NetworkPrefab hash was not found! In-Scene placed NetworkObject soft synchronization failure!", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 766.643, "type": "error", "msg": "[Netcode] [Received log from client][SenderId:1][Cell][NetworkObjectId:12] [NonAuthorityLocalSpawn][GlobalObjectIdHash:1184899663] Failed to spawn NetworkObject!", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:152)"},
+      {"t": 810.757, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1529)"},
+      {"t": 811.016, "type": "warning", "msg": "[ConnectingPanel] Released after waiting 45s for 1 player(s) who never reported their arena built - starting anyway.", "at": "CosmicShore.UI.ConnectingPanelController/<WaitForPeersAsync>d__30:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/ConnectingPanelController.cs:230)"},
+      {"t": 811.043, "type": "log", "msg": "[LoadInsights] ■ Load report ready — 60.85s · Loaded — arena complete (laid + grown), connecting screen done → C:/Users/yskha/AppData/LocalLow/Froglet Games/Cosmic Shore\\Benchmarks/LoadInsights\\load_MinigameBloomrush_20261122_131023_d651b7e76be7.json"}
+    ]
+  }
+}
