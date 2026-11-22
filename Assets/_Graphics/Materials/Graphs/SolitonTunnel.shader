@@ -480,10 +480,10 @@ Shader "CosmicShore/SolitonTunnel"
                     float spokes = MWGridLine(ang * _MWThroat.z / (2.0 * MW_PI), 0.04 + 0.3 * saturate(d / (60.0 * sp)));
                     float ripple = 1.0 + _MWThroat3.x * sin(2.0 * MW_PI * (s / (4.0 * sp) - _MWHole.z));
                     float fromEnd = max(_MWRingS[MW_RINGS - 1].y - d, 0.0);
-                    float spill = exp(-fromEnd / max(3.0 * sp, 1.0)) * _MWThroat2.y * _MWThroat3.z;
-                    col = tint * ((0.035 + 0.09 * fog) * ripple)
+                    float spill = exp(-fromEnd / max(2.0 * sp, 1.0)) * _MWThroat2.y * _MWThroat3.z;
+                    col = tint * ((0.012 + 0.05 * fog * fog) * ripple)   // a dark wall, so the grid and the way out's light carry it
                         + lerp(tint, _MWGlintColour.rgb, 0.35) * (max(rings, spokes) * fog * _MWThroat2.x * ripple)
-                        + lerp(tint, _MWGlintColour.rgb, 0.7) * (0.5 * spill);
+                        + lerp(tint, _MWGlintColour.rgb, 0.7) * (0.35 * spill);
                 }
                 float rider = 0.0;
                 for (int h = 0; h < MW_HULLS; h++)
