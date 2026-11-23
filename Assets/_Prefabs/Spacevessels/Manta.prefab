@@ -1949,11 +1949,13 @@ MonoBehaviour:
   waitTillOutsideSkimmer: 0
   shielded: 0
   trailVolume:
-    Enabled: 0
-    Value: 1
-    Min: 1
-    Max: 2.5
-    element: 0
+    Enabled: 1
+    Value: 0.13
+    Min: 0.13
+    Max: 0.6
+    element: 2
+    UseFloor: 1
+    Floor: 0.065
   turnUpgradeShieldsTrail: 0
   turnFlareMaxScale: 1
   speedShape:
