@@ -24,9 +24,9 @@ MonoBehaviour:
   colliderDelaySeconds: 0.1
   massVolumeMultiplier:
     Enabled: 1
-    Value: 1
-    Min: 1
-    Max: 2.5
+    Value: 1.7
+    Min: 1.7
+    Max: 4.25
     element: 2
     UseFloor: 1
     Floor: 0.5
