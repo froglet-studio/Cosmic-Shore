@@ -160,6 +160,7 @@ namespace CosmicShore.Gameplay
         StoatModeExecutor _stoatMode;
         ScriptableEventInputEvents _pressed, _released;
         GameDataSO _gameData;
+        GameDataSO[] _gameDataAssets;
         Player _player;
         float _nextSample, _nextLook, _raceStart, _frameSum, _prevSampleT;
         Quaternion _prevRot;
@@ -279,7 +280,11 @@ namespace CosmicShore.Gameplay
         {
             if (_gameData && _gameData.Players != null && _gameData.Players.Count > 0) return;
             _gameData = null;
-            var all = Resources.FindObjectsOfTypeAll<GameDataSO>();
+            // The search walks every loaded object (about 190 ms with a scene's prisms alive, measured 2026-11-21), so it
+            // runs once and the assets it found are kept: a GameDataSO is an asset that outlives every scene.
+            if (_gameDataAssets == null || _gameDataAssets.Length == 0 || !_gameDataAssets[0])
+                _gameDataAssets = Resources.FindObjectsOfTypeAll<GameDataSO>();
+            var all = _gameDataAssets;
             for (int i = 0; i < all.Length && !_gameData; i++)
                 if (all[i] && all[i].LocalPlayer != null) _gameData = all[i];
             for (int i = 0; i < all.Length && !_gameData; i++)

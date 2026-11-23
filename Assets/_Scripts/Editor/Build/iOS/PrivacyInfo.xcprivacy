@@ -12,9 +12,9 @@
 
   Collected data (what leaves the device; none is used for tracking). The App Store Connect App Privacy label
   (launch blocker #16) must say the same; counsel confirms both before a submission.
-    UserID             linked     UGS player id, PostHog distinct_id, display name      App functionality, Analytics
+    UserID             linked     UGS player id, display name                           App functionality, Analytics
     GameplayContent    linked     Cloud Save progress, multiplayer matching             App functionality
-    ProductInteraction linked     analytics events (UGS Analytics, PostHog)              Analytics
+    ProductInteraction linked     analytics events (UGS Analytics, Froglet Analytics)    Analytics
     OtherUserContent   linked     faction chat messages (Vivox text)                     App functionality
     CrashData          not linked Unity Cloud Diagnostics crash reports                  App functionality
   The birth year from the age screen stays on the device (FairPlayAge, PlayerPrefs) and is not collected.

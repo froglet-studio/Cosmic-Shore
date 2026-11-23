@@ -284,8 +284,8 @@
    "holes": [
     {
      "on": "np",
-     "q": "How many sittings make one pass, and how often a person comes back, is not measured. Analytics events are declared but no funnel reads them yet.",
-     "fill": "Target 3 to 5 sittings a week and one Tide every 6 weeks. Measure it from game_started and game_completed per account before tuning anything above the Round."
+     "q": "How often a person comes back is now read (the Froglet Analytics console's Sessions and Retention pages, from session_started and session_ended in builds after 2026-11-07; PostHog was closed on 2026-11-23), but how many sittings make one pass is not, because nothing marks a pass or a Tide.",
+     "fill": "Target 3 to 5 sittings a week and one Tide every 6 weeks. Read sittings per week from the Sessions page's sessions per player, and mark the pass with a tide_started event when the Tide ships, before tuning anything above the Round."
     }
    ],
    "src": [
@@ -359,8 +359,8 @@
     },
     {
      "on": "np",
-     "q": "Rounds per sitting and places per sitting are not measured.",
-     "fill": "Aim for 5 to 8 rounds and 1 or 2 places in a sitting; read it from the analytics events."
+     "q": "Rounds per sitting and places per sitting are not measured. Sessions are (session_started, session_ended), but game_started does not carry their session_id (Docs/Analytics/EVENT_SCHEMA.json), so a round cannot be put in its sitting except by time.",
+     "fill": "Aim for 5 to 8 rounds and 1 or 2 places in a sitting. Add session_id to game_started (Froglet Analytics only, as session_ended does) and count rounds and places per session on the Sessions page."
     }
    ],
    "src": [
@@ -465,6 +465,11 @@
      "on": "np",
      "q": "What a toy session is for, in loop terms, is not written: there is no stated reason to leave a toy or to come back to one.",
      "fill": "A toy's exit is a crossing. Every toy names the scored loop it is the free version of, and offers it when the player has done the toy's verb a few times."
+    },
+    {
+     "on": "npx",
+     "q": "Every arc in the atlas is fed by winning. A player who only makes things (the painter in Docs/LoopAtlas/personas/journeys.yaml) moves no arc, and has seen every painting and microscene by week 3.",
+     "fill": "Each week of the Tide adds one painting and one microscene, and a shared painting opens the same canvas for whoever taps it."
     }
    ],
    "src": [
@@ -588,7 +593,11 @@
    },
    "src": [
     "Docs/ToySystem/ARCHITECTURE.md (Spawn Matrix, Cell Selector)"
-   ]
+   ],
+   "prop": {
+    "s": "change",
+    "note": "Since 2026-11-22 the matrix spawns five grown creatures (Ray, Plume, Lantern, Ammon, Nettle), each in four element forms with a body of its own (PR #2327, Tools/Build/author_spawn_matrix_roster.py). Let 'play in what you made' include riding one: offer the Jewel Wasp beside a spawned creature, so the matrix becomes the free version of the Wasp's possession kit and the four forms are something a player feels, not only sees."
+   }
   },
   {
    "id": "toy.paint",
@@ -853,6 +862,13 @@
    "plan": {
     "note": "One human plays the four rungs and signs them off as fun; only then is that vessel and element sent to AI training."
    },
+   "holes": [
+    {
+     "on": "n",
+     "q": "Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time's AI (fb750ac38, GRIZZLYTIME.md, 24 courses) finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2's level-5 start and I4's fauna add almost nothing for it.",
+     "fill": "Judge each card's ladder by the fixed AI's time per rung (regatta_judge) and flag two neighbouring rungs closer than about 5% as a ladder to retune before step 3 signs off."
+    }
+   ],
    "src": [
     "Docs/ElementalLoop/PLAYBOOK.md step 2",
     "Docs/MENU_PROGRESSION_AND_IAP.md section 2b"
@@ -1381,6 +1397,16 @@
      "on": "np",
      "q": "It is not said whether voyage pay is the same crystals that buy vessels, so the step from 'voyage ends' to 'spend it on a vessel' has no confirmed path.",
      "fill": "One soft currency. Voyage pay is crystals, paid at dock, scaled so a clean voyage is worth about three arcade wins."
+    },
+    {
+     "on": "npx",
+     "q": "A voyage is 20 to 40 minutes and leaving abandons it, so a player whose sittings are six minutes (the commuter in Docs/LoopAtlas/personas/journeys.yaml) never finishes one.",
+     "fill": "The Ark docks at the location it reached when the player leaves; the next sitting sails from there, one leg at a time."
+    },
+    {
+     "on": "np",
+     "q": "The plan says a voyage is 3 to 6 legs and 20 to 40 minutes, but the one job the board offers since 2026-11-21 is the Crystal Run (commit 00373d12f), and its 4-cell run takes about 8 minutes to its stop and 3 more home (commit 9addc48ee, the way home at 2x). Is the Crystal Run the short job by design, or the first leg of the longer voyage?",
+     "fill": "The Crystal Run stays the short job (about 11 minutes, one sitting on a phone) and is the first leg the longer voyages chain, so a 20 to 40 minute voyage is 2 to 4 runs with a port between them."
     }
    ],
    "src": [
@@ -1731,6 +1757,11 @@
      "on": "p",
      "q": "The Lesson teaches a ship's Time verb. Nothing yet teaches a combo or a role.",
      "fill": "The Mentor's stream is ordered by the ladder of tiers: Pulse and Verb in the Lesson, the kit's first Combo after three races, the Role the first time the player enters a Mass-Space game."
+    },
+    {
+     "on": "npx",
+     "q": "Activation has one door: first launch, the spotlight, a Lesson that flies a Time verb. Two of the six journeys (Mira, the night crew) arrive by invite and never pass through it, and Mira does not want to fly at all.",
+     "fill": "Activation starts where the player arrived: an invite starts in the inviter's party and the seat it named, and the Lesson for that seat (a crew board, a hull) runs there."
     }
    ],
    "src": [
@@ -1844,6 +1875,11 @@
      "on": "np",
      "q": "Which of the 23 hulls ship, at what price and in what order, is not decided beyond the first five.",
      "fill": "Price by how many loops a hull opens: a solo hull 4000, a crew vessel 6000 because it opens a second seat for a friend."
+    },
+    {
+     "on": "npx",
+     "q": "Only the winner is paid. In a group of friends who beat each other, the one who wins least owns nothing new after two weeks; in the night crew journey that friend leaves on day 17 and the crew shrinks.",
+     "fill": "Pay a team win to every seat on the team, crew seats included, and pay a little for finishing, so a friend's fleet grows at the group's pace."
     }
    ],
    "src": [
@@ -2016,7 +2052,7 @@
    ],
    "prop": {
     "s": "change",
-    "note": "Since 2026-11-19 every account holds one crew of 18 dealt from the 126 painted pilots (commit 5a34332f9). Make that dealt crew the start of this loop: recruiting becomes choosing which of your 18 to seat, and standing is earned per pilot of that crew, so the device-side standing stand-in and the dealt crew are one roster instead of two."
+    "note": "Since 2026-11-21 the painted pool holds 324 pilots (PRs 2318, 2328: 17 roster crews, each pilot a species pair no earlier one had), and an account is dealt 18 of them once (PaintedCrewSO). Make the dealt crew the start of this loop and the other ~300 its recruit pool: \"Recruit a pilot\" at port offers someone outside your crew, a species pair you do not hold yet, and standing is earned per pilot. Each new painted batch then restocks the port, a reason to come back that the Returner persona lacks (loop_timescale_sim, PR 2338: Returner 12% at D30 with every fix)."
    }
   },
   {
@@ -2163,7 +2199,16 @@
     {
      "on": "np",
      "q": "Nothing a party does together lasts past the sitting, so a friend is a reason to play tonight and not a reason to return.",
-     "fill": "A party shares one voyage record: the Ark, its hoard and the saga thread belong to the party that sailed it."
+     "fill": "A party shares one voyage record: the Ark, its hoard and the saga thread belong to the party that sailed it. Since 2026-11-21 friends follow the host into one voyage and sail one Ark domain the host picks and friends vote on (commits 00373d12f, 2d72d986f), so the party the record would belong to now exists."
+    },
+    {
+     "on": "np",
+     "q": "Since 2026-11-21 a party on two builds is kept apart (the protocol version gates matchmaking and every join by id, commit 8697ef19f) and the friend sees only a mismatch toast, so the older friend has no way back to the party from that moment. The live flags' update wall (commit 7324953ba) answers only the flags' minimum version, not a friend's newer build.",
+     "fill": "The protocol mismatch toast carries the live flags' per-platform update link for whichever side is older, so a split party ends in an update instead of a lost evening."
+    },
+    {
+     "on": "n",
+     "q": "The now note says crew vessels are local only, but Docs/CREW_STATIONS.md has the rider seat networked on the Orca, Honeyguide, Wrasse and Goby. One of them is stale."
     }
    ],
    "src": [
@@ -2350,7 +2395,7 @@
    },
    "prop": {
     "s": "change",
-    "note": "Tie each turn to a Tide so that players can see it coming."
+    "note": "Tie each turn to a Tide so that players can see it coming, and announce it in the What's new window built 2026-11-21 (commit 56584fa4e, Frogma Rev 121 C): the turn's entry in WhatsNew.asset names which vessels changed and which arena environments are new, and the window opens once by itself after the update, so the hole's 'nothing tells a player that the meta turned' has its channel."
    },
    "holes": [
     {
@@ -2778,6 +2823,126 @@
    "src": [
     "Docs/Pilots/CALLSIGNS.md sections 2 and 4",
     "Assets/_Scripts/Controller/PilotSight/PilotSight.cs"
+   ]
+  },
+  {
+   "id": "seat.crew",
+   "in": "x",
+   "parent": "arc.social",
+   "at": 2,
+   "name": "The crew seat",
+   "tier": 3,
+   "kind": "loop",
+   "t": [
+    60,
+    900
+   ],
+   "is": "Proposed. Take the empty seat on a friend's hull and play its one-thumb board: the Ratel's Dynamo on the Honeyguide, the kite on the Wrasse, the Pistol on the Goby, a gunner on the Orca. What you do there powers their hull, and the AI takes whichever seat nobody holds.",
+   "phases": [
+    {
+     "n": "An empty seat is offered",
+     "d": "\"Play the Ratel on my Honeyguide.\""
+    },
+    {
+     "n": "Take it",
+     "d": "A D-pad press or a two-finger swipe; on a phone the board is upright in portrait."
+    },
+    {
+     "n": "Play the board"
+    },
+    {
+     "n": "See it land on the hull",
+     "d": "A dart that only your pattern made possible."
+    },
+    {
+     "n": "Stay, swap seats, or take your own hull"
+    }
+   ],
+   "drivers": [
+    "crew",
+    "mastery",
+    "joy"
+   ],
+   "reps": null,
+   "repsOf": "seats taken per sitting with a friend",
+   "prop": {
+    "s": "add",
+    "note": "In the game today on four crew vessels, networked for the rider (Docs/CREW_STATIONS.md). Proposed as a loop because it is the one way into the game that needs no flying: Mira's and the night crew's fourth friend's path both start here (journeys.yaml)."
+   },
+   "holes": [
+    {
+     "on": "npx",
+     "q": "A crew seat is reached only from inside a hull: the Toybox's Vessel Changer, then a seat swap. Nobody arriving by invite is dropped into the seat they were invited to.",
+     "fill": "The invite names the seat, and accepting it opens the game in that seat (the prop of Party and friends: the empty seat is the invite)."
+    },
+    {
+     "on": "npx",
+     "q": "A squad is three seats and a voyage party at most three players, so a group of four never fits one team.",
+     "fill": "A crew seat is the fourth place: it costs no squad slot, so four friends fly three hulls with one of them riding."
+    }
+   ],
+   "src": [
+    "Docs/CREW_STATIONS.md",
+    "Docs/Voyages/PARTY.md",
+    "Docs/LoopAtlas/personas/journeys.yaml"
+   ]
+  },
+  {
+   "id": "seat.ratel",
+   "in": "x",
+   "parent": "seat.crew",
+   "at": 2,
+   "name": "The Ratel's board",
+   "tier": 2,
+   "kind": "loop",
+   "t": [
+    15,
+    60
+   ],
+   "is": "Proposed. The Honeyguide's second seat, a hex puzzle. Every 15 seconds the ports turn and the spin gives AP; moves and injections make patterns, each pattern sends a charge to the pilot's battery, and every four patterns the Ratel picks one ability of three.",
+   "phases": [
+    {
+     "n": "The spin",
+     "d": "Ports turn 60 degrees; 3 AP, kept up to 6."
+    },
+    {
+     "n": "Move, inject, make a pattern"
+    },
+    {
+     "n": "A charge goes to the battery",
+     "d": "The pilot slips or darts with it."
+    },
+    {
+     "n": "Every four patterns, pick one of three"
+    }
+   ],
+   "drivers": [
+    "mastery",
+    "crew",
+    "make"
+   ],
+   "reps": "4",
+   "repsOf": "patterns per pick",
+   "prop": {
+    "s": "add",
+    "note": "Built (Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md, DynamoCore). A casual puzzle player's whole game, on an older phone in portrait with one thumb. Proposed as a loop so its sittings are counted apart from the hull's."
+   },
+   "holes": [
+    {
+     "on": "npx",
+     "q": "The Ratel has no way in of its own. A player who wants the puzzle has to find the Honeyguide in the Toybox and swap seats, and the Toybox gives the board no goal and banks nothing.",
+     "fill": "A Ratel card: the Honeyguide's Mass game (Honeycomb) with the player seated on the Ratel and the AI flying, on its own I1 to I4 ladder, so a Ratel player's rungs light the hull's Mass petal."
+    },
+    {
+     "on": "npx",
+     "q": "The Honeyguide is in no arena roster, so a Ratel player cannot come along when their squad goes to the arena.",
+     "fill": "Seat the Honeyguide in Brood Rush, where a hive-builder's Mass verb serves the cultivator role."
+    }
+   ],
+   "src": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md",
+    "Docs/Studios/ONE_THUMB_SEAT_ARCS.md",
+    "Docs/LoopAtlas/personas/journeys.yaml"
    ]
   }
  ],

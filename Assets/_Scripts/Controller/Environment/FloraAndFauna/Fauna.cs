@@ -487,6 +487,10 @@ namespace CosmicShore.Gameplay
         /// <summary>How thick this body's thickest section is against its root scale: 1, or the Space spindle's eroded
         /// girth (<see cref="FaunaElementalForm.ThickestGirth"/>). A body-relative dial taken by GIRTH multiplies it in.</summary>
         protected float BodyGirthFactor { get; private set; } = 1f;
+
+        [Header("Space spindle")]
+        [Tooltip("This prefab IS the eroded Space body: its skins were grown at the law's girth and its prisms authored as the law's needles (Tools/Build/fauna_kit/elements.py). ErodeSpindle then leaves both as authored and only reports the law's girth. For a body of several jointed skins, which the per-skin erosion would tear at its hinges (fauna_kit/erosion.py measures it).")]
+        [SerializeField] bool spindleAuthoredEroded;
         bool lineageRegistered;
         int _feedsSinceBirth;
         float _lastBirthTime = float.NegativeInfinity;
@@ -589,6 +593,16 @@ namespace CosmicShore.Gameplay
                 // Until 2026-08 this job was done by Fauna.SetLevel, as an incidental
                 // side-effect of seeding the spawn level (Docs/ECOSYSTEM.md §40.3).
                 ApplyHeartSize();
+
+                // ARM THE BODY FOR THE ELEMENT THAT WAS JUST ROLLED. The same inversion a third time: LightFauna
+                // and Boid arm their bodies in Initialize, which runs BEFORE this method, when the heart is still
+                // the prefab's authored crystal. A species whose four configs share one prefab (the QuadFish: a
+                // Space crystal) was therefore armed for Space whatever it rolled: its Mass form wore no shield and
+                // its Charge form no danger, with nothing reporting it (measured by running the spawn order headless,
+                // 2026-11-17: QuadFish Mass 0 of 4 shielded, QuadFish Charge 0 of 4 danger). ArmourBody takes a
+                // previous arming off first and is a no-op until the body prisms exist, so this is safe on every
+                // ordering.
+                ArmourBody();
             }
         }
 
@@ -1174,6 +1188,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ErodeSpindle(Element element)
         {
+            if (spindleAuthoredEroded)
+            {
+                // the prefab is already the law's eroded body; the body-relative dials still read the Mass girth
+                BodyGirthFactor = FaunaElementalForm.ThickestGirth;
+                return;
+            }
+
             RestoreSpindle();   // a pooled body is measured from the prefab's seats, never its last life's
 
             // the body is the skin with the most vertices; where several share one mesh (a body built of braids, the

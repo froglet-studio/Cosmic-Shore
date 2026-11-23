@@ -32,6 +32,11 @@
     q: The Lesson teaches a ship's Time verb. Nothing yet teaches a combo or a role.
     fill: 'The Mentor''s stream is ordered by the ladder of tiers: Pulse and Verb in the Lesson, the kit''s first Combo
       after three races, the Role the first time the player enters a Mass-Space game.'
+  - 'on': npx
+    q: 'Activation has one door: first launch, the spotlight, a Lesson that flies a Time verb. Two of the six journeys
+      (Mira, the night crew) arrive by invite and never pass through it, and Mira does not want to fly at all.'
+    fill: 'Activation starts where the player arrived: an invite starts in the inviter''s party and the seat it named,
+      and the Lesson for that seat (a crew board, a hull) runs there.'
   src:
   - Docs/ACTIVATION.md
   - Docs/ModePreview/TRAINING_PLAN.md
@@ -95,6 +100,11 @@
     q: Which of the 23 hulls ship, at what price and in what order, is not decided beyond the first five.
     fill: 'Price by how many loops a hull opens: a solo hull 4000, a crew vessel 6000 because it opens a second seat for
       a friend.'
+  - 'on': npx
+    q: 'Only the winner is paid. In a group of friends who beat each other, the one who wins least owns nothing new
+      after two weeks; in the night crew journey that friend leaves on day 17 and the crew shrinks.'
+    fill: 'Pay a team win to every seat on the team, crew seats included, and pay a little for finishing, so a
+      friend''s fleet grows at the group''s pace.'
   src:
   - Docs/ECONOMY_AND_PRICING.md
   - Docs/MENU_PROGRESSION_AND_IAP.md section 2c
@@ -193,9 +203,11 @@
   - Docs/Pilots/CALLSIGNS.md
   prop:
     s: change
-    note: 'Since 2026-11-19 every account holds one crew of 18 dealt from the 126 painted pilots (commit 5a34332f9). Make
-      that dealt crew the start of this loop: recruiting becomes choosing which of your 18 to seat, and standing is earned
-      per pilot of that crew, so the device-side standing stand-in and the dealt crew are one roster instead of two.'
+    note: 'Since 2026-11-21 the painted pool holds 324 pilots (PRs 2318, 2328: 17 roster crews, each pilot a species pair
+      no earlier one had), and an account is dealt 18 of them once (PaintedCrewSO). Make the dealt crew the start of this
+      loop and the other ~300 its recruit pool: "Recruit a pilot" at port offers someone outside your crew, a species pair
+      you do not hold yet, and standing is earned per pilot. Each new painted batch then restocks the port, a reason to
+      come back that the Returner persona lacks (loop_timescale_sim, PR 2338: Returner 12% at D30 with every fix).'
 - id: arc.hoard
   parent: era
   at: 3
@@ -276,7 +288,19 @@
   - 'on': np
     q: Nothing a party does together lasts past the sitting, so a friend is a reason to play tonight and not a reason to
       return.
-    fill: 'A party shares one voyage record: the Ark, its hoard and the saga thread belong to the party that sailed it.'
+    fill: 'A party shares one voyage record: the Ark, its hoard and the saga thread belong to the party that sailed it.
+      Since 2026-11-21 friends follow the host into one voyage and sail one Ark domain the host picks and friends vote on
+      (commits 00373d12f, 2d72d986f), so the party the record would belong to now exists.'
+  - 'on': np
+    q: Since 2026-11-21 a party on two builds is kept apart (the protocol version gates matchmaking and every join by id,
+      commit 8697ef19f) and the friend sees only a mismatch toast, so the older friend has no way back to the party from
+      that moment. The live flags' update wall (commit 7324953ba) answers only the flags' minimum version, not a friend's
+      newer build.
+    fill: The protocol mismatch toast carries the live flags' per-platform update link for whichever side is older, so a
+      split party ends in an update instead of a lost evening.
+  - 'on': n
+    q: 'The now note says crew vessels are local only, but Docs/CREW_STATIONS.md has the rider seat networked on the
+      Orca, Honeyguide, Wrasse and Goby. One of them is stale.'
   src:
   - Docs/claude/MULTIPLAYER_AND_SOCIAL.md
   - Docs/Voyages/PARTY.md
