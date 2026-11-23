@@ -30,16 +30,16 @@
       "version": "0.2.0"
     },
     "launch-flags": {
-      "commit": "1e4f3cd306015b4687d2b7a4e583d70be108792d",
+      "commit": "665bc64a9b73a7baa8e2902cca700ce077e055dc",
       "id": "launch-flags",
       "kind": "gate",
       "platform": "liveops",
       "result": "success",
-      "run_url": "https://github.com/froglet-studio/Cosmic-Shore/actions/runs/45235637915",
+      "run_url": "https://github.com/froglet-studio/Cosmic-Shore/actions/runs/45238204289",
       "schema": 1,
       "source": "Launch flags check",
       "summary": "Live flags document and Cloud Code script tests: success",
-      "updated_at": "2026-11-23T18:11:17Z"
+      "updated_at": "2026-11-23T18:25:36Z"
     },
     "trunk-static": {
       "commit": "1ac6f87ae0",
@@ -126,6 +126,6 @@
       "updated_at": "2026-11-06T03:38:27Z"
     }
   },
-  "generated_at": "2026-11-23T18:11:20Z",
+  "generated_at": "2026-11-23T18:25:39Z",
   "schema": 1
 }
