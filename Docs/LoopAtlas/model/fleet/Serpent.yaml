@@ -73,6 +73,22 @@ combos:
   - [Time, 'Burn pellets, stacked']
   drivers: [mastery, joy]
   feel: Stacking boosts you made yourself.
+  gene:
+    genome: Time
+    cue: [bank_low, open_space]
+    dials:
+    - - feedBelow
+      - pellets left when the AI stops to feed
+      - 0
+      - 3
+      - count
+    - - feedTime
+      - seconds stopped while the wall eats the trail
+      - 1
+      - 8
+      - s
+    done: Pellets earned back are burned, stacked, within ten seconds.
+    sight: SUNDIAL
 - name: The ghost shot
   t: [10, 30]
   is: Vanish, aim from nowhere, fire once.
@@ -84,4 +100,69 @@ combos:
     - One round through everything on the line
   drivers: [rival, break]
   feel: One shot they never saw coming.
+  gene:
+    genome: Charge
+    cue: [rival_on_line, threatened]
+    dials:
+    - - zoom
+      - how deep the scope is pulled
+      - 0.2
+      - 1.0
+      - fraction
+    - - cloakLead
+      - seconds of cloak before the scope comes up
+      - 0.5
+      - 10
+      - s
+    done: A sniper round strips a rival's petals.
+    sight: BANDIT
+- in: x
+  name: Hedgerow
+  t: [15, 45]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Stop by a rival trail and let the seed wall steal what lands; cloak leaves a second seed.
+  chain:
+  - - Mass
+    - 'Stop by a rival trail: the Seed Wall steals what lands'
+  - - Space
+    - 'Cloak: a super-shielded seed stays behind'
+  - [Mass, Two walls grow]
+  drivers: [make, rival]
+  feel: A hedge that eats their road.
+  gene:
+    genome: Mass
+    cue: [rival_mass_ahead, open_space]
+    dials:
+    - - wallDwell
+      - seconds stopped while the wall grows
+      - 1
+      - 10
+      - s
+    done: A Seed Wall steals rival prisms.
+    sight: ENSIGN
+- in: x
+  name: The cloak raid
+  t: [15, 40]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Cloak, slip into rival territory unseen, leave a seed that walls it, and snipe out.
+  chain:
+  - - Space
+    - 'Cloak: slip into rival territory'
+  - - Mass
+    - The super-shielded seed grows a wall there
+  - - Space
+    - 'Scope up: one round through their mass'
+  drivers: [break, rival]
+  feel: In and out before they look.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, verb_ready]
+    dials:
+    - - raidDepth
+      - distance into rival territory before the seed is left
+      - 20
+      - 300
+      - u
+    done: A wall grows in rival territory and a round breaks their prisms.
+    sight: RAMPART
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_FUEL_PELLETS.md

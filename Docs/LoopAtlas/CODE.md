@@ -72,6 +72,48 @@ identical to Home and is folded into it. A sweep path is matched to the atlas by
 nesting, an ambiguous name is settled by its parents' names and skipped only on a tie. Known gap: flora grown in code
 (no FBX) show only their seed, because drawing them needs the game's own code running (engine follow-up).
 
+## Human first: what a person inspects comes before the code
+
+Garrett, 2026-11-21: "when we get into the deepest aspects of the code it ends up having similar unusability to an
+automatically generated API. lets try to maintain relevance and place the information a human is more likely to want
+to inspect first. so if i am inspecting an ability I want to see how it works, what it does, the parameters of
+interest and what they are. the stuff that would be seen by looking at its scriptable objects and other human
+interfacing parts of the codebase first."
+
+**The card sits in the middle of every ring** and is its biggest thing, because it is read first. It says, in this
+order: what the node is (for a type, its role: *ScriptableObject · designer config*, *Component*, *Serializable data*),
+what it does in its author's words, the parameters that matter as `label = value` rows, and only then the code facts
+(type, signature, Create menu, path:line). The ring's contents go round it clockwise from the top in the order a person
+inspects them, and every neighbour that is not looked for first waits in one **Connections** box.
+
+- **An ability** (a verb on the map) opens on the map's own words: what it does, its trigger and what its element
+  scales. Its Code ring leads with **its entry in the vessel's ElementalAbilityMap** (label, description, unlock level,
+  the level-5 upgrade, the input, enum values by name: "Element = Mass (2)"), then **the action assets bound to its
+  input on the vessel prefab** (`_touchActionOverrides` / `_inputEventShipActions`, matched on the entry's `Input`; the
+  `ability` relation), plus the `Ability<Vessel><Name>` asset and the vessel's action assets that share a word with it,
+  then its doc and card, the scripts, tests last. Every loop's Code ring keeps that order (`human_first` in the tool;
+  boxes *Tuning assets*, *Docs*, *Prefabs and scenes*, *Scripts*, *Tests* once there are more than nine).
+- **An asset made from a script** (a ScriptableObject asset, a component on a prefab) opens straight onto its values in
+  Inspector order, grouped by the script's `[Header]`s, labelled the way the Inspector labels them ("Cooldown
+  Multiplier At Full Mass"), each with its tooltip, range, the default in code and whether this asset changed it. Its
+  card leads with the words a designer wrote on it (a description field) or its script's summary, then the parameters
+  that matter most: elemental and upgrade ones, the ones this asset changed from the code default, the lists by their
+  entries' names. Unity's own values (`m_Name`, `m_Enabled`) wait in *Other values*. A list of entries opens one ring per
+  entry, named by its label ("Crystal Joust"), not `entries[0]`. A field renamed with `[FormerlySerializedAs]` is found
+  under its old key.
+- **A type** that is a ScriptableObject, a component or `[Serializable]` data (`role`) leads with its `///` summary,
+  its **Parameters** (the Inspector, grouped by header, one zoom from each field's value in every asset) and **the
+  assets made from it**; properties, methods and plumbing wait in **The code**. Its parameter sheet (`ps`: field,
+  header, tooltip, default, type, member, range, doc, former names, the entry type, the enum's names) is stored once on
+  the type, so a value's card reads its tooltip from one record.
+- **A GameObject** lists our scripts on it first, then its child objects; Unity's built-in components wait in a box.
+- **"How it works"**: a summary longer than the card holds is a leaf beside it; zoom in to read all of it. A leaf ring
+  is drawn as one whole card once it is big enough to read.
+
+What the tool reads for this: `///` summaries whole (paragraphs kept, `<see cref>` as the name), tooltips across
+`"a" + "b"` concatenations and with commas inside, `[Range]`, `[Min]`, `[FormerlySerializedAs]`,
+`[CreateAssetMenu(menuName)]`, and descriptions in assets kept whole (up to 1,600 characters) when they are prose.
+
 ## The data model: canonical nodes, placements made while you zoom
 
 `Tools/Build/code_atlas.py build` stores the graph **once**. A record per node:
@@ -85,6 +127,7 @@ nesting, an ambiguous name is settled by its parents' names and skipped only on 
 | `f` | an object's serialized values: `[key, value, referenced node?]` rows, every value of the YAML (lists past 64 items are counted, not dropped) |
 | `im` | the node's pictures, indexes into the thumbnail sheets |
 | `path`, `l`, `ty`, `v`, `sig`, `tip`, `hd`, `ser`, `mods`, `tk`, `uc`, `wh`, `lines` | where it is, its type, value, signature, tooltip, header, serialized or not, modifiers, member kind, Unity class, picture size, line count |
+| `sum`, `ws`, `d`, `tr`, `sc` | a type's or member's doc summary; an object's script's summary; a verb's text, trigger and what more of its element does |
 
 Ids are canonical and readable, the prefix is the kind: `d:` folder, `f:` file, `n:` namespace, `t:` type, `m:` member,
 `o:<file>#<fileID>` Unity object, `v:<file>#<fileID>|<key>` value, `s:<file>#<slug>` doc section, `L:<loop>` loop,
@@ -151,7 +194,7 @@ because only a session can write to claude.ai.
 
 ## Next
 
-- Search the code from the map's find box (`names.json` is already written) and fly through the tree to the hit.
+- Search the code from the map's find box (`names.json` is already written) and fly through the tree to the hit: `window.__codeAtlas.enter(<code ring id>)` and `.fly(place)` already open a Code ring and fly in it (a session checks the page with them in Playwright).
 - More automatic loop links: a game mode's controller and scene from its card, a vessel's prefab and HUD from its class.
 - Shader Graph nodes, the Amoebius port and `Tools/` as more passes; method bodies as call edges.
 - Pictures rendered for nodes that have none (a prefab's look, a vessel's model), the way `/cardart` renders cards.
