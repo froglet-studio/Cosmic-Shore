@@ -40,6 +40,12 @@
       it on a vessel' has no confirmed path.
     fill: One soft currency. Voyage pay is crystals, paid at dock, scaled so a clean voyage is worth about three arcade
       wins.
+  - 'on': np
+    q: The plan says a voyage is 3 to 6 legs and 20 to 40 minutes, but the one job the board offers since 2026-11-21 is
+      the Crystal Run (commit 00373d12f), and its 4-cell run takes about 8 minutes to its stop and 3 more home (commit
+      9addc48ee, the way home at 2x). Is the Crystal Run the short job by design, or the first leg of the longer voyage?
+    fill: The Crystal Run stays the short job (about 11 minutes, one sitting on a phone) and is the first leg the longer
+      voyages chain, so a 20 to 40 minute voyage is 2 to 4 runs with a port between them.
   src: [Docs/Voyages/VOYAGES.md, Docs/Voyages/DEPTH.md, Docs/Voyages/HANDOFF.md]
 - id: voy.port
   parent: voyages
