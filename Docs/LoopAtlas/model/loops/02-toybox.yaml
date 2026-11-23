@@ -33,6 +33,11 @@
       to one.'
     fill: A toy's exit is a crossing. Every toy names the scored loop it is the free version of, and offers it when the
       player has done the toy's verb a few times.
+  - 'on': npx
+    q: 'Every arc in the atlas is fed by winning. A player who only makes things (the painter in
+      Docs/LoopAtlas/personas/journeys.yaml) moves no arc, and has seen every painting and microscene by week 3.'
+    fill: Each week of the Tide adds one painting and one microscene, and a shared painting opens the same canvas for
+      whoever taps it.
   src:
   - Docs/ToySystem/ARCHITECTURE.md
   - Docs/claude/MENU_AND_LAVA_LAMP.md
