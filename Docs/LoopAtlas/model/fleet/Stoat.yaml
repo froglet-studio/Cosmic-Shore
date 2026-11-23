@@ -75,4 +75,78 @@ combos:
     - 'The pair collapses: a ripple strips rivals'
   drivers: [joy, mastery, rival]
   feel: Being flung.
+  gene:
+    genome: Time
+    cue: [gate_next, verb_ready]
+    dials:
+    - - holeLead
+      - distance ahead the hole pair is laid
+      - 30
+      - 200
+      - u
+    - - releaseAngle
+      - turn after the catch at which the AI lets go
+      - 60
+      - 120
+      - deg
+    - - squeeze
+      - how tight the orbit is squeezed
+      - 0
+      - 1
+      - fraction
+    done: A full-kick launch (the lime release) threads the next gate.
+    sight: NEEDLE
+- in: x
+  name: Ripple trap
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Lay the pair across a rival's path and let it collapse as they cross.
+  chain:
+  - - Space
+    - Lay a hole pair across a rival's path
+  - - ''
+    - Let it collapse as they cross
+  - - Charge
+    - The ripple strips a petal of every element
+  drivers: [rival, mastery]
+  feel: A trap only you can see coming.
+  gene:
+    genome: Charge
+    cue: [rival_on_line, verb_ready]
+    dials:
+    - - trapLead
+      - seconds ahead of the rival the pair is laid
+      - 0.5
+      - 4
+      - s
+    done: A ripple strips a rival's petals.
+    sight: BANDIT
+- in: x
+  name: Fulmen
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: 'Orbit near the omni crystals, launch through one: the bolt branches at the rest.'
+  chain:
+  - [Space, Orbit near omni crystals]
+  - [Mass, Heavy launch through one]
+  - - Omni
+    - The bolt burns prisms and branches at other omni crystals
+  drivers: [break, find]
+  feel: Lightning that finds its own way.
+  gene:
+    genome: Space
+    cue: [omni_near, rival_mass_ahead]
+    dials:
+    - - chainCount
+      - omni crystals in reach before one is taken
+      - 1
+      - 5
+      - count
+    - - squeeze
+      - how tight the orbit is squeezed
+      - 0
+      - 1
+      - fraction
+    done: The bolt branches at least once and burns rival prisms.
+    sight: OPAL
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md

@@ -6,13 +6,13 @@ namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
     /// Connection and batching settings for Froglet Analytics, our own analytics server
-    /// (Tools/Analytics/server/, replacing PostHog on 2026-11-06). The asset lives at
+    /// (Tools/Analytics/server/). The asset lives at
     /// Resources/FrogletAnalyticsConfig so the sink loads it without scene wiring, and it ships
     /// already pointed at the server: nobody fills these fields in by hand.
     ///
     /// SECURITY: <see cref="IngestKey"/> is a write-only key that only lets a client SEND events
     /// in the game's own event schema. It is public by design (it ships in every build and sits in
-    /// this public repo), the same way PostHog's project key did. The server checks every event
+    /// this public repo). The server checks every event
     /// against Docs/Analytics/EVENT_SCHEMA.json and rate-limits each sender. Reading data needs a
     /// separate read key that never ships in a build. The server reads the same key from
     /// Tools/Analytics/server/ingest_key.public, and its tests fail if the two differ.

@@ -39,8 +39,11 @@
       thinks of it.
     fill: 'The breath (new loop): after each result, one offered next step chosen from what the round just trained.'
   - 'on': np
-    q: Rounds per sitting and places per sitting are not measured.
-    fill: Aim for 5 to 8 rounds and 1 or 2 places in a sitting; read it from the analytics events.
+    q: Rounds per sitting and places per sitting are not measured. Sessions are (session_started, session_ended), but
+      game_started does not carry their session_id (Docs/Analytics/EVENT_SCHEMA.json), so a round cannot be put in its
+      sitting except by time.
+    fill: Aim for 5 to 8 rounds and 1 or 2 places in a sitting. Add session_id to game_started (Froglet Analytics only,
+      as session_ended does) and count rounds and places per session on the Sessions page.
   - 'on': np
     q: The Session tier starts at 10 minutes, but a commuter's and a casual phone player's sittings are 4 to 8 minutes.
       Rounds fit them (94 to 100% of sittings); a voyage fits 0 to 1% of them as planned and 14 to 21% as built.
