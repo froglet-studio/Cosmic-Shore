@@ -2841,6 +2841,31 @@
       "h": 900,
       "page": "game-cards",
       "title": "Rev 128 - notes: what each one moves, what it costs in Unity, the recommendation"
+    },
+    "R129Compare.dc.html": {
+      "x": 0,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 129 - Compare: the Poster card in our font, Skim Race in four pictures, at rest and hovered"
+    },
+    "R129Row.dc.html": {
+      "x": 2100,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 129 Row - Row: the Arcade with Skim Race inside the cell, and every state - interactive",
+      "is_interactive": true
+    },
+    "R129Notes.dc.html": {
+      "x": 0,
+      "y": 7400,
+      "w": 1920,
+      "h": 900,
+      "page": "game-cards",
+      "title": "Rev 129 - notes: why the pictures miss the cell, the touch-ups, what a pick changes"
     }
   },
   "createdOnFiles": {
@@ -2931,6 +2956,7 @@
     "sec-rev126-2",
     "sec-rev127",
     "sec-rev128",
+    "sec-rev129",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -3021,7 +3047,8 @@
     "rev125",
     "rev126",
     "rev127",
-    "rev128"
+    "rev128",
+    "rev129"
   ],
   "notes": {
     "hud_end": {
@@ -5128,6 +5155,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "game-cards"
+    },
+    "rev129": {
+      "kind": "title1",
+      "text": "Rev 129 - The Poster card in our font; Skim Race's picture made to look like the cell",
+      "x": 0,
+      "y": 5740,
+      "w": 240,
+      "maxW": 6120,
+      "page": "game-cards"
+    },
+    "sec-rev129": {
+      "kind": "rect",
+      "x": -160,
+      "y": 5580,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "game-cards"
     }
   },
   "order": [
@@ -5469,7 +5520,10 @@
     "R128D.dc.html",
     "R128E.dc.html",
     "R128F.dc.html",
-    "R128Notes.dc.html"
+    "R128Notes.dc.html",
+    "R129Compare.dc.html",
+    "R129Row.dc.html",
+    "R129Notes.dc.html"
   ],
   "pages": [
     {

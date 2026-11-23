@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-23 from canvas version `1795405826-718d` of **Frogma**: Rev 41 to Rev 128, 339 boards on 17 tabs. The canvas opens on the tab `game-cards`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-23 from canvas version `1795406768-c5d4` of **Frogma**: Rev 41 to Rev 129, 342 boards on 17 tabs. The canvas opens on the tab `game-cards`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -566,6 +566,12 @@ No boards yet.
 - `R123H.dc.html` (not copied yet) - Rev 123 H - Arcade Poster: the one Shombith picked to grow from (2026-11-22) - interactive
 
 ### Tab: Game Cards  (`game-cards`)
+
+#### Rev 129 - The Poster card in our font; Skim Race's picture made to look like the cell
+
+- [`R129Compare.dc.html`](R129Compare.dc.html) - Rev 129 - Compare: the Poster card in our font, Skim Race in four pictures, at rest and hovered
+- [`R129Row.dc.html`](R129Row.dc.html) - Rev 129 Row - Row: the Arcade with Skim Race inside the cell, and every state - interactive
+- [`R129Notes.dc.html`](R129Notes.dc.html) - Rev 129 - notes: why the pictures miss the cell, the touch-ups, what a pick changes
 
 #### Rev 128 - Game cards, six ways: Skim Race's arcade card beside the card we ship - look, motion and hover, light on performance
 
