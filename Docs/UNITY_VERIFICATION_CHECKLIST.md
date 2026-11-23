@@ -26099,6 +26099,30 @@ from packages this machine cannot fetch). The edit-mode tests `AvatarRippleBorde
       the colour eases to the new one.
 - [ ] Hovering a member's avatar still opens their profile card; the host's kick button still works on its shoulder.
 - [ ] End of a match, Play Again votes: each voter's avatar blooms in round, ringed in their domain colour with the waves.
+
+## Avatar borders everywhere, Rev 127 D (2026-11-23)
+
+Shombith asked for the round border and glow on every avatar he found still square or octagonal: the Home pilot card,
+the friends orb (you and the members), a member's profile card, the profile window's "How others see you" preview and
+its "In a party slot" chip, the avatar picker grid, and the Configure screen's pilot seats. Each owning script now wraps
+its avatar in `AvatarRippleBorder`: your own avatar in a menu glows in `ControlActive` (no match has given you a domain
+yet), a party member or seat in its domain colour, a member whose domain is not known yet wears the quiet ring, and in
+the picker the pick ripples in `Selection` while the rest wear the quiet ring. The border now cuts the largest circle
+that fits the avatar's rect, so a portrait in a non-square region (a Configure seat) is round, not an ellipse.
+The octagon frames are gone from the profile window prefabs and disabled in Menu_Main (Home and the friends drawer);
+the Configure seat's octagon LocalGlow is kept hidden by `ConfigureSeatPedestal` because `author_menu_configure.py`
+cannot run on bleeding-edge today (its `check_pilots_fit` and `validate_g` asserts fail before it writes, unrelated to
+this change). Not run in the Unity editor: none in this session. The reference compile has 0 errors in the changed
+files. The edit-mode tests were not run.
+
+- [ ] Home: the pilot card's avatar is round with a ring and glow; clicking it still opens the profile.
+- [ ] Friends orb (bottom left): your avatar at the centre is round and glowing; party members round in their colour.
+- [ ] Hover a friend's avatar in the drawer: the profile card's avatar is round, ringed and glowing.
+- [ ] Profile window: "How others see you" and the "In a party slot" chip show the round, glowing avatar.
+- [ ] Avatar picker: every avatar is round with a quiet ring; the pick ripples in the selection colour; picking another
+      moves the ripple; pad focus shows a ring round the tile.
+- [ ] Configure (Arcade / Arena) Pilots: each seat's portrait is round, ringed and glowing in its domain colour, with no
+      octagon behind it; changing team re-colours it.
 - [ ] Phone and iPad: the rings stay round (not stretched) and the waves do not get clipped by the panel.
 
 ## Arcade Poster card and the cell in every card picture (2026-11-23, Shombith's pick, Frogma Rev 128 E / Rev 129)

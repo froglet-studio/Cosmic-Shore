@@ -20,6 +20,8 @@ namespace CosmicShore.UI
         [HideInInspector]
         public ProfileIconSelectView IconView;
         ProfileIcon profileIcon;
+        AvatarRippleBorder _border;
+        bool _selected;
         public ProfileIcon ProfileIcon {
             get => profileIcon;
             set
@@ -32,6 +34,17 @@ namespace CosmicShore.UI
         void Awake()
         {
             if (tile) tile.onClick.AddListener(OnClick);
+            // Rev 127 D (Docs/MENU_REDESIGN_B.md section 217): every avatar is round, ringed and glowing; in the
+            // picker the pick ripples in the selection colour and the rest carry the quiet ring.
+            _border = AvatarRippleBorder.EnsureFor(IconImage);
+            ApplyBorder();
+        }
+
+        void ApplyBorder()
+        {
+            if (_border == null) return;
+            if (_selected) _border.ShowToken(UIColorToken.Selection);
+            else _border.ShowUnknown();
         }
 
         public void OnClick()
@@ -48,6 +61,8 @@ namespace CosmicShore.UI
 
         public void SetSelected(bool selected)
         {
+            _selected = selected;
+            ApplyBorder();
             if (tile) tile.IsSelected = selected;
             else if (BorderImage) BorderImage.enabled = selected;
         }

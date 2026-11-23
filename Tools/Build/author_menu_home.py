@@ -375,10 +375,18 @@ def chip_node():
     return n
 
 
+def _disabled(body_fn):
+    """A component body with m_Enabled 0 (kept in the scene so its fileIDs stay, drawing and masking nothing)."""
+    return lambda ctx, go: body_fn(ctx, go).replace("  m_Enabled: 1\n", "  m_Enabled: 0\n", 1)
+
+
 def avatar_nodes():
+    # Rev 127 D (section 217): the avatar wears the round border (AvatarRippleBorder, built round it at run time by
+    # HomeScreen); the octagon clip that cut it would also cut the border's halo, so it masks nothing now.
     clip = N("Avatar/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-4, -4)))
-    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_oct_fill"), True)) \
-        .add("mask", 114, A.mask(False))
+    clip.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, _disabled(K.image(K.WHITE, K.kit_sprite("kit_ring_fill"), False))) \
+        .add("mask", 114, _disabled(A.mask(False)))
     av = clip.child(N("Avatar/Clip/Avatar", "Avatar", STRETCH))
     av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER, preserve=False))
     return clip
@@ -494,9 +502,9 @@ def patch_header(p):
     # The hint moved under its fade wrapper (HintDock): a scene written before that still lists it here.
     p.children(I["panel_rt"], [k for k in p.kids(I["panel_rt"]) if str(k) != str(p.ctx.rt("Hint"))])
 
-    # Avatar: octagon ring (its own Image), a masked octagon holding the avatar art, the lamp on top.
+    # Avatar: a clear round hit area (the button's target), the avatar art in its round border, the lamp on top.
     p.rect(I["avatar_rt"], TL(CHIP["x"] + 14, CHIP["y"] + 14, 84, 84))
-    p.body(I["avatar_img"], img_body(tok("TextLight"), K.kit_sprite("kit_oct_fill"), True, raycast=True), I["avatar_go"])
+    p.body(I["avatar_img"], img_body(tok("TextLight", 0.0), K.kit_sprite("kit_ring_fill"), False, raycast=True), I["avatar_go"])
     clip_rt = p.emit(avatar_nodes(), I["avatar_rt"], I["avatar_rt"])
     p.children(I["avatar_rt"], [clip_rt, I["lamp_rt"]])
     p.field(I["home_comp"], "avatarImage", ref(p.ctx.c("Avatar/Clip/Avatar", "img")))

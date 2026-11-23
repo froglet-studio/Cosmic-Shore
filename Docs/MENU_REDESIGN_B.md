@@ -8985,6 +8985,13 @@ party seats (`FriendInfoSlot` / `KitPartySlot`, replacing the octagon ring, gap 
 `PartySlotDomainGlow` is retired. The connecting screen's roster draws no avatars today, so it has none. Not yet seen in
 Unity: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Avatar borders, Rev 127 D Ripple".
 
+
+**Everywhere (2026-11-23).** Shombith sent screenshots of avatars still square or octagonal and asked for the border and
+glow on all of them. The same `AvatarRippleBorder` now wraps the Home pilot card, the friends orb (you and the members),
+the drawer's profile card, the profile window's preview and party-slot chip, the avatar picker and the Configure pilot
+seats. Your own avatar in a menu glows in `ControlActive` (no domain yet); the picker's pick ripples in `Selection` and
+the rest wear the quiet ring. The border cuts the largest circle that fits the avatar's rect, so a non-square region
+still gets a circle. Editor checks: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Avatar borders everywhere".
 ## 222. Rev 128 mockups: the arcade game card, six ways, beside the card we ship (2026-11-23; Shombith picked E, the Poster)
 
 **Asked (Shombith, 2026-11-23):** "Start a thread to redesign the arcade/ arena game cards. Currently they are still
