@@ -38,7 +38,7 @@
   ],
   "bugs": {
     "open": 386,
-    "source": "208 branch(es)",
+    "source": "209 branch(es)",
     "top": [
       {
         "id": "E-cdf0c783c1",
@@ -74,34 +74,6 @@
     "validating": 39
   },
   "captures": [
-    {
-      "branch": "bleeding-edge",
-      "commit": "2477604a45",
-      "contaminated": [
-        "frame cap active"
-      ],
-      "cpuBusyMs": 451.1424865722656,
-      "gcKB": 4717.69091796875,
-      "key": "Voyage|Menu_Main-slower",
-      "timestamp": "2026-11-21 18:40:55",
-      "user": "owner",
-      "valid": true,
-      "verdict": "not adopted as a baseline (frame cap active)"
-    },
-    {
-      "branch": "bleeding-edge",
-      "commit": "2477604a45",
-      "contaminated": [
-        "frame cap active"
-      ],
-      "cpuBusyMs": 164.19224548339844,
-      "gcKB": 796.8740234375,
-      "key": "Voyage|Voyage-slow",
-      "timestamp": "2026-11-21 18:42:02",
-      "user": "owner",
-      "valid": true,
-      "verdict": "not adopted as a baseline (frame cap active)"
-    },
     {
       "branch": "bleeding-edge",
       "commit": "2477604a45",
@@ -185,6 +157,34 @@
       "user": "owner",
       "valid": true,
       "verdict": "not adopted as a baseline (frame cap active)"
+    },
+    {
+      "branch": "bleeding-edge",
+      "commit": "2477604a45",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 8.830666542053223,
+      "gcKB": 162.40774536132812,
+      "key": "MinigameHedgerow|MinigameHedgerow",
+      "timestamp": "2026-11-21 23:13:44",
+      "user": "owner",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active)"
+    },
+    {
+      "branch": "bleeding-edge",
+      "commit": "2477604a45",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 15.616087913513184,
+      "gcKB": 166.25782775878906,
+      "key": "Menu_Main|Garland",
+      "timestamp": "2026-11-21 23:22:38",
+      "user": "owner",
+      "valid": true,
+      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
     }
   ],
   "gates": [
@@ -210,7 +210,7 @@
     }
   ],
   "gatesOk": false,
-  "generatedUtc": "2026-11-22T13:39:06Z",
+  "generatedUtc": "2026-11-23T16:33:50Z",
   "next": [
     "Fix the red gate 'mathf params alloc': mathf-params-alloc check: 6 FAILURE(S) (python3 Tools/Build/perf_hunt.py gates)",
     "Resolve: Performance gate 'mathf params alloc' is red: mathf-params-alloc check: 6 FAILURE(S)",
@@ -227,13 +227,14 @@
     "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): marker BehaviourUpdate 1.083 -> 1.5775 ms/frame (+46%)",
     "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): marker LateBehaviourUpdate 0.2424 -> 0.4651 ms/frame (+92%)",
     "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): marker Fauna.BodySync 0.1876 -> 0.4483 ms/frame (+139%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): cpuBusyMs 10.338772773742676 -> 17.126201629638672 (+66%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): p95Ms 22.80489730834961 -> 32.32310104370117 (+42%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): gcKB 46.97063446044922 -> 200.9027557373047 (+328%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): marker PlayerLoop 12.32 -> 17.2362 ms/frame (+40%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): marker UGUI.Rendering.UpdateBatches 3.5317 -> 5.2659 ms/frame (+49%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): marker Inl_UniversalRenderTotal 2.0078 -> 3.2818 ms/frame (+63%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): marker BehaviourUpdate 1.7693 -> 3.2501 ms/frame (+84%)",
+    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): cpuBusyMs 10.338772773742676 -> 15.616087913513184 (+51%)",
+    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): p95Ms 22.80489730834961 -> 31.074495315551758 (+36%)",
+    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): gcKB 46.97063446044922 -> 166.25782775878906 (+254%)",
+    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): marker PlayerLoop 12.32 -> 16.5453 ms/frame (+34%)",
+    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): marker BehaviourUpdate 1.7693 -> 2.5381 ms/frame (+43%)",
+    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): marker CoroutinesDelayedCalls 0.1594 -> 0.8658 ms/frame (+443%)",
+    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): marker LightFauna.Tick.PrismScan 0.0977 -> 0.7281 ms/frame (+645%)",
+    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): marker LightFauna.Feed 0.0298 -> 0.2972 ms/frame (+897%)",
     "Resolve: Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): cpuBusyMs 130.13706970214844 -> 220.8030242919922 (+70%)",
     "Resolve: Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): p95Ms 201.87890625 -> 304.6697998046875 (+51%)",
     "Resolve: Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): gcKB 123.43673706054688 -> 190.07241821289062 (+54%)",
@@ -288,13 +289,14 @@
     "Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): marker BehaviourUpdate 1.083 -> 1.5775 ms/frame (+46%)",
     "Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): marker LateBehaviourUpdate 0.2424 -> 0.4651 ms/frame (+92%)",
     "Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): marker Fauna.BodySync 0.1876 -> 0.4483 ms/frame (+139%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): cpuBusyMs 10.338772773742676 -> 17.126201629638672 (+66%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): p95Ms 22.80489730834961 -> 32.32310104370117 (+42%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): gcKB 46.97063446044922 -> 200.9027557373047 (+328%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): marker PlayerLoop 12.32 -> 17.2362 ms/frame (+40%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): marker UGUI.Rendering.UpdateBatches 3.5317 -> 5.2659 ms/frame (+49%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): marker Inl_UniversalRenderTotal 2.0078 -> 3.2818 ms/frame (+63%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 18:50:21, commit ?..2477604a45): marker BehaviourUpdate 1.7693 -> 3.2501 ms/frame (+84%)",
+    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): cpuBusyMs 10.338772773742676 -> 15.616087913513184 (+51%)",
+    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): p95Ms 22.80489730834961 -> 31.074495315551758 (+36%)",
+    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): gcKB 46.97063446044922 -> 166.25782775878906 (+254%)",
+    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): marker PlayerLoop 12.32 -> 16.5453 ms/frame (+34%)",
+    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): marker BehaviourUpdate 1.7693 -> 2.5381 ms/frame (+43%)",
+    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): marker CoroutinesDelayedCalls 0.1594 -> 0.8658 ms/frame (+443%)",
+    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): marker LightFauna.Tick.PrismScan 0.0977 -> 0.7281 ms/frame (+645%)",
+    "Performance regression in Menu_Main|Garland (owner, 2026-11-21 23:22:38, commit ?..2477604a45): marker LightFauna.Feed 0.0298 -> 0.2972 ms/frame (+897%)",
     "Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): cpuBusyMs 130.13706970214844 -> 220.8030242919922 (+70%)",
     "Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): p95Ms 201.87890625 -> 304.6697998046875 (+51%)",
     "Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): gcKB 123.43673706054688 -> 190.07241821289062 (+54%)",
