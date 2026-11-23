@@ -378,7 +378,6 @@
    "id": "breath",
    "parent": "sitting",
    "at": 4,
-   "in": "px",
    "name": "The breath",
    "tier": 3,
    "kind": "loop",
@@ -414,16 +413,9 @@
    "src": [
     "proposal"
    ],
-   "plan": {
-    "s": "decided",
+   "now": {
+    "s": "built",
     "note": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off."
-   },
-   "build": {
-    "s": "building",
-    "what": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.",
-    "by": "Garrett",
-    "at": "2026-11-21",
-    "branch": "claude/retain-breath"
    }
   },
   {
@@ -1836,8 +1828,8 @@
    "reps": "4",
    "repsOf": "quests before the Hangar",
    "now": {
-    "s": "dark",
-    "note": "Scurry, Hex Race, Joust, Maelstrom, then the Vessel Hangar. Stood down by the master unlock."
+    "s": "built",
+    "note": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar."
    },
    "holes": [
     {
@@ -1850,18 +1842,7 @@
     "Docs/MENU_PROGRESSION_AND_IAP.md section 2",
     "Docs/QUEST_TRACK_AND_BREADCRUMB.md",
     "Docs/LoopAtlas/sim/REPORT.md"
-   ],
-   "plan": {
-    "s": "decided",
-    "note": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar."
-   },
-   "build": {
-    "s": "building",
-    "what": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar.",
-    "by": "Garrett",
-    "at": "2026-11-21",
-    "branch": "claude/retain-economy"
-   }
+   ]
   },
   {
    "id": "arc.fleet",
@@ -2248,7 +2229,7 @@
    "repsOf": "sittings with a friend",
    "now": {
     "s": "built",
-    "note": "The party lobby, invites, friends and AI backfill exist. Crew vessels (two to four seats on one hull) are local only until networked."
+    "note": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided."
    },
    "prop": {
     "s": "change",
@@ -2279,18 +2260,7 @@
     "Docs/claude/MULTIPLAYER_AND_SOCIAL.md",
     "Docs/Voyages/PARTY.md",
     "Docs/LoopAtlas/sim/REPORT.md"
-   ],
-   "plan": {
-    "s": "decided",
-    "note": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided."
-   },
-   "build": {
-    "s": "building",
-    "what": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided.",
-    "by": "Garrett",
-    "at": "2026-11-21",
-    "branch": "claude/retain-economy"
-   }
+   ]
   },
   {
    "id": "arc.replay",
@@ -3635,7 +3605,7 @@
     "sitting",
     "arcade"
    ],
-   "stage": "building",
+   "stage": "current",
    "branch": "claude/retain-breath"
   },
   {
@@ -3685,7 +3655,7 @@
     "voyages",
     "arc.fleet"
    ],
-   "stage": "building",
+   "stage": "current",
    "branch": "claude/retain-economy"
   },
   {
@@ -3714,7 +3684,7 @@
     "voy.home",
     "sitting"
    ],
-   "stage": "building",
+   "stage": "current",
    "branch": "claude/retain-voyage-chapters"
   },
   {
@@ -3752,7 +3722,7 @@
     "arc.replay",
     "arc.fleet"
    ],
-   "stage": "building",
+   "stage": "current",
    "branch": "claude/retain-makers"
   }
  ],

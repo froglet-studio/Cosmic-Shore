@@ -31,3 +31,10 @@
 {"at": "2026-11-21", "verb": "develop", "target": "arc.social", "by": "Garrett", "text": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided."}
 {"at": "2026-11-21", "verb": "start", "target": "arc.social", "by": "Garrett", "branch": "claude/retain-economy"}
 {"at": "2026-11-20", "verb": "start", "target": "era.tide", "by": "Claude", "branch": "claude/build-era.tide"}
+{"at": "2026-11-23", "verb": "done", "target": "P5", "by": "Garrett", "text": "The breath between rounds"}
+{"at": "2026-11-23", "verb": "done", "target": "P10", "by": "Garrett", "text": "One currency"}
+{"at": "2026-11-23", "verb": "done", "target": "P13", "by": "Garrett", "text": "Voyage chapters"}
+{"at": "2026-11-23", "verb": "done", "target": "P16", "by": "Garrett", "text": "Making pays"}
+{"at": "2026-11-23", "verb": "done", "target": "breath", "by": "Garrett", "text": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.", "status": "built", "branch": "claude/retain-breath"}
+{"at": "2026-11-23", "verb": "done", "target": "arc.unlock", "by": "Garrett", "text": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar.", "status": "built", "branch": "claude/retain-economy"}
+{"at": "2026-11-23", "verb": "done", "target": "arc.social", "by": "Garrett", "text": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided.", "status": "built", "branch": "claude/retain-economy"}
