@@ -135,6 +135,46 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ReleaseSwipesBothClawsDownAndAcrossDiagonally()
+        {
+            // Design ask 2026-11-23: "make it swipe across on release, so both claws can swipe down and across
+            // diagonally". LT's claw sits on the left, so across is +x; RT's on the right, so across is -x.
+            Assert.IsTrue(_claw.SwipeEnabled, "release swipes by default");
+            Assert.Greater(_claw.SwipeSeconds, 0f);
+            Assert.Less(_claw.SwipeSeconds, 0.6f, "a slash, not a slow sweep");
+
+            Vector3 start = _claw.SwipeRotation(true, 0f) * Vector3.forward;
+            Assert.Less((start - Vector3.forward).magnitude, 1e-4f, "the swipe starts where the claw was held");
+
+            Vector3 lt = _claw.SwipeRotation(true, 1f) * Vector3.forward;
+            Vector3 rt = _claw.SwipeRotation(false, 1f) * Vector3.forward;
+            Assert.Less(lt.y, -0.3f, "LT's claw swipes DOWN");
+            Assert.Greater(lt.x, 0.3f, "LT's claw swipes ACROSS, toward the right");
+            Assert.Less(rt.y, -0.3f, "RT's claw swipes DOWN");
+            Assert.Less(rt.x, -0.3f, "RT's claw swipes ACROSS, toward the left");
+            Assert.AreEqual(lt.y, rt.y, 1e-4f, "the two swipes mirror each other");
+            Assert.AreEqual(lt.x, -rt.x, 1e-4f);
+
+            float halfway = Vector3.Angle(Vector3.forward, _claw.SwipeRotation(true, 0.5f) * Vector3.forward);
+            Assert.Greater(halfway, 0.5f * _claw.SwipeArcDegrees, "the swipe is fastest as it leaves (eased out)");
+            Assert.Less(halfway, _claw.SwipeArcDegrees);
+        }
+
+        [Test]
+        public void SwipeKeepsTheSizeOfTheHardestRecentPull()
+        {
+            // Letting go of a trigger passes through every lighter pressure; the swipe must not shrink with it.
+            float peak = 0f, age = 0f, dt = 1f / 60f;
+            for (int f = 0; f < 30; f++) _claw.TrackSwipePressure(ref peak, ref age, 1f, dt);
+            for (int f = 0; f < 6; f++) _claw.TrackSwipePressure(ref peak, ref age, 1f - f / 6f, dt);   // 0.1 s let-go
+            Assert.AreEqual(1f, peak, 1e-4f, "a quick release keeps the full-pull swipe");
+
+            // Easing off on purpose and holding a lighter pull sizes the swipe to that pull.
+            for (int f = 0; f < 60; f++) _claw.TrackSwipePressure(ref peak, ref age, 0.3f, dt);
+            Assert.AreEqual(0.3f, peak, 1e-4f, "a pull held lighter for a while is the swipe's size");
+        }
+
+        [Test]
         public void ClawIsAlwaysTheShortestReach()
         {
             float sniperReach = _sniper.ProjectileSpeed * _sniper.ProjectileTime;

@@ -93,6 +93,18 @@ momentum."*
   `cellRechargeDelay` 0.25 s after that claw stops. An empty cell cuts its claw out until you
   pull again with charge in it. The claw's glow **dims as its cell empties**, which is the read for now.
   `GrizzlyFlamethrowerActionExecutor.CellFill(side)` is there for a HUD bar.
+- **Release swipes** (2026-11-23: *"make the plasma claw activate with trigger pressure, also deciding the size,
+  and make it swipe across on release, so both claws can swipe down and across diagonally"*): the claw still comes
+  out the moment the trigger passes its 5% deadzone and live pressure still sizes it. Letting go no longer just
+  hides it: `ReleaseSpray` **slashes** the claw from where it was held `swipeArcDegrees` 80° **down and inward**
+  over `swipeSeconds` 0.22 s, eased out (fastest as it leaves): LT's claw down-right, RT's down-left, mixed by
+  `swipeDiagonalDegrees` 45 (0 = straight down, 90 = straight across), so the pair cross in front of the nose. The
+  fingers slice and burn the whole way. The swipe is as big as the **hardest pull in the last**
+  `swipeSizeMemorySeconds` 0.25 s, because a trigger passes through every lighter pressure on its way out; ease off
+  and hold a lighter pull for longer than that and the swipe shrinks to match. Each swipe costs `swipeCellCost` 0.1 of
+  the claw's cell, and an empty cell does not swipe. A new pull or a weapon change cancels a swipe; `swipeEnabled` off
+  restores release-ends. Pads with no analog trigger, keyboard and mouse swipe at full size; the centred legacy
+  spray does not swipe.
 - **Sniper zoom on LT** (2026-10-17: *"make the pressure of LT control the zoom distance of the scope"*): while
   the scope is up, LT's pull sets its field of view from `scopeWideFov` 30° (a feather) to `scopeNarrowFov` 5°
   (a full squeeze), eased at `scopeZoomRate` 10/s (`GrizzlySniperShotActionSO`; the executor raises

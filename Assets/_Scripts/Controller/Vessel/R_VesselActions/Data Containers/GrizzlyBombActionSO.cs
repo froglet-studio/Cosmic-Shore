@@ -12,7 +12,8 @@ namespace CosmicShore.Gameplay
     /// peak pressure), pull again freezes, release detonates. GRIZZLY_TRIGGER_BOMBS.md.</item>
     /// <item><b>Plasma claw</b> - LT sprays a cone forward from the LEFT front of the hull, RT from
     /// the RIGHT front, for as long as it is held; live pressure sets the cone's size, always the
-    /// Grizzly's shortest-range weapon.</item>
+    /// Grizzly's shortest-range weapon. Letting go SWIPES the claw down and across toward the centre line
+    /// (2026-11-23), LT down-right and RT down-left.</item>
     /// <item><b>Sniper</b> - LT holds the SCOPE (the view rides the round in flight for as long as
     /// LT is held) and LT's pressure is its ZOOM (2026-10-17); RT FIRES, gated by the sniper's cooldown.</item>
     /// </list>
@@ -93,7 +94,7 @@ namespace CosmicShore.Gameplay
             switch (mode)
             {
                 case GrizzlyWeaponModeExecutor.WeaponMode.Flamethrower:
-                    execs.Get<GrizzlyFlamethrowerActionExecutor>()?.EndSpray(side);
+                    execs.Get<GrizzlyFlamethrowerActionExecutor>()?.ReleaseSpray(side);   // swipes, then ends
                     break;
 
                 case GrizzlyWeaponModeExecutor.WeaponMode.Sniper:

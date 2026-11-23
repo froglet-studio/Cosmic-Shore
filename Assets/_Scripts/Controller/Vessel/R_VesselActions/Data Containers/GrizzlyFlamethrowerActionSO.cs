@@ -51,6 +51,20 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("FMOD event played at each cut. Leave empty for silence (an unwired slot, never a placeholder).")]
         EventReference sliceEvent;
 
+        [Header("Swipe on release (2026-11-23: 'make it swipe across on release, so both claws can swipe down and across diagonally')")]
+        [SerializeField, Tooltip("On: letting go of a trigger SWIPES its claw down and across toward the hull's centre line instead of just vanishing, slicing everything the fingers pass through. LT's claw slashes down-right and RT's down-left, so the pair cross in front of the nose. Off: release ends the claw as before.")]
+        bool swipeEnabled = true;
+        [SerializeField, Tooltip("Seconds one swipe takes, start to finish. Short on purpose: a slash, not a sweep.")]
+        float swipeSeconds = 0.22f;
+        [SerializeField, Tooltip("Degrees the claw turns over the whole swipe, from where it was held.")]
+        float swipeArcDegrees = 80f;
+        [SerializeField, Tooltip("Direction of the swipe: 0 = straight down, 90 = straight across toward the centre line. 45 = the diagonal.")]
+        [Range(0f, 90f)] float swipeDiagonalDegrees = 45f;
+        [SerializeField, Tooltip("Energy cell spent by each swipe, as a fraction of a full cell. A claw whose cell is empty does not swipe.")]
+        [Range(0f, 1f)] float swipeCellCost = 0.1f;
+        [SerializeField, Tooltip("The swipe is as big as the HARDEST pull within this many seconds before release, so easing off the trigger to let go does not shrink the swipe.")]
+        float swipeSizeMemorySeconds = 0.25f;
+
         [Header("Muzzles (one per trigger)")]
         [SerializeField, Tooltip("How far each claw's root sits to its own side of the hull's centre line, in the hull's local units (LT left, RT right).")]
         float sideOffset = 6f;
@@ -136,6 +150,45 @@ namespace CosmicShore.Gameplay
         public Color WhipBodyColor => whipBodyColor;
         public Color WhipRimColor => whipRimColor;
         public float WhipEmptyBrightness => whipEmptyBrightness;
+        public bool SwipeEnabled => swipeEnabled;
+        public float SwipeSeconds => swipeSeconds;
+        public float SwipeArcDegrees => swipeArcDegrees;
+        public float SwipeDiagonalDegrees => swipeDiagonalDegrees;
+        public float SwipeCellCost => swipeCellCost;
+        public float SwipeSizeMemorySeconds => swipeSizeMemorySeconds;
+
+        /// <summary>
+        /// The swipe's turn at <paramref name="progress01"/> (0 = where the claw was held, 1 = the end of the slash),
+        /// in the CLAW's own frame: apply it after the claw's aim (<c>aim * SwipeRotation(...)</c>). The claw's
+        /// forward turns toward "down and inward": down, and toward the hull's centre line - +x for LT's claw on the
+        /// left, -x for RT's on the right - mixed by <c>swipeDiagonalDegrees</c>. Eased out: fastest as it leaves.
+        /// </summary>
+        public Quaternion SwipeRotation(bool leftClaw, float progress01)
+        {
+            float p = Mathf.Clamp01(progress01);
+            float eased = 1f - (1f - p) * (1f - p);
+            float diag = swipeDiagonalDegrees * Mathf.Deg2Rad;
+            var motion = new Vector3((leftClaw ? 1f : -1f) * Mathf.Sin(diag), -Mathf.Cos(diag), 0f);
+            // Rotating forward about cross(forward, motion) by a positive angle carries it toward motion.
+            return Quaternion.AngleAxis(swipeArcDegrees * eased, Vector3.Cross(Vector3.forward, motion));
+        }
+
+        /// <summary>
+        /// Remembers the hardest pull within the last <c>swipeSizeMemorySeconds</c> (call once a frame with the live
+        /// pressure). A trigger eases through every lighter pressure on its way out, so sizing the swipe by the
+        /// pressure AT release would always make the smallest one.
+        /// </summary>
+        public float TrackSwipePressure(ref float peak, ref float peakAge, float live01, float dt)
+        {
+            live01 = Mathf.Clamp01(live01);
+            peakAge += dt;
+            if (live01 >= peak || peakAge > swipeSizeMemorySeconds)
+            {
+                peak = live01;
+                peakAge = 0f;
+            }
+            return peak;
+        }
 
         /// <summary>Cell fraction spent per second spraying at pressure 0..1: the lightest pull
         /// empties a full cell in <c>cellSeconds</c>, the largest <c>largeFlameDrainMultiplier</c>

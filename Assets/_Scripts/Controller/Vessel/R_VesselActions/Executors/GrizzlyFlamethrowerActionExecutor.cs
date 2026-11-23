@@ -30,7 +30,11 @@ namespace CosmicShore.Gameplay
     /// claw out until the trigger is pulled again with charge in it. The fingers' glow dims as the cell empties;
     /// <see cref="CellFill"/> is the HUD read. Simulated on every peer from the replicated presses and analog.</para>
     ///
-    /// <para>Every spray ends when the active weapon changes away from the claw.</para>
+    /// <para><b>Release swipes</b> (2026-11-23): letting go of a trigger slashes its claw down and across toward the
+    /// hull's centre line (<see cref="ReleaseSpray"/>), sized by the hardest recent pull, so LT and RT can cross
+    /// in front of the nose. See GRIZZLY_TRIGGER_BOMBS.md.</para>
+    ///
+    /// <para>Every spray, and every swipe, ends when the active weapon changes away from the claw.</para>
     /// </summary>
     public sealed class GrizzlyFlamethrowerActionExecutor : ShipActionExecutorBase
     {
@@ -44,6 +48,9 @@ namespace CosmicShore.Gameplay
             public float Fill = 1f;                 // energy cell, 0..1
             public float IdleSince = float.NegativeInfinity;
             public GrizzlyFlamethrowerActionSO Config;   // last config sprayed, for the recharge
+            public float SwipePeak, SwipePeakAge;        // hardest recent pull: the size of the release swipe
+            public bool Swiping;
+            public IVesselStatus Status;                 // who is spraying (the swipe runs after the press is gone)
         }
 
         // 0 = LT (left front), 1 = RT (right front), 2 = centre (no side).
@@ -103,6 +110,9 @@ namespace CosmicShore.Gameplay
 
             var spray = _sprays[slot];
             spray.Config = so;
+            spray.Status = status;
+            spray.SwipePeak = 0f;
+            spray.SwipePeakAge = 0f;
             if (spray.Fill <= 0f) return;   // empty cell: nothing until it recharges
             spray.Cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
 
@@ -116,9 +126,37 @@ namespace CosmicShore.Gameplay
             SprayAsync(so, status, side, spray.Cts.Token).Forget();
         }
 
+        /// <summary>
+        /// The trigger let go (2026-11-23: "make it swipe across on release, so both claws can swipe down and across
+        /// diagonally"). A held side claw with charge left SLASHES: it keeps its size from the hardest recent pull and
+        /// turns down and inward over <c>swipeSeconds</c> (LT down-right, RT down-left), slicing all the way, then
+        /// ends. Anything else - swipe off, the centred legacy spray, an empty cell, no claw out - just ends.
+        /// </summary>
+        public void ReleaseSpray(GrizzlyBombActionSO.TriggerSide? side)
+        {
+            var spray = _sprays[SlotOf(side)];
+            var so = spray.Config;
+            if (spray.Cts == null || spray.Swiping || !side.HasValue || !so || !so.SwipeEnabled ||
+                so.SwipeSeconds <= 0f || spray.Fill <= 0f || !spray.Whips)
+            {
+                if (!spray.Swiping) EndSpray(side);
+                return;
+            }
+
+            // Stop the hold loop and hand the same slot to the swipe; the claw stays out, so the HUD's
+            // spray-active read does not flicker between the two.
+            spray.Cts.Cancel();
+            spray.Cts.Dispose();
+            spray.Cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            spray.Fill = Mathf.Max(0f, spray.Fill - so.SwipeCellCost);
+            spray.Swiping = true;
+            SwipeAsync(so, spray.Status, side.Value, spray.SwipePeak, spray.Cts.Token).Forget();
+        }
+
         public void EndSpray(GrizzlyBombActionSO.TriggerSide? side)
         {
             var spray = _sprays[SlotOf(side)];
+            spray.Swiping = false;
             spray.Whips?.Hide();
             if (spray.Cts == null) return;
             spray.Cts.Cancel();
@@ -193,6 +231,7 @@ namespace CosmicShore.Gameplay
                     float pressure = PressureOf(status, side);
                     float range = so.RangeForPressure(pressure);
                     float spread = so.SpreadForPressure(pressure);
+                    so.TrackSwipePressure(ref spray.SwipePeak, ref spray.SwipePeakAge, pressure, Time.deltaTime);
 
                     // The cell: bigger flames burn it faster. Empty cuts the claw out.
                     spray.Fill = Mathf.Max(0f, spray.Fill - so.CellDrainPerSecond(pressure) * Time.deltaTime);
@@ -200,7 +239,7 @@ namespace CosmicShore.Gameplay
                     var vesselTf = status?.Transform;
                     if (spray.Whips && vesselTf)
                         spray.Whips.Show(so, vesselTf.TransformPoint(LocalApex(so, SlotOf(side))),
-                                         vesselTf.rotation * Quaternion.Euler(-so.TiltUpDegrees, Yaw(so, SlotOf(side)), 0f),
+                                         vesselTf.rotation * HeldAim(so, SlotOf(side)),
                                          range, spread, spray.Fill, Time.deltaTime);
                     if (spray.Fill <= 0f)
                     {
@@ -219,6 +258,50 @@ namespace CosmicShore.Gameplay
 
                     await UniTask.Yield(PlayerLoopTiming.Update, token);
                 }
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        /// <summary>The held claw's aim in the hull's frame: tilted up, turned outward to its own side.</summary>
+        static Quaternion HeldAim(GrizzlyFlamethrowerActionSO so, int slot) =>
+            Quaternion.Euler(-so.TiltUpDegrees, Yaw(so, slot), 0f);
+
+        /// <summary>
+        /// The release swipe: the claw keeps the size of the hardest recent pull (<paramref name="pressure"/>) and
+        /// turns from its held aim down and inward over <c>swipeSeconds</c>, riding the hull as it flies. The fingers
+        /// slice and burn the whole way (<see cref="ContactAlongClaws"/>), and the rigid cords lag the turn, so the
+        /// tips trail like a real slash. Ends the claw when done; a new pull or a weapon change cancels it.
+        /// </summary>
+        async UniTaskVoid SwipeAsync(GrizzlyFlamethrowerActionSO so, IVesselStatus status,
+            GrizzlyBombActionSO.TriggerSide side, float pressure, CancellationToken token)
+        {
+            try
+            {
+                var burn = PrismBurnManager.EnsureInstance();
+                var spray = _sprays[(int)side];
+                int slot = (int)side;
+                bool left = side == GrizzlyBombActionSO.TriggerSide.Left;
+                float range = so.RangeForPressure(pressure);
+                float spread = so.SpreadForPressure(pressure);
+                int igniteBudget = so.IgnitesPerTick;
+                float elapsed = 0f;
+
+                while (!token.IsCancellationRequested)
+                {
+                    elapsed += Time.deltaTime;
+                    float progress = elapsed / so.SwipeSeconds;
+
+                    var vesselTf = status?.Transform;
+                    if (!spray.Whips || !vesselTf) break;
+                    spray.Whips.Show(so, vesselTf.TransformPoint(LocalApex(so, slot)),
+                                     vesselTf.rotation * HeldAim(so, slot) * so.SwipeRotation(left, progress),
+                                     range, spread, spray.Fill, Time.deltaTime);
+                    ContactAlongClaws(so, status, spray.Whips, burn, ref igniteBudget);
+
+                    if (progress >= 1f) break;
+                    await UniTask.Yield(PlayerLoopTiming.Update, token);
+                }
+                if (!token.IsCancellationRequested) EndSpray(side);
             }
             catch (OperationCanceledException) { }
         }
