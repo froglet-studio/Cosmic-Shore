@@ -74,7 +74,7 @@
    "rule": "The AIs learn from recorded human play on their own: every editor race is recorded and sent automatically and the learning sweep relearns the AIs from it; no person is ever asked to run a learner, report or test command.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 201
+    "line": 260
    },
    "kind": "LOCKED",
    "area": "ai",
@@ -154,7 +154,7 @@
    "rule": "An AI is trained in its own vessel's minigames (Time first), never in Regatta or any arena; arena play is rebuilt later from those skills.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 207
+    "line": 266
    },
    "kind": "quote",
    "area": "ai",
@@ -202,7 +202,7 @@
    "rule": "Every recorded flight names its pilot (human, mixed, AI or trainer) and only a person's flights reach a learner; the AI never learns from a flight the AI or the trainer flew.",
    "source": {
     "file": "Docs/AI_SYSTEM/AUTO_LEARNING.md",
-    "line": 147
+    "line": 160
    },
    "kind": "decision",
    "area": "ai",
@@ -298,7 +298,7 @@
    "rule": "A vessel joins an arena card (Regatta) only after its AI is good in its own Time game at I1-I4; the arena is designed from those AI skills, never the other way round.",
    "source": {
     "file": "Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md",
-    "line": 524
+    "line": 619
    },
    "kind": "quote",
    "area": "ai",
@@ -362,7 +362,7 @@
    "rule": "A seat's special view (the Pistol's side view) is the real game drawn by the real renderer with real meshes and materials, never a stylised stand-in.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 5146
+    "line": 6964
    },
    "kind": "quote",
    "area": "camera",
@@ -394,7 +394,7 @@
    "rule": "A scope is a picture-in-picture, never a zoom of the whole gameplay camera.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 3815
+    "line": 5633
    },
    "kind": "decision",
    "area": "camera",
@@ -538,7 +538,7 @@
    "rule": "A dying limb condenses into a cytoplasm shard on its own fade clock (one limb in five; the rest evaporate), so nothing pops and no shard is ever removed to make room.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12164
+    "line": 12249
    },
    "kind": "quote",
    "area": "ecology",
@@ -602,7 +602,7 @@
    "rule": "A withering spindle may condense into a cytoplasm shard on its own fade clock (every fifth limb, after Garrett toned it down 5x the same day); shards carry no mass and no collider, and a shard is never culled to make room.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 266
+    "line": 277
    },
    "kind": "quote",
    "area": "ecology",
@@ -618,7 +618,7 @@
    "rule": "A creature changes domain only through the Jacks' net steal, and is born in a player's colour only through the Jacks' omni crystal; its offspring inherit that colour and nothing else about it changes (it eats, breeds, starves and dies by its own rules).",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 71
+    "line": 77
    },
    "kind": "quote",
    "area": "ecology",
@@ -634,7 +634,7 @@
    "rule": "Every creature is scaled to the one crystal size keeping its designed heart:body proportion; body-measured lengths (spacing, reach, bite) scale with it, speeds stay in world units.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12296
+    "line": 12381
    },
    "kind": "quote",
    "area": "ecology",
@@ -650,7 +650,7 @@
    "rule": "A Mass creature has size: its body holds the Mass heart's full segment swing clear of every shield, so the crystal's columns never clip the body.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12420
+    "line": 12505
    },
    "kind": "quote",
    "area": "ecology",
@@ -666,7 +666,7 @@
    "rule": "A Space creature is scaled whole beyond its Mass sibling (by the lattice's own Space:Mass reach) and eroded thinner where it is thickest, so Space takes room: more spread, more reach, a spindlier body.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12472
+    "line": 12557
    },
    "kind": "quote",
    "area": "ecology",
@@ -682,7 +682,7 @@
    "rule": "An elemental form reshapes only a creature's own body skins; the heart crystal is never stretched, eroded or scaled with the body.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12493
+    "line": 12578
    },
    "kind": "quote",
    "area": "ecology",
@@ -698,7 +698,7 @@
    "rule": "Mass is the armoured element (its shield carries its volume, hearts seated clear), Charge makes every prism of its lifeform a danger prism, and no element has chunky prisms.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12540
+    "line": 12634
    },
    "kind": "quote",
    "area": "ecology",
@@ -714,7 +714,7 @@
    "rule": "Space always out-spans Mass with significantly less volume (spindlier, thinner at its thickest), and Mass's shielding is what adds volume; a Mass form never out-spans its Space sibling.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12547
+    "line": 12641
    },
    "kind": "quote",
    "area": "ecology",
@@ -730,7 +730,7 @@
    "rule": "A vessel's own construction (the Serpent's wall) is never also a plant: the Wall flora is retired so the wall reads as the vessel's, not as ecology.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12593
+    "line": 12687
    },
    "kind": "quote",
    "area": "ecology",
@@ -746,7 +746,7 @@
    "rule": "Every lifeform, the data-driven ones (swarms, builder colonies, substrates) included, expresses all four elements by the one fleet law (heart, armour, danger, span), complete and consistent.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12732
+    "line": 12840
    },
    "kind": "quote",
    "area": "ecology",
@@ -762,7 +762,7 @@
    "rule": "Mass may be made in one place only: an Ark's reactor regrowing its own hull (the Ark rule, P-vessel-23); every other vessel morphs an omni crystal into its own effect.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 142
+    "line": 154
    },
    "kind": "quote",
    "area": "ecology",
@@ -778,7 +778,7 @@
    "rule": "On plants and creatures alike Mass is armoured (its prisms shielded and re-armoured for life, the shield 3x the prism), Charge makes every prism danger and never shields, every element keeps its authored danger, and Space always out-spans Mass (greater span, less volume, more spindly).",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 919
+    "line": 930
    },
    "kind": "quote",
    "area": "ecology",
@@ -794,7 +794,7 @@
    "rule": "A pollinator is a third fauna role beside herbivore and predator: it produces (hastens plants, builds comb), takes a productive flora's slot and budget, and is prey like every non-predator.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12796
+    "line": 12904
    },
    "kind": "quote",
    "area": "ecology",
@@ -826,7 +826,7 @@
    "rule": "Pollination is mutualism across all three domains: a bee hastens plants of any domain and builds its comb from all three; it is not a team fight.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12849
+    "line": 12957
    },
    "kind": "quote",
    "area": "ecology",
@@ -842,7 +842,7 @@
    "rule": "A creature is a celestial Etherion lifeform, never an Earth animal: a wireframe spindle body Space can thin, health prisms round it, a long skinny danger prism as its stinger, an Etherion heart that leads, and no sense of up.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12863
+    "line": 12971
    },
    "kind": "quote",
    "area": "ecology",
@@ -858,7 +858,7 @@
    "rule": "A creature's danger prism (stinger, tooth, spine) is an ordinary prism: it thins on Space with the rest and stays in the skeleton like every other body prism; no special case.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12894
+    "line": 13002
    },
    "kind": "quote",
    "area": "ecology",
@@ -906,7 +906,7 @@
    "rule": "Every creature in a cell wears the cell's one fauna colour; taming or leashing never recolours it, because a squad is a leash, not a team.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 11737
+    "line": 11822
    },
    "kind": "LOCKED",
    "area": "ecology",
@@ -1050,7 +1050,7 @@
    "rule": "Only a sort-model swarm with MultiDomain on may grow a second colour, by lineage drift in tissue nobody owns, never by what it eats; no other species gets lineages.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 93
+    "line": 104
    },
    "kind": "decision",
    "area": "ecology",
@@ -1066,7 +1066,7 @@
    "rule": "A creature dies when its last body prism is destroyed, through the one sealed death path (crystal drop and wither included); no override may let a creature survive losing its whole body.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 106
+    "line": 117
    },
    "kind": "decision",
    "area": "ecology",
@@ -1082,7 +1082,7 @@
    "rule": "A starving creature withers from its extremities inward with the heart last and collectable only at the end; a jousted lifeform unravels from the freed heart outward and the jouster auto-collects it; both leave the body prisms standing as grazeable skeleton; a devoured body suctions into the mouth.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 114
+    "line": 125
    },
    "kind": "decision",
    "area": "ecology",
@@ -1098,7 +1098,7 @@
    "rule": "In growth, under grazing and through every death, every standing part of a lifeform connects to its crystal through standing spindles; the crystal joust is the one sanctioned exception.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 122
+    "line": 133
    },
    "kind": "decision",
    "area": "ecology",
@@ -1114,7 +1114,7 @@
    "rule": "Everything about a cell (phase, dominant domain, prey, HUD) keys off per-domain laid volume, never prism count (count is only a frenzy/perf backstop); a change that moves laid volume re-measures the cell's phase ladder.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 273
+    "line": 284
    },
    "kind": "decision",
    "area": "ecology",
@@ -1130,7 +1130,7 @@
    "rule": "In a nucleus cell, control is the volume laid inside the nucleus and the outside is contested feeding ground that never sways control; a mode that borrows the nucleus as play geometry declares it is not a control zone rather than bending the rule.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 275
+    "line": 286
    },
    "kind": "decision",
    "area": "ecology",
@@ -1146,7 +1146,7 @@
    "rule": "Every lifeform carries one elemental heart and drops it on death; in a colony every member is a lifeform with its own heart and only the root is heartless.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 296
+    "line": 307
    },
    "kind": "decision",
    "area": "ecology",
@@ -1162,7 +1162,7 @@
    "rule": "Plants are a population: a seed floor, a per-cell cap resolved on the Cell, and reproduction funded by the prisms a plant grew; spawners only seed, and a lowered cap stops producing and never culls.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 387
+    "line": 398
    },
    "kind": "decision",
    "area": "ecology",
@@ -1178,7 +1178,7 @@
    "rule": "A lattice plant grows on the exact tiling its surface carries, never on a fitted Euclidean grid; a function-shaped surface with no tiling addresses on the sphere instead.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 594
+    "line": 605
    },
    "kind": "decision",
    "area": "ecology",
@@ -1194,7 +1194,7 @@
    "rule": "A claimed nucleus is never consumed by fauna, so a cell taken stays taken when you leave; only the exterior is contested churn.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 949
+    "line": 960
    },
    "kind": "decision",
    "area": "ecology",
@@ -1210,7 +1210,7 @@
    "rule": "Tempo is Time's identity: a Time plant reproduces fastest (1.25x against 0.8x), and the rate is resolved from the element at spawn, never authored per config.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 954
+    "line": 965
    },
    "kind": "decision",
    "area": "ecology",
@@ -1226,7 +1226,7 @@
    "rule": "A species authors one leaf and the four elements spend it four ways (Charge danger, Mass armoured at x0.64 under Space, Space the longest aspect, Time the fastest clock); the four are a redistribution averaging exactly 1, never an inflation, so no cell's volume ladder moves.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1159
+    "line": 1170
    },
    "kind": "decision",
    "area": "ecology",
@@ -1242,7 +1242,7 @@
    "rule": "Fitness is survival itself (starvation, predation, reproduction cost), never a designer-scored function; this is the line between artificial life and an optimizer.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1197
+    "line": 1208
    },
    "kind": "decision",
    "area": "ecology",
@@ -1258,7 +1258,7 @@
    "rule": "No per-individual acquired growth of any kind: feeding pays out as population (a reset starvation clock, a birth, a growth quota), never as a bigger individual, and offspring inherit only the element.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1200
+    "line": 1211
    },
    "kind": "decision",
    "area": "ecology",
@@ -1274,7 +1274,7 @@
    "rule": "A world swap suctions the old cell out and blooms the new one in only because a player flew into a station and asked; nothing swaps or resets a world on its own.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1278
+    "line": 1289
    },
    "kind": "decision",
    "area": "ecology",
@@ -1306,7 +1306,7 @@
    "rule": "Every elemental crystal is one size (the Ark converter's) and grants exactly one petal; the omni crystal is one size too.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12263
+    "line": 12312
    },
    "kind": "quote",
    "area": "economy",
@@ -1354,7 +1354,7 @@
    "rule": "A crystal pickup is one shared 0.44 s beat from the one config, never a per-prefab duration; the reward and the scoring event land at contact, and no objective waits on a flourish.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 359
+    "line": 370
    },
    "kind": "decision",
    "area": "economy",
@@ -1418,7 +1418,7 @@
    "rule": "First-time guidance is given by a captain or pilot character who enters from the side and speaks to the player, with a leader line to the one lit control; not a bare caption strip.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 4716
+    "line": 4795
    },
    "kind": "quote",
    "area": "ftue",
@@ -1594,7 +1594,7 @@
    "rule": "Every hull has its own Time race, authored to be very fun around what that hull alone does well.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 964
+    "line": 1087
    },
    "kind": "quote",
    "area": "modes",
@@ -1610,7 +1610,7 @@
    "rule": "Serpentine's gates are single rings closed by mode-laid shapes with a gold core, ringed by regrowing debris that feeds Seed Walls; the mode is dirty through its track and AI while the vessel is never changed.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 978
+    "line": 1101
    },
    "kind": "quote",
    "area": "modes",
@@ -1626,7 +1626,7 @@
    "rule": "A mode makes itself interesting with its track, environment and AI only; it never rations, vetoes, rescales, adds contact effects to, or edits what a vessel's abilities do; a kit change is a vessel change for the vessel's owner.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 241
+    "line": 300
    },
    "kind": "LOCKED",
    "area": "modes",
@@ -1642,7 +1642,7 @@
    "rule": "The Angler's Time race is about painting prism clusters and dashing to them: two neutral clusters per leg on the ring's own axis, the second dash through the ring, the ladder being where the paint is.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 988
+    "line": 1111
    },
    "kind": "quote",
    "area": "modes",
@@ -1658,7 +1658,7 @@
    "rule": "A vessel's Time game teaches its Time ability alone: introduced gently at I1 and intense at I4, with no corner or gate that needs another element.",
    "source": {
     "file": "Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md",
-    "line": 630
+    "line": 724
    },
    "kind": "quote",
    "area": "modes",
@@ -1674,7 +1674,7 @@
    "rule": "Brittle Star Time asks one movement question per intensity (I1 Gearbox, I2 Feather slalom, I3 Coast-in hairpins, I4 Corkscrew), 8 rings x 2 laps on every rung.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 972
+    "line": 1095
    },
    "kind": "quote",
    "area": "modes",
@@ -1738,7 +1738,7 @@
    "rule": "A mode anchors its points of interest on what the platform already grows (living flora hearts in FloraHeartRegistry) before authoring sockets of its own, so the set is alive, grazeable and joustable.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 383
+    "line": 394
    },
    "kind": "decision",
    "area": "modes",
@@ -1754,7 +1754,7 @@
    "rule": "A mode that needs ecology wires and configures the standard Cell (membrane, cytoplasm, nucleus, spawn profile, phase thresholds in volume) and owns only its gameplay-bearing structure; no mode-local spawner, culler, edge cage or plankton, and never a hand-placed membrane, nucleus or cytoplasm.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1229
+    "line": 1240
    },
    "kind": "decision",
    "area": "modes",
@@ -1770,7 +1770,7 @@
    "rule": "A card's Vessels list alone decides which hulls a mode offers; the hangar's purchase lock gates only the hangar.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 1120
+    "line": 1243
    },
    "kind": "decision",
    "area": "modes",
@@ -1786,7 +1786,7 @@
    "rule": "Combat points price the verb (a round 1, a contact strike 8, an area debuff 12, a rocket 10/20/30), never the hull, so a card can gain a hull without the scoring rule learning anything.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 1157
+    "line": 1280
    },
    "kind": "decision",
    "area": "modes",
@@ -1802,7 +1802,7 @@
    "rule": "A mode balances through what it owns (hit windows, prices, cooldowns), never through vessel speed, which a card cannot touch.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 1186
+    "line": 1309
    },
    "kind": "decision",
    "area": "modes",
@@ -1818,7 +1818,7 @@
    "rule": "A teleport never threads a ring or gate; a step containing one counts no gate, in every mode.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 1281
+    "line": 1404
    },
    "kind": "decision",
    "area": "modes",
@@ -1850,7 +1850,7 @@
    "rule": "The party lobby draws the connected molecule with the host at its centre and grows with the party beyond four; the blue background stays toned down.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 5124
+    "line": 5203
    },
    "kind": "quote",
    "area": "multiplayer",
@@ -1914,7 +1914,7 @@
    "rule": "Solo play is the multiplayer pipeline with AI backfill; a mode never ships separate single-player and multiplayer scenes.",
    "source": {
     "file": "Docs/claude/MULTIPLAYER_AND_SOCIAL.md",
-    "line": 847
+    "line": 897
    },
    "kind": "decision",
    "area": "multiplayer",
@@ -1962,7 +1962,7 @@
    "rule": "Controls for a 2D seat are designed for touch first, then gamepad, then mouse and keyboard.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 3340
+    "line": 5157
    },
    "kind": "decision",
    "area": "other",
@@ -2266,7 +2266,7 @@
    "rule": "No generated prism interpenetrates another; it is held at authoring time inside each generator by sizing prisms flush with their neighbours (never by removing prisms and never by a runtime pass).",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1291
+    "line": 1302
    },
    "kind": "quote",
    "area": "prisms",
@@ -2458,7 +2458,7 @@
    "rule": "A mover that touches a prism it cannot affect still acknowledges the hit: own armoured mass lights, super-shielded mass jiggles.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1302
+    "line": 1313
    },
    "kind": "decision",
    "area": "prisms",
@@ -2570,7 +2570,7 @@
    "rule": "A gunner seat is two buttons under the right thumb with aim on the left, and no vessel gets a UI-breaking text row unique to itself.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 3749
+    "line": 5567
    },
    "kind": "quote",
    "area": "ui",
@@ -2618,7 +2618,7 @@
    "rule": "Ability icons are angular, line-weight and monochrome, and may use the hull's own silhouette where it reads (the Dolphin's jaw on its Space icon).",
    "source": {
     "file": "Docs/Icons/ABILITY_ICON_SKILL_PLAN.md",
-    "line": 445
+    "line": 530
    },
    "kind": "decision",
    "area": "ui",
@@ -2634,7 +2634,7 @@
    "rule": "The element flower above the ability row owns the element; an ability icon never repeats its element's mark.",
    "source": {
     "file": "Docs/Icons/ABILITY_ICON_SKILL_PLAN.md",
-    "line": 446
+    "line": 531
    },
    "kind": "decision",
    "area": "ui",
@@ -2746,7 +2746,7 @@
    "rule": "The friends drawer never overlaps a gameplay card: it cannot open over an open game window, on the arcade screen it pushes the cards aside, and on every other screen it slides over without moving content.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 3104
+    "line": 3113
    },
    "kind": "quote",
    "area": "ui",
@@ -2810,7 +2810,7 @@
    "rule": "The configure screen is quiet: preview left with its description below, controls top right, intensity, team and AI below them, one START (no hold-to-launch, no invite button) and no filler text.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 3278
+    "line": 3287
    },
    "kind": "quote",
    "area": "ui",
@@ -2826,7 +2826,7 @@
    "rule": "One configure card (vessel, domain, AI, intensity) serves Arcade, Arena and Voyage; a mode never gets its own configuration layout.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 3437
+    "line": 3446
    },
    "kind": "quote",
    "area": "ui",
@@ -2842,7 +2842,7 @@
    "rule": "An element glyph means an element (an ability, a petal, an element bar) and nothing else: never people, a social feature or decoration.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 3486
+    "line": 3495
    },
    "kind": "quote",
    "area": "ui",
@@ -2858,7 +2858,7 @@
    "rule": "In the Hangar the vessel demonstrates an ability only when its card is clicked and the components stay small; the top strip runs Codex (locked), Hangar, Home, Ark, Port (locked) in that order.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 3630
+    "line": 3639
    },
    "kind": "quote",
    "area": "ui",
@@ -2890,7 +2890,7 @@
    "rule": "A mode preview's full screen is a tray that extends the play area and hides the right-side UI, never a true full-screen takeover.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 5102
+    "line": 5181
    },
    "kind": "quote",
    "area": "ui",
@@ -2938,7 +2938,7 @@
    "rule": "The Voyage window has four tabs with Voyage first; the episode saga and the quest tracker are separate tabs, episodes shown coming soon or locked, with the sea lines behind it.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 5405
+    "line": 5488
    },
    "kind": "quote",
    "area": "ui",
@@ -2954,7 +2954,7 @@
    "rule": "Element marks everywhere in the menus (control panels, cards) use the Codex's element shapes, never the HUD petal sprite.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 251
+    "line": 1838
    },
    "kind": "quote",
    "area": "ui",
@@ -2970,7 +2970,7 @@
    "rule": "Every surface Froglet makes (game UI, Frogma boards, artifacts and diagrams, decks, the website, the Fleet Codex, every studio) wears the one Froglet style guide and loads its tokens instead of typing colours.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 55
+    "line": 84
    },
    "kind": "quote",
    "area": "ui",
@@ -2986,7 +2986,7 @@
    "rule": "Each of the six colour families carries exactly one meaning: Lime is the call to action, Jade is a claimable choice / selection / focus, Ruby is no way back (Ready); a domain is one accent.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 57
+    "line": 86
    },
    "kind": "quote",
    "area": "ui",
@@ -3002,7 +3002,7 @@
    "rule": "Colour sets (themes) are changed from the Profile and are quest unlocks (all unlocked for now); applying one plays the cell-change loading screen.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 5760
+    "line": 5843
    },
    "kind": "quote",
    "area": "ui",
@@ -3050,7 +3050,7 @@
    "rule": "Lime is only the one call to action on a screen; focus and selection are never lime; Play is Ruby like Ready.",
    "source": {
     "file": "Docs/UI_STYLE_GUIDE.md",
-    "line": 246
+    "line": 266
    },
    "kind": "decision",
    "area": "ui",
@@ -3082,7 +3082,7 @@
    "rule": "Every word a player can read is an authored field a human can add, edit, blank or delete without code; computed facts fill tokens in an authored template; an empty field shows nothing, never a hardcoded default.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 409
+    "line": 492
    },
    "kind": "LOCKED",
    "area": "ui",
@@ -3114,7 +3114,7 @@
    "rule": "Every word a player can read is an authored field (a serialized string or a template with tokens) a person can edit, blank or delete without code; an empty field shows nothing and never falls back to a hardcoded default.",
    "source": {
     "file": "Docs/UI_STYLE_GUIDE.md",
-    "line": 186
+    "line": 206
    },
    "kind": "LOCKED",
    "area": "ui",
@@ -3226,7 +3226,7 @@
    "rule": "A vessel's hull is a built FBX model (made by /vessel-model with its bones, element morphs and slots), never a C# procedural HullForm surface, not even as a placeholder.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 78
+    "line": 107
    },
    "kind": "quote",
    "area": "vessel",
@@ -3274,7 +3274,7 @@
    "rule": "Every crew vessel shares one notion: a seat on the hull (ICrewSeat), one card naming both, the shared seat rules, the shared two-view layout and seat camera, and the Vessel Changer as the way in.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 5111
+    "line": 6929
    },
    "kind": "quote",
    "area": "vessel",
@@ -3402,7 +3402,7 @@
    "rule": "Inversion is applied once by the player's settings at the end of every input mix; no strategy or hull carries a pitch sign of its own (a hull's touch tilt flip is hull data under the same rule).",
    "source": {
     "file": "Docs/claude/ARCHITECTURE_CORE.md",
-    "line": 421
+    "line": 431
    },
    "kind": "decision",
    "area": "vessel",
@@ -3418,7 +3418,7 @@
    "rule": "The local human pilot's nose follows the commanded rotation each frame on every device; AI, autopilot and remote hulls keep the fleet's 1.5/s lag, which only a mode may set per AI.",
    "source": {
     "file": "Docs/claude/ARCHITECTURE_CORE.md",
-    "line": 425
+    "line": 435
    },
    "kind": "decision",
    "area": "vessel",
@@ -3434,7 +3434,7 @@
    "rule": "On a phone each hull has its own touch profile (thumb lifts or totem buttons, tilt, extra buttons); a tilt flip is hull data under the one Invert Y rule, and both thumbs off reads as both triggers pulled and switches to gyro (tilt) controls.",
    "source": {
     "file": "Docs/claude/ARCHITECTURE_CORE.md",
-    "line": 444
+    "line": 454
    },
    "kind": "quote",
    "area": "vessel",
@@ -3450,7 +3450,7 @@
    "rule": "A human pilot's nose lag is one dial per device (gamepad 1.5/s, touch 9/s, keyboard and mouse none), never per hull; no response curve and no multi-stage smoothing on the stick.",
    "source": {
     "file": "Docs/claude/ARCHITECTURE_CORE.md",
-    "line": 431
+    "line": 441
    },
    "kind": "quote",
    "area": "vessel",
@@ -3466,7 +3466,7 @@
    "rule": "A new vessel is designed as one package: the hull, its own mini-game and its four elemental abilities with their level-5 upgrades; all three reach the game together (hull to the Vessel Changer, mini-game as a real mode, abilities as the element map).",
    "source": {
     "file": "CLAUDE.md",
-    "line": 192
+    "line": 251
    },
    "kind": "quote",
    "area": "vessel",
@@ -3610,7 +3610,7 @@
    "rule": "The Meerkat's element definition is locked: Space the Soliton (surface area by level, L5 Steal), Time faster through every soliton (L5 Boost Out), Charge Sentinel mode (L5 Six Sentinels), Mass the Exit Portal (L5 Danger Portal). A design may extend these but never redefine them; how each is built stays Yash's.",
    "source": {
     "file": "Docs/ElementalAbilitySystem/FLEET_MAPS.md",
-    "line": 658
+    "line": 689
    },
    "kind": "LOCKED",
    "area": "vessel",
@@ -3642,7 +3642,7 @@
    "rule": "A destroyed stretch of the Goby's trail is a real gap the Pistol must clear; a fall never hits phantom prisms and never leaves the best path uncrossable: it restores the gap it touched and sets the Pistol down beyond it.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 1350
+    "line": 3129
    },
    "kind": "quote",
    "area": "vessel",
@@ -3658,7 +3658,7 @@
    "rule": "No new vessels: the work is each existing vessel's Time minigame first, then the arena games; every vessel prototype is parked and catalogued, and one is brought back only when an owner asks.",
    "source": {
     "file": "Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md",
-    "line": 470
+    "line": 564
    },
    "kind": "quote",
    "area": "vessel",
@@ -3674,7 +3674,7 @@
    "rule": "The Stoat's kit is the orbit alone; the pathfinding field trajectory is parked.",
    "source": {
     "file": "Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md",
-    "line": 495
+    "line": 589
    },
    "kind": "quote",
    "area": "vessel",
@@ -3898,7 +3898,7 @@
    "rule": "A blast's reach is shown by lighting what it will destroy in the world, never by a ring; projectiles carry enough fidelity not to feel cheap.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 3770
+    "line": 5588
    },
    "kind": "quote",
    "area": "world-look",
@@ -3946,7 +3946,7 @@
    "rule": "Each free elemental crystal wears its own element's lime shade (the Wrasse's four), so Mass and omni never look alike.",
    "source": {
     "file": "Docs/PALETTE.md",
-    "line": 796
+    "line": 816
    },
    "kind": "quote",
    "area": "world-look",
@@ -3962,7 +3962,7 @@
    "rule": "An element's shapes wear that element's shade wherever they are: combining crystals keep their colours, and the omni crystal wears all four shades, each on its element's shapes, in every instance.",
    "source": {
     "file": "Docs/PALETTE.md",
-    "line": 862
+    "line": 882
    },
    "kind": "quote",
    "area": "world-look",
@@ -4042,7 +4042,7 @@
    "rule": "Shield feedback is Lime, grow and restore are a lit domain colour (never cyan, which is Jade), and the juice plays on landing, not while it happens.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 1285
+    "line": 3064
    },
    "kind": "quote",
    "area": "world-look",
@@ -4170,7 +4170,7 @@
    "rule": "Living mass moves with its limb's sway; trails, authored environment and a dead lifeform's skeleton stay still, so alive and dead read without a label.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 184
+    "line": 193
    },
    "kind": "decision",
    "area": "world-look",
@@ -4186,7 +4186,7 @@
    "rule": "A world seen from a distant camera (the home screen) spends its prisms on length and silhouette with depth replacing detail, never on surface; a world flown inside is budgeted for the pilot.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 506
+    "line": 517
    },
    "kind": "decision",
    "area": "world-look",
@@ -4202,7 +4202,7 @@
    "rule": "A plant whose shape is a function traces it as an open cage of curves the player sees through, never as a solid skin.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 840
+    "line": 851
    },
    "kind": "decision",
    "area": "world-look",
@@ -4250,7 +4250,7 @@
    "rule": "Unity CLI verification — the verify rule gates every C# commit (LOCKED rule)",
    "source": {
     "file": "CLAUDE.md",
-    "line": 278
+    "line": 346
    },
    "kind": "LOCKED",
    "area": "process",
@@ -4266,7 +4266,7 @@
    "rule": "Editor Tooling (LOCKED convention — read `Docs/TOOLING.md` before adding any `[MenuItem]`)",
    "source": {
     "file": "CLAUDE.md",
-    "line": 302
+    "line": 370
    },
    "kind": "LOCKED",
    "area": "process",
@@ -4289,6 +4289,38 @@
    "retired": "",
    "test": "python3 Tools/Build/check_agent_first.py",
    "status": "confirmed"
+  },
+  {
+   "id": "P-ai-23",
+   "owner": "Garrett",
+   "date": "2026-11-02",
+   "words": "AI training serves one plan (LOCKED rule, Garrett, 2026-11-02)",
+   "rule": "AI training serves one plan (LOCKED rule, Garrett, 2026-11-02)",
+   "source": {
+    "file": "CLAUDE.md",
+    "line": 270
+   },
+   "kind": "LOCKED",
+   "area": "ai",
+   "retired": "",
+   "test": "",
+   "status": "drafted"
+  },
+  {
+   "id": "P-world-look-31",
+   "owner": "Garrett",
+   "date": "2026-11-10",
+   "words": "Every colour comes from the colour set (LOCKED rule, Garrett, 2026-11-10)",
+   "rule": "Every colour comes from the colour set (LOCKED rule, Garrett, 2026-11-10)",
+   "source": {
+    "file": "CLAUDE.md",
+    "line": 309
+   },
+   "kind": "LOCKED",
+   "area": "world-look",
+   "retired": "",
+   "test": "",
+   "status": "drafted"
   }
  ]
 }
