@@ -32,7 +32,7 @@ SCRIPTS = ("VesselPrismController", "SparrowPrismController", "ShrikePrismContro
 TABLE = {
     "Orca": 0.9809,  # PROVISIONAL (night integration branch only): refit value, lane occupied
     "Grizzly": 0.4,       # the floor; 1.04 at Medium
-    "Sparrow": 0.4,  # PROVISIONAL: the floor; real Unity reads 1.54 and wants ~0.21 (the judge reads 1.0: parity gap)
+    "Sparrow": 0.459,  # PROVISIONAL: judge fit. Unity reads 1.54, but its books leak Sparrow volume (VC-Lost-Held 71% of VC): not trusted
     "Wrasse": 0.4947,
     "Scarab": 1.171,
     "Honeyguide": 1.5232,
