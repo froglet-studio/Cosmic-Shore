@@ -79,9 +79,14 @@ radius + 60 u of it, and no pilot's next ring is this one. So the leader cuts, a
 the leader's holes (a comeback current); a pilot who comes round keeps what they already cut. The dead prism is released
 to its pool before the new one is laid (Spearline owns its seal prisms' exit).
 
-**Measured** (`spearline_race_model.py`, 40 courses a rung, a MODEL): reading saves 0 / 36 / 37 / 57% of race time
-against the best fixed habit; a human reader (one factor fitted to the recorded Headlong I1 race) takes about 85 / 88 /
-96 / 109 s; the best fixed habit 85 / 138 / 150 / 253 s; 4 laps would fall to 69-71 s at I1-I2.
+**Measured** (`spearline_race_model.py`, 40 courses a rung, a MODEL; re-run 2026-11-23 with the 2 / 3 / 4 / 5 seals):
+reading saves 0 / 36 / 51 / 64% of race time against the best fixed habit; a human reader (one factor fitted to the
+recorded Headlong I1 race) takes about 85 / 88 / 96 / 110 s; the best fixed habit 85 / 138 / 194 / 300 s; 4 laps would
+fall to 69-71 s at I1-I2. **Open, for the ladder's sign-off:** the fifth seal took I4 past the fun pass's own bar
+(reading saves at most 60%): a pilot who does not read closes 3.65 passes a lap there and takes about 300 s, 2.7x a
+reader. The model's self-test fails on that bar and is left failing until a person decides (four seals at I4, or
+the bar moves). The model flies the ramp without its fuel tank, so its absolute times run fast; the real-game times
+are in section 3.
 
 ## 3. The AI (`SpearlineController.Coach.cs`)
 
