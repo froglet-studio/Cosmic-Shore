@@ -12,7 +12,8 @@
 -- expression, in each query below. When game_started carries the player's domain and a team
 -- composition field, split `multi_human` into coop and adversarial there and nowhere else.
 --
--- WHEN THE TEAM-COMPOSITION FIELDS SHIP (Docs/Analytics/proposals/team_composition_fields.patch),
+-- WHEN THE TEAM-COMPOSITION FIELDS SHIP (the proposal patch was removed 2026-11-23; see git history of
+-- Docs/Analytics/proposals/team_composition_fields.patch),
 -- replace the `play_type` expression in each `plays` subquery with the one below. It splits
 -- multi_human into coop / adversarial / mixed, and labels rows recorded before the fields
 -- existed 'multi_human_unknown' (tested against live data: all 309 older multi-human plays came
