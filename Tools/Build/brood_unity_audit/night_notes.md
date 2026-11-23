@@ -2,7 +2,7 @@
 
 The question: does Brood Rush's per-hull balance depend on the frame rate? The same AI-only matches ran twice in
 the real Unity game (6000.3.17f1, batchmode, one fresh Play session from Bootstrap per match), once with the frame
-rate pinned at 60 and once at 30.
+rate pinned at 60 and once at 30: 60 matches per block, 540 seats per block, 31-32 seats per hull.
 
 **Tree.** `claude/brood-night-integration` (#2322 + #2329 + #2330 + #2331 + #2332 + #2333 + the five held refit
 levers) merged into this branch. Only the Editor-only harness (`Assets/_Scripts/Editor/Launch/BroodAudit/`) differs
@@ -19,7 +19,7 @@ It never had to re-apply (pin resets 0 in every match). Each match records its f
 unscaled deltaTime, frames per game second and per wall second, and the timeScale seen.
 
 - **30 fps is reached exactly**: 29.7-30.0 fps in every match, mean deltaTime 33.4 ms.
-- **60 fps reaches 56.7 on average** (mean deltaTime 17.7 ms). Batchmode on this PC cannot hold 60: matches run
+- **60 fps reaches 57.4 on average** (mean deltaTime 17.5 ms). Batchmode on this PC cannot hold 60: matches run
   56-60 fps with nothing else on the machine. The first 10 matches overlapped the D: client import (idle priority)
   and averaged 53.9 (min 47.3), against 57.6 for the other matches.
 - timeScale is 1 apart from brief in-game dips to 0.1 in some matches (mean 0.998 or higher). The game does this;
@@ -35,7 +35,19 @@ is expected to land outside 2 se by chance alone.
 
 ## What it says
 
-{{FINDINGS}}
+- **Most of the field does not care about the frame rate.** 14 of 17 hulls move by less than 2 se. The mean
+  absolute change is 0.07. The top three stay the top three at both rates (Sparrow 1.54 / 1.55, Dolphin 1.45 / 1.49,
+  TigerMoth 1.27 / 1.31), and Urchin stays last (0.71 / 0.69).
+- **Scarab is frame-rate sensitive: 1.00 at 60 fps, 0.78 at 30** (-0.22, about 5 se). Its team's win rate falls from
+  61% to 23%. This is the one clear effect.
+- **Wrasse (+0.17, 2.1 se) and Manta (+0.10, 2.5 se) do better at 30 fps**, and Stoat (+0.10) and Meerkat (+0.09)
+  lean the same way, just inside 2 se. Thresher, Squirrel, Shrike and Swordfish lean the other way (-0.07 to -0.09).
+- **Inside the 0.90-1.10 band**: 10 of 17 hulls at 60 fps, 7 of 17 at 30. The judged tree's balance is therefore
+  best read at 60 fps, and a phone that drops to 30 shifts Brood Rush toward Wrasse and Manta and away from Scarab.
+- Team wins are even at both rates (60 fps: Gold 23, Jade 19, Ruby 18; 30 fps: Gold 21, Ruby 20, Jade 19). The
+  host-team lead seen in the first 42-match audit (Jade 19 of 42) did not appear on this tree.
+- Not tested: why Scarab loses at 30 fps (frame-step steering, collision or ability timing). A paired run of Scarab at
+  both rates with its ability and collision counts would narrow it down.
 
 ## Block tables
 
