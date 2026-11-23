@@ -84,6 +84,8 @@ MARKS = {
                "Couldn't follow the party - returned to your menu. | That party has ended."),
     "stall": ("Utility/FrameStallWatch.cs", "<seconds>s in <scene>"),
     "stallContext": ("Utility/FrameStallWatch.cs", "what was loading"),
+    "stallFrame": ("Utility/FrameStallWatch.cs + StallFrameMarkers.cs, one frame after the stall",
+                   "<marker> <ms> ms; ... the engine work the frozen frame was made of, longest first"),
     "netConfig": ("Controller/Multiplayer/MultiplayerSetup.cs", "hash=<hex> prefabs=<n> <key>:<name> ... (B35)"),
     "manual": ("Utility/NetSessionConsoleCommand.cs", "whatever the person typed after `net mark`"),
     "offlineChosen": ("System/OfflineModeService.cs", ""),

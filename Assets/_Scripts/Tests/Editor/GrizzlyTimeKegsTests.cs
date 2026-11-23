@@ -430,6 +430,35 @@ namespace CosmicShore.Tests
             return float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
         }
 
+        /// <summary>The AI rams a standing keg only where the core is the shorter way round, presses inside a Rush's reach
+        /// with its nose on the core, and gives the keg up only nearer the core than the ram's own reach (2026-11-21: a
+        /// 25 u give-up fired before the ram landed and turned the hull away from kegs it was about to open).</summary>
+        [Test]
+        public void The_AI_rams_a_keg_only_where_the_core_is_the_shorter_way_round()
+        {
+            var hull = new Vector3(0f, 0f, 0f);
+            var gate = new Vector3(0f, 0f, 400f);
+            var next = new Vector3(400f, 0f, 400f);            // a 90 deg corner to the right
+            var inside = new Vector3(100f, 0f, 300f);          // a keg on the corner's inside
+            var outside = new Vector3(-100f, 0f, 500f);        // the same offset to the outside
+            Assert.IsTrue(GrizzlyTimeKegs.AIRamPays(hull, inside, gate, next, 0f), "the inside core cuts the corner");
+            Assert.IsFalse(GrizzlyTimeKegs.AIRamPays(hull, outside, gate, next, 0f), "an outside core is the long way");
+            Assert.IsTrue(GrizzlyTimeKegs.AIRamPays(hull, outside, gate, next, 400f), "slack lets the long way through");
+
+            const float cost = 0.25f, tick = 0.05f, cooldown = 2f;
+            float ready = cooldown + GrizzlyTimeKegs.AIRushCooldownMargin + 0.01f;
+            float near = GrizzlyTimeKegs.AIRamPressDistance - 1f, nose = GrizzlyTimeKegs.AIRamNoseDegrees - 1f;
+            Assert.IsTrue(GrizzlyTimeKegs.AIShouldRam(nose, near, cost + tick, cost, tick, ready, cooldown), "lined up, in reach");
+            Assert.IsFalse(GrizzlyTimeKegs.AIShouldRam(nose, GrizzlyTimeKegs.AIRamPressDistance + 1f, cost + tick, cost, tick, ready, cooldown), "too far");
+            Assert.IsFalse(GrizzlyTimeKegs.AIShouldRam(GrizzlyTimeKegs.AIRamNoseDegrees + 1f, near, cost + tick, cost, tick, ready, cooldown), "nose off the core");
+            Assert.IsFalse(GrizzlyTimeKegs.AIShouldRam(nose, near, cost, cost, tick, ready, cooldown), "no Energy headroom");
+            Assert.IsFalse(GrizzlyTimeKegs.AIShouldRam(nose, near, cost + tick, cost, tick, cooldown, cooldown), "inside its cooldown");
+
+            Assert.Less(GrizzlyTimeKegs.AIRamGiveUp, GrizzlyTimeKegs.RamReach, "the give-up sits inside the ram's reach");
+            float rushRun = GrizzlyTimeCourse.GrizzlyThrottleScaler * RushAsset("duration") + RushAsset("magnitude") * RushAsset("duration");
+            Assert.Less(GrizzlyTimeKegs.AIRamPressDistance, rushRun, "a ram pressed at the press distance reaches the core inside its window");
+        }
+
         /// <summary>The AI's Rush is one pure rule: lined up, a straight ahead, no launch pushing it, the Energy there
         /// with a tick to spare, its last press cooled down. Each condition alone refuses the press.</summary>
         [Test]

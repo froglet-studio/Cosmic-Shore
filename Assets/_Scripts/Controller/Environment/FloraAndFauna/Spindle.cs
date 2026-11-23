@@ -469,6 +469,16 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>The per-spindle phase this limb's material variant carries (<c>_Phase</c>), whatever sway the
+        /// material authors: what anything riding a wave the SHADER computes must share (a grown body's prisms ride
+        /// <c>SpindleGrownSway</c>, which <see cref="TryGetSwayConstants"/> does not describe). False until Start has
+        /// resolved the bucket.</summary>
+        internal bool TryGetSwayPhase(out float phase)
+        {
+            phase = _swayPhase;
+            return _swayPhaseResolved;
+        }
+
         public void AddHealthBlock(HealthPrism healthPrism)
         {
             if (isPermanentlyWithered) return;

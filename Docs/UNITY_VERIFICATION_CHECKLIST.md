@@ -65,6 +65,175 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Element armour now lands on EVERY light fauna and boid: Mass shielded, Charge all danger (`cece/peaceful-babbage-tsg0kd`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED, changes shipped creatures
+
+**What was wrong.** `LightFauna` and `Boid` arm their bodies in `Initialize`, which every spawner calls BEFORE
+`AssignLineage` rolls the element and provisions its heart. The body was armed for the PREFAB's crystal: the QuadFish
+(a Space crystal in its one prefab) wore no shield as Mass and no danger as Charge. `Fauna.AssignLineage` now arms the
+body after the heart is provisioned (one line). Reference compile: 0 errors in changed files.
+
+**Measured by running the game's own spawn order in Amoebius** (no Unity), 60 and 300 frames after spawn:
+
+| | Mass: plain prisms shielded | Charge: prisms danger | Time, Space (controls) |
+|---|---|---|---|
+| QuadFish before | 0 of 4 | 0 of 4 | none |
+| QuadFish after | 4 of 4 | 4 of 4 | none |
+| Ray before | 0 of 8 | 1 of 9 (its authored sting) | sting only |
+| Ray after | 8 of 8 | 9 of 9 | sting only |
+
+1. **Mass creatures are shielded** on the Spawn Matrix (QuadFish, Clawfish, tadpole, Brittlestar, shark, the Ray):
+   every plain body prism wears a shield, a shed shield comes back one every few seconds, and the heart's swing
+   still clears them.
+2. **Charge creatures are all danger**, not only teeth and stings. A Charge predator's MOUTH still sits at its
+   authored danger prisms (`IsAuthoredDanger`), not at the centroid of the whole body.
+3. **Balance.** This is the law of `Docs/ECOSYSTEM.md` 65.4 arriving in play for the first time on these species, so
+   cells with Mass or Charge fauna will feel different: Mass schools take two passes, Charge schools hurt to touch.
+   If that is not wanted, the dial is the law's (`ElementalArmour`), not this line.
+4. **A pooled body** that comes back as another element sheds the last one's armour (it did in the harness's
+   Time and Space controls; not tested through the pool).
+
+### 🔴 Four more grown creatures in Unity: Plume, Lantern, Ammon, Nettle, each as four element prefabs (`cece/peaceful-babbage-tsg0kd`, 2026-11-21, Garrett) — NOT EDITOR-VERIFIED
+
+Made exactly as the Ray was (`Tools/Build/fauna_kit/unity_port.py <name>` from `specs/<name>.py`; the Ray's entry
+below has the shared checks: do its check 0 to 5 once, they cover the shader, the meshes and the prisms for all five).
+All of them are `GrownFauna` (the Ray's class, generalised; `RayFauna.cs` was renamed, same script guid). None carries a
+network rig or is in the network prefab list. **Where:** Cell Selector > Barren > Spawn Matrix, a row each.
+
+| creature | what it is | renderers (Time form) | attack (RT at a vessel) | under a Jewel Wasp |
+|---|---|---|---|---|
+| Plume | ten feathered arms round a cup, a sting on each | 16 | WHIPS all ten arms (and the Time form's five streamers) | turns at half rate; RT at prisms eats on EVERY side; attacks a vessel anywhere round it |
+| Lantern | eight comb rows round a woven body, two stinging lines | 1 | LUNGES (the whole body punches forward) | turns at 0.7; a mouthful ahead |
+| Ammon | two coiled shells, six stinging feelers | 9 | WHIPS shells and feelers | swims in JETS: a kick every 1.2 s, then a glide it turns in |
+| Nettle | a woven bell, eight tendrils, four frilled arms | 9 | WHIPS the four frilled arms | swims in PULSES (1.8 s); eats on every side; attacks all round |
+
+**Run in Amoebius** (the game's own code, not Unity's renderer; all sixteen configs, 360 frames each): 0 errors, every
+prism active, Mass shields every plain prism, Charge arms every prism, Space is at x 1.6477 with its meshes not eroded
+a second time, the attack finds 15 / 0 / 8 / 4 limbs (Plume / Lantern / Ammon / Nettle) each ending on a tip, and each
+`GrownFauna` carries its spec's numbers.
+
+1. **Each element of each creature draws and looks like its own form** (the lab shows all sixteen: pick the creature,
+   then the element). Charge's one big thing: Plume five forward talons, Lantern four spurs, Ammon two great horns,
+   Nettle four claws from the rim. Space is the largest and thinnest with needle prisms; Mass is shielded.
+2. **Each ripples, and answers its turns** (the Ray's checks 3 and 13 to 16). The Plume's feathers and the Nettle's
+   tendrils should trail a turn and settle.
+3. **The whip.** RT at a vessel: Plume, Ammon and Nettle swing the limbs in the table toward it and they come back to
+   rest exactly. A limb is one or two rigid pieces (cut along the limb): look for a piece that swings about the wrong
+   point or leaves a gap at its root. The Lantern lunges.
+4. **The pulse** (Ammon, Nettle): a ridden one surges and coasts in a steady rhythm and turns more easily in the
+   coast. If it feels like stuttering, the numbers are `pulsePeriod`, `pulseKickSpeed`, `pulseGlideSpeed` on the
+   prefab's `GrownFauna` (from `"motion"` in the spec).
+5. **Eating on every side** (Plume, Nettle): RT at prisms takes mass behind and beside it, not only ahead.
+   **With a rival vessel 70 to 120 u away** (out of strike reach, any side) RT must still eat: before the review fix
+   it aimed at that rival, whiffed and never fed.
+6. **Draw calls.** A Plume is 16 renderers and each carries a property block for the turn (not SRP-batched): eight
+   Plumes is about 130 draws. Not measured. If it shows in a frame-time A/B, whip joints can drop to five arms.
+7. **Every other creature under a wasp is unchanged** (the new hooks' defaults are the old constants; the attack's
+   aim cone is 50 degrees unless a `GrownFauna` says otherwise).
+
+### 🔴 The Ray, the first GROWN creature in Unity: four element prefabs, its wave in the spindle shader, on the Spawn Matrix (`cece/peaceful-babbage-tsg0kd`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
+
+Written by `Tools/Build/fauna_kit/unity_port.py ray` from `specs/ray.py` and `elements.py`; the whole path with what
+went wrong at each step is `.claude/skills/fauna-maker/references/RAY.md`. **No Unity editor ran.**
+
+**This change touches the SHARED spindle shader.** `SpindleGraph` gained one vertex function, `SpindleGrownSway`
+(after `SpindleSway`), and two material floats, `_GrownSway` and `_GrownFrequency`, both 0 by default; the four graphs
+generated from it (`SpindleLodMid/Far`, `SpindleDepth`, `SpindleWire`) were regenerated. With `_GrownSway` 0 the
+function returns the position it was given, bit for bit (proved by compiling the shipped HLSL: `verify_spindle_grown_sway.py` T2).
+**Check 0 before anything else: open any cell with flora and a shipped creature. Every spindle draws as before (not
+pink, not still). If one is pink, `git checkout` the five `.shadergraph` files and tell the session.**
+
+C# changed (reference compile: 0 errors in the files this branch changed; 30 in existing code that needs packages this
+container lacks): `GrownLimbDriver` (carries prisms along the shader's wave), `GrownFauna` (was `RayFauna`: the wing feeding, the glide,
+the rider's up), `Fauna.spindleAuthoredEroded`, `Spindle.TryGetSwayPhase`, `LightFauna.LeashTurnScale / LeashSpeedEase /
+LeashUp` (virtual, defaults unchanged), `IFaunaLeashFrame` (the Jewel Wasp implements it).
+
+Headless: `unity_port.py ray --check` and `--self-test`, `elements.py --check`, `--self-test`, `--silhouette ray`,
+`erosion.py --self-test`, `wire_spindle_grown_sway.py --check` and `--self-test`, `wire_spindle_lod.py --check`,
+`verify_spindle_grown_sway.py`, `verify_spindle_sway.py`, `verify_spindle_lod.py`, `author_spawn_matrix_roster.py --check`,
+`check_network_prefab_hashes.py`, `author_lifeform_heart_collection.py --check`, `verify_fauna_heart_seat.py`, `colour_trace.py --check`.
+
+**Where to see it:** Cell Selector > Barren, then the Spawn Matrix: the **Ray** row, one station an element.
+
+| element | prefab | what it should look like | size |
+|---|---|---|---|
+| Time | `Ray.prefab` | the comet: the base Ray with a long streamer flying from each wingtip | x 1 |
+| Charge | `RayCharge.prefab` | the storm: thorns forward along the leading edges, a talon hooked forward at each wingtip, a three-tined tail, every prism danger | x 1 |
+| Mass | `RayMass.prefab` | the leviathan: thick wire, four ribs across each wing, a tail fluke, every plain prism shielded | x 1.25 |
+| Space | `RaySpace.prefab` | the ghost: thin ribbon wire, a long torn sleeve hanging from the outer half of each hind edge, needle prisms | x 2.06 |
+
+1. **The meshes import.** The `Ray*` assets under `Assets/_Models/Fauna/` open as Meshes with no console error. They
+   are native Mesh assets written as text with a 72-byte vertex: position, normal, tangent, UV0, and **UV1 and UV2 as
+   three floats each** (the wave). In the mesh inspector UV1 and UV2 should show as present. If Unity rewrites the
+   files on import, say so: `unity_port.py --check` will report drift.
+2. **Each form draws, from both sides,** in the domain's spindle colour with the spindle's lace on it, and looks like
+   its row above. The lace now runs ALONG each strand (UV0 was one stripe before): if it looks stretched or too busy,
+   the number is `LACE_SPAN` in `fauna_kit/spindle.py`.
+3. **It ripples.** The wing waves smoothly from shoulder to tip, the hind edge a beat behind the leading edge; the
+   streamers, sleeves and fluke drift; there is NO fold at x = 3, 13, 24 (the wing is cut there, but the wave is not
+   the joints'). Time is quickest (0.53 Hz), then Charge (0.44), Space (0.30), Mass slowest (0.27).
+   **If the body is perfectly still:** the material's `_GrownSway` is not reaching the shader (look at
+   `RaySpindle.mat`, then at the depth material the LOD system gives the body at runtime, `RaySpindle_Phase*_Depth`).
+4. **The prisms ride the wave.** Each plate stays ON its wing edge as the edge moves (it is carried by
+   `GrownLimbDriver` from the same clock). A plate that floats off the wire, or lags it, is the thing to report, with
+   the element: the phase comes from `Spindle.TryGetSwayPhase`.
+5. **Nothing is culled early.** Fly so a Ray is half off screen: its wingtip must not vanish while in view (the mesh
+   bounds were grown by the wave's reach).
+6. **SPACE IS NOT THINNED A SECOND TIME.** `RaySpace.prefab` says `spindleAuthoredEroded`. Wings whole and joined
+   (not crumpled toward the middle of each piece), plates thin needles about 3.5 long, the sting a hair-thin needle
+   about 8.7 long. If the needles are too thin to read, say so: they are the lattice law's numbers.
+7. **Sizes.** Mass is a quarter bigger than Time; Space is 2.06 x Time, about 140 u across. Mass: the heart's swing
+   clears every shield.
+8. **A Jewel Wasp possesses each form:** steer, RT at prisms eats what is within its lobes on every side, RT at a
+   vessel WHIPS both wings and the tail toward it (the only thing the joints do), A leaves.
+9. **The glide.** Under a rider it turns slowly (about a third of another creature's rate) and is slow to gain and
+   lose speed. **Roll the wasp** (one stick up, one down): the Ray rolls with you and stays rolled; no other creature
+   does. If this feels wrong, the three numbers are on the prefab's `GrownFauna`.
+10. **Every other creature under a wasp is unchanged** (the hooks' defaults are the old constants: turn x 1, ease 2.5, world up).
+11. **Multiplayer.** The Ray is NOT network-synced, like every fauna species today: its prefabs carry no network rig
+    and are not in the network prefab list (the trunk took the rig off the donor QuadFish for the same reason,
+    3d802353d3). Each peer simulates its own. Rolling a species out is `/multiplayer`'s decision.
+12. **Budget.** Nine prisms a Ray on every element; vertices 2,688 / 3,650 / 4,575 / 2,838 (Time / Charge / Mass /
+    Space) against the 5,072 bar; 10 renderers a Ray. Nothing here measured draw calls, overdraw, or the cost of two
+    more vertex channels on every spindle draw (they are read and multiplied by 0): run a frame-time A/B in a lattice
+    cell before believing it is free.
+
+**The turn (2026-11-18; Garrett: "its rotations just happen ... i want the wings to take on chiral movements that
+match their rotations").** The body now answers its own rotation; the two wings do mirrored things. All of it is the
+same formula as the lab (Body tab there has four multipliers), driven by `GrownLimbDriver.AnswerTheTurn`, and all of
+it is zero when the Ray flies straight.
+
+13. **Turn (yaw).** Steer a possessed Ray into a steady turn, and watch a free one turn. The OUTER wing beats visibly
+    harder than the inner one; the body banks into the turn (about 25 to 35 degrees in a hard turn) and levels out
+    over a second when the turn stops; the wingtips, streamers and tail trail behind the turn and swing back past
+    centre once before settling.
+14. **Roll.** Roll the wasp (one stick up, one down). The hind edges deflect opposite ways, like ailerons, and the
+    wingtips bend against the roll in an S across the span, then settle.
+15. **Pitch.** Pull up or push down: the tail and the wings' far parts lag, and the top and bottom of the wave beat
+    differently (hard to see on a flat body; it should at least not look wrong).
+16. **The prisms stay on the wire** through every one of those (they are carried by the same formula on the CPU).
+17. **Each element has its own weight:** Time answers quickest and snaps back; Mass lags most and settles slowly;
+    Space drifts.
+18. **Nothing else moved.** Every other spindle in the cell is as it was (the six new shader inputs are 0 on every
+    material and on every renderer without this driver).
+19. **Cost to know about:** a Ray's ten renderers each carry a MaterialPropertyBlock while it is turning, so they are
+    not SRP-batched then (about 80 draws for eight Rays). Swimming straight, the driver writes zeros once and stops.
+    Not measured.
+20. **A dead one leaves its skeleton where it died.** Starve a Ray or kill it (any grown creature): the prisms it
+    leaves behind stay in place and do not move. Before the review fix they would have jumped to the cell's centre
+    and waved there.
+21. **The hardest turns.** A wild one that reverses on the spot still leans and trails through the whole turn (its
+    answer used to cut out above 6 radians a second and snap in at the end).
+
+The numbers are on the prefab's `GrownLimbDriver` (Lag, Stroke, Twist, Bank, each with its cap, and the spring); they
+come from the `turn` block of the form (`elements.TURN`, with an element's weight). Tune them in the lab's Body tab
+first, then tell the session the multipliers.
+
+**If the shader's wave is wrong and cannot be fixed quickly:** `"sway": "joints"` in the `unity` block of
+`specs/ray.py`, then `python3 Tools/Build/fauna_kit/unity_port.py ray`: the body returns to the shared SpindleMaterial
+and beats at its joints on the CPU.
+
+Not built: a Codex page. The other four grown creatures (Nettle, Plume, Lantern, Ammon) have their four forms in the
+lab and port by one command each (`unity_port.py <name> --dry` passes); they wait for this entry's check 0 to 4.
 
 ## 🔴 Voyages launch fixes: follow the host, the Ark's one domain, the Escort lock, Start pauses (2026-11-21, Shombith, NOT RUN IN EDITOR)
 `claude/project-thread-zobeo0` into `launch-check`. `VoyageLobbyLink` + `ScreenSwitcher.VoyageLobby.cs` (protocol 38, `Docs/Voyages/PARTY.md` §7), `VoyageArkPage` (domain chips, uncropped faces, the Fill button), `VoyageKit.Commit` (ruby Set sail / Open voyage / Ready), `VoyageToyDefinitionSO.lockEscort`, `VoyageJobsView` (locked jobs off the board), `MenuMiniGameHUD` (Start pauses in the voyage), `MenuServerPlayerVesselInitializer` (the voyage scene spawns everyone in the Ark's domain), the Crystal Run's kind Raid -> Salvage. Verified: `unity_refcompile` has no errors in the changed files (the UGS package errors on launch-check are the sandbox's); `author_voyage_assets.py --check` clean; colour_trace, console logging, conditional compilation OK. Not compiled or run in Unity.
@@ -803,7 +972,7 @@ Verified: `node Tools/UGS/CloudCode/launch-flags.test.cjs` 14 passed, with three
 and removes it afterwards; `BuildStamp.Current` reads it; `AuthenticationServiceFacade` initializes UGS with
 `SetEnvironmentName` (release player → `production`, development build and Editor → `development`, an explicit
 `-ugsEnvironment` / `CS_UGS_ENVIRONMENT` wins, anything else fails the build); the settings version line, crash
-metadata and PostHog person properties carry the stamp; the Windows pipeline puts `bundleVersion` back and passes
+metadata and analytics person properties carry the stamp; the Windows pipeline puts `bundleVersion` back and passes
 `WINDOWS_BUILD` for the build only. Proven offline: `unity_refcompile` player + editor configs OK. **Not compiled or
 run in the Unity editor; the EditMode tests have not run.** Docs/LAUNCH/BUILD_STAMP.md.
 
@@ -907,8 +1076,8 @@ reboot are proven only by these steps. Use a throwaway guest, never your own pil
    default or public keys for it; the display name is free again (set the same name on the new guest: it is accepted).
 5. **Offline:** turn the network off, Delete account. "Your account was not deleted" appears with Close; Player ID,
    crystals and name are unchanged; network back on, Delete account works.
-6. **Console:** one warning on the failed attempt (`[AccountDeletion] Deletion did not complete...`), and PostHog's
-   "flagged for deletion" warning on the successful one; no errors.
+6. **Console:** one warning on the failed attempt (`[AccountDeletion] Deletion did not complete...`), and the
+   "Froglet Analytics deletion requested" line on the successful one; no errors.
 7. **Browser Toybox:** Delete account is not shown (no online account there).
 
 ### 🔴 Mode smoke test: every rostered mode from Bootstrap, all-AI, to the game-over event (`claude/launch-mode-smoke`, 2026-11-05) — NOT EDITOR-VERIFIED
@@ -22320,7 +22489,7 @@ Not compiled and not run: no Unity editor or CLI was reachable. Checked by readi
    and scene reload off, which is what stacks the copies). Start one arcade match and finish it. **Pass:** the console
    has no new errors or warnings from `AnalyticsServiceFacade`, `ApplicationStateMachine`, `AuthenticationServiceFacade`
    or `StatsManager`.
-3. In PostHog, query that session's `game_started` and `game_completed` events. **Pass:** exactly one row of each per
+3. In the Froglet Analytics console (a player's profile, Event timeline), find that session's `game_started` and `game_completed` events. **Pass:** exactly one row of each per
    match (before the fix there were two, a few milliseconds apart, with different event ids). A check: no two rows of
    the same event for the same user within 50 ms.
 4. Change a setting in the menu (music level, invert Y). **Pass:** one `setting_changed` row per change.
@@ -22333,7 +22502,7 @@ Not compiled and not run: no Unity editor or CLI was reachable. Checked by readi
 8. Known gap: `StatsManager` uses a normal deferred `Destroy()`, so a stale copy lives to the end of the frame it is
    replaced in. If step 7 ever shows a double count, switch to `DestroyImmediate`.
 
-**Addendum (2026-10-29) — Scoreboard crystal latch is now static.** Play one `game_placement` match in the editor, then Stop/Play and play another. PostHog should show one `crystals_earned` row per match, and the wallet should rise once per match (no pairs 2-27 ms apart with balances 200 apart). Also confirm the latch still clears: a second match in the same session must pay out again.
+**Addendum (2026-10-29) — Scoreboard crystal latch is now static.** Play one `game_placement` match in the editor, then Stop/Play and play another. Froglet Analytics should show one `crystals_earned` row per match, and the wallet should rise once per match (no pairs 2-27 ms apart with balances 200 apart). Also confirm the latch still clears: a second match in the same session must pay out again.
 
 ## Serpent recut: Scope on Charge, Cloak / Sniper on Space, Hunter's Sight, fifth pellet (2026-10-30) - NOT EDITOR-VERIFIED
 
@@ -25034,8 +25203,11 @@ Measured in `Docs/PartySystem/BUGS.md`, "B45 on the return to the menu".
 
 - [x] Solo online host, Bloomrush 90 s, Main Menu: the load's frame is 5.7-6.5 s (9.5-10.5 s before), the menu comes
       up normally, no red error, and the test log has a `sceneExitDrain` mark.
-- [ ] Two players, the same: the guest also reaches the menu, nobody bounces, and both logs carry the mark. Compare
-      each player's longest freeze with the 8.7-10.0 s of the test with Garrett of 2026-11-20.
+- [x] Two players, the same: the guest also reaches the menu, nobody bounces, and both logs carry the mark.
+      **Passed 2026-11-20** (editor + MPPM Player 2, `fbb1961a48`, 74,000 prisms on each at the end): longest frame
+      5.7 s on the host and 4.5 s on the guest (8.7-10.0 s in the test with Garrett the night before); the drain's own
+      frames were 1.4-3.5 s on the host and 0.5-1.8 s on the guest; both back on the menu, party still 2 of 4, no red
+      error. Both marks read `cut short at 8.0s`. One PC: a second machine and a build are still owed.
 - [ ] By eye: after pressing Main Menu the splash is up for longer than before (up to about 8 s more after a very
       heavy match) and nothing of the match shows through it.
 - [ ] A match with a cell environment (Cleave, Dog Fight), return to the menu, then launch it again: the arena lays
@@ -25043,14 +25215,62 @@ Measured in `Docs/PartySystem/BUGS.md`, "B45 on the return to the menu".
 - [ ] Play Again (the same scene reloads) and a Maelstrom round back to the hub still work.
 - [ ] `FrogletTools`: nothing new. The two numbers are on the SceneLoader in Bootstrap ("Scene exit drain").
 
+## 🟡 The boot shows the menu before the Relay host (2026-11-21, Yash, COMPILED and PLAYED by a session)
+
+`Cell.BootBuild.cs` (the boot world lays while nothing listens), `SceneLoader.BootReveal.cs` (the menu revealed once its
+world stands, UI input held until the vessel), `SceneTransitionManager.IsCovering`. Affects: Shombith's boot reveal
+(Docs/MENU_REDESIGN_B.md sections 25-26; queued for his `/approve`). `unity recompile`: 0 errors;
+`BootRevealBeforeHostTests` 8/8, `SceneTransitionManagerTests` 14/14, `PresenceIdentityRepublishTests` 5/5 by
+reflection; `check_console_logging`, `check_conditional_compilation` pass (`check_agent_first` fails on `Fauna.cs`,
+not this change). Measured in `Docs/Multiplayer/BUGS.md` (the 41% row).
+
+- [x] Solo online boots in the editor: the Garland is laid during "Creating session"; the menu shows 6.8-7.5 s after Menu_Main loads (about 10.5 s before).
+- [x] When the host is slower than the lay: the menu fades in with UI input off; input comes back when the vessel spawns.
+- [x] A focused editor (2026-11-21, second run): the splash dissolves in about 1.1 s while the session is still being created; the menu was up 1.7-2.3 s before the host listened. A build is still owed.
+- [x] UI input during the early menu, as a state check (same run): the EventSystem is disabled (`EventSystem.current` null) from the reveal until the vessel spawns, then enabled again. A person still owes the real clicks on ARCADE, TOY BOX and the cell; input that does not go through the EventSystem is not held.
+- [x] The late-host re-cover, forced (the host wait set to 0.5 s by a probe in Play): the warning is logged, the splash covers the menu again with input back on, and the ordinary reveal shows the menu once the host listens and the vessel spawns.
+- [ ] Block the network after sign-in (or a Relay failure): the boot's retry and "Starting offline" screens show on the re-covered splash.
+- [x] A first-time player (FTUE), by reading the code: `QuestGraphRunner.TryStart` runs only from `OnClientReady` (the vessel) and `FTUEEventManager.InitializeFTUE`, which nothing calls. A person still owes a first-run boot.
+- [ ] A build, and two machines.
+
+## 🟡 The boot's 41% "Creating session": no redundant identity republish on the party create (2026-11-21, Yash, COMPILED and PLAYED by a session)
+
+`HostConnectionService.IdentityDiffersFromLobby` / `IdentityDiffers`, timing lines in `PresenceLobbyService`,
+`PartySessionService` and `HostConnectionService` (Party channel), the refused SDK call in `UgsRequestPolicy`'s retry
+line. Affects: Shombith's UGS layer (queued for his `/approve`). `unity recompile`: 0 errors;
+`PresenceIdentityRepublishTests` 5/5 by reflection; `check_console_logging`, `check_conditional_compilation` pass.
+Measured in `Docs/Multiplayer/BUGS.md` (the 41% row).
+
+- [x] Solo online boots in the editor: a rate-limited refusal in 1 of 6 boots (9 of 11 before); the create 6.2-11.0 s.
+- [ ] A renamed player: change the display name, boot, and check the online list on another machine shows the new name.
+- [ ] Two machines: the guest's boot and the host's boot both reach "Host ready" without a "Relay session not ready".
+- [ ] A phone or desktop build, cold start: time "Creating session" with a stopwatch against the editor numbers.
+
+## 🟡 A freeze names the work it was made of: the `stallFrame` mark (B45, 2026-11-21, Yash, COMPILED and PLAYED by a session)
+
+`StallFrameMarkers` (new), `FrameStallWatch`, `FrameStallWatchTests`, `net_scenarios.py` (`MARKS`). `unity recompile`:
+0 errors; `FrameStallWatchTests` 10/10 in the open editor (by reflection, with SetUp and TearDown);
+`check_agent_first`, `check_console_logging`, `check_conditional_compilation` and `net_scenarios.py --self-test` pass.
+
+- [x] Solo online host, Bloomrush, return to the menu: each `stall` is followed one frame later by a `stallFrame`
+      line naming the scene load's work (measured: `Application.LoadLevelAsync Integrate 2737 ms`, `GC.Collect 806 ms`...).
+- [x] Running `FrameStallWatchTests` in the editor no longer switches the stall record off for the next Play.
+- [ ] The next two-machine test: any freeze on the menu after a return shows a `stallFrame` line in
+      `net_logs.py show` on the machine that froze. Read it before changing anything.
+- [ ] A development build: the line carries markers. A release build: it reads "no profiler markers on this build".
+- [ ] No frame-rate change from the recorders (about 120, started once online): compare a menu's fps online and offline.
+
 ## 🟡 Maelstrom seats its AI where the host placed them (2026-11-20, Yash, COMPILED and PLAYED by a session, solo host)
 
 `ServerPlayerVesselInitializerWithAI.PlacedOrBalancedDomain`, used by the match spawner and by
 `MaelstromController.DealAISeats`. `PlacedAIDomainTests` (4) pass in the editor (run by reflection, not the Test Runner).
 
 - [x] Solo host, Maelstrom, three AI placed on Ruby: the hub deals and spawns all three on Ruby.
-- [ ] Two players as in the report: both on Jade, two AI placed on Ruby. The hub shows both AI on Ruby on BOTH
-      machines, and every round keeps them there.
+- [x] Two players as in the report: both on Jade, two AI placed on Ruby. The hub shows both AI on Ruby on BOTH
+      machines, and every round keeps them there. **Passed 2026-11-20** (editor + MPPM Player 2, `fbb1961a48`): the
+      hub, a Breakwater round and the hub after it list ys1 and YS2 on Jade and both AI on Ruby on both machines; the
+      round's scoreboard has two teams, Ruby and Jade, and no Gold. One round played, set through the launch data
+      (`SetRequestedAIDomains`), not by clicking the launch panel.
 - [ ] Nothing placed (the default): the AI are spread as before (one per empty domain first).
 
 ## 🟡 Stoat: one slingshot - the swing's speed-up, no second push at the exit (2026-11-19, Yash, NOT PLAYED)
@@ -25799,6 +26019,25 @@ compiler from the editor's response file: 0 errors. No EditMode tests ran.
       the open-slot text (`79f1ff888b`).
 - [ ] Trigger a toast, change scene, trigger another: it shows, with no MissingReferenceException (`540bac6a24`).
 
+## Dead game cards unlinked (2026-11-20)
+
+Ten vessel class assets no longer list archived cards whose scenes were deleted, `TrainingGames` is empty (all four of
+its games led to deleted scenes and are archived), and `HangarScreen.DisplayTrainingModal` opens only for a hull with
+two training games. `check_gamelist_scenes.py`: OK (self-test 16/16). Unity editor recompile: 0 errors. Not played.
+
+- [ ] Menu: open the Hangar on the Dolphin, Manta, Serpent and Squirrel and press whatever opened training before.
+      Nothing opens and the console has no exception and no "Scene ... couldn't be loaded".
+- [ ] The daily challenge entry point: it reads as unavailable (one `[DailyChallengeSystem] Training game list is
+      empty` warning), and does not start a load.
+- [ ] A development build: play any game from the Arcade grid and the Hangar's Games page; no scene-load error.
+
+## 🟡 Stoat: the ripple is a colourless space-time wave (2026-11-21, Yash, NOT PLAYED)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1c "The drawn wave". `StoatRipplePass` + `StoatRipple.shader` (full-screen, its own copy); `StoatRippleConfig`: wavelength 9, bend 0.012, nearRadius 22, shimmer 0.05, passShare 0.35. Compiled (both assemblies, Roslyn against the editor's references) and the shader through `Tools/Shaders/verify_stoat_ripple.py` (glslang, both stages, negative control fires); not yet run in the editor.
+- [x] EditMode `StoatRippleTests`: all pass. 2026-11-21, real editor on B: at f19019a9c0: `StoatRipple` 10/10, `Stoat` 145/145; the shader imported with no error.
+- [ ] Let the swing hole go back to nothing: no coloured ring; the scene behind the wave wobbles outward from where the hole was, a few crests, and fades as it spreads.
+- [ ] The wave running past your own camera: a small swell of the whole view, not uncomfortable.
+- [ ] No hitch on the frame a ripple starts (the pass copies the camera colour only while one lives); try the Mobile look on a phone build.
+
 ## Voyage HUD, Rev 120 B: the plate over the Ark (2026-11-20)
 
 The plate, chip and toast feed from Frogma Rev 120 (`Docs/MENU_REDESIGN_B.md` section 215). Not run in the Unity
@@ -25860,3 +26099,68 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
+
+## Arcade Poster card and the cell in every card picture (2026-11-23, Shombith's pick, Frogma Rev 128 E / Rev 129)
+
+Not opened in the editor: built in a cloud session (unity_refcompile: 0 errors in the changed files).
+- [ ] Menu_Main > Arcade: every card is all picture with the name in Aldrich over a navy fade, the hull at the bottom right.
+- [ ] Hover a card with the mouse: a panel slides up from the foot with the mode's line and its pilots; the name rises, the hull fades; it closes on exit.
+- [ ] Gamepad: moving focus onto a card opens the same panel; moving off closes it. Touch (phone): no panel, a tap opens the mode.
+- [ ] A long name (Wildlife Liberation, Scarab Scramble) shrinks to fit beside the hull.
+- [ ] Locked card: the lock and LOCKED read in the middle of the picture.
+- [ ] Card pictures: the cell's pane wall and the dust read at grid size, no blue wash (`Docs/MENU_REDESIGN_B.md` 222.1).
+
+## Retention economy: party pay, voyage dock pay, quests at intensity 2 (2026-11-21)
+
+The economy fixes of the Loop Atlas retention build (Garrett: "Build everything proposed. Get all personas retained";
+`Docs/LoopAtlas/sim/REPORT.md`). Not run in the Unity editor: none in this session. The reference compile has 0 errors
+in the changed files; `RetentionPayTests` were not run.
+
+- [ ] A party of two in one match on different domains: when one domain places first, BOTH players' reward strips show
+      200 crystals. Solo, a last place still shows nothing.
+- [ ] A Crystal Run that meets its goal and docks: the wallet (Hangar's crystal display) rises by 600 on top of the
+      elemental crystals. A run given up at sea pays no wallet crystals.
+- [ ] Fresh account: win the Scurry quest's intensity-2 goal (rank first at I2): the quest is ready to claim at once.
+      Playing I3 later still opens I4 on its goal.
+- [ ] Run the edit-mode tests: `RetentionPayTests` passes, and the progression tests still pass.
+
+
+## The breath between rounds (P5, 2026-11-21)
+
+The scoreboard offers ONE next step beside Play again (`ScoreboardBreath`, a copy of the Play again button made in code;
+words and destinations on `Assets/Resources/BreathConfig.asset`; `BreathRules`). Not run in the Unity editor; the
+reference compile has 0 errors in the changed files; `BreathRulesTests` were not run.
+
+- [ ] Solo, win a Time arcade card at I2 with I3 open: a second button under Play again reads "Next: Intensity 3"; it
+      loads the same card at I3.
+- [ ] Lose a round: no second button (Play again is the same rung).
+- [ ] After three results in one sitting at a card's top open rung, the button reads "Take it to Regatta" (a Time
+      card), "Take it to Broadside" (Charge) or "Take it to Brood Rush" (Mass, Space), and loads that arena card at I2.
+- [ ] A guest in a party sees no second button; the Maelstrom's per-game scoreboard shows none.
+- [ ] The copy carries no rematch faces, and Play again still votes and replays as before.
+
+## Voyage waypoints: a voyage closed at sea waits (P13 "voyage chapters", 2026-11-21)
+
+A voyage left at sea after the Ark reached a world of its leg is kept, with its job and what is aboard, and the harbour
+board offers it as the one card; sailing it picks up from that world (`VoyageWaypoint.Begin` / `Mark` /
+`Remaining`, `VoyageRun.ResumeWaypoint`). Not run in the Unity editor: none in this session. The reference compile
+has 0 errors in the changed files; the two new `VoyageRulesTests` were not run.
+
+- [ ] Take a Crystal Run, sail past the first world, leave freestyle: the banner reads "THE VOYAGE WAITS: PICK IT UP
+      FROM THE HARBOUR", not "JOB LEFT UNDONE".
+- [ ] Reopen the Voyage window: the board shows only that job. Sail it: "VOYAGE RESUMED: ON TO <place>", the Ark starts
+      at the world it reached, the hold still has what was stowed.
+- [ ] Leave freestyle before the first world: the voyage is given up as before.
+- [ ] A friend following the host: leaving never keeps a chapter on the friend's machine.
+- [ ] Run the edit-mode tests: `VoyageRulesTests` passes.
+
+## Puzzle-first door and painting pay (P14, P16, 2026-11-21)
+
+The Honeyguide now remembers the seat its person last picked, as the Wrasse already did (`CrewSeatChoice`): a player who
+swaps to the Ratel's board starts on it next time. A finished Toybox painting pays 150 wallet crystals, twice a day
+(`PaintingPay`, `RetentionTuning.asset`, Cloud Code source `painting`). Not run in the Unity editor: none in this
+session. The reference compile has 0 errors in the changed files; `economy.test.cjs` passes (18).
+
+- [ ] Fly the Honeyguide in freestyle, swap to the Ratel, leave and fly it again: it starts on the Ratel's board. Swap
+      back to flying, leave and return: it starts flying.
+- [ ] Finish a painting in the Toybox gallery: the wallet rises by 150. A third painting the same day pays nothing.

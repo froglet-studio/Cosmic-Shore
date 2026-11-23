@@ -78,8 +78,6 @@ namespace CosmicShore.Gameplay
         /// wall in either variant (the throat draws it, <see cref="Throat"/>), and every other tube is seen from outside.
         /// </summary>
         public static bool MarchFreeWhenOutside = Application.isMobilePlatform;
-        static LocalKeyword s_standinKeyword;
-        static bool s_standinKeywordReady;
         static bool s_resolved, s_holdingCameras;
         static readonly ProfilerMarker s_marker = new("SolitonTunnel.Maintain");
 
@@ -160,12 +158,11 @@ namespace CosmicShore.Gameplay
         /// <summary>Turns the march-free keyword on or off on the lens material; returns whether it is on.</summary>
         static bool SetStandin(bool on)
         {
-            if (!s_standinKeywordReady)
-            {
-                s_standinKeyword = new LocalKeyword(s_lens.shader, "_MW_STANDIN");
-                s_standinKeywordReady = true;
-            }
-            s_lens.SetKeyword(s_standinKeyword, on);
+            // A LocalKeyword is bound to the shader's keyword space at the moment it is made. Editing or reimporting the
+            // lens shader while playing replaces that space on the SAME Shader object, and a keyword cached from the old
+            // one throws "Local keyword _MW_STANDIN comes from a different shader" (Bug Ledger E-8ddade9b04). The lookup
+            // is one native name search per camera per frame, so it is made fresh from the material's current shader.
+            s_lens.SetKeyword(new LocalKeyword(s_lens.shader, "_MW_STANDIN"), on);
             return on;
         }
 
@@ -685,7 +682,6 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogWarning($"[Soliton] The Soliton Tunnel lens cannot draw: {reason}. Tunnels are not shown.");
                 s_lens = null;
-                s_standinKeywordReady = false;
             }
             WorldColorTrace.Paint(s_lens);   // loaded after the scene's repaint: born in the worn colour set
             return s_lens;
@@ -714,7 +710,6 @@ namespace CosmicShore.Gameplay
         {
             s_resolved = false;
             s_lens = null;
-            s_standinKeywordReady = false;
             s_holdingCameras = false;
             s_phaseFrame = -1;
             s_rides.Clear();

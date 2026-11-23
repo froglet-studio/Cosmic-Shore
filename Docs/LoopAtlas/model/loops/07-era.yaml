@@ -48,7 +48,10 @@
       fewer people.'
   prop:
     s: change
-    note: Tie each turn to a Tide so that players can see it coming.
+    note: 'Tie each turn to a Tide so that players can see it coming, and announce it in the What''s new window built 2026-11-21
+      (commit 56584fa4e, Frogma Rev 121 C): the turn''s entry in WhatsNew.asset names which vessels changed and which arena
+      environments are new, and the window opens once by itself after the update, so the hole''s ''nothing tells a player
+      that the meta turned'' has its channel.'
   holes:
   - 'on': p
     q: The schedule is not set, and nothing tells a player that the meta turned or why their vessel flies differently.

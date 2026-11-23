@@ -76,4 +76,112 @@ combos:
     - 'Lock a rival: a creature hunts them'
   drivers: [make, crew, break]
   feel: Conducting, not fighting.
+  gene:
+    genome: Space
+    cue: [herbivore_near, rival_mass_ahead]
+    dials:
+    - - tameHold
+      - seconds a herbivore is held in the light before moving on
+      - 1
+      - 6
+      - s
+    - - minSchool
+      - creatures in the school before a throw
+      - 2
+      - 20
+      - count
+    - - throwRange
+      - distance to the newest painted prisms when the throw is let go
+      - 20
+      - 200
+      - u
+    done: A thrown half eats painted prisms within ten seconds of the paint.
+    sight: DOE
+- in: x
+  name: Hop the school
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Two halves of the school are two stepping stones; the dash hops between them.
+  chain:
+  - [Time, Dash to one half]
+  - [Time, Dash to the other half]
+  - - ''
+    - Carry the line through the gate
+  drivers: [joy, mastery]
+  feel: Two places at once.
+  gene:
+    genome: Time
+    cue: [gate_next, verb_ready]
+    dials:
+    - - schoolSpread
+      - how far apart the two halves are kept
+      - 20
+      - 300
+      - u
+    - - dashLead
+      - distance before the gate at which to dash
+      - 0
+      - 150
+      - u
+    done: A gate is threaded within two seconds of a dash.
+    sight: NEEDLE
+- in: x
+  name: The sic
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Point the beam at a rival and send one of your own after them.
+  chain:
+  - [Charge, 'Beam a rival: lock on']
+  - - ''
+    - A creature leaves the school and hunts them
+  - - Mass
+    - Lure a herbivore to take its place
+  drivers: [rival, crew]
+  feel: Setting the hounds on them.
+  gene:
+    genome: Charge
+    cue: [rival_near, bank_full]
+    dials:
+    - - lockRange
+      - rival distance at which the beam is swept on
+      - 30
+      - 250
+      - u
+    - - keepSchool
+      - creatures kept in the school before one is spent
+      - 1
+      - 15
+      - count
+    done: The hunting creature takes a petal.
+    sight: BANDIT
+- in: x
+  name: The garden
+  t: [12, 40]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: The omni crystal's seed and the lure's light make a plant in your colour.
+  chain:
+  - - Omni
+    - An omni crystal leaves a seed
+  - - Mass
+    - 'Light the lure over plants: they grow faster'
+  - - Mass
+    - 'Let go: the seed is planted'
+  drivers: [make, find]
+  feel: Tending something that will outlast the round.
+  gene:
+    genome: Mass
+    cue: [omni_near, flora_near]
+    dials:
+    - - gardenHold
+      - seconds the lure is held over plants
+      - 1
+      - 8
+      - s
+    - - seedSpacing
+      - distance kept between planted seeds
+      - 10
+      - 150
+      - u
+    done: A planted seed grows in your colour inside the claim.
+    sight: IVY
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md

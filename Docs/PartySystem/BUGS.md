@@ -2766,8 +2766,53 @@ cheap rate). From the button to the menu is about 17 s where it was about 10.5 s
 **Not found:** why a destroy during play costs nearly three times the unload's. The editor Profiler was switched on
 to look at one such frame and the editor crashed (native fault, 21:35); do not profile these frames on this PC.
 
-**Not measured:** a guest, two machines, a build, any mode other than Bloomrush, and the hold on a focused editor.
+**Two players (editor + MPPM Player 2, the same evening):** the load's frame was 5.7 s on the host and 4.5 s on the
+guest, with 74,000 prisms on each at the end; the drain's frames were 1.4-3.5 s and 0.5-1.8 s. Both reached the menu
+still in the party. In a gate race (Breakwater, inside a Maelstrom) the drain found nothing to take and cost 2.1 s:
+a course's own prisms are not the cell's plants or environment, so they still die in the load's frame.
+
+**Not measured:** two machines, a build, the hold on a focused editor, and any heavy mode other than Bloomrush.
 The second freeze on the menu a minute after a return (6.9-21.9 s, B45 of 2026-11-20) is untouched.
+
+### B45 on the menu after a return (2026-11-21): not reproduced on one PC; the next freeze names its work
+
+**Seen** in the two-machine test of 2026-11-20 (`gradi+yskha-20261120_004226`, Garrett hosting, Yash a guest, both on
+`bleeding-edge` `99f24a9bb8`, from before the return drain): a second freeze on the menu after a return, on top of the
+return's own load frame.
+- Garrett (host) 6.9 s, about 10 s after a Regatta return. Yash (guest) 8.2 s, about 11 s after a Brood Rush return.
+  Both with an async prism-clone batch waiting, and right after each, `[EnvironmentPrismPool] Async clone batch (163
+  prisms) not integrated after 4s - forcing WaitForCompletion`.
+- Garrett (host) **21.9 s**, about 62 s after the Brood Rush return, with nothing waiting. Relay dropped him and the
+  party ended. Nothing in either log says what that frame did.
+
+**Not reproduced** (2026-11-21, `Ys-bleeding-edge` `923711842b`, editor + MPPM Player 2 on one PC, every slow frame
+logged for 100 s after the return, no probe running in that window):
+- solo, Bloomrush (73,000 prisms) and back: nothing over 0.4 s once the load frame and the menu's first seconds were
+  past;
+- two players, Brood Rush and back: the menu's arena (the Garland, about 4,300 prisms) was laid within 5 s of arriving
+  in frames of 0.4-1.0 s, then nothing over 0.4 s for 80 s on either player; no clone-batch warning;
+- the same with the return drain switched off on both players (the code path of 2026-11-20): the same.
+
+**What the evidence says, and what it does not.**
+- The clone-batch warning is logged AFTER each of the two shorter freezes, not before (the stall mark comes first), so
+  the forced `WaitForCompletion` was not the frozen frame: the frame froze with a batch waiting, and the watchdog,
+  past its 4 s, fired as soon as the frame ended.
+- The batch is the menu's Garland being laid. `Cell.DeferredEnvironmentBuild` waits for the local player (up to 12 s)
+  before it builds on the menu. On one PC that is under a second; on two machines over the internet it can be the
+  10-11 s the freezes came at. A lead, not a finding: what made those frames seconds long is not known.
+- The 21.9 s frame had no clone waiting: its cause is not known.
+
+**Added** so the next freeze names itself: a `stallFrame` mark one frame after every `stall`, with the engine work
+the frozen frame was made of (`StallFrameMarkers`: about 120 profiler-marker recorders, started the first time the
+game is online, read only around a stall; never the editor Profiler window). Measured on a return's load frame:
+`PlayerLoop 5076 ms; EarlyUpdate.UpdatePreloading 2959 ms; Loading.UpdatePreloading 2959 ms; Application.Integrate
+Assets in Background 2959 ms; Application.LoadLevelAsync Integrate 2737 ms; EarlyUpdate.ScriptRunDelayedStartupFrame
+1291 ms; Loading.AwakeFromLoad 932 ms; GC.Collect 806 ms`. A release player has no recorders and says so.
+
+**Also fixed:** `FrameStallWatchTests` left the stall record switched off ("offline") for the next Play in the same
+editor (the tests restored a provider that always answered false). It now restores the real check.
+
+**Next:** the next two-machine test. A freeze on the menu then carries its `stallFrame` line in `net_logs.py show`.
 
 ## B48 - a reaped party session rebuilt in place leaves the pilot unpaired, and the next match seats them on the wrong domain (2026-11-07)
 

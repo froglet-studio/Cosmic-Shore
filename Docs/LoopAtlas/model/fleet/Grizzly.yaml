@@ -67,4 +67,104 @@ combos:
   - [Time, Rush out]
   drivers: [break, mastery]
   feel: Heavy, planted, loud.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, bank_low]
+    dials:
+    - - postRange
+      - distance from the target to the post the Grizzly digs in at
+      - 30
+      - 250
+      - u
+    - - refillTo
+      - energy refilled while dug in before firing
+      - 0.3
+      - 1.0
+      - fraction
+    - - chargeHold
+      - seconds the cannon is charged before release
+      - 0.3
+      - 3
+      - s
+    done: A charged shell breaks rival prisms and the claw's burn spreads, from one dig-in.
+- in: x
+  name: Three rushes
+  t: [5, 15]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Chain the rushes down the straight and dig in at the turn to refill.
+  chain:
+  - [Time, Rush on the straight]
+  - - Time
+    - Rush again before it fades
+  - - Charge
+    - 'Dig In at the turn: energy refills'
+  drivers: [joy, mastery]
+  feel: A charge, a breath, a charge.
+  gene:
+    genome: Time
+    cue: [straight_ahead, bank_full]
+    dials:
+    - [rushSpacing, seconds between rushes, 0.3, 1.5, s]
+    - [reserve, rushes kept for the exit, 0, 2, count]
+    done: A gate is threaded on a rush.
+    sight: NEEDLE
+- in: x
+  name: The ambush
+  t: [8, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Dig in on a rival's line, pick the sniper, fire as they cross.
+  chain:
+  - [Charge, Dig In on a rival's line]
+  - [Mass, Cycle to the sniper shot]
+  - - Space
+    - Release the cannon as they cross
+  drivers: [rival, mastery]
+  feel: Waiting is a weapon.
+  gene:
+    genome: Charge
+    cue: [rival_on_line, verb_ready]
+    dials:
+    - - ambushLead
+      - seconds ahead of the rival the post is taken
+      - 0.5
+      - 4
+      - s
+    - - sniperRange
+      - rival distance for the sniper shot
+      - 50
+      - 500
+      - u
+    done: A shot from a dug-in post lands a petal hit.
+    sight: BANDIT
+- in: x
+  name: Rush into Dig In
+  t: [8, 50]
+  src: 'Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 80% of the behaviour in an archive
+    cell at 98% of the best genome). Not flown by a person yet.'
+  is: 'A chain the AI search kept that no combo named: Rush (Time), then Dig In (Charge).'
+  chain:
+  - [Time, Rush]
+  - [Charge, Dig In]
+  drivers: [joy, mastery, rival]
+  feel: 'Not felt yet: fly it and name the moment, or drop it.'
+  gene:
+    genome: Time
+    cue: [gate_next]
+    dials:
+    - - handoff
+      - seconds from one verb's payoff to the next press
+      - 0.2
+      - 4.0
+      - s
+    - - commit
+      - share of the first verb spent before chaining
+      - 0.2
+      - 1.0
+      - fraction
+    - - reach
+      - distance to the cue at which the chain starts
+      - 20
+      - 400
+      - u
+    done: Dig In lands within the handoff of the Rush before it.
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_RUSH.md
