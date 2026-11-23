@@ -10,9 +10,9 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 |---|---|---|---|---|---|---|
 | Angler | `R b b` | `b b .` | `b b .` | `b b .` | - | Broadside |
 | BrittleStar | `b b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
-| Dolphin | `D b b` | `b b .` | `- - -` | `b b .` | - | Regatta, BroodRush |
+| Dolphin | `D b b` | `b b .` | `- - -` | `b b b` | - | Regatta, BroodRush |
 | Goby | `b ~ b` | `b b .` | `b b b` | `b b b` | - | Regatta |
-| Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
+| Grizzly | `b b .` | `b b .` | `- - -` | `b b R` | - | - |
 | Honeyguide | `R b ~` | `b b .` | `b b .` | `b b .` | - | - |
 | Jacks | `R b b` | `b b .` | `- - -` | `b b .` | - | Broadside |
 | JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
@@ -22,14 +22,14 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Rhino | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
 | Serpent | `R b b` | `b b .` | `b b .` | `x x x` | - | Regatta, BroodRush |
-| Shrike | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta |
+| Shrike | `b b b` | `b b .` | `b b b` | `b b b` | - | Regatta |
 | Sparrow | `b b b` | `b b .` | `x x x` | `b b .` | - | Regatta, BroodRush |
 | Squirrel | `b b b` | `b b .` | `x x x` | `- - -` | Mass | Regatta, BroodRush |
 | Starling | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
 | Stoat | `b b b` | `b b .` | `- - -` | `b b .` | - | Broadside |
 | Swordfish | `b b .` | `b b .` | `b b b` | `b b b` | - | Regatta, BroodRush |
 | Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta |
-| TigerMoth | `R b .` | `b b .` | `b b .` | `b b .` | - | Regatta |
+| TigerMoth | `R b .` | `b b .` | `b b b` | `b b b` | - | Regatta |
 | Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta |
 | Wrasse | `R b b` | `b b .` | `b b .` | `b b .` | - | - |
 
@@ -81,10 +81,12 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Dolphin Time | 1 fun (abilities + game, one intensity) | done | Garrett | 2026-11-13 | human | Garrett, project thread 2026-11-13: Dolphin signed off as fun on Switchback; I1-I4 not all flown yet |
 | Dolphin Time | 2 intensities I1-I4 | built | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed I3 flat over I2 (1.02x) and I4 1.7x; proposed I3 field + hairpins measure 1.16-1.21x over I2, I4 ~1.5x; HELD as a patch (Yash's occupied Switchback lane), DOLPHIN_TIME_LADDER.md |
 | Dolphin Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | trained drive promoted to Switchback (all four files), model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
+| Dolphin Space | 3 AI on I1-I4 | built | Claude | 2026-11-21 |  | Rampage AI trained on the volume books: charge boost driver on in Rampage (DolphinAIBoostPolicy.disabledInModes drops 2) + ThrottleScale 1.25 through the Mass-Space AI row; VC+VD +15/+14/+8/+6% on I1-I4, fresh seeds (RAMPAGE.md). The throttle half ships with the Mass-Space row. |
 | Goby Time | 2 intensities I1-I4 | doing | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed the AI Goby orbiting a ring inside its turning circle and failing to finish most races past I1; the coach now flies straight on to open the range (PERCH_RUN.md 5.1): Legendary 44/47/46/72 s, 12 of 12 finished on fresh seeds. Open: difficulty does nothing (no seat error); I4 still loses up to 40 s at some reef rings. |
 | Goby Time | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | Perch Run coach searched (time_ai_search.py --hull Goby, I1-I4 + I1@T5 + wide): best confirmed on seeds 101-103 within 0.4% of the shipped coach, so the shipped coach stays (PERCH_RUN.md 5.0). Regatta flies its own Goby dart coach (RegattaGobyDart): 15 seeds card 78.1 s / L5 62.6 s after dartPace rest 1.25 (REGATTA.md 6.6). |
 | Goby Mass | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread |
 | Goby Space | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread |
+| Grizzly Space | 3 AI on I1-I4 | redo | Claude | 2026-11-21 |  | Grizzly Charge can't train a volume AI: it is a 90-point blast race (~20 s) where a better AI ends the match sooner and scores lower, and I1-I4 play the same match. A kit hand (GrizzlyKitAutopilot, unshipped, /mnt/project-files/regatta-flywheel/mass7/grizzly/) uses claw and Rush but cannot move the score. Needs a volume or time end condition first. |
 | Honeyguide Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-19 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta shuffle, 5 seeds: card 374 s / L5 363 s (5.1x / 5.6x the field); its Time levers at the 37.5% cap together (zip speed, slip reach, Time's zip scaling) reach 358 / 351 s. Docs/ElementalLoop/REDESIGN.md |
 | Honeyguide Time | 3 AI on I1-I4 | doing | Claude | 2026-11-19 |  | Slip Line's AI is its controller's coach (rail + race line leads); three real-game searches (2026-11-17, train/Honeyguide/NOTE.md) found no confirmed win over it, and the coach cannot leave Slip Line. Its trained nose rate (6.58/s) in Regatta, 2026-11-19: 369 / 355 s vs 374 / 363 s shipped, noise. No portable Time AI yet |
 | Jacks Time | 1 fun (abilities + game, one intensity) | redo | Garrett | 2026-11-19 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta 2.15x card / 2.37x L5 with its coach; jack run at the 37.5% lever cap only ~1.6x; Docs/ElementalLoop/REDESIGN.md |
@@ -105,6 +107,8 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Serpent Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | SerpentAIBoostPolicy_SerpentTime from serpenttime-serpent-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
 | Shrike Time | 2 intensities I1-I4 | built | Garrett's night thread (Claude) | 2026-11-19 |  | Re-checked 2026-11-19 after #2253's sling cooldown 4.75->3.75: real game, seeds 101-104, all 16 races finish; I1 49.1->42.3 s, I2 55.7->39.9, I3 39.3->40.9, I4 41.5->43.3 (THORNLINE.md 4.1). Difficulty is the aim, unchanged. |
 | Shrike Time | 3 AI on I1-I4 | built | Garrett's night thread (Claude) | 2026-11-19 |  | Regatta seat 2026-11-19: RegattaShrikeSling coach + Thornline run1 line; sling cooldown 4.75->3.75 (step 5 knee) = 1.04x card / 0.98x L5 on 15 seeds, no DNF (regatta-flywheel/seat-sw/shrike/f475s15_*). Thornline AI trained on the old 6->2.5 cooldown: re-check. |
+| Shrike Space | 3 AI on I1-I4 | built | Claude | 2026-11-21 |  | Lancefall edger trained on the volume books (VC+VD, Amoebius, Shrike mirror): aiCrystalDetourRange 150/220/300/400 -> 300/200/100/0; nests 3-4x, VC+VD I1-I4 13.9k->66.2k, 21.4k->53.1k, 19.7k->51.8k, 27.1k->63.1k on fresh seeds (LANCEFALL.md 4.1). Mode AI only: Brood Rush and Time unchanged. |
+| Shrike Mass | 3 AI on I1-I4 | built | Claude | 2026-11-21 |  | Thornbush builder searched on the volume books (raid, perch, dock, lance targets): nothing beat the shipped builder on fresh seeds; it lays 8-9 of the ~11 nests its cooldown allows (THORNBUSH.md 4.1). |
 | Sparrow Time | 2 intensities I1-I4 | built | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder: course rungs never slow the AI; AI difficulty set by nose rate (Easy 1.8 / Medium 2.0 / Hard 3.5 / Legendary trained) so Medium ~110 s on every rung vs Legendary 80-97 (PR #2109, BREAKWATER.md) |
 | Sparrow Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | SparrowAIBoostPolicy_Breakwater from breakwater-sparrow-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
 | Squirrel Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | general SkimRaceAIConfig from skimrace-squirrel-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
@@ -115,6 +119,8 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Swordfish Space | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread |
 | Thresher Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | ThresherAIBoostPolicy_ThresherTime from threshertime-thresher-time-lead, model only, editor soak pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
 | TigerMoth Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-18 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 levers cannot bring it within 1.10x of the five; gap and mechanism in Docs/ElementalLoop/REDESIGN.md |
+| TigerMoth Mass | 3 AI on I1-I4 | built | Claude | 2026-11-21 |  | Tapestry AI trained on the volume books: TapestrySettings aiRaidDeficitFraction 0.1->0.5, aiLateRaidSeconds 25->0, aiCrystalReach 450->900, raiders fly the nearest rival's wake (TapestryController), plus ThrottleScale 1.67 via the Mass-Space AI row; VC+VD I2-I4 91k->231k, 93k->216k, 91k->211k, I1 22k->30k, fresh seeds (TAPESTRY.md). |
+| TigerMoth Space | 3 AI on I1-I4 | built | Claude | 2026-11-21 |  | Sirocco searched (dust hover, retarget, overshoot): settings unchanged; ThrottleScale 1.67 via the Mass-Space AI row +10% at I2 (noisy, +-15%); the 600-prism target is never reached 1v1 in 200 s (SIROCCO.md). |
 | Urchin Time | 1 fun (abilities + game, one intensity) | built | Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest | 2026-11-17 |  | fun call: I2 is the fun rung (AI 125-150 s, headless judge, 3 courses); the AI flies at cruise for half the race, 13 rail-seek variants swept, shipped numbers best; nothing changed at I2 (SKEIN.md 18) |
 | Urchin Time | 2 intensities I1-I4 | built | Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest | 2026-11-17 |  | ladder call: AI 85/141/209/328 s after I4 at 5 laps (#2107); rivals by difficulty via rail-seek gain (SKEIN.md 19) |
 | Urchin Time | 3 AI on I1-I4 | doing | Regatta plan threads | 2026-11-08 |  | Skein aim, rail seek and genome (#1845); not yet well trained: Docs/Reports/SKEIN_URCHIN_AI.md |
