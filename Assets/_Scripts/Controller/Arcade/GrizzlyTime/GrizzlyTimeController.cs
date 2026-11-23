@@ -43,14 +43,14 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Grizzly Time";
 
-        /// <summary>The AI commits to a ring from its approach point (Regatta's steering): the scene's approach lead (549)
-        /// sits outside its commit distance (522 since the 2026-11-20 retrain), which without this is the orbit shape (an AI circling a ring it
+        /// <summary>The AI commits to a ring from its approach point (Regatta's steering). Before the 2026-11-23 retrain the
+        /// approach lead (549) sat outside the commit distance (522); it is now 40 inside 541. Without this switch that is the orbit shape (an AI circling a ring it
         /// cannot quite line up). Redline went from 10/24 to 24/24 offline finishes on this one switch.</summary>
         protected override bool AICommitFromApproachPoint => true;
 
-        [Tooltip("The Grizzly AI's nose follow rate in Grizzly Time (learned by time_ai_search against the 20-80 blast, " +
-                 "2026-11-20). No nose lead; the fleet lag is 1.5/s.")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Grizzly, 0f, noseFollow: 9.05f) };
+        [Tooltip("The Grizzly AI's nose follow rate in Grizzly Time (learned by time_ai_search on the merged tree with two " +
+                 "wide curriculum courses, 2026-11-23). No nose lead; the fleet lag is 1.5/s.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Grizzly, 0f, noseFollow: 6.8f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
