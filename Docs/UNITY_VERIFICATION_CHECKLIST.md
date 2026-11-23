@@ -26071,6 +26071,22 @@ render of it beside the board yet.
 - [ ] Gamepad: up and down walk the list, right reaches Close and Set sail, A presses them.
 - [ ] Phone and iPad: the window fits the screen with nothing cut off.
 
+## The Tide and the quest chain on Home, option C (2026-11-21)
+
+Home's two docked cards became the Tide strip and the quest chain (Loop Atlas `era.tide`, spec
+`Docs/UI/specs/tide-home.md`, written by `author_menu_home.py`). Not run in the Unity editor: none in this session. The
+reference compile (player and editor) has 0 errors in the changed files (30 in untouched files, from packages this
+machine cannot fetch); a planted error in `HomeUpNext.cs` was caught. `TideCalendarTests` were compiled, not run.
+
+- [ ] Run the EditMode tests `TideCalendarTests` and `HomeUpNextTests`: all pass.
+- [ ] Open Menu_Main: under the pilot chip, two 56-tall strips, The Tide ("Week 1 of 6 · <this week's card>" and the
+      six-week clock with week 1 lit) and Quest chain ("<quest> · n of m"). No - or x buttons, no card art.
+- [ ] Hover each with the mouse: it opens (Tide: mode, objective, Ends in, Your best; chain: five nodes with names, the
+      current one ringed, the next goal, the intensity, "Press A or click to open") and folds when the pointer leaves.
+- [ ] With a pad, move the focus onto each card: it opens; moving away folds it. A opens the weekly challenge (Tide)
+      or the Voyage window (chain).
+- [ ] Nothing reaches the friends orb with either card open; on a phone (portrait) the stack still fits.
+
 ## Show FPS setting, every build (2026-11-21)
 
 Settings > Display > Show FPS turns on a small FPS counter (`FpsCounter`, words and look in

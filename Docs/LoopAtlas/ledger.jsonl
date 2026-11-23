@@ -30,3 +30,4 @@
 {"at": "2026-11-21", "verb": "plan", "target": "arc.social", "by": "Garrett", "hole": "In a party of friends the payout pays one friend 200 and the others 50 or nothing, so the weakest friend in a group falls weeks behind on vessels and the group's shared progress splits.", "text": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided."}
 {"at": "2026-11-21", "verb": "develop", "target": "arc.social", "by": "Garrett", "text": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided."}
 {"at": "2026-11-21", "verb": "start", "target": "arc.social", "by": "Garrett", "branch": "claude/retain-economy"}
+{"at": "2026-11-20", "verb": "start", "target": "era.tide", "by": "Claude", "branch": "claude/build-era.tide"}

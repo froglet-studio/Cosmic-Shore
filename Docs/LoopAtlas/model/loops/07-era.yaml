@@ -85,7 +85,8 @@
     note: Proposal P6. It gives the long game's empty last phase a rhythm built from systems that already tick.
   src: [proposal]
   build:
-    s: queued
+    s: building
     what: This and the quest chain should take over the two little windows under the profile on the home screen.
     by: Garrett
     at: '2026-11-20'
+    branch: claude/build-era.tide

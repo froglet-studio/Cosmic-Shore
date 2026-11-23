@@ -10,7 +10,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | breath | Role | building | 2026-11-21 | claude/retain-breath | Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off. |
 | arc.unlock | Arc | building | 2026-11-21 | claude/retain-economy | A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar. |
 | arc.social | Arc | building | 2026-11-21 | claude/retain-economy | A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided. |
-| era.tide | Era | queued | 2026-11-20 |  | This and the quest chain should take over the two little windows under the profile on the home screen. |
+| era.tide | Era | building | 2026-11-20 | claude/build-era.tide | This and the quest chain should take over the two little windows under the profile on the home screen. |
 | P5 | proposal | building |  | claude/retain-breath | The breath between rounds |
 | P10 | proposal | building |  | claude/retain-economy | One currency |
 | P13 | proposal | building |  | claude/retain-voyage-chapters | Voyage chapters |
@@ -117,6 +117,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 
 | Date | Step | Loop or item | By | What |
 | --- | --- | --- | --- | --- |
+| 2026-11-20 | start | era.tide | Claude |  |
 | 2026-11-21 | start | arc.social | Garrett |  |
 | 2026-11-21 | develop | arc.social | Garrett | A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided. |
 | 2026-11-21 | plan | arc.social | Garrett | A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided. |
@@ -141,4 +142,3 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | 2026-11-21 | start | P5 | Garrett | The breath between rounds |
 | 2026-11-21 | develop | P5 | Garrett | Garrett, 2026-11-21: "Build everything proposed. Get all personas retained" |
 | 2026-11-21 | plan | P5 | Garrett | Garrett, 2026-11-21: "Build everything proposed. Get all personas retained" |
-| 2026-11-23 | propose | toy.matrix | Claude | Since 2026-11-22 the matrix spawns five grown creatures (Ray, Plume, Lantern, Ammon, Nettle), each in four element forms with a body of its own (PR #2327, Tools/Build/author_spawn_matrix_roster.py). Let 'play in what you made' include riding one: offer the Jewel Wasp beside a spawned creature, so the matrix becomes the free version of the Wasp's possession kit and the four forms are something a player feels, not only sees. |
