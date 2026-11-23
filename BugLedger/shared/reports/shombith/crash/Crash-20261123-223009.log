@@ -1,0 +1,728 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-11-23 22:30:09 (next editor launch after the abnormal exit)
+session:        20261123-164251769  (pid 13032, Unity 6000.3.17f1)
+started:        2026-11-23T16:42:51.769Z UTC
+last heartbeat: 2026-11-23T16:49:11.469Z UTC
+last state:     DomainReload
+main thread:    responsive at the last heartbeat — the process ended abruptly (hard crash or kill)
+hang dump:      C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261123-164251769.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261123-164251769
+started: 2026-11-23T16:42:51.769Z UTC
+unity:   6000.3.17f1
+pid:     13032
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[22:13:37.843] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261123-164251769.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[22:14:49.661] ---- main thread stalled ~118s and RECOVERED — slow, not hung ----
+[22:16:20.922] ---- entering play mode ----
+[22:16:35.185] ---- play mode running ----
+[22:16:39.268] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ffa496f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffa4af2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffa4af2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffa496a587f (Unity) DebugStringToFile
+        0x00007ffa49561b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc34f864fd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc34f863b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc34f85fcb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:16:54.716] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-11-23'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ffa496f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffa4af2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffa4af2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffa496a587f (Unity) DebugStringToFile
+        0x00007ffa49561b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc34f864fd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc34f863b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc34f85fcb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:19:01.719] ---- leaving play mode ----
+[22:19:08.026] ---- edit mode restored ----
+[22:19:11.469] ---- domain reload begins (script compilation / play-mode transition) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '6e7020f13404e6d82a86e220646591c4') in 0.026627 seconds
+[Worker2]  -> (artifact id: '546535eab2f8b0639799518506bb8f6e') in 0.0138282 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/Crew/HoneyguideCrew.Zip.cs using Guid(a04d73e3661a4615aafcbe1f19df5127) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '2ff0f2ee91ca180610cc9f1988faa8aa') in 0.0162606 seconds
+[Worker2] Start importing Assets/_SO_Assets/Scoring Rules/BlastlineScoringRule.asset using Guid(fc4c931fbd642b91ce64567383aeee33) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] Start importing Assets/_SO_Assets/AI Training/Profiles/FitnessProfile_ScarabRally.asset using Guid(21a51a0cafb0546c970a044bd744bace) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '49de7a8cbbf133a7707d65164b617cbc') in 0.0233098 seconds
+[Worker2]  -> (artifact id: 'e6161181f28f305914fe91ab843391c8') in 0.0251397 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/LanternRun/LanternRunController.cs using Guid(fb2d6152eb7d1fbf523263845c308700) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '0ad9cef1073864593667c02058dc8de8') in 0.0128833 seconds
+[Worker2] Start importing Assets/Resources/Pilots/Scenes/Caberin.jpg using Guid(621183490c9e2a2fac1335cc3798a9f0) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/Resources/CameraFeelConfig.asset using Guid(c40303bf6c50480ab16c093c53e1ad9b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '3e04b098d70d96f1b7dcbc445b650d6f') in 0.0223464 seconds
+[Worker2]  -> (artifact id: '796a1ae799cc11dc9e2c5180027e8563') in 0.030916 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/SquirrelCrystalMorphByCrystalEffectSO.cs using Guid(f8bfd551c679481cad2580e4ef208d58) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '91c8cd92fa937e75d31c43f78c845edd') in 0.0149364 seconds
+[Worker0] Start importing Assets/_SO_Assets/Drills/Lessons/LessonTemplate_TwoThumb.asset using Guid(1c7bc41571655ea9f57b11d3af1a4125) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/System/Economy/DailyRewardHandler.cs using Guid(532b59500cf5e4742a87c8f9de67f309) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'fcf474c788afd54c1d47e10a554d910d') in 0.0144294 seconds
+[Worker0]  -> (artifact id: '21b7d6cc6b681879b5701b71939b330b') in 0.0251617 seconds
+[Worker1] Start importing Assets/_SO_Assets/Cell Configs/Longshot Cell/Longshot Spawn Profile 4.asset using Guid(c1909a180d3977472ed66c7f8c57fcf7) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '699a7c73a05ef1afff9e73e6372fbf13') in 0.0174063 seconds
+[Worker2] Start importing Assets/_Scripts/Tests/Editor/RhinoReworkTests.cs using Guid(fc8b576010424abcba809d507e446258) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Editor/Environment/FulmenConfigSOEditor.cs using Guid(7d8150276aa240d8b1d808ac67890833) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'de3ce18c43208447ac156c020c8dff7b') in 0.0152775 seconds
+[Worker0]  -> (artifact id: '6ba53c9758991a0174e1912764d33550') in 0.0150446 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/JewelWaspNetworkRelay.cs using Guid(5bb9633b47d70e716de8ff47bb536c62) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '445ee9ccf6194acf0fbcc8ebfbea9aec') in 0.0164217 seconds
+[Worker2] Start importing Assets/_Models/Fauna/NettleSpaceFrill1Whip1.asset using Guid(ccfa6f5abb3c0ad16e73745ac16a6152) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] Start importing Assets/_Prefabs/FloraAndFauna/RaySpace.prefab using Guid(7717159530195b51241052fd5676dc6d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: '1ed1b2d8a9ff1a73d7a829db80d03902') in 0.016334 seconds
+[Worker1] Start importing Assets/_Models/Fauna/PlumeMassBrace1Whip0.asset using Guid(52f602a43dd87c83767b45dd283ba9b0) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'da6637fdcb95259e9c5bd6ed0fe7f7eb') in 0.0204587 seconds
+[Worker2] Start importing Assets/_Models/Fauna/AmmonMassBody.asset using Guid(127b475d990830cd9302d2172d4aaa3a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+Container Menu_Main (-1395427422) disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:57)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Container RootContainer disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+[Worker2]  -> (artifact id: '67cfe630083a77b60dc02bcd9dfb78ea') in 0.0201486 seconds
+[Worker0]  -> (artifact id: '98124a7345266d6254065a9bc9b16c0c') in 0.1368236 seconds
+[Worker1] Start importing Assets/Resources/Pilots/Scenes/Ilorin.jpg using Guid(ce3cf54b1ad2937491fe7c091aa83f5d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+Analytics Dispatcher is already flushing.
+0x00007ffa496f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffa4af2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffa4af2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffa496a587f (Unity) DebugStringToFile
+0x00007ffa49561b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001cc34f864fd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001cc34f863b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001cc34f85fcb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001cdd08fb315 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000001cc34f85d10 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001cc34f85bd8 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001cdd0e493d3 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x000001cdd0e4930e (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x000001ce721fa74b (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:ApplicationQuit () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:326)
+0x000001ce721fa61b (Mono JIT Code) Unity.Services.Analytics.AnalyticsContainer:CleanUp () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/AnalyticsContainer.cs:111)
+0x000001cc8ff7f052 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x000001ce721f91d3 (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x000001cbe5641de5 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffa842d6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffa84218984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffa84218a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffa49f2fdd4 (Unity) scripting_method_invoke
+0x00007ffa49f36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffa49f32235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffa4940ab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ffa49dff689 (Unity) NotifyPlayerQuit
+0x00007ffa4a76b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffa4a76d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffa4a76896c (Unity) Application::TickTimer
+0x00007ffa4a549f7c (Unity) MainMessageLoop
+0x00007ffa4a551a12 (Unity) UnityMain
+0x00007ff620502f2a (Unity) __scrt_common_main_seh
+0x00007ffb3b41dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffb3cab9c6c (ntdll) RtlUserThreadStart
+
+[Worker1]  -> (artifact id: '5e0176ee2fadb3a535c9996887cb1a66') in 0.0271668 seconds
+[Wire - ws#]: [23-11-2026 22:19:05] FATAL <>c__DisplayClass169_0.<startReceiving>b__2:2577 The header part of a frame could not be read.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (string,object)
+UnityWebSocketSharp.Logger:defaultOutput (UnityWebSocketSharp.LogData,string) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:231)
+UnityWebSocketSharp.Logger:output (string,UnityWebSocketSharp.LogLevel) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:249)
+UnityWebSocketSharp.Logger:Fatal (string) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:316)
+UnityWebSocketSharp.WebSocket/<>c__DisplayClass169_0:<startReceiving>b__2 (System.Exception) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/WebSocket.cs:2577)
+UnityWebSocketSharp.Ext/<>c__DisplayClass51_0:<ReadBytesAsync>b__0 (System.IAsyncResult) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Ext.cs:812)
+System.Threading.Tasks.TaskToApm/<>c__DisplayClass3_0:<InvokeCallbackWhenTaskCompletes>b__0 ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<int>:TrySetResult (int)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetResult (int)
+Mono.Net.Security.MobileAuthenticatedStream/<StartOperation>d__57:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<Mono.Net.Security.AsyncProtocolResult>:TrySetResult (Mono.Net.Security.AsyncProtocolResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Mono.Net.Security.AsyncProtocolResult>:SetResult (Mono.Net.Security.AsyncProtocolResult)
+Mono.Net.Security.AsyncProtocolRequest/<StartOperation>d__23:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<System.Threading.Tasks.VoidTaskResult>:TrySetResult (System.Threading.Tasks.VoidTaskResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetResult (System.Threading.Tasks.VoidTaskResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetResult (System.Threading.Tasks.Task`1<System.Threading.Tasks.VoidTaskResult>)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetResult ()
+Mono.Net.Security.AsyncProtocolRequest/<ProcessOperation>d__24:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<System.Nullable`1<int>>:TrySetResult (System.Nullable`1<int>)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Nullable`1<int>>:SetResult (System.Nullable`1<int>)
+Mono.Net.Security.AsyncProtocolRequest/<InnerRead>d__25:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<int>:TrySetResult (int)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetResult (int)
+Mono.Net.Security.MobileAuthenticatedStream/<InnerRead>d__66:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<int>:TrySetResult (int)
+System.Threading.Tasks.ValueTask`1/ValueTaskSourceAsTask/<>c<int>:<.cctor>b__4_0 (object)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:InvokeContinuation (System.Action`1<object>,object,bool)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:OnCompleted (System.Net.Sockets.SocketAsyncEventArgs)
+System.Net.Sockets.SocketAsyncEventArgs:Complete_internal ()
+System.Net.Sockets.Socket/<>c:<.cctor>b__367_10 (System.IAsyncResult)
+System.Net.Sockets.SocketAsyncResult/<>c:<Complete>b__27_0 (object)
+System.Threading.QueueUserWorkItemCallback:System.Threading.IThreadPoolWorkItem.ExecuteWorkItem ()
+System.Threading.ThreadPoolWorkQueue:Dispatch ()
+System.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()
+
+(Filename: ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs Line: 231)
+
+[Worker2] Start importing Assets/Resources/Pilots/Scenes/Sanuia.jpg using Guid(b056b50934b1b051a977248603834a77) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/Resources/Pilots/Scenes/Rodiix.jpg using Guid(fffac9e2755876dc24c1c49a1b412b35) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'a40bd459c216b66d5643ac4be246481a') in 0.022999 seconds
+[Worker0]  -> (artifact id: '3ad79b67262be60502443103ca28a75b') in 0.0215504 seconds
+[Worker1] Start importing Assets/_Models/Fauna/NettleBody.asset using Guid(4c646c62a666d8c0db1454517cf3f002) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '50735f7020fdadc80020bc3539b0555c') in 0.0226691 seconds
+[Worker2] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Uloth.png using Guid(8e382f2b1f3c74a4663d33c3c143d993) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '9819a151d40d7099938a43e93c0b0c5d') in 0.0198144 seconds
+[Worker0] Start importing Assets/_SO_Assets/Lifeforms/Ray Fauna Charge.asset using Guid(1243a8c0942c8abaf753cc507bdcd81e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Habear.png using Guid(f559bc9a65938203c75fb1644d89b217) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '3514c8687b81557a78b7af1d3a0d49c3') in 0.0210168 seconds
+[Worker2] Start importing Assets/Resources/Pilots/Scenes/Aane.jpg using Guid(809e0072914868aea7b3be2be5f4ee4f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '9f0b4655b0167c5a739cdd5dbf4900a9') in 0.1096163 seconds
+[Worker2]  -> (artifact id: '781d126cb3c93684abf2fe58115a9ad5') in 0.0223346 seconds
+[Worker1] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Galsoly.png using Guid(1062034a08981193982af076a5125ffe) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '1ef2a3339f919e2fddb64408f56dad09') in 0.0221484 seconds
+[Worker0] Start importing Assets/_Models/Fauna/RayLash0.asset using Guid(9b41d7a935e08f32d6947c9e88e00786) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] Start importing Assets/_Graphics/Materials/Graphs/SpindleGrownSway.hlsl using Guid(4f9b67f57b5756decf996335ef94260e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '424fc76cf91d185b4ee96d2280d5efa6') in 0.0143068 seconds
+[Worker0]  -> (artifact id: 'e4e3d1e257ea7025fa0320a5e7b5f11e') in 0.0156807 seconds
+[Worker1] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Delmadek.png using Guid(e1063a0af68117b358359e148b1d58fe) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'ab279a895fec594e2b846c0eb6698a69') in 0.0241287 seconds
+[Worker0] Start importing Assets/Resources/Pilots/Scenes/Darsoane.jpg using Guid(a12c320e32a5459909aca7d2c8702de4) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Models/Fauna/LanternMassBody.asset using Guid(83d84cdc988a1010cb18fde3ef7546e8) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '78e85a881b65329d141612312ab8ef6e') in 0.0236516 seconds
+[Worker2]  -> (artifact id: '53ce2317d370455d9f5c46e810d92041') in 0.0255329 seconds
+[Worker1] Start importing Assets/_Models/Fauna/RayMassVaneA2.asset using Guid(fe4f563a53031c63df49062c0ffb75f1) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'c55ce40572cd6eb0ecc7fe433f799c51') in 0.0171874 seconds
+[Worker0] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Gallith.png using Guid(9f8d99686a165b3a6fb042001d268a09) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Models/Fauna/RaySpaceVaneA2.asset using Guid(342454183226bfe5ae07facc8d5f6a90) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'fce305821373c7ce99ddcc81fddbd2b4') in 0.0222849 seconds
+[Worker2]  -> (artifact id: 'd3cffc1044ac86f85c4382a1ecedc815') in 0.0161503 seconds
+[Worker1] Start importing Assets/_Models/Fauna/NettleChargeFrill2Whip1.asset using Guid(e30a8c3d11b613d196904c710c0df9dc) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '0d9fe28b485220d2776e24e3847b27b2') in 0.0192266 seconds
+[Worker0] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Darx.png using Guid(cf40e44a18ec366fbd8f024f73ebf09a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/Resources/Pilots/Scenes/Yone.jpg using Guid(f7e5bd9afd3d26d917265e79281c8818) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '364725ec674f1022e27a1499e2e67ca5') in 0.023836 seconds
+[Worker1] Start importing Assets/Resources/Pilots/Scenes/Yonoek.jpg using Guid(037d7637955cf6856bd00a0fcb8fe9b9) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2]  -> (artifact id: 'dc1443d2a1f60a170b1062d70d5c122f') in 0.0245296 seconds
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'ebae286cacf805b7c1eb6df9d9bf1518') in 0.024754 seconds
+[Worker0] Start importing Assets/Resources/Pilots/Scenes/Galbemo.jpg using Guid(f92f532a1078f4b30cc03c828e571d6e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/Resources/Pilots/Scenes/Kash.jpg using Guid(6fa2eb87511b0686a788c7c81e4d0cc9) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'e3056b9d145a909fca4c340fa2dd573e') in 0.0244809 seconds
+[Worker1] Start importing Assets/_Models/Fauna/AmmonMassShell1Whip0.asset using Guid(67f6463836a1c673373a959061aef1bd) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2]  -> (artifact id: 'b8a4f008f54fb94343cf0fb70962c143') in 0.0268341 seconds
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'afa3e9f9aa614e0cf2b80decf96eba33') in 0.0201732 seconds
+Unloading 420 Unused Serialized files (Serialized files now loaded: 0)
+[Worker0] Start importing Assets/_Prefabs/FloraAndFauna/NettleCharge.prefab using Guid(3c3a2a6b30823feb77b09da0ed45c7fb) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Models/Fauna/AmmonChargeFeeler2Whip0.asset using Guid(51d7b8709dfbca324ae8ffbe7598fa89) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'd8310fb53a74c25ac72634c39ea5f5d6') in 0.0176952 seconds
+[Worker1] Start importing Assets/_Scripts/UI/Kit/KitPosterReveal.cs using Guid(a370bf4a60764516abe71920894291df) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '3c7ee5193d33e890ac057bf233513bce') in 0.0190997 seconds
+[Worker2] Start importing Assets/Resources/Pilots/Scenes/Fenkora.jpg using Guid(f9ed1f7d8865d1658485cb6eaa0f1356) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '02ea198f08b75f4217235e98b19296fa') in 0.1409314 seconds
+[Worker1] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Aane.png using Guid(45c13d8f9b859826f0385250b137fb3e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2]  -> (artifact id: 'd860964fd01c1d8cc08665486d0a8cde') in 0.0214645 seconds
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '64a49d1ec7b5687c2a05c724700e7446') in 0.030283 seconds
+[Worker0] Start importing Assets/_Models/Fauna/RayVaneA2.asset using Guid(c2bedbb70692722517039e8996a224a7) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] Start importing Assets/_Models/Fauna/LanternSpaceBody.asset using Guid(df889f44eae4db17c7271903b5a5b9a4) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '03f8f6190e62246a39fd295e59f2cbb0') in 0.0167042 seconds
+[Worker2]  -> (artifact id: '749e4a9dcf3b22e5f8287a52bdaf77fb') in 0.0197341 seconds
+[Worker1] Start importing Assets/_Models/Fauna/PlumeChargeArm3Whip0.asset using Guid(59f7dfe0fa0df9bc654fce6480a7142d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '3182ff37346c86a1ee5228ed807a715f') in 0.0143569 seconds
+[Worker0] Start importing Assets/_Models/Fauna/PlumeChargeTalon2Whip0.asset using Guid(ea42a0f416e0bbc7cb078c852080bdb8) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Models/Fauna/PlumeMassArm6Whip0.asset using Guid(d92f2b41d4ab96b3ac7955683ace77b4) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '1695e2e48a0eaabcb6b6087fe1fd897b') in 0.0158691 seconds
+[Worker2]  -> (artifact id: 'b327a02e34b72b49c3225fc669977669') in 0.0164224 seconds
+[Worker1] Start importing Assets/_Graphics/Materials/Fauna/PlumeChargeSpindle.mat using Guid(112041f6462e68ae7cf2af9b0db7e13b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '8983647bfa4903a65021467504a2e09b') in 0.0243983 seconds
+[Worker0] Start importing Assets/Resources/Pilots/Scenes/Pelowen.jpg using Guid(c71f00ea67d7034d3c008d0788ae717f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Models/Fauna/PlumeMassArm8Whip0.asset using Guid(018431eafc7883a29a7756d00ede482f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '18253d77803669dc9ebf5cb7e9f05b24') in 0.0234002 seconds
+[Worker2]  -> (artifact id: '993ae3f70b932eb6c2da1e0d9c302001') in 0.0161491 seconds
+[Worker1] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Kadiwen.png using Guid(db6087694dc9ccd0274dfcabc70aa6ec) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '720e17d2237f6f77521ba61b9da26c6e') in 0.019317 seconds
+[Worker0] Start importing Assets/Resources/Pilots/Scenes/Rolodek.jpg using Guid(b9a9b5f9298b5757f91f8525edec1db6) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Editor/Build/iOS/PrivacyInfo.xcprivacy using Guid(0c46789d89f445958f128cbf398b03c3) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'e007169265fa8d9e789ffca7df92e93b') in 0.0178062 seconds
+[Worker0]  -> (artifact id: '024e3e01c58ae9c5cb50922797c61ae3') in 0.025229 seconds
+[Worker1] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Pelowen.png using Guid(fea015bb836ba8522787f84d980f8c50) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '433b5c114c9d19e23075303cba9ca88c') in 0.0205299 seconds
+[Worker2] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Delloane.png using Guid(cfad83ab5450452a1a2a7181efe7274f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Models/Fauna/NettleFrill1Whip1.asset using Guid(8f41cce49e17f2a8a058a022a923722a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'dc798eb82a451c6a5bf67505e53e5f22') in 0.0211087 seconds
+[Worker0]  -> (artifact id: 'd20d8611a26e897148ab10eb1db4f4c3') in 0.0166966 seconds
+[Worker1] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Sanuia.png using Guid(371a174204d04ed1954c7add633b23e7) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '212a149359ee6f7c53d3473c94654b5e') in 0.0229144 seconds
+[Worker0] Start importing Assets/_Models/Fauna/PlumeSpaceBody.asset using Guid(5bf8c270b10fa4c56a0b186cd1e18df2) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Prefabs/FloraAndFauna/Nettle.prefab using Guid(7a01c7894e92fa3a2a1c50c4fbedf369) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '309b997ea9074ca6dbf01a6eebd22cd0') in 0.0160458 seconds
+[Worker1] Start importing Assets/_Models/Fauna/NettleMassFrill0Whip0.asset using Guid(b68fcdb5bcf1b01d91ba097df4cca722) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'f3ccc822e9adb0284803782a251ef847') in 0.0157736 seconds
+[Worker0] Start importing Assets/Resources/Pilots/Scenes/Kadiwen.jpg using Guid(29d534c8a12ab4db1008ee8bfdff17a5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: '2580eff1a2e65d3ec2b6b226469baa2d') in 0.1260822 seconds
+[Worker0]  -> (artifact id: '46a2aeddad2177f8cce0263395f1d763') in 0.0253104 seconds
+[Worker1] Start importing Assets/_Models/Fauna/PlumeSpaceArm6Whip0.asset using Guid(e60d46bff37de2767f59a1048a13603d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '9327d2fe5ed7cb86683c5c38903a4d59') in 0.0160856 seconds
+[Worker0] Start importing Assets/_Models/Fauna/RaySpaceLash1.asset using Guid(1349fd5823033281d2a1ae4f4fbc8077) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Graphics/Materials/Fauna using Guid(5d1954b4732278da0c2d831a03463262) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Darsoane.png using Guid(f8f7f9afccb4c99d44a74a78f7cb6a5c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0]  -> (artifact id: '90ec3b910acdce115fff35ce93d3ac68') in 0.0173345 seconds
+[Worker1] (ScriptedImporter)
+[Worker2]  -> (artifact id: '3c20f8aec15a677f7c912a9e0984804d') in 0.0156135 seconds
+[Worker1]  -> (artifact id: '8c1b2b6570c637b83f2684ce7a0fd386') in 0.0205231 seconds
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            30.257 ms
+	Integration:            1079.323 ms
+	Integration of assets:  0.032 ms
+	Thread Wait Time:       -0.005 ms
+	Total Operation Time:   1109.606 ms
+[Worker0] Start importing Assets/_SO_Assets/Lifeforms/Nettle Fauna Time.asset using Guid(457bcaee5d2173e130aca9fc2a3ad75b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_SO_Assets/Lifeforms/Lantern Fauna Charge.asset using Guid(247f736a426917b0b95c5aaab4705302) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/_Models/Fauna/NettleMassFrill2Whip0.asset using Guid(336457e8d8cefa51e2a983a26e0566b1) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'e4ebffc5b790be5fa7041e56d5201af0') in 0.017963 seconds
+[Worker0]  -> (artifact id: '877e283da718fe1b6b97c1143ba43df1') in 0.1163659 seconds
+[Worker2]  -> (artifact id: 'b573b73202f77578806624ddd92f910c') in 0.1182362 seconds
+[Worker1] Start importing Assets/_Models/Fauna/AmmonSpaceFeeler1Whip0.asset using Guid(f0af101eac843147fb0e7d3b7bf764ea) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'd83e8ee8490720eb0a05a81118c833d6') in 0.0183377 seconds
+[Worker0] Start importing Assets/_Models/Fauna/RayChargeLash1.asset using Guid(a4e54160540ffde5327ba3015171e6f7) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] Start importing Assets/_Models/Fauna/RayMassVaneB2.asset using Guid(ca4c6f0656f79973c9e8c60d23d19c36) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'e1719a7c880c7ac6edb022b0fb51b044') in 0.0155572 seconds
+[Worker0]  -> (artifact id: 'd2fea69f977097d7911c0382f7de1ff5') in 0.0181599 seconds
+[Worker1] Start importing Assets/_Models/Fauna/PlumeArm0Whip0.asset using Guid(d37d405980cb0f37dd98edaa02edf551) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '3c5a838ab75a53456ec7ea470ad11a5c') in 0.0168658 seconds
+[Worker2] Start importing Assets/_Models/Fauna/PlumeChargeArm2Whip0.asset using Guid(e4ce5a9180564de00ea99c105d4607cd) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Belwen.png using Guid(7904e344d5cfb18a0b0ba5218a34c048) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'c090322ec2f1361bf32e0a057db55a80') in 0.0175057 seconds
+[Worker1] Start importing Assets/_Models/Fauna/NettleSpaceFrill3Whip0.asset using Guid(c570a39221c0301ba10f9c23761433f5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0]  -> (artifact id: '4677e3c9e4be03a6a6351d1c0b0d64b2') in 0.0229949 seconds
+Unloading 40812 unused Assets / (23.9 MB). Loaded Objects now: 48079.
+Memory consumption went from 0.99 GB to 0.97 GB.
+Total: 378.384100 ms (FindLiveObjects: 8.942000 ms CreateObjectMapping: 12.044800 ms MarkObjects: 308.454700 ms  DeleteObjects: 48.941000 ms)
+
+[ScriptCompilation] Requested script compilation because: Player settings modified
+[Worker1]  -> (artifact id: 'a6b933a086d6d4023ea88bfa435716a3') in 0.018652 seconds
+[Licensing::Client] Successfully resolved entitlement details
+[Worker2] Start importing Assets/_Models/Fauna/RayLash2.asset using Guid(75403e97e9018fb57587d341866c918f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Graphics/Materials/Fauna/AmmonMassSpindle.mat using Guid(6808a1804a9f4b0f0ffd8608f88fe099) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: '772f6e216c9ea518cc958ee998755d25') in 0.0171273 seconds
+[Worker1] Start importing Assets/_Scripts/Utility/Foundation/ShieldShellMath.cs using Guid(d55c5041b6a343fdb3114302f5a241ed) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Worker0]  -> (artifact id: 'd13c9489ea2679f3370941648501634a') in 0.025764 seconds
+[Worker1]  -> (artifact id: '7c1bbae9b5599039be8cc0df4f5ed439') in 0.0148497 seconds
+[ServicesCore]: System.OperationCanceledException: The operation was canceled.
+  at System.Threading.CancellationToken.ThrowOperationCanceledException () [0x00010] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Threading.CancellationToken.ThrowIfCancellationRequested () [0x00008] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at (wrapper unbox) System.Threading.CancellationToken.ThrowIfCancellationRequested()
+  at Unity.Services.Core.Scheduler.Internal.ActionScheduler.ExecuteExpiredActions () [0x000cc] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Runtime\Scheduler\ActionScheduler.cs:116 
+0x00007ffa496f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffa4af2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffa4af2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffa496a587f (Unity) DebugStringToFile
+0x00007ffa49561b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001cc34f864fd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001cc34f863b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001cc34f85fcb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001cdd08fb315 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000001ce722827bb (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,string,object)
+0x000001ce722826bf (Mono JIT Code) Unity.Services.Core.Internal.CoreLogger:LogException (System.Exception) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Runtime/Core.Internal/Logging/CoreLogger.cs:19)
+0x000001cdd3a46ffb (Mono JIT Code) Unity.Services.Core.Scheduler.Internal.ActionScheduler:ExecuteExpiredActions () (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Runtime/Scheduler/ActionScheduler.cs:121)
+0x000001cbece97008 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffa842d6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffa84218984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffa84218a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffa49f2fdd4 (Unity) scripting_method_invoke
+0x00007ffa49f36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffa49ddad44 (Unity) ExecutePlayerLoop
+0x00007ffa49ddfc0f (Unity) PlayerLoop
+0x00007ffa4a7556da (Unity) EditorPlayerLoop::Execute
+0x00007ffa4a76c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffa4a76b987 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffa4a76d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffa4a76896c (Unity) Application::TickTimer
+0x00007ffa4a549f7c (Unity) MainMessageLoop
+0x00007ffa4a551a12 (Unity) UnityMain
+0x00007ff620502f2a (Unity) __scrt_common_main_seh
+0x00007ffb3b41dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffb3cab9c6c (ntdll) RtlUserThreadStart
+
+[Worker2] Start importing Assets/_Graphics/Materials/Shaders/UI/SeaLines.shader using Guid(a858c84b2f4f82fe28d88ab1da996dc2) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'a6a6f45125a570cf5e9ca2306ef00b93') in 0.018034 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/GrizzlyRushActionExecutor.cs using Guid(c6cdeab66eee0b745a037e116b874213) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] Start importing Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_great_serpent_1_eight.json using Guid(d67f14aa0408cb18f0ea4773519ae758) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker0]  -> (artifact id: '8f243c9942157acd5170074193f28b0a') in 0.0152734 seconds
+[Worker1]  -> (artifact id: '29f182cde4146730ed979913b9c160e4') in 0.0160581 seconds
+[Worker2] Start importing Assets/_Graphics/Materials/AssemblySpindleMaterial.mat using Guid(098c6984344832649fdb93671664278b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/TurnMonitors/FulmenPrismTurnMonitor.cs using Guid(2e99757e3c9692dad1ca4bafe48e09fc) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] Start importing Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset using Guid(8d1c1bdcb636a424d9c54fbd1afc952f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2]  -> (artifact id: 'a20d11b0dcde3a96a65c4abcb03bb2e2') in 0.0206949 seconds
+[Worker0] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '55aab1dab30632010db5c93a5dff9014') in 0.0153478 seconds
+[Worker0]  -> (artifact id: '0d3f48edd3894a11185859b24dca9c18') in 0.0308062 seconds
+[Worker2] Start importing Assets/_Scripts/ScriptableObjects/QualityPresetCutsSO.cs using Guid(baff6f3cc6b14e969371b861e716a586) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/_SO_Assets/Lifeforms/Shark Fauna Charge.asset using Guid(58835b82ea284255855af2649ef185a5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2]  -> (artifact id: '8ce8e6f95e7b1dad57d1c64dbef7eaab') in 0.0147719 seconds
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/Crew/HoneyguideCrew.Preview.cs using Guid(b99eda28c574406e9cc7e10c5184c561) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'f6efcb0011a45dc8c9bdddbc8eaa9fb0') in 0.0158613 seconds
+[Worker2] Start importing Assets/Resources/ColorGrades/UkiyoEColorSetSO_ui.bytes using Guid(38a9ea459d4841815c4ab48f8d5f2c3d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1]  -> (artifact id: '8ae4773b3cb70928dd9393446bffe191') in 0.1100081 seconds
+[Worker2]  -> (artifact id: 'a0517e9f4bba1766d6726a52c37b8205') in 0.0272742 seconds
+[Worker0] Start importing Assets/_Scenes/Multiplayer Scenes/MinigameShatterplane.unity using Guid(2a77c10f7818170d6e23f70515343042) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '875903378f60c6b232ed28bb5f66e56b') in 0.0343784 seconds
+[Worker1] Start importing Assets/_SO_Assets/Substrate Fauna/Substrate Pack Hunter Species.asset using Guid(f27da382d37fbd957dd824f847901b43) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorJuice.cs using Guid(9e2f4a7c1b6d4e83a5c0f8d27b31e964) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '76203bc3223de0c8532061d9db06f1c9') in 0.0181305 seconds
+[Worker0] Start importing Assets/_Scripts/UI/Elements/Leaderboard/LeaderboardPodiumSlot.cs using Guid(aa8d23c0e4062f74113631225bc0075a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'ee184ec19638653cc56a0418100b6d48') in 0.0194156 seconds
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.[Worker2] Start importing Assets/_SO_Assets/Swarm Fauna/Bench/Bench Swarm Grid Mass Fauna Config Data.asset using Guid(64313e5dbea7f4301ccaf835a03b821a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'ce6031235a486f776deeadf175d2c90d') in 0.151261 seconds
+[Worker0] Start importing Assets/_Scripts/Tests/Editor/SerpentCrystalPickupTests.cs using Guid(efcd79586538e87858c65e45f44de9fa) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '1a8cf4f1f130e2cf9f8e104e10ba108f') in 0.0146563 seconds
+[Worker2]  -> (artifact id: 'a47b64f208d61d13da81190fb0ab609a') in 0.1013213 seconds
+[Worker1] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Cornoly.png using Guid(88e6c7629b501e3d7556d0fdd99fead8) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Utility/Lit/LitVolume.cs using Guid(db0f98c396b944638a53b61b607a0329) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1]  -> (artifact id: '5d05823362d59956fe611eaebf66a70e') in 0.0231952 seconds
+[Worker0]  -> (artifact id: 'f1499fd014cc821e93b7cc07a309406f') in 0.0144693 seconds
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping application/grpc - - 200 - application/grpc 0.2668ms
+[Worker2] Start importing Assets/_Graphics/Materials/CrystalMaterials/ExplodingMassCrystalMaterial.mat using Guid(68b2d5aac3944624938d347a870b7a25) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '44a0a331751a1faeaab0d6d85da11b3a') in 0.0198183 seconds
+Starting: C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: C:/Users/Shombith/Documents/GitHub/Cosmic-Shore
+[Worker1] Start importing Assets/_Scripts/ScriptableObjects/PrismCradleConfigSO.cs using Guid(bc81e2d6067d41edaee4650e11112d80) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] Start importing Assets/_Scripts/Tests/Editor/GobyPistolTests.cs using Guid(2fd4a6ad540d4342a7082e6ae05b26c0) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '686366215100dc6193ce342e5c1e3ebb') in 0.016454 seconds
+[Worker0]  -> (artifact id: 'd616892799a845af028b42a51b2b6de2') in 0.0152395 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/VesselPilotLoadout.cs using Guid(0d949b1bb46533b40d57286f20a2048f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '7cafaab284082acfdaf74541bb16aed4') in 0.0179566 seconds
+[Worker0] Start importing Assets/_SO_Assets/Mode Previews/ModePreview_Sentry.asset using Guid(1030473d07937ddc9c402318336281b3) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] Start importing Assets/_Prefabs/UI Elements/VesselHUD/SparrowHUDVariant.prefab using Guid(f0a24806a0485254389f97d4c93f7615) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/Arcade/TurnMonitors/ShatterplanePrismTurnMonitor.cs using Guid(9285a66055cc6a47c09a76b86c26dfea) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '7c0bb50f2c24343c193ede4509185c55') in 0.0166883 seconds
+[Worker1]  -> (artifact id: '062e8049c3abf678da781d4e30ffbe53') in 0.6366518 seconds
+[Worker0]  -> (artifact id: 'c28e537afc0a37d9bccde2d8079f1b87') in 0.7885116 seconds
+[Worker2] Start importing Assets/_Scripts/UI/SpectatorOverlay.cs using Guid(19b8c0d353d94ce9a805a1ca5ae793d8) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '61be668b78567e319a8dc5aaf6393c54') in 0.0160422 seconds
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/ConfigurePostProcessors application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/ConfigurePostProcessors'
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Current configuration matches the requested one, skipping
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/ConfigurePostProcessors'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/ConfigurePostProcessors application/grpc - - 200 - application/grpc 5.1396ms
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/ScarabShoveCooldownTests.cs using Guid(f1457d0cf8804b0393748bbcdf90464b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '1947dee1ed85a7fa20eda0cc4f06dd4f') in 0.0162176 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleWarp.cs using Guid(43e5498bcbc94c0a9bbabfcf606a99a6) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/UI/Views/ProfileRecordWindow.cs using Guid(1e63e4e7e2f8f3d29bc95bc48a801170) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0]  -> (artifact id: '75524798cdf70de7ad5f9d063ca3dd70') in 0.1016587 seconds
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '3e6dff7beaef57a06aa73405cf5262b9') in 0.0149004 seconds
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/ToyVesselRosterCoverageTests.cs using Guid(ebce5321825844429478ccebb57438dd) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '81ae0ec1b9727db3e6d0ce65b1af48db') in 0.0197569 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Arcade/TurnMonitors/StingherdStingTurnMonitor.cs using Guid(97fa679db937c3c42237e92d858e810d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_SO_Assets/Scoring Rules/LongshotScoringRule.asset using Guid(72837c5db874b10c54013f6d2ca5856d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0]  -> (artifact id: '6c3c2f6193e38cebdcaee7ce9f25ab80') in 0.0163342 seconds
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '3aa95728e05c8472efb8b9fff00538c2') in 0.0283613 seconds
+[Worker1] Start importing Assets/_SO_Assets/Cell Configs/Kelpwood Cell/Kelpwood Cell Config 1.asset using Guid(9532d6fb8a19dcb9a65ffb07d58dc45e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_SO_Assets/Cell Configs/Chum Cell/Chum Spawn Profile 1.asset using Guid(c4408002785e948e6dc14b4caf330980) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+ExitCode: 0 Duration: 1s385ms
+[2361/3175  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+*** Tundra build success (1.34 seconds), 1 items updated, 3175 evaluated
+[Worker2] Start importing Assets/_Scripts/Controller/Payload/Transforms/AegisTransformSO.cs using Guid(502cd00e79d945f1baff237ebd061285) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '07bb70ec7ce3083a491102054d2f7b98') in 0.0143542 seconds
+[Worker0]  -> (artifact id: '6b55aa19b5ca1fbd76043f7fe6c71094') in 0.1131013 seconds
+[Worker1]  -> (artifact id: 'fbb7691a1b4d063836b918c4a0048299') in 0.1576136 seconds
+[Worker2] Start importing Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity using Guid(5d57b079d45032f8fdb09ec4a2deb8fc) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '188618327bf70f4c4602ea053b57c154') in 0.0297849 seconds
+[Worker0] Start importing Assets/_SO_Assets/Swarm Fauna/TandavaSevering/SwarmPlan_tandava_severed.json using Guid(059dfcb34fec3f1ef9fc307c0a1c211f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Environment/Fulmen/FulmenView.cs using Guid(d43b738c60874bcaa56dab316f9d575b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0]  -> (artifact id: '96e875b64b40a3d8b48e2d0f4062a081') in 0.0142449 seconds
+[Worker1]  -> (artifact id: 'e181c36e1ba683e5ce3402d770ece2db') in 0.0147526 seconds
+[Worker2] Start importing Assets/_Prefabs/UI Elements/VesselHUD/StarlingHUDVariant.prefab using Guid(31700dc4c04545cb445d0a088417e352) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Controller/Arcade/TOLLWAY.md using Guid(2f4ca26fee3e300f31fa2903ab80b126) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_antlion_1.json using Guid(5dd8e9e5977af15fd7e4437a3a243c34) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0]  -> (artifact id: '2bab6c280cb412b4875752d27f0849f5') in 0.0235358 seconds
+[Worker1]  -> (artifact id: '56bcedbb5ea47de34c1d99ba03e5751b') in 0.0153691 seconds
+[Worker2]  -> (artifact id: 'ac489602d5d67086b5b334dfd795acab') in 0.0945751 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Abstract Effect Types/PayloadPrismEffectSO.cs using Guid(8506f4a7b6004c09b1ef2e5dc83abdee) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/Slingshot/SlingshotController.cs using Guid(4da783c2de69582abc92d82676980dc0) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '7d00e5911d2c6a00e29dadde5b4c9072') in 0.0171037 seconds
+[Worker0]  -> (artifact id: '5b662f9c56701a075d5fc08dd48a9b7b') in 0.0191065 seconds
+[Worker2] Start importing Assets/_SO_Assets/VesselActions/BrittleStar using Guid(1187beb97cc0013e14f25693cbc17dc7) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'aa1fa2293b6fa7a2a20a78911b69eb24') in 0.0154476 seconds
+[Worker1] Start importing Assets/_Graphics/Materials/SpindleLodFar.mat using Guid(e504df112b682b68f8997daade6a4fbe) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] Start importing Assets/_SO_Assets/AI Training/Scenarios/Scenario_ScarabScramble.asset using Guid(98c45ba7861a4d35ba2f339c52f68178) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/UI/Elements/Codex/CodexLine.cs using Guid(ed4e48ec1efaa1bc65a55a17c82d743d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1]  -> (artifact id: '6e30155d8f19fcccc5676636af9e3f99') in 0.0240632 seconds
+[Worker0]  -> (artifact id: '2591650bd0ef448bcf1d167bf2c8d745') in 0.0276091 seconds
+[Worker2]  -> (artifact id: '0edd8809facf1093aac70cd6506c3bcc') in 0.014669 seconds
+[Worker1] Start importing Assets/_SO_Assets/Cell Configs/Starweave Cell/Starweave Cell Config 3.asset using Guid(2bb0b7d53021446afa6fa4482dc4ec43) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_SO_Assets/AI Training/Profiles/FitnessProfile_ThresherTime.asset using Guid(c64375fcddcf5343b23d5977a9fee15d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] Start importing Assets/_SO_Assets/AI Training/Profiles/FitnessProfile_Tollway.asset using Guid(d0997c3e57865de1a99946a3d2908e85) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: '81ccdd6dcae48b2b4e38143da3179440') in 0.0183495 seconds
+[Worker0]  -> (artifact id: 'cb8112445df6cb0b8e3fb9532a8ca644') in 0.0183657 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Camera/ThirdEye using Guid(ea1a2eb60f354a6d8b96f1a13196d6fe) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] Start importing Assets/_Scripts/Controller/Arcade/Thornline/ThornlineAIPlan.cs using Guid(53cb9090fccbfbc61a290a74d6273d62) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '47cdff307a234b9b1530c65976fb3e7a') in 0.0162338 seconds
+[Worker2]  -> (artifact id: 'c039dc32b126265b9b8436746052df3d') in 0.0179349 seconds
+[Worker1]  -> (artifact id: 'ba895aa71f7467d17eb642fff873d27f') in 0.1504462 seconds
+[Worker2] Start importing Assets/Resources/PrismLayouts/SpawnableBoneyard_d44a3aaf563c13bd.bytes using Guid(ddad2b9cd89ff9224205becb54d57f4e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] Start importing Assets/_SO_Assets/Cell Configs/Ark Escort Cell/Escort Maw Spawn Profile 4.asset using Guid(b5e7791131054cb59c955429d5d53a61) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/DecoyRun/DecoyRunController.cs using Guid(1fffffbef14165b7fc5f5128f27dc341) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'd11c3cd8bfb1c7a265dba10eab2db47b') in 0.0138351 seconds
+[Worker2]  -> (artifact id: '55463f8cabc84462f70ece0bc360d070') in 0.0257629 seconds
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/SteamSignInTests.cs using Guid(c1661d21cae6452fb06bc4333dc97974) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_Graphics/Profile/Pilots/Avatar_Tamalo.png using Guid(874731b330c75756f03d38b5bafdb29a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[BugLedger] Sent to Claude automatically: 4 performance capture(s); the multiplayer test's logs from vp-mppmaa594ebf and main; 10 load timing report(s). Nothing in your project or branch changed.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Editor.BugHuntAutoSend:AskAfterPlay () (at Assets/_Scripts/Editor/Diagnostics/BugHuntAutoSend.cs:146)
+CosmicShore.Editor.BugHuntAutoSend:AskWhenPeersLanded () (at Assets/_Scripts/Editor/Diagnostics/BugHuntAutoSend.cs:57)
+UnityEditor.EditorApplication:Internal_CallDelayFunctions ()
+
+(Filename: Assets/_Scripts/Editor/Diagnostics/BugHuntAutoSend.cs Line: 146)
+
+[Worker1]  -> (artifact id: '37354a5d8023b8d715f5bda9a8bfa20d') in 0.0164191 seconds
+[Worker2]  -> (artifact id: 'c08f64c861ca93bf3a12c43334d08e72') in 0.0290485 seconds
+[Worker0]  -> (artifact id: '27c5bb3da3ce12358940e9963b265ee6') in 0.1726833 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/TandavaSevering/TandavaSeveringScoringRuleSO.cs using Guid(2aabfd79a5609d1ecb2c9fef7ac09d91) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'cc69c3e2b11734f691c7673b92cd07b9') in 0.0172061 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackCourseSource.cs using Guid(5e65491f06ab4279b3e9a548a0642412) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'c337ca9e75c5a7b0e7b5813aefdc8624') in 0.0164535 seconds
+Reloading assemblies after finishing script compilation.
+Reloading assemblies after forced synchronous recompile.
+Attempted to call .Dispose on an already disposed CancellationTokenSource
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Begin MonoManager ReloadAssembly
+[INFO ] [relay] log Domain reload signal received from client editor-13032-836r5d
+[Logcat] [WorkThread] 22:19:11.7865 Worker thread exited
+[Logcat] [MainThread]22:19:11.7875 Dispatcher shutting down
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+[INFO ] [relay] log Auto-shutdown timer fired after 180s inactivity, shutting down: Dedicated client disconnected
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Dedicated client disconnected
+
