@@ -340,7 +340,7 @@ shields yours and lays your trail"), but the hull laid its twin rails as well. E
 ship, which spins as the ball swings, so neighbouring 8 u tiles sat at unrelated angles. **Fixed:**
 - The hull's pen is up in Mass Mode (`HoldTrailPen(LaunchViewUp || _massMode)`), so the ball's line is the only trail.
   In the breaking-ball mode the twin rails come back.
-- The ball trail's up is carried from tile to tile (`ThresherExecutor.BallTrailUp`, parallel transport), so the
+- The ball trail's up is carried from tile to tile (`ThresherBallTrail.Up`, parallel transport), so the
   tiles form one ribbon.
 - One consequence: in Mass Mode a planted pivot (where the ball lays nothing) now leaves no trail at all.
 

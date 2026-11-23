@@ -121,7 +121,7 @@ namespace CosmicShore.Gameplay
         // A phone: both thumbs off a planted spin read as both triggers full (the aimed launch, ThresherTouchLaunch).
         ThresherTouchLaunch _touchLaunch;
         bool _massMode;
-        Vector3 _ballTrailUp;   // the ball trail's carried up (BallTrailUp); zero = seed afresh
+        Vector3 _ballTrailUp;   // the ball trail's carried up (ThresherBallTrail.Up); zero = seed afresh
         Quaternion _ballTrailShipRot = Quaternion.identity;   // the hull's rotation at the last ball lay
         float _energy;
         /// <summary>The launch direction the AIM camera chose for the pending plant release, taken
@@ -706,13 +706,9 @@ namespace CosmicShore.Gameplay
             HoldTrailPen(TrailPenWanted(up));
         }
 
-        /// <summary>Both triggers held: the spin that winds up a launch. Nothing lays prisms then, in
-        /// either mode: they only get in the way of the launch (Caleb, 2026-11-18).</summary>
-        public bool BothTriggersHeld => LeftTriggerDepth > TriggerEdges.Deadzone
-                                        && RightTriggerDepth > TriggerEdges.Deadzone;
-
-        /// <summary>The hull's pen is up in the launch view, in Mass Mode (the ball lays the trail), and
-        /// while both triggers are held.</summary>
+        /// <summary>Both triggers held (the launch wind-up): nothing lays prisms, in either mode (Caleb, 2026-11-18).</summary>
+        public bool BothTriggersHeld => LeftTriggerDepth > TriggerEdges.Deadzone && RightTriggerDepth > TriggerEdges.Deadzone;
+        /// <summary>The hull's pen is up in the launch view, in Mass Mode (the ball lays the trail), and on both triggers.</summary>
         bool TrailPenWanted(bool launchView) => launchView || _massMode || BothTriggersHeld;
 
         /// <summary>Drop the launch view and hand the trail pen back (disable, re-init).</summary>
@@ -949,12 +945,11 @@ namespace CosmicShore.Gameplay
             if (lays <= 0) return;
             _trailOwed = Mathf.Min(_trailOwed - lays * spacing, spacing);
 
-            // The hull's own turn since the last lay rides along, so a deliberate roll or twist still
-            // twists the ribbon; the ball swinging round the hull does not.
+            // The hull's own turn rides along (a roll twists the ribbon; the ball's swing does not).
             Quaternion shipRot = _status.Transform ? _status.Transform.rotation : Quaternion.identity;
             Quaternion shipTurn = shipRot * Quaternion.Inverse(_ballTrailShipRot);
             _ballTrailShipRot = shipRot;
-            Vector3 up = BallTrailUp(shipTurn * _ballTrailUp, dir, shipPosition - to);
+            Vector3 up = ThresherBallTrail.Up(shipTurn * _ballTrailUp, dir, shipPosition - to);
             _ballTrailUp = up;
             if (!SafeLookRotation.TryGet(dir, up, out var rot, this, logError: false)) return;
 
@@ -964,24 +959,6 @@ namespace CosmicShore.Gameplay
                 Vector3 pos = Vector3.Lerp(from, to, (i + 1f) / lays);
                 LayTrailPrism(channel, spawner.SpawnPrismType, pos, rot);
             }
-        }
-
-        /// <summary>
-        /// The ball trail's up: the last lay's up (already turned by the hull's own rotation since then,
-        /// so a deliberate roll twists the ribbon) carried onto this lay's direction (parallel
-        /// transport), so the flat 8 u tiles stay one ribbon as the ball swings. It used to aim each
-        /// tile's up at the ship, which spins with every orbit of the ball, so neighbouring tiles
-        /// were laid at unrelated roll angles (Caleb's fly test, 2026-11-18). The first lay, or one
-        /// whose path runs along the old up, seeds from the direction to the ship.
-        /// </summary>
-        public static Vector3 BallTrailUp(Vector3 previousUp, Vector3 dir, Vector3 towardShip)
-        {
-            Vector3 up = Vector3.ProjectOnPlane(previousUp, dir);
-            if (up.sqrMagnitude > 0.04f) return up.normalized;
-            up = Vector3.ProjectOnPlane(towardShip, dir);
-            if (up.sqrMagnitude < 1e-6f) up = Vector3.ProjectOnPlane(Vector3.up, dir);
-            if (up.sqrMagnitude < 1e-6f) up = Vector3.ProjectOnPlane(Vector3.forward, dir);
-            return up.normalized;
         }
 
         /// <summary>One ball-trail prism. MASS sizes it (<c>massTrailScale</c>, every axis, read at

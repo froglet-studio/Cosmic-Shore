@@ -542,7 +542,7 @@ trail tells, and **is preserved**:
 | Spacing rules | `ApplyBoostSpawnDelay` (Sparrow family, Shrike, Brittle Star) | boost, Mass, Speed Mode |
 | Mass volume, slabs and gap growth | `trailVolume`, `GrowTrailAction` | the hull's Mass |
 | Danger mode | `EnableDangerMode` (Brittle Star) | the danger state |
-| Ball trail that rolls with the hull | `ThresherExecutor.BallTrailUp` | the ball's path and the hull's rolls |
+| Ball trail that rolls with the hull | `ThresherBallTrail.Up` | the ball's path and the hull's rolls |
 
 **The rule for any change:**
 1. **When a modifier causes a problem** (prisms a hull flies into, an unrideable ribbon, overlap that reads as noise),

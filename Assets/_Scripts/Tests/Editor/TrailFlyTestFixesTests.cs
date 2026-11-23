@@ -80,7 +80,7 @@ namespace CosmicShore.Tests
         [Test]
         public void BallTrailUp_SeedsTowardTheShip()
         {
-            Vector3 up = ThresherExecutor.BallTrailUp(Vector3.zero, Vector3.forward, new Vector3(0f, 5f, -3f));
+            Vector3 up = ThresherBallTrail.Up(Vector3.zero, Vector3.forward, new Vector3(0f, 5f, -3f));
             Assert.AreEqual(1f, Vector3.Dot(up, Vector3.up), Tol);
         }
 
@@ -95,7 +95,7 @@ namespace CosmicShore.Tests
             {
                 Vector3 dir = Quaternion.AngleAxis(i * 0.5f, Vector3.up) * Vector3.forward;
                 Vector3 towardShip = Quaternion.AngleAxis(i * 23f, dir) * Vector3.up;
-                Vector3 next = ThresherExecutor.BallTrailUp(up, dir, towardShip);
+                Vector3 next = ThresherBallTrail.Up(up, dir, towardShip);
                 Assert.AreEqual(0f, Vector3.Dot(next, dir), 1e-3f, "up stays across the path");
                 Assert.AreEqual(1f, next.magnitude, 1e-3f);
                 if (i > 0)
@@ -112,7 +112,7 @@ namespace CosmicShore.Tests
             Vector3 dir = Vector3.forward;
             Vector3 up = Vector3.up;
             Quaternion roll = Quaternion.AngleAxis(30f, dir);
-            Vector3 next = ThresherExecutor.BallTrailUp(roll * up, dir, Vector3.up);
+            Vector3 next = ThresherBallTrail.Up(roll * up, dir, Vector3.up);
             Assert.AreEqual(30f, Vector3.Angle(up, next), 1e-2f);
         }
 
