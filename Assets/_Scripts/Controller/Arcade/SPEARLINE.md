@@ -174,6 +174,8 @@ are in section 3.
   guard, and the regrow clock now runs from when the field passed (as documented).
 - **Watch item:** the stood-up stroke holds both triggers, the energize stance; at a Time rate of about x2.6 (Time ~10)
   the 0.39 s hold would ignite the blade. Spearline seeds no Time, so it should not arise.
-- **Not run in Unity, not flown, no card art rendered yet.** Hand test (`Docs/UNITY_VERIFICATION_CHECKLIST.md`): fly I1
+- **2026-11-23, Unity 6000.3.17f1 (the open editor):** the project compiles with the three controller partials and the
+  autopilot seam, and `SpearlineSealsTests` pass, 11 of 11. Still not flown by a person.
+- **Not flown.** Hand test (`Docs/UNITY_VERIFICATION_CHECKLIST.md`): fly I1
   and I3 in the Toybox; confirm a straight ram does not count a seal and a stroke into it does; the armour reads; the
   worn seal lets a ram through by the fifth pass; an AI strokes through a seal.

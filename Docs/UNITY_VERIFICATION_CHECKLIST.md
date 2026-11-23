@@ -25286,7 +25286,7 @@ reference compile (`unity_refcompile` does not run on this Windows box), the Edi
 The three `SpearlineController` partials and the autopilot seam were read by an independent reviewer, not compiled.
 Docs: `Assets/_Scripts/Controller/Arcade/SPEARLINE.md`, `Docs/Spearline/FUN_PASS.md`.
 
-- [ ] The project compiles; `SpearlineSealsTests` pass in the editor (11).
+- [x] The project compiles; `SpearlineSealsTests` pass in the editor (11). (2026-11-23: 11 of 11 in the open editor, 6000.3.17f1, Ys-bleeding-edge at 6d9dabfe87.)
 - [ ] I1 in the Toybox, alone: fly straight through a sealed ring with the bill at rest - it does NOT count (toast 400
       once). Come round and hold one trigger through it, the bill out toward the pane's middle - it counts, and the
       hole flashes. Note how wide the bill's cut really is (the model's `ModelStrokeReach` is 6.15 u).
