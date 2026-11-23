@@ -8988,7 +8988,7 @@ one card is about 20). Joust's authored Description is still "Joust joust joust"
 touch ups in the skim race cards its too blue and it does not look the cell in any of the card bg. Can you do something
 about that?" Followed up in Rev 129 (section 222.1).
 
-### 222.1 Rev 129: the Poster card in our font; Skim Race's picture made to look like the cell (2026-11-23, awaiting a pick)
+### 222.1 Rev 129: the Poster card in our font; Skim Race's picture made to look like the cell (2026-11-23; Shombith picked Inside the cell)
 
 **On the canvas:** tab Game Cards, round "Rev 129"; copies `Docs/MenuRedesignB/board/R129*.dc.html`, written by
 `Docs/MenuRedesignB/rounds/r129_poster_cell.py`; the pictures by `r129_card_art.py` (seeded) into `r129_assets/`.
@@ -9007,3 +9007,22 @@ about that?" Followed up in Rev 129 (section 222.1).
 **Differs from the build:** a pick goes into the card renderer (wall net, dust, the nucleus's grade), so every Arcade and
 Arena card changes at once and `--check` holds it; the Poster card goes into the Arcade and Arena card prefabs through
 `/frogma-to-unity`. The touch-ups here are made on the one Skim Race PNG only.
+
+**Picked (Shombith, 2026-11-23):** "Selected Inside the cell build it".
+
+**Built (2026-11-23, branch `claude/project-thread-lslakw`):**
+- **Every card's picture is inside the cell.** The card renderer (`Tools/Build/render_card_backgrounds.py`, the harness's
+  `Renderer.cs`) draws the cell's wall as a seeded Voronoi net of panes on the membrane sphere (depth-tested, the far wall
+  from inside, both walls from outside), white dust motes through the cell, the deep-sea ground without the violet nebula
+  or stars, and the glass nucleus as faint near-neutral glass (strength 0.14, was a 0.3 blue). All 90 cards re-rendered;
+  `--check` holds them.
+- **The Arcade card is the Poster** (`author_menu_arcade.py build_card`, `ArcadeGameCard.prefab`): the picture fills the
+  card and drifts, a navy fade (`kit_fade_v`, SurfaceBlack) rises 200 from the foot, the name sits on it in Aldrich at
+  H1 (36, shrinks to fit), the lit hull at the bottom right, the element tag at the top left with the party picks beside
+  it, the star at the top right. Hover or pad focus (never touch) slides a panel up 112 from the foot in 0.2 s with the
+  mode's line and "{pilots} pilots" (`KitPosterReveal`, new; `KitGameCard.descriptionText` / `pilotsText` / `pilotsLine`),
+  the name rides up with it and the hull fades. `check_poster` and two planted defects hold it.
+- **Differs from the board:** the name keeps the mode's own case (H1 is not an upper-case role; the board drew capitals);
+  the board's intensity bars are not built (what they count is undecided); the hull is the square lit icon, not the
+  board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
+  picture; the Poster was drawn for the Arcade grid card.
