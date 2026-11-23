@@ -109,3 +109,13 @@ This run puts all of it into the model and keeps proposing. Map = https://claude
    `{db: {rules: [notes, requests: write interact; verdicts, decisions, applied: write admin; all read view]},
    user: {scopes: ["profile"]}}`.
 8. Finish with a short summary: what was applied, proposed, started, and the PR links.
+
+## 9. Player journeys
+
+`Docs/LoopAtlas/personas/journeys.yaml` holds the personas and their paths through the loops on two layers (`now`,
+`prop`). After editing it, or after a loop it names changes: `python3 Tools/Build/loop_journeys.py build` (it reads
+`model.json`, so run `loop_atlas.py build` first), commit `journeys.json` and `JOURNEYS.md` with it, and republish the
+page: `loop_journeys.py build --html <scratch>/journeys`, then publish `index.html` to
+https://claude.ai/artifact/QTMtLQcBVg4FipV27WSswD with `files` mapping `journeys.json` (and `sim.json`, when built with
+`--sim Docs/LoopAtlas/sim/out/journeys.json`, the economy simulation's runs). A hole a journey hits that the
+atlas lacks goes on the Proposed layer (section 2). Never publish a second journeys page.

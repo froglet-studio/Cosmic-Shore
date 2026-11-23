@@ -92,7 +92,13 @@ namespace CosmicShore.Data
             IReadOnlyList<string> crewPilotIds)
         {
             var board = new List<VoyageJob>();
-            if (state == null || content == null || state.AtSea) return board;
+            if (state == null || content == null) return board;
+            // A voyage waiting at sea at its waypoint is the one card on the board: sail it to pick the voyage up (P13).
+            if (state.AtSea)
+            {
+                if (state.HasWaypoint()) board.Add(state.Current);
+                return board;
+            }
             var here = content.Location(state.At);
             if (here == null) return board;
             VoyageWorld.Begin(state, content);
@@ -795,6 +801,7 @@ namespace CosmicShore.Data
         {
             if (state == null || !state.AtSea || state.Current == null) return null;
             state.AtSea = false;
+            VoyageWaypoint.Clear(state);
             state.At = state.Current.To;
             var here = content.Location(state.At);
             if (IsPort(here)) state.LastPort = here.Id;
@@ -1071,6 +1078,7 @@ namespace CosmicShore.Data
             if (job == null) return result;
             state.Current = null;
             state.AtSea = false;
+            VoyageWaypoint.Clear(state);
             if (job.IsReturn) return result;
 
             var t = content.Job(job.TemplateId);
@@ -1097,6 +1105,7 @@ namespace CosmicShore.Data
             {
                 if (ok) state.AddOwed(t.RewardElement, job.Pay > 0 ? job.Pay : t.Reward);
                 if (ok) state.Log.JobsDone++; else state.Log.JobsFailed++;
+                if (ok) state.JobsDoneSinceDock++;
 
                 // Standing and notoriety (DEPTH.md §6).
                 if (t.Faction != FactionType.None && t.StandingDelta != 0)
@@ -1460,6 +1469,8 @@ namespace CosmicShore.Data
             state.Aboard.Clear();
             state.Owed.Clear();
             state.Carrying.Clear();
+            state.JobsDoneSinceDock = 0;
+            VoyageWaypoint.Clear(state);
             state.AtSea = false;
             state.At = state.Home;
             state.LastPort = state.Home;
@@ -1492,7 +1503,9 @@ namespace CosmicShore.Data
             VoyageWorld.Begin(state, content);
             if (state.AtSea)
             {
-                Abandon(state, content);
+                // A voyage closed mid-leg waits at its waypoint when a world of its route was reached (P13); a leg cut
+                // off before its first world is given up as before.
+                if (!state.HasWaypoint()) Abandon(state, content);
             }
             else
             {
@@ -1518,8 +1531,14 @@ namespace CosmicShore.Data
         /// <see cref="Abandon"/>. Null when nothing was open.
         /// </summary>
         public static Resolution Anchor(VoyageState state, VoyageContent content, bool workDone)
+            => Anchor(state, content, workDone, keepWaypoint: false);
+
+        /// <summary><see cref="Anchor(VoyageState, VoyageContent, bool)"/>; with <paramref name="keepWaypoint"/>, a
+        /// voyage ending at sea with a waypoint reached is kept to pick up later instead of given up (P13). Null then.</summary>
+        public static Resolution Anchor(VoyageState state, VoyageContent content, bool workDone, bool keepWaypoint)
         {
             if (state == null) return null;
+            if (state.AtSea && keepWaypoint && state.HasWaypoint()) return null;
             if (state.AtSea) return Abandon(state, content);
             if (state.Current == null) return null;
             return Resolve(state, content, workDone ? JobOutcome.Succeeded : JobOutcome.Failed);
@@ -1533,6 +1552,8 @@ namespace CosmicShore.Data
             public readonly int[] Crystals = new int[(int)Element.Omni + 1];
             /// <summary>The relics among the artifacts: their ids with the authored name and lore to give the record.</summary>
             public readonly List<(string Id, string Name, string Lore)> Relics = new();
+            /// <summary>Jobs finished since the last dock, which the dock pays in wallet crystals (P10).</summary>
+            public int JobsDone;
         }
 
         /// <summary>
@@ -1568,6 +1589,8 @@ namespace CosmicShore.Data
             int crystals = 0;
             foreach (var c in x.Crystals) crystals += c;
             state.Log.Crystals += crystals;
+            x.JobsDone = state.JobsDoneSinceDock;
+            state.JobsDoneSinceDock = 0;
             state.Aboard.Clear();
             state.Owed.Clear();
             return x;

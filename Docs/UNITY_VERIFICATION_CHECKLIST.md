@@ -26303,6 +26303,22 @@ render of it beside the board yet.
 - [ ] Gamepad: up and down walk the list, right reaches Close and Set sail, A presses them.
 - [ ] Phone and iPad: the window fits the screen with nothing cut off.
 
+## The Tide and the quest chain on Home, option C (2026-11-21)
+
+Home's two docked cards became the Tide strip and the quest chain (Loop Atlas `era.tide`, spec
+`Docs/UI/specs/tide-home.md`, written by `author_menu_home.py`). Not run in the Unity editor: none in this session. The
+reference compile (player and editor) has 0 errors in the changed files (30 in untouched files, from packages this
+machine cannot fetch); a planted error in `HomeUpNext.cs` was caught. `TideCalendarTests` were compiled, not run.
+
+- [ ] Run the EditMode tests `TideCalendarTests` and `HomeUpNextTests`: all pass.
+- [ ] Open Menu_Main: under the pilot chip, two 56-tall strips, The Tide ("Week 1 of 6 · <this week's card>" and the
+      six-week clock with week 1 lit) and Quest chain ("<quest> · n of m"). No - or x buttons, no card art.
+- [ ] Hover each with the mouse: it opens (Tide: mode, objective, Ends in, Your best; chain: five nodes with names, the
+      current one ringed, the next goal, the intensity, "Press A or click to open") and folds when the pointer leaves.
+- [ ] With a pad, move the focus onto each card: it opens; moving away folds it. A opens the weekly challenge (Tide)
+      or the Voyage window (chain).
+- [ ] Nothing reaches the friends orb with either card open; on a phone (portrait) the stack still fits.
+
 ## Show FPS setting, every build (2026-11-21)
 
 Settings > Display > Show FPS turns on a small FPS counter (`FpsCounter`, words and look in
@@ -26487,3 +26503,58 @@ seeds 101-103, 24 of 24 finished): Legendary 148.5 / 142.3 / 135.2 / 143.6 s, Me
 - [ ] Arcade > Spearline, one Swordfish AI rival at Legendary, I1 and I4: it finishes within about 10% of 148 s and 144 s.
 - [ ] The same at Medium, I1: it finishes (model 195 s) and never circles away from a ring.
 - [ ] Away from a sealed ring the AI's bill does not stand up and stay up (the sword hand's new reach of 6 and crowd of 1).
+
+## Retention economy: party pay, voyage dock pay, quests at intensity 2 (2026-11-21)
+
+The economy fixes of the Loop Atlas retention build (Garrett: "Build everything proposed. Get all personas retained";
+`Docs/LoopAtlas/sim/REPORT.md`). Not run in the Unity editor: none in this session. The reference compile has 0 errors
+in the changed files; `RetentionPayTests` were not run.
+
+- [ ] A party of two in one match on different domains: when one domain places first, BOTH players' reward strips show
+      200 crystals. Solo, a last place still shows nothing.
+- [ ] A Crystal Run that meets its goal and docks: the wallet (Hangar's crystal display) rises by 600 on top of the
+      elemental crystals. A run given up at sea pays no wallet crystals.
+- [ ] Fresh account: win the Scurry quest's intensity-2 goal (rank first at I2): the quest is ready to claim at once.
+      Playing I3 later still opens I4 on its goal.
+- [ ] Run the edit-mode tests: `RetentionPayTests` passes, and the progression tests still pass.
+
+
+## The breath between rounds (P5, 2026-11-21)
+
+The scoreboard offers ONE next step beside Play again (`ScoreboardBreath`, a copy of the Play again button made in code;
+words and destinations on `Assets/Resources/BreathConfig.asset`; `BreathRules`). Not run in the Unity editor; the
+reference compile has 0 errors in the changed files; `BreathRulesTests` were not run.
+
+- [ ] Solo, win a Time arcade card at I2 with I3 open: a second button under Play again reads "Next: Intensity 3"; it
+      loads the same card at I3.
+- [ ] Lose a round: no second button (Play again is the same rung).
+- [ ] After three results in one sitting at a card's top open rung, the button reads "Take it to Regatta" (a Time
+      card), "Take it to Broadside" (Charge) or "Take it to Brood Rush" (Mass, Space), and loads that arena card at I2.
+- [ ] A guest in a party sees no second button; the Maelstrom's per-game scoreboard shows none.
+- [ ] The copy carries no rematch faces, and Play again still votes and replays as before.
+
+## Voyage waypoints: a voyage closed at sea waits (P13 "voyage chapters", 2026-11-21)
+
+A voyage left at sea after the Ark reached a world of its leg is kept, with its job and what is aboard, and the harbour
+board offers it as the one card; sailing it picks up from that world (`VoyageWaypoint.Begin` / `Mark` /
+`Remaining`, `VoyageRun.ResumeWaypoint`). Not run in the Unity editor: none in this session. The reference compile
+has 0 errors in the changed files; the two new `VoyageRulesTests` were not run.
+
+- [ ] Take a Crystal Run, sail past the first world, leave freestyle: the banner reads "THE VOYAGE WAITS: PICK IT UP
+      FROM THE HARBOUR", not "JOB LEFT UNDONE".
+- [ ] Reopen the Voyage window: the board shows only that job. Sail it: "VOYAGE RESUMED: ON TO <place>", the Ark starts
+      at the world it reached, the hold still has what was stowed.
+- [ ] Leave freestyle before the first world: the voyage is given up as before.
+- [ ] A friend following the host: leaving never keeps a chapter on the friend's machine.
+- [ ] Run the edit-mode tests: `VoyageRulesTests` passes.
+
+## Puzzle-first door and painting pay (P14, P16, 2026-11-21)
+
+The Honeyguide now remembers the seat its person last picked, as the Wrasse already did (`CrewSeatChoice`): a player who
+swaps to the Ratel's board starts on it next time. A finished Toybox painting pays 150 wallet crystals, twice a day
+(`PaintingPay`, `RetentionTuning.asset`, Cloud Code source `painting`). Not run in the Unity editor: none in this
+session. The reference compile has 0 errors in the changed files; `economy.test.cjs` passes (18).
+
+- [ ] Fly the Honeyguide in freestyle, swap to the Ratel, leave and fly it again: it starts on the Ratel's board. Swap
+      back to flying, leave and return: it starts flying.
+- [ ] Finish a painting in the Toybox gallery: the wallet rises by 150. A third painting the same day pays nothing.

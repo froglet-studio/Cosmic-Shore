@@ -75,6 +75,22 @@ combos:
   - [Time, Drop out when threatened]
   drivers: [make, crew]
   feel: Gardening at altitude.
+  gene:
+    genome: Mass
+    cue: [own_mass_gap, open_space]
+    dials:
+    - - paintTime
+      - seconds in Mass mode before dusting
+      - 1
+      - 10
+      - s
+    - - tendHeight
+      - height kept over your prisms while dusting
+      - 5
+      - 60
+      - u
+    done: Dust grows or shields prisms the moth painted.
+    sight: ENSIGN
 - name: The dust trap
   t: [8, 25]
   is: Fall onto their line and let the dust do it.
@@ -84,4 +100,63 @@ combos:
     - 'Keep them in your dust: petals leave them one at a time'
   drivers: [rival, joy]
   feel: Falling out of the sky onto someone.
+  gene:
+    genome: Charge
+    cue: [rival_on_line, verb_ready]
+    dials:
+    - - dropLead
+      - seconds ahead of the rival the drop starts
+      - 0.3
+      - 3
+      - s
+    - - dwell
+      - seconds kept over the rival
+      - 0.5
+      - 5
+      - s
+    done: Dust steals a petal from a rival.
+    sight: BANDIT
+- in: x
+  name: The drop
+  t: [4, 12]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Drop through the mass on the line, then flip out at the gate.
+  chain:
+  - - Time
+    - Drop through the mass on the line
+  - - ''
+    - No trail, nothing stops you
+  - [Time, Flip out at the gate]
+  drivers: [joy, mastery]
+  feel: Falling on purpose.
+  gene:
+    genome: Time
+    cue: [gate_next, mass_ahead]
+    dials:
+    - [dropLength, seconds a drop is held, 0.3, 4, s]
+    done: A gate is threaded after a drop.
+    sight: NEEDLE
+- in: x
+  name: Sirocco
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: 'Dust mode over rival mass: it is destroyed, shrunk or stolen as you sweep.'
+  chain:
+  - [Mass, Toggle to Dust mode]
+  - - Space
+    - 'Dust over rival prisms: destroyed, shrunk or stolen'
+  - ['', Sweep the field]
+  drivers: [break, make]
+  feel: A storm passing over.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, dense_mass]
+    dials:
+    - - sweepHeight
+      - height kept over the mass
+      - 5
+      - 60
+      - u
+    done: A sweep destroys or steals rival prisms.
+    sight: MANGER
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md
