@@ -60,20 +60,8 @@ namespace CosmicShore.UI
                  "else the template's own Image.")]
         [SerializeField] Image templateAvatarImage;
 
-        [Header("Domain halo")]
-        [Tooltip("Sprite for the glow behind the avatar. Left empty, a soft disc is generated - " +
-                 "NOT borrowed from the template the way the connecting-panel roster borrows its " +
-                 "chip's sprite. That trick works there because that template is a frame; here the " +
-                 "authored template's sprite is a PROFILE ICON, so borrowing it would draw a tinted " +
-                 "copy of somebody's face behind every avatar.")]
-        [SerializeField] Sprite haloSprite;
-
-        [SerializeField, Min(1f)] float haloScale = 1.22f;
-        [SerializeField, Range(0f, 1f)] float haloMinAlpha = 0.45f;
-        [SerializeField, Range(0f, 1f)] float haloMaxAlpha = 0.9f;
-
-        [Tooltip("Halo breath, in cycles per second. Slow — a vote is a state, not an alarm.")]
-        [SerializeField, Min(0f)] float glowPulseHz = 0.7f;
+        // The domain border (ring, waves, halo) is AvatarRippleBorder, Frogma Rev 127 D (Docs/MENU_REDESIGN_B.md
+        // section 217): the same border as the party seats, so a vote chip and a party seat read as one avatar.
 
         [Header("Arrival")]
         [Tooltip("Seconds a newly arrived vote takes to bloom in. Continuity of existence applies " +
@@ -95,7 +83,7 @@ namespace CosmicShore.UI
             public IPlayer Player;
             public RectTransform Root;
             public Image Avatar;
-            public Image Halo;
+            public AvatarRippleBorder Border;
             public float Arrive01;
         }
 
@@ -159,12 +147,11 @@ namespace CosmicShore.UI
             if (VotersChanged()) Rebuild();
 
             float dt = Time.unscaledDeltaTime;
-            float breath = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * glowPulseHz * Mathf.PI * 2f);
             for (int i = 0; i < _chips.Count; i++)
-                TickChip(_chips[i], dt, breath);
+                TickChip(_chips[i], dt);
         }
 
-        void TickChip(Chip chip, float deltaTime, float breath01)
+        void TickChip(Chip chip, float deltaTime)
         {
             if (chip?.Root == null) return;
 
@@ -179,12 +166,12 @@ namespace CosmicShore.UI
                 chip.Avatar.color = tint;
             }
 
-            if (chip.Halo)
+            // The border fades in with the chip itself (its root scales with the arrival), and shows
+            // the voter's domain once the colour set can say what it looks like.
+            if (chip.Border)
             {
-                var halo = DomainColor(chip.Player);
-                halo.a = Mathf.Lerp(haloMinAlpha, haloMaxAlpha, breath01) * eased;
-                chip.Halo.color = halo;
-                chip.Halo.rectTransform.localScale = Vector3.one * haloScale;
+                if (TryDomainColor(chip.Player, out var domain)) chip.Border.Show(domain);
+                else chip.Border.ShowUnknown();
             }
         }
 
@@ -247,7 +234,7 @@ namespace CosmicShore.UI
                 _chips[i].Arrive01 = carried.TryGetValue(_voters[i], out var held) ? held : 0f;
                 ApplyAvatar(_chips[i], _voters[i]);
                 if (_chips[i].Root) _chips[i].Root.gameObject.SetActive(true);
-                TickChip(_chips[i], 0f, 1f);
+                TickChip(_chips[i], 0f);
             }
 
             ShowContainer(_chips.Count > 0);
@@ -388,11 +375,8 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Build one chip as a WRAPPER holding the halo and the visual, in that order.
-        ///
-        /// <para>A UGUI graphic always draws before its own children, so nothing parented under the
-        /// authored chip can draw BEHIND it — and the halo has to be behind. Wrapping gives it a
-        /// sibling slot under the visual, and costs the layout group nothing.</para>
+        /// Build one chip as a WRAPPER holding the visual; its avatar gets the Rev 127 D border.
+        /// The wrapper is what the arrival scales, so the chip and its border bloom in together.
         /// </summary>
         Chip BuildChip()
         {
@@ -404,7 +388,6 @@ namespace CosmicShore.UI
             wrapper.sizeDelta = _template ? _template.sizeDelta : new Vector2(builtEntrySize, builtEntrySize);
 
             var chip = new Chip { Root = wrapper };
-            chip.Halo = BuildHalo(wrapper);
 
             RectTransform visual;
             if (_template)
@@ -432,7 +415,7 @@ namespace CosmicShore.UI
             if (chip.Avatar)
             {
                 chip.Avatar.raycastTarget = false;
-                chip.Avatar.preserveAspect = true;
+                chip.Border = AvatarRippleBorder.EnsureFor(chip.Avatar);
             }
 
             // The chip sits inside the Play Again BUTTON. Nothing it draws may eat the press that
@@ -454,89 +437,6 @@ namespace CosmicShore.UI
             img.raycastTarget = false;
             img.preserveAspect = true;
             return img;
-        }
-
-        Image BuildHalo(RectTransform wrapper)
-        {
-            var go = new GameObject("DomainHalo", typeof(RectTransform), typeof(Image));
-            var rt = (RectTransform)go.transform;
-            rt.SetParent(wrapper, false);
-            Stretch(rt, 0f);
-            rt.localScale = Vector3.one * haloScale;
-
-            var img = go.GetComponent<Image>();
-            img.raycastTarget = false;
-            img.sprite = haloSprite ? haloSprite : GeneratedHalo();
-            // No sprite means a solid rectangle, which behind an avatar is a white box rather than
-            // a glow. Better no halo than a box.
-            img.enabled = img.sprite;
-            img.color = new Color(1f, 1f, 1f, 0f);
-            return img;
-        }
-
-        static Sprite _generatedHalo;
-
-        /// <summary>
-        /// A soft white disc to tint per domain, built once and shared by every chip in the app.
-        ///
-        /// <para>Generated rather than authored for the same reason the domain chip builds its own
-        /// ✕: the feature has to work before any art lands. It is deliberately NOT the template's
-        /// own sprite - the authored template carries a profile icon, and a face tinted Ruby and
-        /// scaled up behind another face is not a glow.</para>
-        /// </summary>
-        static Sprite GeneratedHalo()
-        {
-            if (_generatedHalo) return _generatedHalo;
-
-            const int size = 64;
-            // Fraction of the radius that stays fully opaque before the feather begins.
-            const float HALO_CORE = 0.5f;
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
-            {
-                name = "RematchHalo (generated)",
-                hideFlags = HideFlags.HideAndDontSave,
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear,
-            };
-
-            var px = new Color32[size * size];
-            float centre = (size - 1) * 0.5f;
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float dx = x - centre, dy = y - centre;
-                    float d = Mathf.Sqrt(dx * dx + dy * dy) / centre;   // 0 at the middle, 1 at the edge
-                    // Solid core out to HALO_CORE, then feathered to nothing at the rim.
-                    // Mathf.SmoothStep(from, to, t) is the INTERPOLATE-BETWEEN-TWO-VALUES
-                    // overload, not the edge0/edge1 gate this needs: it returns 0.5 at d=0,
-                    // so the halo peaked at HALF the authored alpha and had no flat core at
-                    // all - haloReadyMaxAlpha 0.95 could never exceed 0.475 on screen.
-                    float a = 1f - SmoothStep01(HALO_CORE, 1f, d);
-                    px[y * size + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(Mathf.Clamp01(a) * 255f));
-                }
-            }
-            tex.SetPixels32(px);
-            tex.Apply(false, false);
-
-            _generatedHalo = Sprite.Create(tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
-            _generatedHalo.name = "RematchHalo (generated)";
-            _generatedHalo.hideFlags = HideFlags.HideAndDontSave;
-            return _generatedHalo;
-        }
-
-        /// <summary>
-        /// The GLSL-style smoothstep: 0 below <paramref name="edge0"/>, 1 above
-        /// <paramref name="edge1"/>, smoothly eased between. Unity's
-        /// <c>Mathf.SmoothStep(from, to, t)</c> interpolates BETWEEN two values with a
-        /// smoothed t and is NOT this gate. Same helper as
-        /// <see cref="PartySlotDomainGlow"/>; the two halo generators stay in step until
-        /// they are folded into one component (Docs/PartySystem/TODOS.md TODO-12).
-        /// </summary>
-        static float SmoothStep01(float edge0, float edge1, float x)
-        {
-            float t = Mathf.Clamp01((x - edge0) / Mathf.Max(1e-5f, edge1 - edge0));
-            return t * t * (3f - 2f * t);
         }
 
         static void Stretch(RectTransform rt, float inset)
@@ -603,11 +503,13 @@ namespace CosmicShore.UI
         /// reads, so a vote chip and a score column can never disagree about what Ruby looks like.
         /// Read live rather than snapshotted.
         /// </summary>
-        Color DomainColor(IPlayer player)
+        bool TryDomainColor(IPlayer player, out Color colour)
         {
+            colour = default;
             var theme = gameData != null ? gameData.ThemeManagerData : null;
-            if (theme == null || theme.ColorSet == null) return Color.white;
-            return theme.ColorSet.GetDomainSignalColor(player?.Domain ?? Domains.Blue);
+            if (player == null || theme == null || theme.ColorSet == null) return false;
+            colour = theme.ColorSet.GetDomainSignalColor(player.Domain);
+            return true;
         }
     }
 }
