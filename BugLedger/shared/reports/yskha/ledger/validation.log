@@ -267,3 +267,17 @@
 2026-11-23T18:27:12.803Z editor load: play=False capture=True minPlay=15s issues=83
 2026-11-23T20:00:33.584Z PlayMode session ended (69s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
 2026-11-23T20:04:33.334Z PlayMode session ended (54s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-8186f3205f
+2026-11-23T20:06:17.445Z PlayMode session ended (56s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-8186f3205f
+2026-11-23T20:07:40.371Z PlayMode session ended (53s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-23T20:16:23.954Z PlayMode session ended (174s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-ca266cef07 E-930ca435ca
+2026-11-23T20:18:28.830Z PlayMode session ended (82s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-ca266cef07 E-930ca435ca
+2026-11-23T20:20:31.281Z PlayMode session ended (86s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-ca266cef07 E-930ca435ca
+2026-11-23T20:24:29.658Z PlayMode session ended (165s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-ca266cef07 E-930ca435ca
+2026-11-23T20:47:21.547Z EditMode session ended (140min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73 E-8909c619e5 E-930ca435ca E-8186f3205f E-ca266cef07
+2026-11-23T20:47:58.895Z editor load: play=False capture=True minPlay=15s issues=85
+2026-11-23T20:52:15.754Z PlayMode session ended (163s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-ca266cef07 E-930ca435ca
+2026-11-23T22:01:56.949Z EditMode session ended (74min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73 E-ca266cef07 E-930ca435ca
+2026-11-23T22:02:05.322Z editor load: play=False capture=True minPlay=15s issues=85
+2026-11-23T22:50:18.377Z PlayMode session ended (152s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-ca266cef07 E-930ca435ca
+2026-11-23T23:16:20.954Z PlayMode session ended (151s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-ca266cef07 E-930ca435ca
+2026-11-23T23:19:29.817Z PlayMode session ended (152s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-ca266cef07 E-930ca435ca
