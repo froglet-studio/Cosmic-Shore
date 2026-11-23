@@ -1,0 +1,6 @@
+00:52:07 play
+00:52:32 menu up; leaving the local host
+00:52:34 StartClient 127.0.0.1:7777 -> True
+00:52:35 connected as client 1
+00:52:45 in MinigameBroodRush
+00:54:21 done: host left
