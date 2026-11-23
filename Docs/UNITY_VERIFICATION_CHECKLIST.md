@@ -25939,3 +25939,13 @@ the reference compile has 0 errors in the changed files.
 - [ ] Toybox or Palisade: energize the Swordfish and let go. The afterimages laid in the next 5 s read as the sword's
       ghost, about 1.2x thicker on every axis than before, and the bill still cuts them after a second.
 - [ ] Brood Rush with the Swordfish seated (once the card seats it again): its score sits with the field's, not at the bottom.
+## Mass-Space AI rows (2026-11-21)
+`AIMassSpacePlanSO` (`Assets/Resources/AIMassSpacePlan.asset`, written by `Tools/Build/massspace_ai_plan.py`) gives the
+Meerkat, Sparrow, Stoat and Urchin AIs a learned ability cycle and steering in Mass-Space modes only; the Urchin also gets
+`UrchinAutopilotConfig_Hijack` / `_BroodRush`. Measured in Amoebius only; not run in the Unity editor. The reference
+- [ ] Brood Rush with AI Meerkat, Sparrow and Stoat: the Meerkat AI forms and shortens solitons, the Sparrow AI goes
+      stationary and fires its guns, the Stoat AI slings. No errors in the console when they spawn.
+- [ ] Regatta with the same hulls: their AIs fly exactly as before (no soliton, sling or stationary presses there).
+- [ ] Warren, Cave-in, Salvo, Wildlife Liberation, Fulmen, Hijack at I1 and I4: the AI plays, nothing stalls.
+- [ ] Multiplayer host with an AI Sparrow in Brood Rush: a client sees its guns fire (AI presses replicate once #2322's
+      AutopilotPressTravels lands).
