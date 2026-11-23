@@ -284,8 +284,8 @@
    "holes": [
     {
      "on": "np",
-     "q": "How many sittings make one pass, and how often a person comes back, is not measured. Analytics events are declared but no funnel reads them yet.",
-     "fill": "Target 3 to 5 sittings a week and one Tide every 6 weeks. Measure it from game_started and game_completed per account before tuning anything above the Round."
+     "q": "How often a person comes back is now read (the Froglet Analytics console's Sessions and Retention pages, from session_started and session_ended in builds after 2026-11-07; PostHog was closed on 2026-11-23), but how many sittings make one pass is not, because nothing marks a pass or a Tide.",
+     "fill": "Target 3 to 5 sittings a week and one Tide every 6 weeks. Read sittings per week from the Sessions page's sessions per player, and mark the pass with a tide_started event when the Tide ships, before tuning anything above the Round."
     }
    ],
    "src": [
@@ -359,20 +359,26 @@
     },
     {
      "on": "np",
-     "q": "Rounds per sitting and places per sitting are not measured.",
-     "fill": "Aim for 5 to 8 rounds and 1 or 2 places in a sitting; read it from the analytics events."
+     "q": "Rounds per sitting and places per sitting are not measured. Sessions are (session_started, session_ended), but game_started does not carry their session_id (Docs/Analytics/EVENT_SCHEMA.json), so a round cannot be put in its sitting except by time.",
+     "fill": "Aim for 5 to 8 rounds and 1 or 2 places in a sitting. Add session_id to game_started (Froglet Analytics only, as session_ended does) and count rounds and places per session on the Sessions page."
+    },
+    {
+     "on": "np",
+     "q": "The Session tier starts at 10 minutes, but a commuter's and a casual phone player's sittings are 4 to 8 minutes. Rounds fit them (94 to 100% of sittings); a voyage fits 0 to 1% of them as planned and 14 to 21% as built.",
+     "fill": "A sitting may be one round. The breath (P5) offers 'one more' or 'your daily job is waiting', and a voyage can be left at a location and picked up next sitting (P13)."
     }
    ],
    "src": [
     "Docs/MENU_PROGRESSION_AND_IAP.md section 1",
-    "Docs/Voyages/VOYAGES.md section 1"
+    "Docs/Voyages/VOYAGES.md section 1",
+    "Docs/LoopAtlas/sim/REPORT.md"
    ]
   },
   {
    "id": "breath",
    "parent": "sitting",
    "at": 4,
-   "in": "x",
+   "in": "px",
    "name": "The breath",
    "tier": 3,
    "kind": "loop",
@@ -405,13 +411,20 @@
    ],
    "reps": "1",
    "repsOf": "per round",
-   "prop": {
-    "s": "add",
-    "note": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off."
-   },
    "src": [
     "proposal"
-   ]
+   ],
+   "plan": {
+    "s": "decided",
+    "note": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off."
+   },
+   "build": {
+    "s": "building",
+    "what": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.",
+    "by": "Garrett",
+    "at": "2026-11-21",
+    "branch": "claude/retain-breath"
+   }
   },
   {
    "id": "toybox",
@@ -465,11 +478,22 @@
      "on": "np",
      "q": "What a toy session is for, in loop terms, is not written: there is no stated reason to leave a toy or to come back to one.",
      "fill": "A toy's exit is a crossing. Every toy names the scored loop it is the free version of, and offers it when the player has done the toy's verb a few times."
+    },
+    {
+     "on": "np",
+     "q": "The Toybox pays no progress. A player who only paints earns about 100 crystals in six weeks (simulated), so the long game never starts for them.",
+     "fill": "P16: a finished painting pays a little and can be shared as a replay link (P12), and a liked painting is the creative player's 'I won'."
+    },
+    {
+     "on": "npx",
+     "q": "Every arc in the atlas is fed by winning. A player who only makes things (the painter in Docs/LoopAtlas/personas/journeys.yaml) moves no arc, and has seen every painting and microscene by week 3.",
+     "fill": "Each week of the Tide adds one painting and one microscene, and a shared painting opens the same canvas for whoever taps it."
     }
    ],
    "src": [
     "Docs/ToySystem/ARCHITECTURE.md",
-    "Docs/claude/MENU_AND_LAVA_LAMP.md"
+    "Docs/claude/MENU_AND_LAVA_LAMP.md",
+    "Docs/LoopAtlas/sim/REPORT.md"
    ]
   },
   {
@@ -588,7 +612,11 @@
    },
    "src": [
     "Docs/ToySystem/ARCHITECTURE.md (Spawn Matrix, Cell Selector)"
-   ]
+   ],
+   "prop": {
+    "s": "change",
+    "note": "Since 2026-11-22 the matrix spawns five grown creatures (Ray, Plume, Lantern, Ammon, Nettle), each in four element forms with a body of its own (PR #2327, Tools/Build/author_spawn_matrix_roster.py). Let 'play in what you made' include riding one: offer the Jewel Wasp beside a spawned creature, so the matrix becomes the free version of the Wasp's possession kit and the four forms are something a player feels, not only sees."
+   }
   },
   {
    "id": "toy.paint",
@@ -775,6 +803,21 @@
     "s": "change",
     "note": "The result screen says what the round trained, and lights a petal on the vessel's flower."
    },
+   "measure": {
+    "in": "x",
+    "event": "game_completed",
+    "params": [
+     "mode",
+     "genre",
+     "intensity",
+     "placing",
+     "seconds",
+     "first_time"
+    ],
+    "target": "A round lasts about 90 seconds for an experienced pilot, and a run is 3 to 5 rounds.",
+    "first": 1,
+    "expect": "A new pilot reaches and finishes the card the spotlight leads to, unaided: the first meaningful match Docs/ACTIVATION.md defines activation by."
+   },
    "holes": [
     {
      "on": "np",
@@ -838,6 +881,13 @@
    "plan": {
     "note": "One human plays the four rungs and signs them off as fun; only then is that vessel and element sent to AI training."
    },
+   "holes": [
+    {
+     "on": "n",
+     "q": "Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time's AI (fb750ac38, GRIZZLYTIME.md, 24 courses) finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2's level-5 start and I4's fauna add almost nothing for it.",
+     "fill": "Judge each card's ladder by the fixed AI's time per rung (regatta_judge) and flag two neighbouring rungs closer than about 5% as a ladder to retune before step 3 signs off."
+    }
+   ],
    "src": [
     "Docs/ElementalLoop/PLAYBOOK.md step 2",
     "Docs/MENU_PROGRESSION_AND_IAP.md section 2b"
@@ -1366,6 +1416,16 @@
      "on": "np",
      "q": "It is not said whether voyage pay is the same crystals that buy vessels, so the step from 'voyage ends' to 'spend it on a vessel' has no confirmed path.",
      "fill": "One soft currency. Voyage pay is crystals, paid at dock, scaled so a clean voyage is worth about three arcade wins."
+    },
+    {
+     "on": "npx",
+     "q": "A voyage is 20 to 40 minutes and leaving abandons it, so a player whose sittings are six minutes (the commuter in Docs/LoopAtlas/personas/journeys.yaml) never finishes one.",
+     "fill": "The Ark docks at the location it reached when the player leaves; the next sitting sails from there, one leg at a time."
+    },
+    {
+     "on": "np",
+     "q": "The plan says a voyage is 3 to 6 legs and 20 to 40 minutes, but the one job the board offers since 2026-11-21 is the Crystal Run (commit 00373d12f), and its 4-cell run takes about 8 minutes to its stop and 3 more home (commit 9addc48ee, the way home at 2x). Is the Crystal Run the short job by design, or the first leg of the longer voyage?",
+     "fill": "The Crystal Run stays the short job (about 11 minutes, one sitting on a phone) and is the first leg the longer voyages chain, so a 20 to 40 minute voyage is 2 to 4 runs with a port between them."
     }
    ],
    "src": [
@@ -1716,11 +1776,27 @@
      "on": "p",
      "q": "The Lesson teaches a ship's Time verb. Nothing yet teaches a combo or a role.",
      "fill": "The Mentor's stream is ordered by the ladder of tiers: Pulse and Verb in the Lesson, the kit's first Combo after three races, the Role the first time the player enters a Mass-Space game."
+    },
+    {
+     "on": "p",
+     "q": "Activation is one funnel: every new player is led to a flying race. Simulated, a player who came for the Ratel's puzzle flies 62% of her arcade rounds today and all of them once the gate flips (the Honeyguide's cards open only after the chain), and leaves (D30 3 to 4%).",
+     "fill": "Activation has doors, each measured on its own: fly (first race finished), solve (first Ratel board played, P14), make (first painting shared, P16), crew (first match with a friend, P15). The first-login guide asks which one and spotlights it."
+    },
+    {
+     "on": "p",
+     "q": "Nothing says how often a new player should win their first ten rounds. Simulated against an I1 AI of strength 0.15, a non-flyer takes first in 16% of them, a commuter 32%, the teen core 37%.",
+     "fill": "Target: a new player takes first in at least half of their first ten rounds, read from game_completed placement in the first sittings. The I1 AI reaches it with fun, suboptimal behaviour loops (the AI complexity rule), never random mistakes."
+    },
+    {
+     "on": "npx",
+     "q": "Activation has one door: first launch, the spotlight, a Lesson that flies a Time verb. Two of the six journeys (Mira, the night crew) arrive by invite and never pass through it, and Mira does not want to fly at all.",
+     "fill": "Activation starts where the player arrived: an invite starts in the inviter's party and the seat it named, and the Lesson for that seat (a crew board, a hull) runs there."
     }
    ],
    "src": [
     "Docs/ACTIVATION.md",
-    "Docs/ModePreview/TRAINING_PLAN.md"
+    "Docs/ModePreview/TRAINING_PLAN.md",
+    "Docs/LoopAtlas/sim/REPORT.md"
    ]
   },
   {
@@ -1772,8 +1848,20 @@
    ],
    "src": [
     "Docs/MENU_PROGRESSION_AND_IAP.md section 2",
-    "Docs/QUEST_TRACK_AND_BREADCRUMB.md"
-   ]
+    "Docs/QUEST_TRACK_AND_BREADCRUMB.md",
+    "Docs/LoopAtlas/sim/REPORT.md"
+   ],
+   "plan": {
+    "s": "decided",
+    "note": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar."
+   },
+   "build": {
+    "s": "building",
+    "what": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar.",
+    "by": "Garrett",
+    "at": "2026-11-21",
+    "branch": "claude/retain-economy"
+   }
   },
   {
    "id": "arc.fleet",
@@ -1829,11 +1917,27 @@
      "on": "np",
      "q": "Which of the 23 hulls ship, at what price and in what order, is not decided beyond the first five.",
      "fill": "Price by how many loops a hull opens: a solo hull 4000, a crew vessel 6000 because it opens a second seat for a friend."
+    },
+    {
+     "on": "np",
+     "q": "A daily arena player owns all seven priced vessels by day 12 to 14 and holds about 60,000 crystals nobody can spend by day 42 (simulated). P7's three sinks add about nine days. A casual or puzzle player never reaches the first vessel at all.",
+     "fill": "Two ends to fix. For the core: open the other hulls over the Tides (one or two per Tide), so the fleet has a new goal every six weeks, and keep P7's sinks. For the casual end: their first vessel comes from the doors they play (a solved board, a shared painting, a daily job), not only from placing."
+    },
+    {
+     "on": "n",
+     "q": "Today the master unlock owns every vessel, so crystals buy nothing and no playtest can measure the economy: whatever testers earn is banked and never spent.",
+     "fill": "A tester build that keeps the unlock for modes and the Hangar but locks vessels, so the earn-to-buy step can be watched before launch."
+    },
+    {
+     "on": "npx",
+     "q": "Only the winner is paid. In a group of friends who beat each other, the one who wins least owns nothing new after two weeks; in the night crew journey that friend leaves on day 17 and the crew shrinks.",
+     "fill": "Pay a team win to every seat on the team, crew seats included, and pay a little for finishing, so a friend's fleet grows at the group's pace."
     }
    ],
    "src": [
     "Docs/ECONOMY_AND_PRICING.md",
-    "Docs/MENU_PROGRESSION_AND_IAP.md section 2c"
+    "Docs/MENU_PROGRESSION_AND_IAP.md section 2c",
+    "Docs/LoopAtlas/sim/REPORT.md"
    ]
   },
   {
@@ -2001,7 +2105,7 @@
    ],
    "prop": {
     "s": "change",
-    "note": "Since 2026-11-19 every account holds one crew of 18 dealt from the 126 painted pilots (commit 5a34332f9). Make that dealt crew the start of this loop: recruiting becomes choosing which of your 18 to seat, and standing is earned per pilot of that crew, so the device-side standing stand-in and the dealt crew are one roster instead of two."
+    "note": "Since 2026-11-21 the painted pool holds 324 pilots (PRs 2318, 2328: 17 roster crews, each pilot a species pair no earlier one had), and an account is dealt 18 of them once (PaintedCrewSO). Make the dealt crew the start of this loop and the other ~300 its recruit pool: \"Recruit a pilot\" at port offers someone outside your crew, a species pair you do not hold yet, and standing is earned per pilot. Each new painted batch then restocks the port, a reason to come back that the Returner persona lacks (loop_timescale_sim, PR 2338: Returner 12% at D30 with every fix)."
    }
   },
   {
@@ -2094,10 +2198,16 @@
      "on": "np",
      "q": "A saga does not run again, so four sagas are a fixed amount of story. 'A season could reseed it' is a default, not a decision.",
      "fill": "Each Tide reseeds one saga and adds one, so there is always an unfinished thread."
+    },
+    {
+     "on": "np",
+     "q": "Four sagas of three chapters last a weekend-binge group about three weekends (simulated: spent by day 19 to 20 in a third of the Night Crew's runs as planned, in all of them with chapters and one currency).",
+     "fill": "Each Tide reseeds one saga (era.tide phase 3), so a binge group meets a new chapter every six weeks, and a saga's chapter length follows the voyage chapter (P13), not a whole voyage."
     }
    ],
    "src": [
-    "Docs/Voyages/DEPTH.md section 5"
+    "Docs/Voyages/DEPTH.md section 5",
+    "Docs/LoopAtlas/sim/REPORT.md"
    ]
   },
   {
@@ -2148,13 +2258,39 @@
     {
      "on": "np",
      "q": "Nothing a party does together lasts past the sitting, so a friend is a reason to play tonight and not a reason to return.",
-     "fill": "A party shares one voyage record: the Ark, its hoard and the saga thread belong to the party that sailed it."
+     "fill": "A party shares one voyage record: the Ark, its hoard and the saga thread belong to the party that sailed it. Since 2026-11-21 friends follow the host into one voyage and sail one Ark domain the host picks and friends vote on (commits 00373d12f, 2d72d986f), so the party the record would belong to now exists."
+    },
+    {
+     "on": "np",
+     "q": "Since 2026-11-21 a party on two builds is kept apart (the protocol version gates matchmaking and every join by id, commit 8697ef19f) and the friend sees only a mismatch toast, so the older friend has no way back to the party from that moment. The live flags' update wall (commit 7324953ba) answers only the flags' minimum version, not a friend's newer build.",
+     "fill": "The protocol mismatch toast carries the live flags' per-platform update link for whichever side is older, so a split party ends in an update instead of a lost evening."
+    },
+    {
+     "on": "n",
+     "q": "The now note says crew vessels are local only, but Docs/CREW_STATIONS.md has the rider seat networked on the Orca, Honeyguide, Wrasse and Goby. One of them is stale."
+    },
+    {
+     "on": "np",
+     "q": "A group of four meets three seats everywhere: a squad, a voyage party, a team in Brood Rush. Simulated, one of the Night Crew sits out 47% of their team matches. No crew vessel has an arena card, so a crew vessel cannot take the fourth.",
+     "fill": "P15: every crew vessel seats at least one arena card and a voyage squad, so two people share one seat and four friends fit three seats."
     }
    ],
    "src": [
     "Docs/claude/MULTIPLAYER_AND_SOCIAL.md",
-    "Docs/Voyages/PARTY.md"
-   ]
+    "Docs/Voyages/PARTY.md",
+    "Docs/LoopAtlas/sim/REPORT.md"
+   ],
+   "plan": {
+    "s": "decided",
+    "note": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided."
+   },
+   "build": {
+    "s": "building",
+    "what": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided.",
+    "by": "Garrett",
+    "at": "2026-11-21",
+    "branch": "claude/retain-economy"
+   }
   },
   {
    "id": "arc.replay",
@@ -2335,7 +2471,7 @@
    },
    "prop": {
     "s": "change",
-    "note": "Tie each turn to a Tide so that players can see it coming."
+    "note": "Tie each turn to a Tide so that players can see it coming, and announce it in the What's new window built 2026-11-21 (commit 56584fa4e, Frogma Rev 121 C): the turn's entry in WhatsNew.asset names which vessels changed and which arena environments are new, and the window opens once by itself after the update, so the hole's 'nothing tells a player that the meta turned' has its channel."
    },
    "holes": [
     {
@@ -2399,6 +2535,491 @@
     "by": "Garrett",
     "at": "2026-11-20"
    }
+  },
+  {
+   "id": "sys.petals",
+   "in": "x",
+   "parent": "round.charge",
+   "at": 3,
+   "name": "Petals and silence",
+   "tier": 3,
+   "kind": "loop",
+   "t": [
+    5,
+    40
+   ],
+   "element": "Charge",
+   "is": "Every scored hit takes a petal, which comes loose as a crystal anyone can grab, and silences the victim for what the hit is worth: their abilities still fire but harm nothing. The race for the loose petal is the duel's second half.",
+   "phases": [
+    {
+     "n": "A scored hit lands"
+    },
+    {
+     "n": "A petal comes loose as a crystal",
+     "d": "Only what the victim holds above level 0; nothing partial ever leaves."
+    },
+    {
+     "n": "The victim is silenced",
+     "d": "Seconds = the hit's points / 10 x 4 x seconds per petal, capped."
+    },
+    {
+     "n": "Both race for the loose crystal",
+     "d": "A silenced pilot can still collect, so the victim can win it back."
+    },
+    {
+     "n": "Kept, or won back"
+    }
+   ],
+   "drivers": [
+    "rival",
+    "stake",
+    "mastery"
+   ],
+   "reps": null,
+   "repsOf": "petal moves per match",
+   "prop": {
+    "s": "add",
+    "note": "In the game today (ResourceSystem.AccrueElementalLoss, ElementalCrystalEjector, the silence window). Proposed as a loop of its own so its count is measured and taught."
+   },
+   "measure": {
+    "in": "x",
+    "event": "petal_changed_hands",
+    "params": [
+     "mode",
+     "from_vessel",
+     "to_vessel",
+     "won_back",
+     "silence_s"
+    ],
+    "target": "6 to 10 petal moves per pilot in a 90-second Charge match, and a third of loose petals won back by the pilot who lost them.",
+    "first": 4,
+    "expect": "A new pilot loses a petal and wins one back in their first Charge game."
+   },
+   "holes": [
+    {
+     "on": "px",
+     "q": "Nothing tells a new pilot that the crystal leaving them is their own petal, or that a silenced pilot can still take it back.",
+     "fill": "The Mentor's first Charge tip: \"That crystal is your petal. Take it back.\" The flower's step and the crystal are the same event, so the tip points at the flower."
+    }
+   ],
+   "src": [
+    "Docs/ElementalAbilitySystem/SILENCE.md section 1",
+    "Docs/ELEMENTAL_ECONOMY.md section 2"
+   ]
+  },
+  {
+   "id": "sys.element",
+   "in": "x",
+   "parent": "arcade",
+   "at": 3,
+   "name": "The element meter",
+   "tier": 2,
+   "kind": "loop",
+   "t": [
+    5,
+    60
+   ],
+   "is": "A crystal is one petal and one level of its element. The level scales the verb that element owns on this vessel, a hit or a danger prism takes a level away, and recovery pulls levels back into the band at one per five seconds.",
+   "phases": [
+    {
+     "n": "See a crystal of an element"
+    },
+    {
+     "n": "Take it",
+     "d": "One petal, one level; the HUD flower steps."
+    },
+    {
+     "n": "That element's verb is stronger",
+     "d": "What it scales is the vessel's own (its element map)."
+    },
+    {
+     "n": "A hit or a danger prism takes a level"
+    },
+    {
+     "n": "Recovery pulls it back toward the band",
+     "d": "One level per five seconds, from either end."
+    }
+   ],
+   "drivers": [
+    "find",
+    "reward",
+    "mastery"
+   ],
+   "reps": null,
+   "repsOf": "level changes per round",
+   "prop": {
+    "s": "add",
+    "note": "In the game today (ResourceSystem, ElementalBarsConfigSO, ElementalAbilityMapSO, the four-petal flower). Runs inside every round; proposed as a loop so a round's element swing is measured."
+   },
+   "measure": {
+    "in": "x",
+    "event": "element_level_changed",
+    "params": [
+     "vessel",
+     "element",
+     "level",
+     "cause"
+    ],
+    "target": "A level moves every 10 to 20 seconds of a round, and a pilot ends most rounds above where they started.",
+    "first": 2,
+    "expect": "In the Lesson a new pilot takes one crystal and sees the flower step and the verb grow."
+   },
+   "src": [
+    "Docs/ELEMENTAL_ECONOMY.md sections 1 and 3",
+    "Docs/claude/VESSEL_HUD_AND_ELEMENTS.md"
+   ]
+  },
+  {
+   "id": "sys.hearts",
+   "in": "x",
+   "parent": "round.ms",
+   "at": 3,
+   "name": "Hearts",
+   "tier": 2,
+   "kind": "loop",
+   "t": [
+    8,
+    60
+   ],
+   "element": "Mass-Space",
+   "is": "Creatures and plants carry elemental crystals as hearts. Wither or kill one and its heart comes loose, worth one petal to whoever takes it.",
+   "phases": [
+    {
+     "n": "Spot a lifeform carrying a heart",
+     "d": "A crystal sight (VOLT, ANVIL, ZODIAC, SUNDIAL) shows which ones carry what."
+    },
+    {
+     "n": "Wither or kill it",
+     "d": "A joust, a blast, a sting, dust."
+    },
+    {
+     "n": "The heart comes loose"
+    },
+    {
+     "n": "Take it"
+    }
+   ],
+   "drivers": [
+    "find",
+    "break",
+    "reward"
+   ],
+   "reps": null,
+   "repsOf": "hearts freed per match",
+   "prop": {
+    "s": "add",
+    "note": "In the game today (LifeFormCrystal, the Squirrel's crystal joust, every kill that frees a heart). Proposed as a loop so hunting has a count."
+   },
+   "measure": {
+    "in": "x",
+    "event": "heart_freed",
+    "params": [
+     "species",
+     "element",
+     "by_vessel",
+     "taken_by"
+    ],
+    "target": "1 to 3 hearts freed per pilot per Mass-Space match.",
+    "first": 4,
+    "expect": "A new pilot frees and takes one heart in their first Mass-Space game."
+   },
+   "src": [
+    "Docs/ECOSYSTEM.md",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/LifeFormCrystal.cs"
+   ]
+  },
+  {
+   "id": "sys.cellphase",
+   "in": "x",
+   "parent": "round.ms",
+   "at": 1,
+   "name": "The cell's mood",
+   "tier": 3,
+   "kind": "loop",
+   "t": [
+    30,
+    180
+   ],
+   "element": "Mass-Space",
+   "is": "The cell's live volume sets its phase, Calm, Restless, then Frenzy, and the phase changes what spawns and how the fauna behave. More mass makes a wilder cell, and a wilder cell eats mass.",
+   "phases": [
+    {
+     "n": "Calm"
+    },
+    {
+     "n": "Volume rises past the Restless threshold"
+    },
+    {
+     "n": "Restless",
+     "d": "Spawns and fauna shift with the phase."
+    },
+    {
+     "n": "Frenzy at the top of the ladder"
+    },
+    {
+     "n": "Volume falls; the cell settles"
+    }
+   ],
+   "drivers": [
+    "stake",
+    "goal",
+    "find"
+   ],
+   "reps": null,
+   "repsOf": "phase changes per match",
+   "prop": {
+    "s": "add",
+    "note": "In the game today (Cell.ResolvedThresholds, CellPhase Calm / Restless / Frenzy, the concentric hexagon volume indicator). Proposed as a loop so a match's arc is read and measured."
+   },
+   "measure": {
+    "in": "x",
+    "event": "cell_phase_changed",
+    "params": [
+     "phase",
+     "live_volume",
+     "seconds_in_match"
+    ],
+    "target": "Calm to Restless inside the first 60 seconds of a Mass-Space match, and Frenzy reached in about half of matches.",
+    "first": 4,
+    "expect": "A new pilot's first Mass-Space match reaches Restless."
+   },
+   "src": [
+    "Assets/_Scripts/Data/Enums/CellPhase.cs",
+    "Assets/_Scripts/Controller/Environment/Cell.cs"
+   ]
+  },
+  {
+   "id": "sys.trail",
+   "in": "x",
+   "parent": "round.ms",
+   "at": 1,
+   "name": "The trail",
+   "tier": 2,
+   "kind": "loop",
+   "t": [
+    5,
+    30
+   ],
+   "element": "Mass-Space",
+   "is": "Every vessel lays prisms of its colour behind it. That trail is mass, yours to skim and defend and theirs to break or steal, and the volume it adds up to is what the nucleus counts.",
+   "phases": [
+    {
+     "n": "Fly"
+    },
+    {
+     "n": "Your trail is laid in your colour"
+    },
+    {
+     "n": "It is mass",
+     "d": "You skim it for speed; rivals break, steal or shrink it."
+    },
+    {
+     "n": "What stands is your volume"
+    }
+   ],
+   "drivers": [
+    "make",
+    "joy",
+    "own"
+   ],
+   "reps": null,
+   "repsOf": "passes per match",
+   "prop": {
+    "s": "add",
+    "note": "In the game today, on every hull (the trail, the volume books on Brood Rush's scoreboard). Proposed as a loop so made and removed volume are read per pilot."
+   },
+   "measure": {
+    "in": "x",
+    "event": "volume_booked",
+    "params": [
+     "vessel",
+     "made",
+     "removed",
+     "lost"
+    ],
+    "target": "Made and removed within a factor of two of each other for a vessel the plateau calls balanced.",
+    "first": 4,
+    "expect": "A new pilot's volume made is above zero in their first Mass-Space game, and the result screen shows it."
+   },
+   "src": [
+    "Docs/MassAndSpaceGames/PLAN.md",
+    "Docs/ArcadeRestructure/PLAN.md"
+   ]
+  },
+  {
+   "id": "sys.sight",
+   "in": "x",
+   "parent": "voy.cell",
+   "at": 1,
+   "name": "The pilot's sight",
+   "tier": 1,
+   "kind": "loop",
+   "t": [
+    2,
+    10
+   ],
+   "is": "Hold LB and what your pilot's callsign sees lights through the mass, for you only. Pick one, let go, fly at it. For an AI pilot the same callsign weights what it goes after.",
+   "phases": [
+    {
+     "n": "Hold LB"
+    },
+    {
+     "n": "What the callsign sees lights up",
+     "d": "Others see your callsign plate light, so they know you are looking."
+    },
+    {
+     "n": "Pick one"
+    },
+    {
+     "n": "Let go and fly at it"
+    }
+   ],
+   "drivers": [
+    "find",
+    "mastery"
+   ],
+   "reps": null,
+   "repsOf": "looks per cell",
+   "prop": {
+    "s": "add",
+    "note": "In the game today (PilotSight, PilotSightGesture, CallsignSetSO), unverified in the editor. Proposed as a loop so a callsign's worth is measured, and so the genes' sight bias has a human twin."
+   },
+   "measure": {
+    "in": "x",
+    "event": "sight_used",
+    "params": [
+     "callsign",
+     "held_s",
+     "went_for"
+    ],
+    "target": "Held at least once a cell, and followed by flying at what it showed more than half the time.",
+    "first": 4,
+    "expect": "A pilot who has seated a callsign holds the sight once in their first voyage cell."
+   },
+   "src": [
+    "Docs/Pilots/CALLSIGNS.md sections 2 and 4",
+    "Assets/_Scripts/Controller/PilotSight/PilotSight.cs"
+   ]
+  },
+  {
+   "id": "seat.crew",
+   "in": "x",
+   "parent": "arc.social",
+   "at": 2,
+   "name": "The crew seat",
+   "tier": 3,
+   "kind": "loop",
+   "t": [
+    60,
+    900
+   ],
+   "is": "Proposed. Take the empty seat on a friend's hull and play its one-thumb board: the Ratel's Dynamo on the Honeyguide, the kite on the Wrasse, the Pistol on the Goby, a gunner on the Orca. What you do there powers their hull, and the AI takes whichever seat nobody holds.",
+   "phases": [
+    {
+     "n": "An empty seat is offered",
+     "d": "\"Play the Ratel on my Honeyguide.\""
+    },
+    {
+     "n": "Take it",
+     "d": "A D-pad press or a two-finger swipe; on a phone the board is upright in portrait."
+    },
+    {
+     "n": "Play the board"
+    },
+    {
+     "n": "See it land on the hull",
+     "d": "A dart that only your pattern made possible."
+    },
+    {
+     "n": "Stay, swap seats, or take your own hull"
+    }
+   ],
+   "drivers": [
+    "crew",
+    "mastery",
+    "joy"
+   ],
+   "reps": null,
+   "repsOf": "seats taken per sitting with a friend",
+   "prop": {
+    "s": "add",
+    "note": "In the game today on four crew vessels, networked for the rider (Docs/CREW_STATIONS.md). Proposed as a loop because it is the one way into the game that needs no flying: Mira's and the night crew's fourth friend's path both start here (journeys.yaml)."
+   },
+   "holes": [
+    {
+     "on": "npx",
+     "q": "A crew seat is reached only from inside a hull: the Toybox's Vessel Changer, then a seat swap. Nobody arriving by invite is dropped into the seat they were invited to.",
+     "fill": "The invite names the seat, and accepting it opens the game in that seat (the prop of Party and friends: the empty seat is the invite)."
+    },
+    {
+     "on": "npx",
+     "q": "A squad is three seats and a voyage party at most three players, so a group of four never fits one team.",
+     "fill": "A crew seat is the fourth place: it costs no squad slot, so four friends fly three hulls with one of them riding."
+    }
+   ],
+   "src": [
+    "Docs/CREW_STATIONS.md",
+    "Docs/Voyages/PARTY.md",
+    "Docs/LoopAtlas/personas/journeys.yaml"
+   ]
+  },
+  {
+   "id": "seat.ratel",
+   "in": "x",
+   "parent": "seat.crew",
+   "at": 2,
+   "name": "The Ratel's board",
+   "tier": 2,
+   "kind": "loop",
+   "t": [
+    15,
+    60
+   ],
+   "is": "Proposed. The Honeyguide's second seat, a hex puzzle. Every 15 seconds the ports turn and the spin gives AP; moves and injections make patterns, each pattern sends a charge to the pilot's battery, and every four patterns the Ratel picks one ability of three.",
+   "phases": [
+    {
+     "n": "The spin",
+     "d": "Ports turn 60 degrees; 3 AP, kept up to 6."
+    },
+    {
+     "n": "Move, inject, make a pattern"
+    },
+    {
+     "n": "A charge goes to the battery",
+     "d": "The pilot slips or darts with it."
+    },
+    {
+     "n": "Every four patterns, pick one of three"
+    }
+   ],
+   "drivers": [
+    "mastery",
+    "crew",
+    "make"
+   ],
+   "reps": "4",
+   "repsOf": "patterns per pick",
+   "prop": {
+    "s": "add",
+    "note": "Built (Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md, DynamoCore). A casual puzzle player's whole game, on an older phone in portrait with one thumb. Proposed as a loop so its sittings are counted apart from the hull's."
+   },
+   "holes": [
+    {
+     "on": "npx",
+     "q": "The Ratel has no way in of its own. A player who wants the puzzle has to find the Honeyguide in the Toybox and swap seats, and the Toybox gives the board no goal and banks nothing.",
+     "fill": "A Ratel card: the Honeyguide's Mass game (Honeycomb) with the player seated on the Ratel and the AI flying, on its own I1 to I4 ladder, so a Ratel player's rungs light the hull's Mass petal."
+    },
+    {
+     "on": "npx",
+     "q": "The Honeyguide is in no arena roster, so a Ratel player cannot come along when their squad goes to the arena.",
+     "fill": "Seat the Honeyguide in Brood Rush, where a hive-builder's Mass verb serves the cultivator role."
+    }
+   ],
+   "src": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md",
+    "Docs/Studios/ONE_THUMB_SEAT_ARCS.md",
+    "Docs/LoopAtlas/personas/journeys.yaml"
+   ]
   }
  ],
  "edges": [
@@ -2567,6 +3188,41 @@
    "kind": "cross",
    "why": "The offered next step after a round.",
    "handoff": "done",
+   "in": "x"
+  },
+  {
+   "from": "sys.element",
+   "to": "round.time",
+   "kind": "feed",
+   "why": "A Time crystal is speed: the meter is what a race spends.",
+   "in": "x"
+  },
+  {
+   "from": "sys.petals",
+   "to": "sys.element",
+   "kind": "feed",
+   "why": "A petal lost is a level lost, and a petal won back is the level back.",
+   "in": "x"
+  },
+  {
+   "from": "sys.hearts",
+   "to": "sys.element",
+   "kind": "feed",
+   "why": "A freed heart is one petal of its element.",
+   "in": "x"
+  },
+  {
+   "from": "sys.trail",
+   "to": "sys.cellphase",
+   "kind": "feed",
+   "why": "Trail is the live volume the cell's phase reads.",
+   "in": "x"
+  },
+  {
+   "from": "sys.sight",
+   "to": "sys.hearts",
+   "kind": "feed",
+   "why": "A crystal sight shows which lifeforms carry which heart.",
    "in": "x"
   }
  ],
@@ -2977,7 +3633,9 @@
     "breath",
     "sitting",
     "arcade"
-   ]
+   ],
+   "stage": "building",
+   "branch": "claude/retain-breath"
   },
   {
    "id": "P6",
@@ -3025,7 +3683,9 @@
    "touches": [
     "voyages",
     "arc.fleet"
-   ]
+   ],
+   "stage": "building",
+   "branch": "claude/retain-economy"
   },
   {
    "id": "P11",
@@ -3042,6 +3702,57 @@
    "touches": [
     "arc.replay"
    ]
+  },
+  {
+   "id": "P13",
+   "title": "Voyage chapters",
+   "what": "A voyage can be left at any location it has reached and picked up next sitting, with the haul still aboard; only the dock at home banks it. A 20 to 40 minute voyage becomes two to four phone sittings, and a commuter stops losing hauls (100% of started voyages simulated as planned, none with chapters).",
+   "touches": [
+    "voyages",
+    "voy.place",
+    "voy.home",
+    "sitting"
+   ],
+   "stage": "building",
+   "branch": "claude/retain-voyage-chapters"
+  },
+  {
+   "id": "P14",
+   "title": "A puzzle-first door",
+   "what": "The first-login guide asks fly or solve. A solver's spotlight leads to the Ratel's board while the Honeyguide's AI flies, and a Honeyguide game counts for the quest chain. Simulated, it lifts a puzzle player's D30 from 3% to 94%, with P15.",
+   "touches": [
+    "arc.activation",
+    "arc.unlock",
+    "toybox",
+    "fleet"
+   ],
+   "stage": "building",
+   "branch": "claude/retain-makers"
+  },
+  {
+   "id": "P15",
+   "title": "A crew vessel in every squad",
+   "what": "Every crew vessel seats at least one arena card and a voyage squad, so two people share one seat: a parent rides as the Ratel in a child's arena squad, and four friends fit three seats.",
+   "touches": [
+    "arena",
+    "voyages",
+    "arc.social",
+    "arc.squad",
+    "fleet"
+   ]
+  },
+  {
+   "id": "P16",
+   "title": "Making pays",
+   "what": "A finished painting pays a little and can be shared as a replay link; a liked painting is the creative player's win. The Toybox feeds the long game instead of standing beside it.",
+   "touches": [
+    "toybox",
+    "toy.paint",
+    "arc.replay",
+    "arc.fleet"
+   ],
+   "stage": "building",
+   "branch": "claude/retain-makers"
   }
  ],
  "fleet": {
@@ -3165,7 +3876,201 @@
       "crew",
       "break"
      ],
-     "feel": "Conducting, not fighting."
+     "feel": "Conducting, not fighting.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "herbivore_near",
+       "rival_mass_ahead"
+      ],
+      "dials": [
+       [
+        "tameHold",
+        "seconds a herbivore is held in the light before moving on",
+        1,
+        6,
+        "s"
+       ],
+       [
+        "minSchool",
+        "creatures in the school before a throw",
+        2,
+        20,
+        "count"
+       ],
+       [
+        "throwRange",
+        "distance to the newest painted prisms when the throw is let go",
+        20,
+        200,
+        "u"
+       ]
+      ],
+      "done": "A thrown half eats painted prisms within ten seconds of the paint.",
+      "sight": "DOE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Hop the school",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Two halves of the school are two stepping stones; the dash hops between them.",
+     "chain": [
+      [
+       "Time",
+       "Dash to one half"
+      ],
+      [
+       "Time",
+       "Dash to the other half"
+      ],
+      [
+       "",
+       "Carry the line through the gate"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "Two places at once.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "schoolSpread",
+        "how far apart the two halves are kept",
+        20,
+        300,
+        "u"
+       ],
+       [
+        "dashLead",
+        "distance before the gate at which to dash",
+        0,
+        150,
+        "u"
+       ]
+      ],
+      "done": "A gate is threaded within two seconds of a dash.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The sic",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Point the beam at a rival and send one of your own after them.",
+     "chain": [
+      [
+       "Charge",
+       "Beam a rival: lock on"
+      ],
+      [
+       "",
+       "A creature leaves the school and hunts them"
+      ],
+      [
+       "Mass",
+       "Lure a herbivore to take its place"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "crew"
+     ],
+     "feel": "Setting the hounds on them.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_near",
+       "bank_full"
+      ],
+      "dials": [
+       [
+        "lockRange",
+        "rival distance at which the beam is swept on",
+        30,
+        250,
+        "u"
+       ],
+       [
+        "keepSchool",
+        "creatures kept in the school before one is spent",
+        1,
+        15,
+        "count"
+       ]
+      ],
+      "done": "The hunting creature takes a petal.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The garden",
+     "t": [
+      12,
+      40
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "The omni crystal's seed and the lure's light make a plant in your colour.",
+     "chain": [
+      [
+       "Omni",
+       "An omni crystal leaves a seed"
+      ],
+      [
+       "Mass",
+       "Light the lure over plants: they grow faster"
+      ],
+      [
+       "Mass",
+       "Let go: the seed is planted"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "find"
+     ],
+     "feel": "Tending something that will outlast the round.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "omni_near",
+       "flora_near"
+      ],
+      "dials": [
+       [
+        "gardenHold",
+        "seconds the lure is held over plants",
+        1,
+        8,
+        "s"
+       ],
+       [
+        "seedSpacing",
+        "distance kept between planted seeds",
+        10,
+        150,
+        "u"
+       ]
+      ],
+      "done": "A planted seed grows in your colour inside the claim.",
+      "sight": "IVY"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md"
@@ -3292,7 +4197,38 @@
       "make",
       "break"
      ],
-     "feel": "Always in the right gear."
+     "feel": "Always in the right gear.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "heatCutoff",
+        "how hot the guns run before the switch to Creation Mode",
+        0.3,
+        1.0,
+        "fraction"
+       ],
+       [
+        "coolLay",
+        "seconds in Creation Mode while the guns cool",
+        1,
+        8,
+        "s"
+       ],
+       [
+        "chargeRange",
+        "rival distance that switches to Charge Mode",
+        10,
+        120,
+        "u"
+       ]
+      ],
+      "done": "Guns break rival prisms and Creation lays trail while they cool, with no overheat lock-out."
+     }
     },
     {
      "name": "The ring throw",
@@ -3315,7 +4251,140 @@
       "break",
       "joy"
      ],
-     "feel": "One huge flat cut."
+     "feel": "One huge flat cut.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "omni_near",
+       "rival_mass_ahead"
+      ],
+      "dials": [
+       [
+        "omniDetour",
+        "distance flown off the line for an omni crystal",
+        0,
+        200,
+        "u"
+       ],
+       [
+        "planeFill",
+        "share of the ring's plane that must be rival prisms before the throw",
+        0.1,
+        0.9,
+        "fraction"
+       ]
+      ],
+      "done": "The thrown disk wrecks rival prisms within five seconds of the pickup.",
+      "sight": "OPAL"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Speed and settle",
+     "t": [
+      8,
+      25
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Speed Mode on the straight, a slower mode before the turn, Speed again out of it.",
+     "chain": [
+      [
+       "Time",
+       "Speed Mode on a straight"
+      ],
+      [
+       "Mass",
+       "Creation Mode into the hard turn"
+      ],
+      [
+       "Time",
+       "Speed Mode out of it"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "Shifting gears without a clutch.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "straight_ahead",
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "minStraight",
+        "straight length that is worth Speed Mode",
+        50,
+        600,
+        "u"
+       ],
+       [
+        "turnShift",
+        "heading change ahead that ends Speed Mode",
+        20,
+        120,
+        "deg"
+       ]
+      ],
+      "done": "A gate is threaded in Speed Mode.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Five-line weave",
+     "t": [
+      10,
+      40
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Creation Mode near the nucleus, the ring turning, five lines weaving one sheet.",
+     "chain": [
+      [
+       "Mass",
+       "Creation Mode by the nucleus"
+      ],
+      [
+       "",
+       "Turn the ring as you fly: the five lines weave"
+      ],
+      [
+       "Charge",
+       "Charge Mode cords if a rival comes"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "crew"
+     ],
+     "feel": "Knitting a wall.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "own_mass_gap",
+       "open_space"
+      ],
+      "dials": [
+       [
+        "weaveRadius",
+        "distance from the nucleus the weave is flown",
+        20,
+        300,
+        "u"
+       ],
+       [
+        "ringTurn",
+        "how fast the ring is turned while weaving",
+        10,
+        180,
+        "deg/s"
+       ]
+      ],
+      "done": "Creation Mode lays its five lines inside the claim for five seconds unbroken.",
+      "sight": "ENSIGN"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md"
@@ -3478,7 +4547,40 @@
       "mastery",
       "goal"
      ],
-     "feel": "Seeing the line before you fly it, and being right."
+     "feel": "Seeing the line before you fly it, and being right.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "bank_full",
+       "rival_mass_ahead",
+       "crystal_near"
+      ],
+      "dials": [
+       [
+        "bankThreshold",
+        "energy banked before the AI seeks a target",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "targetMass",
+        "prisms a cluster must hold to be worth a full bank",
+        10,
+        400,
+        "count"
+       ],
+       [
+        "alignTolerance",
+        "aim error onto the crystal that still fires",
+        1,
+        20,
+        "deg"
+       ]
+      ],
+      "done": "The blast destroys at least half the prisms of the target it was aimed at.",
+      "sight": "MANGER"
+     }
     },
     {
      "in": "px",
@@ -3515,7 +4617,33 @@
       "rival",
       "mastery"
      ],
-     "feel": "Leading a moving target."
+     "feel": "Leading a moving target.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_on_line",
+       "crystal_near",
+       "bank_full"
+      ],
+      "dials": [
+       [
+        "leadTime",
+        "how far ahead the rival's path is led",
+        0.2,
+        3,
+        "s"
+       ],
+       [
+        "bankThreshold",
+        "energy banked before hunting",
+        0.1,
+        1.0,
+        "fraction"
+       ]
+      ],
+      "done": "A blast through a crystal takes a petal from a rival.",
+      "sight": "BANDIT"
+     }
     },
     {
      "in": "px",
@@ -3544,7 +4672,85 @@
       "break",
       "joy"
      ],
-     "feel": "Rate of fire over size."
+     "feel": "Rate of fire over size.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "crystal_near",
+       "mass_ahead"
+      ],
+      "dials": [
+       [
+        "snapRange",
+        "how near the nearest crystal must be for a snap",
+        10,
+        120,
+        "u"
+       ],
+       [
+        "bankCeiling",
+        "the bank below which the AI snaps instead of saving",
+        0,
+        0.5,
+        "fraction"
+       ]
+      ],
+      "done": "A blast goes off within three seconds of the target being seen."
+     }
+    },
+    {
+     "in": "x",
+     "name": "Drift and kick",
+     "t": [
+      4,
+      15
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Drift into the turn skimming the wall, let go on the exit line.",
+     "chain": [
+      [
+       "Time",
+       "Hold to drift into the turn"
+      ],
+      [
+       "Space",
+       "Skim the mass as you slide: energy banks"
+      ],
+      [
+       "Time",
+       "Let go on the exit line"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "The slide and the kick out of it.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next",
+       "mass_ahead"
+      ],
+      "dials": [
+       [
+        "driftEntry",
+        "heading error that starts a drift",
+        15,
+        120,
+        "deg"
+       ],
+       [
+        "releaseAlign",
+        "heading error onto the exit at which the drift is let go",
+        0,
+        20,
+        "deg"
+       ]
+      ],
+      "done": "A gate is threaded within one and a half seconds of the release.",
+      "sight": "NEEDLE"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md"
@@ -3657,7 +4863,140 @@
       "make",
       "rival"
      ],
-     "feel": "Two games that need each other."
+     "feel": "Two games that need each other.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "crew_ready",
+       "open_space"
+      ],
+      "dials": [
+       [
+        "perchSpacing",
+        "distance between the perches the Goby picks",
+        20,
+        250,
+        "u"
+       ],
+       [
+        "denEnergy",
+        "energy earned over the ground before the Pistol rests to build",
+        0.2,
+        1.0,
+        "fraction"
+       ]
+      ],
+      "done": "A den is built at a perch the Pistol reached without a fall.",
+      "sight": "ENSIGN"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Lock and snap",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "The Goby holds the lock, the Pistol snaps, and the ring homes.",
+     "chain": [
+      [
+       "",
+       "The Goby locks a rival in the Pistol's view"
+      ],
+      [
+       "Charge",
+       "The Pistol snaps: the vortex ring homes"
+      ],
+      [
+       "Space",
+       "The undertow pulls their loose mass in"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "rival"
+     ],
+     "feel": "Spotter and shooter.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_near",
+       "crew_ready"
+      ],
+      "dials": [
+       [
+        "lockHold",
+        "seconds the Goby holds the lock before the snap",
+        0.2,
+        3,
+        "s"
+       ],
+       [
+        "snapRange",
+        "rival distance at which the Pistol snaps",
+        10,
+        150,
+        "u"
+       ]
+      ],
+      "done": "A homed ring takes petals.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The riptide",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Sit in dense mass, let the undertow fill the plane, then smash it in one ring.",
+     "chain": [
+      [
+       "Space",
+       "Undertow pulls mass into the plane"
+      ],
+      [
+       "Charge",
+       "Snap a ring through what was pulled in"
+      ],
+      [
+       "",
+       "Crystals drift in to collect"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "find"
+     ],
+     "feel": "Drawing it all in, then letting go.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "dense_mass"
+      ],
+      "dials": [
+       [
+        "dwell",
+        "seconds the Pistol stays in dense mass",
+        1,
+        10,
+        "s"
+       ],
+       [
+        "snapDensity",
+        "prisms in the plane before the snap",
+        5,
+        200,
+        "count"
+       ]
+      ],
+      "done": "A ring collapses on mass the undertow pulled in.",
+      "sight": "MANGER"
+     }
     }
    ],
    "doc": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset"
@@ -3773,7 +5112,202 @@
       "break",
       "mastery"
      ],
-     "feel": "Heavy, planted, loud."
+     "feel": "Heavy, planted, loud.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "bank_low"
+      ],
+      "dials": [
+       [
+        "postRange",
+        "distance from the target to the post the Grizzly digs in at",
+        30,
+        250,
+        "u"
+       ],
+       [
+        "refillTo",
+        "energy refilled while dug in before firing",
+        0.3,
+        1.0,
+        "fraction"
+       ],
+       [
+        "chargeHold",
+        "seconds the cannon is charged before release",
+        0.3,
+        3,
+        "s"
+       ]
+      ],
+      "done": "A charged shell breaks rival prisms and the claw's burn spreads, from one dig-in."
+     }
+    },
+    {
+     "in": "x",
+     "name": "Three rushes",
+     "t": [
+      5,
+      15
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Chain the rushes down the straight and dig in at the turn to refill.",
+     "chain": [
+      [
+       "Time",
+       "Rush on the straight"
+      ],
+      [
+       "Time",
+       "Rush again before it fades"
+      ],
+      [
+       "Charge",
+       "Dig In at the turn: energy refills"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "A charge, a breath, a charge.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "straight_ahead",
+       "bank_full"
+      ],
+      "dials": [
+       [
+        "rushSpacing",
+        "seconds between rushes",
+        0.3,
+        1.5,
+        "s"
+       ],
+       [
+        "reserve",
+        "rushes kept for the exit",
+        0,
+        2,
+        "count"
+       ]
+      ],
+      "done": "A gate is threaded on a rush.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The ambush",
+     "t": [
+      8,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Dig in on a rival's line, pick the sniper, fire as they cross.",
+     "chain": [
+      [
+       "Charge",
+       "Dig In on a rival's line"
+      ],
+      [
+       "Mass",
+       "Cycle to the sniper shot"
+      ],
+      [
+       "Space",
+       "Release the cannon as they cross"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "mastery"
+     ],
+     "feel": "Waiting is a weapon.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_on_line",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "ambushLead",
+        "seconds ahead of the rival the post is taken",
+        0.5,
+        4,
+        "s"
+       ],
+       [
+        "sniperRange",
+        "rival distance for the sniper shot",
+        50,
+        500,
+        "u"
+       ]
+      ],
+      "done": "A shot from a dug-in post lands a petal hit.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Rush into Dig In",
+     "t": [
+      8,
+      50
+     ],
+     "src": "Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 80% of the behaviour in an archive cell at 98% of the best genome). Not flown by a person yet.",
+     "is": "A chain the AI search kept that no combo named: Rush (Time), then Dig In (Charge).",
+     "chain": [
+      [
+       "Time",
+       "Rush"
+      ],
+      [
+       "Charge",
+       "Dig In"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery",
+      "rival"
+     ],
+     "feel": "Not felt yet: fly it and name the moment, or drop it.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "handoff",
+        "seconds from one verb's payoff to the next press",
+        0.2,
+        4.0,
+        "s"
+       ],
+       [
+        "commit",
+        "share of the first verb spent before chaining",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "reach",
+        "distance to the cue at which the chain starts",
+        20,
+        400,
+        "u"
+       ]
+      ],
+      "done": "Dig In lands within the handoff of the Rush before it."
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_RUSH.md"
@@ -3897,7 +5431,186 @@
       "crew",
       "mastery"
      ],
-     "feel": "My partner made that shot possible."
+     "feel": "My partner made that shot possible.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "crew_ready",
+       "rival_near"
+      ],
+      "dials": [
+       [
+        "hiveDetour",
+        "distance flown for a hive",
+        30,
+        400,
+        "u"
+       ],
+       [
+        "bankedUses",
+        "stronger uses banked before spending",
+        1,
+        6,
+        "count"
+       ]
+      ],
+      "done": "A banked Flit strikes a rival.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Slip chain",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "The Ratel's patterns fill the battery; the nose finds the next trail of that colour.",
+     "chain": [
+      [
+       "",
+       "The Ratel makes patterns: colour charge"
+      ],
+      [
+       "Time",
+       "Nose onto a trail of that colour: slip to its end"
+      ],
+      [
+       "Time",
+       "The next trail"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "joy"
+     ],
+     "feel": "The partner pays for the ride.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "mass_ahead",
+       "bank_full"
+      ],
+      "dials": [
+       [
+        "slipAlign",
+        "heading error onto a trail that still noses on",
+        2,
+        30,
+        "deg"
+       ],
+       [
+        "keepCharge",
+        "colour charges kept in reserve",
+        0,
+        3,
+        "count"
+       ]
+      ],
+      "done": "A slip ends nearer the next gate than it began.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Peck the comb",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Space cards from the hive bank stronger pecks, spent on rival mass.",
+     "chain": [
+      [
+       "Mass",
+       "Fly into a hive"
+      ],
+      [
+       "",
+       "The Ratel makes Space cards"
+      ],
+      [
+       "Space",
+       "Three-shot pecks into rival mass"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "break"
+     ],
+     "feel": "Earned shots.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "bank_full"
+      ],
+      "dials": [
+       [
+        "peckRange",
+        "distance to rival mass when pecking",
+        20,
+        200,
+        "u"
+       ],
+       [
+        "burstSpacing",
+        "seconds between bursts",
+        0.2,
+        2,
+        "s"
+       ]
+      ],
+      "done": "Banked pecks break rival prisms."
+     }
+    },
+    {
+     "in": "x",
+     "name": "The hive build",
+     "t": [
+      15,
+      45
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Hives near the nucleus are prisms for the claim.",
+     "chain": [
+      [
+       "Mass",
+       "Fly into a hive near the nucleus"
+      ],
+      [
+       "",
+       "The Ratel's puzzle pays prisms"
+      ],
+      [
+       "Mass",
+       "On to the next hive"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "make"
+     ],
+     "feel": "Building by solving.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "own_mass_gap",
+       "crew_ready"
+      ],
+      "dials": [
+       [
+        "hiveRange",
+        "distance from the nucleus a hive is worth flying to",
+        30,
+        400,
+        "u"
+       ]
+      ],
+      "done": "A hive pays its prisms inside the claim.",
+      "sight": "ENSIGN"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md"
@@ -4022,7 +5735,133 @@
       "rival",
       "mastery"
      ],
-     "feel": "A flock turning as one."
+     "feel": "A flock turning as one.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "fauna_near",
+       "rival_near"
+      ],
+      "dials": [
+       [
+        "herdSize",
+        "creatures herded before the call",
+        2,
+        30,
+        "count"
+       ],
+       [
+        "callLead",
+        "seconds before the rival passes that the herd is called",
+        0.2,
+        3,
+        "s"
+       ]
+      ],
+      "done": "A danger creature stings a rival hull.",
+      "sight": "DOE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Decoy and dash",
+     "t": [
+      5,
+      15
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Netting, a decoy ahead on the line, and the whole ship rushes to it.",
+     "chain": [
+      [
+       "Time",
+       "Drop a decoy ahead on the line"
+      ],
+      [
+       "Time",
+       "Rush the ship to it"
+      ],
+      [
+       "",
+       "The next decoy"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "Throwing yourself forward.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "decoyLead",
+        "distance ahead the decoy is dropped",
+        20,
+        250,
+        "u"
+       ]
+      ],
+      "done": "A gate is threaded during a rush.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The trawl",
+     "t": [
+      12,
+      40
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Go wide to find the herd, rush to it, call it onto your plane.",
+     "chain": [
+      [
+       "Space",
+       "Go wide: find the dense herd"
+      ],
+      [
+       "Time",
+       "Rush to it"
+      ],
+      [
+       "Mass",
+       "The Call pulls it onto your plane"
+      ]
+     ],
+     "drivers": [
+      "find",
+      "crew"
+     ],
+     "feel": "A full net.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "fauna_near",
+       "open_space"
+      ],
+      "dials": [
+       [
+        "wideDwell",
+        "seconds spent in the wide view",
+        0.5,
+        5,
+        "s"
+       ],
+       [
+        "netRange",
+        "distance to the herd when the call is made",
+        20,
+        300,
+        "u"
+       ]
+      ],
+      "done": "Creatures are pulled onto your plane by one call.",
+      "sight": "DOE"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md"
@@ -4208,7 +6047,32 @@
        "feel": "One more bomb is a bigger bloom, and one more chance to brush a prism and lose them all.",
        "src": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md section 0"
       }
-     ]
+     ],
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_near",
+       "bank_full"
+      ],
+      "dials": [
+       [
+        "plantsBeforeBloom",
+        "bombs planted before the AI spends an omni crystal",
+        1,
+        8,
+        "count"
+       ],
+       [
+        "grazeGap",
+        "how close a graze is flown",
+        1,
+        15,
+        "u"
+       ]
+      ],
+      "done": "A Kabloom takes petals from at least one rival.",
+      "sight": "BANDIT"
+     }
     },
     {
      "name": "The bait",
@@ -4235,7 +6099,132 @@
       "rival",
       "joy"
      ],
-     "feel": "A trap someone chose to walk into."
+     "feel": "A trap someone chose to walk into.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "crystal_near",
+       "rival_ahead"
+      ],
+      "dials": [
+       [
+        "baitRange",
+        "a crystal is taken as bait when a rival is within this of it",
+        20,
+        300,
+        "u"
+       ],
+       [
+        "yawAway",
+        "seconds of hard yaw away after the pickup",
+        0.3,
+        3,
+        "s"
+       ]
+      ],
+      "done": "A rival takes the decoy and its danger prisms."
+     }
+    },
+    {
+     "in": "x",
+     "name": "Soar the line",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "A hard flat yaw at the gate, a skim to arm, then soar the straight.",
+     "chain": [
+      [
+       "Time",
+       "Hard flat yaw at the gate"
+      ],
+      [
+       "Space",
+       "Skim the gate's mass to arm"
+      ],
+      [
+       "Time",
+       "Soar the straight"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "Turning on a coin.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next",
+       "mass_ahead"
+      ],
+      "dials": [
+       [
+        "yawCommit",
+        "heading error that commits a hard yaw",
+        10,
+        90,
+        "deg"
+       ],
+       [
+        "skimDetour",
+        "distance flown off the line to skim",
+        0,
+        60,
+        "u"
+       ]
+      ],
+      "done": "A gate is threaded with a skim inside two seconds.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Chain blow",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Skimmed rival mass turns explosive; one blast takes the field with it.",
+     "chain": [
+      [
+       "Space",
+       "Skim rival mass: it turns explosive"
+      ],
+      [
+       "Charge",
+       "Graze a creature or rival there and let the fuse go"
+      ],
+      [
+       "",
+       "The blasts take the explosive mass with them"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "mastery"
+     ],
+     "feel": "One match, a whole field.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "dense_mass"
+      ],
+      "dials": [
+       [
+        "skimPass",
+        "prisms skimmed before the fuse is let go",
+        3,
+        60,
+        "count"
+       ]
+      ],
+      "done": "A chain of explosive prisms breaks more prisms than were skimmed.",
+      "sight": "MANGER"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
@@ -4361,7 +6350,178 @@
       "make",
       "break"
      ],
-     "feel": "Disappearing here and arriving there."
+     "feel": "Disappearing here and arriving there.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "exitAim",
+        "how far the tunnel's exit is aimed into rival mass",
+        20,
+        300,
+        "u"
+       ],
+       [
+        "suckDensity",
+        "prisms near the entrance before a tunnel is formed",
+        5,
+        150,
+        "count"
+       ]
+      ],
+      "done": "Prisms fired out of a tunnel smash rival prisms."
+     }
+    },
+    {
+     "in": "x",
+     "name": "Ride the network",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Tunnels aimed at the next gate, ridden faster, one from the exit of the last.",
+     "chain": [
+      [
+       "Space",
+       "Form a tunnel toward the next gate"
+      ],
+      [
+       "Time",
+       "Ride it faster"
+      ],
+      [
+       "Space",
+       "The next tunnel from the exit"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "Folding the course.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next",
+       "straight_ahead"
+      ],
+      "dials": [
+       [
+        "tunnelAim",
+        "distance ahead the tunnel is aimed",
+        50,
+        500,
+        "u"
+       ]
+      ],
+      "done": "A gate is threaded within two seconds of a tunnel exit.",
+      "sight": "FLUME"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Sentry line",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Sentinel Mode on, tunnels across a rival's path, every entrance zaps them.",
+     "chain": [
+      [
+       "Charge",
+       "Sentinel Mode on"
+      ],
+      [
+       "Space",
+       "Tunnels across a rival's path"
+      ],
+      [
+       "",
+       "Each entrance zaps them"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "make"
+     ],
+     "feel": "A minefield with your name on it.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_on_line",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "sentryLead",
+        "seconds ahead of the rival the tunnel is formed",
+        0.5,
+        4,
+        "s"
+       ]
+      ],
+      "done": "A sentinel knocks a petal out of a rival.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The warren",
+     "t": [
+      15,
+      45
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Tunnel out from the nucleus; every exit leaves a hexagon of your prisms.",
+     "chain": [
+      [
+       "Space",
+       "Tunnel out from the nucleus"
+      ],
+      [
+       "Mass",
+       "A hexagon at every exit"
+      ],
+      [
+       "",
+       "A ring of exits round the claim"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "crew"
+     ],
+     "feel": "A home with many doors.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "own_mass_gap"
+      ],
+      "dials": [
+       [
+        "exitSpacing",
+        "distance between exits",
+        10,
+        150,
+        "u"
+       ],
+       [
+        "warrenRadius",
+        "distance from the nucleus the exits are laid",
+        20,
+        300,
+        "u"
+       ]
+      ],
+      "done": "Exit hexagons stand inside the claim.",
+      "sight": "ENSIGN"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md"
@@ -4486,7 +6646,244 @@
       "break",
       "rival"
      ],
-     "feel": "Four people, one hit."
+     "feel": "Four people, one hit.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_near",
+       "ally_near",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "closeTo",
+        "distance the helm closes to before the gunners launch",
+        50,
+        400,
+        "u"
+       ],
+       [
+        "salvo",
+        "missiles flown at once",
+        1,
+        4,
+        "count"
+       ],
+       [
+        "burstLead",
+        "seconds before contact a gunner taps to burst",
+        0,
+        2,
+        "s"
+       ]
+      ],
+      "done": "A burst takes petals from a rival hull.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Tank and missile",
+     "t": [
+      8,
+      25
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "The helm boosts the straight while a gunner flies a missile through the crystal ahead.",
+     "chain": [
+      [
+       "Time",
+       "Helm boosts on the straight"
+      ],
+      [
+       "Charge",
+       "A gunner flies a missile through a crystal ahead"
+      ],
+      [
+       "Time",
+       "Boost on into the gate"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "joy"
+     ],
+     "feel": "The crew clears the road.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "straight_ahead",
+       "crystal_near"
+      ],
+      "dials": [
+       [
+        "tankReserve",
+        "share of the tank kept for the gate",
+        0,
+        0.6,
+        "fraction"
+       ],
+       [
+        "missileDetour",
+        "distance a missile flies off the line for a crystal",
+        0,
+        300,
+        "u"
+       ]
+      ],
+      "done": "A gate is threaded under boost.",
+      "sight": "SUNDIAL"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The ice shelf",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Ring the hull in shield along the claim, and let it fall as lingering danger.",
+     "chain": [
+      [
+       "Mass",
+       "Helm rings the hull in shield"
+      ],
+      [
+       "Time",
+       "Boost along the claim"
+      ],
+      [
+       "",
+       "The ring drops as danger prisms that linger"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "crew"
+     ],
+     "feel": "A wall that bites.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "own_mass_gap",
+       "rival_near"
+      ],
+      "dials": [
+       [
+        "shelfRadius",
+        "distance from the nucleus the shield is dropped",
+        20,
+        300,
+        "u"
+       ]
+      ],
+      "done": "Dropped danger prisms stand inside the claim.",
+      "sight": "HORNET"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Depth charge",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Fly a missile deep into rival mass and burst it in the middle.",
+     "chain": [
+      [
+       "Charge",
+       "A gunner flies a missile into rival mass"
+      ],
+      [
+       "Space",
+       "Tap again: it bursts in the middle"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "crew"
+     ],
+     "feel": "From the inside.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "dense_mass"
+      ],
+      "dials": [
+       [
+        "burstDepth",
+        "how deep into the mass before the tap",
+        0,
+        60,
+        "u"
+       ]
+      ],
+      "done": "A burst wrecks rival prisms on every side of it.",
+      "sight": "MANGER"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Boost Tank into Danger Shield into Flown Missiles",
+     "t": [
+      12,
+      60
+     ],
+     "src": "Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 73% of the behaviour in an archive cell at 98% of the best genome). Not flown by a person yet.",
+     "is": "A chain the AI search kept that no combo named: Boost Tank (Time), then Danger Shield (Mass), then Flown Missiles (Charge).",
+     "chain": [
+      [
+       "Time",
+       "Boost Tank"
+      ],
+      [
+       "Mass",
+       "Danger Shield"
+      ],
+      [
+       "Charge",
+       "Flown Missiles"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery",
+      "make"
+     ],
+     "feel": "Not felt yet: fly it and name the moment, or drop it.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "crystal_near"
+      ],
+      "dials": [
+       [
+        "handoff",
+        "seconds from one verb's payoff to the next press",
+        0.2,
+        4.0,
+        "s"
+       ],
+       [
+        "commit",
+        "share of the first verb spent before chaining",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "reach",
+        "distance to the cue at which the chain starts",
+        20,
+        400,
+        "u"
+       ]
+      ],
+      "done": "Flown Missiles lands within the handoff of the Boost Tank before it."
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md"
@@ -4602,7 +6999,132 @@
       "make",
       "joy"
      ],
-     "feel": "Momentum that nothing stops."
+     "feel": "Momentum that nothing stops.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "mass_ahead",
+       "straight_ahead"
+      ],
+      "dials": [
+       [
+        "spoolBeforeField",
+        "share of top speed reached before the field",
+        0.3,
+        1.0,
+        "fraction"
+       ],
+       [
+        "throwHold",
+        "seconds a trigger is held to throw the field to one side",
+        0.3,
+        4,
+        "s"
+       ]
+      ],
+      "done": "The thrown prisms settle in a line inside the claim."
+     }
+    },
+    {
+     "in": "x",
+     "name": "Straight spool",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Hold the straight; the furrow shoves the mass aside so nothing costs speed.",
+     "chain": [
+      [
+       "Time",
+       "Hold the straight: spool up"
+      ],
+      [
+       "Space",
+       "The furrow shoves prisms aside"
+      ],
+      [
+       "Time",
+       "The spool carries into the gate"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "Nothing in the way matters.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "straight_ahead",
+       "mass_ahead"
+      ],
+      "dials": [
+       [
+        "turnBudget",
+        "heading error accepted before turning",
+        1,
+        30,
+        "deg"
+       ]
+      ],
+      "done": "A gate is threaded at better than three quarters of top speed.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The landslide",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Spool, plough a field, and aim the carry into rival mass.",
+     "chain": [
+      [
+       "Time",
+       "Spool up"
+      ],
+      [
+       "Charge",
+       "Plough the field: throws carry into the next and break both"
+      ],
+      [
+       "Space",
+       "Hold a trigger: aim the carry at rival mass"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "joy"
+     ],
+     "feel": "Pushing a mountain over.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "straight_ahead"
+      ],
+      "dials": [
+       [
+        "fieldDensity",
+        "prisms in a field worth ploughing",
+        5,
+        200,
+        "count"
+       ],
+       [
+        "aimHold",
+        "seconds the trigger is held to aim the carry",
+        0.3,
+        4,
+        "s"
+       ]
+      ],
+      "done": "Carried prisms break rival prisms.",
+      "sight": "MANGER"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_RAMP_BOOST.md"
@@ -4730,7 +7252,176 @@
       "mastery",
       "goal"
      ],
-     "feel": "A clean strike."
+     "feel": "A clean strike.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "omni_near",
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "lineUp",
+        "heading error onto the ball's line before the dash",
+        1,
+        20,
+        "deg"
+       ],
+       [
+        "throttleDepth",
+        "how deep the throttle is held onto the line",
+        0.2,
+        1.0,
+        "fraction"
+       ]
+      ],
+      "done": "A struck ball threads a switch or a goal.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The shove",
+     "t": [
+      4,
+      12
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Throttle onto a rival's path and dash: the plate engulfs them.",
+     "chain": [
+      [
+       "Time",
+       "Throttle onto a rival's path"
+      ],
+      [
+       "Charge",
+       "Dash: the shove's plate engulfs them"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "joy"
+     ],
+     "feel": "Shoulder to shoulder.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_on_line",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "dashLead",
+        "seconds before the paths cross the dash is made",
+        0.2,
+        2,
+        "s"
+       ]
+      ],
+      "done": "The plate debuffs a rival pilot.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The tollway",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "A switch round a crystal on the path; a ball threads it and it becomes a dais.",
+     "chain": [
+      [
+       "Mass",
+       "Place a switch round a crystal on your path"
+      ],
+      [
+       "",
+       "A ball threads it: energy"
+      ],
+      [
+       "Mass",
+       "It breaks into a dais of prisms"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "goal"
+     ],
+     "feel": "A toll that builds.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "crystal_near",
+       "own_mass_gap"
+      ],
+      "dials": [
+       [
+        "switchDetour",
+        "distance flown to place a switch",
+        0,
+        200,
+        "u"
+       ]
+      ],
+      "done": "A threaded switch leaves its dais inside the claim.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Throttle line",
+     "t": [
+      5,
+      15
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Throttle deep on the straight, let go before the turn, dash the gate clear.",
+     "chain": [
+      [
+       "Time",
+       "Throttle deep on the straight"
+      ],
+      [
+       "Time",
+       "Let go before the turn: the only brake"
+      ],
+      [
+       "Charge",
+       "Dash at the gate: the shove clears it"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "Knowing when to lift.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "straight_ahead",
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "brakeLead",
+        "seconds before the turn the throttle is let go",
+        0.2,
+        3,
+        "s"
+       ],
+       [
+        "depth",
+        "how deep the throttle is held",
+        0.3,
+        1.0,
+        "fraction"
+       ]
+      ],
+      "done": "A gate is threaded without a rail hit.",
+      "sight": "NEEDLE"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md"
@@ -4852,7 +7543,32 @@
       "mastery",
       "joy"
      ],
-     "feel": "Stacking boosts you made yourself."
+     "feel": "Stacking boosts you made yourself.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "bank_low",
+       "open_space"
+      ],
+      "dials": [
+       [
+        "feedBelow",
+        "pellets left when the AI stops to feed",
+        0,
+        3,
+        "count"
+       ],
+       [
+        "feedTime",
+        "seconds stopped while the wall eats the trail",
+        1,
+        8,
+        "s"
+       ]
+      ],
+      "done": "Pellets earned back are burned, stacked, within ten seconds.",
+      "sight": "SUNDIAL"
+     }
     },
     {
      "name": "The ghost shot",
@@ -4879,7 +7595,126 @@
       "rival",
       "break"
      ],
-     "feel": "One shot they never saw coming."
+     "feel": "One shot they never saw coming.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_on_line",
+       "threatened"
+      ],
+      "dials": [
+       [
+        "zoom",
+        "how deep the scope is pulled",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "cloakLead",
+        "seconds of cloak before the scope comes up",
+        0.5,
+        10,
+        "s"
+       ]
+      ],
+      "done": "A sniper round strips a rival's petals.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Hedgerow",
+     "t": [
+      15,
+      45
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Stop by a rival trail and let the seed wall steal what lands; cloak leaves a second seed.",
+     "chain": [
+      [
+       "Mass",
+       "Stop by a rival trail: the Seed Wall steals what lands"
+      ],
+      [
+       "Space",
+       "Cloak: a super-shielded seed stays behind"
+      ],
+      [
+       "Mass",
+       "Two walls grow"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "rival"
+     ],
+     "feel": "A hedge that eats their road.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "rival_mass_ahead",
+       "open_space"
+      ],
+      "dials": [
+       [
+        "wallDwell",
+        "seconds stopped while the wall grows",
+        1,
+        10,
+        "s"
+       ]
+      ],
+      "done": "A Seed Wall steals rival prisms.",
+      "sight": "ENSIGN"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The cloak raid",
+     "t": [
+      15,
+      40
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Cloak, slip into rival territory unseen, leave a seed that walls it, and snipe out.",
+     "chain": [
+      [
+       "Space",
+       "Cloak: slip into rival territory"
+      ],
+      [
+       "Mass",
+       "The super-shielded seed grows a wall there"
+      ],
+      [
+       "Space",
+       "Scope up: one round through their mass"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "rival"
+     ],
+     "feel": "In and out before they look.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "raidDepth",
+        "distance into rival territory before the seed is left",
+        20,
+        300,
+        "u"
+       ]
+      ],
+      "done": "A wall grows in rival territory and a round breaks their prisms.",
+      "sight": "RAMPART"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_FUEL_PELLETS.md"
@@ -5004,7 +7839,32 @@
       "rival",
       "mastery"
      ],
-     "feel": "A trap sprung from three sides."
+     "feel": "A trap sprung from three sides.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_near",
+       "bank_full"
+      ],
+      "dials": [
+       [
+        "nestsBeforePaint",
+        "nests standing before a rival is painted",
+        1,
+        3,
+        "count"
+       ],
+       [
+        "paintHold",
+        "seconds a target is painted",
+        0.3,
+        3,
+        "s"
+       ]
+      ],
+      "done": "A nest's missile takes a petal from a rival.",
+      "sight": "BANDIT"
+     }
     },
     {
      "name": "Perch and lance",
@@ -5031,7 +7891,191 @@
       "break",
       "joy"
      ],
-     "feel": "A sniper who is never where they fired from."
+     "feel": "A sniper who is never where they fired from.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "perchOffset",
+        "distance from the target line to the perch",
+        20,
+        300,
+        "u"
+       ],
+       [
+        "lanceAlign",
+        "aim error down the line that still fires",
+        1,
+        15,
+        "deg"
+       ]
+      ],
+      "done": "One lance breaks rival prisms along its whole line."
+     }
+    },
+    {
+     "in": "x",
+     "name": "Sling chain",
+     "t": [
+      5,
+      15
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Sling to the block nearest the gate line, dock while the cooldown runs, sling again.",
+     "chain": [
+      [
+       "Time",
+       "Sling to a block on the gate line"
+      ],
+      [
+       "Mass",
+       "Dock: every cooldown runs faster"
+      ],
+      [
+       "Time",
+       "Sling again"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "Swinging branch to branch.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next",
+       "mass_ahead"
+      ],
+      "dials": [
+       [
+        "slingAlign",
+        "heading error to the block that still slings",
+        1,
+        45,
+        "deg"
+       ],
+       [
+        "dockTime",
+        "seconds docked before the next sling",
+        0,
+        2,
+        "s"
+       ]
+      ],
+      "done": "A gate is threaded within two seconds of a sling.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The thornbush",
+     "t": [
+      20,
+      60
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Sling to blocks round the nucleus and leave a nest at each.",
+     "chain": [
+      [
+       "Time",
+       "Sling to a block by the nucleus"
+      ],
+      [
+       "Mass",
+       "Detach: a nest of super-shielded blocks"
+      ],
+      [
+       "",
+       "Three nests round the claim"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "mastery"
+     ],
+     "feel": "A fortress you planted.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "own_mass_gap"
+      ],
+      "dials": [
+       [
+        "nestSpacing",
+        "distance between nests",
+        10,
+        200,
+        "u"
+       ]
+      ],
+      "done": "Three nests stand inside the claim.",
+      "sight": "ENSIGN"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Void Lance into Nest into Void Sling",
+     "t": [
+      12,
+      60
+     ],
+     "src": "Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 100% of the behaviour in an archive cell at 93% of the best genome). Not flown by a person yet.",
+     "is": "A chain the AI search kept that no combo named: Void Lance (Space), then Nest (Mass), then Void Sling (Time).",
+     "chain": [
+      [
+       "Space",
+       "Void Lance"
+      ],
+      [
+       "Mass",
+       "Nest"
+      ],
+      [
+       "Time",
+       "Void Sling"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "joy",
+      "make"
+     ],
+     "feel": "Not felt yet: fly it and name the moment, or drop it.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "rival_mass_ahead"
+      ],
+      "dials": [
+       [
+        "handoff",
+        "seconds from one verb's payoff to the next press",
+        0.2,
+        4.0,
+        "s"
+       ],
+       [
+        "commit",
+        "share of the first verb spent before chaining",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "reach",
+        "distance to the cue at which the chain starts",
+        20,
+        400,
+        "u"
+       ]
+      ],
+      "done": "Void Sling lands within the handoff of the Void Lance before it."
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md"
@@ -5158,7 +8202,32 @@
       "break",
       "rival"
      ],
-     "feel": "Earning the big shot with the small ones."
+     "feel": "Earning the big shot with the small ones.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_mass_ahead",
+       "rival_near"
+      ],
+      "dials": [
+       [
+        "rocketRange",
+        "rival distance at which the rocket is spent",
+        30,
+        250,
+        "u"
+       ],
+       [
+        "heatCutoff",
+        "gun heat at which firing stops",
+        0.2,
+        1.0,
+        "fraction"
+       ]
+      ],
+      "done": "A Skyburst hits a pilot within eight seconds of the rocket being earned.",
+      "sight": "BANDIT"
+     }
     },
     {
      "name": "The bunker",
@@ -5185,7 +8254,132 @@
       "make",
       "joy"
      ],
-     "feel": "A wall where there was none."
+     "feel": "A wall where there was none.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "open_space",
+       "threatened"
+      ],
+      "dials": [
+       [
+        "stanceTime",
+        "seconds in Turret Stance",
+        1,
+        10,
+        "s"
+       ],
+       [
+        "sweep",
+        "how wide the aim sweeps while the stance fires",
+        5,
+        90,
+        "deg"
+       ]
+      ],
+      "done": "Turret Stance lays prisms between the Sparrow and the threat, and the roll out escapes it."
+     }
+    },
+    {
+     "in": "x",
+     "name": "Strafe the gate",
+     "t": [
+      4,
+      12
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Afterburn the line, roll past the mass at the mouth, cold shots clear the rest.",
+     "chain": [
+      [
+       "Time",
+       "Afterburn on the line"
+      ],
+      [
+       "Time",
+       "A strafing roll past the mass at the mouth"
+      ],
+      [
+       "Space",
+       "Cold shots clear the gate"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "Threading a needle at speed.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next",
+       "danger_ahead"
+      ],
+      "dials": [
+       [
+        "rollTrigger",
+        "distance to an obstacle that triggers the roll",
+        10,
+        120,
+        "u"
+       ]
+      ],
+      "done": "A gate is threaded under boost.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Cold bursts",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Short bursts while the gun is cold and pin-accurate; let go before it heats.",
+     "chain": [
+      [
+       "Space",
+       "A short cold burst"
+      ],
+      [
+       "",
+       "Let go before it heats"
+      ],
+      [
+       "Space",
+       "The next burst"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "mastery"
+     ],
+     "feel": "Discipline on the trigger.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "fauna_near"
+      ],
+      "dials": [
+       [
+        "burstLength",
+        "seconds a burst is held",
+        0.2,
+        3,
+        "s"
+       ],
+       [
+        "coolPause",
+        "seconds let go between bursts",
+        0.1,
+        2,
+        "s"
+       ]
+      ],
+      "done": "More prisms break per second of fire than holding the trigger down.",
+      "sight": "HORNET"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md"
@@ -5311,7 +8505,33 @@
       "joy",
       "rival"
      ],
-     "feel": "Threading the needle at full speed."
+     "feel": "Threading the needle at full speed.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "mass_ahead",
+       "gate_next",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "ringLead",
+        "distance ahead the Boost Ring is dropped",
+        20,
+        150,
+        "u"
+       ],
+       [
+        "skimLine",
+        "how close to the mass the line is flown",
+        1,
+        10,
+        "u"
+       ]
+      ],
+      "done": "A gate is threaded within two seconds of a ring graze.",
+      "sight": "SUNDIAL"
+     }
     },
     {
      "name": "The thief's lap",
@@ -5338,7 +8558,239 @@
       "make",
       "joy"
      ],
-     "feel": "Their wall becoming your road."
+     "feel": "Their wall becoming your road.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead"
+      ],
+      "dials": [
+       [
+        "stealLine",
+        "how close to a rival trail the steal is flown",
+        1,
+        10,
+        "u"
+       ],
+       [
+        "loopBack",
+        "seconds before looping back over the stolen mass",
+        2,
+        20,
+        "s"
+       ]
+      ],
+      "done": "Prisms stolen on the way out are skimmed again on the way back.",
+      "sight": "ENSIGN"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The joust",
+     "t": [
+      5,
+      15
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Skim behind a rival for speed, then overtake above joust speed.",
+     "chain": [
+      [
+       "Time",
+       "Skim behind a rival to build speed"
+      ],
+      [
+       "Charge",
+       "Overtake above joust speed"
+      ],
+      [
+       "",
+       "Their petals are yours"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "joy"
+     ],
+     "feel": "Passing them is taking from them.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_ahead",
+       "bank_full"
+      ],
+      "dials": [
+       [
+        "joustMargin",
+        "speed kept above the joust minimum before passing",
+        0,
+        30,
+        "%"
+       ]
+      ],
+      "done": "An overtake steals petals.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Crystal denial",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Garrett, Docs/AI_SYSTEM/AI_PLAN.md 2026-11-02: a Time Squirrel with an omni-spotting pilot denies crystals",
+     "is": "Race a rival to the omni crystal, take it first, drop a ring on their line.",
+     "chain": [
+      [
+       "Time",
+       "Skim toward the omni crystal a rival is going for"
+      ],
+      [
+       "Time",
+       "Take it first"
+      ],
+      [
+       "Mass",
+       "Drop a Boost Ring on their line"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "find"
+     ],
+     "feel": "Getting there first.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "omni_near",
+       "rival_near"
+      ],
+      "dials": [
+       [
+        "denyMargin",
+        "seconds ahead of the rival needed to go for it",
+        0,
+        3,
+        "s"
+       ],
+       [
+        "omniDetour",
+        "distance flown off the line for the crystal",
+        0,
+        250,
+        "u"
+       ]
+      ],
+      "done": "The omni crystal is taken before the rival reaches it.",
+      "sight": "OPAL"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Ring fence",
+     "t": [
+      15,
+      45
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Boost Rings dropped across rival lines near the nucleus stand as danger mass for your side.",
+     "chain": [
+      [
+       "Time",
+       "Skim to the nucleus"
+      ],
+      [
+       "Mass",
+       "Drop a Boost Ring across a rival's line"
+      ],
+      [
+       "Space",
+       "Steal the trail round it"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "rival"
+     ],
+     "feel": "A fence they have to fly round.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "own_mass_gap",
+       "rival_on_line"
+      ],
+      "dials": [
+       [
+        "fenceRadius",
+        "distance from the nucleus the rings are dropped",
+        20,
+        300,
+        "u"
+       ]
+      ],
+      "done": "A rival hits a dropped ring, or flies round it, inside the claim.",
+      "sight": "HORNET"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Skimming into Crystal Joust into Steal",
+     "t": [
+      8,
+      45
+     ],
+     "src": "Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 77% of the behaviour in an archive cell at 93% of the best genome). Not flown by a person yet.",
+     "is": "A chain the AI search kept that no combo named: Skimming (Time), then Crystal Joust (Charge), then Steal (Space).",
+     "chain": [
+      [
+       "Time",
+       "Skimming"
+      ],
+      [
+       "Charge",
+       "Crystal Joust"
+      ],
+      [
+       "Space",
+       "Steal"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery",
+      "rival"
+     ],
+     "feel": "Not felt yet: fly it and name the moment, or drop it.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "handoff",
+        "seconds from one verb's payoff to the next press",
+        0.2,
+        4.0,
+        "s"
+       ],
+       [
+        "commit",
+        "share of the first verb spent before chaining",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "reach",
+        "distance to the cue at which the chain starts",
+        20,
+        400,
+        "u"
+       ]
+      ],
+      "done": "Steal lands within the handoff of the Skimming before it."
+     }
     }
    ],
    "doc": "Docs/ElementalAbilitySystem/FLEET_MAPS.md"
@@ -5442,7 +8894,104 @@
       "mastery",
       "find"
      ],
-     "feel": "A build coming together."
+     "feel": "A build coming together.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "crew_ready"
+      ],
+      "dials": [
+       [
+        "timeWeight",
+        "how much the AI wants a Time card",
+        0,
+        1,
+        ""
+       ],
+       [
+        "chargeWeight",
+        "how much the AI wants a Charge card",
+        0,
+        1,
+        ""
+       ],
+       [
+        "massWeight",
+        "how much the AI wants a Mass card",
+        0,
+        1,
+        ""
+       ],
+       [
+        "spaceWeight",
+        "how much the AI wants a Space card",
+        0,
+        1,
+        ""
+       ]
+      ],
+      "done": "The picked card is the one the swarm held least of, and the next hand comes sooner."
+     }
+    },
+    {
+     "in": "x",
+     "name": "Pick the Time card into Pick the Charge card into Pick the Mass card",
+     "t": [
+      30,
+      60
+     ],
+     "src": "Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 100% of the behaviour in an archive cell at 94% of the best genome). Not flown by a person yet.",
+     "is": "A chain the AI search kept that no combo named: Pick the Time card (Time), then Pick the Charge card (Charge), then Pick the Mass card (Mass).",
+     "chain": [
+      [
+       "Time",
+       "Pick the Time card"
+      ],
+      [
+       "Charge",
+       "Pick the Charge card"
+      ],
+      [
+       "Mass",
+       "Pick the Mass card"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery",
+      "rival"
+     ],
+     "feel": "Not felt yet: fly it and name the moment, or drop it.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "handoff",
+        "seconds from one verb's payoff to the next press",
+        0.2,
+        4.0,
+        "s"
+       ],
+       [
+        "commit",
+        "share of the first verb spent before chaining",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "reach",
+        "distance to the cue at which the chain starts",
+        20,
+        400,
+        "u"
+       ]
+      ],
+      "done": "Pick the Mass card lands within the handoff of the Pick the Time card before it."
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md"
@@ -5567,7 +9116,140 @@
       "mastery",
       "rival"
      ],
-     "feel": "Being flung."
+     "feel": "Being flung.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "holeLead",
+        "distance ahead the hole pair is laid",
+        30,
+        200,
+        "u"
+       ],
+       [
+        "releaseAngle",
+        "turn after the catch at which the AI lets go",
+        60,
+        120,
+        "deg"
+       ],
+       [
+        "squeeze",
+        "how tight the orbit is squeezed",
+        0,
+        1,
+        "fraction"
+       ]
+      ],
+      "done": "A full-kick launch (the lime release) threads the next gate.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Ripple trap",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Lay the pair across a rival's path and let it collapse as they cross.",
+     "chain": [
+      [
+       "Space",
+       "Lay a hole pair across a rival's path"
+      ],
+      [
+       "",
+       "Let it collapse as they cross"
+      ],
+      [
+       "Charge",
+       "The ripple strips a petal of every element"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "mastery"
+     ],
+     "feel": "A trap only you can see coming.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_on_line",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "trapLead",
+        "seconds ahead of the rival the pair is laid",
+        0.5,
+        4,
+        "s"
+       ]
+      ],
+      "done": "A ripple strips a rival's petals.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Fulmen",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Orbit near the omni crystals, launch through one: the bolt branches at the rest.",
+     "chain": [
+      [
+       "Space",
+       "Orbit near omni crystals"
+      ],
+      [
+       "Mass",
+       "Heavy launch through one"
+      ],
+      [
+       "Omni",
+       "The bolt burns prisms and branches at other omni crystals"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "find"
+     ],
+     "feel": "Lightning that finds its own way.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "omni_near",
+       "rival_mass_ahead"
+      ],
+      "dials": [
+       [
+        "chainCount",
+        "omni crystals in reach before one is taken",
+        1,
+        5,
+        "count"
+       ],
+       [
+        "squeeze",
+        "how tight the orbit is squeezed",
+        0,
+        1,
+        "fraction"
+       ]
+      ],
+      "done": "The bolt branches at least once and burns rival prisms.",
+      "sight": "OPAL"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md"
@@ -5696,7 +9378,173 @@
       "rival",
       "joy"
      ],
-     "feel": "A charge with a blade at the end of it."
+     "feel": "A charge with a blade at the end of it.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_on_line",
+       "straight_ahead"
+      ],
+      "dials": [
+       [
+        "lightLead",
+        "seconds before contact the sword is lit",
+        0.5,
+        3,
+        "s"
+       ]
+      ],
+      "done": "A sword hit knocks a rival's petals loose.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Spear",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Spool on the straight; the hull breaks what it rams, so the speed carries.",
+     "chain": [
+      [
+       "Time",
+       "Spool on the straight"
+      ],
+      [
+       "Space",
+       "The hull breaks what it rams: no speed lost"
+      ],
+      [
+       "Time",
+       "Carry it into the gate"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "break"
+     ],
+     "feel": "Through, not round.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "straight_ahead",
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "turnBudget",
+        "heading error accepted before turning",
+        1,
+        30,
+        "deg"
+       ]
+      ],
+      "done": "A gate is threaded at better than three quarters of top speed.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The palisade",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Light the sword by the nucleus and swing as it goes out: the afterimages are walls.",
+     "chain": [
+      [
+       "Charge",
+       "Light the sword by the nucleus"
+      ],
+      [
+       "Mass",
+       "Swing as it goes out: afterimages stand"
+      ],
+      [
+       "",
+       "Walls round the claim"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "mastery"
+     ],
+     "feel": "Drawing walls with a blade.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "own_mass_gap",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "swingRate",
+        "how fast the sword is swung while the afterimages lay",
+        10,
+        180,
+        "deg/s"
+       ]
+      ],
+      "done": "Afterimages stand inside the claim.",
+      "sight": "ENSIGN"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Cleave",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Squeeze hard through rival mass and keep the blade off super-shielded mass.",
+     "chain": [
+      [
+       "Space",
+       "Squeeze hard: swing through rival mass"
+      ],
+      [
+       "",
+       "Keep off super-shielded mass"
+      ],
+      [
+       "Space",
+       "The next swath"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "joy"
+     ],
+     "feel": "A clean cut.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "shielded_ahead"
+      ],
+      "dials": [
+       [
+        "superBerth",
+        "distance kept from super-shielded mass",
+        0,
+        40,
+        "u"
+       ],
+       [
+        "squeeze",
+        "how hard the swing is squeezed",
+        0.3,
+        1.0,
+        "fraction"
+       ]
+      ],
+      "done": "A swing cuts rival prisms without sticking.",
+      "sight": "CITADEL"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SWORDFISH.md"
@@ -5819,7 +9667,32 @@
       "joy",
       "mastery"
      ],
-     "feel": "A whip cracking."
+     "feel": "A whip cracking.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_near",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "laps",
+        "orbit laps round the planted ball before the winch",
+        1,
+        5,
+        "count"
+       ],
+       [
+        "winchDepth",
+        "how deep the winch is pulled",
+        0.3,
+        1.0,
+        "fraction"
+       ]
+      ],
+      "done": "A red ball or its chain steals a rival's petals.",
+      "sight": "BANDIT"
+     }
     },
     {
      "name": "Bank and burst",
@@ -5846,7 +9719,180 @@
       "make",
       "break"
      ],
-     "feel": "Patience paid back at once."
+     "feel": "Patience paid back at once.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "rival_mass_ahead",
+       "own_mass_gap"
+      ],
+      "dials": [
+       [
+        "bankTarget",
+        "energy banked in Mass Mode before switching back",
+        0.2,
+        1.0,
+        "fraction"
+       ]
+      ],
+      "done": "Mass Mode steals rival prisms, and the next blast is the larger one."
+     }
+    },
+    {
+     "in": "x",
+     "name": "Plant and fling",
+     "t": [
+      4,
+      12
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Anchor round the turn with a partial pull, ease off to launch onto the exit.",
+     "chain": [
+      [
+       "Time",
+       "A partial pull: anchor round the turn"
+      ],
+      [
+       "Time",
+       "Ease off: launch boosted onto the exit"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "Swinging round a post.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "anchorPull",
+        "how far the trigger is pulled to anchor",
+        0.2,
+        0.9,
+        "fraction"
+       ],
+       [
+        "launchAlign",
+        "heading error onto the exit at launch",
+        0,
+        20,
+        "deg"
+       ]
+      ],
+      "done": "A gate is threaded within two seconds of the launch.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Harvest",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Winch the chain stiff through rival mass to slice and bank, then smash.",
+     "chain": [
+      [
+       "Space",
+       "Winch the chain stiff through rival mass: it slices and banks"
+      ],
+      [
+       "Charge",
+       "Swing to smash speed"
+      ],
+      [
+       "",
+       "The red ball blows through"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "mastery"
+     ],
+     "feel": "Reaping.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "dense_mass"
+      ],
+      "dials": [
+       [
+        "sliceDepth",
+        "how deep into the mass the chain is drawn",
+        0,
+        60,
+        "u"
+       ]
+      ],
+      "done": "A pass slices rival prisms and the banked blast breaks more.",
+      "sight": "MANGER"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Plant into Mass Mode into Winch",
+     "t": [
+      9,
+      54
+     ],
+     "src": "Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 80% of the behaviour in an archive cell at 99% of the best genome). Not flown by a person yet.",
+     "is": "A chain the AI search kept that no combo named: Plant (Time), then Mass Mode (Mass), then Winch (Space).",
+     "chain": [
+      [
+       "Time",
+       "Plant"
+      ],
+      [
+       "Mass",
+       "Mass Mode"
+      ],
+      [
+       "Space",
+       "Winch"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery",
+      "make"
+     ],
+     "feel": "Not felt yet: fly it and name the moment, or drop it.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "handoff",
+        "seconds from one verb's payoff to the next press",
+        0.2,
+        4.0,
+        "s"
+       ],
+       [
+        "commit",
+        "share of the first verb spent before chaining",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "reach",
+        "distance to the cue at which the chain starts",
+        20,
+        400,
+        "u"
+       ]
+      ],
+      "done": "Winch lands within the handoff of the Plant before it."
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md"
@@ -5970,7 +10016,32 @@
       "make",
       "crew"
      ],
-     "feel": "Gardening at altitude."
+     "feel": "Gardening at altitude.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "own_mass_gap",
+       "open_space"
+      ],
+      "dials": [
+       [
+        "paintTime",
+        "seconds in Mass mode before dusting",
+        1,
+        10,
+        "s"
+       ],
+       [
+        "tendHeight",
+        "height kept over your prisms while dusting",
+        5,
+        60,
+        "u"
+       ]
+      ],
+      "done": "Dust grows or shields prisms the moth painted.",
+      "sight": "ENSIGN"
+     }
     },
     {
      "name": "The dust trap",
@@ -5993,7 +10064,126 @@
       "rival",
       "joy"
      ],
-     "feel": "Falling out of the sky onto someone."
+     "feel": "Falling out of the sky onto someone.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_on_line",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "dropLead",
+        "seconds ahead of the rival the drop starts",
+        0.3,
+        3,
+        "s"
+       ],
+       [
+        "dwell",
+        "seconds kept over the rival",
+        0.5,
+        5,
+        "s"
+       ]
+      ],
+      "done": "Dust steals a petal from a rival.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The drop",
+     "t": [
+      4,
+      12
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Drop through the mass on the line, then flip out at the gate.",
+     "chain": [
+      [
+       "Time",
+       "Drop through the mass on the line"
+      ],
+      [
+       "",
+       "No trail, nothing stops you"
+      ],
+      [
+       "Time",
+       "Flip out at the gate"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "Falling on purpose.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next",
+       "mass_ahead"
+      ],
+      "dials": [
+       [
+        "dropLength",
+        "seconds a drop is held",
+        0.3,
+        4,
+        "s"
+       ]
+      ],
+      "done": "A gate is threaded after a drop.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Sirocco",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Dust mode over rival mass: it is destroyed, shrunk or stolen as you sweep.",
+     "chain": [
+      [
+       "Mass",
+       "Toggle to Dust mode"
+      ],
+      [
+       "Space",
+       "Dust over rival prisms: destroyed, shrunk or stolen"
+      ],
+      [
+       "",
+       "Sweep the field"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "make"
+     ],
+     "feel": "A storm passing over.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "dense_mass"
+      ],
+      "dials": [
+       [
+        "sweepHeight",
+        "height kept over the mass",
+        5,
+        60,
+        "u"
+       ]
+      ],
+      "done": "A sweep destroys or steals rival prisms.",
+      "sight": "MANGER"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md"
@@ -6109,7 +10299,168 @@
       "joy",
       "rival"
      ],
-     "feel": "Grinding a line nobody else can."
+     "feel": "Grinding a line nobody else can.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "rival_mass_ahead",
+       "bank_low"
+      ],
+      "dials": [
+       [
+        "rideShare",
+        "share of a trail ridden before slipping off",
+        0.2,
+        1.0,
+        "fraction"
+       ],
+       [
+        "spikeRange",
+        "distance into rival territory the spikes are fired",
+        10,
+        120,
+        "u"
+       ]
+      ],
+      "done": "A rival trail is stolen and the spikes chain through their mass."
+     }
+    },
+    {
+     "in": "x",
+     "name": "Rail to the gate",
+     "t": [
+      5,
+      15
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Project a rail at the gate, ride it, slip off at the mouth.",
+     "chain": [
+      [
+       "Space",
+       "Project a rail toward the gate"
+      ],
+      [
+       "Mass",
+       "Ride it"
+      ],
+      [
+       "Time",
+       "Slip off at the mouth"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery"
+     ],
+     "feel": "Laying your own track.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "slipLead",
+        "distance before the gate the slip is made",
+        0,
+        120,
+        "u"
+       ]
+      ],
+      "done": "A gate is threaded within a second of a slip.",
+      "sight": "NEEDLE"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Spike burst",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "Ride a rival's trail toward them and burst spikes as you pass.",
+     "chain": [
+      [
+       "Mass",
+       "Ride a rival's trail toward them: ammo refills"
+      ],
+      [
+       "Charge",
+       "Hold and release: spikes in every direction"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "break"
+     ],
+     "feel": "Riding their road into them.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "rival_near",
+       "bank_full"
+      ],
+      "dials": [
+       [
+        "burstRange",
+        "rival distance at which the burst is released",
+        10,
+        100,
+        "u"
+       ]
+      ],
+      "done": "Spikes chain through rival prisms around a rival.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Rail into their land",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "A rail projected into rival territory, ridden so their trail is stolen round it.",
+     "chain": [
+      [
+       "Space",
+       "Project a rail into rival territory"
+      ],
+      [
+       "Mass",
+       "Ride it: their trail round it is stolen"
+      ],
+      [
+       "Charge",
+       "Spikes chain on"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "rival"
+     ],
+     "feel": "A road that takes the land it crosses.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "rival_mass_ahead",
+       "verb_ready"
+      ],
+      "dials": [
+       [
+        "projectAim",
+        "how far into rival mass the rail is aimed",
+        20,
+        200,
+        "u"
+       ]
+      ],
+      "done": "A projected rail is ridden and rival trail is stolen along it.",
+      "sight": "ENSIGN"
+     }
     }
    ],
    "doc": "Assets/Resources/ElementalAbilityMaps/Urchin.asset"
@@ -6233,7 +10584,172 @@
       "crew",
       "mastery"
      ],
-     "feel": "Closing the loop just in time."
+     "feel": "Closing the loop just in time.",
+     "gene": {
+      "genome": "Mass",
+      "cue": [
+       "crew_ready",
+       "own_mass_gap"
+      ],
+      "dials": [
+       [
+        "motesPerLoop",
+        "Mass motes gathered before the loop closes",
+        1,
+        10,
+        "count"
+       ],
+       [
+        "pureness",
+        "share of a loop that must be one element before it closes",
+        0.5,
+        1.0,
+        "fraction"
+       ]
+      ],
+      "done": "A loop closes on one element and lays its cluster, with no fizzle.",
+      "sight": "ANVIL"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Saved boosts",
+     "t": [
+      6,
+      20
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "The kite lassos Time motes; the Grouper chains the saved boosts into the gate.",
+     "chain": [
+      [
+       "",
+       "The kite lassos Time motes"
+      ],
+      [
+       "Time",
+       "The Grouper chains the saved boosts into the gate"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "joy"
+     ],
+     "feel": "The kite fuels the run.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "crew_ready",
+       "gate_next"
+      ],
+      "dials": [
+       [
+        "boostsBeforeSpend",
+        "boosts saved before the Grouper spends them",
+        1,
+        5,
+        "count"
+       ]
+      ],
+      "done": "A gate is threaded on chained boosts.",
+      "sight": "SUNDIAL"
+     }
+    },
+    {
+     "in": "x",
+     "name": "The ram",
+     "t": [
+      8,
+      25
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "The kite loops Charge motes, the hull rams a rival, and the crew grabs the loose petals.",
+     "chain": [
+      [
+       "",
+       "The kite loops Charge motes"
+      ],
+      [
+       "Charge",
+       "Ram a rival: petals come loose"
+      ],
+      [
+       "",
+       "Grab them"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "rival"
+     ],
+     "feel": "One loads, one hits.",
+     "gene": {
+      "genome": "Charge",
+      "cue": [
+       "crew_ready",
+       "rival_near"
+      ],
+      "dials": [
+       [
+        "motesPerLoop",
+        "Charge motes in the loop before the ram",
+        1,
+        8,
+        "count"
+       ]
+      ],
+      "done": "A charged ram knocks petals loose.",
+      "sight": "BANDIT"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Blastline",
+     "t": [
+      8,
+      25
+     ],
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "is": "The kite loops Space motes over rival mass; the blast goes off where the loop closes.",
+     "chain": [
+      [
+       "",
+       "The kite loops Space motes over rival mass"
+      ],
+      [
+       "Space",
+       "The blast where the loop closes"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "break"
+     ],
+     "feel": "A lasso that explodes.",
+     "gene": {
+      "genome": "Space",
+      "cue": [
+       "crew_ready",
+       "rival_mass_ahead"
+      ],
+      "dials": [
+       [
+        "loopSize",
+        "how wide the loop is drawn",
+        10,
+        150,
+        "u"
+       ],
+       [
+        "motesPerLoop",
+        "Space motes in the loop before it closes",
+        1,
+        10,
+        "count"
+       ]
+      ],
+      "done": "A blast destroys rival prisms and spares yours.",
+      "sight": "MANGER"
+     }
     }
    ],
    "doc": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md"
@@ -6313,6 +10829,223 @@
    "src": [
     "commits a67739a1e, b8f578023, c30156ef7"
    ]
+  }
+ ],
+ "genes": {
+  "is": "Every combo is also an AI behaviour: one gene of the vessel's genome for one element (Docs/AI_SYSTEM/AI_PLAN.md, one AI per vessel per element). A gene names the cues that start the combo, the dials a search learns (each with the range it may try; a seed is whatever the shipped AI does today, and no dial is typed by hand after a search writes it), the moment it counts as done, and the pilot callsign whose sight leans into it. A pilot only changes what the AI goes after, never what the vessel can do. The same done-moment is the combo_completed event, so the AI and the player are measured by one count.",
+  "activation": "A new pilot completes the first combo listed for a vessel at least once within their first three rounds on that vessel. The Mentor teaches that combo after the Lesson (arc.activation, hole 1). combo_completed carries vessel, combo, genome, seconds and whether a person or an AI flew it, so the same number reads activation and AI coverage.",
+  "search": {
+   "is": "Garrett, 2026-11-21: a search tells two kinds of complexity apart, keeps one small and weights toward the other. Players get a more interesting game from vessels that switch between noticeably different behaviours, and less from a perfect AI with mistakes added.",
+   "cut": "Bloat: a dial, cue or branch that changes nothing an onlooker can see and nothing the score shows, that only widens the search space, or that costs effectiveness. The search pays a cost for every dial and branch a genome uses, and drops a dial whose whole range moves neither the outcome nor the visible behaviour.",
+   "keep": "Style: switching between noticeably different behaviours (different genes of the genome, or one gene flown in clearly different ways) whose effectiveness is roughly comparable. The search keeps an archive of distinct behaviours (MAP-Elites over which genes fire, how often, and when) beside the single best genome, and rewards a genome that switches between archive cells without losing effectiveness.",
+   "ladder": "Skill comes down by weighting a genome toward the fun, less effective behaviours the archive kept, never by adding random mistakes to the best one. A behaviour that costs effectiveness but reads as a real pilot is recycled for the lower rungs (I1, I2) and for AI teammates, so the player feels they play with or against a person, not a perturbed optimiser. The top rung (I4) flies the best archive cells; every rung still switches.",
+   "measure": "combo_completed per AI round: distinct genes used, switches between them, and each gene's effectiveness next to the genome's best. Proposed target: at I2 and above, three or more distinct genes a round with the best and third within a fifth of each other; lower rungs lean on genes up to a third less effective, not on more errors. Dials per genome is reported beside the score so bloat is visible."
+  }
+ },
+ "senses": [
+  {
+   "id": "rival_near",
+   "is": "A rival hull inside the reach of the verb the combo spends.",
+   "from": "situation features 'rivals' (flight/3), the vessel list by domain"
+  },
+  {
+   "id": "rival_on_line",
+   "is": "A rival's predicted path crosses yours ahead, inside the time the combo takes.",
+   "from": "rivals' position and velocity (flight/3)"
+  },
+  {
+   "id": "rival_ahead",
+   "is": "A rival ahead of you on the course or in the objective's order.",
+   "from": "rings threaded per rival (flight/3), the scoreboard"
+  },
+  {
+   "id": "rival_mass_ahead",
+   "is": "Prisms of a rival domain ahead, inside skim or weapon reach.",
+   "from": "prism domain (_PrismLitDomain), the density grid"
+  },
+  {
+   "id": "mass_ahead",
+   "is": "Any prisms ahead inside skim reach, whoever owns them.",
+   "from": "situation features 'skims' and the trail lane (flight/3)"
+  },
+  {
+   "id": "dense_mass",
+   "is": "The densest mass cluster in the cell, where the fauna are heading.",
+   "from": "Cell.GetDensestRegionAnyDomain, BlockDensityGrid"
+  },
+  {
+   "id": "own_mass_gap",
+   "is": "A gap in your own domain's mass near the nucleus, or none of yours where the claim is decided.",
+   "from": "prism domain, the nucleus claim"
+  },
+  {
+   "id": "open_space",
+   "is": "Empty volume ahead or around, room to lay or build.",
+   "from": "the density grid"
+  },
+  {
+   "id": "shielded_ahead",
+   "is": "Shielded or super-shielded prisms on the line ahead.",
+   "from": "prismProperties.IsShielded, IsSuperShielded"
+  },
+  {
+   "id": "danger_ahead",
+   "is": "Danger prisms on the line ahead.",
+   "from": "prismProperties.IsDangerous"
+  },
+  {
+   "id": "crystal_near",
+   "is": "An elemental crystal inside the gene's detour budget.",
+   "from": "crystals present (flight/3), RaceAICrystalGenesSO's detour slack"
+  },
+  {
+   "id": "omni_near",
+   "is": "An omni crystal inside the detour budget.",
+   "from": "crystals present, Element.Omni"
+  },
+  {
+   "id": "straight_ahead",
+   "is": "A long run to the next objective with no hard turn in it.",
+   "from": "the course's next rings (headingErr, axisAngle, timeToMouth)"
+  },
+  {
+   "id": "gate_next",
+   "is": "The next gate, ring, goal or switch, and the line into it.",
+   "from": "situation features 'target' and 'line-up' groups"
+  },
+  {
+   "id": "fauna_near",
+   "is": "A creature inside reach, any diet.",
+   "from": "FaunaDiet, LifeFormCrystal"
+  },
+  {
+   "id": "herbivore_near",
+   "is": "A herbivore inside reach.",
+   "from": "FaunaDiet.Herbivore"
+  },
+  {
+   "id": "flora_near",
+   "is": "A plant inside reach.",
+   "from": "Flora"
+  },
+  {
+   "id": "ally_near",
+   "is": "A vessel of your side inside reach, or the other seat of a crew vessel.",
+   "from": "the vessel list by domain, ICrewSeat"
+  },
+  {
+   "id": "bank_full",
+   "is": "What the kit stores (energy, ammo, pellets, rings, boosts, motes, cards) is at or above the gene's threshold.",
+   "from": "the vessel's resource system and its executors"
+  },
+  {
+   "id": "bank_low",
+   "is": "What the kit stores is below the gene's threshold.",
+   "from": "the vessel's resource system and its executors"
+  },
+  {
+   "id": "verb_ready",
+   "is": "The verb the combo starts with is off cooldown and not silenced.",
+   "from": "the action's cooldown, the silence window"
+  },
+  {
+   "id": "threatened",
+   "is": "A rival closing from behind, a predator near, or a danger prism on the line you cannot turn from.",
+   "from": "rivals' velocity, FaunaDiet.Predator, danger prisms"
+  },
+  {
+   "id": "silenced",
+   "is": "You are silenced (a scored hit landed on you); harm is off until it runs out.",
+   "from": "Docs/ElementalAbilitySystem/SILENCE.md, the victim's silence window"
+  },
+  {
+   "id": "petals_loose",
+   "is": "Petals knocked loose as crystals lie within reach.",
+   "from": "EjectedCrystal, ElementalCrystalEjector"
+  },
+  {
+   "id": "claim_tipping",
+   "is": "The nucleus claim is within a brood of flipping, for or against your domain.",
+   "from": "the Mass-Space scoreboard's volume books"
+  },
+  {
+   "id": "crew_ready",
+   "is": "The other seat of a crew vessel has set up its half (a path laid, motes lassoed, a hand dealt).",
+   "from": "ICrewSeat, CrewSeat"
+  }
+ ],
+ "sights": [
+  {
+   "id": "ENSIGN",
+   "sees": "your domain's mass, and the gaps in it"
+  },
+  {
+   "id": "MANGER",
+   "sees": "the mass cluster the fauna are heading for"
+  },
+  {
+   "id": "ANVIL",
+   "sees": "every Mass crystal"
+  },
+  {
+   "id": "VOLT",
+   "sees": "every Charge crystal"
+  },
+  {
+   "id": "ZODIAC",
+   "sees": "every Space crystal"
+  },
+  {
+   "id": "SUNDIAL",
+   "sees": "every Time crystal"
+  },
+  {
+   "id": "OPAL",
+   "sees": "every Omni crystal"
+  },
+  {
+   "id": "RAMPART",
+   "sees": "every shielded prism"
+  },
+  {
+   "id": "CITADEL",
+   "sees": "every super-shielded prism"
+  },
+  {
+   "id": "HORNET",
+   "sees": "every danger prism"
+  },
+  {
+   "id": "IVY",
+   "sees": "every plant"
+  },
+  {
+   "id": "TALON",
+   "sees": "every predator"
+  },
+  {
+   "id": "DOE",
+   "sees": "every herbivore"
+  },
+  {
+   "id": "WINGMAN",
+   "sees": "every vessel on your side"
+  },
+  {
+   "id": "BANDIT",
+   "sees": "every opposing vessel"
+  },
+  {
+   "id": "NEEDLE",
+   "sees": "every ring that activates something: gates, switches, goals"
+  },
+  {
+   "id": "GALLEON",
+   "sees": "the Arks, and the payload aboard"
+  },
+  {
+   "id": "FLUME",
+   "sees": "every soliton"
   }
  ]
 }

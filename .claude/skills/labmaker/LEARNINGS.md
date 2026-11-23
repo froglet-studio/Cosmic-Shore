@@ -1944,3 +1944,128 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: in the game, read what actually happened (the hull's displacement since the last loop), never a rate times dt; when the lab models a loop, put its update order in the model (`/labmaker` §2), and feed the pacing tests long frames (a hitch every ~100 frames), not just jitter.
 - Evidence: `VesselPrismController.ShapedSpawnLoopAsync`; `TrailSpeedShape.StepLay` / `NextLay`; `TrailSpeedShapeTests.StepLay_LaysEvenlyAtEverySpeed_ThroughJitterAndHitches`; `Docs/Manta/POLISH.md` fly tests 1-3.
 - Promoted: no
+
+### L-STU-181 — Three seeds can be one run three times: check that the seed reaches what the column measures
+- Lab: Fauna Possession Lab (`Docs/Studios/FaunaLab.html`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-15
+- What happened: the scorecard averaged seeds 1-3. In the vessel, Ark-approach and slalom games the seed only shuffled the prism cluster and the Ark's socket kinds, which those games never read, so every seed gave the same number to the decimal (slalom 27.6, 27.6, 27.6) and a 0.1 s lead looked like a result. With the host's start seeded (up to 30 u and 12 degrees off) the same columns spread 0.8 to 4, and the "lead" was inside it.
+- Do instead: print each column per seed before quoting it. A spread of exactly 0 across seeds means the seed does not reach the column: seed the start conditions of the thing being scored. `verify_lab.cjs` checks a batch is repeatable, never that its seeds differ.
+- Evidence: `Docs/Studios/FAUNA_LAB.md` round 1, Found 4; `playGame` in the page (the seeded `placeCreature`).
+- Promoted: no
+
+### L-STU-182 — A pilot that holds the trigger measures the trigger rule, not the creature
+- Lab: Fauna Possession Lab · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-15
+- What happened: the wasp's RT attacks a vessel within three reaches, the strike lands only 35% to 100% of the way through a 0.6 s attack and only within one reach, and the recharge is spent on the press. The first scorecard pilot held RT, so a creature with a LONGER reach attacked earlier, missed, and scored 1 where a short-reach one scored 5: the design looked worse for being better. The pilot now presses when the gap will have closed by the strike (it watches the gap), and the rookie setting keeps the held trigger.
+- Do instead: when an ability has a commit window, give the skilled pilot the timing a person would learn and keep the naive press as the rookie column. Fix the pilot before the creature (section 2.4), and write the rule the pilot exposed into Found: it is a design fact about the game.
+- Evidence: `pilot()` in the page; `Docs/Studios/FAUNA_LAB.md` round 1, Found 3.
+- Promoted: no
+
+### L-STU-183 — A stand-in opponent that chases will orbit: give it committed passes
+- Lab: Fauna Possession Lab · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-15
+- What happened: the "vessel attacks you" stand-in steered at the host every frame with a capped turn. Against a slow host it settled into a circle of its own turn radius (80 u/s at 1.6 /s is 50 u), outside every strike reach, so the brawl column read 1 for most creatures and rewarded the ones erratic enough to break the orbit. A pass it commits to (line up, fly straight through a point beside the host and 240 u past, come about) gives every creature the same six chances a minute.
+- Do instead: a stand-in that must come within a distance flies a path that provably does, and the write-up says it is a stand-in. Print the closest approach per run before trusting a contact column.
+- Evidence: `stepVessel` level 3 in the page; `Docs/Studios/FAUNA_LAB.md` round 1, Found 6.
+- Promoted: no
+
+### L-STU-184 — A shape measure that fits each view to the frame turns a dot into a disc: one scale per body, and plant the pair that must differ
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/silhouette.py` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-16
+- What happened: the silhouette comparison scaled every view so its longest side filled the 40 x 40 grid. A dart seen end-on (a dot) then filled the grid and matched a disc, so the tool's own negative control ("a dart and a disc must not read alike") failed at 0.31 the moment a second alignment search (the travel axis) gave the two shapes a view in common. Before the fix it had called the Marlin and the Bee the closest pair in the game (0.16); after it, 0.3. A table had already been read with the wrong scale.
+- Do instead: normalise a body once (its longest extent) and use that scale in every view. Keep a planted pair that must differ and a planted pair that must match (a rolled, flipped, scaled copy) in the self-test, and re-run it after every change to the alignment search: more freedom to align is more ways for two different shapes to agree.
+- Evidence: `silhouette.py --self-test`; `Docs/Studios/FAUNA_LAB.md` round 2, Found 1.
+- Promoted: no
+
+### L-STU-185 — Compare shapes in ONE pose across all views, pooled by outline: per-view best matches call every flat body the same
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/silhouette.py` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-16
+- What happened: the silhouette distance took each view's smallest difference over all alignments separately. Two flat bodies are both a line edge-on, so a woven manta read 0.03 from the Brittlestar. Comparing the three views of one pose fixed that, but a plain mean still let the two edge-on line views outvote the outline from above (0.30); pooling the overlap over the three views, so a view counts by the outline it holds, gave 0.44. The table published the round before was wrong and had to be marked superseded.
+- Do instead: an alignment is one pose, and every view of it is scored together; weight views by the area they carry. Add the shape that breaks the measure (two different flat bodies) to its self-test before quoting a table, and mark an earlier table superseded rather than leaving it.
+- Evidence: `silhouette.py` (`views`, `_one_way`); `Docs/Studios/FAUNA_LAB.md` round 3, Measured.
+- Promoted: no
+
+
+### L-STU-186 — Port the game's own transform of your body before you ship the body: a per-part rule tears what you cut into parts
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/erosion.py` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the Ray went to Unity as a wing cut into jointed pieces, with a Space config that turns on the game's spindle erosion like every species. The erosion thins each mesh about its own principal axis. Nobody could see it without the editor, and the earlier check ("the gap between two pieces did not grow") passed because crumpled pieces overlap. Porting `SpindleErosion` to Python and measuring how far apart two vertices that TOUCHED end up showed 6.7 u.
+- Do instead: when the game transforms a body at spawn (erosion, scaling, armour), port that transform, pin the port to the numbers the game's own tests pin, run it on the asset you wrote, and DRAW the result. Measure tearing as the distance between points that were together, never as the smallest gap between two parts.
+- Evidence: `erosion.py` (`runtime`, `self_test`); `Docs/Studios/FAUNA_LAB.md` round 8.
+- Promoted: `/fauna-maker` Into Unity step A; `/fauna-creation` section 12; `Docs/ECOSYSTEM.md` 64.9
+
+### L-STU-187 — "The smallest value that passes the law" is a default that can contradict the law's intent: state the floor
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/specs/_kit.py` (`elements`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the law says a Mass body is grown until its heart's swing clears its shields. The helper returned the smallest scale that clears them. For bodies whose prisms sit far from the heart that is under 1, so the "gentle giant" came out at 0.58 of the base body and Space under the base body too, on five creatures, with every gate green.
+- Do instead: when a helper solves a law's inequality, write the direction the law intends as a second clause (never under the base body) and plant a case on the far side of it in the self-test.
+- Evidence: `specs/_kit.py` `elements`; `celestial.py` L8; `Docs/Studios/FAUNA_LAB.md` round 8.
+- Promoted: `/fauna-creation` law L8
+
+### L-STU-188 — A variant that adds detail can erase the outline: measure every variant against the roster, not only the base
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/elements.py` (`silhouettes`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the Ray's Space form hung a veil along its whole hind edge. It looked the most different of the four, and it was the one that failed: the veil filled the outline into a delta and read as the Sparrow hull (0.35 under a 0.41 bar) while the base Ray stood at 0.49.
+- Do instead: run the distinctness measure on each variant against every OTHER body (its own kin excluded), and shape additions so they leave gaps in the outline.
+- Evidence: `elements.py --silhouette ray`; `specs/ray.py` `ghost`.
+- Promoted: `/fauna-maker` step 6.5
+
+### L-STU-189 — Test a skill by giving it to a smaller model and reading what it did, not what it reports passing
+
+- Lab: Fauna Possession Lab, `.claude/skills/fauna-maker` step 6.5 · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: four sessions on a smaller model each followed the element-forms step on one creature and reported where the skill failed them. All four "passed". Reading the pictures showed the Plume had passed its outline check by cutting its arms' barbs from 16 to 3: it was no longer a feather creature. Nothing in the skill or the tools said the barbs were the species. The same four reports found one real bug (`barbs: False` handed a limb its design's barbs back, tripling a mesh) and that every tester had worked out "spread outward" by trial.
+- Do instead: after writing a skill, hand it to a smaller model with one concrete task, a hard file limit and "report every place the skill failed you". Then LOOK at what it made. Turn each failure into a refusal in the tool with its fix in the message (not a sentence in the skill), and run the task again: the second Plume took 2 rounds and 11 tool calls against 19, and kept its feathers.
+- Evidence: `Docs/Studios/FAUNA_LAB.md` round 9; `elements.form` (the refusals), `fauna.py` `FORM_FIX`.
+- Promoted: `/fauna-maker` step 6.5; `/fauna-creation` section 12
+
+### L-STU-190 — A process a small model can complete is not a design a small model can make: say which one a check proves
+
+- Lab: Fauna Possession Lab, `.claude/skills/fauna-maker` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the smallest model took "make a seahorse" from nothing to four element forms in about nine rounds, every law, budget and outline check green, without reading kit source. The body was a ribbed column with fans. The no-up law had turned the animal's one curl into three, and no step had made it decide what a three-fold seahorse should look like before drawing.
+- Do instead: put the design question the laws will force (what happens to this animal's one-sided feature when it must repeat round the axis?) in step 1, before any geometry, and give the maker a line that stops it going on ("would a person name the animal from this picture alone?"). In the hand-back, separate "the process ran" from "the result is good", and do not keep a trial body that only did the first.
+- Evidence: `Docs/Studios/FAUNA_LAB.md` round 9 (round 3 of the trial); `/fauna-maker` step 1, question 4.
+- Promoted: `/fauna-maker` step 1
+
+### L-STU-191 — A shader that computes from a vertex's own position tears anything you cut into pieces with their own origins
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/unity_port.py` (`joints_of`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the Ray's wing and tail were cut into jointed pieces, each mesh in its joint's own space. The shared spindle shader sways a vertex by its own z. Two vertices that touch across a cut had z measured from different origins, so the tail would have opened 2.6 u at its first hinge with nothing wrong in any asset.
+- Do instead: when a body is split for a rig, keep every piece's mesh in the BODY's space and set the piece's transform back by its joint's place; then any position-driven shader is one function across the cut. Evaluate the shader's own formula on both sides of each cut as a check.
+- Evidence: `unity_port.joints_of` and the skin transforms in `prefab`; `Docs/ECOSYSTEM.md` 47.8.
+- Promoted: `.claude/skills/fauna-maker/references/RAY.md`
+
+### L-STU-192 — Run the game's own code on what you built before you call it done: file checks cannot see order
+
+- Lab: Fauna Possession Lab, the Ray's Unity port · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: four element prefabs had passed every file check (laws, budgets, mesh contents, prism seats, guids) and a reference compile. Spawning each element's config in Amoebius through the spawner's own calls showed the Mass form unshielded and the Charge form harmless. The cause was not in the new assets: the game arms a body in `Initialize`, before `AssignLineage` rolls the element, and the shipped QuadFish had the same fault (0 of 4 shielded) with every gate green for weeks.
+- Do instead: after a headless port, spawn the thing with the engine's real spawn order and read back the BEHAVIOUR the design promises (counts of shielded and danger prisms, a scale, a position over time). When it fails, run the same probe on a shipped sibling first: it tells you whether the fault is yours or the game's.
+- Evidence: `Docs/ECOSYSTEM.md` 65.4 (the added paragraph); `Docs/Studios/FAUNA_LAB.md` round 9; `Fauna.AssignLineage`.
+- Promoted: `/fauna-maker` Into Unity step A; `.claude/skills/fauna-maker/references/RAY.md`
+
+### L-STU-193 — A body that only rotates is a model on a stick: derive its motion from its own angular velocity, mirrored
+
+- Lab: Fauna Possession Lab, `stepTurn` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-18
+- What happened: the Ray's ripple was right flying straight, and Garrett's first words after turning it were "its rotations just happen and the fauna movement doesn't match it ... i want the wings to take on chiral movements that match their rotations". A clock-driven wave is the same in a turn as on a straight line, so nothing in the body said it was turning. No check could have found this: every number was right.
+- Do instead: for any body a person steers or watches turn, measure its angular velocity in its own frame and give it at least: a lag of the far parts (a spring, so it overshoots and settles), an asymmetry of the cycle between the inside and outside of the turn, and a bank. State each as a function of position so one formula serves the shader, the CPU riders and the lab, and expose multipliers in the lab so the person tunes feel, not code.
+- Evidence: `Docs/Studios/FAUNA_LAB.md` round 10; `elements.TURN`; `SpindleGrownSway.hlsl`; `GrownLimbDriver.AnswerTheTurn`.
+- Promoted: `/spindle` section 3
+
+### L-STU-194 — A variant's identity must change the OUTLINE: measure the variants against each other, not only against the world
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/elements.py` (`silhouettes`, `KIN`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-21
+- What happened: four creatures were each given four element forms by smaller models following the skill. Every form passed the check against other species. Three of the four Charge forms were then found 0.13 to 0.15 from another form of their OWN species: thorns and a small pair of tines read as detail, and at a distance the Charge creature was the Time or Mass one. Nothing had measured kin against kin.
+- Do instead: when a thing has variants a player must tell apart, measure every pair of variants with the same distinctness measure and set a floor from the reference set (here 0.18, under the flagship's closest pair). State the fix in terms of the measure ("one thing 15 u or longer that leaves the body"), not taste.
+- Evidence: `elements.py --silhouette <name>` (`ALIKE`); `specs/nettle.py` `thornbell`, `specs/lantern.py` `corona`, `specs/ammon.py` `corona`; `Docs/Studios/FAUNA_LAB.md` round 11.
+- Promoted: `/fauna-maker` step 6.5
+
+### L-STU-195 — Generalise at the second instance, and let the tool derive what a person would have had to author
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/unity_port.py` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-21
+- What happened: the first creature in Unity had its own class and a hand-written block saying where to cut its limbs. Bringing four more to the same standard would have meant four classes and four blocks, three of them for limbs a plane cannot cut (coils, curved arms). Instead the class became one class reading the spec's existing "how it feels" numbers, and the tool derives the whip limbs from the same rule the lab already used and cuts each along its own path. The four ports needed no C#, no block and no hand edit.
+- Do instead: when the second instance of a hand-made thing arrives, look for the data that already states the intent (the lab's own numbers, the rule the lab already runs) and make the tool read it, before writing a second copy of the hand-made thing. A port that needs per-instance code will not be repeated by a smaller model.
+- Evidence: `GrownFauna.cs`; `unity_port.whip_limbs`, `joints_of` (the `along` cut); `Docs/Studios/FAUNA_LAB.md` round 11.
+- Promoted: `/fauna-maker` Into Unity
+
+### L-STU-196 — A check you wrote proves what you thought of: before shipping, hand the code to a reader told to break it
+
+- Lab: Fauna Possession Lab, the grown creatures in Unity · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-21
+- What happened: five creatures passed every gate the kit has, a clang proof of the shader and a run of the game's own code on all twenty configs. A second reader, given only the diff and told to find what breaks, found four things none of those could: a dead creature's prisms are handed to the cell and the driver kept writing their local positions (the skeleton would have jumped to the cell's centre); the prefab stated one field twice (the tool inserted a list beside the donor's empty one); an all-round aim cone kept a rider from feeding whenever a rival was within three strike-reaches; and the turn response was thrown away, not clamped, in the hardest turns. Each was in a state the checks never visited: death, a second reading of a YAML key, a rival out of reach, a turn faster than the test's.
+- Do instead: after the checks pass, give the diff to a reader with no stake in it and ask what breaks at the lifecycle edges (death, pooling, reparenting, the hardest input, the widest setting). Then turn each finding that a file can show into a check with a planted defect (here: `unity_port.py --check` fails on any object that states a field twice), and each that needs the running game into a hand test.
+- Evidence: `GrownLimbDriver.CarryRiders` (the parent test), `AnswerTheTurn` (`FastestTurn`, `placed`); `JewelWaspExecutor.HostRight`; `unity_port.verify` (duplicate keys) and `self_test` (six planted defects); `.claude/skills/fauna-maker/references/RAY.md` section 5.
+- Promoted: `/fauna-maker` Into Unity
+

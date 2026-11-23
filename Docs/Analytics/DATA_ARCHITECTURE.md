@@ -3,13 +3,14 @@
 > **Status:** schemas approved; commits 1-4 shipped. Companion to `DATA_INVENTORY.md` (what exists today)
 > and `INSTRUMENTATION_DATA.html` (the instrumentation team's event reference).
 >
-> **Decisions taken (2026-07-27):** PostHog is fed **directly from the client** through a second
-> analytics sink · cloud saves are **broken, not migrated** (pre-launch) · PostHog receives **all
-> events plus person properties** · **display name is allowed** to leave the client.
+> **Decisions taken (2026-07-27):** a second analytics destination is fed **directly from the client**
+> through a second analytics sink · cloud saves are **broken, not migrated** (pre-launch) · it receives
+> **all events plus person properties** · **display name is allowed** to leave the client.
 >
-> The PostHog project is **already set up** — the Unity → PostHog link is the only missing piece
-> (§7.3, commit 4). A person is identified by UGS player ID and **searchable by display name**
-> (§7.3.1). §8 inventories the legal exposure this creates.
+> **That destination is Froglet Analytics, our own server** (`Tools/Analytics/server/`, Oracle VM,
+> Shombith 2026-11-06). It was PostHog from July until then; PostHog's history was imported and the
+> PostHog project was closed on 2026-11-23. A person is identified by UGS player ID and **searchable
+> by display name** (§7.3.1). §8 inventories the legal exposure this creates.
 >
 > Sources read: `UGSKeys.cs`, `UGSDataService.cs`, `CloudDataRepository.cs`, `UGSCloudSaveProvider.cs`,
 > `AnalyticsServiceFacade.cs`, `UGSStatsManager.cs`, `PlayerDataService.cs`, `VesselUnlockSystem.cs`,
@@ -24,13 +25,12 @@
 | Doc | What it is |
 |---|---|
 | `DATA_INVENTORY.md` | What we persisted before this rework |
-| `EVENT_SCHEMA.json` | Machine-readable event contract — the source for UGS Event Manager + PostHog config |
-| `POSTHOG_SETUP.md` | The out-of-repo checklist: create the project, paste the key, verify, insights, deletion runbook, free-tier guardrails |
-| `viability-report.md` | Why PostHog over the alternatives; the three attribution-bridging options |
+| `EVENT_SCHEMA.json` | Machine-readable event contract — the source for UGS Event Manager, and read by the Froglet Analytics server to check every event |
+| `viability-report.md` | (2026-07, historical) why PostHog was picked then; the three attribution-bridging options |
 | `event-taxonomy.md` | Target event schema from the analysis pass |
 | `utm-conventions.md` | Campaign/UTM naming conventions |
 | `implementation-plan.md` | The original phased plan behind the sink layer |
-| `../../Tools/Analytics/README.md` | Bulk Cloud Save export + PostHog backfill scripts |
+| `../../Tools/Analytics/README.md` | The analytics tools: the Froglet Analytics server and console, and the bulk Cloud Save export |
 
 The bottom five were written on the attribution/viability branch (PR #592) and salvaged here; each
 carries a provenance banner. **This document is the authority on implemented shape.**
@@ -105,8 +105,8 @@ first-launch guard) · `EPHEMERAL` (process lifetime only).
 **group**, not a field hunt. This is the single strongest argument for the nesting in §2.1.
 
 > **Legal follow-up (blocking for store release, not for this branch):** approving display name for
-> PostHog means `Docs/Legal/PRIVACY_POLICY_TEMPLATE.md` and the consent dialog copy must name
-> PostHog as a data processor and list the categories sent. The existing COPPA age gate and opt-in
+> the second destination means `Docs/Legal/PRIVACY_POLICY_TEMPLATE.md` and the consent dialog copy must
+> name it and list the categories sent (done 2026-11-17 for Froglet Analytics). The existing COPPA age gate and opt-in
 > consent in `AnalyticsServiceFacade` already gate collection correctly — only the disclosure text
 > is missing.
 
@@ -137,7 +137,7 @@ pays for itself twice.
 reasons, not aesthetics:
 
 1. A group maps 1:1 to a privacy class, so erasure/export is `delete profile.Identity`, not a field audit.
-2. A group maps 1:1 to a PostHog person-property prefix (`economy_crystal_balance`), so the mirror in
+2. A group maps 1:1 to a person-property prefix (`economy_crystal_balance`), so the mirror in
    §7.3 is mechanical rather than a hand-maintained list.
 3. A group maps 1:1 to a writer, which makes the single-writer rule checkable by inspection.
 
@@ -471,7 +471,7 @@ and `HANGAR_DATA.Vessels[v].FlightTimeSeconds` — the second one matters becaus
 a vessel" (`PreferredVessel`) is otherwise blind to the vessel the player spends the most time in.
 It deliberately does **not** touch `GamesCompleted` or `GamesPlayed`: no game was played.
 
-**No new event and no new parameter.** Menu flight reaches PostHog through the person properties
+**No new event and no new parameter.** Menu flight reaches Froglet Analytics through the person properties
 `total_flight_time_seconds` / `preferred_vessel`, which `ReportFreestyleFlight` re-publishes via
 `AnalyticsServiceFacade.IdentifyPlayer()`. Nothing has to be added to the UGS Event Manager. If a
 discrete `freestyle_session_ended` event is wanted later for segmentation, it costs one event name
@@ -543,7 +543,7 @@ Two sources were considered:
 
 The NetworkVariable is authoritative for who is genuinely in the match. `player_ids` is filtered to
 humans (`!NetIsAI`); AI is reported separately as `player_count_ai`. UGS Analytics parameters accept
-only scalars, so it travels as a comma-joined string and the PostHog sink expands it back to an array.
+only scalars, so it travels as a comma-joined string and the Froglet Analytics sink expands it back to an array.
 
 `PlayerUUID` is **left as-is** rather than repointed at the new id: it is load-bearing for AOE block
 ownership strings (`AOERadialBlocks`, `AOEBlockCreation`, `AOEDangerHemisphereBlocks`) and for
@@ -577,7 +577,7 @@ exactly the organic-rematch cohort we are trying to measure.
 `schema_version` · `timestamp_utc_ms` (long) · `timestamp_utc_iso` (string).
 
 Both timestamp forms are sent deliberately: `_ms` for arithmetic, `_iso` for the day/week/month
-bucketing the email asks for without a per-query conversion. UGS and PostHog both stamp their own
+bucketing the email asks for without a per-query conversion. UGS and Froglet Analytics both stamp their own
 ingest time — the explicit field is the *client* time and is what the email means by "at completion".
 
 ### 7.2 `game_started` / `game_completed`
@@ -605,46 +605,45 @@ game_completed
 
 `vessel`, `game_mode` and `player id` from the email are already present or arrive via the envelope.
 
-### 7.3 PostHog
+### 7.3 Froglet Analytics (the second sink)
 
-> **Status:** the PostHog project itself is **already set up**. The only missing piece is the
-> Unity → PostHog link, which is what this section builds.
+> **Status:** shipped. Until 2026-11-06 this sink was `PostHogAnalyticsSink` sending to PostHog (EU);
+> since then it is `FrogletAnalyticsSink` sending to our own server (`Tools/Analytics/server/`), with the
+> same wire format and the same identity and person properties. PostHog was closed on 2026-11-23.
 
 **Transport.** `IAnalyticsSink` is extracted behind the existing `AnalyticsServiceFacade.RecordEvent`
-choke point (`AnalyticsServiceFacade.cs:285`) — that method is already the single funnel every event
-passes through, so this is an interface extraction, not a rewrite. Two sinks register:
-`UgsAnalyticsSink` (today's behaviour, unchanged) and `PostHogAnalyticsSink`.
+choke point — that method is the single funnel every event passes through. Two sinks register:
+`UgsAnalyticsSink` and `FrogletAnalyticsSink`.
 
-`PostHogAnalyticsSink` batches to `{host}/batch/`. It flushes on pause/quit and on a size/interval
-threshold, persists its queue to `Application.persistentDataPath` so offline play is not lost, and
-sits **behind the same consent + age gate** as UGS — an `IAnalyticsSink` cannot opt out of the gate,
-because the gate is upstream of the interface.
+`FrogletAnalyticsSink` batches `{api_key, batch: [...]}` to `{serverUrl}/batch/`. It flushes on
+pause/quit and on a size/interval threshold, persists its queue to `Application.persistentDataPath` so
+offline play is not lost, and sits **behind the same consent + age gate** as UGS — an `IAnalyticsSink`
+cannot opt out of the gate, because the gate is upstream of the interface.
 
-Config lives in `PostHogConfigSO` (project API key, host, batch size, flush interval, enabled). The
-PostHog **project** API key is write-only by design and is safe to ship in a client build. A PostHog
-**personal** API key is read/admin-capable and must never be placed in this SO or any client build.
+Config lives in `FrogletAnalyticsConfigSO` (`Assets/Resources/FrogletAnalyticsConfig.asset`: server
+URL, ingest key, batch size, flush interval, enabled), shipped already filled in. The **ingest** key is
+write-only by design and is safe to ship in a client build. Read and admin keys live only on the
+server and must never be placed in this SO or any client build.
 
-**Coverage.** All ~30 events already declared in `UGSKeys.cs` plus the new fields above — the two sinks
-receive identical payloads, so PostHog is at full parity from the first commit rather than the current
-partial feed.
+**Coverage.** Every event declared in `UGSKeys.cs` plus the new fields above — the two sinks receive
+identical payloads. The server checks each event against `EVENT_SCHEMA.json`.
 
-**Erasure is only partial from the client, and this is surfaced rather than hidden.** Deleting a
-PostHog *person* requires a personal (admin) API key, which must never ship in a client build. So
-`PostHogAnalyticsSink.RequestDataDeletion` does what it actually can: stops collecting, drops the
-pending queue, and sets `gdpr_deletion_requested` + a timestamp on the person so an operator or
-server-side automation can complete the deletion. **Until that automation exists, pressing the
-in-game erasure button does not fully honor the request** — see §8.6 and §10.
+**Erasure is complete.** `FrogletAnalyticsSink.RequestDataDeletion` stops collecting, drops the pending
+queue, and sets `gdpr_deletion_requested` + a timestamp on the person; the server deletes every event
+and the person record for that id the moment the flag arrives, keeping only a salted hash in its
+erasure log (§8.6). If the flag cannot be sent (offline), the console's Erasure page deletes by id.
+(PostHog could only be flagged from the client; that gap closed with the move.)
 
 #### 7.3.1 Identity — two searchable keys, one canonical
 
-Sending the UGS ID *alone* would make PostHog unusable for the thing it is for: recognising a player.
+Sending the UGS ID *alone* would make Froglet Analytics unusable for the thing it is for: recognising a player.
 Sending the display name *as the identity* would break every join and silently split one player into
 several the first time they rename. So:
 
 | Role | Value | Why |
 |---|---|---|
-| `distinct_id` (canonical identity) | UGS player ID | Immutable. Same key as Cloud Save, Leaderboards and UGS Analytics, so PostHog joins to all three with no mapping table. Survives renames. |
-| `display_name` (person property, searchable) | `PLAYER_PROFILE.Identity.DisplayName` | What a human actually recognises. PostHog person search matches on any property, so a name lookup finds the person and their whole history. |
+| `distinct_id` (canonical identity) | UGS player ID | Immutable. Same key as Cloud Save, Leaderboards and UGS Analytics, so Froglet Analytics joins to all three with no mapping table. Survives renames. |
+| `display_name` (person property, searchable) | `PLAYER_PROFILE.Identity.DisplayName` | What a human actually recognises. Person search in the Froglet Analytics console matches on any property, so a name lookup finds the person and their whole history. |
 
 Both are always present, so a person is findable by **either**. The distinction is only which one the
 event graph is keyed on — using a mutable, non-unique string as the key is how analytics datasets
@@ -676,7 +675,7 @@ mechanical rather than a hand-maintained list that drifts.
 >
 > Two rules came out of it, and they generalise past this property:
 >
-> - **An unknown value is omitted, never written.** PostHog person properties are last-write-wins, so
+> - **An unknown value is omitted, never written.** Froglet Analytics person properties are last-write-wins, so
 >   `$set`-ting `first_seen_utc_ms = 0` / `invite_wave = ""` from a not-yet-loaded profile would
 >   *destroy* a good cohort. An omitted key changes nothing on the person; a written empty one is a
 >   deletion wearing an update's clothes.
@@ -718,7 +717,7 @@ change** — that is the whole reason the raw timestamp travels too.
 | Real Steam grant data | Explicitly cut from this window; no SDK integration exists to read it. |
 
 **Where it lives, and why not on events.** It is a **person property**, set through `Identify`,
-never an event parameter. PostHog cohorts and retention are person-based, so a person property is
+never an event parameter. Froglet Analytics cohorts and retention are person-based, so a person property is
 directly filterable on every insight at no per-event cost. Stamping it on each event would repeat the
 mistake §7.1 exists to avoid: one permanent UGS Event Manager schema row **per event**, against a
 1,500-per-environment cap from which rows can never be deleted, for a value that never changes for a
@@ -763,7 +762,7 @@ week is it" is a reporting bug nobody finds. Two traps that come with it:
 **Empty is not a cohort.** `first_seen_utc_ms = 0` means *never stamped*, and
 `FromUnixTimeMilliseconds(0)` would bucket that player into the week of **1969-12-29** — a cohort
 that looks real and is not. `InviteWaveFor` returns empty, and the identify omits the key entirely.
-In PostHog, filter these out rather than treating them as a wave.
+In Froglet Analytics, filter these out rather than treating them as a wave.
 
 **Erasure.** Nothing here changes §8.6. Deletion is **person**-scoped — `RequestDataDeletion` flags
 the person, and an operator or server-side automation deletes that person and every property on it,
@@ -775,7 +774,7 @@ surface; adding *event* properties would have.
 declines consent produces no events and no identify call**, so they carry no wave.
 
 **Still to do outside the client.** The field is now emitted; the **dashboards are not built**.
-Someone has to create the PostHog retention and funnel insights broken down by `invite_wave`, and
+Someone has to create the retention and funnel views in the Froglet Analytics console broken down by `invite_wave`, and
 the stability view over crash-free sessions. DoD #6 has a data source as of this change — it does
 not yet have a chart.
 
@@ -786,7 +785,8 @@ Two non-code steps, both easy to forget and both silent when skipped:
 1. **UGS dashboard Event Manager** — every event *and every parameter* must be declared or the backend
    **silently discards** the event. This is already noted in `UGSKeys.cs:26` and is the most likely
    cause of "very few data is transferred".
-2. **PostHog project** — create the project, take the write-only key, define the rematch insight.
+2. **Froglet Analytics** — nothing per event: the server reads `EVENT_SCHEMA.json` from the repo. A new
+   event that is not in the schema is counted under rejects (Data health page), not stored.
 
 Both are driven from a generated `Docs/Analytics/EVENT_SCHEMA.json` (every event, parameter, type,
 and which sinks receive it) so dashboard configuration is a copy-paste rather than a memory exercise,
@@ -800,6 +800,13 @@ and so schema drift between code and dashboard is diffable.
 > data leaves the device for a third party, written so counsel can be pointed at specific items
 > rather than at "we added analytics". Items marked **BLOCKING** must be closed before a public store
 > release; none of them block this branch.
+
+> **Since 2026-11-06 the second destination is Froglet's own server, not PostHog** (§7.3). The items
+> below were written for PostHog in July 2026. Those about PostHog as a third party (its DPA,
+> sub-processors, EU region, partial erasure, IP capture) no longer apply: our server keeps a two-letter
+> country and never the IP, erases on receipt, and the privacy policy and store labels name it
+> (`Docs/Legal/`, 2026-11-17). The rest (consent, children, display names, retention, store
+> disclosure) applies to Froglet Analytics the same way. PostHog was closed on 2026-11-23.
 
 The trigger is specific: today all player data terminates at Unity Gaming Services, which is already
 named in our terms and already the identity provider. Adding PostHog makes Froglet a **data
@@ -987,22 +994,21 @@ path removes it.
 | Item | Owner | Blocking release? |
 |---|---|---|
 | ~~PostHog project region~~ — **RESOLVED: EU Cloud**, client host set to `eu.i.posthog.com` (§8.3) | — | Done |
-| Privacy policy + consent copy must name PostHog and list categories sent (§8.1) | legal/product | **Yes** |
-| Execute the PostHog DPA, review sub-processors (§8.2) | legal | **Yes** |
+| ~~Privacy policy + consent copy must name PostHog~~ — superseded: they name Froglet Analytics (2026-11-17) | — | Done |
+| ~~Execute the PostHog DPA~~ — superseded: no third-party analytics processor since 2026-11-06 | — | Done |
 | Apple Nutrition Labels + Play Data Safety updated in the shipping release (§8.8) | product | **Yes** |
 | Declare all events/parameters in the UGS Event Manager, or the backend silently discards them (§7.4) | instrumentation | No |
-| Confirm PostHog replay + autocapture off; decide on IP/geolocation capture (§8.9) | instrumentation | No |
-| Define retention for PostHog and Cloud Save (§8.7) | instrumentation | No |
-| **Fill in the PostHog project API key** in `Assets/Resources/PostHogConfig.asset` (write-only project key, never a personal key) — the sink stays inert until then | instrumentation | **Yes** |
-| **Server-side PostHog person deletion** to complete right-to-erasure; the client can only flag it (§7.3, §8.6) | instrumentation | **Yes** |
-| **PostHog removed from the game** (Shombith, 2026-11-06): `FrogletAnalyticsSink` + `Resources/FrogletAnalyticsConfig.asset` send to our own server (`Tools/Analytics/server/`), shipped already pointed at it. The consent screen now names "Froglet's own analytics server" and the country (`Resources/PrivacyConsentConfig.asset`). The PostHog rows in §8.11 (DPA, region, person deletion) no longer apply; the privacy policy and store labels must name our server and country instead. History: `import_posthog.py`, once, without IP addresses | instrumentation / legal | **Yes** (policy text) |
+| ~~Confirm PostHog replay + autocapture off; decide on IP capture~~ — superseded: our server keeps the country, never the IP | — | Done |
+| Define retention for Froglet Analytics and Cloud Save (§8.7) | instrumentation | No |
+| ~~Fill in the PostHog project API key~~ — superseded: `FrogletAnalyticsConfig.asset` ships filled in | — | Done |
+| ~~Server-side PostHog person deletion~~ — done: Froglet Analytics erases on receipt (§7.3, §8.6) | — | Done |
+| **PostHog removed from the game** (Shombith, 2026-11-06): `FrogletAnalyticsSink` + `Resources/FrogletAnalyticsConfig.asset` send to our own server (`Tools/Analytics/server/`), shipped already pointed at it. The consent screen now names "Froglet's own analytics server" and the country (`Resources/PrivacyConsentConfig.asset`). The PostHog rows in §8.11 (DPA, region, person deletion) no longer apply; the privacy policy and store labels must name our server and country instead. History: imported once, without IP addresses; PostHog closed 2026-11-23 and the importer removed | instrumentation / legal | **Yes** (policy text) |
 | **Player profiles** (Shombith, 2026-11-05): the console shows each player's id, display name, country, platforms, matches, crystals, FTUE steps, friends and parties, settings and event timeline, to admin keys and the read keys named in `profile_readers` only. Claude never receives it (Ask reads aggregates). This is the per-person view PostHog's People page gave, and §8.5's display-name risk applies to it: keep the list of profile readers short | instrumentation | No |
-| **Replacing PostHog with our own server** (Shombith, 2026-11-05): `Tools/Analytics/server/` takes the PostHog sink's batches unchanged and finishes the in-game deletion on arrival, which closes the item above once the game points at it. Until then the PostHog rows above still apply | instrumentation | No |
-| Run `Tools/Analytics/export_cloud_save.py` + `import_snapshot_to_posthog.py` once to backfill existing players into PostHog People (needs a read-only UGS service account) | instrumentation | No |
+| **Replacing PostHog with our own server** (Shombith, 2026-11-05): `Tools/Analytics/server/` takes the PostHog sink's batches unchanged and finishes the in-game deletion on arrival, which closes the item above once the game points at it. The game points at it since 2026-11-06; PostHog was closed on 2026-11-23 | instrumentation | Done |
 | One `SO_Vessel` asset has a blank `Name` — fix the asset (§3.2 stops it persisting, it does not fix the asset) | gameplay | No |
 | Publish `SO_Game.GolfScoring` onto `GameDataSO` so scoring direction has one source (§3.3) | gameplay | No |
 | Retire `IPlayer.PlayerUUID` (display name) in favour of `UgsPlayerId`, once AOE ownership strings are decoupled (§6.3) | gameplay | No |
 | `IntensityPlayCounts` ↔ `MODE_STATS.GamesPlayed` redundancy | quest-system pass | No |
 
-~~PostHog project + write-only API key~~ — **done** (project set up; only the Unity link is outstanding,
-which is commit 4).
+~~PostHog project + write-only API key~~ — **done**, then retired: PostHog was replaced by Froglet Analytics on
+2026-11-06 and closed on 2026-11-23.

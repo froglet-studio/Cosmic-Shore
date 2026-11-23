@@ -7,9 +7,14 @@
 > Shombith + Ian) and **F4** (GDPR/COPPA consent review, 1.0 d, Shombith).
 >
 > Companions: `DATA_ARCHITECTURE.md` (the authority on schema + design), `EVENT_SCHEMA.json`
-> (machine-readable event contract), `POSTHOG_SETUP.md` (the click-by-click PostHog guide),
-> `../../Tools/Analytics/README.md` (export + backfill scripts), `ugs_step1_parameters.csv` +
-> `ugs_step2_events.csv` (the two UGS Event Manager passes).
+> (machine-readable event contract), `../../Tools/Analytics/README.md` (the analytics tools and the
+> Cloud Save export), `ugs_step1_parameters.csv` + `ugs_step2_events.csv` (the two UGS Event Manager
+> passes).
+>
+> **Since 2026-11-06 the second destination is Froglet Analytics, our own server, not PostHog**
+> (`Tools/Analytics/server/`, `Docs/Reports/ANALYTICS.md`). PostHog's history was imported and the
+> PostHog project was closed on 2026-11-23. The PostHog steps below are kept as the record of what was
+> done; those still open are marked superseded. UGS steps (A3, §6.1) are unchanged.
 
 ---
 
@@ -217,9 +222,7 @@ PostHog sink beside the first and double-sent every event.
 
 - `Tools/Analytics/export_cloud_save.py` — bulk Cloud Save export via a read-only service
   account, standard-library Python only
-- `Tools/Analytics/import_snapshot_to_posthog.py` — backfills existing players into PostHog
-  People/cohorts, so your whole player base is visible rather than only post-launch players
-- `POSTHOG_SETUP.md`, `viability-report.md`, `event-taxonomy.md`, `utm-conventions.md`,
+- `viability-report.md`, `event-taxonomy.md`, `utm-conventions.md`,
   `implementation-plan.md` — each with a provenance banner
 
 **Ported into the shipped sink** — genuine improvements it lacked:
@@ -270,12 +273,12 @@ Ordered. Everything in **A** is required before any data arrives at all.
 | # | Action | Why it matters |
 |---|---|---|
 | **A1** | ~~Paste the PostHog **Project API key** into `Assets/Resources/PostHogConfig.asset`.~~ **DONE.** Key `phc_qixNiz…` is committed and the host is `https://eu.i.posthog.com`, confirmed against the `eu.posthog.com` login. | The sink was inert until this existed. PostHog now receives events. |
-| **A2** | PostHog → *Organization settings → Billing → Product analytics → Edit billing limit → **$0***. | Makes free-tier overage a hard drop instead of a surprise bill. |
+| **A2** | ~~PostHog billing limit $0.~~ **Superseded:** PostHog closed 2026-11-23; our server has no per-event bill. | |
 | **A3** | **Hand-create 28 events and 67 parameters in the UGS Event Manager.** Full walkthrough in §6.1 — read it before starting, because the rows are permanent. | UGS rejects any custom event with no dashboard schema. This is why so little has reached UGS while the code has been recording all along. **UGS only — PostHog needs none of it.** |
-| **A4** | Play one full game. Check PostHog → *Activity* for `game_started` / `game_completed`. | End-to-end proof. Works today, independently of A3. |
+| **A4** | Play one full game. Check the Froglet Analytics console (Data health, or the player's profile) for `game_started` / `game_completed`. | End-to-end proof. Works today, independently of A3. |
 
-> **A4 is unblocked now.** A1 is done and PostHog accepts whatever the sink sends, so you can
-> confirm the PostHog half of the pipeline before touching the UGS list at all.
+> **A4 is unblocked now.** Froglet Analytics accepts every event in `EVENT_SCHEMA.json`, so you can
+> confirm that half of the pipeline before touching the UGS list at all.
 
 ### 6.1 · A3 in full — the UGS Event Manager
 
@@ -362,14 +365,13 @@ of our 42 collides with those, and none of them needs creating.
 
 ### B · Backfill the players you already have — ~1 hr, once
 
-Without this, PostHog only knows players who play *after* A1. The scripts are plain Python,
-no `pip install`.
+The export is plain Python, no `pip install`. (The second step, a snapshot per player into PostHog,
+was retired with PostHog on 2026-11-23.)
 
 | # | Action |
 |---|---|
 | **B1** | Unity Cloud → *Administration → Service Accounts* → new account `cloudsave-export`, project role **Cloud Save Viewer**. Create a key; note Key ID, Secret, and the Project ID. |
 | **B2** | Run `python3 Tools/Analytics/export_cloud_save.py` → JSONL of every player's save data. |
-| **B3** | Run `python3 Tools/Analytics/import_snapshot_to_posthog.py` → one snapshot per player into PostHog People. |
 
 Full instructions and ready-made DuckDB queries: `Tools/Analytics/README.md`.
 
@@ -392,10 +394,10 @@ and paperwork, not engineering.
 
 | # | Action | Notes |
 |---|---|---|
-| **D1** | Execute the **PostHog DPA** and review their sub-processor list. | Article 28 requirement. PostHog publishes one; it has to actually be signed. |
-| **D2** | Add **PostHog (EU)** by name to `Docs/Legal/PRIVACY_POLICY_TEMPLATE.md` and the consent dialog copy, listing the categories sent. | The opt-in gate is already correct mechanically. Consent that does not name the recipient is not informed consent. |
+| **D1** | ~~Execute the PostHog DPA.~~ **Superseded:** no third-party analytics processor since 2026-11-06. | |
+| **D2** | ~~Add PostHog (EU)~~ **Done for Froglet Analytics (2026-11-17)**: name the analytics destination in `Docs/Legal/PRIVACY_POLICY_TEMPLATE.md` and the consent dialog copy, listing the categories sent. | The opt-in gate is already correct mechanically. Consent that does not name the recipient is not informed consent. |
 | **D3** | Update **Apple Privacy Nutrition Labels** and **Google Play Data Safety** in the same release the sink ships in. | Because display name is sent, declare *user content* as linked to identity. A truthful form describing the previous build is still a false declaration. |
-| **D4** | Build **server-side PostHog person deletion**. | See §7 — this is the one item that is a code gap, not paperwork. |
+| **D4** | ~~Build server-side PostHog person deletion.~~ **Done:** Froglet Analytics erases the person on receipt of the flag. | |
 | **D5** | Confirm the store age rating / Families-policy classification. | If the game is ever listed as child-directed, third-party analytics restrictions apply — Apple's Kids Category prohibits it outright. |
 
 ### E · Housekeeping — not urgent
@@ -405,13 +407,14 @@ and paperwork, not engineering.
 | **E1** | **Delete the branch `claude/analytics-attribution-viability-vwkunw`.** PR #592 is closed, but the git proxy in my environment refuses ref deletions (`send-pack: unexpected disconnect`), so I could not remove it. One click in the GitHub UI. |
 | **E2** | ~~Fix the `SO_Vessel` asset with a blank `Name`.~~ **DONE.** It was `FalconClassSO.asset` (Class 9); its sibling `ShrikeClassSO` carried "Shrike" and Falcon's was never filled in. All 11 vessel assets now have `Name` matching their `VesselClassType`. |
 | **E4** | Falcon and Shrike both have `isLocked` unserialized, so both default to **unlocked** despite being "Planned" vessels. Probably wrong, but changing lock state is a design call — left alone. |
-| **E3** | Set `Excluded Events` on `PostHogConfig.asset` to `ui_action` if you ever approach the 1M/month free tier. UGS keeps receiving it, so nothing leaves the system of record. |
+| **E3** | ~~`Excluded Events` on `PostHogConfig.asset`.~~ **Superseded:** PostHog is gone. |
 
 ---
 
 ## 7. Known gaps — stated plainly
 
-**Erasure is only partial.** Deleting a PostHog *person* requires an admin API key that must
+**Erasure — closed 2026-11-06.** Froglet Analytics deletes the person the moment the flag arrives.
+The paragraph below is the PostHog-era gap, kept as history. Deleting a PostHog *person* requires an admin API key that must
 never ship in a client build. The in-game button stops collection, drops the pending queue, and
 sets `gdpr_deletion_requested` on the person — but the deletion itself is currently a manual
 dashboard step (*People → search the UGS PlayerId → Delete person → include events*). **Until

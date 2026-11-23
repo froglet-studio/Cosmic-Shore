@@ -75,4 +75,98 @@ combos:
     - Thread a Switch for energy
   drivers: [joy, mastery, goal]
   feel: A clean strike.
+  gene:
+    genome: Space
+    cue: [omni_near, gate_next]
+    dials:
+    - - lineUp
+      - heading error onto the ball's line before the dash
+      - 1
+      - 20
+      - deg
+    - - throttleDepth
+      - how deep the throttle is held onto the line
+      - 0.2
+      - 1.0
+      - fraction
+    done: A struck ball threads a switch or a goal.
+    sight: NEEDLE
+- in: x
+  name: The shove
+  t: [4, 12]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: 'Throttle onto a rival''s path and dash: the plate engulfs them.'
+  chain:
+  - - Time
+    - Throttle onto a rival's path
+  - - Charge
+    - 'Dash: the shove''s plate engulfs them'
+  drivers: [rival, joy]
+  feel: Shoulder to shoulder.
+  gene:
+    genome: Charge
+    cue: [rival_on_line, verb_ready]
+    dials:
+    - - dashLead
+      - seconds before the paths cross the dash is made
+      - 0.2
+      - 2
+      - s
+    done: The plate debuffs a rival pilot.
+    sight: BANDIT
+- in: x
+  name: The tollway
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: A switch round a crystal on the path; a ball threads it and it becomes a dais.
+  chain:
+  - - Mass
+    - Place a switch round a crystal on your path
+  - - ''
+    - 'A ball threads it: energy'
+  - - Mass
+    - It breaks into a dais of prisms
+  drivers: [make, goal]
+  feel: A toll that builds.
+  gene:
+    genome: Mass
+    cue: [crystal_near, own_mass_gap]
+    dials:
+    - - switchDetour
+      - distance flown to place a switch
+      - 0
+      - 200
+      - u
+    done: A threaded switch leaves its dais inside the claim.
+    sight: NEEDLE
+- in: x
+  name: Throttle line
+  t: [5, 15]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Throttle deep on the straight, let go before the turn, dash the gate clear.
+  chain:
+  - - Time
+    - Throttle deep on the straight
+  - - Time
+    - 'Let go before the turn: the only brake'
+  - - Charge
+    - 'Dash at the gate: the shove clears it'
+  drivers: [joy, mastery]
+  feel: Knowing when to lift.
+  gene:
+    genome: Time
+    cue: [straight_ahead, gate_next]
+    dials:
+    - - brakeLead
+      - seconds before the turn the throttle is let go
+      - 0.2
+      - 3
+      - s
+    - - depth
+      - how deep the throttle is held
+      - 0.3
+      - 1.0
+      - fraction
+    done: A gate is threaded without a rail hit.
+    sight: NEEDLE
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md
