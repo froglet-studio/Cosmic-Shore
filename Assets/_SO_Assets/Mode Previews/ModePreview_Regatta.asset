@@ -21,8 +21,8 @@ MonoBehaviour:
   PreviewCellsByIntensity:
   - {fileID: 11400000, guid: bb2f0490e16e46fcc5aff4879f4c8f43, type: 2}
   - {fileID: 11400000, guid: f3734c7541f66efb9279736770eb38f2, type: 2}
-  - {fileID: 11400000, guid: a01c8f7c575bfab019d7257b4453e83e, type: 2}
-  - {fileID: 11400000, guid: fdbbf8a69cba1a5f40fc8c1c4f209b73, type: 2}
+  - {fileID: 11400000, guid: 6d418a7e688375a2307a0da98b361d27, type: 2}
+  - {fileID: 11400000, guid: de0dd660f18f3aaf5c76599e344d0f30, type: 2}
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
   Vessel: -1

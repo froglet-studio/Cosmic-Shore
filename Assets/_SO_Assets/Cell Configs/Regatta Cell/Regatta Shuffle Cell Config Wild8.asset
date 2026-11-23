@@ -17,28 +17,29 @@ MonoBehaviour:
     (CellTypeChoiceOptions.CourseVariantWise, list order = Regatta Course Pool order - the
     host deals one enabled entry per match). A searched course: its rails prefab carries the
     whole RegattaCourseGenome (circuit, braid, features, placements), the one the real-game
-    judge raced. Wide search shard_cloud4-0049: Ourobor world, super-shielded 48%, no rails,
-    nucleus, lifeforms none, lap 4968 u. Field spread {''card'': 4.168, ''L5'': 6.215} (3
-    seeds, real-game judge). 4570 prisms measured; PhaseThresholds ride that count at the
-    rail prism''s nominal volume plus a trail band. The spawn profile is the Barren cell''s
-    (no flora, no fauna). Regenerate with Tools/Build/author_regatta_assets.py from
+    judge raced. Wide search shard_cloud0-0329: Switchyard world, super-shielded 0%, rails
+    on 9% of the lap, no nucleus, lifeforms Switchyard Cell/Switchyard Cell Config 1, lap
+    5581 u. Field spread {''card'': 5.057, ''L5'': 4.86} (3 seeds, real-game judge). 2367
+    prisms measured; PhaseThresholds ride that count at the rail prism''s nominal volume
+    plus a trail band. Flora and fauna: Switchyard Cell/Switchyard Cell Config 1''s spawn
+    profile. Regenerate with Tools/Build/author_regatta_assets.py from
     Tools/Build/regatta_shuffle_pool.json, never by hand.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 1
   CellEndGameScore: 0
   MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
-  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  NucleusPrefab: {fileID: 0}
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
   CellModifiers: []
-  SpawnProfile: {fileID: 11400000, guid: 434c1f97bcb91b34895ef0f0a987b716, type: 2}
+  SpawnProfile: {fileID: 11400000, guid: eab0c99bbf13d420231fedda7d4c4d31, type: 2}
   EnvironmentPrefab: {fileID: 5260000000000303, guid: b7354e6e8cb4e4b794d795c92bde2060, type: 3}
   EnvironmentIntensity: 1
   PhaseThresholds:
-    RestlessEnter: 5270
-    RestlessExit: 5070
-    FrenzyEnter: 8170
-    FrenzyExit: 7570
-    RestlessEnterVolume: 1376160
-    RestlessExitVolume: 1356160
-    FrenzyEnterVolume: 1716160
-    FrenzyExitVolume: 1636160
+    RestlessEnter: 3067
+    RestlessExit: 2867
+    FrenzyEnter: 5967
+    FrenzyExit: 5367
+    RestlessEnterVolume: 741696
+    RestlessExitVolume: 721696
+    FrenzyEnterVolume: 1081696
+    FrenzyExitVolume: 1001696

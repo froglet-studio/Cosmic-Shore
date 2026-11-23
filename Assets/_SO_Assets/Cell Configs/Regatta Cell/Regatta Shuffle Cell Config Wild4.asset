@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: Regatta Shuffle Cell Config Wild4
   m_EditorClassIdentifier:
   CellName: Regatta
-  Description: 'Regatta course-pool entry 4, shuffle course Wild4
+  Description: 'Regatta course-pool entry 2, shuffle course Ref3 (Wild4)
     (CellTypeChoiceOptions.CourseVariantWise, list order = Regatta Course Pool order - the
     host deals one enabled entry per match). A searched course: its rails prefab carries the
     whole RegattaCourseGenome (circuit, braid, features, placements), the one the real-game
-    judge raced. Wide search shard_cloud0-0329: Switchyard world, super-shielded 0%, rails
-    on 9% of the lap, no nucleus, lifeforms Switchyard Cell/Switchyard Cell Config 1, lap
-    5581 u. Field spread {''card'': 5.057, ''L5'': 4.86} (3 seeds, real-game judge). 2367
+    judge raced. Wide search shard_cloud1-0486: LinkedRings world, super-shielded 0%, rails
+    on 28% of the lap, no nucleus, lifeforms Breakwater Cell/Breakwater Cell Config 4, lap
+    4167 u. Field spread {''card'': 3.26, ''L5'': 3.594} (3 seeds, real-game judge). 4691
     prisms measured; PhaseThresholds ride that count at the rail prism''s nominal volume
-    plus a trail band. Flora and fauna: Switchyard Cell/Switchyard Cell Config 1''s spawn
+    plus a trail band. Flora and fauna: Breakwater Cell/Breakwater Cell Config 4''s spawn
     profile. Regenerate with Tools/Build/author_regatta_assets.py from
     Tools/Build/regatta_shuffle_pool.json, never by hand.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
@@ -31,15 +31,15 @@ MonoBehaviour:
   NucleusPrefab: {fileID: 0}
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
   CellModifiers: []
-  SpawnProfile: {fileID: 11400000, guid: eab0c99bbf13d420231fedda7d4c4d31, type: 2}
+  SpawnProfile: {fileID: 11400000, guid: dbc11bd72f4e0822935e5d296b63ae70, type: 2}
   EnvironmentPrefab: {fileID: 5260000000000303, guid: 51e743a63e510879e2eef7ed66712d89, type: 3}
   EnvironmentIntensity: 1
   PhaseThresholds:
-    RestlessEnter: 3067
-    RestlessExit: 2867
-    FrenzyEnter: 5967
-    FrenzyExit: 5367
-    RestlessEnterVolume: 741696
-    RestlessExitVolume: 721696
-    FrenzyEnterVolume: 1081696
-    FrenzyExitVolume: 1001696
+    RestlessEnter: 5391
+    RestlessExit: 5191
+    FrenzyEnter: 8291
+    FrenzyExit: 7691
+    RestlessEnterVolume: 1411008
+    RestlessExitVolume: 1391008
+    FrenzyEnterVolume: 1751008
+    FrenzyExitVolume: 1671008

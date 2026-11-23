@@ -25,39 +25,39 @@ MonoBehaviour:
     Notes: 'Wide search shard_cloud3-0089: Corona world, super-shielded 9%, no rails, nucleus,
     lifeforms Orrery Cell/Orrery Cell Config, lap 4948 u. Field spread {''card'': 2.094,
     ''L5'': 2.972} (3 seeds, real-game judge).'
-  - Label: Ref3 (Wild6)
-    CellConfig: {fileID: 11400000, guid: a01c8f7c575bfab019d7257b4453e83e, type: 2}
+  - Label: Ref3 (Wild4)
+    CellConfig: {fileID: 11400000, guid: 6d418a7e688375a2307a0da98b361d27, type: 2}
     Enabled: 1
-    Notes: 'Wide search shard_cloud2-0428: LinkedRings world, super-shielded 35%, rails on 12% of
-    the lap, no nucleus, lifeforms Zephyr Cell/Zephyr Cell Config, lap 4305 u. Field spread
-    {''card'': 4.002, ''L5'': 4.666} (3 seeds, real-game judge).'
-  - Label: Ref4 (Wild3)
+    Notes: 'Wide search shard_cloud1-0486: LinkedRings world, super-shielded 0%, rails on 28% of
+    the lap, no nucleus, lifeforms Breakwater Cell/Breakwater Cell Config 4, lap 4167 u.
+    Field spread {''card'': 3.26, ''L5'': 3.594} (3 seeds, real-game judge).'
+  - Label: Ref4 (Wild5)
+    CellConfig: {fileID: 11400000, guid: de0dd660f18f3aaf5c76599e344d0f30, type: 2}
+    Enabled: 1
+    Notes: 'Wide search shard_cloud2-1499: Ourobor world, super-shielded 39%, rails on 14% of the
+    lap, no nucleus, lifeforms Boneyard Cell/Boneyard Cell Config 2, lap 5747 u. Field
+    spread {''card'': 2.679, ''L5'': 3.756} (3 seeds, real-game judge).'
+  - Label: Wild3
     CellConfig: {fileID: 11400000, guid: fdbbf8a69cba1a5f40fc8c1c4f209b73, type: 2}
+    Enabled: 1
+    Notes: 'Wide search shard_cloud4-1418: Spherene world, super-shielded 48%, rails on 19% of the
+    lap, no nucleus, lifeforms Wildlife Liberation Cell/Wildlife Liberation Cell Config 4,
+    lap 6449 u. Field spread {''card'': 3.386, ''L5'': 3.958} (3 seeds, real-game judge).'
+  - Label: Wild6
+    CellConfig: {fileID: 11400000, guid: a01c8f7c575bfab019d7257b4453e83e, type: 2}
     Enabled: 1
     Notes: 'Wide search shard_cloud4-0089: Boneyard world, super-shielded 17%, no rails, no
     nucleus, lifeforms Scurry Cell/Scurry Cell Config, lap 6495 u. Field spread {''card'':
     4.475, ''L5'': 4.932} (3 seeds, real-game judge).'
-  - Label: Wild4
-    CellConfig: {fileID: 11400000, guid: 6d418a7e688375a2307a0da98b361d27, type: 2}
+  - Label: Wild7
+    CellConfig: {fileID: 11400000, guid: f468902ef734106d0f08f3a778182560, type: 2}
+    Enabled: 1
+    Notes: 'Wide search shard_cloud2-1337: Helicoid world, super-shielded 4%, rails on 12% of the
+    lap, nucleus, lifeforms Lattice Cell/Lattice Cell Config, lap 4762 u. Field spread
+    {''card'': 4.764, ''L5'': 5.267} (3 seeds, real-game judge).'
+  - Label: Wild8
+    CellConfig: {fileID: 11400000, guid: 07dc764d85fd91cf46b5c7f5332f9a0e, type: 2}
     Enabled: 1
     Notes: 'Wide search shard_cloud0-0329: Switchyard world, super-shielded 0%, rails on 9% of the
     lap, no nucleus, lifeforms Switchyard Cell/Switchyard Cell Config 1, lap 5581 u. Field
     spread {''card'': 5.057, ''L5'': 4.86} (3 seeds, real-game judge).'
-  - Label: Wild5
-    CellConfig: {fileID: 11400000, guid: de0dd660f18f3aaf5c76599e344d0f30, type: 2}
-    Enabled: 1
-    Notes: 'Wide search shard_cloud0-0042: Garland world, super-shielded 0%, no rails, nucleus,
-    lifeforms Ark Escort Cell/Escort Garland Cell Config, lap 6313 u. Field spread
-    {''card'': 4.905, ''L5'': 5.328} (3 seeds, real-game judge).'
-  - Label: Wild7
-    CellConfig: {fileID: 11400000, guid: f468902ef734106d0f08f3a778182560, type: 2}
-    Enabled: 1
-    Notes: 'Wide search shard_cloud2-0411: TorusKnot world, super-shielded 82%, rails on 12% of the
-    lap, nucleus, lifeforms none, lap 5558 u. Field spread {''card'': 5.443, ''L5'': 5.68}
-    (3 seeds, real-game judge).'
-  - Label: Wild8
-    CellConfig: {fileID: 11400000, guid: 07dc764d85fd91cf46b5c7f5332f9a0e, type: 2}
-    Enabled: 1
-    Notes: 'Wide search shard_cloud4-0049: Ourobor world, super-shielded 48%, no rails, nucleus,
-    lifeforms none, lap 4968 u. Field spread {''card'': 4.168, ''L5'': 6.215} (3 seeds,
-    real-game judge).'
