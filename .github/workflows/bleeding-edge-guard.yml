@@ -830,7 +830,7 @@ jobs:
 
       - name: Fix and open a PR against the guarded branch
         if: steps.key.outputs.have == 'true'
-        uses: anthropics/claude-code-action@cc98b3ae241b0fcfb6a42a2690751afffecb4452 # v1 — pinned to a commit; re-pin deliberately
+        uses: anthropics/claude-code-action@c84e279f859e2591391e95bd309286eb111c345f # v1 — pinned to a commit; re-pin deliberately
         with:
           # Both are passed; the action ignores whichever is empty. See the
           # credential check above for which one bills where.
