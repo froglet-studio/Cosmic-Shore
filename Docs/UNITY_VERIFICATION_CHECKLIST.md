@@ -1116,7 +1116,7 @@ Verified: `node Tools/UGS/CloudCode/launch-flags.test.cjs` 14 passed, with three
 and removes it afterwards; `BuildStamp.Current` reads it; `AuthenticationServiceFacade` initializes UGS with
 `SetEnvironmentName` (release player → `production`, development build and Editor → `development`, an explicit
 `-ugsEnvironment` / `CS_UGS_ENVIRONMENT` wins, anything else fails the build); the settings version line, crash
-metadata and PostHog person properties carry the stamp; the Windows pipeline puts `bundleVersion` back and passes
+metadata and analytics person properties carry the stamp; the Windows pipeline puts `bundleVersion` back and passes
 `WINDOWS_BUILD` for the build only. Proven offline: `unity_refcompile` player + editor configs OK. **Not compiled or
 run in the Unity editor; the EditMode tests have not run.** Docs/LAUNCH/BUILD_STAMP.md.
 
@@ -1220,8 +1220,8 @@ reboot are proven only by these steps. Use a throwaway guest, never your own pil
    default or public keys for it; the display name is free again (set the same name on the new guest: it is accepted).
 5. **Offline:** turn the network off, Delete account. "Your account was not deleted" appears with Close; Player ID,
    crystals and name are unchanged; network back on, Delete account works.
-6. **Console:** one warning on the failed attempt (`[AccountDeletion] Deletion did not complete...`), and PostHog's
-   "flagged for deletion" warning on the successful one; no errors.
+6. **Console:** one warning on the failed attempt (`[AccountDeletion] Deletion did not complete...`), and the
+   "Froglet Analytics deletion requested" line on the successful one; no errors.
 7. **Browser Toybox:** Delete account is not shown (no online account there).
 
 ### 🔴 Mode smoke test: every rostered mode from Bootstrap, all-AI, to the game-over event (`claude/launch-mode-smoke`, 2026-11-05) — NOT EDITOR-VERIFIED
@@ -22721,7 +22721,7 @@ Not compiled and not run: no Unity editor or CLI was reachable. Checked by readi
    and scene reload off, which is what stacks the copies). Start one arcade match and finish it. **Pass:** the console
    has no new errors or warnings from `AnalyticsServiceFacade`, `ApplicationStateMachine`, `AuthenticationServiceFacade`
    or `StatsManager`.
-3. In PostHog, query that session's `game_started` and `game_completed` events. **Pass:** exactly one row of each per
+3. In the Froglet Analytics console (a player's profile, Event timeline), find that session's `game_started` and `game_completed` events. **Pass:** exactly one row of each per
    match (before the fix there were two, a few milliseconds apart, with different event ids). A check: no two rows of
    the same event for the same user within 50 ms.
 4. Change a setting in the menu (music level, invert Y). **Pass:** one `setting_changed` row per change.
@@ -22734,7 +22734,7 @@ Not compiled and not run: no Unity editor or CLI was reachable. Checked by readi
 8. Known gap: `StatsManager` uses a normal deferred `Destroy()`, so a stale copy lives to the end of the frame it is
    replaced in. If step 7 ever shows a double count, switch to `DestroyImmediate`.
 
-**Addendum (2026-10-29) — Scoreboard crystal latch is now static.** Play one `game_placement` match in the editor, then Stop/Play and play another. PostHog should show one `crystals_earned` row per match, and the wallet should rise once per match (no pairs 2-27 ms apart with balances 200 apart). Also confirm the latch still clears: a second match in the same session must pay out again.
+**Addendum (2026-10-29) — Scoreboard crystal latch is now static.** Play one `game_placement` match in the editor, then Stop/Play and play another. Froglet Analytics should show one `crystals_earned` row per match, and the wallet should rise once per match (no pairs 2-27 ms apart with balances 200 apart). Also confirm the latch still clears: a second match in the same session must pay out again.
 
 ## Serpent recut: Scope on Charge, Cloak / Sniper on Space, Hunter's Sight, fifth pellet (2026-10-30) - NOT EDITOR-VERIFIED
 
@@ -26450,3 +26450,14 @@ in Unity. The cause is read from the load reports, not reproduced.
       warning "Return to menu requested again ... ignored", and a game card's domain pick and Start work.
 - [ ] Normal case: return to the menu from an arcade game and from a Voyage, then launch another game: as before.
 - [ ] Return to the menu, launch a game, return again within 30 s: the second return is not ignored.
+
+## Arcade Poster card and the cell in every card picture (2026-11-23, Shombith's pick, Frogma Rev 128 E / Rev 129)
+
+Not opened in the editor: built in a cloud session (unity_refcompile: 0 errors in the changed files).
+- [ ] Menu_Main > Arcade: every card is all picture with the name in Aldrich over a navy fade, the hull at the bottom right.
+- [ ] Hover a card with the mouse: a panel slides up from the foot with the mode's line and its pilots; the name rises, the hull fades; it closes on exit.
+- [ ] Gamepad: moving focus onto a card opens the same panel; moving off closes it. Touch (phone): no panel, a tap opens the mode.
+- [ ] A long name (Wildlife Liberation, Scarab Scramble) shrinks to fit beside the hull.
+- [ ] Locked card: the lock and LOCKED read in the middle of the picture.
+- [ ] Card pictures: the cell's pane wall and the dust read at grid size, no blue wash (`Docs/MENU_REDESIGN_B.md` 222.1).
+

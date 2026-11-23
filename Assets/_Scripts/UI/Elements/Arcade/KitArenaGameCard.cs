@@ -51,8 +51,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>"2" when the bounds agree, "2 - 6" otherwise.</summary>
-        public static string Range(int min, int max) => min == max ? min.ToString() : $"{min} - {max}";
-
         const string IconChildName = "Icon";
 
         private void DrawHulls(SO_ArcadeGame game)
