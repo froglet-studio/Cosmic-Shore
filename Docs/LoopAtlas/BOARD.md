@@ -16,7 +16,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | voy.meet | Round | V2 and V3. One squad hosts, one joins, in a managed peer-to-peer instance. |
 | era.meta | Era | Garrett, 2026-11-12: it will disrupt the meta on an optimized schedule before it gets stale. Each loop needs fewer people. |
 
-## Brainstorm: proposed (29)
+## Brainstorm: proposed (30)
 
 | Loop or item | Tier or area | The proposal |
 | --- | --- | --- |
@@ -25,6 +25,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | breath | Role | Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off. |
 | toybox | Session | Each toy ends by offering its scored cousin: the Vessel Changer offers the hull's Time game, the Arkway offers a voyage. |
 | toy.changers | Role | After a few minutes in a hull you do not own, offer its Time game at I1. |
+| toy.matrix | Role | Since 2026-11-22 the matrix spawns five grown creatures (Ray, Plume, Lantern, Ammon, Nettle), each in four element forms with a body of its own (PR #2327, Tools/Build/author_spawn_matrix_roster.py). Let 'play in what you made' include riding one: offer the Jewel Wasp beside a spawned creature, so the matrix becomes the free version of the Wasp's possession kit and the four forms are something a player feels, not only sees. |
 | arcade | Session | The result screen says what the round trained, and lights a petal on the vessel's flower. |
 | arena | Session | An arena match offers the voyage that squad is ready for. |
 | round.broodrush | Round | Seat the twelve hulls the trail-volume lever already balanced (Meerkat, Wrasse, Urchin, Honeyguide, Stoat, Sparrow, Scarab, Squirrel, Dolphin, Orca, Tiger Moth, Thresher: each within 10% of the mean on net control of space over 124 real-game matches) as Brood Rush's roster now, and hold the ten flagged hulls (Manta, Serpent, Grizzly, Jewel Wasp, Angler, Rhino, Jacks, Goby, Swordfish, Brittle Star) out until the redesign brings each in range. The Shrike's nest rework measured 1.09, so it may join first. Source: commits 2b94a1fda and b8f578023, Docs/ElementalLoop/REDESIGN.md. |
@@ -54,9 +55,9 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 
 | Loop or item | Hole | Question | Proposed fill |
 | --- | --- | --- | --- |
-| era | 0 | How many sittings make one pass, and how often a person comes back, is not measured. Analytics events are declared but no funnel reads them yet. | Target 3 to 5 sittings a week and one Tide every 6 weeks. Measure it from game_started and game_completed per account before tuning anything above the Round. |
+| era | 0 | How often a person comes back is now read (the Froglet Analytics console's Sessions and Retention pages, from session_started and session_ended in builds after 2026-11-07; PostHog was closed on 2026-11-23), but how many sittings make one pass is not, because nothing marks a pass or a Tide. | Target 3 to 5 sittings a week and one Tide every 6 weeks. Read sittings per week from the Sessions page's sessions per player, and mark the pass with a tide_started event when the Tide ships, before tuning anything above the Round. |
 | sitting | 0 | Nothing in the game points a player from one place to another. A crossing happens only if the player opens Home and thinks of it. | The breath (new loop): after each result, one offered next step chosen from what the round just trained. |
-| sitting | 1 | Rounds per sitting and places per sitting are not measured. | Aim for 5 to 8 rounds and 1 or 2 places in a sitting; read it from the analytics events. |
+| sitting | 1 | Rounds per sitting and places per sitting are not measured. Sessions are (session_started, session_ended), but game_started does not carry their session_id (Docs/Analytics/EVENT_SCHEMA.json), so a round cannot be put in its sitting except by time. | Aim for 5 to 8 rounds and 1 or 2 places in a sitting. Add session_id to game_started (Froglet Analytics only, as session_ended does) and count rounds and places per session on the Sessions page. |
 | toybox | 0 | What a toy session is for, in loop terms, is not written: there is no stated reason to leave a toy or to come back to one. | A toy's exit is a crossing. Every toy names the scored loop it is the free version of, and offers it when the player has done the toy's verb a few times. |
 | arcade | 0 | Rounds per run are not measured, and nothing but the player's own wish moves them from a card to the next card. | 3 to 5 rounds a run. The breath offers the next rung after a win and the same rung after a loss. |
 | arcade | 1 | Most cards have never been played: steps 1 to 3 of the elemental loop are 'built', not 'done', for every vessel and element except Dolphin Time step 1. |  |
@@ -80,10 +81,11 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | arc.support | 0 | What an episode gives the player is not defined in loop terms: it opens no loop on this map. | An episode is a Tide's content, sold once the Tide has run free for its season: its saga, its arena environments, its colour set. |
 | era.meta | 0 | The schedule is not set, and nothing tells a player that the meta turned or why their vessel flies differently. | One turn per Tide, six weeks. The Tide's news says in authored words which vessels changed and which arena environments are new. |
 
-## Recent moves (7)
+## Recent moves (8)
 
 | Date | Step | Loop or item | By | What |
 | --- | --- | --- | --- | --- |
+| 2026-11-23 | propose | toy.matrix | Claude | Since 2026-11-22 the matrix spawns five grown creatures (Ray, Plume, Lantern, Ammon, Nettle), each in four element forms with a body of its own (PR #2327, Tools/Build/author_spawn_matrix_roster.py). Let 'play in what you made' include riding one: offer the Jewel Wasp beside a spawned creature, so the matrix becomes the free version of the Wasp's possession kit and the four forms are something a player feels, not only sees. |
 | 2026-11-22 | propose | arc.crew | Claude | Since 2026-11-21 the painted pool holds 324 pilots (PRs 2318, 2328: 17 roster crews, each pilot a species pair no earlier one had), and an account is dealt 18 of them once (PaintedCrewSO). Make the dealt crew the start of this loop and the other ~300 its recruit pool: "Recruit a pilot" at port offers someone outside your crew, a species pair you do not hold yet, and standing is earned per pilot. Each new painted batch then restocks the port, a reason to come back that the Returner persona lacks (loop_timescale_sim, PR 2338: Returner 12% at D30 with every fix). |
 | 2026-11-21 | propose | arc.crew | Claude | Every account holds one crew of 18 dealt from the painted pilots (commit 5a34332f9); since 2026-11-20 there are 180 of them in 10 full crews (commit b02766a07). Make that dealt crew the start of this loop: recruiting becomes choosing which of your 18 to seat, and standing is earned per pilot of that crew, so the device-side standing stand-in and the dealt crew are one roster instead of two. |
 | 2026-11-21 | propose | era.meta | Claude | Tie each turn to a Tide so that players can see it coming, and announce it in the What's new window built 2026-11-21 (commit 56584fa4e, Frogma Rev 121 C): the turn's entry in WhatsNew.asset names which vessels changed and which arena environments are new, and the window opens once by itself after the update, so the hole's 'nothing tells a player that the meta turned' has its channel. |
