@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("The blade's width in world units across the hull's right axis: at rest, at Space 10, and its floor " +
                  "in the deficit band (Space; Mass until 2026-11-12). The hull is ~12 u wide, so the rest width is a little wider than the hull and " +
                  "Space 10 is about three hulls.")]
-        [SerializeField] ElementalFloat width = ElementalFloat.Multiplier(14f, 40f, Element.Space, 10f);
+        [SerializeField] ElementalFloat width = ElementalFloat.Multiplier(14f, 40f, Element.Space, 7f);
 
         BoxCollider _box;
         IVesselStatus _status;

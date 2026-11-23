@@ -374,6 +374,8 @@ namespace CosmicShore.Gameplay
             {
                 int again = report.Difficulty;
                 board.TryAgain = () => TryAgainEscort(again);
+                // Back to Voyages ends what is left of the escort, so the scene returns to the menu.
+                board.Close = () => GiveUp("back to Voyages after the Ark fell");
             }
             VoyageScoreboard.Show(board);
         }
@@ -394,6 +396,7 @@ namespace CosmicShore.Gameplay
             if (x != null)
                 for (int e = 0; e < x.Crystals.Length; e++)
                     if (x.Crystals[e] > 0) PilotLoadoutStore.AddCrystals((Element)e, x.Crystals[e], "voyage");
+            VoyageRun.BankWalletCrystals(x);
             state.SavedAtMs = UniqueId.NowMs();
             VoyageStore.Save(state);
             var board = new VoyageScoreboard

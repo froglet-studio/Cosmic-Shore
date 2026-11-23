@@ -1,0 +1,168 @@
+# Loop Atlas model: vessel Serpent. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Serpent
+verbs:
+  Time:
+    ability: Solid Fuel Pellets
+    does: Each press burns one of four fuel pellets for a burst of speed; press again while one burns and the boosts stack.
+      The tank never refills on a clock - your Seed Wall eating your own trail earns pellets back.
+    trigger: Tap, tap again to stack
+    scales: More Time makes each pellet burn longer, not faster.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_FUEL_PELLETS.md
+    arch: tap
+    t: [2, 20]
+  Charge:
+    ability: Scope
+    does: Raise a magnified eyepiece beside your flight view - the ship keeps flying as normal - with the zoom following
+      how far you pull. While it is up, your cloak trigger fires the Sniper Shot instead.
+    trigger: Hold, pull deeper to zoom
+    scales: More Charge shortens the sniper's recovery between shots.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md
+    arch: hold
+    t: [2, 12]
+  Mass:
+    ability: Seed Wall
+    does: Stop dead and your last prism becomes a seed that pulls loose prisms into a growing herringbone wall, stealing
+      rival prisms as they land. It grows while you stay stopped, and you shrug off debuffs meanwhile.
+    trigger: Tap to stop, tap again to fly
+    scales: More Mass makes the wall's bricks bigger and more widely spaced.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SEED_WALL.md
+    arch: mode
+    t: [5, 30]
+  Space:
+    ability: Cloak / Sniper Shot
+    does: 'Unscoped: vanish, hull and trail, for about 15 s, leaving a decoy and a super-shielded seed that grows a wall.
+      Scoped: one long hitscan round that breaks every hostile prism in its path, shields and all, and strips rival petals.'
+    trigger: Tap; fires the shot while scoped
+    scales: More Space lets your Seed Walls reach further to steal prisms.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md
+    arch: tap
+    t: [2, 20]
+  Omni:
+    ability: Explosion + Wall Shield
+    does: A blast breaks prisms round you, and beams from the crystal re-shield every seed wall you have standing, rippling
+      out from each seed.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/SerpentWallShieldByCrystalEffectSO.cs
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b b
+  Charge: b b .
+  Mass: b b .
+  Space: x x x
+missing: ''
+arenas: [Regatta, Brood Rush]
+games:
+  Time: [Serpentine]
+  Charge: [Hood]
+  Mass: [Hedgerow, Longshot]
+  Space: []
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: Feed the tank
+  t: [15, 45]
+  is: Your own trail is fuel.
+  chain:
+  - ['', Lay trail]
+  - - Mass
+    - 'Stop: the Seed Wall eats your trail and earns pellets'
+  - [Time, 'Burn pellets, stacked']
+  drivers: [mastery, joy]
+  feel: Stacking boosts you made yourself.
+  gene:
+    genome: Time
+    cue: [bank_low, open_space]
+    dials:
+    - - feedBelow
+      - pellets left when the AI stops to feed
+      - 0
+      - 3
+      - count
+    - - feedTime
+      - seconds stopped while the wall eats the trail
+      - 1
+      - 8
+      - s
+    done: Pellets earned back are burned, stacked, within ten seconds.
+    sight: SUNDIAL
+- name: The ghost shot
+  t: [10, 30]
+  is: Vanish, aim from nowhere, fire once.
+  chain:
+  - - Space
+    - 'Cloak: a decoy and a seed stay behind'
+  - [Charge, Raise the scope]
+  - - Space
+    - One round through everything on the line
+  drivers: [rival, break]
+  feel: One shot they never saw coming.
+  gene:
+    genome: Charge
+    cue: [rival_on_line, threatened]
+    dials:
+    - - zoom
+      - how deep the scope is pulled
+      - 0.2
+      - 1.0
+      - fraction
+    - - cloakLead
+      - seconds of cloak before the scope comes up
+      - 0.5
+      - 10
+      - s
+    done: A sniper round strips a rival's petals.
+    sight: BANDIT
+- in: x
+  name: Hedgerow
+  t: [15, 45]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Stop by a rival trail and let the seed wall steal what lands; cloak leaves a second seed.
+  chain:
+  - - Mass
+    - 'Stop by a rival trail: the Seed Wall steals what lands'
+  - - Space
+    - 'Cloak: a super-shielded seed stays behind'
+  - [Mass, Two walls grow]
+  drivers: [make, rival]
+  feel: A hedge that eats their road.
+  gene:
+    genome: Mass
+    cue: [rival_mass_ahead, open_space]
+    dials:
+    - - wallDwell
+      - seconds stopped while the wall grows
+      - 1
+      - 10
+      - s
+    done: A Seed Wall steals rival prisms.
+    sight: ENSIGN
+- in: x
+  name: The cloak raid
+  t: [15, 40]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Cloak, slip into rival territory unseen, leave a seed that walls it, and snipe out.
+  chain:
+  - - Space
+    - 'Cloak: slip into rival territory'
+  - - Mass
+    - The super-shielded seed grows a wall there
+  - - Space
+    - 'Scope up: one round through their mass'
+  drivers: [break, rival]
+  feel: In and out before they look.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, verb_ready]
+    dials:
+    - - raidDepth
+      - distance into rival territory before the seed is left
+      - 20
+      - 300
+      - u
+    done: A wall grows in rival territory and a round breaks their prisms.
+    sight: RAMPART
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_FUEL_PELLETS.md

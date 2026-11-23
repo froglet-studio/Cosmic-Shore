@@ -6202,7 +6202,7 @@ returns aggregate and a per-party funnel. Charts: the colour set's four rims in 
 solo, Ruby multiplayer, Blue plain data) with legends and labels; the rims sit above the usual chart lightness band
 (`dataviz` validator), so labels stay on. Awaiting a pick.
 
-## 142. Rev 66 mockups: Froglet Analytics, more ideas - chart switches, live now, alerts, funnels, release and player compare (2026-11-06, awaiting a pick)
+## 142. Rev 66 mockups: Froglet Analytics, more ideas - chart switches, live now, alerts, funnels, release and player compare (2026-11-06; Shombith picked A, Funnels and Releases, 2026-11-17)
 
 **Asked (Shombith, 2026-11-06, picking all seven Rev 65 screens to be built):** "If you have more ideas provide mockups
 lets do that too", and the console should have "switches in graphs which helps all these departments" (business,
@@ -6247,7 +6247,14 @@ launches and returns split by `app_version` and an exception event the game does
 the message and its top frame). Player compare needs `GET /v1/similar?id=` worked out on the server; Claude is not
 asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in that order with a legend; play types Jade
 solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
-a better number. No player id reaches Claude on any of these. Awaiting a pick.
+a better number. No player id reaches Claude on any of these.
+
+**Picked (Shombith, 2026-11-17, "Build them A"):** the Funnel builder and Release compare, built in
+`Tools/Analytics/server/analytics_compare.py` and `Tools/Analytics/console/compare.js` (rail: Funnels under Players,
+Releases under Health). Live, Alerts and Player compare stay parked. **Differs from the board:** the conversion chart
+is a line per platform (the console's charts have no grouped bars over ordered steps); Finished by mode is a table;
+the launch histogram is a line per version; saving a funnel as a segment is not built (the steps are kept in the
+browser); release reads are worked out on the server when asked, not from a nightly table.
 
 ## 143. Rev 68 mockups: the Fleet Codex for the website - four looks, the whole fleet and one vessel window each (2026-11-08; Shombith picked C, section 144)
 
@@ -8670,6 +8677,11 @@ them in the game". So: the crew screen B (C2, pilot first); the objective strip 
 IAB board, read as its option A); the chase camera (F1). No toast option was picked: the Rev 113 band stays, in screen
 space. The HyperSea page stays as built. Build prompts: `/mnt/project-files/milestone1-mockups/rev114-build-prompts.md`.
 
+**F1 retired (Shombith, 2026-11-17)**: "It should be exactly like how the vessels have their camera in any other game.
+Please remove whatever camera setup you have added." The chase camera (`VoyageChaseCamera`, `VoyageCameraSO`,
+`Resources/Voyages/VoyageCamera.asset`, `CustomCameraController.Mode`) was removed; a voyage flies each vessel's own
+follow camera. The intro still hands over onto that camera.
+
 ### 210.1 Built: the crew screen, pilot first (Rev 114 C2; 2026-11-16, claude/project-thread-ga37fg, not seen in Unity)
 
 Asked (Shombith, on Rev 114): "I like c2 ... build them in the game"; the HyperSea page stays as built. Build prompt A of
@@ -8749,3 +8761,316 @@ Built in code (`VoyageArkPage`, `VoyageSeatPicker`; no prefab or scene change), 
   that card's hull-only drawing as it was.
 
 Not seen in Unity: a render of both screens still needs to sit beside the board.
+
+
+## 212. Rev 116 mockups: the in-game voyage UI, six ways (2026-11-17; Shombith picked A, built in 212.1)
+
+**Asked** (Shombith, after playing the round-3 build): "the In game UI is too stupid and old like we need to work more
+on that for sure. I need new mockups lets say 6 of each in game screen including toasts, the toasts should come in the
+designated toast spot as it comes in many arcade games."
+
+**On the canvas**: the Voyages playtest tab, section `sec-rev116`. Every screen of every option is its own board, `R116<option>_<screen>.dc.html` (36 boards, 1920 x 1080; the toast spot boards 1920 x 1330 with the other toast kinds under the screen), one row per option in its group (116A Marquee ... 116F Blocks), the screens in the same order on every row. First published as one board per screen with all six options on it, then as one board per option; Shombith asked twice the same day for each to be separate. To fit 36 boards under the canvas's 512-file limit, on Shombith's word (2026-11-17) 32 superseded voyage boards came off the canvas, their repo copies kept: Rev 113 (all nine), Rev 114 (C2, F1, IAB, O1, TAB, TCD), Rev 115 B-E and the Rev 14-17 voyage windows (VoyageA-L and R14Notes). Generator: `Docs/MenuRedesignB/rounds/r116_voyage_hud.py <root> 116 singles`.
+
+Each option has the same six screens:
+- **In flight**: flying in a raided cell: 23 of 50 banked, 7 carried, the Ark's hull 64% (on the left in every
+  option that has room), cell 3 of 6, the Ark sails in 0:18.
+- **The Ark under attack**: a kaiju-sized raider on the hull, the hull at 27% (under the 30% leak line, near the 10%
+  breach line), THE HOLD IS LEAKING in the toast spot. The raider is lit red in the world; no rings or arrows on the screen.
+- **The toast spot**: each option's one fixed toast spot, outlined in cyan, with ARK UNDER ATTACK landing in it;
+  under each screen the same spot holding an event, the goal and a small BANKED toast. One toast at a time; a threat
+  jumps the queue.
+- **The raid countdown**: the last five seconds at anchor (ToastAnchorClosing), bank what you carry or lose it.
+- **Pause, goal met**: the goal met, Resume, Complete and set sail (the one Lime call to action), Settings,
+  Leave voyage.
+- **The end scoreboard**: docked at Home, a row per seat, rewards, Finish and Venture further (goal 60). The rewards
+  (crew trust, pilot XP, colour shards) are placeholders: there is no voyage XP or trust system yet.
+
+The options:
+- **116A Marquee** (recommended): arcade top centre. The banked count is the score at the top, the route a line under it;
+  the toast spot is a slanted band right under the score, where the eye already goes; the hull a tall bar on the left
+  edge with the breach and leak lines on it. Recommended because the toast spot and the number that matters share one
+  place, like an arcade game's score and combo callouts, and the middle of the screen stays the game's.
+- **116B Rail**: one column on the left, the hull first, then the goal, the timer and the route. Toasts slide out of the rail.
+- **116C Console**: a racing game's console at bottom centre (hull gauge, count, timer); the route across the top; toasts in
+  the lower third above the console.
+- **116D Corners**: a shooter's corners, hull top left and crystals top right; toasts are a feed of up to three under the
+  crystals, newest on top.
+- **116E Edges**: two arcs on the screen's sides, hull left and goal right; toasts are big spaced words at top centre with
+  no box.
+- **116F Blocks**: a fighting game's top bar in segments with the timer boxed between; toasts are a slanted banner that slams
+  in at mid left. Busiest of the six (its segments fail `check_mockup.py`'s noise budget).
+
+Every word is the authored voyage text already in the assets (ToastArkUnderAttack, ObjectiveStripAnchor, PauseCompleteAndSail,
+...); the vessel's own HUD keeps its corner (bottom right); nothing moves at rest except a toast's entry. `check_mockup.py`
+still flags the large display numbers as off the type scale and a few threat reds inherited from the Rev 113/114 kit.
+
+**Differs from the build**: the build is `ArkwayVoyageHud`'s Rev 114 O1 strip (420 px, top left) with toasts on the
+Rev 113 band at top centre, and the pause button is a copy of Resume made in code. Any pick replaces the strip and gives
+the toasts one fixed spot of their own.
+
+**Picked** (Shombith, 2026-11-17): "build A". 116A Marquee.
+
+### 212.1 Built: 116A Marquee in the game (2026-11-17, not yet seen in Unity)
+
+- **In flight** (`VoyageObjectiveBox`, `VoyageHud.cs`, replaces the Rev 114 O1 strip): the count top centre (72 pt, the
+  goal smaller and dimmer), the route under it with the cells done lit, then the flowers by element, the place and the
+  clock, and the action line. The hull is a tall bar on the left edge (x 75, 380 high) with its figure above, the breach
+  mark and the leak line's dashes on it and the new authored label `ObjectiveRailLabel` ("Ark hull") under it; it turns
+  the threat colour while leaking, under attack or in an assault. What the crew carries is a chip at mid height.
+- **The raid countdown**: the last five seconds at anchor draw a ring in the middle (`VoyageCountdownRing`, a mesh, no
+  sprite) emptying clockwise round the seconds left.
+- **The toast spot** (`ArkwayVoyageHud`): while the marquee is up (`VoyageObjectiveBox.Showing`) the toast sits right
+  under it (y 238), on a slanted band (`ArkwayToastBand`) with a thin line along its foot in the toast's mood colour
+  (event, threat, good). The leash countdown sits under the toast. The Arkway toy, which has no marquee, keeps the old
+  top spot.
+- **The end scoreboard** (`VoyageScoreboardView`): one centred column 900 wide: the kicker, title, the big count of
+  crystals with the count by element (flowers) under it and the stats line; the seats table; a row of reward tiles (the
+  Ark's hull with its bar, the pay); banked or at stake; then the quiet button and the call to action centred side by
+  side with their captions under them.
+- **Not built**: the pause screen (the shared pause window, not voyage code), and the mockup's crew trust, pilot XP and
+  colour shard tiles (no such systems yet).
+
+**Made room (2026-11-17):** Frogma was full again (511 boards plus `canvas.json` = its 512-file cap, which the
+claude.ai Design type sets and nothing in the repo can raise). On Shombith's pick the 228 boards of Rev 3 to Rev 40
+(222 on Menu Redesign, 6 on Compute Console) came off the canvas with their 96 title notes and section frames
+(canvas version `1794949812-dbeb`): 283 boards are left, 228 files free. Their copies stay in
+`Docs/MenuRedesignB/board/R3*` to `R40*`; the repo index and README were rewritten from the live canvas.
+
+## 213. Rev 118 mockups: every in-game voyage screen, one HUD for every device (2026-11-20; set aside, removed from the canvas; regenerate from its round script)
+
+**Asked** (Shombith, 2026-11-20): "We can definitely improve the in game hud lets do that I guess", then, after a
+phone-sized mockup page: "HUD should be same accross all devices, I was asking you to draw in game mockups for all in
+game HUD." and "Use frogma".
+
+**On the canvas**: the Voyages playtest tab, round `rev118`, sixteen boards in the order a run meets them plus a notes
+board, all one family: Rev 116 A (Marquee, picked and built) sized up so the one 1920 x 1080 layout reads on every
+device (a phone shows it at about 0.40, `Docs/UI_STYLE_GUIDE.md` section 8, D6), with no word under 28 units. Generator:
+`Docs/MenuRedesignB/rounds/r118_voyage_hud_all.py <root> 118`; copies `Docs/MenuRedesignB/board/R118*.dc.html`.
+- **R118Intro**: the intro reel's title shot, no HUD, hold to skip.
+- **R118SetOff**: setting off, STEAL 50 CRYSTALS in the toast spot, the Ark's hull top left.
+- **R118Raid** (the main screen): 23 / 50 with +7 carried beside it, the route, the place and the raid clock on one row;
+  the toast spot holds the next thing to do, dimmed, when no toast is up.
+- **R118Pickup**, **R118Banked**: the running +1 toast; the BANKED toast carrying what was banked by element (the flower
+  split left the marquee).
+- **R118Attack**, **R118Leak**: the hull block turns red with UNDER ATTACK; ArkAttackerMarks' diamonds and edge arrow
+  (built) mark the raiders in the world.
+- **R118Sail**: the countdown ring with "Bank the +7 or lose it" under it.
+- **R118Kaiju**, **R118Stray**: between cells (no clock, "Ark bound for"), and the recall countdown.
+- **R118Goal**, **R118Pause**: the goal met (count in Lime), and the pause sheet drawn at the new sizes.
+- **R118Home**: on the way home the score is what is aboard and at stake.
+- **R118Escort**: an escort's score is its hull, so the marquee carries the hull and its bar and the top-left block is
+  not drawn.
+- **R118Score**, **R118Lost**: the met board (Finish here X, Sail home B, Venture further A) and the Ark lost.
+
+**Differs from the build**: the built Marquee (212.1) has a 54-unit count, 20-unit lines (about 8 pt on a phone), the
+hull as a tall rail at mid left, a Carrying chip mid screen, the flower split in the marquee and 28 / 19 toasts. The
+sized-up HUD is already written on branch `claude/project-thread-xnd2ma` (not merged, not run in Unity) and waits on
+this pick; Pickup's and Pause's sizes and the escort / home marquee are not in it yet.
+
+## 214. Rev 119 mockups: four HUD directions without the marquee, at normal text sizes (2026-11-20; Shombith picked B; removed from the canvas after Rev 120)
+
+**Asked.** Shombith on Rev 118: "Why are the texts so big. I do not want big texts what the hell", then "Yes I want
+different mockups not just marquee, I didnt like marquee and how it looks in game".
+
+**Drawn.** Tab "Voyages playtest", sixteen boards and notes (`Docs/MenuRedesignB/rounds/r119_voyage_hud_directions.py`).
+The game's own text sizes again (labels 15, body 18, toasts 24 / 17, numbers 18-34). Four families, each on Raid,
+Banked, Attack and Sail, none with the objective at top centre and each unlike Rev 116's B-F:
+- **A Tracker**: an open-world quest tracker on the right (Steal crystals 23 / 50 +7, Keep the Ark above 10% 64%,
+  The Ark sails 0:18); toasts a slim line in the lower third.
+- **B On the Ark**: a lit plate over the Ark in the world holds the crystals aboard and the hull as lit segments, red
+  when hit; a small chip top left carries the same numbers when the Ark is off screen; toasts a feed under the chip.
+- **C Reticle**: two thin arcs around the aim point, hull left and crystals right; route and clock a hairline at the
+  top; toasts are words over the aim point.
+- **D Card**: one small card top left with everything in it; toasts slide out under it.
+
+**Picked.** B, On the Ark (Shombith, 2026-11-20: "I like B with the HUD above the ark, thats cool"). Drawn on every screen in 215. The Rev 118 sized-up HUD code parked on
+`claude/project-thread-xnd2ma` is not built and will be replaced by the pick.
+
+## 215. Rev 120 mockups: B On the Ark on every in-game voyage screen (2026-11-20, built)
+
+**Asked.** Shombith picked Rev 119 B: "I like B with the HUD above the ark, thats cool".
+
+**Drawn.** Tab "Voyages playtest", sixteen screens and notes (`Docs/MenuRedesignB/rounds/r120_voyage_hud_ark.py`), at the
+game's own text sizes: Intro, SetOff, Raid, Pickup, Banked, Attack, Leak, Sail, Kaiju, Stray, Goal, Pause, Home, Escort,
+Score, Lost. A lit plate over the Ark in the world carries the crystals aboard, the hull as 16 lit segments and one
+state line (+7 to bank, Sails in 5, Under attack, Leaking, Goal met); sea blue at rest, red when hit, lime at the goal.
+On an escort its number is the hull; on the way home, what is aboard. A one-line chip top left repeats the numbers for
+when the Ark is off screen (outlined on Stray), and toasts are a feed under it. Pause and the end board are the shared
+windows at normal sizes.
+
+**To build.** VoyageHud's objective box becomes the chip and toast feed; a world-space plate parented to the Ark shows
+the rest. Replaces the Rev 118 code parked on `claude/project-thread-xnd2ma`.
+
+**Built (2026-11-20).** `ArkHudPlate` (Controller/Voyages) is the plate: a faceted slab with 16 segments, the count and
+one state line in 3D text, a sixth of the screen wide at any camera distance, hidden during the intro, the end board and
+a fallen Ark. `VoyageObjectiveBox` is the chip (`VoyageGlyph` draws its gem, Ark and clock marks), and
+`ArkwayVoyageHud` lays toasts out as a feed under the chip while it shows, widening to a long line. Every word is a
+`VoyageLines` field (`Plate*`, `Chip*`). Seen in Amoebius on a Crystal Run (calm, under attack, assault, anchored); not
+yet run in the Unity editor.
+
+## 216. Rev 121 mockups: What's new, after an update and from Settings, four ways (2026-11-21, C picked, built)
+
+**Asked** (Shombith, 2026-11-21): "open a frogma board and create a new UI on main menu a pop up called what's new it
+can be accessed from settings or after an update this shows up. Create 4 mock-ups screens for this". Read as four
+options for the pop-up, each working, plus the Settings way in. The update featured is Voyages (Update 0.3).
+
+**On the canvas:** a new tab, **What's New**, round "Rev 121 - What's new: the pop-up after an update and from Settings,
+four ways, featuring Voyages". Copies in `Docs/MenuRedesignB/board/R121*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r121_whats_new.py <root> 121`.
+- **A Poster (recommended):** one window over Home: the Ark on the HyperSea, three features under it (Take a job,
+  Rival crews, Sagas and relics), the fixes folded under "Also in this update", Close and Set sail. One look tells
+  what is new.
+- **B Pages:** one feature a page with large art, LB / RB and dots to page, Skip, Set sail on the last page.
+- **C Changelog:** every update listed on the left, the picked one on the right with its features and fixes; Set
+  sail only on the newest. Update 0.2 and 0.1 are placeholders showing how the list grows.
+- **D Card:** a small card slides in at Home's lower right ("New in Update 0.3, Voyages", Later / See it) and opens
+  a tall drawer on the right.
+- **Settings:** Settings, Other, About: a "What's new" row (a mark until opened once), Credits, Version. Open shows A's
+  window with Back in place of Close.
+- **Notes:** when it opens (once, on the first Home visit after an update with an entry; never over a match or the
+  start flow), and that closing it says where it lives.
+
+**Differs from the build:** nothing exists yet. The build would add one authored What's new entry per update
+(version, name, line, features, fixes, art; every word a field), a seen-version flag saved on the device, the row on
+Settings' Other tab, and the window of the picked option on Menu_Main.
+
+**Picked (Shombith, 2026-11-21):** "I like C build C".
+
+**Built (2026-11-21, not yet run in the editor):** the window C as `WhatsNewModal` (modal type `WHATS_NEW = 22`), built
+in code beside the Quests window with the Voyage window's kit; its words in `Assets/Resources/WhatsNew.asset`
+(`WhatsNewSO`, one entry per update, newest first); it opens once by itself after an update (`WhatsNewRules`, the
+pref `WhatsNew.SeenId`) and from a WHAT'S NEW button beside CREDITS in Settings' General links
+(`author_menu_settings.py`). Spec `Docs/UI/specs/rev121-c-whats-new.md`, which lists where it differs from the board
+(no Ark picture yet, the door on General not Other, only Update 0.3 listed). Hand test in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 217. Rev 127 mockups: avatar borders that sit on the domain halo, six animated rings (2026-11-23; Shombith picked D, Ripple; built)
+
+**Asked** (Shombith, 2026-11-23): "The avatar backdrop have the glowing circle but the actual borders of the avatars
+do not align with it. Give me 6 variations on the design board for avatars with their animated glowing borders."
+
+**Read as**: the round domain halo drawn behind a player's avatar (`PartySlotDomainGlow` in the party panel,
+`ConnectingPlayerRoster` and `RematchVoteRoster` in matches; a radial glow 1.22x the avatar rect) sits behind SQUARE
+avatar art, whose corners reach 0.71 of its width from the centre against the halo's 0.61, so the border is a square
+that follows none of the circle.
+
+**On the canvas**: tab Menu Redesign A (`menu-redesign-c`), section `sec-rev127`; generator
+`Docs/MenuRedesignB/rounds/r127_avatar_borders.py`, copies `Docs/MenuRedesignB/board/R127*.dc.html`. Every option
+shares one geometry: the avatar masked to a circle, its ring on that circle's edge, the halo centred on it at 1.3x
+(up from 1.22) and at full colour from the ring outward; a pilot whose domain is not known yet keeps no halo and a quiet
+2 px ring. Each option board shows a 340 px avatar with domain, "show the circles" and motion switches, the party panel
+and a 3 v 2 v 1 match lobby. Colours are the style tokens' Jade `#21C0BD`, Ruby `#BD1BC8`, Gold `#FF9B11`.
+- **R127Compare**: today's square avatar over its halo, then all six side by side (Jade large, Ruby and Gold small, not known).
+- **R127A Breath (recommended)**: a 3 px ring that breathes with the halo at the game's 0.7 Hz; alpha only. It keeps
+  the motion the game already has and makes the ring part of it, the quietest answer.
+- **R127B Orbit**: a hairline ring with one bright arc circling it every 4 s; the halo holds still.
+- **R127C Dial**: a solid 2 px ring and two segmented rings turning opposite ways (18 s, 26 s).
+- **R127D Ripple**: a 3 px ring sending a wave out to the halo's rim, two waves 1.2 s apart.
+- **R127E Current**: a 4 px gradient ring (domain colour and white) turning every 3 s with its own glow.
+- **R127F Corona**: an eclipse rim, a crescent of light turning every 12 s, the halo brighter on its side.
+- **R127Notes**: the problem, the shared geometry, the motion per option, what the pick changes in Unity.
+
+**Differs from the build**: the avatar Image gets a round mask and a ring Image on its edge; the halo grows to 1.3x
+and its sprite starts at the ring's radius; the three halo call sites become one component
+(`Docs/PartySystem/TODOS.md` TODO-12) so the party panel, connecting roster and rematch vote share the border.
+
+**Picked (Shombith, 2026-11-23)**: "D build it", on every avatar with a domain glow ("All of them").
+
+**Built (2026-11-23)**: `AvatarRippleBorder` (`Assets/_Scripts/UI/Elements/`) builds the board's geometry round any avatar
+Image at run time: a holder in the avatar's place, a round mask holding the avatar, the ring on its edge (0.016 x diameter
++ 1.6 px), two waves (0.008 x diameter + 1 px) growing from 1 to 1.3x over 2.4 s on the board's ease-out and fading out at
+the rim, the halo at 1.3x and 0.45 alpha, the quiet 2 px `SurfaceLight` ring when the domain is not known. It is on the
+party seats (`FriendInfoSlot` / `KitPartySlot`, replacing the octagon ring, gap and backing, which
+`author_menu_arcade.py` no longer writes) and the scoreboard's rematch votes (`RematchVoteRoster`, replacing its own halo).
+`PartySlotDomainGlow` is retired. The connecting screen's roster draws no avatars today, so it has none. Not yet seen in
+Unity: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Avatar borders, Rev 127 D Ripple".
+
+
+**Everywhere (2026-11-23).** Shombith sent screenshots of avatars still square or octagonal and asked for the border and
+glow on all of them. The same `AvatarRippleBorder` now wraps the Home pilot card, the friends orb (you and the members),
+the drawer's profile card, the profile window's preview and party-slot chip, the avatar picker and the Configure pilot
+seats. Your own avatar in a menu glows in `ControlActive` (no domain yet); the picker's pick ripples in `Selection` and
+the rest wear the quiet ring. The border cuts the largest circle that fits the avatar's rect, so a non-square region
+still gets a circle. Editor checks: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Avatar borders everywhere".
+## 222. Rev 128 mockups: the arcade game card, six ways, beside the card we ship (2026-11-23; Shombith picked E, the Poster)
+
+**Asked (Shombith, 2026-11-23):** "Start a thread to redesign the arcade/ arena game cards. Currently they are still
+images generated by idk who. They need to get way way better in terms of lets say appearance, motion, hover features etc.
+They need to lively yet not affect performance. Create 6 different variations of one game mode's card have the card so we
+can compare the before look as well with the 6 new".
+
+**On the canvas:** a new tab, **Game Cards**, round "Rev 128 - Game cards, six ways"; the copies are
+`Docs/MenuRedesignB/board/R128*.dc.html`, written by `Docs/MenuRedesignB/rounds/r128_game_cards.py`. One mode, Skim Race
+(Squirrel, Time), at the shipped size (341 x 296), with the shipped words (name, hull, element shape, favourite star). The
+images are the shipped `CardBackground` renders and the colourful hull card renders, uploaded for this round.
+- **R128Compare:** the card we ship (Rev 18 A, section 73, hover 101.1 Sheen) and A-F side by side at 1.22 x; hover each.
+- **R128A Depth:** the render full bleed in three planes (stars, render, the Squirrel and motes), the name on a glass strip;
+  hover tilts the card toward the pointer and the planes part.
+- **R128B Racing line (recommended):** a light runs the course traced through the render's own rings to a crystal every
+  4 s; hover draws the line and the Squirrel flies it once.
+- **R128C Hero hull:** the Squirrel rides above the frame; hover surges it forward with speed lines.
+- **R128D Silver foil:** a collectible card, the render in a silver foil frame that shimmers; hover tilts it and the
+  light follows the pointer.
+- **R128E Poster:** the render full bleed under a big title; hover slides the card open (its Description, pilots, the
+  intensity signal sign).
+- **R128F Live loop:** at rest one frame of the race (trails running to the cell's rim, the Squirrel on the jade trail);
+  hover plays it, a crystal bursting into +1.
+- **R128Notes:** what each moves, what each costs in Unity, the rules every option keeps, why B.
+Each option board is the Arcade row (Skim Race, Dog Fight, Headlong, Joust) and Skim Race at rest, hovered, under pad
+focus and locked. Hover is CSS (a 3 x 3 grid of hover cells sets the tilt), so nothing runs at rest but each option's one loop.
+
+**Why B:** the card teaches the mode at a glance without a word, it is lively at rest for one scrolling line per card,
+and the line is data: each mode's course comes from the generator `/cardart` already renders.
+
+**Differs from the build:** today the card is one still render that drifts 5 px over 40 s (`CardDrift`), with the Sheen
+on hover. A pick would add per option: A three masked images and a pointer tilt; B a line mesh with a scrolling material
+and a hull tween, the line written per mode by the card-art harness; C the hull outside the mask with `PortraitBob`; D one
+foil overlay material and a tilt; E a body height tween; F a 24-frame flipbook per mode played only on the hovered or
+focused card. Touch keeps the rest state; the pad's focus plays what hover plays.
+
+**Gates:** `frogma.py check --only R128` OK; `check_mockup.py` passes colours, type and contrast on every board and fails
+the noise budget on the card sheets (150-382 elements: eight cards a board with their hover cells and F's trail prisms;
+one card is about 20). Joust's authored Description is still "Joust joust joust", which E shows on hover.
+
+**Picked (Shombith, 2026-11-23):** "I like the poster style but use our font. But for the insides I think you can do
+touch ups in the skim race cards its too blue and it does not look the cell in any of the card bg. Can you do something
+about that?" Followed up in Rev 129 (section 222.1).
+
+### 222.1 Rev 129: the Poster card in our font; Skim Race's picture made to look like the cell (2026-11-23; Shombith picked Inside the cell)
+
+**On the canvas:** tab Game Cards, round "Rev 129"; copies `Docs/MenuRedesignB/board/R129*.dc.html`, written by
+`Docs/MenuRedesignB/rounds/r129_poster_cell.py`; the pictures by `r129_card_art.py` (seeded) into `r129_assets/`.
+- The Poster's title is Aldrich (the style guide's reading face), capitals, tracked .06em; labels stay Chakra Petch.
+- **Why the pictures miss the cell:** `render_card_backgrounds.py` draws the arena's prisms, rings and trails and the
+  nucleus as glass on a purple-blue ground. It never draws the cell's wall (the net of many-sided panes the game shows
+  first, `Docs/Pilots/art/refs/sea_flight_trail.jpg`) or the white dust, and Skim Race's glass nucleus fills a third of
+  the picture in blue.
+- **R129Compare:** the Poster with four pictures, at rest and hovered: as shipped; **No blue wash** (ground to the
+  deep-sea navy, the nucleus to faint glass, the race's colours kept); **Inside the cell (recommended)** (that, plus the
+  wall's panes behind the race and the dust); **The whole cell** (the race inside a wire ball of panes in dusty space,
+  `sea_cell_outside.jpg`).
+- **R129Row:** the Arcade row with Skim Race inside the cell, and Skim Race in every state.
+- **R129Notes:** the above, and what a pick changes.
+
+**Differs from the build:** a pick goes into the card renderer (wall net, dust, the nucleus's grade), so every Arcade and
+Arena card changes at once and `--check` holds it; the Poster card goes into the Arcade and Arena card prefabs through
+`/frogma-to-unity`. The touch-ups here are made on the one Skim Race PNG only.
+
+**Picked (Shombith, 2026-11-23):** "Selected Inside the cell build it".
+
+**Built (2026-11-23, branch `claude/project-thread-lslakw`):**
+- **Every card's picture is inside the cell.** The card renderer (`Tools/Build/render_card_backgrounds.py`, the harness's
+  `Renderer.cs`) draws the cell's wall as a seeded Voronoi net of panes on the membrane sphere (depth-tested, the far wall
+  from inside, both walls from outside), white dust motes through the cell, the deep-sea ground without the violet nebula
+  or stars, and the glass nucleus as faint near-neutral glass (strength 0.14, was a 0.3 blue). All 90 cards re-rendered;
+  `--check` holds them.
+- **The Arcade card is the Poster** (`author_menu_arcade.py build_card`, `ArcadeGameCard.prefab`): the picture fills the
+  card and drifts, a navy fade (`kit_fade_v`, SurfaceBlack) rises 200 from the foot, the name sits on it in Aldrich at
+  H1 (36, shrinks to fit), the lit hull at the bottom right, the element tag at the top left with the party picks beside
+  it, the star at the top right. Hover or pad focus (never touch) slides a panel up 112 from the foot in 0.2 s with the
+  mode's line and "{pilots} pilots" (`KitPosterReveal`, new; `KitGameCard.descriptionText` / `pilotsText` / `pilotsLine`),
+  the name rides up with it and the hull fades. `check_poster` and two planted defects hold it.
+- **Differs from the board:** the name keeps the mode's own case (H1 is not an upper-case role; the board drew capitals);
+  the board's intensity bars are not built (what they count is undecided); the hull is the square lit icon, not the
+  board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
+  picture; the Poster was drawn for the Arcade grid card.

@@ -1,9 +1,10 @@
 // Runs every [Test] of the compiled SHIPPED Grizzly Time tests (GrizzlyTimeCourseTests, GrizzlyTimeKegsTests) by
 // reflection and prints a pass/fail line per test. Exit 0 = all passed. One more mode reads the shipped C#, never a copy:
-//   --sweep   the powder-keg ladder per intensity over 400 seeds: prisms, clearances, the bank shot's worth, and the
-//             throw chain (each gate's keg taken from where the last throw landed).
-// The throw chain is a MODEL (GrizzlyTimeKegs.ThrowCost: cruise to the blow point, one full carry, cruise on). It is not
-// the hull and not the AI; the real race is measured in the editor (POWDER_KEGS_SPEC.md section 9).
+//   --sweep   the powder-keg ladder per intensity over 400 seeds: prisms, clearances, the blow point (on the keg's exit
+//             side), the bank shot's worth, and the throw chain (each gate's keg taken from where the last throw
+//             landed), without a Rush and with one on every straight the Energy allows.
+// The throw chain is a MODEL (cruise in straight lines to the blow point, one full carry, cruise on; no turning, no
+// threading). It is not the hull and not the AI; the real race is measured in the editor (POWDER_KEGS_SPEC.md section 9).
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -48,6 +49,43 @@ public static class Runner
         return t;
     }
 
+    // The Rush, as MODEL numbers (the shipped values on 2026-11-20; only the ram's radius and seconds are read back by a
+    // test, because only they decide anything in the game): a burst of 80 u/s for 1 s under the transformer's 100 u/s
+    // ceiling carries about 76 u past cruise; Energy starts at 0, gains 0.05/s and a Rush costs 0.25 (one per 5 s);
+    // 2 s between two.
+    const float RushCarry = 76f, RushSeconds = 1f, RushCost = 0.25f, EnergyPerSecond = 0.05f, EnergyMax = 1f, RushCooldown = 2f;
+
+    /// <summary>The same chain with a Rush on every straight the Energy allows (the AI's rule:
+    /// <see cref="GrizzlyTimeKegs.AIRushMinRun"/> u of straight left, never during the launch). <paramref name="t"/>,
+    /// <paramref name="energy"/> and <paramref name="lastRush"/> run on across laps; returns the Rushes spent.</summary>
+    static int ChainWithRush(List<GrizzlyTimeKegs.Keg> kegs, ref Vector3 from, ref float t, ref float energy, ref float lastRush)
+    {
+        float cruise = GrizzlyTimeCourse.GrizzlyThrottleScaler;
+        int rushes = 0;
+        foreach (var k in kegs)
+        {
+            float left = Vector3.Distance(from, GrizzlyTimeKegs.BlowPoint(k));
+            while (left > 0f)
+            {
+                float wait = Math.Max(Math.Max(0f, (RushCost - energy) / EnergyPerSecond), lastRush + RushCooldown - t);
+                if (left - wait * cruise < GrizzlyTimeKegs.AIRushMinRun)
+                {
+                    float dt = left / cruise;
+                    t += dt; energy = Math.Min(EnergyMax, energy + EnergyPerSecond * dt); left = 0f;
+                    break;
+                }
+                t += wait; energy = Math.Min(EnergyMax, energy + EnergyPerSecond * wait); left -= wait * cruise;
+                energy -= RushCost; lastRush = t; rushes++;
+                t += RushSeconds; energy = Math.Min(EnergyMax, energy + EnergyPerSecond * RushSeconds);
+                left -= cruise * RushSeconds + RushCarry;
+            }
+            t += GrizzlyTimeCourse.ImpulseDuration;
+            energy = Math.Min(EnergyMax, energy + EnergyPerSecond * GrizzlyTimeCourse.ImpulseDuration);
+            from = GrizzlyTimeKegs.ThrowLanding(k);
+        }
+        return rushes;
+    }
+
     public static int Main(string[] args)
     {
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
@@ -62,6 +100,8 @@ public static class Runner
                 var mouthClear = new List<float>(); var chalkLine = new List<float>(); var waste = new List<float>();
                 var legs = new List<float>(); var deflect = new List<float>();
                 var reader = new List<float>(); var chalkDots = new List<int>();
+                var rusher = new List<float>(); var rushCount = new List<float>();
+                var standClear = new List<float>(); var lands = new List<float>();
                 for (int seed = 1; seed <= Seeds; seed++)
                 {
                     var lap = Circuit(i, seed);
@@ -91,16 +131,27 @@ public static class Runner
                         }
                         mouthClear.Add(m);
                         Vector3 prev = lap[(keg.Ring - 1 + n) % n].Position, at = lap[keg.Ring].Position, next = lap[(keg.Ring + 1) % n].Position;
+                        float sc = float.MaxValue;
+                        foreach (var g in lap) sc = Math.Min(sc, Vector3.Distance(GrizzlyTimeKegs.BlowPoint(keg), g.Position) - g.Radius);
+                        standClear.Add(sc);
+                        // Signed along the exit lane (which points at the next ring's centre): + short of it, - past it.
+                        lands.Add(Vector3.Dot(next - GrizzlyTimeKegs.ThrowLanding(keg), keg.ExitDir));
                         if (RaceCourseGeometry.Angle(at - prev, next - at) > 60f)
                         {
+                            // The straight blow: fly on past the keg the way you came in and blow it from there.
                             Vector3 ap = (keg.Centre - prev).normalized;
-                            waste.Add(Vector3.Distance(keg.Centre - ap * 60f + ap * carry, next) - Vector3.Distance(GrizzlyTimeKegs.ThrowLanding(keg), next));
+                            waste.Add(Vector3.Distance(keg.Centre + ap * (GrizzlyTimeKegs.BlowStandOff + carry), next) - Vector3.Distance(GrizzlyTimeKegs.ThrowLanding(keg), next));
                         }
                     }
                     Vector3 f0 = lap[n - 1].Position;
                     float tr = Chain(kegs, ref f0);
                     tr += Chain(kegs, ref f0);
                     reader.Add(tr);
+                    Vector3 f1 = lap[n - 1].Position;
+                    float t1 = 0f, energy = 0f, lastRush = -RushCooldown;
+                    int spent = ChainWithRush(kegs, ref f1, ref t1, ref energy, ref lastRush);
+                    spent += ChainWithRush(kegs, ref f1, ref t1, ref energy, ref lastRush);
+                    rusher.Add(t1); rushCount.Add(spent);
                 }
                 Console.WriteLine($"I{i}: mouth {GrizzlyTimeCourse.ForIntensity(i).RingRadius:F0} u, credit {GrizzlyTimeKegs.CreditRadius(i):F0} u, " +
                                   $"regrow {GrizzlyTimeKegs.RegrowSeconds(i):F1} s, core {GrizzlyTimeKegs.CoreKind(i)}, prisms/lap {GrizzlyTimeKegs.PrismsPerLap(i)}");
@@ -110,9 +161,13 @@ public static class Runner
                     Console.WriteLine($"    chalk dots a lane keeps (of {GrizzlyTimeKegs.ChalkPerKeg}): all {chalkDots.Count(c => c == GrizzlyTimeKegs.ChalkPerKeg) / (float)chalkDots.Count:P1}, fewest {chalkDots.Min()}");
                 if (chalkLine.Count > 0)
                     Console.WriteLine($"    chalk to the nearest ring-to-ring line: min {chalkLine.Min():F0} u, p10 {Pct(chalkLine, 0.1f):F0} u, median {Pct(chalkLine, 0.5f):F0} u");
+                Console.WriteLine($"    blow point (exit side, {GrizzlyTimeKegs.BlowStandOff:F0} u out) outside the nearest mouth: min {standClear.Min():F0} u, p10 {Pct(standClear, 0.1f):F0} u; " +
+                                  $"a full throw ends short (+) or past (-) the next ring's centre: p10 {Pct(lands, 0.1f):F0} u, median {Pct(lands, 0.5f):F0} u, p90 {Pct(lands, 0.9f):F0} u; " +
+                                  $"{lands.Count(l => l < 0f) / (float)lands.Count:P1} of throws end past it");
                 if (waste.Count > 0)
                     Console.WriteLine($"    straight blow vs bank shot at corners over 60 deg: lands min {waste.Min():F0} u, median {Pct(waste, 0.5f):F0} u farther from the next ring");
                 Console.WriteLine($"    throw chain, 2 laps (model: one launch a gate, no carry bomb): median {Pct(reader, 0.5f):F1} s, p90 {Pct(reader, 0.9f):F1} s");
+                Console.WriteLine($"    the same with a Rush on every straight the Energy allows: median {Pct(rusher, 0.5f):F1} s, p90 {Pct(rusher, 0.9f):F1} s, {Pct(rushCount, 0.5f):F0} Rushes a race");
             }
             return 0;
         }

@@ -25,6 +25,9 @@ namespace CosmicShore.Gameplay
     /// Perf contract: burning set is capped, ticks run at ~4 Hz staggered across
     /// frames, and burnouts are budgeted per tick (each Steal/Damage triggers
     /// material/animation work). Everything clears on turn end via ResetAll().
+    /// Two burns pass the cap, both already bounded by their caller: a prism a Fulmen stream passes through
+    /// (<c>overCap</c>, bounded by the bolt's own path) and a client's replay of a burn the server decided
+    /// (<see cref="IgniteRemote"/>). Neither spreads past the cap.
     /// </summary>
     public class PrismBurnManager : Singleton<PrismBurnManager>
     {
@@ -110,10 +113,15 @@ namespace CosmicShore.Gameplay
         /// generation cap - exactly the rule before <see cref="PrismBurnSpread"/> existed.</summary>
         public PrismBurnSpread LegacySpread => PrismBurnSpread.Unbounded(spreadRadius, spreadChance, spreadInterval);
 
+        /// <summary>True while a new burn fits under the concurrent-burn cap.</summary>
+        public bool HasRoom => _burning.Count < maxConcurrentBurning;
+
         /// <summary>Ignites with an explicit spread rule and look. <paramref name="generation"/> is 0 for a direct hit.
-        /// Fulmen: <c>Ignite(prism, .., cfg.BurnSeconds, netId, cfg.BurnSpread, PrismBurnStyle.Laser, 0)</c>.</summary>
+        /// Fulmen: <c>Ignite(prism, .., cfg.BurnSeconds, netId, cfg.BurnSpread, PrismBurnStyle.Laser, 0)</c>.
+        /// <paramref name="overCap"/>: the concurrent-burn cap does not refuse this burn (Fulmen: a prism ON a
+        /// stream's path, which must always burn; the caller bounds how many it asks for).</summary>
         public bool Ignite(Prism prism, string igniter, Domains igniterDomain, bool convertOnBurnout, float seconds,
-            ushort netStrike, in PrismBurnSpread spread, PrismBurnStyle style, int generation)
+            ushort netStrike, in PrismBurnSpread spread, PrismBurnStyle style, int generation, bool overCap = false)
         {
             if (prism == null || prism.destroyed) return false;
             if (prism.prismProperties != null && prism.prismProperties.IsSuperShielded) return false;
@@ -132,7 +140,7 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
-            if (_burning.Count >= maxConcurrentBurning) return false;
+            if (!overCap && _burning.Count >= maxConcurrentBurning) return false;
 
             float dur = seconds > 0f ? seconds : burnSeconds;
             var st = Rent();
@@ -167,7 +175,8 @@ namespace CosmicShore.Gameplay
             float ago, float seed, PrismBurnStyle style = PrismBurnStyle.Laser)
         {
             if (prism == null || prism.destroyed || _burning.ContainsKey(prism)) return false;
-            if (_burning.Count >= maxConcurrentBurning) return false;
+            // No cap here: the server already decided this burn under its own cap. Refusing it left the prism
+            // standing on this peer for good (there is no other destroy sync for trail mass).
             float now = Time.time;
             ago = Mathf.Clamp(ago, 0f, seconds);
             var st = Rent();
@@ -290,6 +299,7 @@ namespace CosmicShore.Gameplay
             var spread = state.Spread;
             float chance = spread.ChanceAt(state.Generation);
             if (chance <= 0f || state.Children >= spread.MaxPerBurn) return;
+            if (_burning.Count >= maxConcurrentBurning) return;   // full: no neighbour could light, so do not ask the index
 
             _scratch.Clear();
             index.QuerySphere(source.transform.position, spread.Radius, _scratch);

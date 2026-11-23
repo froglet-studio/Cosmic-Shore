@@ -1779,7 +1779,7 @@ MonoBehaviour:
     convergeToDomainColour: 1
   - vessel: 18
     element: 1
-    bake: {fileID: 11400000, guid: 7d32ad4d63a127345a5311a30ea2ccaf, type: 2}
+    bake: {fileID: 11400000, guid: 4d458b45025de114c923c91a38df7355, type: 2}
     approachStandoff: 2.5
     approachSeconds: 0.22
     peelSeconds: 0.16
@@ -1800,7 +1800,7 @@ MonoBehaviour:
     convergeToDomainColour: 1
   - vessel: 18
     element: 2
-    bake: {fileID: 11400000, guid: 3d2e4d9c38db0d34b9f5761317ac55c1, type: 2}
+    bake: {fileID: 11400000, guid: 371db6957372fb74b972db2589077bc0, type: 2}
     approachStandoff: 2.5
     approachSeconds: 0.22
     peelSeconds: 0.16
@@ -1821,7 +1821,7 @@ MonoBehaviour:
     convergeToDomainColour: 1
   - vessel: 18
     element: 3
-    bake: {fileID: 11400000, guid: e47fe070b929b464b83c889294c5fa49, type: 2}
+    bake: {fileID: 11400000, guid: 1b261f09dacbd944db6c9fb217b8ac13, type: 2}
     approachStandoff: 2.5
     approachSeconds: 0.22
     peelSeconds: 0.16
@@ -1842,7 +1842,7 @@ MonoBehaviour:
     convergeToDomainColour: 1
   - vessel: 18
     element: 4
-    bake: {fileID: 11400000, guid: a38b290ed6ae8704fa2d6fae8b906dd0, type: 2}
+    bake: {fileID: 11400000, guid: b68fae654b888c541bd6cd46bb8203ff, type: 2}
     approachStandoff: 2.5
     approachSeconds: 0.22
     peelSeconds: 0.16

@@ -302,8 +302,12 @@ namespace CosmicShore.UI
                 crystalsText.text = TemplateText.Fill(crystalsTemplate, "element", ElementName(row).ToUpperInvariant(),
                                                       "held", held.ToString(), "spent", spent.ToString());
             }
-            if (abilityText) abilityText.text = row.open ? openSlotTitle : entry.AbilityLabel;
-            if (descriptionText) descriptionText.text = row.open ? openSlotLine : entry.AbilityDescription;
+            // An element with no ability entry is an open slot, whatever the row last recorded. `row.open` is written
+            // when the rows are bound and `entry` is read again here, so the two can disagree: a balance change (a
+            // Daily Toy reward) redrew the page with `row.open` false and no entry, and `entry.AbilityLabel` threw.
+            bool open = row.open || entry == null;
+            if (abilityText) abilityText.text = open ? openSlotTitle : entry.AbilityLabel;
+            if (descriptionText) descriptionText.text = open ? openSlotLine : entry.AbilityDescription;
             if (nowFlower) nowFlower.Set(row.element, row.level);
             if (nowText) nowText.text = TemplateText.Fill(nowTemplate, "level", level);
             KitVisibility.SetShown(nextGroup, !maxed);

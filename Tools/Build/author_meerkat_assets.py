@@ -115,7 +115,7 @@ STOAT_FBX_GUID = "0ef0b84d93774ac39ddc699c59d0821a"     # Stoat.fbx, the hull th
 MEERKAT_FBX_GUID = "81b9ac1e02714f0fa49b1eef2bb2d9f5"   # Meerkat.fbx, its own hull on the Stoat's rig (2026-11-03)
 # 2026-11-11 (Yash: "replace this ability with current fulmen omni crystal ability. Replace meerkat's networked tunnel with
 # this fulmen ... Archive the networked wormhole for now, maybe we modify and use it in future somewhere else"): the
-# omnicrystal is FULMEN (the Stoat's omni ability until its giant white hole), a container entry like any vessel's; the
+# omnicrystal is FULMEN (the Stoat's omni ability too; the giant white hole planned to replace it there was dropped, 2026-11-20), a container entry like any vessel's; the
 # soliton's own omni abilities (the Rift, the network) are parked behind omniOn = 0, code and assets kept
 FULMEN_EFFECT_GUID = "a45807f7b21b4c898e6646a9865c0bba"  # FulmenByCrystalEffect (Environment/Fulmen/README.md)
 FULMEN_ICON_GUID = "765ce4af4495cbc8f4dc73bac4a1b5ff"    # Stoat/Core/Stoat_Fulmen.png, the Fulmen omni card
@@ -182,7 +182,7 @@ CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax",
 # 2026-11-13 roster audit (it was a raw pair the executor lerped on GetLevel); config_retrofit carries the asset's numbers over.
 KIT_KEYS = ["boostOut", "sentinelPool", "sentinelPoolL5", "guardShare", "aiZapRate", "portalShare"]
 KIT_UNITY = {"zapCooldownSeconds": "0"}
-KIT_FLOATS = [("rush", "rushL0", "rushL10", 4, "0.05"),
+KIT_FLOATS = [("rush", "rushL0", "rushL10", 4, "0.5"),
               ("zapPetals", "zapPetalsL0", "zapPetalsL10", 1, "0"), ("portalSize", "portalSizeL0", "portalSizeL10", 2, "0.05"),
               ("surfaceArea", "areaL0", "areaL10", 3, "3000")]
 KIT_EVENTS = ["zapEvent", "sentinelPlacedEvent", "sentinelLostEvent", "portalEvent", "prismFiredEvent"]
@@ -560,8 +560,9 @@ DESIGNED = [
      "prism destroys both, scored to you; a shielded one bounces. Garrett's design, approved by Yash 2026-10-28.",
      RIGHT_STICK_ACTION, "Steal", "Every prism your soliton swallows is stolen into your domain as its run starts, so it "
      "leaves the way out already yours."),
-    (4, "Faster Ride", "Passive: you ride every soliton faster, your own or anyone's (the throat's rush grows with Time). "
-     "Garrett's design, approved by Yash 2026-10-28.",
+    (4, "Ride", "Fly into any soliton, your own or anyone's, and it carries you: the throat's rush is your Time, x1 at "
+     "rest and x2 at level 10, and the Rift's void run is as fast. A high-Time Meerkat crosses the cell through its "
+     "tunnels in a blink. Garrett's design, approved by Yash 2026-10-28; x2 since 2026-11-16.",
      0, "Boost Out", "You leave every soliton with a boost (1.5 x the exit speed)."),
     (2, "Exit Portal", "Passive: when your soliton forms it sets down six small prisms of your domain on a hexagon round its "
      "way out, at 1.5 x the exit's radius. Mass sets their size. Garrett's design, approved by Yash 2026-10-28.",
@@ -773,7 +774,7 @@ def check_prefab(text: str):
          "Meerkat.prefab: the ActionExecutorRegistry does not list the wormhole and the stance executors")
     for sid in STOAT_ONLY:
         want(f"&{sid}\n" not in text and f"fileID: {sid}}}" not in text, f"Meerkat.prefab: the Stoat's executor {sid} is still on the hull")
-    for name in ("StoatDipoleExecutor", "StoatPathfinderExecutor", "StoatModeExecutor", "StoatRippleExecutor",
+    for name in ("StoatPathfinderExecutor", "StoatModeExecutor", "StoatRippleExecutor",
                  "StoatSlingExecutor", "StoatHUDController", "StoatHUDView"):
         want(f"guid: {guid_of_script(name)}, type: 3" not in text, f"Meerkat.prefab: the Stoat's {name} is still on the hull (one ability only)")
     t = doc_of(text, TRANSFORMER_ID)

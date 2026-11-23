@@ -1,7 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,8 +23,6 @@ namespace CosmicShore.UI
     /// <item><b>Time</b> — in Mass mode the pathfinder's boost (how much of the warp's speed-up is on); in Time mode,
     /// while orbiting, how far round toward the 90° sweet spot, turning to the ready colour inside the window.</item>
     /// </list>
-    /// Time mode's Skim Sling also counts its run on the Time card: <b>SKIP ×N</b> (STOAT_DIPOLE.md §1q), a small label
-    /// generated at runtime on the card's icon (no prefab edit), shown after each skip and faded out.
     /// The four cards are drawn in parts for the orbit-only kit (<c>Tools/Build/icon_kit/specs/stoat.py</c>, 2026-11-07)
     /// that <c>RefreshParts</c> paints; the Mass card's mode-icon swap below now lands on a transparent holder.
     /// Colour here is a GAUGE channel; the upgrade lives on the lockup's card, so this view only re-anchors its
@@ -57,11 +54,6 @@ namespace CosmicShore.UI
         [SerializeField] Sprite massModeIcon;
         [Tooltip("Time mode: the catch sling - the orbit. The Stoat's only mode since 2026-11-02.")]
         [SerializeField] Sprite timeModeIcon;
-
-        [Header("Skip counter (Time mode's Skim Sling; generated on the Time card when empty)")]
-        [Tooltip("The SKIP ×N label. Empty: one is generated on the Time card's icon at runtime.")]
-        [SerializeField] TMP_Text skipLabel;
-        [SerializeField, Min(8f)] float skipFontSize = 20f;
 
         [Header("Ability parts (icon kit: Tools/Build/icon_kit/specs/stoat.py)")]
         [Tooltip("Charge card: the Stoat side-on (domain).")]
@@ -106,7 +98,8 @@ namespace CosmicShore.UI
         [SerializeField] Image slingStoatGoneIcon;
         [Tooltip("Time card: the slingshot's speed (white; just let go).")]
         [SerializeField] Image slingSpeedIcon;
-        [Tooltip("Time card, Foresight (Time 5): a rival's predicted path (danger).")]
+        [Tooltip("Time card: the part that showed Foresight (Time 5), a rival's predicted path. Foresight was deleted with the " +
+                 "old pathfinder on 2026-11-21, so it stays hidden until Time 5 has an upgrade again.")]
         [SerializeField] Image slingForesightIcon;
         [Tooltip("Rival colour on the parts (the fleet danger orange).")]
         [SerializeField] Color dangerColor = new(1f, 0.3294f, 0.1020f, 1f);
@@ -120,8 +113,6 @@ namespace CosmicShore.UI
         bool _launched;
 
         StoatModeExecutor.Mode? _shownMode;
-        int _skipShown = -1;
-        bool _skipPerfectShown;
         Sprite _authoredModeIcon;   // the card's own icon, shown for a mode whose slot is empty
 
         /// <summary>Seat every readout at rest. Idempotent: it re-runs on a vessel swap.</summary>
@@ -133,8 +124,6 @@ namespace CosmicShore.UI
             Seat(timeGauge, 0f);
             _shownMode = null;
             SetModeIcon(StoatModeExecutor.Mode.Time);
-            _skipShown = -1;
-            if (skipLabel) skipLabel.alpha = 0f;
             _pairHeld = _orbiting = _inWindow = _launched = false;
             RefreshParts();
         }
@@ -198,7 +187,7 @@ namespace CosmicShore.UI
             Paint(slingStoatOrbitIcon, _domain, _orbiting ? 1f : 0f);
             Paint(slingStoatGoneIcon, _domain, _orbiting ? 0f : 1f);
             Paint(slingSpeedIcon, Color.white, !_orbiting && _launched ? 1f : 0f);
-            Paint(slingForesightIcon, danger, IsAbilityUpgraded(Element.Time) ? 1f : 0f);
+            Paint(slingForesightIcon, danger, 0f);   // Time 5 has no upgrade since Foresight was deleted (2026-11-21)
         }
 
         static void Paint(Image part, Color color, float alpha)
@@ -235,49 +224,6 @@ namespace CosmicShore.UI
         public void SetAccretion(float accretion01) => Push(accretionGauge, accretion01, false);
         /// <summary>The Time card: <paramref name="fill01"/>, in the ready colour while <paramref name="ready"/>.</summary>
         public void SetTime(float fill01, bool ready) => Push(timeGauge, fill01, ready);
-
-        /// <summary>
-        /// The Skim Sling's run on the Time card: "SKIP ×<paramref name="count"/>" at <paramref name="alpha01"/> (0 hides
-        /// it), in the ready colour for a perfect skip. The label is generated on first use when none is wired.
-        /// </summary>
-        public void SetSkip(int count, float alpha01, bool perfect)
-        {
-            if (alpha01 <= 0f || count <= 0)
-            {
-                if (skipLabel) skipLabel.alpha = 0f;
-                return;
-            }
-            if (!skipLabel) skipLabel = MakeSkipLabel();
-            if (!skipLabel) return;
-            if (count != _skipShown || perfect != _skipPerfectShown)
-            {
-                _skipShown = count;
-                _skipPerfectShown = perfect;
-                skipLabel.text = perfect ? $"SKIP \u00d7{count}!" : $"SKIP \u00d7{count}";
-                skipLabel.color = perfect ? readyColor : Color.white;
-            }
-            skipLabel.alpha = Mathf.Clamp01(alpha01);
-        }
-
-        TMP_Text MakeSkipLabel()
-        {
-            if (!TryGetAbilityIcon(Element.Time, out var icon) || !icon) return null;
-            var text = ResolveGeneratedChild<TextMeshProUGUI>(icon.rectTransform, "SkipCount");
-            var rt = text.rectTransform;
-            rt.anchorMin = new Vector2(0.5f, 1f);
-            rt.anchorMax = new Vector2(0.5f, 1f);
-            rt.pivot = new Vector2(0.5f, 0f);
-            rt.anchoredPosition = new Vector2(0f, 4f);
-            rt.sizeDelta = new Vector2(120f, 28f);
-            text.alignment = TextAlignmentOptions.Bottom;
-            text.fontSize = skipFontSize;
-            text.fontStyle = FontStyles.Bold;
-            text.enableWordWrapping = false;
-            text.overflowMode = TextOverflowModes.Overflow;
-            text.raycastTarget = false;
-            text.alpha = 0f;
-            return text;
-        }
 
         void Push(Image gauge, float fill01, bool ready)
         {

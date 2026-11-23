@@ -267,5 +267,14 @@ namespace CosmicShore.Engine
         public float range = 10f;
         public float intensity = 1f;
         public LightShadows shadows = LightShadows.None;
+        public LightRenderMode renderMode = LightRenderMode.Auto;
+    }
+
+    /// <summary>Original-engine light render mode (UnityEngine.LightRenderMode, values frozen). Data-only headless.</summary>
+    public enum LightRenderMode
+    {
+        Auto = 0,
+        ForcePixel = 1,
+        ForceVertex = 2,
     }
 }

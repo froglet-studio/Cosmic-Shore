@@ -1,0 +1,129 @@
+# Loop Atlas model: genes. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json, GENES.md and the page.
+genes:
+  is: 'Every combo is also an AI behaviour: one gene of the vessel''s genome for one element (Docs/AI_SYSTEM/AI_PLAN.md,
+    one AI per vessel per element). A gene names the cues that start the combo, the dials a search learns (each with the
+    range it may try; a seed is whatever the shipped AI does today, and no dial is typed by hand after a search writes
+    it), the moment it counts as done, and the pilot callsign whose sight leans into it. A pilot only changes what the AI
+    goes after, never what the vessel can do. The same done-moment is the combo_completed event, so the AI and the
+    player are measured by one count.'
+  activation: 'A new pilot completes the first combo listed for a vessel at least once within their first three rounds on
+    that vessel. The Mentor teaches that combo after the Lesson (arc.activation, hole 1). combo_completed carries vessel,
+    combo, genome, seconds and whether a person or an AI flew it, so the same number reads activation and AI coverage.'
+  search:
+    is: 'Garrett, 2026-11-21: a search tells two kinds of complexity apart, keeps one small and weights toward the other.
+      Players get a more interesting game from vessels that switch between noticeably different behaviours, and less from
+      a perfect AI with mistakes added.'
+    cut: 'Bloat: a dial, cue or branch that changes nothing an onlooker can see and nothing the score shows, that only widens
+      the search space, or that costs effectiveness. The search pays a cost for every dial and branch a genome uses, and
+      drops a dial whose whole range moves neither the outcome nor the visible behaviour.'
+    keep: 'Style: switching between noticeably different behaviours (different genes of the genome, or one gene flown in
+      clearly different ways) whose effectiveness is roughly comparable. The search keeps an archive of distinct behaviours
+      (MAP-Elites over which genes fire, how often, and when) beside the single best genome, and rewards a genome that switches
+      between archive cells without losing effectiveness.'
+    ladder: Skill comes down by weighting a genome toward the fun, less effective behaviours the archive kept, never by
+      adding random mistakes to the best one. A behaviour that costs effectiveness but reads as a real pilot is recycled
+      for the lower rungs (I1, I2) and for AI teammates, so the player feels they play with or against a person, not a perturbed
+      optimiser. The top rung (I4) flies the best archive cells; every rung still switches.
+    measure: 'combo_completed per AI round: distinct genes used, switches between them, and each gene''s effectiveness next
+      to the genome''s best. Proposed target: at I2 and above, three or more distinct genes a round with the best and third
+      within a fifth of each other; lower rungs lean on genes up to a third less effective, not on more errors. Dials per
+      genome is reported beside the score so bloat is visible.'
+senses:
+- id: rival_near
+  is: A rival hull inside the reach of the verb the combo spends.
+  from: situation features 'rivals' (flight/3), the vessel list by domain
+- id: rival_on_line
+  is: A rival's predicted path crosses yours ahead, inside the time the combo takes.
+  from: rivals' position and velocity (flight/3)
+- id: rival_ahead
+  is: A rival ahead of you on the course or in the objective's order.
+  from: rings threaded per rival (flight/3), the scoreboard
+- id: rival_mass_ahead
+  is: Prisms of a rival domain ahead, inside skim or weapon reach.
+  from: prism domain (_PrismLitDomain), the density grid
+- id: mass_ahead
+  is: Any prisms ahead inside skim reach, whoever owns them.
+  from: situation features 'skims' and the trail lane (flight/3)
+- id: dense_mass
+  is: The densest mass cluster in the cell, where the fauna are heading.
+  from: Cell.GetDensestRegionAnyDomain, BlockDensityGrid
+- id: own_mass_gap
+  is: A gap in your own domain's mass near the nucleus, or none of yours where the claim is decided.
+  from: prism domain, the nucleus claim
+- id: open_space
+  is: Empty volume ahead or around, room to lay or build.
+  from: the density grid
+- id: shielded_ahead
+  is: Shielded or super-shielded prisms on the line ahead.
+  from: prismProperties.IsShielded, IsSuperShielded
+- id: danger_ahead
+  is: Danger prisms on the line ahead.
+  from: prismProperties.IsDangerous
+- id: crystal_near
+  is: An elemental crystal inside the gene's detour budget.
+  from: crystals present (flight/3), RaceAICrystalGenesSO's detour slack
+- id: omni_near
+  is: An omni crystal inside the detour budget.
+  from: crystals present, Element.Omni
+- id: straight_ahead
+  is: A long run to the next objective with no hard turn in it.
+  from: the course's next rings (headingErr, axisAngle, timeToMouth)
+- id: gate_next
+  is: The next gate, ring, goal or switch, and the line into it.
+  from: situation features 'target' and 'line-up' groups
+- id: fauna_near
+  is: A creature inside reach, any diet.
+  from: FaunaDiet, LifeFormCrystal
+- id: herbivore_near
+  is: A herbivore inside reach.
+  from: FaunaDiet.Herbivore
+- id: flora_near
+  is: A plant inside reach.
+  from: Flora
+- id: ally_near
+  is: A vessel of your side inside reach, or the other seat of a crew vessel.
+  from: the vessel list by domain, ICrewSeat
+- id: bank_full
+  is: What the kit stores (energy, ammo, pellets, rings, boosts, motes, cards) is at or above the gene's threshold.
+  from: the vessel's resource system and its executors
+- id: bank_low
+  is: What the kit stores is below the gene's threshold.
+  from: the vessel's resource system and its executors
+- id: verb_ready
+  is: The verb the combo starts with is off cooldown and not silenced.
+  from: the action's cooldown, the silence window
+- id: threatened
+  is: A rival closing from behind, a predator near, or a danger prism on the line you cannot turn from.
+  from: rivals' velocity, FaunaDiet.Predator, danger prisms
+- id: silenced
+  is: You are silenced (a scored hit landed on you); harm is off until it runs out.
+  from: Docs/ElementalAbilitySystem/SILENCE.md, the victim's silence window
+- id: petals_loose
+  is: Petals knocked loose as crystals lie within reach.
+  from: EjectedCrystal, ElementalCrystalEjector
+- id: claim_tipping
+  is: The nucleus claim is within a brood of flipping, for or against your domain.
+  from: the Mass-Space scoreboard's volume books
+- id: crew_ready
+  is: The other seat of a crew vessel has set up its half (a path laid, motes lassoed, a hand dealt).
+  from: ICrewSeat, CrewSeat
+sights:
+- {id: ENSIGN, sees: 'your domain''s mass, and the gaps in it'}
+- {id: MANGER, sees: the mass cluster the fauna are heading for}
+- {id: ANVIL, sees: every Mass crystal}
+- {id: VOLT, sees: every Charge crystal}
+- {id: ZODIAC, sees: every Space crystal}
+- {id: SUNDIAL, sees: every Time crystal}
+- {id: OPAL, sees: every Omni crystal}
+- {id: RAMPART, sees: every shielded prism}
+- {id: CITADEL, sees: every super-shielded prism}
+- {id: HORNET, sees: every danger prism}
+- {id: IVY, sees: every plant}
+- {id: TALON, sees: every predator}
+- {id: DOE, sees: every herbivore}
+- {id: WINGMAN, sees: every vessel on your side}
+- {id: BANDIT, sees: every opposing vessel}
+- {id: NEEDLE, sees: 'every ring that activates something: gates, switches, goals'}
+- {id: GALLEON, sees: 'the Arks, and the payload aboard'}
+- {id: FLUME, sees: every soliton}

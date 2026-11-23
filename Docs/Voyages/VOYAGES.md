@@ -547,8 +547,8 @@ and the in-flight branches (`CLAUDE.md` § Team).
    wreck (an `ArkFall` spill placed on arrival).
 5. **The voyage record and extraction.** Legs flown, what is aboard, the hull count, on the device. Docking at home
    moves what is aboard into the collection. A delivered dispatch writes the destination port's ledger.
-6. **Hand tests and a ticket.** One Froglet Tasks ticket for the branch (suggested, approved by a person), with the
-   editor hand tests as its checklist (`/verify-unity` gates every C# commit).
+6. **Hand tests.** The editor hand tests go in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, and, with a person's yes, the
+   lane goes for test (`/handoff-for-test`; `/verify-unity` gates every C# commit).
 
 ## 10. Who works where (ask before changing)
 

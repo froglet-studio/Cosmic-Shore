@@ -43,6 +43,23 @@ swings at hostile prisms in reach and energizes in a crowd, so a raid cuts and t
 crowd of hostile prisms). If AIs lose to humans by building too little, the fix is in the mode's AI (raid earlier), not
 in the vessel.
 
+### 3.1 The sword hand trained here (2026-11-19, elemental loop step 3)
+
+The watch item above was the gap. Raced on the Brood Rush volume books (each pilot's VC + VD, `brood_judge.py --mode
+Palisade`, Amoebius headless, Swordfish against Swordfish), the shipped sword hand barely energized, so the Swordfish
+laid trail and almost no afterimages. Its own numbers on `SwordfishSwordAutopilot` (`Swordfish.prefab`) were searched in
+Palisade and Cleave together: `reachMultiple` 1.1 -> 6, `hardenedSearchMultiple` 1.6 -> 9, `energizeCrowd` 6 -> 1. The
+hand now swings and energizes whenever there is anything near, which keeps the afterimage window open.
+
+| Mean seat VC + VD (2 seeds, 4 seats) | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Palisade shipped -> trained | 5.8k -> 9.8k | 8.8k -> 12.9k | 5.8k -> 12.6k | 8.8k -> 14.5k |
+| Cleave shipped -> trained | 7.5k -> 21.1k | 13.0k -> 25.1k | 26.3k -> 33.3k | 31.2k -> 38.7k |
+
+I2 on fresh seeds 11-12, the other rungs on seeds 21-22. Knee (seeds 1-2, I2, Palisade / Cleave): reach 2 at crowd 6 +19% / +46%; at crowd 1, reach
+3 +51% / +97%, 4.5 +55% / +115%, 6 +86% / +130%. The hand is the vessel's own AI, so every mode flies it. Regatta, which fuels the Swordfish's ramp from its slices, is unchanged (shuffle, 3 seeds: card 71.9 -> 72.7 s, L5 65.8 -> 65.1 s); Broadside and Spearline were not re-judged. Raw:
+`/mnt/project-files/regatta-flywheel/mass/`.
+
 ## 4. Ladder
 
 Scarcity, Tapestry's: elemental crystals 24 / 16 / 10 / 6 by intensity in the same bare cell.

@@ -23,6 +23,28 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class FulmenMath
     {
+        /// <summary>What the burn does with one unlit prism a segment query found (<see cref="Decide"/>).</summary>
+        public enum BurnVerdict
+        {
+            /// <summary>Ignite it now.</summary>
+            Light = 0,
+            /// <summary>This frame's ignites are spent: keep the segment and ask again next frame.</summary>
+            Wait = 1,
+            /// <summary>The halo only: the burn manager is full, so the rest of this segment's halo is left.</summary>
+            Drop = 2,
+        }
+
+        /// <summary>
+        /// The burn rule for one unlit prism. A prism ON the path (<paramref name="onPath"/>: the stream passes through
+        /// it) is never dropped: it is lit now, or its segment waits for the next frame's ignites. A halo prism (near the
+        /// stream, not on it) is dropped once the burn manager has no room (<paramref name="burnHasRoom"/>).
+        /// </summary>
+        public static BurnVerdict Decide(bool onPath, bool burnHasRoom, int ignitesThisFrame, int ignitesPerFrame)
+        {
+            if (!onPath && !burnHasRoom) return BurnVerdict.Drop;
+            return ignitesThisFrame < ignitesPerFrame ? BurnVerdict.Light : BurnVerdict.Wait;
+        }
+
         /// <summary>One straight piece of a bolt.</summary>
         public struct Segment
         {

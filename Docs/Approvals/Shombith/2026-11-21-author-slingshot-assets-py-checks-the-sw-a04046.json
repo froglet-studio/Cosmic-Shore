@@ -1,0 +1,19 @@
+{
+  "id": "2026-11-21-author-slingshot-assets-py-checks-the-sw-a04046",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-21T18:04:36+00:00",
+  "area": "Tools/Build generators and checks",
+  "summary": "author_slingshot_assets.py checks the swing's AI (StoatSlingConfig_Slingshot aiSlingMinTurnDegrees, AutopilotSwing on the replicated path) instead of the deleted StoatDipoleExecutor; author_meerkat_assets.py drops the deleted script from its not-on-the-Meerkat list; vessel_mode_chart.py points the Stoat at StoatSlingExecutor.cs; author_stoat_assets.py stage 4 owns only the pathfinder and fails if the dipole comes back; promote_trained_drives.py and time_ai_search.py drop four genome fields the swing never read. Every --check is no worse than before.",
+  "why": "The Stoat's old slingshots and field dipole were deleted (Yash, 2026-11-21).",
+  "branch": "Ys-bleeding-edge",
+  "commit": "4e5df7090",
+  "paths": [
+    "Tools/Build/author_meerkat_assets.py",
+    "Tools/Build/author_slingshot_assets.py",
+    "Tools/Build/author_stoat_assets.py",
+    "Tools/Build/promote_trained_drives.py",
+    "Tools/Build/vessel_mode_chart.py",
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ]
+}

@@ -411,6 +411,27 @@ namespace CosmicShore.Gameplay
 
         public ICameraController GetActiveController() => _activeController;
 
+        /// <summary>
+        /// The camera on screen while it is following <paramref name="hull"/> (the hull itself or a child of it), else
+        /// null: no manager, no active camera (the menu's lava lamp), or a camera pointed at something else.
+        ///
+        /// <para><b>The rule for anything a vessel does to the camera (Yash, 2026-11-22): the camera belongs to the
+        /// hull it follows, whoever holds the sticks.</b> A hull the AI is flying for the local player (the AI Diagnose
+        /// panel's You / AI toggle, <c>PilotControl</c>) keeps the camera the player gets on that hull: the same
+        /// distance, the same zoom and framing its abilities and elements ask for. So a vessel asks THIS, never
+        /// <c>!AutoPilotEnabled</c>: that test dropped the hull's own framing the moment the AI took the sticks, and the
+        /// view sat nearer than the one the player flies with (the Thresher's ball zoom, the Swordfish's sword reach).
+        /// Only what the pilot's own hand drives stays with the pilot: an aiming view, a scope, a pinch zoom.</para>
+        /// </summary>
+        public static CustomCameraController ActiveRigFollowing(Transform hull)
+        {
+            var manager = Instance;
+            if (!manager || !hull) return null;
+            if (manager._activeController is not CustomCameraController rig || !rig) return null;
+            var followed = rig.FollowTarget;
+            return followed && (followed == hull || followed.IsChildOf(hull)) ? rig : null;
+        }
+
         static Camera s_viewCamera;
         static int s_viewCameraFrame = -1;
 

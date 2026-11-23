@@ -86,28 +86,6 @@ namespace CosmicShore.Tests
             finally { Object.DestroyImmediate(go); }
         }
 
-        [Test]
-        public void Warpline_TheAIStoatLetsGoOfItsWarpWellBeforeTheRing()
-        {
-            // Tools/Build/switchback_dolphin_sim.py --mode Warpline (2026-10-27): warped to 120-170 u/s at a fixed 48 deg/s
-            // the Stoat needs ~200 u to line up on a 26-48 u ring; let go at the base 60 u it missed 180-280 rings over
-            // Yash's 15 courses, at 250 u none.
-            var tuned = Resources.Load<StoatDipoleConfigSO>("AIBoostPolicies/StoatDipoleConfig_Warpline");
-            Assert.IsNotNull(tuned, "Warpline's Stoat autopilot variant is missing");
-            Assert.GreaterOrEqual(tuned.AutopilotLetGoNear, 200f);
-        }
-
-        [Test]
-        public void Slingshot_TheAIStoatLetsGoOfItsWarpWellBeforeTheRing()
-        {
-            // Slingshot's variants start from Warpline's (2026-10-27): the same hull, the same warp, the same turn.
-            var tuned = Resources.Load<StoatDipoleConfigSO>("AIBoostPolicies/StoatDipoleConfig_Slingshot");
-            Assert.IsNotNull(tuned, "Slingshot's Stoat autopilot variant is missing");
-            Assert.GreaterOrEqual(tuned.AutopilotLetGoNear, 200f);
-            Assert.IsNotNull(Resources.Load<StoatSlingConfigSO>("AIBoostPolicies/StoatSlingConfig_Slingshot"),
-                "Slingshot's Stoat sling variant is missing");
-        }
-
         static T Field<T>(object o, string name)
         {
             var f = o.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
@@ -125,8 +103,10 @@ namespace CosmicShore.Tests
             {
                 var c = go.AddComponent<SwitchbackController>();
                 Assert.IsTrue(Field<bool>(c, "aiDodgeDangerOnly"));
-                Assert.AreEqual(200f, Field<float>(c, "aiNoDodgeNearRing"));
+                Assert.AreEqual(177f, Field<float>(c, "aiNoDodgeNearRing"));
                 Assert.IsFalse(Field<bool>(c, "aiStrikeSetupLeg"), "the setup leg cost about what the blast saved");
+                // Yash, 2026-11-17: in a Time game speed beats breaking (MINIGAME_TRAINING_PLAN.md 6.2).
+                Assert.IsTrue(Field<bool>(c, "aiSpeedOverBreaking"), "a passable ring is flown, never left for a crystal");
             }
             finally { Object.DestroyImmediate(go); }
         }
@@ -142,7 +122,7 @@ namespace CosmicShore.Tests
                 var table = Field<SwitchbackNoseFollow[]>(go.AddComponent<SwitchbackController>(), "aiNoseFollowByIntensity");
                 Assert.AreEqual(4, table.Length, "one row per intensity");
                 var i4 = table[3];
-                CollectionAssert.AreEqual(new[] { 1.8f, 2.2f, 3.5f, 6f }, new[] { i4.easy, i4.medium, i4.hard, i4.legendary });
+                CollectionAssert.AreEqual(new[] { 1.8f, 2.2f, 3.5f, 13.41f }, new[] { i4.easy, i4.medium, i4.hard, i4.legendary });
                 for (int intensity = 1; intensity <= 4; intensity++)
                 for (int level = 1; level <= 4; level++)
                 {
@@ -171,7 +151,7 @@ namespace CosmicShore.Tests
                 var c = go.AddComponent<SwitchbackController>();
                 var table = Field<SwitchbackNoseFollow[]>(c, "aiNoseFollowByIntensity");
                 var g = Field<SwitchbackNoseFollow>(c, "aiNoseFollowGauntlet");
-                CollectionAssert.AreEqual(new[] { 1.5f, 2.2f, 3.5f, 6f }, new[] { g.easy, g.medium, g.hard, g.legendary });
+                CollectionAssert.AreEqual(new[] { 1.5f, 2.2f, 3.5f, 13.41f }, new[] { g.easy, g.medium, g.hard, g.legendary });
                 for (int level = 1; level <= 4; level++)
                 {
                     Assert.AreEqual(g.For(level), SwitchbackController.NoseFollowFor(table, g, true, 4, level), "I4 gauntlet");
@@ -181,6 +161,39 @@ namespace CosmicShore.Tests
                     Assert.GreaterOrEqual(g.For(level), VesselTransformer.RotationFollowRate, "never slower than the fleet lag");
                     if (level > 1) Assert.GreaterOrEqual(g.For(level), g.For(level - 1), "a harder level follows at least as fast");
                 }
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        /// <summary>Scarab Rally reuses Switchback's course but serves the Scarab's own trained nose table and no-dodge radius
+        /// (Scarab run3, 2026-11-17); Switchback keeps the Dolphin's.</summary>
+        [Test]
+        public void ScarabRally_FliesItsOwnNoseTable()
+        {
+            var go = new GameObject("SwitchbackAISteeringTests_ScarabNose");
+            try
+            {
+                var table = typeof(SwitchbackController).GetProperty("AINoseFollowTable", BindingFlags.Instance | BindingFlags.NonPublic);
+                var noDodge = typeof(SwitchbackController).GetProperty("AINoDodgeNearRing", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsNotNull(table, "SwitchbackController.AINoseFollowTable is gone");
+                Assert.IsNotNull(noDodge, "SwitchbackController.AINoDodgeNearRing is gone");
+                var scarab = go.AddComponent<ScarabRallyController>();
+                var rows = (SwitchbackNoseFollow[])table.GetValue(scarab);
+                Assert.AreEqual(4, rows.Length);
+                Assert.AreEqual(15f, rows[0].legendary);
+                Assert.AreEqual(18f, rows[3].legendary);
+                Assert.AreEqual(224f, (float)noDodge.GetValue(scarab));
+                for (int i = 0; i < 4; i++)
+                for (int level = 2; level <= 4; level++)
+                    Assert.GreaterOrEqual(rows[i].For(level), rows[i].For(level - 1), "a harder level follows at least as fast");
+
+                var dolphin = new GameObject("SwitchbackAISteeringTests_DolphinNose").AddComponent<SwitchbackController>();
+                try
+                {
+                    Assert.AreEqual(11.18f, ((SwitchbackNoseFollow[])table.GetValue(dolphin))[0].legendary, "Switchback keeps its own table");
+                    Assert.AreEqual(177f, (float)noDodge.GetValue(dolphin));
+                }
+                finally { Object.DestroyImmediate(dolphin.gameObject); }
             }
             finally { Object.DestroyImmediate(go); }
         }

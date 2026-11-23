@@ -54,13 +54,13 @@ namespace CosmicShore.Gameplay
                  "fresh mass for the fleet-wide self-trail grace (SelfTrailContactConfigSO).")]
         [SerializeField, Min(0f)] float colliderDelaySeconds = 0.1f;
 
-        /// <summary>MASS -> afterimage VOLUME: x1 at rest, x2.5 at level 10, floored at x0.25. Cube-rooted
+        /// <summary>MASS -> afterimage VOLUME: x1 at rest, x2.5 at level 10, floored at x0.5 (the fleet floor rule). Cube-rooted
         /// into every axis, so volume - the conserved quantity - scales linearly with the level (the
         /// VesselPrismController.trailVolume rule). Read at the REPLICATED level: the mass is laid on
         /// every peer and every peer must lay the same mass.</summary>
         [Header("Elements")]
         [SerializeField] ElementalFloat massVolumeMultiplier =
-            ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 0.25f);
+            ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 0.5f);
 
         [Tooltip("Element whose level-5 upgrade lays the afterimages as DANGER prisms. Gated on the " +
                  "replicated unlock bit (IsUpgradeActive), snapshotted per afterimage.")]

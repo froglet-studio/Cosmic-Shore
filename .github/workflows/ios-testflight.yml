@@ -83,7 +83,7 @@ jobs:
       # Only Tools/iOS is needed (the signing script). Sparse and blob-less: the full repository
       # is many gigabytes of LFS art this job never reads.
       - name: Check out Tools/iOS
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: Tools/iOS
           filter: blob:none
@@ -421,7 +421,7 @@ jobs:
 
       - name: Keep the build logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: testflight-logs
           path: |

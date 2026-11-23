@@ -19,6 +19,7 @@ MonoBehaviour:
   shieldOnSeed: 2
   stanceShieldOnSeed: 1
   bondingDepth: 50
+  wallPlane: 1
   brickShortSide: 3
   brickDepth: 0.5
   massSizeMultiplierAtFull: 2

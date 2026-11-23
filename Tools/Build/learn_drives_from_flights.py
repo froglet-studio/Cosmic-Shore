@@ -1115,6 +1115,11 @@ def base_asset_of(variant_file):
     return stem[:stem.rfind("_")] + ".asset"
 
 
+# A mode variant whose engage runway is this never engages: the mode stands the hull's own boost policy down because
+# something else drives Speed (BrittleStarAIBoostPolicy_BrittleStarTime, whose BrittleStarTimeCoach is the only writer).
+STAND_DOWN_RUNWAY_S = 999.0
+
+
 def check():
     """The written variants: each policy variant has its base's script and fields, every value inside its range."""
     problems = []
@@ -1137,6 +1142,8 @@ def check():
             if extra:
                 problems.append(f"{fn}: fields its base does not have: {sorted(extra)}")
         for k, v in re.findall(r"(?m)^  (\w+): ([-0-9.eE]+)$", text):
+            if k == "engageRunwaySeconds" and float(v) == STAND_DOWN_RUNWAY_S:
+                continue                       # a mode that stands the hull's boost down (BrittleStarTime: its coach drives)
             if k in RANGES and not RANGES[k][0] <= float(v) <= RANGES[k][1]:
                 problems.append(f"{fn}: {k} {v} outside {RANGES[k]}")
     for p in problems:

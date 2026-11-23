@@ -44,6 +44,15 @@ instead of copying them:
    the Third Eye and the studio draw it (§4.2). An AI that cannot say where it is going cannot be watched.
 7. **Never read `VesselStatus.AIPilot` from a tool or a reader.** Its getter is `GetOrAdd<AIPilot>()`: reading
    it ADDS an autopilot to a human's ship. Use `status.TryGetComponent(out AIPilot pilot)`.
+8. **In a Time game mode, speed comes before breaking** (Yash, 2026-11-17; `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`
+   §6.2). An AI breaks only what it cannot pass, and passes as soon as it can: once the hull can fly through its ring
+   (a gap wide enough exists, however it got there) it commits to the ring and never leaves for a pickup to break more.
+   When it must break, it takes the pickup on its way, not one beside or behind it. "Passable" is measured from the
+   game's data (the prisms' real boxes against the hull's size), at the replan rate, never per frame. The decision is a
+   pure function with an edit-mode test: blocked ring and a crystal ahead takes the crystal; a ring partly opened and
+   passable is flown even with another crystal nearby; an open ring is never left
+   (`SwitchbackBlastPlanner.Passable` / `KeyOnTheWay`, `SwitchbackSpeedOverBreakingTests`). The rule is about the AI's
+   choice: it never changes or rations what a vessel's ability does.
 
 ## 2. Where a new AI goes (the lowest layer that works)
 
@@ -148,18 +157,25 @@ Climb it in order; each rung catches what the one below cannot.
 
 ### 4.1 The AI Diagnose panel (code name Third Eye; in the game scene, editor + development builds)
 
-The Third Eye is a camera tool INSIDE the game view (`Assets/_Scripts/Controller/Camera/ThirdEye/`, 2026-11-01;
-the old `FrogletTools > AI > Third Eye` window and its second render are gone). It drives the MAIN camera, so
-nothing is rendered twice. Compiled only into the editor and development builds; a release build has none of it.
+The Third Eye is a diagnose tool INSIDE the game view (`Assets/_Scripts/Controller/Camera/ThirdEye/`, 2026-11-01;
+the old `FrogletTools > AI > Third Eye` window and its second render are gone). Compiled only into the editor and
+development builds; a release build has none of it.
+
+**One camera rule (Yash, 2026-11-22): a hull is watched through the player's own camera, whoever flies it.** Handing
+your hull to the AI (Pilots: AI) changes the sticks and nothing else: the game's follow camera stays on it with the
+hull's own settings, zoom and framing. The panel has no camera that follows a hull (its Chase, Follow and Orbit cameras
+were removed: they sat at their own distances, nearer than the player flies). The one extra camera is **Free fly**,
+attached to no hull; it drives the MAIN camera, so nothing is rendered twice. To put the game's camera on another AI
+hull, take it over (You) and hand it back (AI). The same rule on the vessel side: anything a vessel does to the camera
+asks `CameraManager.ActiveRigFollowing(hull)`, never `!AutoPilotEnabled`.
 
 | Control | Does |
 |---|---|
 | **F2** | Open / close the **AI Diagnose** panel (the ONLY hotkey; ignored while the menu's god-mode camera is up or a text field has focus) |
-| Panel: Camera | Take / Release camera; Chase, Follow, Free fly, Orbit; Prev / Next / Frame pilot; Fly speed slider |
+| Panel: Camera | Free fly / Release camera (back to the game's); Prev / Next / Frame pilot (Frame jumps Free fly once to the picked pilot); Fly speed slider |
 | Panel: Pilots / Overlays / Settings | You / AI per pilot; AI thinking, trails, labels, mode gizmos |
 | Panel: Command + Send | Any DiagnosticsHUD console command (Enter also sends; `help` lists them), e.g. `aidiag cam on`, `aidiag fly`, `aidiag next`, `aidiag thinking on`, `aidiag overlay trails off`, `timescale 0.5` |
 | Free fly | Lavalamp's `FreeFlyCamera` (shared with `MenuGodModeCamera`): RMB look, WASD, E/Space up, Q/Ctrl down, Shift fast, Alt slow, wheel speed, gamepad. Your hull's input is paused while it flies. |
-| Orbit | Drag RMB round the watched pilot |
 
 - **AI thinking** (overlay): a line from each AI hull to its aim point, coloured by state, a ring on the crystal
   it is really after; the bottom strip reads the watched AI's state, heading error, recoveries, difficulty mistakes
@@ -235,6 +251,19 @@ the same source as the studios' `studio-domains.js`): game Ruby is magenta, neve
 - **A plan costed over one obstacle's box undercounts the plan that ignores the obstacle.** Splitting a gate into several
   keys made "thread straight to the ring" look cheap at the first key, because only that key's box was counted; the AI
   skipped every first key. Cost each plan over the whole way to the ring (`SwitchbackBlastPlanner.PathPenalty`).
+- **A point to fly through must be sized from the RING's mouth, not from whatever hangs behind it.** Switchback's
+  pass points were first spread across the door's eye (42 u at I4), wider than the ring (20 u): the AI aimed outside
+  its own mouth and missed 73 rings in 24 races where it had missed 4 (2026-11-17). A missed mouth costs a loop, a
+  plain prism 0.25 s, so a pass point stays well inside the mouth (`SwitchbackBlastPlanner.PassMouthShare`).
+- **Three editor races a side cannot settle a 5% question.** Switchback's speed-over-breaking A/B (I4, three AI
+  Dolphins, the same course): after three races a side the new rule's winners looked 9.5 s slower; after six a side the
+  gap was 4.6 s inside a 12 s spread, with one "before" race at 215 s. An I4 winner's time has a standard deviation of
+  8-12 s. Run the sides in swapped order, at least six races each, and say plainly when the races cannot tell.
+- **"On the way" is a time, not a distance off the line.** Judged as "within 20 u of the line and a turn under
+  15 deg", a key 12 u off the line 40 u ahead was refused (17 deg) though flying through it costs 0.06 s, and the AI
+  gave up blasts that paid (Switchback I2 Legendary 5 s slower offline, 2026-11-17). Cost the extra distance at the
+  hull's speed plus the bend at its turn rate (`SwitchbackBlastPlanner.KeyDetourSeconds`, 0.15 s or less = on the way):
+  the same number refuses a gauntlet key 50 u off the line 150 u ahead (a 37 deg bend, 0.33 s).
 - **Run a mode's EditMode tests headless before Unity does.** When the tested code is pure (layout, planner), compile
   the SHIPPED test file against the harness's Unity shim with an NUnit shim (`switchback_sim_harness/run.sh tests`:
   `NUnitShim.cs` expands `[Values]`, `TestRunner.cs` reports PASS/FAIL), then negative-control the new tests by planting

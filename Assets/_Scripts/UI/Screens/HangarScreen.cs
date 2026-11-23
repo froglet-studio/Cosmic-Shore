@@ -346,7 +346,9 @@ namespace CosmicShore.UI
         {
             if (SelectedShip == null || SelectedShip.IsLocked) return;
 
-            if (HangarTrainingModal && SelectedShip.TrainingGames != null)
+            // The modal shows a hull's two training games and indexes both. A hull with fewer has no training to
+            // open: every hull, since the four training games were archived with their retired modes (2026-11-20).
+            if (HangarTrainingModal && SelectedShip.TrainingGames is { Count: >= 2 })
             {
                 HangarTrainingModal.SetTrainingGames(SelectedShip.TrainingGames);
                 HangarTrainingModal.ModalWindowIn();

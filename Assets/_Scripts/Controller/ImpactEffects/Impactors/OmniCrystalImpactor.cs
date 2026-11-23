@@ -50,6 +50,10 @@ namespace CosmicShore.Gameplay
             if (!IsSweepDispatch && impactee is VesselImpactor gated && !gated.TakesCrystalsByContact)
                 return;
 
+            // a crystal a Soliton Tunnel carries is not in the world: nobody collects it by touch (SolitonIsolation.Seal)
+            if (!IsSweepDispatch && SolitonIsolation.Sealed(Crystal))
+                return;
+
             // Always enforce domain matching - vessels can only collect
             // crystals that belong to their domain (or unowned crystals).
             if (!IsDomainMatching(impactee.OwnDomain))

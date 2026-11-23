@@ -33,8 +33,13 @@ HeadlongCircuit.Generate; GrizzlyTimeCourseTests asserts the ladder over 400 see
 THE POWDER KEGS (2026-11-11, Docs/GrizzlyTime/POWDER_KEGS_SPEC.md). A keg beside every ring (GrizzlyTimeKegs,
 GrizzlyTimeController.Kegs.cs): blow it with your own bomb and the gate is yours, and the blast throws you down the next
 leg. This generator authors the controller's keg block into the committed scene (a one-shot migration that stands down
-once the block is there), the mode's toast config (the shared race beats 129-132 + 30 and the mode's own 300 / 301),
-and checks that the C# ladder matches the numbers below. Every sound slot ships EMPTY.
+once the block is there), the mode's toast config (the shared race beats 129-132 + 30 and the mode's own 300 - 302),
+and checks that the C# ladder matches the numbers below. A sound slot holds what the placeholder ledger lists for it
+(Docs/AudioSystem/sound_placeholders.json), and is empty when the ledger does not list it.
+
+THE FUN PASS (2026-11-20, GRIZZLYTIME.md section 0.1). The blow point is on the keg's EXIT side; a Rush rams a keg open
+on every peer (toast 302, the kegRammedEvent slot); the AI Rushes on a straight (aiRushes; its code is the partial
+GrizzlyTimeController.AI.cs).
 """
 import os
 import re
@@ -61,6 +66,7 @@ SCRIPT_PATHS = {
     "GrizzlyTimeCourseTests": "Assets/_Scripts/Tests/Editor/GrizzlyTimeCourseTests.cs",
     "GrizzlyTimeKegs":        f"{MODE_DIR}/GrizzlyTimeKegs.cs",
     "GrizzlyTimeController.Kegs": f"{MODE_DIR}/GrizzlyTimeController.Kegs.cs",
+    "GrizzlyTimeController.AI": f"{MODE_DIR}/GrizzlyTimeController.AI.cs",
     "GrizzlyTimeKegsTests":   "Assets/_Scripts/Tests/Editor/GrizzlyTimeKegsTests.cs",
 }
 HARNESS_DIR = "Tools/Build/grizzly_time_course_harness"
@@ -112,9 +118,10 @@ BASE_RADIUS = 800                 # GrizzlyTimeCourse.BaseRadius
 
 # AI approach geometry, sized to the Grizzly's 211 u full-launch circle the way Redline's were
 # sized to the Manta's 237 u (420 / 480 / 320 there - 1.8x, 2x and 1.35x the circle).
-AI_COMMIT_DISTANCE = 380
-AI_APPROACH_LEAD = 420
-AI_THROUGH_DISTANCE = 285
+# Retrained 2026-11-20 by time_ai_search against the 20-80 blast (was 380 / 420 / 285).
+AI_COMMIT_DISTANCE = 522
+AI_APPROACH_LEAD = 549
+AI_THROUGH_DISTANCE = 114
 
 # Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn. A launching
 # Grizzly makes 350 u/s (cruise + the bomb launch's own 300 u/s ceiling; Rush and the cannon stay
@@ -125,8 +132,8 @@ MAX_PLAUSIBLE_SPEED = 1400
 # The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.45 a
 # quarter-of-race deficit (4 gates) buys 1.8 element levels - the 1.8 that 0.3 bought on the
 # three-lap 24-gate race and the 1.75 of the old 28-gate one (two laps since 2026-10-26, to bring
-# the race toward ~90 s). The Grizzly's Time element scales Rush, its burst onto a straight, so the buff
-# lands on the mode's axis.
+# the race toward ~90 s). The Grizzly's Time element refills its Rush (the ram) faster, so the buff lands on the mode's
+# axis - in name: Energy, not the refill, is what caps a Rush to one per 5 s (GRIZZLYTIME.md section 0.1).
 COMEBACK_RATE = 0.45
 
 # ── The powder kegs (GrizzlyTimeKegs; the C# arrays are checked against these below) ──
@@ -142,19 +149,24 @@ CHALK_BY_INTENSITY = ("false", "true", "true", "true")
 RING_RADIUS_BY_INTENSITY = (96, 84, 74, 66)
 TOAST_HINT = 300            # GameToastSituation.GrizzlyTimeHint (300-309 reserved for Grizzly Time)
 TOAST_BANK_SHOT = 301       # GameToastSituation.GrizzlyTimeBankShot
+TOAST_RAM_KEY = 302         # GameToastSituation.GrizzlyTimeRamKey (the fun pass, 2026-11-20)
 # The controller's keg fields, in declaration order (GrizzlyTimeController.Kegs.cs); the C# defaults are the same numbers
-# (checked below). The four sound slots ship EMPTY (CLAUDE.md: never a placeholder event).
+# (checked below). A sound slot holds what the placeholder ledger lists for it and is empty otherwise (lib.event_yaml);
+# a NEW slot goes in before the last one, which is the block's end marker (with_keg_fields).
 KEG_SCALARS = (
     ("kegBurstPerFrame", 24), ("kegBurstSpeed", 60), ("kegRegrowPerFrame", 15), ("chalkRegrowSeconds", 3),
     ("crownPrisms", 16), ("crownOutset", 14),
 )
+KEG_BOOLS = (("aiRushes", 1),)
 KEG_TOAST_SCALARS = (("hintToast", TOAST_HINT), ("bankShotToast", TOAST_BANK_SHOT), ("bankShotEveryN", 4),
-                     ("bankShotMaxDegrees", 30))
-KEG_SOUNDS = ("kegBurstEvent", "kegStrippedEvent", "bankShotEvent", "crownBurstEvent")
+                     ("bankShotMaxDegrees", 30), ("bankShotWindowSeconds", 1.5), ("ramKeyToast", TOAST_RAM_KEY),
+                     ("ramKeyEveryN", 4))
+KEG_SOUNDS = ("kegBurstEvent", "kegStrippedEvent", "kegRammedEvent", "bankShotEvent", "crownBurstEvent")
 KEG_FIELDS = (
     f"  kegsAtGates: {KEGS_AT_GATES}\n"
     f"  kegPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
     + "".join(f"  {k}: {v}\n" for k, v in KEG_SCALARS)
+    + "".join(f"  {k}: {v}\n" for k, v in KEG_BOOLS)
     + "".join(f"  {k}: {v}\n" for k, v in KEG_TOAST_SCALARS)
     + "".join(f"  {k}:\n" + lib.event_yaml(SCENE, k) for k in KEG_SOUNDS))
 
@@ -187,9 +199,10 @@ g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameGrizzlyT
   DisplayName: Grizzly Time
   Description: Grizzlies only, against the clock. Your speed is your bombs - squeeze LT or
     RT to fire, pull again to freeze it, let go to blow it, and the blast throws you away
-    from the bomb. A powder keg stands beside every ring - blow it from its far side and the
-    gate is yours and the blast throws you down the next leg. Two laps. Fastest domain home
-    wins.
+    from the bomb. A powder keg stands beside every ring - open it with a bomb or Rush
+    through it and the gate is yours. Freeze a bomb in the keg, fly just past it toward the
+    next ring and let go, and the blast throws you down the next leg. Two laps. Fastest
+    domain home wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {lib.card_background('GrizzlyTime')}, type: 3}}
@@ -198,7 +211,7 @@ g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameGrizzlyT
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Grizzly']}, type: 2}}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
@@ -345,9 +358,11 @@ g.emit_asset(TOASTS, G_TOASTS, header(lib.SCRIPT_GUIDS["GameToastConfigSO"], "Ga
              lib.toast(131, "{0} is on the home stretch - gate {1}/{2}", tint_domain=1, domain_names=0) +
              lib.toast(132, "{0} is on the final lap", tint_domain=1, domain_names=0) +
              lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9) +
-             lib.toast(TOAST_HINT, "Freeze a bomb in the keg, get round to its far side, blow it - the gate is yours "
-                                   "and the blast throws you down the next leg.", domain_names=0) +
-             lib.toast(TOAST_BANK_SHOT, "Bank shot ({0})", tint_domain=1, domain_names=0))
+             lib.toast(TOAST_HINT, "Open a keg and its gate is yours: bomb it, or Rush through it. Freeze a bomb in "
+                                   "the keg, fly just past it toward the next ring and let go: the blast throws you "
+                                   "down the leg.", domain_names=0) +
+             lib.toast(TOAST_BANK_SHOT, "Bank shot ({0})", tint_domain=1, domain_names=0) +
+             lib.toast(TOAST_RAM_KEY, "Rammed open ({0})", tint_domain=1, domain_names=0))
 g.register_toast_config(G_TOASTS)
 
 # ── 6. Registries ────────────────────────────────────────────────────────────
@@ -453,19 +468,33 @@ m = re.search(r"RingRadius = new\[\] \{([^}]*)\}", _course)
 if not m or nums(v.strip().rstrip("f") for v in m.group(1).split(",")) != [float(r) for r in RING_RADIUS_BY_INTENSITY]:
     errors.append(f"GrizzlyTimeCourse RingRadius is not {list(RING_RADIUS_BY_INTENSITY)}")
 _toast_enum = read_or_empty("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
-for member, want in (("GrizzlyTimeHint", TOAST_HINT), ("GrizzlyTimeBankShot", TOAST_BANK_SHOT)):
+for member, want in (("GrizzlyTimeHint", TOAST_HINT), ("GrizzlyTimeBankShot", TOAST_BANK_SHOT),
+                     ("GrizzlyTimeRamKey", TOAST_RAM_KEY)):
     m = re.search(rf"^\s*{member}\s*=\s*(\d+),", _toast_enum, re.M)
     if not m or int(m.group(1)) != want:
         errors.append(f"GameToastSituation.{member} is not {want}")
 _ids = [int(v) for v in re.findall(r"=\s*(\d+),", _toast_enum)]
-for want in (TOAST_HINT, TOAST_BANK_SHOT):
+for want in (TOAST_HINT, TOAST_BANK_SHOT, TOAST_RAM_KEY):
     if _ids.count(want) != 1:
         errors.append(f"GameToastSituation value {want} is used {_ids.count(want)} times")
 _ctrl_kegs = read_or_empty(SCRIPT_PATHS["GrizzlyTimeController.Kegs"])
-for k, v in KEG_SCALARS + (("bankShotEveryN", 4), ("bankShotMaxDegrees", 30)):
+for k, v in KEG_SCALARS + (("bankShotEveryN", 4), ("bankShotMaxDegrees", 30), ("bankShotWindowSeconds", 1.5),
+                           ("ramKeyEveryN", 4)):
     d = lib.cs_field_default(_ctrl_kegs, k)
     if d is None or float(d) != float(v):
         errors.append(f"GrizzlyTimeController.{k} defaults to {d}, the scene authors {v}")
+for k, v in KEG_BOOLS:
+    m = re.search(rf"\bbool {k} = (true|false);", _ctrl_kegs)
+    if not m or (m.group(1) == "true") != bool(v):
+        errors.append(f"GrizzlyTimeController.{k} defaults to {m.group(1) if m else None}, the scene authors {v}")
+for field, member in (("hintToast", "GrizzlyTimeHint"), ("bankShotToast", "GrizzlyTimeBankShot"),
+                      ("ramKeyToast", "GrizzlyTimeRamKey")):
+    if not re.search(rf"GameToastSituation {field} = GameToastSituation\.{member};", _ctrl_kegs):
+        errors.append(f"GrizzlyTimeController.{field} does not default to GameToastSituation.{member}")
+_kegs_src = read_or_empty(SCRIPT_PATHS["GrizzlyTimeKegs"])
+if "=> keg.Centre + keg.ExitDir * standOff;" not in _kegs_src:
+    errors.append("GrizzlyTimeKegs.BlowPoint is not on the keg's exit side (Centre + ExitDir * standOff): a hull there "
+                  "is thrown away from the next ring")
 for k in KEG_SOUNDS:
     if not re.search(rf"FMODUnity\.EventReference {k};", _ctrl_kegs):
         errors.append(f"GrizzlyTimeController.{k} is not an exposed EventReference")

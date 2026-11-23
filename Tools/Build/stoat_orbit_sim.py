@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """The AI Stoat on the orbit alone (2026-11-02, Yash): how fast it races Slingshot with only Time mode's catch.
 
+2026-11-21: the catch orbit, its aimed exit, the trampoline and the field dipole this file models were DELETED from the game
+(Yash: the swing is the Stoat's only slingshot, for every AI). Only --swing / --swing-grid model what ships; the other
+modes keep their last shipped numbers as the record. The C# names below (AutopilotSling, StepOrbit, CatchPair, Catches,
+OrbitRadius, SweetSpot, TimedKick, ...) are the deleted code at 4e5df7090a, not the tree today.
+
 Since the field dipole was parked (Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md) the catch sling is the Stoat's only
 speed: the hull's flight clock warps only while a pair is held (StoatSlingExecutor.WarpsFlight, from the press). So the
 AI's press rule decides its pace, and this model picks its numbers (StoatSlingConfig's ai* rows and autopilotHold01).
@@ -409,9 +414,12 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None, nose
                     before = list(fwd); fwd = unit(rotate_about(fwd, swing_axis, step)); turned += step
                     cmd = rotate_about(cmd, swing_axis, step)
                 else:
-                    amount = min(CRUISE * (BOOST_MIN + (BOOST_MAX - BOOST_MIN) * row["hold"]) * kick_rate, (row["cap"] - 1) * CRUISE * clock)
+                    # StoatSlingExecutor.Fling: swingKickShare of the old kick (0 since 2026-11-19: one slingshot, the swing's warp)
+                    amount = row.get("swing_kick", 1.0) * min(CRUISE * (BOOST_MIN + (BOOST_MAX - BOOST_MIN) * row["hold"]) * kick_rate,
+                                                               (row["cap"] - 1) * CRUISE * clock)
                     momentum_clock, momentum_at = clock, t
-                    kick = (list(fwd), amount, t); timed += 1
+                    if amount > 0: kick = (list(fwd), amount, t)
+                    timed += 1
                     laid = caught = False
         if laid and not tramp and not swing:
             squeeze_r = orbit_radius(row["hold"])
@@ -652,6 +660,9 @@ if __name__ == "__main__":
         trained = dict(SHIPPED_ROW, aimed=False, swing=True, rate=150.0, reach=55.0, hold=0.012, min_turn=147.951, interval=2.896,
                        min_dist=13.329, warp_dist=310.106)
         print(line("SWING x the Slingshot copy's trained rows", score(trained, seeds=a.seeds, dt=1 / 60)), flush=True)
+        print(line("ONE SLINGSHOT (no exit kick), trained rows", score(dict(trained, swing_kick=0.0), seeds=a.seeds, dt=1 / 60)), flush=True)
+        print(line("ONE SLINGSHOT (no exit kick), hull rows", score(dict(SHIPPED_ROW, aimed=False, swing=True, rate=150.0, reach=55.0,
+                                                                          min_turn=20.0, swing_kick=0.0), seeds=a.seeds, dt=1 / 60)), flush=True)
         print(line("SWING rate 150 reach 55, turn>=20, hold 1", score(dict(SHIPPED_ROW, aimed=False, swing=True, rate=150.0, reach=55.0,
                                                                            min_turn=20.0), seeds=a.seeds, dt=1 / 60)), flush=True)
         if not a.swing_grid:

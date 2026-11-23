@@ -33,6 +33,9 @@ namespace CosmicShore.Data
         public List<string> Aboard = new();
         /// <summary>Crystals earned by jobs, paid at extraction, by element (index = (int)Element).</summary>
         public List<int> Owed = new();
+        /// <summary>What the crystals owed are multiplied by when the Ark docks home (Shombith 2026-11-17: escorting the
+        /// Ark home after a met goal pays 2x). 1 (or less) pays them as they are; docking sets it back to 1.</summary>
+        public float HomeRewardScale = 1f;
         public List<PortLedger> Ledgers = new();
         public List<WreckRecord> Wrecks = new();
         public List<StoryEntry> Story = new();
@@ -59,8 +62,21 @@ namespace CosmicShore.Data
         public int TickedDay;
         /// <summary>When the record was last saved (ms since the epoch): the days away tick the galaxy on return.</summary>
         public long SavedAtMs;
+        /// <summary>Jobs finished since the last dock: what the dock pays in wallet crystals (P10, one currency;
+        /// <c>RetentionPay.VoyageWalletCrystals</c>). Lost with the haul when the voyage is given up.</summary>
+        public int JobsDoneSinceDock;
+        /// <summary>A voyage waiting at sea (P13, voyage chapters): the leg's worlds, saved when the leg began. Empty when
+        /// no waypoint waits.</summary>
+        public List<int> WaypointRoute = new();
+        /// <summary>The last world of <see cref="WaypointRoute"/> the Ark reached; -1 before the first. A voyage closed
+        /// mid-leg picks up here next time instead of being given up.</summary>
+        public int WaypointReached = -1;
 
         public bool HasJob() => Current != null && !string.IsNullOrEmpty(Current.TemplateId);
+
+        /// <summary>A waypoint waits: at sea, with the job and a world reached on its saved route.</summary>
+        public bool HasWaypoint() => AtSea && HasJob() && WaypointRoute != null && WaypointReached >= 0 &&
+                                    WaypointReached < WaypointRoute.Count;
 
         public bool IsHome() => !AtSea && !string.IsNullOrEmpty(Home) && At == Home;
 
@@ -161,6 +177,7 @@ namespace CosmicShore.Data
             Aboard ??= new List<string>();
             Aboard.RemoveAll(string.IsNullOrEmpty);
             Owed ??= new List<int>();
+            WaypointRoute ??= new List<int>();
             Ledgers ??= new List<PortLedger>();
             Ledgers.RemoveAll(l => l == null || string.IsNullOrEmpty(l.Port));
             foreach (var l in Ledgers)
@@ -253,6 +270,11 @@ namespace CosmicShore.Data
         public int Cells;
         /// <summary>How many times the squad ventured further to reach this run (0 for the first).</summary>
         public int Venture;
+        /// <summary>The leg cell by cell, copied from the template (<see cref="JobTemplate.CellWorlds"/>,
+        /// <see cref="JobTemplate.CellAnchorSeconds"/>, <see cref="JobTemplate.CellLife"/>).</summary>
+        public List<string> CellWorlds = new();
+        public List<float> CellAnchorSeconds = new();
+        public List<float> CellLife = new();
 
         /// <summary>A shallow copy (the warnings and news are shared): the voyage page sets a copy's difficulty, never the
         /// board's own job.</summary>

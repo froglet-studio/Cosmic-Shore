@@ -149,9 +149,10 @@ namespace CosmicShore.Gameplay
                 if (stat == null) continue;
                 if (_subscriptions.Any(s => s.stat == stat)) continue; // already subscribed
 
-                // Seed cache with current value (or 0)
+                // Seed the cache with 0, never with stat.CurrentValue: the SO asset outlives the scene, so its
+                // value is the LAST match's, and the host's scoreboard showed it for a stat this match never raised.
                 if (!_latestValues.ContainsKey(stat))
-                    _latestValues[stat] = stat.CurrentValue;
+                    _latestValues[stat] = 0f;
 
                 void Handler(float value) => _latestValues[stat] = value;
                 stat.OnRaised += Handler;

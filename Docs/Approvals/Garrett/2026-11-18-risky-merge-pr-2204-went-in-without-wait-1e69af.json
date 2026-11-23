@@ -1,0 +1,29 @@
+{
+  "id": "2026-11-18-risky-merge-pr-2204-went-in-without-wait-1e69af",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-18T00:43:19+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2204 went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/VesselActions/Starling/StarlingConfig.asset",
+  "branch": "claude/project-thread-iqvkw9",
+  "pr": 2204,
+  "commit": "80917611a",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/Starling/StarlingConfig.asset",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StarlingSwarmExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md",
+    "Assets/_Scripts/Controller/Vessel/StarlingRules.cs",
+    "Assets/_Scripts/Tests/Editor/StarlingRulesTests.cs",
+    "Containers/StarlingConfigSO.cs",
+    "Tools/Build/author_starling_assets.py"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/VesselActions/Starling/StarlingConfig.asset"
+    }
+  ]
+}

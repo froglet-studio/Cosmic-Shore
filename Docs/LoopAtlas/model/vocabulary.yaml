@@ -1,0 +1,142 @@
+# Loop Atlas model: vocabulary. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+layers:
+- id: now
+  letter: n
+  name: Now
+  is: What is in the game today, with how far each loop has been played and signed off. A loop the plan has and the game
+    lacks shows as a ghost.
+- id: plan
+  letter: p
+  name: Planned
+  is: 'The stabilised version the team has decided on: Garrett''s elemental loop, the arcade restructure, voyages V1 to
+    V4. Where the plan says nothing, it is a hole.'
+- id: prop
+  letter: x
+  name: Proposed
+  is: The plan plus proposed changes. Every hole is filled with an invention, marked as one, for the team to accept, change
+    or throw out.
+tiers:
+- id: 0
+  term: Pulse
+  span: [0.1, 3]
+  is: One input and the hull's answer. The feel of flying.
+  ask: Is it a pleasure with nothing to do?
+- id: 1
+  term: Verb
+  span: [2, 20]
+  is: One elemental ability, from trigger to payoff and back to ready.
+  ask: Is the payoff worth the trigger, and where does the pleasure land?
+- id: 2
+  term: Combo
+  span: [8, 60]
+  is: Verbs chained inside one kit. The loops a kit has baked in.
+  ask: Does one verb set up the next?
+- id: 3
+  term: Role
+  span: [20, 180]
+  is: 'The kit pointed at the game''s goals: what this vessel does for its team.'
+  ask: Does what I am good at matter to the objective?
+- id: 4
+  term: Round
+  span: [60, 360]
+  is: 'One objective, won or lost: an arcade or arena match, or a cell on a voyage.'
+  ask: Can I read who is winning and why, in about 90 seconds?
+- id: 5
+  term: Session
+  span: [600, 2700]
+  is: 'A sitting in one place: a ladder run, an arena set, a voyage.'
+  ask: Do I want one more, and does anything point me to another place?
+- id: 6
+  term: Arc
+  span: [86400, 2592000]
+  is: 'What changes between sittings: unlocks, the fleet, the squad, the crew, the hoard.'
+  ask: What do I have tomorrow that I did not have today?
+- id: 7
+  term: Era
+  span: [1209600, 15552000]
+  is: 'What changes without you: the living sea, sagas, the meta, new vessels.'
+  ask: Why come back next month?
+drivers:
+- id: joy
+  code: Jo
+  name: Sensation
+  kind: inner
+  is: The raw joy of the movement itself.
+- id: mastery
+  code: Ma
+  name: Mastery
+  kind: inner
+  is: 'Getting better: a cleaner line, a harder rung.'
+- id: make
+  code: Mk
+  name: Creation
+  kind: inner
+  is: Making mass, growing, building something that stays.
+- id: break
+  code: Br
+  name: Destruction
+  kind: inner
+  is: Breaking mass. The release of a big hit.
+- id: rival
+  code: Ri
+  name: Rivalry
+  kind: inner
+  is: 'Beating another pilot: a place, a petal, a claim.'
+- id: crew
+  code: Cr
+  name: Fellowship
+  kind: inner
+  is: Playing with and for a team or a party.
+- id: find
+  code: Fi
+  name: Discovery
+  kind: inner
+  is: 'Something new: a toy, a hull, an uncharted place.'
+- id: own
+  code: Ow
+  name: Collection
+  kind: inner
+  is: 'Having it: vessels, pilots, artifacts, relics.'
+- id: stake
+  code: St
+  name: Stakes
+  kind: inner
+  is: Something of yours can be lost.
+- id: story
+  code: Sy
+  name: Story
+  kind: inner
+  is: People, factions and sagas that remember you.
+- id: goal
+  code: Go
+  name: Objective
+  kind: outer
+  is: Goals laid out on the map by the game you are in.
+- id: reward
+  code: Re
+  name: Reward
+  kind: outer
+  is: Crystals, pay and unlocks handed over at the end.
+handoffs:
+- id: fill
+  name: Tank full
+  is: A resource the loop was banking is full, so you go and spend it one tier up.
+- id: done
+  name: Objective met
+  is: The loop's goal is reached and the tier above takes its next step.
+- id: fail
+  name: Loss
+  is: The loop is lost and the tier above resets or sends you home.
+- id: spend
+  name: Reward to spend
+  is: You hold something that is only useful in another loop.
+- id: new
+  name: Something new
+  is: A new hull, card, place or piece of news opens a loop you have not run.
+- id: pull
+  name: A friend
+  is: An invite or a party moves you to where someone else is.
+- id: tired
+  name: Enough of this
+  is: The loop has stopped paying and you look for another at the same tier.

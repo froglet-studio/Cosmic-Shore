@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-sparrowaiboostpolicy-breakwater-takes-sp-9c673c",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T03:32:05+00:00",
+  "area": "the Sparrow racing AI",
+  "summary": "SparrowAIBoostPolicy_Breakwater takes Sparrow run3's drive and BreakwaterController's Sparrow row goes to lead 1.29 with a 7.9/s nose (was 1.0 at the fleet lag).",
+  "why": "Garrett's Regatta flywheel: confirm on 32 fresh flights a side: shipped timed out on all 8 I4 races, trained finished all 32 (I4 82 s, I1 99, I2 85).",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "b11ce58ed",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset",
+    "Assets/_Scripts/Controller/Arcade/Breakwater/BreakwaterController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Sparrow"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

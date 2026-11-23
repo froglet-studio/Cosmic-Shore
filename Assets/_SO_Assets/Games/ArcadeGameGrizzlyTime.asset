@@ -17,9 +17,10 @@ MonoBehaviour:
   DisplayName: Grizzly Time
   Description: Grizzlies only, against the clock. Your speed is your bombs - squeeze LT or
     RT to fire, pull again to freeze it, let go to blow it, and the blast throws you away
-    from the bomb. A powder keg stands beside every ring - blow it from its far side and the
-    gate is yours and the blast throws you down the next leg. Two laps. Fastest domain home
-    wins.
+    from the bomb. A powder keg stands beside every ring - open it with a bomb or Rush
+    through it and the gate is yours. Freeze a bomb in the keg, fly just past it toward the
+    next ring and let go, and the blast throws you down the next leg. Two laps. Fastest
+    domain home wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 438aea60b3ad404d920ef47ba6fa114c, type: 3}
@@ -28,7 +29,7 @@ MonoBehaviour:
   Vessels:
   - {fileID: 11400000, guid: 312ea06c4539cdc46b027615a590c94b, type: 2}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1

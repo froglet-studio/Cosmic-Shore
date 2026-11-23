@@ -1,0 +1,147 @@
+# Loop Atlas model: vessel Jacks. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Jacks
+verbs:
+  Time:
+    ability: Decoys
+    does: Herding, drop a decoy jack where one of your jacks stands; it keeps the herd away like a third jack. Netting,
+      rush the whole ship to the decoy at speed.
+    trigger: Tap
+    scales: More Time makes your herd swim faster.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md
+    arch: tap
+    t: [2, 20]
+  Charge:
+    ability: Danger Share
+    does: Part of your herd turns dangerous. A danger creature that touches a rival hull stings it, scoring a hit, and is
+      used up.
+    trigger: Passive - your herd touches a rival
+    scales: More Charge makes more of your herd dangerous, from none of it to all of it.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md
+    arch: passive
+    t: [2, 15]
+  Mass:
+    ability: The Call
+    does: Herding, the herd rushes to the point between your two jacks for a moment. Netting, it switches whether your creatures
+      are pulled onto your plane.
+    trigger: Tap
+    scales: More Mass makes your herd breed faster, each birth costing less food.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md
+    arch: tap
+    t: [2, 20]
+  Space:
+    ability: Wide
+    does: Herding, the view eases out to show the whole cell so you can find more creatures, and back in again. It does
+      nothing while netting.
+    trigger: Tap
+    scales: More Space widens the ring your jacks and decoy push the herd away with.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md
+    arch: tap
+    t: [2, 20]
+  Omni:
+    ability: Omni Worm
+    does: A jack or the hull that collects an omni crystal hatches a worm colony of your colour behind you, which eats prisms
+      and creatures. A crystal caught in the net is carried, not collected.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b .
+  Charge: b b .
+  Mass: '- - -'
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Decoy Run]
+  Charge: [Stingherd]
+  Mass: []
+  Space: [Trawl]
+excused: [Mass]
+lean: destroyer
+leanWhy: A herd is not mass; its Mass game is excused.
+combos:
+- name: Herd and sting
+  t: [15, 60]
+  is: Find them, shape them, send them.
+  chain:
+  - - Space
+    - Go wide to find creatures
+  - [Time, Decoys shape the herd]
+  - - Mass
+    - The Call rushes it between the jacks
+  - - Charge
+    - Danger creatures sting rival hulls
+  drivers: [crew, rival, mastery]
+  feel: A flock turning as one.
+  gene:
+    genome: Charge
+    cue: [fauna_near, rival_near]
+    dials:
+    - - herdSize
+      - creatures herded before the call
+      - 2
+      - 30
+      - count
+    - - callLead
+      - seconds before the rival passes that the herd is called
+      - 0.2
+      - 3
+      - s
+    done: A danger creature stings a rival hull.
+    sight: DOE
+- in: x
+  name: Decoy and dash
+  t: [5, 15]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Netting, a decoy ahead on the line, and the whole ship rushes to it.
+  chain:
+  - - Time
+    - Drop a decoy ahead on the line
+  - [Time, Rush the ship to it]
+  - ['', The next decoy]
+  drivers: [joy, mastery]
+  feel: Throwing yourself forward.
+  gene:
+    genome: Time
+    cue: [gate_next, verb_ready]
+    dials:
+    - - decoyLead
+      - distance ahead the decoy is dropped
+      - 20
+      - 250
+      - u
+    done: A gate is threaded during a rush.
+    sight: NEEDLE
+- in: x
+  name: The trawl
+  t: [12, 40]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Go wide to find the herd, rush to it, call it onto your plane.
+  chain:
+  - - Space
+    - 'Go wide: find the dense herd'
+  - [Time, Rush to it]
+  - - Mass
+    - The Call pulls it onto your plane
+  drivers: [find, crew]
+  feel: A full net.
+  gene:
+    genome: Space
+    cue: [fauna_near, open_space]
+    dials:
+    - - wideDwell
+      - seconds spent in the wide view
+      - 0.5
+      - 5
+      - s
+    - - netRange
+      - distance to the herd when the call is made
+      - 20
+      - 300
+      - u
+    done: Creatures are pulled onto your plane by one call.
+    sight: DOE
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md

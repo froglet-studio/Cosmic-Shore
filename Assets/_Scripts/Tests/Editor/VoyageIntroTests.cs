@@ -8,7 +8,7 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The voyage intro (Shombith, 2026-11-16, Milestone 1): the escort and Crystal Run ship Rev 114's Departure: the Ark
-    /// wide and along its hull, your vessel, the wingmates, the title and route, then GO, every line it shows is authored, and its camera maths frames what each shot names.
+    /// wide, the title and objective, then each wingmate and last your own vessel launching from its hangar in close-up (2026-11-17), then GO, every line it shows is authored, and its camera maths frames what each shot names.
     /// </summary>
     public class VoyageIntroTests
     {
@@ -31,21 +31,31 @@ namespace CosmicShore.Tests
         static void AssertDeparture(VoyageIntroSO intro)
         {
             var shots = intro.Shots;
-            Assert.AreEqual(5, shots.Count, "Departure (Rev 114) is five shots and the hand-over.");
+            Assert.AreEqual(4, shots.Count, "The Departure is four shots and the hand-over.");
             Assert.AreEqual(VoyageIntroSO.Subject.Ark, shots[0].Subject, "Shot 1 is wide on the Ark.");
             Assert.IsTrue(string.IsNullOrEmpty(shots[0].Title) && string.IsNullOrEmpty(shots[0].Line), "Shot 1 has no words.");
-            Assert.AreEqual(VoyageIntroSO.Subject.Ark, shots[1].Subject, "Shot 2 pushes along the Ark's hull.");
-            StringAssert.Contains("{hull}", shots[1].Title, "The hull caption does not show the hull.");
-            Assert.AreEqual(VoyageIntroSO.Subject.You, shots[2].Subject, "Shot 3 is your own vessel.");
-            Assert.AreEqual(VoyageIntroSO.Subject.Wingmates, shots[3].Subject, "Shot 4 is the wingmates.");
-            Assert.AreEqual(VoyageIntroSO.Subject.Course, shots[4].Subject, "Shot 5 is the title and the route.");
-            Assert.IsFalse(string.IsNullOrEmpty(shots[4].Title), "The course shot has no title.");
-            StringAssert.Contains("{objective}", shots[4].Line, "The goal line is not the objective's own words.");
+            Assert.AreEqual(VoyageIntroSO.Subject.Course, shots[1].Subject, "Shot 2 is the title and the objective.");
+            Assert.IsFalse(string.IsNullOrEmpty(shots[1].Title), "The course shot has no title.");
+            StringAssert.Contains("{objective}", shots[1].Line, "The goal line is not the objective's own words.");
+            // Shombith 2026-11-17: each vessel launches from the Ark in its own close-up, the pilot's own last, and the
+            // camera follows the pilot's vessel into play.
+            Assert.AreEqual(VoyageIntroSO.Subject.Wingmates, shots[2].Subject, "Shot 3 launches the wingmates, one each.");
+            Assert.AreEqual(VoyageIntroSO.Subject.You, shots[3].Subject, "The last shot launches your own vessel.");
+            Assert.IsTrue(shots[2].Launch && shots[3].Launch, "A vessel's close-up does not launch it.");
+            Assert.IsFalse(shots[0].Launch || shots[1].Launch, "The squad leaves before its close-ups.");
+            Assert.IsTrue(intro.LaunchesSquad);
+            Assert.LessOrEqual(shots[3].FromDistance, 4f, "Your launch is not a close-up.");
+            Assert.Greater(Mathf.Abs(Mathf.DeltaAngle(0f, shots[3].ToAzimuth)), 150f,
+                "Your launch does not end behind your vessel, where play picks up.");
+            var settings = VoyageToyDefinitionSO.Load();
+            var formation = settings ? settings.ArkFormation : new ArkFormationSettings();
+            Assert.LessOrEqual(formation.LaunchSeconds, shots[3].Seconds + intro.HandOverSeconds,
+                "Your vessel is still flying to its slot when the stick comes back.");
             Assert.IsFalse(string.IsNullOrEmpty(intro.GoWord), "No GO over the hand-over.");
             StringAssert.Contains("{pilot}", intro.CardLine, "The name card does not name the pilot.");
             Assert.IsNotNull(intro.Vessels, "The intro reads no vessel list: the name cards would have no vessel.");
-            Assert.That(intro.Duration(3), Is.EqualTo(9f).Within(0.01f), "A three-seat Departure runs nine seconds.");
-            Assert.That(intro.Duration(1), Is.EqualTo(8f).Within(0.01f), "Alone: no wingmate shots.");
+            Assert.That(intro.Duration(3), Is.EqualTo(12.4f).Within(0.01f), "A three-seat Departure runs 12.4 seconds.");
+            Assert.That(intro.Duration(1), Is.EqualTo(7.6f).Within(0.01f), "Alone: no wingmate shots.");
             Assert.IsTrue(intro.SkippableAfterFirstRun, "The first run plays through; later ones may be skipped.");
         }
 

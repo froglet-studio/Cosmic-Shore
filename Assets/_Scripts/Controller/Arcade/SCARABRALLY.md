@@ -80,6 +80,24 @@ is 420 / 400 / 420 / 360 u.
 - Its approach uses Switchback's numbers (commit 260, lead 300, through 220), all outside twice that circle.
 - Nobody has raced it yet. The learning sweep picks up recorded races automatically (`AUTO_LEARNING.md`).
 
+### AI: pace by difficulty (2026-11-17, elemental loop step 2)
+
+Claude, on Garrett's "do your best on fun", pending his playtest. Raced in the real game (Amoebius headless, the
+shipped AI alone, course seeds 1-3), the lower levels flew the nose rows that came before the Scarab's Legendary was
+trained (1.8-3.5/s against Legendary's trained 15-18/s). So Medium, the rival a person meets by default, took 4x
+Legendary's time (I3 199-254 s against 57) and never finished I4 in 420 s, and Easy never finished I4 either.
+`aiScarabNoseFollowByIntensity` now gives Easy 3.5, Medium 5 and Hard 8 on every rung; Legendary keeps its trained row.
+
+| Level | nose /s | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|---|
+| Easy | 3.5 (was 1.8-2.1) | 85 | 102 | 108 | 189 (was DNF) |
+| Medium | 5 (was 2.2-2.4) | 74 | 73 | 72 | 161 (was DNF) |
+| Hard | 8 (was 2.8-3.5) | 66 | 64 | 64 | 144 |
+| Legendary | 15 / 18 (unchanged) | 63 | 57 | 57 | 121 |
+
+Confirmed through the shipped code on fresh course seeds 4-6: Easy 74-85 s at I1 and 178-213 s at I4, Medium 69-75
+s at I2 and 162-172 s at I4, every race finished. This changes the mode's AI, never the vessel (the LOCKED mode rule).
+
 ## Known limitations
 
 - Not run in the editor. The scene is a text clone of Switchback's. It needs one open-and-save in Unity (the

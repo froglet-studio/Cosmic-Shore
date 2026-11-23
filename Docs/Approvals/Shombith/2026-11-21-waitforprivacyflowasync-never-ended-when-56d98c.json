@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-21-waitforprivacyflowasync-never-ended-when-56d98c",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-21T19:18:05+00:00",
+  "area": "sign-in (AuthenticationSceneController)",
+  "summary": "WaitForPrivacyFlowAsync never ended when the privacy overlay was destroyed without Finish(): Current becomes null and Unity treats null as equal to the destroyed overlay, so the backstop poll looped forever and the boot stayed on the sign-in screen. Added the overlay's own null test to the loop condition. Found by the PC bench, which removes the overlay.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "2e17ea96d"
+}

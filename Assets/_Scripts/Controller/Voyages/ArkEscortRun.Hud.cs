@@ -3,18 +3,20 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// What the escort shows on the voyage HUD (Frogma Rev 113, Hud): the objective box (<see cref="VoyageObjective"/>:
     /// the goal and its breach line, the worlds as route stops, the hull, where the Ark is and the assault on it), the
-    /// Ark's alarms (<see cref="ArkAlarmToasts"/>) and the marks on the fauna attacking it (<see cref="ArkAttackerMarks"/>). Facts only; the words are the voyage's authored lines.
+    /// Ark's alarms (<see cref="ArkAlarmToasts"/>) the marks on the fauna attacking it (<see cref="ArkAttackerMarks"/>) and the plate over the Ark (<see cref="ArkHudPlate"/>). Facts only; the words are the voyage's authored lines.
     /// </summary>
     public sealed partial class ArkEscortRun : IVoyageObjectiveSource
     {
         ArkAlarmToasts _alarms;
         ArkAttackerMarks _attackerMarks;
+        ArkHudPlate _plate;
 
         void ShowOnHud()
         {
             VoyageObjective.Source = this;
             (_alarms ??= new ArkAlarmToasts(this, () => _sea)).Hook();
             if (!_attackerMarks) _attackerMarks = ArkAttackerMarks.Create(transform, this, () => Ark);
+            if (!_plate) _plate = ArkHudPlate.Create(transform, () => Ark);
         }
 
         void LeaveHud()
@@ -22,6 +24,8 @@ namespace CosmicShore.Gameplay
             _alarms?.Unhook();
             if (_attackerMarks) Destroy(_attackerMarks.gameObject);
             _attackerMarks = null;
+            if (_plate) Destroy(_plate.gameObject);
+            _plate = null;
             if (ReferenceEquals(VoyageObjective.Source, this)) VoyageObjective.Source = null;
         }
 

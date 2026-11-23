@@ -175,6 +175,7 @@ namespace CosmicShore.Gameplay
                 case OmniCrystalImpactor omniCrystalImpactee:
                 {
                     if (!IsSweepDispatch && !TakesCrystalsByContact) break;   // the Jacks' net takes it instead
+                    if (!IsSweepDispatch && SolitonIsolation.Sealed(omniCrystalImpactee.Crystal)) break;   // carried in a tube
                     if (!TryLatchCrystalImpact(omniCrystalImpactee.Crystal)) break;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
                     VesselCameraFeel.Pickup(Vessel?.VesselStatus);
@@ -189,6 +190,10 @@ namespace CosmicShore.Gameplay
 
                 case ElementalCrystalImpactor elementalCrystalImpactee:
                 {
+                    // A hull inside a Soliton Tunnel touches no crystal, a lifeform's heart included, and a crystal a
+                    // tunnel carries is touched by nobody (SolitonIsolation). A sweep (a race ring) still lands.
+                    if (!IsSweepDispatch && (SolitonIsolation.Sealed(Vessel?.VesselStatus)
+                                             || SolitonIsolation.Sealed(elementalCrystalImpactee.Crystal))) break;
                     // A LIVING lifeform's embedded crystal (its heart) is a JOUST surface, not a
                     // pickup: skip the collect chain and run the lifeform-crystal effects instead
                     // (e.g. Squirrel Space-5 Crystal Joust). Local-only - the ecosystem sim is local.
@@ -227,6 +232,9 @@ namespace CosmicShore.Gameplay
                     // SkimmerImpactor.AcceptImpactee.
                     if (skimmerImpactee.Skimmer
                         && ReferenceEquals(skimmerImpactee.Skimmer.VesselStatus, Vessel?.VesselStatus)) return;
+                    // a hull inside a Soliton Tunnel and a skimmer outside it never meet (SolitonIsolation)
+                    if (skimmerImpactee.Skimmer
+                        && SolitonIsolation.Apart(skimmerImpactee.Skimmer.VesselStatus, Vessel?.VesselStatus)) return;
                     var skimmerEffects = vesselImpactorDataContainerSO.VesselSkimmerEffects;
                     if (!DoesEffectExist(skimmerEffects)) return;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.VesselImpact, transform.position);

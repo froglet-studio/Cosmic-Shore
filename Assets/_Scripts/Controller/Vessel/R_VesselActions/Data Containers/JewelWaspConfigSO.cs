@@ -51,7 +51,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("How fast a host rolls under the sticks (degrees per second at full stick).")]
         [SerializeField, Min(0f)] float hostRollDegrees = 110f;
         [Tooltip("A host's speed, as a multiple of its own top speed: Time's parameter (Quicken). 1.5 at rest, 3 at Time 10.")]
-        [SerializeField] ElementalFloat hostSpeedScale = ElementalFloat.Multiplier(1.5f, 3f, Element.Time, 1f);
+        [SerializeField] ElementalFloat hostSpeedScale = ElementalFloat.Multiplier(1.5f, 3f, Element.Time, 0.75f);
         [Tooltip("The share of a host's speed it keeps with the sticks together (slowest); apart is full speed.")]
         [SerializeField, Range(0f, 1f)] float hostSlowShare = 0.45f;
         [Tooltip("THE TIME ABILITY in a host (LT): a burst of speed, this many times the host's speed.")]
@@ -99,7 +99,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("How much faster a possessed plant grows: Mass's parameter, x3.5 at rest to x7 at Mass 10 (Garrett, " +
                  "2026-11-14: \"possessing flora should cause them to grow based on your mass level while in possession\"; " +
                  "2026-11-15: the base raised from x2 to make up for the time the wasp lays no trail inside a creature).")]
-        [SerializeField] ElementalFloat floraGrowth = ElementalFloat.Multiplier(3.5f, 7f, Element.Mass, 2.2f);
+        [SerializeField] ElementalFloat floraGrowth = ElementalFloat.Multiplier(3.5f, 7f, Element.Mass, 1.75f);
         [Tooltip("MASS LEVEL 5, Overgrowth: every plant within this radius of the one possessed grows as fast (u).")]
         [SerializeField, Min(0f)] float overgrowthRadius = 200f;
 
@@ -148,6 +148,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float hostCameraBodies = 6f;
         [Tooltip("The chase camera's base stand-back on a host (u).")]
         [SerializeField, Min(0f)] float hostCameraBase = 30f;
+        [Tooltip("The nearest the chase camera comes on a host (u): a ride keeps its wide view while the free wasp's own " +
+                 "camera sits close (Garrett, 2026-11-19: closer only when it is not in a lifeform).")]
+        [SerializeField, Min(0f)] float hostCameraFloor = 204f;
         [Tooltip("How fast the camera eases to a new stand-back (1/s).")]
         [SerializeField, Min(0.1f)] float cameraEase = 4f;
 
@@ -227,6 +230,7 @@ namespace CosmicShore.Gameplay
         public float AbilityFlashSeconds => abilityFlashSeconds;
         public float HostCameraBodies => hostCameraBodies;
         public float HostCameraBase => hostCameraBase;
+        public float HostCameraFloor => hostCameraFloor;
         public float CameraEase => cameraEase;
         public IReadOnlyList<FaunaConfigurationSO> OmniPredators => omniPredators;
         public float AIHostSeconds => aiHostSeconds;

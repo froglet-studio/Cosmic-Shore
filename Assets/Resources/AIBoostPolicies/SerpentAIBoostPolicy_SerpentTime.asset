@@ -12,14 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64ec4ca21c20449dad3153a2605a3f77, type: 3}
   m_Name: SerpentAIBoostPolicy_SerpentTime
   m_EditorClassIdentifier: 
-  alignDegrees: 13.106
-  releaseAlignDegrees: 25
-  stickBand: 0.162
-  releaseStickBand: 0.6
-  engageRunwaySeconds: 4.456
-  releaseRunwaySeconds: 0.5
+  alignDegrees: 84.525
+  releaseAlignDegrees: 66.04
+  stickBand: 0.584
+  releaseStickBand: 0.845
+  engageRunwaySeconds: 3.049
+  releaseRunwaySeconds: 1.661
   disabledInModes: []
   requireAIPlayer: 0
   maxConcurrentBurns: 3
-  minSecondsBetweenPellets: 2.423
+  minSecondsBetweenPellets: 0.415
   reservePellets: 0
+  refuelBelowPellets: 4
+  refuelCoastSeconds: 0.291
+  lowTankSecondsBetweenPellets: 0.175
+  refuelMinCornerDegrees: 0
+  refuelMaxRunwaySeconds: 0

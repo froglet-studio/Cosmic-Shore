@@ -1,5 +1,7 @@
 # Stoat play styles — five ways to fly the dipole sling
 
+> **History, not the current Stoat (marked 2026-11-20, Yash).** What ships is the swing: one small black hole, the stick picks the exit angle, one slingshot. The source of truth is `Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md` (the banner at its top) and `STOAT_DIPOLE.md` ("The swing", "One slingshot"). Kept as a record: the five play styles were a studio prototype and none of them ships.
+
 Status: **prototype in the Stoat Flight Studio** (round 9; retuned in round 12 from the sim lab). The game still runs the orbit sling; nothing
 here is in `Assets/` yet. Decisions recorded 2026-10-09 with the designer:
 

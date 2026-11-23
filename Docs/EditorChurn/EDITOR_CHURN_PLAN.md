@@ -65,7 +65,7 @@ For each one, prefer committing its settled output once, then switch it to resol
 
 **W9: The hand test.**
 - Windows and macOS each clone fresh, open Unity, and see a clean GitHub Desktop.
-- Suggest it as **one** ticket through `/team-tasks`, with a checklist line per OS, for the person to approve. Never file it yourself, and never assign it.
+- Put it in `Docs/UNITY_VERIFICATION_CHECKLIST.md` with a line per OS, and, with the person's yes, hand it for test (`/handoff-for-test`). Never assign it.
 
 ## Starting evidence (as of 2026-11-12, `bleeding-edge` 4d580c31; the tracker overrides this once it exists)
 

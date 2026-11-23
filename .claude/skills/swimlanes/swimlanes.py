@@ -24,15 +24,14 @@ one that is truly closed out is archived there (`archived`), not deleted silentl
              them (Time first, arena-seated vessels first, earliest step). Never cut. An occupied vessel shows its
              next loop step too, for its occupant.
   OPEN       nobody is in it. Ranked, highest first:
-               1. work waiting: open Froglet Tasks tickets that name it, editor hand tests not yet run
-                  (Docs/UNITY_VERIFICATION_CHECKLIST.md), open Bug Ledger errors thrown from its files, placeholder
-                  files, level-5 upgrades named but not gated;
+               1. work waiting: editor hand tests not yet run (Docs/UNITY_VERIFICATION_CHECKLIST.md), open Bug
+                  Ledger errors thrown from its files, placeholder files, level-5 upgrades named but not gated;
                2. (occupied lanes are listed here, between the two)
                3. needs polish: no obvious work, but measured gaps (undesigned level-5 upgrades, no model dossier,
                   no Time game, no tests, a pile of TODOs, a style-guide worst screen) or a person said "rough";
                4. polished: none of that, or a person said "polished".
 
-Read from origin/* (run `git fetch --prune origin` first), the tickets and open pull requests through `gh` (skipped
+Read from origin/* (run `git fetch --prune origin` first), the open pull requests through `gh` (skipped
 with --no-github or when gh is not signed in), and the repo's own files. A READER: it writes nothing except, with
 `set`, the verdict in lanes.json.
 """
@@ -43,7 +42,6 @@ CATALOG = os.path.join(HERE, 'lanes.json')
 BASE = 'origin/bleeding-edge'
 TIP_COMMITS = 60
 MAX_FILES = 400                     # a whole-repo snapshot says nothing about a lane
-TICKET_WEIGHT = {'P0': 5, 'P1': 4, 'P2': 3, 'P3': 2}
 CHECKLIST_RE = re.compile(r'^###\s+🔴\s+(.*?NOT EDITOR-VERIFIED.*)$', re.M)
 STACK_AT_RE = re.compile(r'\(at (Assets/[^:)]+):\d+\)')
 CAP_CHECKLIST, CAP_BUGS, CAP_PLACEHOLDERS = 4, 3, 2      # many of one kind is one kind of work, not more urgent
@@ -393,17 +391,6 @@ def pull_requests(root, team):
     return open_prs, merged
 
 
-def tickets(root, offline=None):
-    args = [sys.executable, os.path.join(root, 'Tools', 'Build', 'team_tasks.py'), 'list', '--json']
-    if offline:
-        args += ['--offline', offline]
-    try:
-        r = subprocess.run(args, cwd=root, capture_output=True, text=True, timeout=90)
-        return [t for t in json.loads(r.stdout) if t.get('state') == 'open' and not t.get('takenBy')]
-    except (OSError, ValueError, subprocess.TimeoutExpired):
-        return None
-
-
 def bugs(root):
     tool = os.path.join(root, 'Tools', 'Build', 'bug_ledger.py')
     if not os.path.exists(tool):
@@ -452,24 +439,16 @@ def worst_screens(root):
     return [l for l in (m.group(1).splitlines() if m else []) if re.match(r'\|\s*\d+\s*\|', l)]
 
 
-def assess(root, lanes, files, ticket_rows, bug_rows, l5, verdicts):
+def assess(root, lanes, files, bug_rows, l5, verdicts):
     """lane key -> {'work': [(weight, text)], 'polish': [(weight, text)]}."""
     out = {ln.key: {'work': [], 'polish': []} for ln in lanes}
     lane_files = {ln.key: [f for f in files if ln.matches(f)] for ln in lanes}
     checklist = CHECKLIST_RE.findall(read(root, 'Docs/UNITY_VERIFICATION_CHECKLIST.md'))
     screens = worst_screens(root)
     tests = [f for f in files if '/Tests/' in f and f.endswith('.cs')]
-    ticket_lanes = []
-    for t in ticket_rows or []:
-        on = named_lanes(t.get('area', ''), lanes, 2) or named_lanes(t.get('title', ''), lanes, 2)
-        ticket_lanes.append((t, on))
     check_lanes = [(h, named_lanes(h, lanes, 3)) for h in checklist]
     for ln in lanes:
         w, p, mine = out[ln.key]['work'], out[ln.key]['polish'], lane_files[ln.key]
-        for t, on in ticket_lanes:
-            if ln.key in on:
-                w.append((TICKET_WEIGHT.get(t.get('priority'), 2),
-                          f'ticket {t["id"]} (#{t.get("number")}, {t.get("priority")}, {t.get("kind")}): {t["title"][:110]}'))
         for i, h in enumerate(h for h, on in check_lanes if ln.key in on):
             w.append((1 if i < CAP_CHECKLIST else 0, f'hand test not run in the editor: {h[:120]}'))
         thrown = collections.OrderedDict()
@@ -556,9 +535,6 @@ def build(root, args):
     prs, merged = ({}, {}) if args.no_github else pull_requests(root, team)
     if not args.no_github and not prs and not merged:
         notes.append('gh is not signed in or not reachable here: Claude branches show without the person who opened their pull request, and squash-merged branches may still read as occupied.')
-    ticket_rows = None if args.no_github else tickets(root, args.tickets_offline)
-    if ticket_rows is None:
-        notes.append('Froglet Tasks tickets were not read (--no-github, or gh is not signed in): work waiting may be under-counted.')
     bug_rows = None if args.no_bugs else bugs(root)
     l5 = l5_rows(root)
     occ = occupancy(root, lanes, team, catalog, days, BASE, prs, merged)
@@ -585,7 +561,7 @@ def build(root, args):
         if rows and not occ.get(k):                       # someone else is on it now: nothing to ask about
             quiet[k] = [dict(o, asked=o['people'][0] if o['people'] else None)    # the branch's own person, not its mergers
                         for o in sorted(rows, key=lambda o: o['last'], reverse=True)[:1]]  # only the LAST work in it is asked
-    found = assess(root, lanes, files, ticket_rows, bug_rows, l5, catalog.get('verdicts', {}))
+    found = assess(root, lanes, files, bug_rows, l5, catalog.get('verdicts', {}))
     for k, h in handoffs.items():                      # an open or sent-back lane carries the handoff's note on top
         if k in found and h['status'] in ('open', 'back'):
             fb = [e for e in h.get('events', []) if e['event'] == 'feedback']
@@ -974,9 +950,8 @@ def main():
     ap.add_argument('--kind', choices=['vessel', 'game', 'shell', 'system'], help='only lanes of this kind')
     ap.add_argument('--md', action='store_true')
     ap.add_argument('--json', action='store_true')
-    ap.add_argument('--no-github', action='store_true', help='skip the tickets and pull requests (gh)')
+    ap.add_argument('--no-github', action='store_true', help='skip the pull requests (gh)')
     ap.add_argument('--no-bugs', action='store_true', help='skip the Bug Ledger')
-    ap.add_argument('--tickets-offline', help='read the tickets from a team_tasks.py dump instead of GitHub')
     ap.add_argument('--by', help='set: who says so')
     ap.add_argument('--note', default='', help='set: why')
     ap.add_argument('--me', help='show what was handed to this person first (default: your git identity)')

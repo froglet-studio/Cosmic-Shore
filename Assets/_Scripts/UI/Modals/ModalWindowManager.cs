@@ -90,6 +90,7 @@ namespace CosmicShore.UI
         public bool IsOpen => isOn && gameObject.activeInHierarchy;
 
         CanvasGroup _canvasGroup;
+        Canvas _windowCanvas;
         Coroutine _disableCoroutine;
         RectTransform _backdrop;
 
@@ -157,6 +158,49 @@ namespace CosmicShore.UI
 
             go.SetActive(false);
         }
+
+        /// <summary>
+        /// Every window draws on its own nested Canvas, and that Canvas is on exactly while the window's
+        /// CanvasGroup shows something (Docs/MENU_REDESIGN_B.md 46.3, the open item "hidden graphics are
+        /// still batched"). A closed window hides by alpha and never deactivates, so on the shared menu
+        /// canvas its graphics were still batched, and anything that moved behind it re-batched the whole
+        /// menu: measured 2026-11-22, one 6,937-graphic canvas rebuilt every frame, 1.4 ms of a 9 ms frame.
+        /// On its own Canvas a window re-batches only itself, and a switched-off Canvas costs nothing.
+        ///
+        /// <para>The Canvas is added here when the scene authored none (with a GraphicRaycaster: a nested
+        /// Canvas takes no clicks without its own), the pattern <c>AbilityLockupView.Awake</c> uses.</para>
+        /// </summary>
+        void EnsureWindowCanvas()
+        {
+            if (_windowCanvas || TryGetComponent(out _windowCanvas)) return;
+
+            var parent = transform.parent ? transform.parent.GetComponentInParent<Canvas>(true) : null;
+            _windowCanvas = gameObject.AddComponent<Canvas>();
+            if (parent) _windowCanvas.additionalShaderChannels = parent.additionalShaderChannels;
+            gameObject.AddComponent<GraphicRaycaster>();
+        }
+
+        /// <summary>
+        /// The one rule for the window's Canvas: on while the group's alpha is above
+        /// <see cref="KitSightline.HiddenAlpha"/>, off otherwise. Read from the group and not from
+        /// <c>isOn</c>, because the group is also written from outside this class (the "Window In" and
+        /// "Window Out" clips, <c>ScreenSwitcher.HubSlide</c>): whoever shows the window, it draws.
+        /// </summary>
+        void SyncWindowCanvas()
+        {
+            if (!_canvasGroup) return;
+            EnsureWindowCanvas();
+            bool shown = _canvasGroup.alpha > KitSightline.HiddenAlpha;
+            if (_windowCanvas.enabled != shown) _windowCanvas.enabled = shown;
+        }
+
+        /// <summary>
+        /// After the Animator and every coroutine have written the group this frame. A subclass that
+        /// declares LateUpdate must call base.LateUpdate(): Unity dispatches the message to the
+        /// most-derived declaration only, and a window whose Canvas stops following its group stays
+        /// invisible.
+        /// </summary>
+        protected virtual void LateUpdate() => SyncWindowCanvas();
 
         void SetBackdropActive(bool active)
         {
@@ -459,6 +503,7 @@ namespace CosmicShore.UI
             _canvasGroup.alpha = visible ? 1f : 0f;
             _canvasGroup.blocksRaycasts = visible;
             _canvasGroup.interactable = visible;
+            SyncWindowCanvas();
         }
     }
 }

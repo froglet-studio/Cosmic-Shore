@@ -1,0 +1,4 @@
+{
+ "about": "Testers accounts that hold a dealt crew automatically (Garrett, 2026-11-19): SHA-256 (hex) of cosmic-shore/crew-account/ + the UGS player id, and the dealt crew index (roster.py deal order). Hashes only: the ids and whose they are stay private.",
+ "accounts": []
+}

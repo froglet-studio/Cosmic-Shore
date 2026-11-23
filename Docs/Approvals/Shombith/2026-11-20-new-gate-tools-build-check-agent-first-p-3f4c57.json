@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-20-new-gate-tools-build-check-agent-first-p-3f4c57",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-20T14:22:51+00:00",
+  "area": "tooling: gates and CLAUDE.md",
+  "summary": "New gate Tools/Build/check_agent_first.py (ratchet over a baseline: a new runtime file over 1,500 lines, a new asset-bound script whose file names no type, a new string-named lookup) and a CLAUDE.md section pointing sessions at it. It is NOT wired into CI or /ship: say whether it should be, and at what limit.",
+  "why": "Yash asked for code designed for the session that writes it (Docs/claude/AGENT_FIRST_ARCHITECTURE.md)",
+  "branch": "Ys-bleeding-edge",
+  "commit": "950fffd9a",
+  "paths": [
+    "CLAUDE.md",
+    "Docs/claude/AGENT_FIRST_ARCHITECTURE.md",
+    "Docs/claude/principles.json",
+    "Tools/Build/agent_first_baseline.json",
+    "Tools/Build/check_agent_first.py"
+  ]
+}

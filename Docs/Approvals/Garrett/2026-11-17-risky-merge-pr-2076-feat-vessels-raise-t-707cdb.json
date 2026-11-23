@@ -1,0 +1,56 @@
+{
+  "id": "2026-11-17-risky-merge-pr-2076-feat-vessels-raise-t-707cdb",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-17T02:26:56+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2076 (feat(vessels): raise the ten weakest abilities) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/Resources/ElementalAbilityMaps/Dolphin.asset, Assets/Resources/ElementalAbilityMaps/Goby.asset, Assets/Resources/ElementalAbilityMaps/Grizzly.asset, Assets/Resources/ElementalAbilityMaps/Jacks.asset and 9 more",
+  "branch": "claude/weakest-abilities-pass",
+  "pr": 2076,
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/Resources/ElementalAbilityMaps/Dolphin.asset",
+    "Assets/Resources/ElementalAbilityMaps/Goby.asset",
+    "Assets/Resources/ElementalAbilityMaps/Grizzly.asset",
+    "Assets/Resources/ElementalAbilityMaps/Jacks.asset",
+    "Assets/Resources/ElementalAbilityMaps/Meerkat.asset",
+    "Assets/Resources/ElementalAbilityMaps/Squirrel.asset",
+    "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_Rush.png",
+    "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_WeaponSystems.png",
+    "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_Wide.png",
+    "Assets/_SO_Assets/Effects/Skimmer Prism Effects/SkimmerBoostPrismEffect.asset",
+    "Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset",
+    "Assets/_SO_Assets/VesselActions/Dolphin/DeployTeamCrystalAction.asset",
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset",
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyDigInAction.asset",
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyFlamethrowerAction.asset",
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyRushAction.asset",
+    "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset",
+    "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerBoostPrismEffectSO.cs",
+    "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolConfigSO.cs",
+    "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyDigInActionSO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyFlamethrowerActionSO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyRushActionSO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/JacksConfigSO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatSolitonConfigSO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/GrizzlyChargedShotActionExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/GrizzlyDigInActionExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/GrizzlyFlamethrowerActionExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/GrizzlyRushActionExecutor.cs"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/Resources/ElementalAbilityMaps/Dolphin.asset, Assets/Resources/ElementalAbilityMaps/Goby.asset, Assets/Resources/ElementalAbilityMaps/Grizzly.asset, Assets/Resources/ElementalAbilityMaps/Jacks.asset and 9 more"
+    }
+  ]
+}
