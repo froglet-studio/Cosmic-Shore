@@ -51,7 +51,7 @@ An Android build number must be a positive whole number (it becomes the versionC
   sha) `{ref} {channel} {env}`. Empty shows nothing.
 - **Crash reports** (`CrashReportingService`, consent-gated): `build_version`, `build_number`, `build_commit`,
   `release_channel`, `ugs_environment`, `development_build`.
-- **Analytics person properties** (PostHog only, so no UGS Event Manager rows): `build_version`, `build_number`,
+- **Analytics person properties** (Froglet Analytics only, so no UGS Event Manager rows): `build_version`, `build_number`,
   `build_commit`, `release_channel`, `ugs_environment` (`Docs/Analytics/EVENT_SCHEMA.json`).
 - **`build_manifest.txt`** next to a Windows player now records the same fields.
 

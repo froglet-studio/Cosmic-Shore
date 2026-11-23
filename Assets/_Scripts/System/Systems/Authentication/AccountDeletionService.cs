@@ -58,8 +58,9 @@ namespace CosmicShore.Core
     /// game restarted; a failure anywhere before that returns <see cref="AccountDeletionStatus.Failed"/> with the
     /// account still there, so trying again finishes the job instead of stranding a half-deleted player.</para>
     ///
-    /// <para><b>Not done here, by design.</b> PostHog cannot delete a person from the client (its key is write-only):
-    /// the sink flags the person and the deletion is finished server side (<c>PostHogAnalyticsSink.RequestDataDeletion</c>).
+    /// <para><b>Not done here, by design.</b> The analytics ingest key is write-only, so the client cannot delete a
+    /// person itself: the sink flags the person and our analytics server erases them on receipt
+    /// (<c>FrogletAnalyticsSink.RequestDataDeletion</c>).
     /// Data that other UGS services keep against the player id (Leaderboards, Friends, Lobby) cannot be deleted by the
     /// client either; it goes with the account through UGS's own player deletion.</para>
     /// </summary>
