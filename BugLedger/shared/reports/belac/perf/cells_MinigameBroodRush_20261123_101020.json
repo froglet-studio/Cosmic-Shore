@@ -1,0 +1,58 @@
+{
+    "scene": "MinigameBroodRush",
+    "timestamp": "2026-11-23 10:10:20",
+    "label": "",
+    "secondsSinceSceneLoad": 107.03636169433594,
+    "floraObjectsInScene": 0,
+    "faunaObjectsInScene": 18,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Nucleus Rush Cell Config",
+            "spawnProfile": "Nucleus Rush Spawn Profile",
+            "configChoice": "Random",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "RandomLifeSpawner",
+            "phase": "Calm",
+            "liveVolume": 44.056888580322269,
+            "liveEnvironmentVolume": 0.0,
+            "livePrismCount": 0,
+            "floraPlantingEnabled": true,
+            "faunaSpawningEnabled": false,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 400.0,
+            "frenzyEnterVolume": 1500.0,
+            "frenzyExitVolume": 1200.0,
+            "frenzyEnterCount": 1500,
+            "frenzyExitCount": 1200,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 391.9114685058594,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Jade",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 0,
+            "faunaLiveTotal": 18,
+            "flora": [],
+            "fauna": [
+                {
+                    "config": "Nucleus Rush Tadpole Fauna Config Data",
+                    "prefab": "TadPoleFauna",
+                    "live": 18,
+                    "initialBatch": 6,
+                    "cap": 24,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                }
+            ]
+        }
+    ],
+    "notes": []
+}

@@ -246,3 +246,7 @@
 2026-11-23T17:17:52.079Z E-75a12f0559: fix d8a7763cd taken (PlayMode); needs 2 clean run(s)
 2026-11-23T17:17:52.126Z E-e061201544: fix e357fbad6 taken (PlayMode); needs 2 clean run(s)
 2026-11-23T17:18:41.222Z PlayMode session ended (22s play run, exiting play mode): 6 fix(es) waiting; counted: E-0f0eb8a59f 1/2 E-111d87fec0 1/2 E-245165ae01 1/2 E-3e99fba873 1/2 E-75a12f0559 1/2 E-e061201544 1/2; fired: E-930ca435ca E-c8e2f49696
+2026-11-23T17:25:30.494Z PlayMode session ended (378s play run, exiting play mode): 6 fix(es) waiting; counted: E-0f0eb8a59f 2/2 E-111d87fec0 2/2 E-245165ae01 2/2 E-3e99fba873 2/2 E-75a12f0559 2/2 E-e061201544 2/2; fired: E-930ca435ca E-c8e2f49696
+2026-11-23T17:31:17.704Z editor load: play=False capture=True minPlay=15s issues=31
+2026-11-23T17:31:37.926Z E-6bc7e07601: fix 97aab2a6a is not in this checkout yet — waiting for a pull
+2026-11-23T18:20:03.661Z PlayMode session ended (2075s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-c8e2f49696
