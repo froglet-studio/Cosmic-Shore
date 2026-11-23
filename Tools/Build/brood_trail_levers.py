@@ -32,14 +32,14 @@ SCRIPTS = ("VesselPrismController", "SparrowPrismController", "ShrikePrismContro
 TABLE = {
     "Orca": 0.9809,  # PROVISIONAL (night integration branch only): refit value, lane occupied
     "Grizzly": 0.4,       # the floor; 1.04 at Medium
-    "Sparrow": 0.459,
+    "Sparrow": 0.4,  # PROVISIONAL: the floor; real Unity reads 1.54 and wants ~0.21 (the judge reads 1.0: parity gap)
     "Wrasse": 0.4947,
     "Scarab": 1.171,
     "Honeyguide": 1.5232,
     "Squirrel": 2.3823,
     "Stoat": 2.3317,  # PROVISIONAL (night integration branch only): refit value, lane occupied
     "Meerkat": 1.8407,
-    "Dolphin": 1.3828,  # PROVISIONAL: fitted on the 60/30 fps mean; cannot hold both (0.85 / 1.16)
+    "Dolphin": 0.977,  # PROVISIONAL: targets real Unity (1.45/1.49 there at 1.6466; the judge flies it at 72 m/s, Unity 100)
     "Urchin": 3.6596,  # PROVISIONAL: 1.46x over the 2.5 cap (cap lifted); 0.90 at 60 fps, 1.08 at 30
     "TigerMoth": 0.2587,  # PROVISIONAL: 0.26, under the 0.4 floor (cap lifted); 1.01 at both rates
     "Thresher": 1.0565,  # PROVISIONAL (night integration branch only): refit value, lane occupied
