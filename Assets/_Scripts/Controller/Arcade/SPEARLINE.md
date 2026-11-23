@@ -184,6 +184,8 @@ are in section 3.
   10% of the judge's 143.6 s. At 4x a frame covers four times the game time, so the AI's read and stroke at a seal are
   timed coarsely and it closes more passes; the loss grew with the seals a lap (I1 none, I2 +4 s, I3 +28 s, I4 +52 s).
   So the 4x times above are not race times for I2-I4: time Spearline's AI at 1x. No Spearline change was made.
+  I2 and I3 at 1x, same seats, one seed each: 133.3 s and 132.7 s (judge 142.3 and 135.2 s). So at 1x the winner of
+  three takes 133.3 / 132.7 / 130.9 s at I2 / I3 / I4: the ladder is flat for the AI in the editor too. I1 at 1x not run.
 - **Frame rate, I2, clock 1x, 1920x1080 Ultra, 15 s `capture`** (i7-8700K, RTX 4070 Ti, editor): Debug code mode with
   the 75 fps cap, 49 fps (game work 12.8 ms a frame, capped, so not a measurement); Release code mode with VSync and the
   target off, 111 fps average, median 8.6 ms, p95 12.4 ms, p99 15.6 ms, GPU 2.8 ms, CPU-bound. The controller's

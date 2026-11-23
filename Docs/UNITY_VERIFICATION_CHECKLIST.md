@@ -26509,6 +26509,7 @@ all finished with a winner and no error in the match (I1 135.5-150.5 s, I2 146.3
 boxes above stay open: nobody watched the races or flew one, and I4's 195.9 s is not within 10% of 144 s.
 The 195.9 s came from the 4x clock: I4 again at 1x with the same three AIs took 130.9 s (one seed), within 10% of 144 s.
 Time this mode's AI at 1x.
+I2 and I3 at 1x: 133.3 s and 132.7 s (one seed each), both within 10% of the judge's 142.3 and 135.2 s.
 
 ## Retention economy: party pay, voyage dock pay, quests at intensity 2 (2026-11-21)
 
