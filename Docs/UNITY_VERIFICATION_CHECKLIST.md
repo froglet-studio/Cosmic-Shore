@@ -26083,3 +26083,14 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
+
+## Arcade Poster card and the cell in every card picture (2026-11-23, Shombith's pick, Frogma Rev 128 E / Rev 129)
+
+Not opened in the editor: built in a cloud session (unity_refcompile: 0 errors in the changed files).
+- [ ] Menu_Main > Arcade: every card is all picture with the name in Aldrich over a navy fade, the hull at the bottom right.
+- [ ] Hover a card with the mouse: a panel slides up from the foot with the mode's line and its pilots; the name rises, the hull fades; it closes on exit.
+- [ ] Gamepad: moving focus onto a card opens the same panel; moving off closes it. Touch (phone): no panel, a tap opens the mode.
+- [ ] A long name (Wildlife Liberation, Scarab Scramble) shrinks to fit beside the hull.
+- [ ] Locked card: the lock and LOCKED read in the middle of the picture.
+- [ ] Card pictures: the cell's pane wall and the dust read at grid size, no blue wash (`Docs/MENU_REDESIGN_B.md` 222.1).
+
