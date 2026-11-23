@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
     }
     public class VesselImpactor : MonoBehaviour { public IVessel Vessel => null; }
     public class PrismImpactor : MonoBehaviour { public Prism Prism => null; }
-    public class Prism : MonoBehaviour { public PrismProperties prismProperties; public Domains Domain => default; }
+    public class Prism : MonoBehaviour { public PrismProperties prismProperties; public Domains Domain => default; public string PlayerName => null; }
     public class PrismProperties { public bool IsDangerous; public float DangerWeight = 1f; }
     public class SnowChanger : MonoBehaviour { }
     // Assets/_Scripts/ScriptableObjects/WarpFieldSO.cs (CellConfigDataSO's warp field slot)
