@@ -26507,6 +26507,8 @@ seeds 101-103, 24 of 24 finished): Legendary 148.5 / 142.3 / 135.2 / 143.6 s, Me
 2026-11-24, in the editor, AI only (mode smoke test, three Legendary AI, clock 4x): I1 four times, I2, I3 and I4 once each
 all finished with a winner and no error in the match (I1 135.5-150.5 s, I2 146.3 s, I3 163.4 s, I4 195.9 s). The three
 boxes above stay open: nobody watched the races or flew one, and I4's 195.9 s is not within 10% of 144 s.
+The 195.9 s came from the 4x clock: I4 again at 1x with the same three AIs took 130.9 s (one seed), within 10% of 144 s.
+Time this mode's AI at 1x.
 
 ## Retention economy: party pay, voyage dock pay, quests at intensity 2 (2026-11-21)
 

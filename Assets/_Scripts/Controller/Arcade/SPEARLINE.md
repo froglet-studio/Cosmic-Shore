@@ -179,7 +179,11 @@ are in section 3.
 - **2026-11-24, the same editor, AI only** (the mode smoke test, three Legendary Swordfish AI, clock 4x, one seed
   each): every race finished with a winner and no error or exception in the match. I1 136.9 / 135.5 / 150.5 / 143.0 s,
   I2 146.3 s, I3 163.4 s, I4 195.9 s. The smoke test still marks the runs failed for errors at boot only (a Cloud Code
-  `404 Script could not be found`), not Spearline's. I4 took 52 s longer than the headless judge's 143.6 s; not explained.
+  `404 Script could not be found`), not Spearline's. I4 took 52 s longer than the headless judge's 143.6 s.
+  **Explained the same day: the 4x clock.** I4 again with the same three AIs at clock 1x: 130.9 s (one seed), within
+  10% of the judge's 143.6 s. At 4x a frame covers four times the game time, so the AI's read and stroke at a seal are
+  timed coarsely and it closes more passes; the loss grew with the seals a lap (I1 none, I2 +4 s, I3 +28 s, I4 +52 s).
+  So the 4x times above are not race times for I2-I4: time Spearline's AI at 1x. No Spearline change was made.
 - **Frame rate, I2, clock 1x, 1920x1080 Ultra, 15 s `capture`** (i7-8700K, RTX 4070 Ti, editor): Debug code mode with
   the 75 fps cap, 49 fps (game work 12.8 ms a frame, capped, so not a measurement); Release code mode with VSync and the
   target off, 111 fps average, median 8.6 ms, p95 12.4 ms, p99 15.6 ms, GPU 2.8 ms, CPU-bound. The controller's
