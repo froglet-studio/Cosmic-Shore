@@ -26,27 +26,30 @@ SCRIPTS = ("VesselPrismController", "SparrowPrismController", "ShrikePrismContro
 # 17-hull card with #2329 Rhino, #2330 Swordfish, #2331 Manta and #2332's Mass-Space AI rows, shield shells netted),
 # capped at 0.4x-2.5x of the pre-#2261 value (1.35 for Squirrel, Stoat, Meerkat, Thresher; else 1).
 # /mnt/project-files/regatta-flywheel/broodrush-deep/REFIT.md.
+# PROVISIONAL 2026-11-23 (claude/brood-night-refit, scratch): refit on the mean of 60 and 30 fps (JUDGE_DT), Medium 3x3,
+# the 17-hull card, with the TigerMoth and Urchin caps lifted (Garrett's open card). Rhino, Manta kept from their PRs.
+# /mnt/project-files/regatta-flywheel/night4/broodrush/REFIT_FPS.md.
 TABLE = {
-    "Orca": 0.9784,  # PROVISIONAL (night integration branch only): refit value, lane occupied
+    "Orca": 0.9809,  # PROVISIONAL (night integration branch only): refit value, lane occupied
     "Grizzly": 0.4,       # the floor; 1.04 at Medium
-    "Sparrow": 0.4705,
-    "Wrasse": 0.4869,
-    "Scarab": 0.9953,
-    "Honeyguide": 1.5417,
-    "Squirrel": 2.1557,
-    "Stoat": 2.2858,  # PROVISIONAL (night integration branch only): refit value, lane occupied
-    "Meerkat": 1.9244,
-    "Dolphin": 1.6466,  # PROVISIONAL (night integration branch only): refit value, lane occupied
-    "Urchin": 2.5,        # the cap, and still 0.61 at Medium: flagged, its Mass kit needs a lever of its own
-    "TigerMoth": 0.4,     # the cap, and still 1.21 at Medium on #2332's throttle row: flagged
-    "Thresher": 0.9141,  # PROVISIONAL (night integration branch only): refit value, lane occupied
-    "Swordfish": 0.7268,  # with #2330's 1.7x afterimages
+    "Sparrow": 0.459,
+    "Wrasse": 0.4947,
+    "Scarab": 1.171,
+    "Honeyguide": 1.5232,
+    "Squirrel": 2.3823,
+    "Stoat": 2.3317,  # PROVISIONAL (night integration branch only): refit value, lane occupied
+    "Meerkat": 1.8407,
+    "Dolphin": 1.3828,  # PROVISIONAL: fitted on the 60/30 fps mean; cannot hold both (0.85 / 1.16)
+    "Urchin": 3.6596,  # PROVISIONAL: 1.46x over the 2.5 cap (cap lifted); 0.90 at 60 fps, 1.08 at 30
+    "TigerMoth": 0.2587,  # PROVISIONAL: 0.26, under the 0.4 floor (cap lifted); 1.01 at both rates
+    "Thresher": 1.0565,  # PROVISIONAL (night integration branch only): refit value, lane occupied
+    "Swordfish": 0.6766,  # with #2330's 1.7x afterimages
     "Shrike": 0.0675,     # "shrink shrike's trail so it is almost nothing" (Garrett, 2026-11-19); its lever is the nest (NEST)
 }
 
 # The Shrike's mass is its nest (ShrikeRules.NestPieces): its lever is the shell's plate thickness (0.7 shipped), not the trail.
 SHRIKE_CONFIG = os.path.join(ROOT, "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset")
-NEST = {"nestShellThickness": 1.2273}
+NEST = {"nestShellThickness": 1.2762}
 
 BLOCK = "  trailVolume:\n    Enabled: 0\n    Value: {v}\n    Min: 1\n    Max: 2.5\n    element: 0\n    UseFloor: 0\n    Floor: 0\n"
 

@@ -75,7 +75,7 @@ MonoBehaviour:
     Floor: 6
   nestBlockSize: 4.5
   nestClearance: 1.1
-  nestShellThickness: 1.2273
+  nestShellThickness: 1.2762
   nestHoops: 3
   nestTwigWidth: 1
   nestTwigLength: 4

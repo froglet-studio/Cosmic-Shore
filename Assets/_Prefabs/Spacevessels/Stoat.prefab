@@ -786,7 +786,7 @@ MonoBehaviour:
   shielded: 0
   trailVolume:
     Enabled: 0
-    Value: 2.2858
+    Value: 2.3317
     Min: 1
     Max: 2.5
     element: 0
