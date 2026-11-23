@@ -639,9 +639,8 @@ def build_slot():
     # not given one - RequestInfoEntry / OnlineInfoEntry already fade them in (entryFadeInSeconds).
     root.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=8))
     occ = root.child(N("Occupied", "Occupied", STRETCH)).add("cg", 225, canvas_group(False))
-    oct_nodes(occ, "Occupied/Avatar/Ring", SOCK_AV + 6, "SurfaceDark")
-    oct_nodes(occ, "Occupied/Avatar/Gap", SOCK_AV + 2, "SurfaceVeryDark")
-    oct_nodes(occ, "Occupied/Avatar/Back", SOCK_AV, "SurfaceDark")
+    # The avatar's round cut, domain ring, waves and halo are built round the icon at run time (AvatarRippleBorder,
+    # Frogma Rev 127 D, Docs/MENU_REDESIGN_B.md section 217); the octagon ring, gap and backing it replaced are gone.
     art_node(occ, "Occupied/Avatar/Icon", "Avatar", R((0.5, 1), None, (0, -SOCK_AV_Y), (SOCK_AV, SOCK_AV)),
              AVATAR_PLACEHOLDER, preserve=True)
     # Rev 7: hovering a member's avatar opens their profile card (FriendProfilePopup); under the kick button.
@@ -684,13 +683,11 @@ def build_slot():
              f"  addButton: {ref(ctx.c('Empty', 'tile'))}\n"
              f"  displayNameText: {ref(ctx.c('Occupied/Name', 'tmp'))}\n"
              f"  kickButton: {ref(ctx.iref('KickButton', 'root#button'))}\n"
-             "  domainGlow: {fileID: 0}\n"
              f"  occupiedGroup: {ref(ctx.c('Occupied', 'cg'))}\n"
              f"  emptyGroup: {ref(ctx.c('Empty', 'cg'))}\n"
              f"  kickGroup: {ref(ctx.c('Occupied/Kick', 'cg'))}\n"
              f"  roleText: {ref(ctx.c('Occupied/Role', 'kt'))}\n"
-             f"  domainRing: {ref(ctx.c('Occupied/Avatar/Ring', 'img'))}\n"
-             f"  theme: {K.ref(11400000, K.THEME, 2)}\n"))
+             ))
     return root
 
 
@@ -1672,7 +1669,7 @@ def check_fields(files, name, comp_key, wanted):
 TMP, IMG = K.TMP_UGUI, K.IMAGE
 FIELDS = [
     ("PartySlot", "root#slot", dict(avatarIcon=IMG, addButton=S["tile"], displayNameText=TMP, kickButton=S["button"],
-                                    occupiedGroup=225, emptyGroup=225, kickGroup=225, roleText=S["kt"], domainRing=IMG)),
+                                    occupiedGroup=225, emptyGroup=225, kickGroup=225, roleText=S["kt"])),
     ("PartyRequestRow", "root#row", dict(avatarIcon=IMG, usernameText=TMP, labelText=TMP, acceptButton=S["button"],
                                          declineButton=S["button"], kindText=S["kt"])),
     ("PartyOnlineRow", "root#row", dict(avatarIcon=IMG, usernameText=TMP, labelText=TMP, inviteButton=S["button"],

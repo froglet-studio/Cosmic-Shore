@@ -8973,3 +8973,14 @@ and a 3 v 2 v 1 match lobby. Colours are the style tokens' Jade `#21C0BD`, Ruby 
 **Differs from the build**: the avatar Image gets a round mask and a ring Image on its edge; the halo grows to 1.3x
 and its sprite starts at the ring's radius; the three halo call sites become one component
 (`Docs/PartySystem/TODOS.md` TODO-12) so the party panel, connecting roster and rematch vote share the border.
+
+**Picked (Shombith, 2026-11-23)**: "D build it", on every avatar with a domain glow ("All of them").
+
+**Built (2026-11-23)**: `AvatarRippleBorder` (`Assets/_Scripts/UI/Elements/`) builds the board's geometry round any avatar
+Image at run time: a holder in the avatar's place, a round mask holding the avatar, the ring on its edge (0.016 x diameter
++ 1.6 px), two waves (0.008 x diameter + 1 px) growing from 1 to 1.3x over 2.4 s on the board's ease-out and fading out at
+the rim, the halo at 1.3x and 0.45 alpha, the quiet 2 px `SurfaceLight` ring when the domain is not known. It is on the
+party seats (`FriendInfoSlot` / `KitPartySlot`, replacing the octagon ring, gap and backing, which
+`author_menu_arcade.py` no longer writes) and the scoreboard's rematch votes (`RematchVoteRoster`, replacing its own halo).
+`PartySlotDomainGlow` is retired. The connecting screen's roster draws no avatars today, so it has none. Not yet seen in
+Unity: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Avatar borders, Rev 127 D Ripple".
