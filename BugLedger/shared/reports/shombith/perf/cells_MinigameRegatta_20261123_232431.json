@@ -1,0 +1,49 @@
+{
+    "scene": "MinigameRegatta",
+    "timestamp": "2026-11-23 23:24:31",
+    "label": "",
+    "secondsSinceSceneLoad": 110.18913269042969,
+    "floraObjectsInScene": 0,
+    "faunaObjectsInScene": 0,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Regatta Shuffle Cell Config Course1",
+            "spawnProfile": "Barren Cell Spawn Profile",
+            "configChoice": "CourseVariantWise",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "IntensityWiseLifeSpawner",
+            "phase": "Frenzy",
+            "liveVolume": 296699.09375,
+            "liveEnvironmentVolume": 100428.6875,
+            "livePrismCount": 13609,
+            "floraPlantingEnabled": false,
+            "faunaSpawningEnabled": true,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 1581845.25,
+            "frenzyEnterVolume": 1921845.25,
+            "frenzyExitVolume": 1841845.25,
+            "frenzyEnterCount": 12722,
+            "frenzyExitCount": 12122,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 391.9114685058594,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Gold",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 0,
+            "faunaLiveTotal": 0,
+            "flora": [],
+            "fauna": []
+        }
+    ],
+    "notes": [
+        "Cell 0: planting is OFF because the phase is Frenzy."
+    ]
+}
