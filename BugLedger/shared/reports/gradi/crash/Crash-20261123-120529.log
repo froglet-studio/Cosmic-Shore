@@ -1,0 +1,1859 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-11-23 12:05:29 (next editor launch after the abnormal exit)
+session:        20261120-003113640  (pid 32196, Unity 6000.3.17f1)
+started:        2026-11-20T00:31:13.640Z UTC
+last heartbeat: 2026-11-21T18:35:03.846Z UTC
+last state:     EditMode
+main thread:    unresponsive for ~1269s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      C:\Users\gradi\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261120-003113640.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261120-003113640
+started: 2026-11-20T00:31:13.640Z UTC
+unity:   6000.3.17f1
+pid:     32196
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[19:31:59.736] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261120-003113640.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[19:32:31.943] ---- main thread stalled ~78s and RECOVERED — slow, not hung ----
+[19:32:34.974] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[19:32:35.762] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[19:42:29.167] ---- entering play mode ----
+[19:42:32.482] [EditMode] Exception: [Vivox]: System.ArgumentException: 'server' is null or empty
+Parameter name: server
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[19:42:33.195] ---- play mode running ----
+[19:42:48.289] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-11-16'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:20:26.567] [PlayMode] Error: Received error message from Relay: allocation ID not found.
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcabb5a7fa (Unity) DefaultBurstRuntimeLogCallback
+        0x00007ffcab7b971a (Unity) BurstCompilerService_CUSTOM_RuntimeLog
+        0x00007ffcd01dead1 (caeb738c05adf2fd6253f9b919d44fa) Unity.Networking.Transport.Relay.RelayMessageError.LogError (at C:/Users/gradi/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@98ef8bfec34d/Runtime/Relay/Messages/RelayMessageError.cs:46)
+        0x00007ffcd01e917a (caeb738c05adf2fd6253f9b919d44fa) Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>.ProcessReceivedMessages (at C:/Users/gradi/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@98ef8bfec34d/Runtime/Layers/RelayLayer.cs:326)
+        0x00007ffcd01e7813 (caeb738c05adf2fd6253f9b919d44fa) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>>.Execute(ref Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList> data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_0d64390541958b43604801c180219108 from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/gradi/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffcd01e75bd (caeb738c05adf2fd6253f9b919d44fa) 8de023688c1b71ddd3534988b741c831
+        0x00007ffcac0333a6 (Unity) ExecuteJob
+        ...
+[20:20:26.571] [PlayMode] Error: Relay allocation is invalid. See NetworkDriver.GetRelayConnectionStatus and RelayConnectionStatus.AllocationInvalid for details on how to handle this situation.
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcabb5a7fa (Unity) DefaultBurstRuntimeLogCallback
+        0x00007ffcab7b971a (Unity) BurstCompilerService_CUSTOM_RuntimeLog
+        0x00007ffcd01deafe (caeb738c05adf2fd6253f9b919d44fa) Unity.Networking.Transport.Relay.RelayMessageError.LogError (at C:/Users/gradi/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@98ef8bfec34d/Runtime/Relay/Messages/RelayMessageError.cs:50)
+        0x00007ffcd01e917a (caeb738c05adf2fd6253f9b919d44fa) Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>.ProcessReceivedMessages (at C:/Users/gradi/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@98ef8bfec34d/Runtime/Layers/RelayLayer.cs:326)
+        0x00007ffcd01e7813 (caeb738c05adf2fd6253f9b919d44fa) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>>.Execute(ref Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList> data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_0d64390541958b43604801c180219108 from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/gradi/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffcd01e75bd (caeb738c05adf2fd6253f9b919d44fa) 8de023688c1b71ddd3534988b741c831
+        0x00007ffcac0333a6 (Unity) ExecuteJob
+        ...
+[20:20:26.619] [PlayMode] Error: Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. Use NetworkManager.OnTransportFailure to be notified of such events programmatically.
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:20:26.623] [PlayMode] Error: [Netcode] Host is shutting down due to network transport failure of UnityTransport!
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:20:26.839] [PlayMode] Error: Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. Use NetworkManager.OnTransportFailure to be notified of such events programmatically.
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:20:26.842] [PlayMode] Error: [Netcode] Host is shutting down due to network transport failure of UnityTransport!
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:20:35.873] ---- leaving play mode ----
+[20:20:41.668] ---- edit mode restored ----
+[21:08:42.491] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:08:43.021] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:08:46.278] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:08:47.010] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:07:52.928] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:07:53.505] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:07:55.865] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:07:56.728] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:07:43.268] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:07:43.951] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:07:48.240] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:07:48.917] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:07:53.320] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:07:53.895] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:07:54.681] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:07:55.413] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:06:58.775] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:06:59.430] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:07:01.453] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:07:02.191] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[05:06:01.679] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[05:06:02.132] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[05:06:06.106] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[05:06:06.854] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:05:42.516] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:05:43.048] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:05:47.237] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:05:47.777] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:05:48.561] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:05:49.290] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[09:05:01.308] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[09:05:01.819] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[09:05:02.889] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[09:05:03.670] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[11:04:31.536] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[11:04:32.192] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[11:04:36.294] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[11:04:36.848] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[11:04:37.407] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[11:04:38.267] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[13:04:02.834] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[13:04:03.272] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[13:04:04.050] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[13:04:05.000] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:03:10.959] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:03:11.546] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:03:13.945] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:03:14.613] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209e942928e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209e9429093 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209e9428d4b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:09:39.722] ---- domain reload begins (script compilation / play-mode transition) ----
+[15:10:39.453] ---- domain reload complete — session re-adopted ----
+[15:11:04.058] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002099c131e1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002099c131c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002099c1318db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:11:04.569] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002099c131e1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002099c131c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002099c1318db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:26:10.043] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261120-003113640.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[15:26:24.191] ---- domain reload begins (script compilation / play-mode transition) ----
+[15:26:34.081] ---- domain reload complete — session re-adopted ----
+[15:26:59.430] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:26:59.867] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:03:09.534] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:03:10.046] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:03:13.480] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:03:14.305] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[19:02:37.407] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[19:02:37.968] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[19:02:42.356] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[19:02:43.002] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[19:02:43.554] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[19:02:44.444] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:01:50.165] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:01:50.634] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:01:54.109] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:01:54.967] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:01:50.333] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:01:50.912] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:01:53.705] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:01:54.457] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:01:39.846] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:01:40.408] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:01:44.285] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:01:45.225] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:01:16.110] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:01:16.648] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:01:19.808] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:01:20.639] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[05:00:26.063] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[05:00:26.664] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[05:00:29.347] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[05:00:30.237] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:00:15.910] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:00:16.456] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:00:20.731] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:00:21.403] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[08:59:31.289] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[08:59:32.169] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[08:59:34.529] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[08:59:35.261] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[10:59:32.817] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[10:59:33.346] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[10:59:37.025] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[10:59:37.760] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[12:09:23.975] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261120-003113640.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[12:09:24.207] ---- main thread stalled ~153s and RECOVERED — slow, not hung ----
+[12:11:23.422] ---- main thread stalled ~104s and RECOVERED — slow, not hung ----
+[12:35:49.193] ---- main thread stalled ~89s and RECOVERED — slow, not hung ----
+[13:09:48.185] ---- main thread stalled ~1196s and RECOVERED — slow, not hung ----
+[13:13:54.600] ---- main thread stalled ~248s and RECOVERED — slow, not hung ----
+[13:16:39.980] [EditMode] Error: connection.state_change
+oldState=Connecting newState=Failed error=Relay process exited (exit code 0)
+        0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab95587f (Unity) DebugStringToFile
+        0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Scanning for USB devices : 22.980ms
+Scanning for USB devices : 10.508ms
+Scanning for USB devices : 9.935ms
+Scanning for USB devices : 176.802ms
+Scanning for USB devices : 44.889ms
+Scanning for USB devices : 9.633ms
+Scanning for USB devices : 9.828ms
+Scanning for USB devices : 9.215ms
+Scanning for USB devices : 11.837ms
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Scanning for USB devices : 8.859ms
+Scanning for USB devices : 9.782ms
+Scanning for USB devices : 9.778ms
+Scanning for USB devices : 32.712ms
+Scanning for USB devices : 30.508ms
+Scanning for USB devices : 11.226ms
+Scanning for USB devices : 9.897ms
+Scanning for USB devices : 8.926ms
+Scanning for USB devices : 9.869ms
+Scanning for USB devices : 9.496ms
+Scanning for USB devices : 9.455ms
+Scanning for USB devices : 9.714ms
+Scanning for USB devices : 9.687ms
+Scanning for USB devices : 9.598ms
+Scanning for USB devices : 9.432ms
+Scanning for USB devices : 9.745ms
+Scanning for USB devices : 9.845ms
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Scanning for USB devices : 9.649ms
+Scanning for USB devices : 9.398ms
+Scanning for USB devices : 10.803ms
+Scanning for USB devices : 9.652ms
+Scanning for USB devices : 11.260ms
+Scanning for USB devices : 9.913ms
+Scanning for USB devices : 9.539ms
+Scanning for USB devices : 9.422ms
+Scanning for USB devices : 11.576ms
+System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020ac4df0a07 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x0000020ac10b7bd9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x0000020ac10b75fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002082ba50b98 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcab6bb129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffcac0a2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffcadb10bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffcadb10dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffcac0228ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffcac0ab65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffcaca1833d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020ac4df0a07 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x0000020ac10b7bd9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x0000020ac10b75fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002082ba50b98 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcab6bb129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffcac0a2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffcadb10bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffcadb10dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffcac0228ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffcac0ab65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffcaca1833d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "PEZ8SCOk"... (expires: 2026-11-21T13:59:27Z)
+System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020ac4df0a07 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x0000020ac10b7bd9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x0000020ac10b75fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002082ba50b98 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcab6bb129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffcac0a2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffcadb10bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffcadb10dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffcac0228ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffcac0ab65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffcaca1833d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020ac4df0a07 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x0000020ac10b7bd9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x0000020ac10b75fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002082ba50b98 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcab6bb129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffcac0a2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffcadb10bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffcadb10dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffcac0228ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffcac0ab65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffcaca1833d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Scanning for USB devices : 10.435ms
+Scanning for USB devices : 9.037ms
+Scanning for USB devices : 9.920ms
+Scanning for USB devices : 9.646ms
+Scanning for USB devices : 9.662ms
+Scanning for USB devices : 9.547ms
+Scanning for USB devices : 9.580ms
+Scanning for USB devices : 10.182ms
+Scanning for USB devices : 11.074ms
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Scanning for USB devices : 10.045ms
+Scanning for USB devices : 9.501ms
+Scanning for USB devices : 9.996ms
+Scanning for USB devices : 9.587ms
+Scanning for USB devices : 9.454ms
+Scanning for USB devices : 11.028ms
+Scanning for USB devices : 9.701ms
+Scanning for USB devices : 10.128ms
+Scanning for USB devices : 10.286ms
+Scanning for USB devices : 9.729ms
+Scanning for USB devices : 9.503ms
+Scanning for USB devices : 9.597ms
+Scanning for USB devices : 9.704ms
+Scanning for USB devices : 10.181ms
+Scanning for USB devices : 10.825ms
+Scanning for USB devices : 9.554ms
+Scanning for USB devices : 10.252ms
+Scanning for USB devices : 9.809ms
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Scanning for USB devices : 9.239ms
+Scanning for USB devices : 9.237ms
+Scanning for USB devices : 10.156ms
+Scanning for USB devices : 9.869ms
+Scanning for USB devices : 10.253ms
+Scanning for USB devices : 10.217ms
+Scanning for USB devices : 9.857ms
+Scanning for USB devices : 21.323ms
+Scanning for USB devices : 11.822ms
+System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020ac4df0a07 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x0000020ac10b7bd9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x0000020ac10b75fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002082ba50b98 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcab6bb129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffcac0a2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffcadb10bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffcadb10dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffcac0228ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffcac0ab65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffcaca1833d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020ac4df0a07 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x0000020ac10b7bd9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x0000020ac10b75fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002082ba50b98 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcab6bb129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffcac0a2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffcadb10bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffcadb10dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffcac0228ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffcac0ab65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffcaca1833d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "EKbA5kUn"... (expires: 2026-11-21T15:59:30Z)
+System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020ac4df0a07 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x0000020ac10b7bd9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x0000020ac10b75fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002082ba50b98 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcab6bb129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffcac0a2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffcadb10bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffcadb10dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffcac0228ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffcac0ab65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffcaca1833d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020ac4df0a07 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x0000020ac10b7bd9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x0000020ac10b75fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002082ba50b98 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcab6bb129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffcac0a2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffcadb10bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffcadb10dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffcac0228ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffcac0ab65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffcaca1833d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Scanning for USB devices : 9.688ms
+Scanning for USB devices : 10.013ms
+Scanning for USB devices : 10.195ms
+Scanning for USB devices : 9.857ms
+Scanning for USB devices : 9.590ms
+Scanning for USB devices : 9.463ms
+Scanning for USB devices : 9.371ms
+Scanning for USB devices : 9.392ms
+Scanning for USB devices : 11.298ms
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020ac4df0a07 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x0000020ac10b7bd9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x0000020ac10b75fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002082ba50b98 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcab6bb129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffcac0a2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffcadb10bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffcadb10dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffcac0228ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffcac0ab65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffcaca1833d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020ac4df0a07 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x0000020ac10b7bd9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x0000020ac10b75fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002082ba50b98 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcab6bb129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffcac0a2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffcadb10bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffcadb10dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffcac0228ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffcac0ab65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffcaca1833d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "wCgj4UJP"... (expires: 2026-11-21T17:58:58Z)
+System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020ac4df0a07 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x0000020ac10b7bd9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x0000020ac10b75fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002082ba50b98 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcab6bb129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffcac0a2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffcadb10bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffcadb10dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffcac0228ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffcac0ab65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffcaca1833d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020ac4df0a07 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x0000020ac10b7bd9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x0000020ac10b75fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002082ba50b98 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcab6bb129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffcac0a2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffcadb10bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffcadb10dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffcac0228ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffcac0ab65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffcaca1833d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Asset Pipeline Refresh (id=3005e32e4c274f944be200ffdc51cac0): Total: 32.693 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=32471 ms
+		Asset DB Callback time: managed=0 ms, native=212 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=0 ms, other=0 ms
+		Project Asset Count: scripts=4767, non-scripts=13913
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 32.521ms
+	InvokePackagesCallback: 180.657ms
+	ApplyChangesToAssetFolders: 6835.042ms
+	Scan: 0.002ms
+	GatherAllCurrentPrimaryArtifactRevisions: 1555.342ms
+	UnloadStreamsBegin: 0.009ms
+	UnloadStreamsEnd: 0.006ms
+	Untracked: 24089.760ms
+
+Asset Pipeline Refresh (id=26ff950c762bad546a7620f08408ec30): Total: 2.350 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=2347 ms
+		Asset DB Callback time: managed=0 ms, native=2 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=0 ms, other=0 ms
+		Project Asset Count: scripts=4767, non-scripts=13913
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.002ms
+	InvokePackagesCallback: 53.224ms
+	ApplyChangesToAssetFolders: 647.706ms
+	Scan: 0.001ms
+	GatherAllCurrentPrimaryArtifactRevisions: 4.203ms
+	UnloadStreamsBegin: 0.007ms
+	UnloadStreamsEnd: 0.005ms
+	Untracked: 1644.698ms
+
+Asset Pipeline Refresh (id=f7715fa128dcf69468928ec5738dc863): Total: 80.925 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=80923 ms
+		Asset DB Callback time: managed=0 ms, native=1 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=0 ms, other=0 ms
+		Project Asset Count: scripts=4767, non-scripts=13913
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.003ms
+	InvokePackagesCallback: 986.731ms
+	ApplyChangesToAssetFolders: 68926.537ms
+	Scan: 0.000ms
+	GatherAllCurrentPrimaryArtifactRevisions: 2.758ms
+	UnloadStreamsBegin: 0.007ms
+	UnloadStreamsEnd: 0.006ms
+	Untracked: 11009.281ms
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+[INFO ] [relay] log Auto-shutdown timer fired after 180s inactivity, shutting down: Dedicated client disconnected
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Dedicated client disconnected
+warn: Microsoft.AspNetCore.Server.Kestrel[22]
+      As of "11/21/2026 18:03:35 +00:00", the heartbeat has been running for "00:00:01.5912928" which is longer than "00:00:01". This could be caused by thread pool starvation.
+connection.state_change
+oldState=Connecting newState=Failed error=Relay process exited (exit code 0)
+0x00007ffcab9a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcad1df369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcad1dfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab95587f (Unity) DebugStringToFile
+0x00007ffcab811b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000209aa94129e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000209aa9410a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000209aa940d5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000209aa9401de (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000020ac6be810a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x0000020b14966ca3 (Mono JIT Code) Unity.AI.Tracing.ConsoleSink:LogToConsole (string,string,System.Exception) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/TraceSinks.cs:307)
+0x0000020b14965a23 (Mono JIT Code) Unity.AI.Tracing.ConsoleSink:Write (Unity.AI.Tracing.TraceEvent) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/TraceSinks.cs:277)
+0x00000209bef3175a (Mono JIT Code) Unity.AI.Tracing.TraceWriter:WriteEventInternal (string,string,Unity.AI.Tracing.TraceEventOptions,string,System.Nullable`1<int>) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/TraceWriter.cs:373)
+0x00000209bef2f5e3 (Mono JIT Code) Unity.AI.Tracing.TraceWriter:Event (string,Unity.AI.Tracing.TraceEventOptions) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/TraceWriter.cs:297)
+0x0000020ac45a41cb (Mono JIT Code) Unity.AI.Tracing.Trace:Event (string,Unity.AI.Tracing.TraceEventOptions) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/Trace.cs:79)
+0x0000020ac45a926b (Mono JIT Code) Unity.Relay.Editor.RelayService:TransitionTo (Unity.Relay.Editor.RelayStatus,string) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Editor/Assistant/Relay/RelayService.cs:1226)
+0x0000020b14963c0b (Mono JIT Code) Unity.Relay.Editor.RelayService/<ConnectWebSocketAsync>d__102:MoveNext () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Editor/Assistant/Relay/RelayService.cs:675)
+0x000002096a427b02 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x0000020b14963483 (Mono JIT Code) Unity.Relay.Editor.RelayService:ConnectWebSocketAsync ()
+0x0000020b14962133 (Mono JIT Code) Unity.Relay.Editor.RelayService/<ReconnectAsync>d__92:MoveNext () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Editor/Assistant/Relay/RelayService.cs:414)
+0x000002096a427b02 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x0000020b149619b3 (Mono JIT Code) Unity.Relay.Editor.RelayService:ReconnectAsync ()
+0x0000020ac6bab58b (Mono JIT Code) Unity.Relay.Editor.RelayService:Update () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Editor/Assistant/Relay/RelayService.cs:1294)
+0x0000020ac1105818 (Mono JIT Code) UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+0x0000020a9eb6cf65 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffcd74a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffcd73e8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffcd73e8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcac1dfdd4 (Unity) scripting_method_invoke
+0x00007ffcac1e6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcac1e2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcac7cbcbb (Unity) Scripting::UnityEditor::EditorApplicationProxy::Internal_CallUpdateFunctions
+0x00007ffcace49d27 (Unity) SceneTracker::Update
+0x00007ffcaca1846d (Unity) Application::TickTimer
+0x00007ffcac7f9f7c (Unity) MainMessageLoop
+0x00007ffcac801a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+
