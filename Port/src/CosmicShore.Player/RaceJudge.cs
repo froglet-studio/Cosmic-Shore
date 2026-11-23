@@ -44,7 +44,7 @@ namespace CosmicShore.Player
         /// a race at intensity 1-4 lays when its genome is not handed to RegattaCourseGenome.Override.</summary>
         const string CoursePoolPath = "Assets/_SO_Assets/Cell Configs/Regatta Cell/Regatta Course Pool.asset";
         const BindingFlags Any = BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
-        const double TickSeconds = 1.0 / 60.0;
+        static readonly double TickSeconds = JudgeDt.Dt;
         /// <summary>The sim time every judge launches its game at, whatever frame the boot reached the menu on, so a run
         /// repeats exactly (the menu came at 0.2-1.3 s in every measured boot).</summary>
         const double LaunchAtSeconds = 5.0;

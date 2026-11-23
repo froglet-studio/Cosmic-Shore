@@ -27,19 +27,19 @@ SCRIPTS = ("VesselPrismController", "SparrowPrismController", "ShrikePrismContro
 # capped at 0.4x-2.5x of the pre-#2261 value (1.35 for Squirrel, Stoat, Meerkat, Thresher; else 1).
 # /mnt/project-files/regatta-flywheel/broodrush-deep/REFIT.md.
 TABLE = {
-    "Orca": 0.8,          # HELD: the refit wants 0.9784 (+22%), but the Orca lane is occupied (claude/ms-ai-orca)
+    "Orca": 0.9784,  # PROVISIONAL (night integration branch only): refit value, lane occupied
     "Grizzly": 0.4,       # the floor; 1.04 at Medium
     "Sparrow": 0.4705,
     "Wrasse": 0.4869,
     "Scarab": 0.9953,
     "Honeyguide": 1.5417,
     "Squirrel": 2.1557,
-    "Stoat": 1.9373,      # HELD: the refit wants 2.2858 (+18%), but the Stoat lane is occupied (Yash, Ys-bleeding-edge)
+    "Stoat": 2.2858,  # PROVISIONAL (night integration branch only): refit value, lane occupied
     "Meerkat": 1.9244,
-    "Dolphin": 1.871,     # HELD: the refit wants 1.6466 (-12%), but the Dolphin lane is occupied (claude/ms-ai-dolphin)
+    "Dolphin": 1.6466,  # PROVISIONAL (night integration branch only): refit value, lane occupied
     "Urchin": 2.5,        # the cap, and still 0.61 at Medium: flagged, its Mass kit needs a lever of its own
     "TigerMoth": 0.4,     # the cap, and still 1.21 at Medium on #2332's throttle row: flagged
-    "Thresher": 1.1475,   # HELD: the refit wants 0.9141 (-20%), but the Thresher lane is occupied (claude/fervent-pascal-o28ftt)
+    "Thresher": 0.9141,  # PROVISIONAL (night integration branch only): refit value, lane occupied
     "Swordfish": 0.7268,  # with #2330's 1.7x afterimages
     "Shrike": 0.0675,     # "shrink shrike's trail so it is almost nothing" (Garrett, 2026-11-19); its lever is the nest (NEST)
 }

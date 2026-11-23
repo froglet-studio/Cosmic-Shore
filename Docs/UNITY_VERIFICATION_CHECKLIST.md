@@ -25931,12 +25931,19 @@ no Unity editor, so `SerpentWallSyncTests` has not run. What changed is in `R_Ve
 - [ ] An AI Serpent at Mass 8+ (crystals): its bricks are the same size on host and client.
 - [ ] Serpent Hood / Serpent Time, an AI that scopes: it never cloaks on the client while scoped on the host.
 ## Mass-Space AI rows (2026-11-21)
+## Swordfish: bigger afterimages, its Brood Rush Mass lever (2026-11-21, NOT PLAYED)
 
+`SwordfishSwordAfterimageConfig.asset` `massVolumeMultiplier` x1 -> x2.5 became x1.7 -> x4.25 (`SWORDFISH.md` § "Brood
+Rush"). Measured in the Amoebius Brood Rush judge only (index 0.73 -> 1.03 at Medium, 3 teams of 3). No Unity editor ran;
+the reference compile has 0 errors in the changed files.
+
+- [ ] Toybox or Palisade: energize the Swordfish and let go. The afterimages laid in the next 5 s read as the sword's
+      ghost, about 1.2x thicker on every axis than before, and the bill still cuts them after a second.
+- [ ] Brood Rush with the Swordfish seated (once the card seats it again): its score sits with the field's, not at the bottom.
+## Mass-Space AI rows (2026-11-21)
 `AIMassSpacePlanSO` (`Assets/Resources/AIMassSpacePlan.asset`, written by `Tools/Build/massspace_ai_plan.py`) gives the
 Meerkat, Sparrow, Stoat and Urchin AIs a learned ability cycle and steering in Mass-Space modes only; the Urchin also gets
 `UrchinAutopilotConfig_Hijack` / `_BroodRush`. Measured in Amoebius only; not run in the Unity editor. The reference
-compile has 0 errors in the changed files.
-
 - [ ] Brood Rush with AI Meerkat, Sparrow and Stoat: the Meerkat AI forms and shortens solitons, the Sparrow AI goes
       stationary and fires its guns, the Stoat AI slings. No errors in the console when they spawn.
 - [ ] Regatta with the same hulls: their AIs fly exactly as before (no soliton, sling or stationary presses there).
