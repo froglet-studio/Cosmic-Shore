@@ -44,6 +44,12 @@ namespace CosmicShore.Editor
         double _phaseStarted, _lastReady = double.NegativeInfinity, _lastBootPoke;
         bool _skippedName, _subscribed, _gameEnded, _snapped;
         float _matchStart, _nextSample;
+        // Frame accounting for the turn: frame count, unscaled time and wall time at its start; timeScale samples.
+        int _frameStart;
+        float _unscaledStart;
+        double _wallMatchStart;
+        double _tsSum;
+        int _tsN;
         Cell _cell;
         readonly List<IPlayer> _seats = new();
         readonly Dictionary<IPlayer, BroodAuditLauncher.Seat> _rows = new();
@@ -238,7 +244,13 @@ namespace CosmicShore.Editor
             if (_gameData.IsTurnRunning)
             {
                 OnTurnBegan();
+                PinFrameRate();
                 _matchStart = Time.time;
+                _frameStart = Time.frameCount;
+                _unscaledStart = Time.unscaledTime;
+                _wallMatchStart = now;
+                _m.timeScaleMin = float.MaxValue;
+                _m.timeScaleMax = 0f;
                 _nextSample = 0f;
                 Enter(Phase.Match, now);
                 return;
@@ -263,8 +275,28 @@ namespace CosmicShore.Editor
         }
 
         // ── Match ──
+        /// <summary>Holds -broodFps: vSync off and Application.targetFrameRate at the pin. The game's boot and its
+        /// graphics settings set their own rate, so this is re-checked every tick and each reset is counted.</summary>
+        void PinFrameRate()
+        {
+            if (_m.targetFps <= 0) return;
+            if (QualitySettings.vSyncCount == 0 && Application.targetFrameRate == _m.targetFps) return;
+            if (_phase == Phase.Match) _m.pinResets++;
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = _m.targetFps;
+        }
+
         void TickMatch(double now)
         {
+            PinFrameRate();
+            if (_gameData.IsTurnRunning)
+            {
+                float ts = Time.timeScale;
+                _tsSum += ts;
+                _tsN++;
+                _m.timeScaleMin = Mathf.Min(_m.timeScaleMin, ts);
+                _m.timeScaleMax = Mathf.Max(_m.timeScaleMax, ts);
+            }
             if (_m.parkHost) ParkHost();
             if (_gameData.IsTurnRunning && _m.timeScale > 1f && Mathf.Approximately(Time.timeScale, 1f)) Time.timeScale = _m.timeScale;
             float t = Time.time - _matchStart;
@@ -393,6 +425,18 @@ namespace CosmicShore.Editor
         void Read()
         {
             _m.raceS = Time.time - _matchStart;
+            _m.frames = Time.frameCount - _frameStart;
+            float unscaled = Time.unscaledTime - _unscaledStart;
+            double wall = EditorApplication.timeSinceStartup - _wallMatchStart;
+            if (_m.frames > 0)
+            {
+                _m.meanDt = _m.raceS / _m.frames;
+                _m.meanUnscaledDt = unscaled / _m.frames;
+                _m.fpsGame = _m.raceS > 0f ? _m.frames / _m.raceS : 0f;
+                _m.fpsWall = wall > 0 ? (float)(_m.frames / wall) : 0f;
+            }
+            _m.timeScaleMean = _tsN > 0 ? (float)(_tsSum / _tsN) : Time.timeScale;
+            if (_tsN == 0) { _m.timeScaleMin = _m.timeScaleMax = Time.timeScale; }
             var roster = _gameData.RoundStatsList.Where(s => s != null).Select(s => s.Name).ToList();
             // The controller counts at its own end; a timeout is counted here the same way.
             _gameData.VolumeLedger.CountLive(PrismSpatialIndex.Instance, roster);

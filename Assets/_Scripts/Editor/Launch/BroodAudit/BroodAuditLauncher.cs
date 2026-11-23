@@ -21,7 +21,9 @@ namespace CosmicShore.Editor
     /// <code>Unity -batchmode -projectPath . -executeMethod CosmicShore.Editor.BroodAuditLauncher.Run -logFile -
     ///   -broodOut Logs/BroodAudit -broodRosters "Meerkat,Wrasse,Urchin/Honeyguide,Stoat,Sparrow;..." -broodSeeds 1,2
     ///   [-broodLimit 300] [-broodTimeScale 1] [-broodDifficulty Legendary] [-broodIntensity 2] [-broodPark]
-    ///   [-broodStock] -broodQuit</code>
+    ///   [-broodStock] [-broodFps 60] -broodQuit</code>
+    /// <para><c>-broodFps N</c> pins <c>Application.targetFrameRate</c> to N with vSync off for every match (re-applied
+    /// whenever the game's own settings change it); each match records its frames, mean deltaTime and timeScale.</para>
     /// <para>A roster is team A / team B. Without <c>-broodPark</c> the host flies team A's first hull, handed to the
     /// AI as the smoke test does; with it the host is parked outside the cell on a hull nobody flies and every roster
     /// hull is a backfill AI, as the judge does. <c>-broodStock</c> keeps the card's own hull list (an off-card pick is
@@ -53,6 +55,12 @@ namespace CosmicShore.Editor
             public string teamA, teamB, teamC = "", hostHull, difficulty = "Legendary";
             public bool parkHost, stockCard, waitClient;
             public float limitS = 300f, timeScale = 1f;
+            /// <summary>Pinned Application.targetFrameRate for the match; 0 leaves the game's own.</summary>
+            public int targetFps;
+            /// <summary>Frames played in the turn, mean Time.deltaTime and unscaled deltaTime, frames per game second and
+            /// per wall second, the timeScale seen (mean, min, max), and how often the pin had to be re-applied.</summary>
+            public int frames, pinResets;
+            public float meanDt, meanUnscaledDt, fpsGame, fpsWall, timeScaleMean, timeScaleMin, timeScaleMax;
             public string status = "planned", phaseReached = "", outcome = "", fault = "", notes = "", broods = "",
                 winner = "", claim = "", hostDomainAtLaunch = "", allowed = "", hostBooks = "";
             public float raceS, wallS;
@@ -132,6 +140,7 @@ namespace CosmicShore.Editor
                         parkHost = HasArg("-broodPark"),
                         stockCard = HasArg("-broodStock"),
                         waitClient = HasArg("-broodWaitClient"),
+                        targetFps = int.Parse(Arg("-broodFps", "0"), CultureInfo.InvariantCulture),
                         hostHull = hostOff,
                     });
             }
@@ -261,6 +270,8 @@ namespace CosmicShore.Editor
             "super_shields", "team_broods", "trail_volume", "start_levels", "speed", "nucleus_s", "blocks",
             "volume_created", "stolen", "destroyed", "crystals", "ability_s", "seat_difficulty", "pilots",
             "pilots_at_end", "ability_starts", "abilities", "serpent_walls_max", "serpent_bricks_max", "fault", "notes",
+            "target_fps", "frames", "mean_dt", "mean_unscaled_dt", "fps_game", "fps_wall", "time_scale_mean",
+            "time_scale_min", "time_scale_max", "pin_resets",
         };
 
         static void Write()
@@ -280,12 +291,15 @@ namespace CosmicShore.Editor
                         F(s.trailVolume), Q(s.startLevels), F(s.speed), F(s.nucleusS), s.blocks, F(s.volumeCreated),
                         F(s.stolen), F(s.destroyed), s.crystals, Q(s.abilityS), s.difficulty, Q(s.pilots),
                         Q(s.pilotsAtEnd), s.abilityStarts, Q(s.abilities), m.serpentWallsMax, m.serpentBricksMax, Q(m.fault), Q(m.notes),
+                        m.targetFps, m.frames, F6(m.meanDt), F6(m.meanUnscaledDt), F(m.fpsGame), F(m.fpsWall),
+                        F(m.timeScaleMean), F(m.timeScaleMin), F(m.timeScaleMax), m.pinResets,
                     }.Select(o => o?.ToString() ?? ""))).Append('\n');
             }
             File.WriteAllText(Path.Combine(_state.outDir, "results.csv"), csv.ToString());
             File.WriteAllText(Path.Combine(_state.outDir, "matches.jsonl"), json.ToString());
         }
 
+        static string F6(float v) => float.IsNaN(v) ? "" : v.ToString("0.######", CultureInfo.InvariantCulture);
         static string F(float v) => float.IsNaN(v) ? "" : v.ToString("0.###", CultureInfo.InvariantCulture);
         static string Q(string s) => "\"" + (s ?? "").Replace("\"", "'") + "\"";
 

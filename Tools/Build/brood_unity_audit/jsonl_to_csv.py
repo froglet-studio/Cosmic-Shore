@@ -12,7 +12,9 @@ COLS = ["match", "seed", "teamA", "teamB", "teamC", "park_host", "stock_card", "
         "winner", "broods", "seat_name", "hull", "requested_on_seat", "domain", "is_host", "vc", "vd", "vc_vd", "lost",
         "held", "super_shields", "team_broods", "trail_volume", "start_levels", "speed", "nucleus_s", "blocks",
         "volume_created", "stolen", "destroyed", "crystals", "ability_s", "seat_difficulty", "pilots", "pilots_at_end",
-        "ability_starts", "abilities", "serpent_walls_max", "serpent_bricks_max", "fault", "notes"]
+        "ability_starts", "abilities", "serpent_walls_max", "serpent_bricks_max", "fault", "notes",
+        "target_fps", "frames", "mean_dt", "mean_unscaled_dt", "fps_game", "fps_wall", "time_scale_mean", "time_scale_min",
+        "time_scale_max", "pin_resets"]
 
 
 def main(src, dst):
@@ -31,7 +33,10 @@ def main(src, dst):
                             s["trailVolume"], s["startLevels"], s["speed"], s["nucleusS"], s["blocks"],
                             s["volumeCreated"], s["stolen"], s["destroyed"], s["crystals"], s["abilityS"],
                             s["difficulty"], s["pilots"], s["pilotsAtEnd"], s.get("abilityStarts", 0),
-                            s.get("abilities", ""), m["serpentWallsMax"], m["serpentBricksMax"], m["fault"], m["notes"]])
+                            s.get("abilities", ""), m["serpentWallsMax"], m["serpentBricksMax"], m["fault"], m["notes"],
+                            m.get("targetFps", 0), m.get("frames", 0), m.get("meanDt", ""), m.get("meanUnscaledDt", ""),
+                            m.get("fpsGame", ""), m.get("fpsWall", ""), m.get("timeScaleMean", ""),
+                            m.get("timeScaleMin", ""), m.get("timeScaleMax", ""), m.get("pinResets", 0)])
 
 
 if __name__ == "__main__":

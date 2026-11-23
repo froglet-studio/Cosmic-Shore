@@ -68,6 +68,15 @@ def render(name, matches):
         out.append(f"| {hull} | {n} | {st.mean(h['idx']):.2f} | {sd:.2f} | {st.mean(h['vc']):.2f} | {st.mean(h['vd']):.2f} | {st.mean(h['lost']):.2f} | {st.mean(h['vcabs']):.0f} | {st.mean(h['vdabs']):.0f} | {st.mean(h['broods']):.2f} | "
                    f"{st.mean(h['win']):.0%} | {st.mean(h['nuc']):.0%} | {st.mean(h['speed']):.0f} | {st.mean(h['trail']):.2f} | "
                    f"{st.mean(h['abil']):.0f} | {int(sum(h['host']))} |")
+    fr = [seats[0] for seats in matches.values() if seats[0].get("frames") not in (None, "", "0")]
+    if fr:
+        fg = [f(r["fps_game"]) for r in fr]
+        fw = [f(r["fps_wall"]) for r in fr]
+        out.insert(1, f"Frames: pinned {fr[0].get('target_fps') or 'off'}; fps per game second mean {st.mean(fg):.1f} "
+                      f"(min {min(fg):.1f}, max {max(fg):.1f}); per wall second {st.mean(fw):.1f}; mean deltaTime "
+                      f"{st.mean(f(r['mean_dt']) for r in fr) * 1000:.2f} ms; timeScale {min(f(r['time_scale_min']) for r in fr):g}"
+                      f"-{max(f(r['time_scale_max']) for r in fr):g}; pin resets {sum(int(r['pin_resets'] or 0) for r in fr)}.")
+        out.insert(1, "")
     inside = [k for k, h in per.items() if 0.9 <= st.mean(h["idx"]) <= 1.1]
     out += ["", f"Within 0.90-1.10 of the field: {len(inside)} of {len(per)} ({', '.join(sorted(inside)) or 'none'}).", ""]
     return "\n".join(out), per
