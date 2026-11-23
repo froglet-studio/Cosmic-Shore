@@ -44,13 +44,19 @@
       sitting except by time.
     fill: Aim for 5 to 8 rounds and 1 or 2 places in a sitting. Add session_id to game_started (Froglet Analytics only,
       as session_ended does) and count rounds and places per session on the Sessions page.
+  - 'on': np
+    q: The Session tier starts at 10 minutes, but a commuter's and a casual phone player's sittings are 4 to 8 minutes.
+      Rounds fit them (94 to 100% of sittings); a voyage fits 0 to 1% of them as planned and 14 to 21% as built.
+    fill: A sitting may be one round. The breath (P5) offers 'one more' or 'your daily job is waiting', and a voyage can
+      be left at a location and picked up next sitting (P13).
   src:
   - Docs/MENU_PROGRESSION_AND_IAP.md section 1
   - Docs/Voyages/VOYAGES.md section 1
+  - Docs/LoopAtlas/sim/REPORT.md
 - id: breath
   parent: sitting
   at: 4
-  in: x
+  in: px
   name: The breath
   tier: 3
   kind: loop
@@ -68,7 +74,13 @@
   drivers: [reward, mastery, find]
   reps: '1'
   repsOf: per round
-  prop:
-    s: add
-    note: Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.
   src: [proposal]
+  plan:
+    s: decided
+    note: Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.
+  build:
+    s: building
+    what: Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.
+    by: Garrett
+    at: '2026-11-21'
+    branch: claude/retain-breath

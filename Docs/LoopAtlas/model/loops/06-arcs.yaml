@@ -32,6 +32,19 @@
     q: The Lesson teaches a ship's Time verb. Nothing yet teaches a combo or a role.
     fill: 'The Mentor''s stream is ordered by the ladder of tiers: Pulse and Verb in the Lesson, the kit''s first Combo
       after three races, the Role the first time the player enters a Mass-Space game.'
+  - 'on': p
+    q: 'Activation is one funnel: every new player is led to a flying race. Simulated, a player who came for the Ratel''s
+      puzzle flies 62% of her arcade rounds today and all of them once the gate flips (the Honeyguide''s cards open only
+      after the chain), and leaves (D30 3 to 4%).'
+    fill: 'Activation has doors, each measured on its own: fly (first race finished), solve (first Ratel board played, P14),
+      make (first painting shared, P16), crew (first match with a friend, P15). The first-login guide asks which one and
+      spotlights it.'
+  - 'on': p
+    q: Nothing says how often a new player should win their first ten rounds. Simulated against an I1 AI of strength 0.15,
+      a non-flyer takes first in 16% of them, a commuter 32%, the teen core 37%.
+    fill: 'Target: a new player takes first in at least half of their first ten rounds, read from game_completed placement
+      in the first sittings. The I1 AI reaches it with fun, suboptimal behaviour loops (the AI complexity rule), never random
+      mistakes.'
   - 'on': npx
     q: 'Activation has one door: first launch, the spotlight, a Lesson that flies a Time verb. Two of the six journeys
       (Mira, the night crew) arrive by invite and never pass through it, and Mira does not want to fly at all.'
@@ -40,6 +53,7 @@
   src:
   - Docs/ACTIVATION.md
   - Docs/ModePreview/TRAINING_PLAN.md
+  - Docs/LoopAtlas/sim/REPORT.md
 - id: arc.unlock
   parent: era
   at: 3
@@ -68,6 +82,18 @@
   src:
   - Docs/MENU_PROGRESSION_AND_IAP.md section 2
   - Docs/QUEST_TRACK_AND_BREADCRUMB.md
+  - Docs/LoopAtlas/sim/REPORT.md
+  plan:
+    s: decided
+    note: A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after
+      the Hangar.
+  build:
+    s: building
+    what: A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after
+      the Hangar.
+    by: Garrett
+    at: '2026-11-21'
+    branch: claude/retain-economy
 - id: arc.fleet
   parent: era
   at: 4
@@ -100,6 +126,18 @@
     q: Which of the 23 hulls ship, at what price and in what order, is not decided beyond the first five.
     fill: 'Price by how many loops a hull opens: a solo hull 4000, a crew vessel 6000 because it opens a second seat for
       a friend.'
+  - 'on': np
+    q: A daily arena player owns all seven priced vessels by day 12 to 14 and holds about 60,000 crystals nobody can spend
+      by day 42 (simulated). P7's three sinks add about nine days. A casual or puzzle player never reaches the first vessel
+      at all.
+    fill: 'Two ends to fix. For the core: open the other hulls over the Tides (one or two per Tide), so the fleet has a
+      new goal every six weeks, and keep P7''s sinks. For the casual end: their first vessel comes from the doors they play
+      (a solved board, a shared painting, a daily job), not only from placing.'
+  - 'on': n
+    q: 'Today the master unlock owns every vessel, so crystals buy nothing and no playtest can measure the economy: whatever
+      testers earn is banked and never spent.'
+    fill: A tester build that keeps the unlock for modes and the Hangar but locks vessels, so the earn-to-buy step can be
+      watched before launch.
   - 'on': npx
     q: 'Only the winner is paid. In a group of friends who beat each other, the one who wins least owns nothing new
       after two weeks; in the night crew journey that friend leaves on day 17 and the crew shrinks.'
@@ -108,6 +146,7 @@
   src:
   - Docs/ECONOMY_AND_PRICING.md
   - Docs/MENU_PROGRESSION_AND_IAP.md section 2c
+  - Docs/LoopAtlas/sim/REPORT.md
 - id: fleet
   parent: arc.fleet
   at: 3
@@ -257,8 +296,14 @@
     q: A saga does not run again, so four sagas are a fixed amount of story. 'A season could reseed it' is a default, not
       a decision.
     fill: Each Tide reseeds one saga and adds one, so there is always an unfinished thread.
+  - 'on': np
+    q: 'Four sagas of three chapters last a weekend-binge group about three weekends (simulated: spent by day 19 to 20 in
+      a third of the Night Crew''s runs as planned, in all of them with chapters and one currency).'
+    fill: Each Tide reseeds one saga (era.tide phase 3), so a binge group meets a new chapter every six weeks, and a saga's
+      chapter length follows the voyage chapter (P13), not a whole voyage.
   src:
   - Docs/Voyages/DEPTH.md section 5
+  - Docs/LoopAtlas/sim/REPORT.md
 - id: arc.social
   parent: era
   at: 0
@@ -301,9 +346,25 @@
   - 'on': n
     q: 'The now note says crew vessels are local only, but Docs/CREW_STATIONS.md has the rider seat networked on the
       Orca, Honeyguide, Wrasse and Goby. One of them is stale.'
+  - 'on': np
+    q: 'A group of four meets three seats everywhere: a squad, a voyage party, a team in Brood Rush. Simulated, one of the
+      Night Crew sits out 47% of their team matches. No crew vessel has an arena card, so a crew vessel cannot take the
+      fourth.'
+    fill: 'P15: every crew vessel seats at least one arena card and a voyage squad, so two people share one seat and four
+      friends fit three seats.'
   src:
   - Docs/claude/MULTIPLAYER_AND_SOCIAL.md
   - Docs/Voyages/PARTY.md
+  - Docs/LoopAtlas/sim/REPORT.md
+  plan:
+    s: decided
+    note: A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided.
+  build:
+    s: building
+    what: A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided.
+    by: Garrett
+    at: '2026-11-21'
+    branch: claude/retain-economy
 - id: arc.replay
   parent: era
   at: 3

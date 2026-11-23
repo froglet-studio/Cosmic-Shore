@@ -361,18 +361,24 @@
      "on": "np",
      "q": "Rounds per sitting and places per sitting are not measured. Sessions are (session_started, session_ended), but game_started does not carry their session_id (Docs/Analytics/EVENT_SCHEMA.json), so a round cannot be put in its sitting except by time.",
      "fill": "Aim for 5 to 8 rounds and 1 or 2 places in a sitting. Add session_id to game_started (Froglet Analytics only, as session_ended does) and count rounds and places per session on the Sessions page."
+    },
+    {
+     "on": "np",
+     "q": "The Session tier starts at 10 minutes, but a commuter's and a casual phone player's sittings are 4 to 8 minutes. Rounds fit them (94 to 100% of sittings); a voyage fits 0 to 1% of them as planned and 14 to 21% as built.",
+     "fill": "A sitting may be one round. The breath (P5) offers 'one more' or 'your daily job is waiting', and a voyage can be left at a location and picked up next sitting (P13)."
     }
    ],
    "src": [
     "Docs/MENU_PROGRESSION_AND_IAP.md section 1",
-    "Docs/Voyages/VOYAGES.md section 1"
+    "Docs/Voyages/VOYAGES.md section 1",
+    "Docs/LoopAtlas/sim/REPORT.md"
    ]
   },
   {
    "id": "breath",
    "parent": "sitting",
    "at": 4,
-   "in": "x",
+   "in": "px",
    "name": "The breath",
    "tier": 3,
    "kind": "loop",
@@ -405,13 +411,20 @@
    ],
    "reps": "1",
    "repsOf": "per round",
-   "prop": {
-    "s": "add",
-    "note": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off."
-   },
    "src": [
     "proposal"
-   ]
+   ],
+   "plan": {
+    "s": "decided",
+    "note": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off."
+   },
+   "build": {
+    "s": "building",
+    "what": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.",
+    "by": "Garrett",
+    "at": "2026-11-21",
+    "branch": "claude/retain-breath"
+   }
   },
   {
    "id": "toybox",
@@ -467,6 +480,11 @@
      "fill": "A toy's exit is a crossing. Every toy names the scored loop it is the free version of, and offers it when the player has done the toy's verb a few times."
     },
     {
+     "on": "np",
+     "q": "The Toybox pays no progress. A player who only paints earns about 100 crystals in six weeks (simulated), so the long game never starts for them.",
+     "fill": "P16: a finished painting pays a little and can be shared as a replay link (P12), and a liked painting is the creative player's 'I won'."
+    },
+    {
      "on": "npx",
      "q": "Every arc in the atlas is fed by winning. A player who only makes things (the painter in Docs/LoopAtlas/personas/journeys.yaml) moves no arc, and has seen every painting and microscene by week 3.",
      "fill": "Each week of the Tide adds one painting and one microscene, and a shared painting opens the same canvas for whoever taps it."
@@ -474,7 +492,8 @@
    ],
    "src": [
     "Docs/ToySystem/ARCHITECTURE.md",
-    "Docs/claude/MENU_AND_LAVA_LAMP.md"
+    "Docs/claude/MENU_AND_LAVA_LAMP.md",
+    "Docs/LoopAtlas/sim/REPORT.md"
    ]
   },
   {
@@ -1759,6 +1778,16 @@
      "fill": "The Mentor's stream is ordered by the ladder of tiers: Pulse and Verb in the Lesson, the kit's first Combo after three races, the Role the first time the player enters a Mass-Space game."
     },
     {
+     "on": "p",
+     "q": "Activation is one funnel: every new player is led to a flying race. Simulated, a player who came for the Ratel's puzzle flies 62% of her arcade rounds today and all of them once the gate flips (the Honeyguide's cards open only after the chain), and leaves (D30 3 to 4%).",
+     "fill": "Activation has doors, each measured on its own: fly (first race finished), solve (first Ratel board played, P14), make (first painting shared, P16), crew (first match with a friend, P15). The first-login guide asks which one and spotlights it."
+    },
+    {
+     "on": "p",
+     "q": "Nothing says how often a new player should win their first ten rounds. Simulated against an I1 AI of strength 0.15, a non-flyer takes first in 16% of them, a commuter 32%, the teen core 37%.",
+     "fill": "Target: a new player takes first in at least half of their first ten rounds, read from game_completed placement in the first sittings. The I1 AI reaches it with fun, suboptimal behaviour loops (the AI complexity rule), never random mistakes."
+    },
+    {
      "on": "npx",
      "q": "Activation has one door: first launch, the spotlight, a Lesson that flies a Time verb. Two of the six journeys (Mira, the night crew) arrive by invite and never pass through it, and Mira does not want to fly at all.",
      "fill": "Activation starts where the player arrived: an invite starts in the inviter's party and the seat it named, and the Lesson for that seat (a crew board, a hull) runs there."
@@ -1766,7 +1795,8 @@
    ],
    "src": [
     "Docs/ACTIVATION.md",
-    "Docs/ModePreview/TRAINING_PLAN.md"
+    "Docs/ModePreview/TRAINING_PLAN.md",
+    "Docs/LoopAtlas/sim/REPORT.md"
    ]
   },
   {
@@ -1818,8 +1848,20 @@
    ],
    "src": [
     "Docs/MENU_PROGRESSION_AND_IAP.md section 2",
-    "Docs/QUEST_TRACK_AND_BREADCRUMB.md"
-   ]
+    "Docs/QUEST_TRACK_AND_BREADCRUMB.md",
+    "Docs/LoopAtlas/sim/REPORT.md"
+   ],
+   "plan": {
+    "s": "decided",
+    "note": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar."
+   },
+   "build": {
+    "s": "building",
+    "what": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar.",
+    "by": "Garrett",
+    "at": "2026-11-21",
+    "branch": "claude/retain-economy"
+   }
   },
   {
    "id": "arc.fleet",
@@ -1877,6 +1919,16 @@
      "fill": "Price by how many loops a hull opens: a solo hull 4000, a crew vessel 6000 because it opens a second seat for a friend."
     },
     {
+     "on": "np",
+     "q": "A daily arena player owns all seven priced vessels by day 12 to 14 and holds about 60,000 crystals nobody can spend by day 42 (simulated). P7's three sinks add about nine days. A casual or puzzle player never reaches the first vessel at all.",
+     "fill": "Two ends to fix. For the core: open the other hulls over the Tides (one or two per Tide), so the fleet has a new goal every six weeks, and keep P7's sinks. For the casual end: their first vessel comes from the doors they play (a solved board, a shared painting, a daily job), not only from placing."
+    },
+    {
+     "on": "n",
+     "q": "Today the master unlock owns every vessel, so crystals buy nothing and no playtest can measure the economy: whatever testers earn is banked and never spent.",
+     "fill": "A tester build that keeps the unlock for modes and the Hangar but locks vessels, so the earn-to-buy step can be watched before launch."
+    },
+    {
      "on": "npx",
      "q": "Only the winner is paid. In a group of friends who beat each other, the one who wins least owns nothing new after two weeks; in the night crew journey that friend leaves on day 17 and the crew shrinks.",
      "fill": "Pay a team win to every seat on the team, crew seats included, and pay a little for finishing, so a friend's fleet grows at the group's pace."
@@ -1884,7 +1936,8 @@
    ],
    "src": [
     "Docs/ECONOMY_AND_PRICING.md",
-    "Docs/MENU_PROGRESSION_AND_IAP.md section 2c"
+    "Docs/MENU_PROGRESSION_AND_IAP.md section 2c",
+    "Docs/LoopAtlas/sim/REPORT.md"
    ]
   },
   {
@@ -2145,10 +2198,16 @@
      "on": "np",
      "q": "A saga does not run again, so four sagas are a fixed amount of story. 'A season could reseed it' is a default, not a decision.",
      "fill": "Each Tide reseeds one saga and adds one, so there is always an unfinished thread."
+    },
+    {
+     "on": "np",
+     "q": "Four sagas of three chapters last a weekend-binge group about three weekends (simulated: spent by day 19 to 20 in a third of the Night Crew's runs as planned, in all of them with chapters and one currency).",
+     "fill": "Each Tide reseeds one saga (era.tide phase 3), so a binge group meets a new chapter every six weeks, and a saga's chapter length follows the voyage chapter (P13), not a whole voyage."
     }
    ],
    "src": [
-    "Docs/Voyages/DEPTH.md section 5"
+    "Docs/Voyages/DEPTH.md section 5",
+    "Docs/LoopAtlas/sim/REPORT.md"
    ]
   },
   {
@@ -2209,12 +2268,29 @@
     {
      "on": "n",
      "q": "The now note says crew vessels are local only, but Docs/CREW_STATIONS.md has the rider seat networked on the Orca, Honeyguide, Wrasse and Goby. One of them is stale."
+    },
+    {
+     "on": "np",
+     "q": "A group of four meets three seats everywhere: a squad, a voyage party, a team in Brood Rush. Simulated, one of the Night Crew sits out 47% of their team matches. No crew vessel has an arena card, so a crew vessel cannot take the fourth.",
+     "fill": "P15: every crew vessel seats at least one arena card and a voyage squad, so two people share one seat and four friends fit three seats."
     }
    ],
    "src": [
     "Docs/claude/MULTIPLAYER_AND_SOCIAL.md",
-    "Docs/Voyages/PARTY.md"
-   ]
+    "Docs/Voyages/PARTY.md",
+    "Docs/LoopAtlas/sim/REPORT.md"
+   ],
+   "plan": {
+    "s": "decided",
+    "note": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided."
+   },
+   "build": {
+    "s": "building",
+    "what": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided.",
+    "by": "Garrett",
+    "at": "2026-11-21",
+    "branch": "claude/retain-economy"
+   }
   },
   {
    "id": "arc.replay",
@@ -3557,7 +3633,9 @@
     "breath",
     "sitting",
     "arcade"
-   ]
+   ],
+   "stage": "building",
+   "branch": "claude/retain-breath"
   },
   {
    "id": "P6",
@@ -3605,7 +3683,9 @@
    "touches": [
     "voyages",
     "arc.fleet"
-   ]
+   ],
+   "stage": "building",
+   "branch": "claude/retain-economy"
   },
   {
    "id": "P11",
@@ -3622,6 +3702,57 @@
    "touches": [
     "arc.replay"
    ]
+  },
+  {
+   "id": "P13",
+   "title": "Voyage chapters",
+   "what": "A voyage can be left at any location it has reached and picked up next sitting, with the haul still aboard; only the dock at home banks it. A 20 to 40 minute voyage becomes two to four phone sittings, and a commuter stops losing hauls (100% of started voyages simulated as planned, none with chapters).",
+   "touches": [
+    "voyages",
+    "voy.place",
+    "voy.home",
+    "sitting"
+   ],
+   "stage": "building",
+   "branch": "claude/retain-voyage-chapters"
+  },
+  {
+   "id": "P14",
+   "title": "A puzzle-first door",
+   "what": "The first-login guide asks fly or solve. A solver's spotlight leads to the Ratel's board while the Honeyguide's AI flies, and a Honeyguide game counts for the quest chain. Simulated, it lifts a puzzle player's D30 from 3% to 94%, with P15.",
+   "touches": [
+    "arc.activation",
+    "arc.unlock",
+    "toybox",
+    "fleet"
+   ],
+   "stage": "building",
+   "branch": "claude/retain-makers"
+  },
+  {
+   "id": "P15",
+   "title": "A crew vessel in every squad",
+   "what": "Every crew vessel seats at least one arena card and a voyage squad, so two people share one seat: a parent rides as the Ratel in a child's arena squad, and four friends fit three seats.",
+   "touches": [
+    "arena",
+    "voyages",
+    "arc.social",
+    "arc.squad",
+    "fleet"
+   ]
+  },
+  {
+   "id": "P16",
+   "title": "Making pays",
+   "what": "A finished painting pays a little and can be shared as a replay link; a liked painting is the creative player's win. The Toybox feeds the long game instead of standing beside it.",
+   "touches": [
+    "toybox",
+    "toy.paint",
+    "arc.replay",
+    "arc.fleet"
+   ],
+   "stage": "building",
+   "branch": "claude/retain-makers"
   }
  ],
  "fleet": {
