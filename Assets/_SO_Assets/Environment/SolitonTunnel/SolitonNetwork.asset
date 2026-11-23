@@ -37,8 +37,12 @@ MonoBehaviour:
     InsideSwirl: 0.06
     FarView: 0.75
     FormFlare: 1
-    InsideStreak: 0.5
-    InsideDim: 0.3
+    InsideGrid: 0.6
+    InsideGridSpacing: 8
+    InsideGridSpokes: 12
+    InsideGlow: 0.6
+    InsideFog: 120
+    InsideHullRadius: 8
     ExitPop: 0.06
   ride:
     InsideBend: 0.5

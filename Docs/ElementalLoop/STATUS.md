@@ -15,7 +15,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | Honeyguide | `R b ~` | `b b .` | `b b .` | `b b .` | - | - |
 | Jacks | `R b b` | `b b .` | `- - -` | `b b .` | - | Broadside |
-| JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
+| JewelWasp | `b b .` | `b b .` | `x x x` | `b b .` | - | - |
 | Manta | `R b ~` | `b b .` | `x x x` | `b b .` | - | Regatta, BroodRush |
 | Meerkat | `R b b` | `b b .` | `b b .` | `b b .` | - | Broadside |
 | Orca | `R ~ .` | `b b .` | `b b .` | `b b .` | - | - |
@@ -27,7 +27,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Squirrel | `b b b` | `b b .` | `x x x` | `- - -` | Mass | Regatta, BroodRush |
 | Starling | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
 | Stoat | `b b b` | `b b .` | `- - -` | `b b .` | - | Broadside |
-| Swordfish | `b b .` | `b b .` | `b b b` | `b b b` | - | Regatta, BroodRush |
+| Swordfish | `b b b` | `b b .` | `b b b` | `b b b` | - | Regatta, BroodRush |
 | Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | TigerMoth | `R b .` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta |
@@ -54,9 +54,9 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Grizzly | Grizzly Time | Standoff | excused | Grizzly Charge |
 | Honeyguide | Slip Line | Flitstrike | Honeycomb | Woodpecker |
 | Jacks | Decoy Run | Stingherd | excused | Trawl |
-| JewelWasp | - | Marionette | - | Gorge |
+| JewelWasp | Burrow Run | Marionette | - | Gorge |
 | Manta | Redline | Corona | - | Bloomrush |
-| Meerkat | Burrow Run, Warpline | Sentry | Warren | Cave-in |
+| Meerkat | Warpline | Sentry | Warren | Cave-in |
 | Orca | Breach | Pod Hunt | Ice Shelf | Depth Charge |
 | Rhino | Headlong | Bullrush | Windrow | Landslide |
 | Scarab | Scarab Rally | Undertow | Tollway | Wrecking Ball |
@@ -111,6 +111,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Stoat Time | 2 intensities I1-I4 | built | Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest | 2026-11-17 |  | ladder call: no change; Legendary 64/53/66/75 s on 8 courses a rung, Medium 76/66/72/95 s; denser I3 Orrery measured no effect |
 | Stoat Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | StoatSlingConfig_Slingshot from slingshot-stoat-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
 | Swordfish Time | 1 fun (abilities + game, one intensity) | built | Garrett | 2026-11-19 |  | Redesigned (ramp fuel from ploughing/slicing, #2233, #2240); back inside the Regatta field at both starts (Docs/ElementalLoop/REDESIGN.md: Rhino 70.0/66.9 s, Swordfish 70.8/65.8 s; trunk re-judge 2026-11-18 Rhino 70.8/66.8, Swordfish 71.7/65.4). Fun sign-off of the new ramp is still a person's (Headlong / Spearline) |
+| Swordfish Time | 3 AI on I1-I4 | built | Claude | 2026-11-23 |  | SwordfishAIBoostPolicy_Spearline (time_ai_search.py --hull Swordfish, trained in Spearline 2026-11-18, crystal gene 168.7) re-flown 2026-11-23 on fb540a46df after the sword hand's Mass/Space retrain (f03a47b575): time_ladder_judge.py, Amoebius headless, seeds 101-103, 24 of 24 finished, no stall (worst gate 14.2 s). Legendary I1-I4 148.5 / 142.3 / 135.2 / 143.6 s, Medium 194.7 / 159.5 / 161.0 / 165.4 s (medians of 3). Not flown in the Unity editor; ladder is flat (step 2's question). SPEARLINE.md 3 |
 | Swordfish Mass | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread |
 | Swordfish Space | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread |
 | Thresher Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | ThresherAIBoostPolicy_ThresherTime from threshertime-thresher-time-lead, model only, editor soak pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |

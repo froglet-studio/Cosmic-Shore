@@ -387,7 +387,7 @@ WORDS = [
     ('GrizzlyTime', 'Grizzly Time', 'Your speed is your bombs.', 'Against the clock', 'Grizzly'),
     ('Slingshot', 'Slingshot', 'You cruise slow and turn wide. Your poles do the steering.', 'Lead runner home wins', 'Stoat'),
     ('Warpline', 'Warpline', 'Bend the tunnel. Dig the line. Ride it out.', 'Time is everything', 'Meerkat'),
-    ('BurrowRun', 'Burrow Run', 'Eight rings. Dig to every one.', 'Lead runner home wins', 'Meerkat'),
+    ('BurrowRun', 'Burrow Run', 'Eight rings a lap. Thread every one.', 'Lead runner home wins', 'Jewel Wasp'),
     ('ThresherTime', 'Thresher Time', 'Plant the ball. Orbit it. Let go.', 'Against the clock', 'Thresher'),
     ('WrasseRun', 'Wrasse Run', 'The Grouper flies the plane. The Wrasse takes the ring.', 'Only the Wrasse counts', 'Wrasse and Grouper'),
     ('ScarabRally', 'Scarab Rally', 'Hold the throttle. Drift the hairpin. Juke in.', 'No ball, just rings', 'Scarab'),

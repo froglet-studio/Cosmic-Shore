@@ -122,7 +122,65 @@ namespace CosmicShore.Gameplay
             spindles.RemoveWhere(s => !s);
         }
 
-        void Awake() => CacheRenderers();
+        void Awake()
+        {
+            CacheRenderers();
+            _authoredChildCount = transform.childCount;
+            _authoredLocalScale = transform.localScale;
+            _authoredParentSpindle = parentSpindle;
+        }
+
+        // ── Pooling (SpindlePool) ────────────────────────────────────────────────────────────
+        // A limb SpindlePool issued goes back to it when it has evaporated, and is handed out again
+        // in the state a fresh clone is in before its Start.
+
+        /// <summary>The prefab this limb was cloned from by <see cref="SpindlePool"/>; 0 = not pooled.</summary>
+        internal int PoolPrefabId;
+        /// <summary>Set by the pool on a reused limb whose <see cref="Begin"/> has not run yet.</summary>
+        internal bool BeginPending;
+        int _authoredChildCount;
+        Vector3 _authoredLocalScale;
+        Spindle _authoredParentSpindle;
+        bool[] _authoredEnabled;
+
+        /// <summary>Nothing hangs under this limb that its prefab does not have: no prism, no child
+        /// limb. Destroying such a limb takes nothing else with it, so it can be reused instead.</summary>
+        internal bool IsBareForPool => !retainSpindle && transform.childCount == _authoredChildCount;
+
+        /// <summary>Back to a fresh clone's state before Start. The limb is inactive and already
+        /// deregistered from its plant, its parent limb and the LOD.</summary>
+        internal void ResetForPool()
+        {
+            CancelFadeSettle();
+            CacheRenderers();
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                var partRenderer = _renderers[i];
+                if (!partRenderer) continue;
+                if (_phaseBaseMaterials[i]) partRenderer.sharedMaterial = _phaseBaseMaterials[i];
+                partRenderer.SetPropertyBlock(null);
+                partRenderer.enabled = _authoredEnabled[i];
+                _phaseVariants[i] = null;
+            }
+
+            transform.localScale = _authoredLocalScale;
+            healthBlocks.Clear();
+            spindles.Clear();
+            parentSpindle = _authoredParentSpindle;
+            LifeForm = null;
+            deregistered = false;
+            dying = false;
+            isPermanentlyWithered = false;
+            isolatedForOrderedWither = false;
+            _started = false;
+            _swayPhaseResolved = false;
+            _fadeActive = false;
+            BeginPending = false;
+            _lean = 0;
+            _glow = 0;
+            _leanKey = 0;
+            _leanTarget = default;
+        }
 
         /// <summary>
         /// Flattens <see cref="RenderedObject"/> + <see cref="additionalRenderedObjects"/> into
@@ -163,6 +221,9 @@ namespace CosmicShore.Gameplay
 
             _phaseBaseMaterials = new Material[_renderers.Length];
             _phaseVariants = new Material[_renderers.Length];
+            _authoredEnabled = new bool[_renderers.Length];
+            for (int i = 0; i < _renderers.Length; i++)
+                _authoredEnabled[i] = _renderers[i] && _renderers[i].enabled;
         }
 
         /// <summary>
@@ -211,9 +272,15 @@ namespace CosmicShore.Gameplay
             CancelFadeSettle();
         }
 
-        void Start()
+        void Start() => Begin();
+
+        /// <summary>The limb's Start work: its sway phase and material, the condense fade, its links
+        /// to its plant and parent limb, and the LOD. Unity runs it once for a clone;
+        /// <see cref="SpindlePool"/> runs it again for each reuse, at the same point in the frame.</summary>
+        internal void Begin()
         {
-            if (isPermanentlyWithered)
+            BeginPending = false;
+            if (_started || isPermanentlyWithered)
                 return;
 
             // Before the guard, not after: CacheRenderers is what resolves an unauthored
@@ -762,7 +829,7 @@ namespace CosmicShore.Gameplay
 
             if (retainSpindle)
                 gameObject.SetActive(false);
-            else
+            else if (!SpindlePool.TryRelease(this))
                 Destroy(gameObject);
         }
 
