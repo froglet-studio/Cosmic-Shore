@@ -2771,6 +2771,101 @@
       "h": 900,
       "page": "menu-redesign-c",
       "title": "Rev 127 - notes: the shared geometry, what each option changes in Unity, the pick"
+    },
+    "R128Compare.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 128 - Compare: the shipped card and the six new ones side by side, hover each"
+    },
+    "R128A.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 128 A - Depth: the picture in three planes that tilt with the pointer - interactive",
+      "is_interactive": true
+    },
+    "R128B.dc.html": {
+      "x": 4200,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 128 B - Racing line: a light runs the course through the rings; on hover the Squirrel flies it (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R128C.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 128 C - Hero hull: the Squirrel breaks out of the frame and surges on hover - interactive",
+      "is_interactive": true
+    },
+    "R128D.dc.html": {
+      "x": 2100,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 128 D - Silver foil: a collectible card, foil that catches the light as it tilts - interactive",
+      "is_interactive": true
+    },
+    "R128E.dc.html": {
+      "x": 4200,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 128 E - Poster: the picture full bleed under a big title; the card slides open on hover - interactive",
+      "is_interactive": true
+    },
+    "R128F.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 128 F - Live loop: a still at rest, the game playing in the card on hover - interactive",
+      "is_interactive": true
+    },
+    "R128Notes.dc.html": {
+      "x": 0,
+      "y": 3780,
+      "w": 1920,
+      "h": 900,
+      "page": "game-cards",
+      "title": "Rev 128 - notes: what each one moves, what it costs in Unity, the recommendation"
+    },
+    "R129Compare.dc.html": {
+      "x": 0,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 129 - Compare: the Poster card in our font, Skim Race in four pictures, at rest and hovered"
+    },
+    "R129Row.dc.html": {
+      "x": 2100,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 129 Row - Row: the Arcade with Skim Race inside the cell, and every state - interactive",
+      "is_interactive": true
+    },
+    "R129Notes.dc.html": {
+      "x": 0,
+      "y": 7400,
+      "w": 1920,
+      "h": 900,
+      "page": "game-cards",
+      "title": "Rev 129 - notes: why the pictures miss the cell, the touch-ups, what a pick changes"
     }
   },
   "createdOnFiles": {
@@ -2779,7 +2874,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "menu-redesign-c",
+    "page": "game-cards",
     "view": "canvas"
   },
   "noteOrder": [
@@ -2860,6 +2955,8 @@
     "sec-rev126",
     "sec-rev126-2",
     "sec-rev127",
+    "sec-rev128",
+    "sec-rev129",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -2949,7 +3046,9 @@
     "rev121",
     "rev125",
     "rev126",
-    "rev127"
+    "rev127",
+    "rev128",
+    "rev129"
   ],
   "notes": {
     "hud_end": {
@@ -5032,6 +5131,54 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "menu-redesign-c"
+    },
+    "rev128": {
+      "kind": "title1",
+      "text": "Rev 128 - Game cards, six ways: Skim Race's arcade card beside the card we ship - look, motion and hover, light on performance",
+      "x": 0,
+      "y": -400,
+      "w": 240,
+      "maxW": 6120,
+      "page": "game-cards"
+    },
+    "sec-rev128": {
+      "kind": "rect",
+      "x": -160,
+      "y": -560,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "game-cards"
+    },
+    "rev129": {
+      "kind": "title1",
+      "text": "Rev 129 - The Poster card in our font; Skim Race's picture made to look like the cell",
+      "x": 0,
+      "y": 5740,
+      "w": 240,
+      "maxW": 6120,
+      "page": "game-cards"
+    },
+    "sec-rev129": {
+      "kind": "rect",
+      "x": -160,
+      "y": 5580,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "game-cards"
     }
   },
   "order": [
@@ -5365,7 +5512,18 @@
     "R127D.dc.html",
     "R127E.dc.html",
     "R127F.dc.html",
-    "R127Notes.dc.html"
+    "R127Notes.dc.html",
+    "R128Compare.dc.html",
+    "R128A.dc.html",
+    "R128B.dc.html",
+    "R128C.dc.html",
+    "R128D.dc.html",
+    "R128E.dc.html",
+    "R128F.dc.html",
+    "R128Notes.dc.html",
+    "R129Compare.dc.html",
+    "R129Row.dc.html",
+    "R129Notes.dc.html"
   ],
   "pages": [
     {
@@ -5431,6 +5589,10 @@
     {
       "id": "frogma-website",
       "name": "Frogma Website"
+    },
+    {
+      "id": "game-cards",
+      "name": "Game Cards"
     }
   ],
   "title": "Frogma"

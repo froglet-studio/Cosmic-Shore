@@ -790,7 +790,7 @@
       ]
     },
     "analytics": {
-      "title": "Froglet Analytics (own server and console, replaced PostHog)",
+      "title": "Froglet Analytics (own server and console)",
       "aliases": [
         "analytics",
         "froglet analytics",

@@ -838,6 +838,13 @@
    "plan": {
     "note": "One human plays the four rungs and signs them off as fun; only then is that vessel and element sent to AI training."
    },
+   "holes": [
+    {
+     "on": "n",
+     "q": "Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time's AI (fb750ac38, GRIZZLYTIME.md, 24 courses) finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2's level-5 start and I4's fauna add almost nothing for it.",
+     "fill": "Judge each card's ladder by the fixed AI's time per rung (regatta_judge) and flag two neighbouring rungs closer than about 5% as a ladder to retune before step 3 signs off."
+    }
+   ],
    "src": [
     "Docs/ElementalLoop/PLAYBOOK.md step 2",
     "Docs/MENU_PROGRESSION_AND_IAP.md section 2b"
@@ -1366,6 +1373,11 @@
      "on": "np",
      "q": "It is not said whether voyage pay is the same crystals that buy vessels, so the step from 'voyage ends' to 'spend it on a vessel' has no confirmed path.",
      "fill": "One soft currency. Voyage pay is crystals, paid at dock, scaled so a clean voyage is worth about three arcade wins."
+    },
+    {
+     "on": "np",
+     "q": "The plan says a voyage is 3 to 6 legs and 20 to 40 minutes, but the one job the board offers since 2026-11-21 is the Crystal Run (commit 00373d12f), and its 4-cell run takes about 8 minutes to its stop and 3 more home (commit 9addc48ee, the way home at 2x). Is the Crystal Run the short job by design, or the first leg of the longer voyage?",
+     "fill": "The Crystal Run stays the short job (about 11 minutes, one sitting on a phone) and is the first leg the longer voyages chain, so a 20 to 40 minute voyage is 2 to 4 runs with a port between them."
     }
    ],
    "src": [
@@ -2001,7 +2013,7 @@
    ],
    "prop": {
     "s": "change",
-    "note": "Since 2026-11-19 every account holds one crew of 18 dealt from the 126 painted pilots (commit 5a34332f9). Make that dealt crew the start of this loop: recruiting becomes choosing which of your 18 to seat, and standing is earned per pilot of that crew, so the device-side standing stand-in and the dealt crew are one roster instead of two."
+    "note": "Since 2026-11-21 the painted pool holds 324 pilots (PRs 2318, 2328: 17 roster crews, each pilot a species pair no earlier one had), and an account is dealt 18 of them once (PaintedCrewSO). Make the dealt crew the start of this loop and the other ~300 its recruit pool: \"Recruit a pilot\" at port offers someone outside your crew, a species pair you do not hold yet, and standing is earned per pilot. Each new painted batch then restocks the port, a reason to come back that the Returner persona lacks (loop_timescale_sim, PR 2338: Returner 12% at D30 with every fix)."
    }
   },
   {
@@ -2148,7 +2160,12 @@
     {
      "on": "np",
      "q": "Nothing a party does together lasts past the sitting, so a friend is a reason to play tonight and not a reason to return.",
-     "fill": "A party shares one voyage record: the Ark, its hoard and the saga thread belong to the party that sailed it."
+     "fill": "A party shares one voyage record: the Ark, its hoard and the saga thread belong to the party that sailed it. Since 2026-11-21 friends follow the host into one voyage and sail one Ark domain the host picks and friends vote on (commits 00373d12f, 2d72d986f), so the party the record would belong to now exists."
+    },
+    {
+     "on": "np",
+     "q": "Since 2026-11-21 a party on two builds is kept apart (the protocol version gates matchmaking and every join by id, commit 8697ef19f) and the friend sees only a mismatch toast, so the older friend has no way back to the party from that moment. The live flags' update wall (commit 7324953ba) answers only the flags' minimum version, not a friend's newer build.",
+     "fill": "The protocol mismatch toast carries the live flags' per-platform update link for whichever side is older, so a split party ends in an update instead of a lost evening."
     }
    ],
    "src": [
@@ -2335,7 +2352,7 @@
    },
    "prop": {
     "s": "change",
-    "note": "Tie each turn to a Tide so that players can see it coming."
+    "note": "Tie each turn to a Tide so that players can see it coming, and announce it in the What's new window built 2026-11-21 (commit 56584fa4e, Frogma Rev 121 C): the turn's entry in WhatsNew.asset names which vessels changed and which arena environments are new, and the window opens once by itself after the update, so the hole's 'nothing tells a player that the meta turned' has its channel."
    },
    "holes": [
     {
