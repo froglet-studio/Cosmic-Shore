@@ -1,16 +1,14 @@
-# Cloud Save Export & PostHog Snapshot Import
+# Analytics tools
 
-Two scripts that get **everything already stored in UGS Cloud Save** out of Unity's
-backend and into places you can actually analyze it:
-
-| Script | What it does |
+| Folder or script | What it does |
 |---|---|
-| `export_cloud_save.py` | Downloads every player's Cloud Save data to files on your PC |
-| `import_snapshot_to_posthog.py` | Pushes one snapshot per player into PostHog so the whole player base shows up in People / cohorts / SQL |
+| `server/` | **Froglet Analytics**, our own analytics backend: the game's events, the nightly numbers, the read API (`server/README.md`) |
+| `console/` | The Froglet Analytics console page the server serves at `/` |
+| `export_cloud_save.py` | Downloads every player's UGS Cloud Save data to files on your PC |
 
-Plain Python, **standard library only — nothing to pip install**. These talk to Unity's
-servers directly with an admin key: **no Unity editor, no game session, no consent
-dialog involved.**
+The rest of this page is the Cloud Save export. Plain Python, **standard library only, nothing to pip install**. It
+talks to Unity's servers directly with an admin key: **no Unity editor, no game session, no consent dialog
+involved.** The files it writes stay on your PC; query them with DuckDB (section 2).
 
 ---
 
@@ -27,10 +25,7 @@ dialog involved.**
    put them in the game.
 4. Also note the **Project ID** (a UUID): Unity Cloud → the project → Settings.
 
-**B. PostHog key**: PostHog → **Settings → Project → Project API key** (starts with
-`phc_`). Same key the game config uses.
-
-**C. Python on Windows** (skip if `py --version` already works): install from
+**B. Python on Windows** (skip if `py --version` already works): install from
 [python.org/downloads](https://www.python.org/downloads/) — on the first installer
 screen **tick "Add python.exe to PATH"**. Any Python 3.8+ is fine.
 
@@ -90,83 +85,12 @@ If you see `rate limited (429): waiting 60s...` lines, that's normal — Unity's
 allows 1,000 requests per 30 minutes and the script waits and resumes by itself. A few
 thousand players can take an hour or more; just leave the window open.
 
-**Dry-run the PostHog import** (prints the first 5 payloads it *would* send — makes zero
-network calls, safe to run as many times as you like):
-
-```bat
-set POSTHOG_API_KEY=phc_YOUR_KEY
-py import_snapshot_to_posthog.py --dry-run
-```
-
-Expected output: five JSON blocks like this, then a total —
-
-```json
-{
-  "event": "cloud_save_snapshot",
-  "timestamp": "2026-07-15T17:20:00Z",
-  "properties": {
-    "name": "Pilot4821",
-    "xp": 1275,
-    "crystal_balance": 250,
-    "total_games": 88,
-    "favorite_vessel": "Sparrow",
-    "first_seen": "2024-06-20T16:13:20Z",
-    "last_login": "2024-06-11T17:52:00Z",
-    "distinct_id": "AbC123...",
-    "$set": { "...same fields..." }
-  }
-}
-```
-```
-Dry run: would send 137 snapshot event(s) to https://eu.i.posthog.com in 2 batch(es). No network calls were made.
-```
-
-**Real import** (happy with the dry run? drop the flag):
-
-```bat
-py import_snapshot_to_posthog.py
-```
-
-Expected output:
-
-```
-  progress: 100/137 processed
-  progress: 137/137 processed
-Done: 137 player snapshot(s) sent in 2 batch(es), 0 batch(es) failed.
-They appear in PostHog → Activity as 'cloud_save_snapshot', and each player is now a Person with filterable properties.
-```
-
-Then in PostHog: **Activity** shows the `cloud_save_snapshot` events, **People** shows
-every player with `xp`, `crystal_balance`, `total_games`, `favorite_vessel`, `first_seen`,
-`last_login`, … as filterable person properties, and SQL sees them as `properties.*`.
-Re-running later after a fresh export is safe — each player just gets a newer snapshot.
-
 **Mac/Linux**: same commands with `python3` instead of `py` and `export VAR=value`
 instead of `set VAR=value`.
 
 ---
 
-## 2. What gets flattened (actual Cloud Save keys → PostHog properties)
-
-The property names map from the real save keys in `Assets/_Scripts/System/UGSKeys.cs`
-(shapes documented in `Docs/Analytics/DATA_INVENTORY.md` §1) — nothing is guessed:
-
-| Cloud Save key | PostHog properties |
-|---|---|
-| `player_profile` | `name`, `avatar_id`, `xp`, `crystal_balance`, `first_seen`, `rewards_unlocked` |
-| `PLAYER_STATS_PROFILE` | `last_login` (converted from .NET ticks) |
-| `VESSEL_STATS` | `total_games` (sum of per-vessel GamesPlayed), `favorite_vessel` (most-played) |
-| `GAME_MODE_PROGRESSION` | `unlocked_modes`, `unlocked_modes_count`, `max_intensity_unlocked`, `recorded_play_count` |
-| `HANGAR_DATA` | `vessels_unlocked`, `selected_vessel` |
-| (all) | `keys_present` — which save keys this player has |
-
-Every field is optional — players missing a key simply lack those properties. Keys not
-listed (settings, daily challenge, training, squad, loadout, captain, episode) are in the
-raw export but deliberately not pushed to PostHog; deep analysis of those belongs in the
-export files (see §3). Want another field flattened? Edit `build_snapshot()` in
-`import_snapshot_to_posthog.py` — it's ~60 self-explanatory lines.
-
-## 3. Optional: query the raw export locally with DuckDB
+## 2. Query the export locally with DuckDB
 
 For the analyst: the full, unflattened data (per-intensity high scores, per-vessel
 counters, …) is in `cloud_save_export/items.jsonl` (`value` is the saved object as a JSON
@@ -203,7 +127,7 @@ GROUP BY 1 ORDER BY games DESC;
 
 ---
 
-## 4. Troubleshooting
+## 3. Troubleshooting
 
 | Symptom | Cause / fix |
 |---|---|
@@ -212,10 +136,6 @@ GROUP BY 1 ORDER BY games DESC;
 | `Environment 'production' not found` | Run `py export_cloud_save.py --list-environments` and pass the right name via `--environment`. |
 | Export finishes with `0 players` | Wrong environment (data usually lives in `production`, test data elsewhere), or wrong `--project-id` — verify the UUID against Unity Cloud → project → Settings. Players only appear here if they have saved data. |
 | Lots of `rate limited (429)` waits | Normal. Unity caps the admin API at 1,000 requests/30 min. The script waits and continues; don't close the window. |
-| Import: `PostHog rejected the batch (HTTP 401...)` | Wrong `phc_` key (make sure it's the **Project** API key, not a personal `phx_` key), or region mismatch — a **US**-cloud project needs `--host https://us.i.posthog.com`. |
-| Import: `Export file not found` | Run the export first, or you're in the wrong folder — the import looks for `cloud_save_export\items.jsonl` next to where you run it (override with `--items <path>`). |
-| Import ends with `N batch(es) failed` | Transient network/5xx trouble. Just run `py import_snapshot_to_posthog.py` again — resending is safe. |
-| Events sent but nothing in PostHog | Check **Activity** (not a dashboard) and confirm you're in the right PostHog project; ingestion can lag a minute or two. |
 
 Security reminder: the Key ID/Secret pair grants read access to all player saves. Keep it
 out of git, out of the game client, and out of screenshots. `set` variables vanish when

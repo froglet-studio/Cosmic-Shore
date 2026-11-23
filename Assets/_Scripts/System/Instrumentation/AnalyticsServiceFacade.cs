@@ -205,8 +205,8 @@ namespace CosmicShore.Core
 
             _sinks.Add(new UgsAnalyticsSink(Log));
 
-            // Our own analytics server (Tools/Analytics/server/), which replaced PostHog on
-            // 2026-11-06. The asset ships pointed at the server; nothing is filled in by hand.
+            // Our own analytics server (Tools/Analytics/server/). The asset ships pointed at the
+            // server; nothing is filled in by hand.
             var frogletConfig = Resources.Load<FrogletAnalyticsConfigSO>("FrogletAnalyticsConfig");
             if (frogletConfig != null && frogletConfig.Enabled)
             {
