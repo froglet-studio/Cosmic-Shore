@@ -18,6 +18,7 @@ MonoBehaviour:
   Description: Grizzly proving grounds. A cell full of prisms to nuke, an opponent
     to shove around, and room to ride your own shockwaves. Charge the cannon, dig
     in, rush, snipe, and burn - a test range today, a tank game tomorrow.
+  ShortDescription: Nuke prisms, shove a rival, ride shockwaves.
   IconActive: {fileID: 21300000, guid: ff915aad644c07144a1d02cc4723b015, type: 3}
   IconInactive: {fileID: 21300000, guid: 1917088452678c8449563992f4132c7e, type: 3}
   CardBackground: {fileID: 21300000, guid: 4002a4178e5148abb2bcb3ad23659d07, type: 3}

@@ -20,6 +20,7 @@ MonoBehaviour:
     make them bigger. The same blade cuts a rival's walls down, so a lit run through their wall
     leaves yours standing in its place. When the clock runs out, the team with the most standing
     wins.
+  ShortDescription: Swing your sword to build walls.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 955af4b059b249d1adfb801a6daa50d2, type: 3}

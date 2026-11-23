@@ -21,6 +21,7 @@ MonoBehaviour:
     runs out - your trail and your garden. Wild herds graze every garden outside the core,
     and a rival paints your plants to throw a school at them. Higher intensities thin the
     seeds, bring more grazers and leave less room to grow.'
+  ShortDescription: Plant seeds, grow the biggest garden.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 22fbf9d548db4f2d9e331e9f4fe9e275, type: 3}

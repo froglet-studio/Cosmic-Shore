@@ -21,6 +21,7 @@ MonoBehaviour:
     through it and the gate is yours. Freeze a bomb in the keg, fly just past it toward the
     next ring and let go, and the blast throws you down the next leg. Two laps. Fastest
     domain home wins.
+  ShortDescription: Your bombs are your speed. Beat the clock.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 438aea60b3ad404d920ef47ba6fa114c, type: 3}

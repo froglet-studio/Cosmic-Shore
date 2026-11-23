@@ -20,6 +20,7 @@ MonoBehaviour:
     bomb into a cluster, and let the guns pick at what is left. Your own colour is not your
     score but it is your cover. Omni crystals reload every gunner seat. Higher intensities
     thin the forest. First team to the target wins.'
+  ShortDescription: Raid the rival forest with bombs.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 8247fb1632604b47826ca824b50c9f35, type: 3}

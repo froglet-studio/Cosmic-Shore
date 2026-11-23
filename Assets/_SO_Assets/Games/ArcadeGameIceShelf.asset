@@ -20,6 +20,7 @@ MonoBehaviour:
     carried round the hull, then dropped where it stands for twenty seconds. A shield
     dropped in the closing seconds still counts at the whistle. Rival gunners break your
     mass, and wild herds graze it outside the core. Higher intensities bring more grazers.'
+  ShortDescription: Hold the most mass when time runs out.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 869af551a49b4db58192cb2708d6566e, type: 3}

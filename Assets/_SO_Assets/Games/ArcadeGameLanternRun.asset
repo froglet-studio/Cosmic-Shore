@@ -20,6 +20,7 @@ MonoBehaviour:
     throw, paint the far one past the ring and throw again, then dash after each half
     and zoom straight through the ring. The clusters grow back. Two laps. Fastest
     domain home wins.
+  ShortDescription: Paint your path, throw your school.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 57c0df5c8591406199babeab98472139, type: 3}

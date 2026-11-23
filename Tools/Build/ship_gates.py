@@ -69,6 +69,8 @@ STATIC = [
     ('ship_triage_self_test', 'Tools/Build/ship_triage.py', ['--self-test']),
     ('editor_themes', 'Tools/Build/author_editor_themes.py', ['--check']),
     ('editor_themes_self_test', 'Tools/Build/author_editor_themes.py', ['--self-test']),
+    ('card_short_lines', 'Tools/Build/author_card_short_lines.py', ['--check']),
+    ('card_short_lines_self_test', 'Tools/Build/author_card_short_lines.py', ['--self-test']),
     # Every colour comes from the colour set (Garrett, 2026-11-10, LOCKED; Docs/VesselModels/COLOR_TRACE.md): every
     # authored colour is traced, every set's values are kept apart, and every coloured texture is graded.
     ('colour_trace', 'Tools/Build/colour_trace.py', ['--check']),

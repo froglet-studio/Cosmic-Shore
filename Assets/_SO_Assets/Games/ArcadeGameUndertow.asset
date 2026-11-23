@@ -19,6 +19,7 @@ MonoBehaviour:
     a rival and the cavitation plate drags them through the undertow - every element they
     have stripped for four seconds. Drag the swarm through it too and the creatures die.
     A pilot is three points, a creature one; first team to the target wins.
+  ShortDescription: Drag rivals through your undertow.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 4070b298bd694ddca5ef5eb2f3385865, type: 3}

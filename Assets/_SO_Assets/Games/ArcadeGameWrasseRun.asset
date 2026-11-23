@@ -19,6 +19,7 @@ MonoBehaviour:
     ring so the Wrasse can swing through it - the hull alone does not count. Wrasse,
     loop Time motes to bank boosts the Grouper spends to reach the next ring. Two laps.
     Fastest crew home wins.
+  ShortDescription: Two pilots, one hull, every ring.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 7823fe6c5ae54af0b53bc2e22b76c979, type: 3}

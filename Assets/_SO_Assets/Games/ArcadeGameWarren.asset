@@ -21,6 +21,7 @@ MonoBehaviour:
     When the clock runs out, the team with the most standing wins. Higher intensities thin
     the crystals, start everyone at Mass 5 (danger portals) and then Space 5 (a soliton
     steals what it swallows).'
+  ShortDescription: Swallow their mass, fire it back.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 2b8fed793a1b41389db8b9d596998e89, type: 3}

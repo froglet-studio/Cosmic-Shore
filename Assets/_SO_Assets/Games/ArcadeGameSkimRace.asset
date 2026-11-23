@@ -17,6 +17,7 @@ MonoBehaviour:
   DisplayName: Skim Race
   Description: Find the fastest path to the crystal by skimming trails for a speed
     boost.
+  ShortDescription: Skim trails for speed. First to the crystal.
   IconActive: {fileID: 21300000, guid: 9842120c8e297c64d8e6e9bed82feeb5, type: 3}
   IconInactive: {fileID: 21300000, guid: d7304af54e4930545a2bafd4c4b193f1, type: 3}
   CardBackground: {fileID: 21300000, guid: 66bebfc371fe47409acb7f4939ab58b0, type: 3}

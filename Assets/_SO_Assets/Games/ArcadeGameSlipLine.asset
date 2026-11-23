@@ -21,6 +21,7 @@ MonoBehaviour:
     charges, so spend them well - stubs are not worth one, leaning rails need a
     turn out to meet, and on the hardest level one ride chains into the next.
     First team to put a pilot through the last ring takes it.
+  ShortDescription: Zip down rails of your colour.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 05c65c7b2a144bfdb44b6adce5c972d0, type: 3}

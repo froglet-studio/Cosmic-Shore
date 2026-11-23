@@ -19,6 +19,7 @@ MonoBehaviour:
     when your pair of holes closes, the meeting throws a ripple through space. Every rival its front
     sweeps over loses a petal of every element. Charge widens the ripple. One rival stripped is one
     hit; first team to the target wins.
+  ShortDescription: Close your holes, ripple your rivals.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: fc9400db48264abbb16d3f0ea5c5590e, type: 3}

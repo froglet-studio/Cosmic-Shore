@@ -21,6 +21,7 @@ MonoBehaviour:
     strike them - each strike is one point and silences them while they refuel. Crystals
     float in the clearings, out of the sticks'' cover. Higher intensities grow the heap,
     cross the sticks into jacks and add red-tipped sticks. First team to the target wins.'
+  ShortDescription: A chain brawl in floating sticks.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: c61a56cc915d43c2b7e2d0433c6a7439, type: 3}

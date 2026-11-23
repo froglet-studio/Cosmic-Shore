@@ -22,6 +22,7 @@ MonoBehaviour:
     omni crystal re-shields every wall you are growing. The most volume standing in your
     colour when the clock runs out wins. Higher intensities put longer, thicker hedges
     farther out.'
+  ShortDescription: Grow your wall along their hedge.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 2c3997ce816e48cb865732112115a897, type: 3}

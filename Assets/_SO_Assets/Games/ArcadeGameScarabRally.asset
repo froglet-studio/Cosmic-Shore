@@ -19,6 +19,7 @@ MonoBehaviour:
     Hold the throttle to wind up speed, drift the hairpins to keep it, and juke into a
     mouth that sits off your line. Walls to weave and danger beside the fast line on
     the hard levels. First team to put a pilot through the last ring takes it.
+  ShortDescription: Drift the hairpins, juke into the rings.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 06226eb595a649b5a0e7ee59ea2094a7, type: 3}

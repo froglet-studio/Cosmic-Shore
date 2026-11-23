@@ -19,6 +19,7 @@ MonoBehaviour:
     you would dig - bend it toward the next ring with the right stick, shorten it with LT,
     and pull RT to ripple it open and dive through, out the far end with the speed you went
     in with. Eight rings a lap, two laps.
+  ShortDescription: Burrow from ring to ring, fastest wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 7075814d232b4d529000c9a2fe239322, type: 3}

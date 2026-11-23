@@ -21,6 +21,7 @@ MonoBehaviour:
     rival a bloom catches is a point that silences them. Never touch a shell with your hull
     - that sets your bombs off early. Higher intensities add shells, narrow the gates, rim
     them in danger and thin the crystals. First team to the target wins.'
+  ShortDescription: Arm bombs on the shells, set them off inside.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: fe8abd77552044ef8b8989e416f337bc, type: 3}

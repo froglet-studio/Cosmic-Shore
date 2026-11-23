@@ -18,6 +18,7 @@ MonoBehaviour:
   Description: Stoats only, in Rampage's cactus forest. Race for the omni crystals in the heart - every
     one you take throws a thunderbolt through the forest, and the plants it touches burn. A bolt that
     reaches another crystal throws another bolt. First team to burn the target wins.
+  ShortDescription: Take crystals, throw thunderbolts.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 6f9bee4056de43c28b94d2d81c0e449e, type: 3}

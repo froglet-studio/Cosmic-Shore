@@ -20,6 +20,7 @@ MonoBehaviour:
     a careless hull. Slip out through a gap, or shoot or ram its gold core and the whole
     shape comes apart. Cloak just past a ring and a Seed Wall grows in the way of whoever
     is behind you. Two laps. Fastest domain home wins.
+  ShortDescription: Race through rings a great shape closes.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 717a8f247ddd4f47b1c6205902959fab, type: 3}

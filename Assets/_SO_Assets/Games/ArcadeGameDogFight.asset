@@ -19,6 +19,7 @@ MonoBehaviour:
     one, rockets score fifty, and the Boneyard is full of places to disappear into -
     hollow hulks, leaning spires, a reactor nobody should loiter near. First domain
     to the point target takes it.
+  ShortDescription: Guns and rockets in the Boneyard.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: fef15a00e928452f9ae44105a047dfd7, type: 3}

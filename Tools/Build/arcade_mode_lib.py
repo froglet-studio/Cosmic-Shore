@@ -541,7 +541,7 @@ class Generator:
             full = os.path.join(ROOT, rel)
             os.makedirs(os.path.dirname(full), exist_ok=True)
             with open(full, "w", encoding="utf-8", newline="\n") as fh:
-                fh.write(placeholder_sounds(rel, content))
+                fh.write(shared_fills(rel, content))
         for rel in self.stale:
             full = os.path.join(ROOT, rel)
             if os.path.exists(full):
@@ -554,6 +554,26 @@ class Generator:
 
 def _meta_lines(text: str) -> "list[str]":
     return [ln.rstrip() for ln in text.splitlines()]
+
+
+def shared_fills(rel: str, content: str) -> str:
+    """What other tables own inside a generator's output, filled in before it is written or diffed: the listed
+    placeholder sounds (placeholder_sounds) and an arcade card's short line (card_short_line)."""
+    return card_short_line(rel, placeholder_sounds(rel, content))
+
+
+def card_short_line(rel: str, content: str) -> str:
+    """An arcade card with its `ShortDescription` from Tools/Build/card_short_lines.json (author_card_short_lines.py,
+    Shombith 2026-11-23: the Poster card's reveal shows a short line, not the long Description). Without it a mode
+    generator re-emits its card without the line and wipes it; with it, write and --check agree with the tree."""
+    if not re.match(rf"{re.escape(CARDS_DIR)}/ArcadeGame[^/]*\.asset$", rel.replace(os.sep, "/")):
+        return content
+    try:
+        import author_card_short_lines as acs
+    except ImportError:
+        return content
+    line = acs.line_for(os.path.splitext(os.path.basename(rel))[0])
+    return content if line is None else acs.with_line(content, line)
 
 
 def placeholder_sounds(rel: str, content: str) -> str:
@@ -593,7 +613,7 @@ def drift(files: "dict[str, str]", stale=()) -> "list[str]":
     makes a gate red for nothing. Every other file is compared byte for byte."""
     changed = []
     for rel, content in files.items():
-        content = placeholder_sounds(rel, content)
+        content = shared_fills(rel, content)
         full = os.path.join(ROOT, rel)
         if not os.path.exists(full):
             changed.append(f"{rel} (missing on disk)")

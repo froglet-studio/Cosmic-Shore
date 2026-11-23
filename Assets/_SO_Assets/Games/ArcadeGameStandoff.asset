@@ -21,6 +21,7 @@ MonoBehaviour:
     catches is a point that silences them. Dig in behind a post to aim and recharge, and
     charge the cannon for a bigger blast. Higher intensities add posts, an inner ring,
     shielded rims and danger corners. First team to the target wins.'
+  ShortDescription: Stick bombs on rivals behind cover.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: a19979e451e44aec8240524d9ec7dbfa, type: 3}

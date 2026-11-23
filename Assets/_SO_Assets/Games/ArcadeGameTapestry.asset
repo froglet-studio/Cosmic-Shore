@@ -19,6 +19,7 @@ MonoBehaviour:
     wide - Mass crystals widen your brush. Flip to Dust mode and fly over a rival's painting
     to shred it, shrink it or steal it for your own. When the clock runs out, the team with
     the most standing wins.
+  ShortDescription: Paint the sky, shred their painting.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 14f04ffc9afa4608b0290b6df1c3b81e, type: 3}

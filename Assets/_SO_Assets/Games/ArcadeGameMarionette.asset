@@ -20,6 +20,7 @@ MonoBehaviour:
     point. Charge makes the attack ready sooner, and at Charge 5 leaving a creature bursts
     it on every rival near it. An omni crystal hatches a predator you ride at once. Higher
     intensities grow more kelp and thin the herds. First team to the target wins.'
+  ShortDescription: Ride a creature, attack with it.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 5bda523a27354ddcb3c4a723461dda62, type: 3}

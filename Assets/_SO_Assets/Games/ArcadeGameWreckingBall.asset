@@ -20,6 +20,7 @@ MonoBehaviour:
     prism it plows through is yours; flick a dash beside the forest and the cavitation
     plate shreds the rest. Balls bounce off the wall and come back for more. First team
     to the wrecking target wins.
+  ShortDescription: Bowl your ball through the forest.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: f8bfd3fd9f1f47af83c130fbbc913dd3, type: 3}

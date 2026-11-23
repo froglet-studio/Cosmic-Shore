@@ -21,6 +21,7 @@ MonoBehaviour:
     needs twelve seconds between shots, so make each one count - and a rival flying straight
     leaves a lance of their own colour behind them. The most prisms broken when the clock
     runs out wins. Higher intensities bend the lances into shorter runs, farther out.'
+  ShortDescription: Line up a lance, take it in one shot.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 60bda72068284fa392204d11947b9e59, type: 3}

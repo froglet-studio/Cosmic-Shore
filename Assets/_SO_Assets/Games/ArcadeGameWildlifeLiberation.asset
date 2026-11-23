@@ -19,6 +19,7 @@ MonoBehaviour:
     scattered from the open water you spawn in all the way to the core. Shoot what
     swims past, break in after what does not. You never know what the next one is.
     First domain to the kill count takes it.
+  ShortDescription: Break the cages, hunt the wildlife.
   IconActive: {fileID: 21300000, guid: 576d21301c622e9489beb58263f393cb, type: 3}
   IconInactive: {fileID: 21300000, guid: ebb26aeda98ffe840ad60e7ab88c8a28, type: 3}
   CardBackground: {fileID: 21300000, guid: d158c4fd34d94218a67750ebf3d7190c, type: 3}

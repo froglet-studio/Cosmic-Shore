@@ -23,6 +23,7 @@ MonoBehaviour:
     lanterns are short, and at the top a Time crystal hangs on the last plunge of each
     tower, just short of its deepest landing. The last gap is one long drop, and it leaves a
     wormhole for whoever follows.'
+  ShortDescription: Weave the rings down the Drop Tower.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 5f369710bf604859820aa9aeb3301a12, type: 3}

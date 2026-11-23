@@ -21,6 +21,7 @@ MonoBehaviour:
     your colour scores. Open the fish wide for a bigger net, and sweep the packed cores.
     Shielded prisms only bounce. Higher intensities shield the cores, paint the sheaves in
     team colours and add danger spokes and creatures. First team to the target wins.'
+  ShortDescription: Net loose prisms and smash them.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 1a512c5da67d43bca888bf2e02eecf21, type: 3}

@@ -21,6 +21,7 @@ MonoBehaviour:
     them; every missile that reaches them is a point. The wreckage is cover - a missile that
     meets a block blows on it. Higher intensities pile up more wreckage and thin the
     crystals. First team to the target wins.'
+  ShortDescription: Paint a rival, every plant fires.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 92679aecdef849bfbb3b3aaad371929b, type: 3}

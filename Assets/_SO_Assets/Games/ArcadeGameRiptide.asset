@@ -20,6 +20,7 @@ MonoBehaviour:
     - fire vortex rings to gather them and smash them, and break what you touch. Rival
     trails and dens count too. Higher intensities turn the plates, stack them, and brace
     them with shielded ribs. First team to the target wins.'
+  ShortDescription: Pull tiles into your plane and smash them.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 0c2aedb38459432db049716dd3ce4bdf, type: 3}

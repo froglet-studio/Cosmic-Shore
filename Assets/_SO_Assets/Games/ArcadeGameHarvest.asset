@@ -21,6 +21,7 @@ MonoBehaviour:
     blast. Only prisms that are not your colour count. Crystals in the clear centre windmill
     your red-hot ball round you. Higher intensities shield the cores, colour the sheaves by
     team and add danger stalks. First team to the harvest target wins.'
+  ShortDescription: Mow the stalks, whip the ball into the core.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 35e22475497d4117880ad86315824fa5, type: 3}

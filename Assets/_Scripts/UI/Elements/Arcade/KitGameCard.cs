@@ -24,7 +24,7 @@ namespace CosmicShore.UI
         [SerializeField] private KitThemedGraphic starPaint;
 
         [Header("Poster reveal (Frogma Rev 128 E)")]
-        [Tooltip("The mode's line in the panel that slides up on hover or pad focus (KitPosterReveal). Empty: not drawn.")]
+        [Tooltip("The mode's short line (SO_Game.ShortDescription) in the panel that slides up on hover or pad focus (KitPosterReveal). Empty: not drawn.")]
         [SerializeField] private TMP_Text descriptionText;
         [Tooltip("The pilots line in that panel (Label role). Empty: not drawn.")]
         [SerializeField] private KitText pilotsText;
@@ -36,7 +36,7 @@ namespace CosmicShore.UI
 
         protected override void DrawDetails(SO_ArcadeGame game)
         {
-            if (descriptionText) descriptionText.text = game.Description;
+            if (descriptionText) descriptionText.text = game.ShortDescription;
             if (pilotsText) pilotsText.SetText(TemplateText.Fill(pilotsLine, "pilots", Range(game.MinPlayersAllowed, game.MaxPlayersAllowed)));
         }
 

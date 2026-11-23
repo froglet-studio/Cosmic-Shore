@@ -22,6 +22,7 @@ MonoBehaviour:
     a hood''s core and the whole hood falls, flushing whoever hid in it. Higher intensities
     pull the hoods in, deepen their cups and stand shutters across the heart. First team to
     the target wins.'
+  ShortDescription: A sniper duel across a crystal heart.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 6ae541e1fc3d4852bf8a958146f3e5df, type: 3}

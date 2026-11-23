@@ -20,6 +20,7 @@ MonoBehaviour:
     plough straight through them. Swerve and the boost dies. Thorn hedges burn your Time,
     so slip their window or take the burn. Top intensity starts at Time 5 - carry the
     corner and Momentum bulldozes the danger. Five laps. Fastest domain home wins.
+  ShortDescription: Fly straight, plough through the hedges.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: a2509d2cef43488ab5130e6662487520, type: 3}

@@ -19,6 +19,7 @@ MonoBehaviour:
     Dust mode and your scale dust hangs below you - fly OVER a rival and every element they
     have takes the bite. Charge makes it bite harder. One pass is one dusting; first team to
     the target wins.
+  ShortDescription: Dust rivals from above. No guns.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 3165c40ef6c74d48a330c77df0320be7, type: 3}

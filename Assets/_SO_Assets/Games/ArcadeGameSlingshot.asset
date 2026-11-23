@@ -20,6 +20,7 @@ MonoBehaviour:
     difference pulls them apart sideways, the sum lengthways - and the field bends your
     path round the corner. Dive into the black hole and you come out of the white one.
     Eight rings, two laps.
+  ShortDescription: Steer with two holes through the rings.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 5d2280c8f0184379a10183130f23c2b2, type: 3}

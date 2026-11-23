@@ -20,6 +20,7 @@ MonoBehaviour:
     fire a vortex ring when the locked rival is on your screen - it homes on them, and every
     ring hit is a point that takes their petals. Higher intensities thicken the kelp, thin
     the herds and crystals, and add danger tips and collars. First team to the target wins.'
+  ShortDescription: Lock a rival, fire the vortex ring.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: d81e72e27beb440282587654b826dfca, type: 3}

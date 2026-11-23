@@ -22,6 +22,7 @@ MonoBehaviour:
     you, so the heap is cover, and the clearings are where you build the run. Crystals float
     in the clearings. Higher intensities grow the heap and add red-tipped sticks that sting.
     First team to the target wins.'
+  ShortDescription: Gore rivals from behind while faster.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 0238ba69645340a1920a838e9ece57ab, type: 3}

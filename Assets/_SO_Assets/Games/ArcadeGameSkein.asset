@@ -19,6 +19,7 @@ MonoBehaviour:
     on and the cable does the driving - your colour runs fast, theirs runs at a
     crawl, and every rail ENDS somewhere, aimed at another. Thread the rings in
     order; the first team to put a pilot through the last one takes it.'
+  ShortDescription: Ride a knot of rails through the rings.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 0c0b94c8798641508c3e271bbf6cb149, type: 3}

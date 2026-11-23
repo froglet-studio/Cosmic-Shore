@@ -19,6 +19,7 @@ MonoBehaviour:
     way. Every gate is somewhere new and facing somewhere new, and you take them in
     order - drift the corners, boost the straights, and go back for the one you missed.
     First team to put a pilot through the last gate takes it.
+  ShortDescription: A new ring course every race.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 46051160ebe3434098b498d984a39421, type: 3}

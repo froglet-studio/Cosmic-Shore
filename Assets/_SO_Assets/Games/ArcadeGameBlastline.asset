@@ -21,6 +21,7 @@ MonoBehaviour:
     kite''s head pops what it touches. Gather Space crystals and more Space motes come to
     the board. Higher intensities grow a wilder forest and thin the crystals. First team to
     the target wins.'
+  ShortDescription: Loop motes to blast the overgrowth.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: ba46b8f3b82d4c8c82276ca5c101dff8, type: 3}

@@ -12,6 +12,9 @@ namespace CosmicShore.ScriptableObjects
         public bool IsMultiplayer;
         public string DisplayName;
         public string Description;
+        [Tooltip("One short line for the game card's reveal panel (under 48 characters). Empty shows nothing. " +
+                 "Written for the arcade cards by Tools/Build/author_card_short_lines.py from card_short_lines.json.")]
+        public string ShortDescription;
         [FormerlySerializedAs("SelectedIcon")]
         public Sprite IconActive;
         [FormerlySerializedAs("Icon")]
