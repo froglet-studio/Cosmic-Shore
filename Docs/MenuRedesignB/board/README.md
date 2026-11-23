@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-23 from canvas version `1795406768-c5d4` of **Frogma**: Rev 41 to Rev 129, 342 boards on 17 tabs. The canvas opens on the tab `game-cards`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-23 from canvas version `1795461723-7362` of **Frogma**: Rev 41 to Rev 130, 352 boards on 17 tabs. The canvas opens on the tab `game-cards`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -566,6 +566,19 @@ No boards yet.
 - `R123H.dc.html` (not copied yet) - Rev 123 H - Arcade Poster: the one Shombith picked to grow from (2026-11-22) - interactive
 
 ### Tab: Game Cards  (`game-cards`)
+
+#### Rev 130 - The card's picture, eight more ways: real frames and signs of the play; the short line
+
+- [`R130Compare.dc.html`](R130Compare.dc.html) - Rev 130 - Compare
+- [`R130S1.dc.html`](R130S1.dc.html) - Rev 130 S1 - S1 Frame - interactive
+- [`R130S2.dc.html`](R130S2.dc.html) - Rev 130 S2 - S2 Night grade - interactive
+- [`R130S3.dc.html`](R130S3.dc.html) - Rev 130 S3 - S3 Reel - interactive
+- [`R130S4.dc.html`](R130S4.dc.html) - Rev 130 S4 - S4 Window - interactive
+- [`R130Y1.dc.html`](R130Y1.dc.html) - Rev 130 Y1 - Y1 Pictogram - interactive
+- [`R130Y2.dc.html`](R130Y2.dc.html) - Rev 130 Y2 - Y2 Playbook - interactive
+- [`R130Y3.dc.html`](R130Y3.dc.html) - Rev 130 Y3 - Y3 Diorama - interactive
+- [`R130Y4.dc.html`](R130Y4.dc.html) - Rev 130 Y4 - Y4 Crest - interactive
+- [`R130Notes.dc.html`](R130Notes.dc.html) - Rev 130 - Notes
 
 #### Rev 129 - The Poster card in our font; Skim Race's picture made to look like the cell
 

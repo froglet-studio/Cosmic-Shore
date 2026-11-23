@@ -2866,6 +2866,94 @@
       "h": 900,
       "page": "game-cards",
       "title": "Rev 129 - notes: why the pictures miss the cell, the touch-ups, what a pick changes"
+    },
+    "R130Compare.dc.html": {
+      "x": 0,
+      "y": 9760,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 - Compare"
+    },
+    "R130S1.dc.html": {
+      "x": 2100,
+      "y": 9760,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 S1 - S1 Frame - interactive",
+      "is_interactive": true
+    },
+    "R130S2.dc.html": {
+      "x": 4200,
+      "y": 9760,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 S2 - S2 Night grade - interactive",
+      "is_interactive": true
+    },
+    "R130S3.dc.html": {
+      "x": 0,
+      "y": 11020,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 S3 - S3 Reel - interactive",
+      "is_interactive": true
+    },
+    "R130S4.dc.html": {
+      "x": 2100,
+      "y": 11020,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 S4 - S4 Window - interactive",
+      "is_interactive": true
+    },
+    "R130Y1.dc.html": {
+      "x": 4200,
+      "y": 11020,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 Y1 - Y1 Pictogram - interactive",
+      "is_interactive": true
+    },
+    "R130Y2.dc.html": {
+      "x": 0,
+      "y": 12280,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 Y2 - Y2 Playbook - interactive",
+      "is_interactive": true
+    },
+    "R130Y3.dc.html": {
+      "x": 2100,
+      "y": 12280,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 Y3 - Y3 Diorama - interactive",
+      "is_interactive": true
+    },
+    "R130Y4.dc.html": {
+      "x": 4200,
+      "y": 12280,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 Y4 - Y4 Crest - interactive",
+      "is_interactive": true
+    },
+    "R130Notes.dc.html": {
+      "x": 0,
+      "y": 13540,
+      "w": 1920,
+      "h": 900,
+      "page": "game-cards",
+      "title": "Rev 130 - Notes"
     }
   },
   "createdOnFiles": {
@@ -2957,6 +3045,7 @@
     "sec-rev127",
     "sec-rev128",
     "sec-rev129",
+    "sec-rev130",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -3048,7 +3137,8 @@
     "rev126",
     "rev127",
     "rev128",
-    "rev129"
+    "rev129",
+    "rev130"
   ],
   "notes": {
     "hud_end": {
@@ -5179,6 +5269,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "game-cards"
+    },
+    "rev130": {
+      "kind": "title1",
+      "text": "Rev 130 - The card's picture, eight more ways: real frames and signs of the play; the short line",
+      "x": 0,
+      "y": 9360,
+      "w": 240,
+      "maxW": 6120,
+      "page": "game-cards"
+    },
+    "sec-rev130": {
+      "kind": "rect",
+      "x": -160,
+      "y": 9200,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "game-cards"
     }
   },
   "order": [
@@ -5523,7 +5637,17 @@
     "R128Notes.dc.html",
     "R129Compare.dc.html",
     "R129Row.dc.html",
-    "R129Notes.dc.html"
+    "R129Notes.dc.html",
+    "R130Compare.dc.html",
+    "R130S1.dc.html",
+    "R130S2.dc.html",
+    "R130S3.dc.html",
+    "R130S4.dc.html",
+    "R130Y1.dc.html",
+    "R130Y2.dc.html",
+    "R130Y3.dc.html",
+    "R130Y4.dc.html",
+    "R130Notes.dc.html"
   ],
   "pages": [
     {

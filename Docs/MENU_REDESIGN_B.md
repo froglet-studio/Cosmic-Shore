@@ -9026,3 +9026,35 @@ Arena card changes at once and `--check` holds it; the Poster card goes into the
   the board's intensity bars are not built (what they count is undecided); the hull is the square lit icon, not the
   board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
   picture; the Poster was drawn for the Arcade grid card.
+
+### 222.2 Rev 130: the card's short line, and its picture eight more ways (2026-11-23; awaiting a pick)
+
+**Asked (Shombith, 2026-11-23):** "For the arcade game cards - the description is too big there should be a short
+description. For the arcade game cards bg - I need 8 more variations 4 of them with screenshots and the directions we are
+going with all the variations of hover, locked etc and 4 with symbolic approach where on hover the vessel does something
+for eg the scarab scores a goal".
+
+**Built (the short line):** `SO_Game.ShortDescription`, one line under 48 characters, written into all 86 arcade cards
+from `Tools/Build/card_short_lines.json` by `author_card_short_lines.py` (`--check`, `--self-test`, both in the ship
+gates). The Poster's reveal shows it instead of the long Description (`KitGameCard.DrawDetails`), and opens 84 tall
+instead of 112 (`author_menu_arcade.py` `POSTER_OPEN_H`, `KitPosterReveal.openHeight`). Every mode generator keeps the
+line (`arcade_mode_lib.card_short_line`, through `Generator.finish` and `drift()`, and the emit of the seven that write
+on their own), so re-running one no longer wipes it. Empty shows nothing.
+
+**On the canvas:** round "Rev 130" on the Game Cards tab; copies `Docs/MenuRedesignB/board/R130*.dc.html`, written by
+`Docs/MenuRedesignB/rounds/r130_card_pictures.py` (frames in `rounds/r130_assets/`). Four modes (Skim Race, Scarab
+Scramble, Dog Fight, Headlong), every board at rest, hovered, under pad focus and locked, all on the Poster with the short
+line.
+- **Screenshots:** S1 Frame (a real game frame full bleed under the Poster's shade), S2 Night grade (the frame graded to
+  the deep-sea palette so the title reads), S3 Reel (hover steps through three frames), S4 Window (the frame in a porthole
+  on the cell's wall).
+- **Symbolic (hover makes the vessel act):** Y1 Pictogram (a flat sign; the Scarab bats the ball through the ring, +1),
+  Y2 Playbook (a chalk play on a grid), Y3 Diorama (the vessel and its props in a small lit stage), Y4 Crest (an emblem;
+  hover plays the act inside it). Each mode has its act: goal, skim, shoot, plough.
+- **R130Compare:** Scarab Scramble in all nine (today's Poster and the eight); **R130Notes:** costs and what a pick changes.
+
+**Differs from the build:** the S frames are real game frames but not yet one per mode; a pick of S1-S4 means capturing a
+frame per mode (the look sheet, `Docs/LOOK_SHEET.md`). A pick of Y1-Y4 means an authored act per mode (a hull tween on a
+path and two or three props), played only on the hovered or focused card.
+
+**Gates:** `check_mockup.py` OK on all 10 boards; `frogma.py check` OK on 352 boards.
