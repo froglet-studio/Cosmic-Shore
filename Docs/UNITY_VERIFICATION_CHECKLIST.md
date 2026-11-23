@@ -26461,3 +26461,12 @@ Not opened in the editor: built in a cloud session (unity_refcompile: 0 errors i
 - [ ] Locked card: the lock and LOCKED read in the middle of the picture.
 - [ ] Card pictures: the cell's pane wall and the dust read at grid size, no blue wash (`Docs/MENU_REDESIGN_B.md` 222.1).
 
+
+## Spearline: the Swordfish's Time AI on I1-I4 (2026-11-23, elemental loop step 3, Plan step: time-arcade)
+
+Not opened in the editor. Measured in Amoebius headless only (`time_ladder_judge.py --mode Spearline --hull Swordfish`,
+seeds 101-103, 24 of 24 finished): Legendary 148.5 / 142.3 / 135.2 / 143.6 s, Medium 194.7 / 159.5 / 161.0 / 165.4 s
+(`Assets/_Scripts/Controller/Arcade/SPEARLINE.md` 3). The engine's `Shadow` now derives from `UIBehaviour` (Port only).
+- [ ] Arcade > Spearline, one Swordfish AI rival at Legendary, I1 and I4: it finishes within about 10% of 148 s and 144 s.
+- [ ] The same at Medium, I1: it finishes (model 195 s) and never circles away from a ring.
+- [ ] Away from a sealed ring the AI's bill does not stand up and stay up (the sword hand's new reach of 6 and crowd of 1).

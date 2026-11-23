@@ -106,6 +106,18 @@ against the best fixed habit; a human reader (one factor fitted to the recorded 
   `SwordfishAIBoostPolicy_Spearline` and `_Regatta` variants; `RhinoAIBoostPolicy_Spearline` is gone. The Spearline
   variant is trained here by `time_ai_search.py --hull Swordfish` with the ramp's slice fuel (#2233) and the refuel gene
   (`RaceAIRefuelGenes`, row 1), and promoted by `promote_trained_drives.py`.
+  **2026-11-23, re-flown (loop step 3 recorded as built, Plan step: time-arcade).** After the sword hand's Mass/Space
+  retrain changed the hull prefab (reach 1.1 -> 6, energize crowd 6 -> 1, hardened search 1.6 -> 9; f03a47b575), the
+  shipped drive was flown again alone: `time_ladder_judge.py --mode Spearline --hull Swordfish`, Amoebius headless,
+  seeds 101-103, commit fb540a46df. 24 of 24 finished, worst gate 14.2 s (no stall). Medians of 3:
+
+  | | I1 | I2 | I3 | I4 |
+  |---|---|---|---|---|
+  | Legendary (s) | 148.5 | 142.3 | 135.2 | 143.6 |
+  | Medium (s) | 194.7 | 159.5 | 161.0 | 165.4 |
+
+  No drive or coach change was needed. Not flown in the Unity editor. The ladder is still flat for the AI (Legendary
+  within 10%, Medium I1 the slowest rung): that is step 2's question, not the AI's.
 - **By difficulty** (Easy / Medium / Hard / Legendary): the chance it does not read a seal and crosses the centre with
   a right-hand stroke 30 / 15 / 5 / 0%, and a fixed lane error up to 10 / 7 / 4 / 2 u.
 - **A closed pass** is the gate race's own: the AI comes round to the same approach. The worn seal and its own cut
