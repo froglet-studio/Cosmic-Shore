@@ -60,6 +60,7 @@ namespace CosmicShore.Gameplay
             runner.Finished += () =>
             {
                 if (ActiveRuns.TryGetValue(id, out var r) && r == runner) ActiveRuns.Remove(id);
+                PaintingPay.PayFinished(id);
             };
             runner.Begin(painting, Definition, Context, _anchorPositions[index], _anchorRotations[index],
                 resumeFromStroke);
