@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-21 from canvas version `1795251681-3892` of **Frogma**: Rev 41 to Rev 121, 306 boards on 15 tabs. The canvas opens on the tab `what-s-new`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-23 from canvas version `1795405322-5b52` of **Frogma**: Rev 41 to Rev 127, 331 boards on 16 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -198,6 +198,17 @@ Copied on 2026-11-21 from canvas version `1795251681-3892` of **Frogma**: Rev 41
 - [`R42Notes.dc.html`](R42Notes.dc.html) - Rev 42 - notes: what each look changes against the built page, and what stays
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
+
+#### Rev 127 - Avatar borders that sit on the domain halo: six animated rings
+
+- [`R127Compare.dc.html`](R127Compare.dc.html) - Rev 127 - today's square avatar over its round halo, then all six rings side by side in Jade, Ruby and Gold
+- [`R127A.dc.html`](R127A.dc.html) - Rev 127 A - Breath: one ring on the avatar's edge that breathes with the halo (recommended) - interactive
+- [`R127B.dc.html`](R127B.dc.html) - Rev 127 B - Orbit: a hairline ring with one bright arc circling it - interactive
+- [`R127C.dc.html`](R127C.dc.html) - Rev 127 C - Dial: two counter-turning segmented rings - interactive
+- [`R127D.dc.html`](R127D.dc.html) - Rev 127 D - Ripple: a ring that sends a wave out to the halo's edge - interactive
+- [`R127E.dc.html`](R127E.dc.html) - Rev 127 E - Current: a turning gradient ring with its own glow - interactive
+- [`R127F.dc.html`](R127F.dc.html) - Rev 127 F - Corona: an eclipse rim, a crescent of light that slowly turns - interactive
+- [`R127Notes.dc.html`](R127Notes.dc.html) - Rev 127 - notes: the shared geometry, what each option changes in Unity, the pick
 
 #### Rev 112 - Colour sets for a growing catalog: a world preview, one scrolling list, Free and Premium apart, no empty middle
 
@@ -525,5 +536,33 @@ No boards yet.
 - [`R121D.dc.html`](R121D.dc.html) - Rev 121 D - Card: a small card slides in over Home and opens into the window - interactive
 - [`R121Settings.dc.html`](R121Settings.dc.html) - Rev 121 Settings - Settings: the What's new row under Other opens the same window - interactive
 - [`R121Notes.dc.html`](R121Notes.dc.html) - Rev 121 - notes: what each option does, where it opens from, what the build needs
+
+### Tab: Frogma Website  (`frogma-website`)
+
+#### Rev 126: calmer, made of the HyperSea - sky, cells, galaxy, flora and fauna; the galaxy map on Voyages; Tumult's storm hero
+
+- `R126A.dc.html` (not copied yet) - Rev 126 A - Home - interactive
+- `R126B.dc.html` (not copied yet) - Rev 126 B - Vessels - interactive
+- `R126C.dc.html` (not copied yet) - Rev 126 C - Arcade - interactive
+- `R126D.dc.html` (not copied yet) - Rev 126 D - Arena - interactive
+- `R126E.dc.html` (not copied yet) - Rev 126 E - Voyages - interactive
+- `R126F.dc.html` (not copied yet) - Rev 126 F - Pilots - interactive
+- `R126G.dc.html` (not copied yet) - Rev 126 G - Studio - interactive
+- `R126Notes.dc.html` (not copied yet) - Rev 126 notes
+
+#### Rev 125: E as a site of pages, with the Fleet Codex, the Pilot Codex and a moving background
+
+- `R125A.dc.html` (not copied yet) - Rev 125 A - Home: hero, story, four ways to play, fleet teaser, Press Start, get the game, latest news - interactive
+- `R125B.dc.html` (not copied yet) - Rev 125 B - Vessels: the racing lane; every card and the button open the Fleet Codex full screen - interactive
+- `R125C.dc.html` (not copied yet) - Rev 125 C - Arcade: all 49 arcade games in the Fleet Codex look, filtered and sorted by element - interactive
+- `R125D.dc.html` (not copied yet) - Rev 125 D - Arena: its own page, the four arena games and how a match works - interactive
+- `R125E.dc.html` (not copied yet) - Rev 125 E - Voyages: the story of the HyperSea, the squad and one Ark (in development) - interactive
+- `R125F.dc.html` (not copied yet) - Rev 125 F - Pilots: the Pilot Codex, all 18 callsigns filtered by what they see - interactive
+- `R125G.dc.html` (not copied yet) - Rev 125 G - Studio: blog, the team and contact - interactive
+- `R125Notes.dc.html` (not copied yet) - Rev 125 - notes: the seven pages, Tumult, the moving background and how the codex stays current
+
+#### Frogma Website
+
+- `R123H.dc.html` (not copied yet) - Rev 123 H - Arcade Poster: the one Shombith picked to grow from (2026-11-22) - interactive
 
 <!-- frogma.py readme: end -->

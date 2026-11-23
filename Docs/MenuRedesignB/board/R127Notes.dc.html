@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 127 - notes: the shared geometry, what each option changes in Unity, the pick</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.body{font-size:18px;line-height:1.5;color:#B8C0F0}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.edge{box-shadow:inset 0 0 0 1px #434C89}
+.seg{box-sizing:border-box;height:44px;padding:0 18px;border:0;cursor:pointer;background:rgba(0,4,31,.78);color:#747BAD;box-shadow:inset 0 0 0 1px #434C89;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:14px;letter-spacing:.14em;text-transform:uppercase;display:inline-flex;align-items:center;gap:10px}
+.seg[aria-pressed=true]{color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD,inset 0 -2px 0 #E6E9FF}
+.seg:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* one geometry for every option: a round avatar, its ring on the edge, the halo centred at 1.3x */
+.av{position:relative;width:var(--d);height:var(--d);flex:none}
+.av>*{position:absolute;box-sizing:border-box;border-radius:50%;pointer-events:none}
+.face{inset:0;width:100%;height:100%;object-fit:cover}
+.halo{width:calc(var(--d) * 1.3);height:calc(var(--d) * 1.3);left:calc(var(--d) * -0.15);top:calc(var(--d) * -0.15);background:radial-gradient(closest-side,var(--c) 0,var(--c) 76.9%,color-mix(in srgb,var(--c) 38%,transparent) 87.3%,transparent 100%);opacity:.8}
+.base{inset:0}
+.guide{display:none}
+.guides .guide{display:block;border:1px dashed rgba(230,233,255,.7)}
+.g1{inset:0}
+.g2{width:calc(var(--d) * 1.3);height:calc(var(--d) * 1.3);left:calc(var(--d) * -0.15);top:calc(var(--d) * -0.15)}
+.unk .halo,.unk .fx{display:none}
+.unk .base{box-shadow:inset 0 0 0 2px #434C89!important;animation:none!important;filter:none!important;background:none!important;opacity:1!important;-webkit-mask:none!important;mask:none!important}
+.still *{animation-play-state:paused!important}
+.band{-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - var(--w)),#000 calc(100% - var(--w) + 1px));mask:radial-gradient(farthest-side,transparent calc(100% - var(--w)),#000 calc(100% - var(--w) + 1px))}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes spinr{to{transform:rotate(-360deg)}}
+@keyframes breath0{0%,100%{opacity:.45}50%{opacity:.9}}
+
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="abs" style="left:96px;top:72px;width:1728px">
+<div class="lab">Rev 127 &middot; Notes</div>
+<div class="cap" style="font-size:36px;font-weight:700;letter-spacing:.08em;margin-top:10px">What the round decides</div>
+</div>
+<div class="abs body" style="left:96px;top:190px;width:820px">
+<div class="lab" style="margin-bottom:10px">The problem</div>
+<p style="margin:0 0 22px">The domain halo is a round glow 1.22x the avatar's rect (PartySlotDomainGlow in the party panel, ConnectingPlayerRoster and RematchVoteRoster in matches). The avatar art is square, so its corners stand outside the circle and its border is a square: nothing follows the glow.</p>
+<div class="lab" style="margin-bottom:10px">What every option shares</div>
+<p style="margin:0 0 22px">The avatar is masked to a circle. The ring sits on that circle's edge. The halo is centred on the same point at 1.3x (up from 1.22, so the glow has room outside the ring) and starts at full colour exactly at the ring. A pilot whose domain is not known yet gets no halo and a quiet 2 px line ring, as today's "draws only what it knows" rule.</p>
+<div class="lab" style="margin-bottom:10px">Recommended: A Breath</div>
+<p style="margin:0">It keeps the motion the game already has (alpha only, 0.7 Hz, the halo's own breath) and makes the ring part of it, so it is the quietest answer and costs one ring sprite. B and D are the next choices if the party should feel more alive; C, E and F are louder and read best large, at 150 px and up.</p>
+</div>
+<div class="abs body" style="left:1004px;top:190px;width:820px">
+<div class="lab" style="margin-bottom:10px">Motion per option</div>
+<ul style="margin:0 0 22px;padding-left:20px"><li style="margin-bottom:8px"><span class="cap" style="color:#E6E9FF">A Breath</span>: Alpha only, 0.7 Hz, ring and halo in phase. Nothing moves or turns.</li><li style="margin-bottom:8px"><span class="cap" style="color:#E6E9FF">B Orbit</span>: One arc, one turn every 4 s, linear.</li><li style="margin-bottom:8px"><span class="cap" style="color:#E6E9FF">C Dial</span>: Outer segments one turn in 18 s, inner in 26 s the other way.</li><li style="margin-bottom:8px"><span class="cap" style="color:#E6E9FF">D Ripple</span>: Each wave 2.4 s, eased out, scale 1.0 to 1.3 (the halo&#x27;s size).</li><li style="margin-bottom:8px"><span class="cap" style="color:#E6E9FF">E Current</span>: The gradient turns once every 3 s; the glow travels with its bright part.</li><li style="margin-bottom:8px"><span class="cap" style="color:#E6E9FF">F Corona</span>: One turn every 12 s, linear; the halo is brighter on the crescent&#x27;s side.</li></ul>
+<div class="lab" style="margin-bottom:10px">What the pick changes in Unity</div>
+<p style="margin:0">One round mask on the avatar Image, one ring Image over it, the halo resized to 1.3x and its sprite starting at the ring's radius. The three halo call sites become one component (Docs/PartySystem/TODOS.md TODO-12), so the party panel, the connecting roster and the rematch vote all get the same border. Colours are the style tokens' Jade, Ruby and Gold.</p>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

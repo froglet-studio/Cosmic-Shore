@@ -8943,3 +8943,33 @@ pref `WhatsNew.SeenId`) and from a WHAT'S NEW button beside CREDITS in Settings'
 (`author_menu_settings.py`). Spec `Docs/UI/specs/rev121-c-whats-new.md`, which lists where it differs from the board
 (no Ark picture yet, the door on General not Other, only Update 0.3 listed). Hand test in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 217. Rev 127 mockups: avatar borders that sit on the domain halo, six animated rings (2026-11-23, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-23): "The avatar backdrop have the glowing circle but the actual borders of the avatars
+do not align with it. Give me 6 variations on the design board for avatars with their animated glowing borders."
+
+**Read as**: the round domain halo drawn behind a player's avatar (`PartySlotDomainGlow` in the party panel,
+`ConnectingPlayerRoster` and `RematchVoteRoster` in matches; a radial glow 1.22x the avatar rect) sits behind SQUARE
+avatar art, whose corners reach 0.71 of its width from the centre against the halo's 0.61, so the border is a square
+that follows none of the circle.
+
+**On the canvas**: tab Menu Redesign A (`menu-redesign-c`), section `sec-rev127`; generator
+`Docs/MenuRedesignB/rounds/r127_avatar_borders.py`, copies `Docs/MenuRedesignB/board/R127*.dc.html`. Every option
+shares one geometry: the avatar masked to a circle, its ring on that circle's edge, the halo centred on it at 1.3x
+(up from 1.22) and at full colour from the ring outward; a pilot whose domain is not known yet keeps no halo and a quiet
+2 px ring. Each option board shows a 340 px avatar with domain, "show the circles" and motion switches, the party panel
+and a 3 v 2 v 1 match lobby. Colours are the style tokens' Jade `#21C0BD`, Ruby `#BD1BC8`, Gold `#FF9B11`.
+- **R127Compare**: today's square avatar over its halo, then all six side by side (Jade large, Ruby and Gold small, not known).
+- **R127A Breath (recommended)**: a 3 px ring that breathes with the halo at the game's 0.7 Hz; alpha only. It keeps
+  the motion the game already has and makes the ring part of it, the quietest answer.
+- **R127B Orbit**: a hairline ring with one bright arc circling it every 4 s; the halo holds still.
+- **R127C Dial**: a solid 2 px ring and two segmented rings turning opposite ways (18 s, 26 s).
+- **R127D Ripple**: a 3 px ring sending a wave out to the halo's rim, two waves 1.2 s apart.
+- **R127E Current**: a 4 px gradient ring (domain colour and white) turning every 3 s with its own glow.
+- **R127F Corona**: an eclipse rim, a crescent of light turning every 12 s, the halo brighter on its side.
+- **R127Notes**: the problem, the shared geometry, the motion per option, what the pick changes in Unity.
+
+**Differs from the build**: the avatar Image gets a round mask and a ring Image on its edge; the halo grows to 1.3x
+and its sprite starts at the ring's radius; the three halo call sites become one component
+(`Docs/PartySystem/TODOS.md` TODO-12) so the party panel, connecting roster and rematch vote share the border.

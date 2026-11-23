@@ -2535,6 +2535,242 @@
       "h": 900,
       "page": "what-s-new",
       "title": "Rev 121 - notes: what each option does, where it opens from, what the build needs"
+    },
+    "R123H.dc.html": {
+      "x": 0,
+      "y": 160,
+      "w": 1440,
+      "h": 7330,
+      "page": "frogma-website",
+      "title": "Rev 123 H - Arcade Poster: the one Shombith picked to grow from (2026-11-22) - interactive",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R125A.dc.html": {
+      "x": 0,
+      "y": 9260,
+      "w": 1440,
+      "h": 4562,
+      "page": "frogma-website",
+      "title": "Rev 125 A - Home: hero, story, four ways to play, fleet teaser, Press Start, get the game, latest news - interactive",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R125B.dc.html": {
+      "x": 1620,
+      "y": 9260,
+      "w": 1440,
+      "h": 2619,
+      "page": "frogma-website",
+      "title": "Rev 125 B - Vessels: the racing lane; every card and the button open the Fleet Codex full screen - interactive",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R125C.dc.html": {
+      "x": 3240,
+      "y": 9260,
+      "w": 1440,
+      "h": 5639,
+      "page": "frogma-website",
+      "title": "Rev 125 C - Arcade: all 49 arcade games in the Fleet Codex look, filtered and sorted by element - interactive",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R125D.dc.html": {
+      "x": 4860,
+      "y": 9260,
+      "w": 1440,
+      "h": 3358,
+      "page": "frogma-website",
+      "title": "Rev 125 D - Arena: its own page, the four arena games and how a match works - interactive",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R125E.dc.html": {
+      "x": 6480,
+      "y": 9260,
+      "w": 1440,
+      "h": 2021,
+      "page": "frogma-website",
+      "title": "Rev 125 E - Voyages: the story of the HyperSea, the squad and one Ark (in development) - interactive",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R125F.dc.html": {
+      "x": 8100,
+      "y": 9260,
+      "w": 1440,
+      "h": 2328,
+      "page": "frogma-website",
+      "title": "Rev 125 F - Pilots: the Pilot Codex, all 18 callsigns filtered by what they see - interactive",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R125G.dc.html": {
+      "x": 9720,
+      "y": 9260,
+      "w": 1440,
+      "h": 2561,
+      "page": "frogma-website",
+      "title": "Rev 125 G - Studio: blog, the team and contact - interactive",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R125Notes.dc.html": {
+      "x": 0,
+      "y": 14999,
+      "w": 1920,
+      "h": 600,
+      "page": "frogma-website",
+      "title": "Rev 125 - notes: the seven pages, Tumult, the moving background and how the codex stays current"
+    },
+    "R126A.dc.html": {
+      "x": 1620,
+      "y": 160,
+      "w": 1440,
+      "h": 4958,
+      "page": "frogma-website",
+      "title": "Rev 126 A - Home",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R126B.dc.html": {
+      "x": 3240,
+      "y": 160,
+      "w": 1440,
+      "h": 2916,
+      "page": "frogma-website",
+      "title": "Rev 126 B - Vessels",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R126C.dc.html": {
+      "x": 4860,
+      "y": 160,
+      "w": 1440,
+      "h": 5639,
+      "page": "frogma-website",
+      "title": "Rev 126 C - Arcade",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R126D.dc.html": {
+      "x": 6480,
+      "y": 160,
+      "w": 1440,
+      "h": 3358,
+      "page": "frogma-website",
+      "title": "Rev 126 D - Arena",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R126E.dc.html": {
+      "x": 8100,
+      "y": 160,
+      "w": 1440,
+      "h": 3033,
+      "page": "frogma-website",
+      "title": "Rev 126 E - Voyages",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R126F.dc.html": {
+      "x": 9720,
+      "y": 160,
+      "w": 1440,
+      "h": 2328,
+      "page": "frogma-website",
+      "title": "Rev 126 F - Pilots",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R126G.dc.html": {
+      "x": 11340,
+      "y": 160,
+      "w": 1440,
+      "h": 2561,
+      "page": "frogma-website",
+      "title": "Rev 126 G - Studio",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "R126Notes.dc.html": {
+      "x": 1620,
+      "y": 5899,
+      "w": 1920,
+      "h": 600,
+      "page": "frogma-website",
+      "title": "Rev 126 notes"
+    },
+    "R127Compare.dc.html": {
+      "x": 0,
+      "y": 48564,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 127 - today's square avatar over its round halo, then all six rings side by side in Jade, Ruby and Gold"
+    },
+    "R127A.dc.html": {
+      "x": 2100,
+      "y": 48564,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 127 A - Breath: one ring on the avatar's edge that breathes with the halo (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R127B.dc.html": {
+      "x": 4200,
+      "y": 48564,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 127 B - Orbit: a hairline ring with one bright arc circling it - interactive",
+      "is_interactive": true
+    },
+    "R127C.dc.html": {
+      "x": 0,
+      "y": 49824,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 127 C - Dial: two counter-turning segmented rings - interactive",
+      "is_interactive": true
+    },
+    "R127D.dc.html": {
+      "x": 2100,
+      "y": 49824,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 127 D - Ripple: a ring that sends a wave out to the halo's edge - interactive",
+      "is_interactive": true
+    },
+    "R127E.dc.html": {
+      "x": 4200,
+      "y": 49824,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 127 E - Current: a turning gradient ring with its own glow - interactive",
+      "is_interactive": true
+    },
+    "R127F.dc.html": {
+      "x": 0,
+      "y": 51084,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 127 F - Corona: an eclipse rim, a crescent of light that slowly turns - interactive",
+      "is_interactive": true
+    },
+    "R127Notes.dc.html": {
+      "x": 0,
+      "y": 52344,
+      "w": 1920,
+      "h": 900,
+      "page": "menu-redesign-c",
+      "title": "Rev 127 - notes: the shared geometry, what each option changes in Unity, the pick"
     }
   },
   "createdOnFiles": {
@@ -2543,7 +2779,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "what-s-new",
+    "page": "menu-redesign-c",
     "view": "canvas"
   },
   "noteOrder": [
@@ -2619,6 +2855,11 @@
     "sec-rev120",
     "sec-rev120-2",
     "sec-rev121",
+    "sec-rev125",
+    "sec-rev125-2",
+    "sec-rev126",
+    "sec-rev126-2",
+    "sec-rev127",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -2705,7 +2946,10 @@
     "grp-116f-blocks-t",
     "rev117",
     "rev120",
-    "rev121"
+    "rev121",
+    "rev125",
+    "rev126",
+    "rev127"
   ],
   "notes": {
     "hud_end": {
@@ -4686,6 +4930,108 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "what-s-new"
+    },
+    "sec-rev125": {
+      "kind": "rect",
+      "x": -160,
+      "y": 8940,
+      "w": 5730,
+      "h": 6779,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 0px 0px 3px",
+        "border-radius": "40px 0px 0px 0px"
+      },
+      "page": "frogma-website"
+    },
+    "sec-rev125-2": {
+      "kind": "rect",
+      "x": 5570,
+      "y": 8940,
+      "w": 5730,
+      "h": 6779,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 0px 0px 0px",
+        "border-radius": "0px"
+      },
+      "page": "frogma-website"
+    },
+    "rev125": {
+      "kind": "title1",
+      "text": "Rev 125: E as a site of pages, with the Fleet Codex, the Pilot Codex and a moving background",
+      "x": 0,
+      "y": 9100,
+      "w": 240,
+      "maxW": 11160,
+      "page": "frogma-website"
+    },
+    "rev126": {
+      "kind": "title1",
+      "text": "Rev 126: calmer, made of the HyperSea - sky, cells, galaxy, flora and fauna; the galaxy map on Voyages; Tumult's storm hero",
+      "x": 1620,
+      "y": 0,
+      "w": 240,
+      "maxW": 11160,
+      "page": "frogma-website"
+    },
+    "sec-rev126": {
+      "kind": "rect",
+      "x": 1460,
+      "y": -160,
+      "w": 5730,
+      "h": 6779,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 0px 0px 3px",
+        "border-radius": "40px 0px 0px 0px"
+      },
+      "page": "frogma-website"
+    },
+    "sec-rev126-2": {
+      "kind": "rect",
+      "x": 7190,
+      "y": -160,
+      "w": 5750,
+      "h": 6779,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 0px 0px 0px",
+        "border-radius": "0px"
+      },
+      "page": "frogma-website"
+    },
+    "rev127": {
+      "kind": "title1",
+      "text": "Rev 127 - Avatar borders that sit on the domain halo: six animated rings",
+      "x": 0,
+      "y": 48164,
+      "w": 240,
+      "maxW": 6120,
+      "page": "menu-redesign-c"
+    },
+    "sec-rev127": {
+      "kind": "rect",
+      "x": -160,
+      "y": 48004,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "menu-redesign-c"
     }
   },
   "order": [
@@ -4994,7 +5340,32 @@
     "R121C.dc.html",
     "R121D.dc.html",
     "R121Settings.dc.html",
-    "R121Notes.dc.html"
+    "R121Notes.dc.html",
+    "R123H.dc.html",
+    "R125A.dc.html",
+    "R125B.dc.html",
+    "R125C.dc.html",
+    "R125D.dc.html",
+    "R125E.dc.html",
+    "R125F.dc.html",
+    "R125G.dc.html",
+    "R125Notes.dc.html",
+    "R126A.dc.html",
+    "R126B.dc.html",
+    "R126C.dc.html",
+    "R126D.dc.html",
+    "R126E.dc.html",
+    "R126F.dc.html",
+    "R126G.dc.html",
+    "R126Notes.dc.html",
+    "R127Compare.dc.html",
+    "R127A.dc.html",
+    "R127B.dc.html",
+    "R127C.dc.html",
+    "R127D.dc.html",
+    "R127E.dc.html",
+    "R127F.dc.html",
+    "R127Notes.dc.html"
   ],
   "pages": [
     {
@@ -5056,6 +5427,10 @@
     {
       "id": "what-s-new",
       "name": "What's New"
+    },
+    {
+      "id": "frogma-website",
+      "name": "Frogma Website"
     }
   ],
   "title": "Frogma"
