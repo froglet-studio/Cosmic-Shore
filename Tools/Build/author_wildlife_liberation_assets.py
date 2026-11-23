@@ -42,6 +42,7 @@ POPULATION_ONLY = "--population" in sys.argv
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import wildlife_cage_budget as budget  # noqa: E402
+import arcade_mode_lib as aml  # noqa: E402  - card_short_line (the card's short line)
 
 
 def guid(name: str) -> str:
@@ -238,7 +239,7 @@ files: "dict[str, str]" = {}
 
 
 def emit(rel: str, content: str):
-    files[rel] = content
+    files[rel] = aml.card_short_line(rel, content)  # the card's short line, card_short_lines.json
 
 
 # ── 1. .cs.meta for the four new scripts ─────────────────────────────────────

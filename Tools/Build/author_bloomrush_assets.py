@@ -276,7 +276,8 @@ def main() -> int:
         "Assets/_Scenes/Multiplayer Scenes/MinigameBloomrush.unity.meta": SCENE_META,
         "Assets/_SO_Assets/Scoring Rules/BloomrushScoringRule.asset": RULE_ASSET,
         "Assets/_SO_Assets/Scoring Rules/BloomrushScoringRule.asset.meta": ASSET_META.format(guid=RULE_GUID),
-        "Assets/_SO_Assets/Games/ArcadeGameBloomrush.asset": CARD_ASSET,
+        "Assets/_SO_Assets/Games/ArcadeGameBloomrush.asset":
+            aml.card_short_line("Assets/_SO_Assets/Games/ArcadeGameBloomrush.asset", CARD_ASSET),
         "Assets/_SO_Assets/Games/ArcadeGameBloomrush.asset.meta": ASSET_META.format(guid=CARD_GUID),
     }
 

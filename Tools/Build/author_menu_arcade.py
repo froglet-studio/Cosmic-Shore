@@ -1054,7 +1054,7 @@ def body_sea(parent, key, body_h):
 
 
 POSTER_SHADE_H = 200                   # Rev 128 E: the navy fade up from the foot the name sits on
-POSTER_OPEN_H = 112                    # the reveal panel's open height (KitPosterReveal.openHeight)
+POSTER_OPEN_H = 84                     # the reveal panel's open height (KitPosterReveal.openHeight)
 POSTER_TITLE_H = 84                    # two lines of H1 (36, Aldrich), one word a line for a two-word name
 
 

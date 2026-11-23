@@ -184,7 +184,7 @@ MonoBehaviour:
   panel: {fileID: 521416909345974799}
   title: {fileID: 712715978325528480}
   hull: {fileID: 959056542886374530}
-  openHeight: 112
+  openHeight: 84
   duration: 0.2
 --- !u!114 &1058347607008028468
 MonoBehaviour:

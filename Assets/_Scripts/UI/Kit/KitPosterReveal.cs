@@ -27,7 +27,7 @@ namespace CosmicShore.UI
 
         [Header("Motion")]
         [Tooltip("The open panel's height, in canvas units (the board's 112).")]
-        [SerializeField] private float openHeight = 112f;
+        [SerializeField] private float openHeight = 84f;
         [Tooltip("Seconds to open or close (the board's .2 s).")]
         [SerializeField, Min(0.01f)] private float duration = 0.2f;
 

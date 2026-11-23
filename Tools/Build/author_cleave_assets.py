@@ -267,7 +267,7 @@ files: "dict[str, str]" = {}
 
 
 def emit(rel: str, content: str):
-    files[rel] = content
+    files[rel] = aml.card_short_line(rel, content)  # the card's short line, card_short_lines.json
 
 
 def read(rel: str) -> str:
