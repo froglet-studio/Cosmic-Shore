@@ -279,6 +279,18 @@ jobs:
         if: ${{ !cancelled() }}
         run: python3 Tools/Build/retire_call_to_action.py --check
 
+      # Every element flower (HUD, menu, Fleet Codex, toy portraits, icon sheets) is one petal sprite
+      # turned five times about its centre, so the sprite carries the layout. mass_petal.png sat
+      # flipped and shrunk for four weeks (2026-10-27 to 2026-11-22) with nothing in any code diff.
+      # Standard library only; well under a second.
+      - name: Check the element petals point into the flower's centre
+        # Runs even after an earlier check failed, so one run reports every failure.
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_element_petals.py --self-test
+          python3 Tools/Build/check_element_petals.py
+
       # JetBrains Junie reads skills only from .junie/skills, which is a symlink to
       # .claude/skills. A real directory there is a second hand-maintained copy, and
       # the last one drifted 3,920 diff lines before anybody noticed. See AGENTS.md.
